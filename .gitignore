@@ -1,0 +1,17 @@
+node_modules
+.next
+.next-dev
+dist
+.env.local
+.env*.local
+app/idp/.env.local
+app/idp/.env*.local
+.DS_Store
+*.log
+.vercel
+app/idp/public/pdfjs
+app/idp/public/mockServiceWorker.js
+coverage
+.ladle/build
+tsconfig.tsbuildinfo
+*.tsbuildinfo
