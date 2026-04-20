@@ -26,6 +26,7 @@ import {
   packageActions,
 } from "./fixtures/details"
 import { buildPackageFixtures } from "./fixtures/packages"
+import { buildTransportOrders } from "./fixtures/transport-orders"
 
 const packages = buildPackageFixtures(54)
 const packagesById = new Map(packages.map((p) => [p.id, p]))
@@ -248,8 +249,7 @@ export const handlers = [
     if (!pkg) return notFound(params.id)
     return HttpResponse.json({
       package_id: pkg.id,
-      transport_orders: null,
-      verified_transport_orders: null,
+      ...buildTransportOrders(pkg),
     })
   }),
 

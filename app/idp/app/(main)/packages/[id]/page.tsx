@@ -39,6 +39,7 @@ import { ExportMenu } from "@/components/export-menu"
 import { PackageMetadataEditors } from "@/components/package-metadata-editors"
 import { ReprocessDialog } from "@/components/reprocess-dialog"
 import { SourceMaterialsPanel } from "@/components/source-materials-panel"
+import { TransportOrdersPanel } from "@/components/transport-orders/transport-orders-panel"
 
 const TRANSITION_LABELS: Record<PackageTransition, string> = {
   start_verification: "Start verification",
@@ -212,12 +213,16 @@ export default function PackageDetailPage() {
               </CardContent>
             </Card>
 
-            <Tabs defaultValue="analysis">
+            <Tabs defaultValue="transport">
               <TabsList>
+                <TabsTrigger value="transport">Transport orders</TabsTrigger>
                 <TabsTrigger value="analysis">Analysis result</TabsTrigger>
                 <TabsTrigger value="actions">Action log</TabsTrigger>
                 <TabsTrigger value="source">Source materials</TabsTrigger>
               </TabsList>
+              <TabsContent value="transport">
+                <TransportOrdersPanel packageId={pkg.id} canEdit={canEdit} />
+              </TabsContent>
               <TabsContent value="analysis" className="space-y-3">
                 {isActiveVerification && !canEdit ? (
                   <p className="text-xs text-muted-foreground">
