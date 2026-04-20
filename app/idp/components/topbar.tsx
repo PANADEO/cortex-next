@@ -19,7 +19,7 @@ import { useSetUserPreferences } from "@cortex/api"
 import { Bell, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useEffect, useState } from "react"
+import { Fragment, useEffect, useState } from "react"
 import { breadcrumbsFromPath } from "../lib/breadcrumbs"
 import { useSidebarStore } from "../lib/stores/sidebar-store"
 import { useThemeStore } from "../lib/stores/theme-store"
@@ -77,18 +77,18 @@ export function Topbar() {
               {trail.map((entry, idx) => {
                 const isLast = idx === trail.length - 1
                 return (
-                  <BreadcrumbItem key={`${entry.label}-${idx}`}>
-                    {isLast || !entry.href ? (
-                      <BreadcrumbPage>{entry.label}</BreadcrumbPage>
-                    ) : (
-                      <>
+                  <Fragment key={`${entry.label}-${idx}`}>
+                    <BreadcrumbItem>
+                      {isLast || !entry.href ? (
+                        <BreadcrumbPage>{entry.label}</BreadcrumbPage>
+                      ) : (
                         <BreadcrumbLink asChild>
                           <Link href={entry.href}>{entry.label}</Link>
                         </BreadcrumbLink>
-                        <BreadcrumbSeparator />
-                      </>
-                    )}
-                  </BreadcrumbItem>
+                      )}
+                    </BreadcrumbItem>
+                    {isLast ? null : <BreadcrumbSeparator />}
+                  </Fragment>
                 )
               })}
             </BreadcrumbList>
