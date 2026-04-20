@@ -39,8 +39,9 @@ import { ArrowLeft, Braces, ExternalLink, FileArchive, Loader2 } from "lucide-re
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { toast } from "sonner"
+import { downloadBlob } from "@/lib/download"
 import { ExportMenu } from "@/components/export-menu"
 import { PackageMetadataEditors } from "@/components/package-metadata-editors"
 import { ReprocessDialog } from "@/components/reprocess-dialog"
@@ -66,8 +67,6 @@ export default function PackageDetailPage() {
   const [structureOpen, setStructureOpen] = useState(false)
   const [zipDownloading, setZipDownloading] = useState(false)
 
-  // Polling pauzuje gdy verification w trakcie (chroni user input) lub gdy
-  // otwarty dialog reprocess (pilnuje tekst w additional AI context).
   const detail = usePackage(id, { polling: pollingEnabled })
   const effectivePolling =
     pollingEnabled && detail.data?.verification_state !== "in_progress" && !reprocessOpen
@@ -84,19 +83,20 @@ export default function PackageDetailPage() {
   const isActiveVerification = pkg?.verification_state === "in_progress"
   const canEdit = isActiveVerification && emailsMatch(session?.user?.email, pkg?.assignee)
 
+  const userNotesUpdated = useMemo(
+    () =>
+      actions.data?.actions.find((a) => a.action_type === "user_notes_updated")?.timestamp ??
+      null,
+    [actions.data],
+  )
+
   const handleDownloadZip = async () => {
     if (!pkg) return
     setZipDownloading(true)
     try {
       const blob = await endpoints.packages.download(pkg.id)
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = pkg.file_name.endsWith(".zip") ? pkg.file_name : `${pkg.file_name}.zip`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
+      const fileName = pkg.file_name.endsWith(".zip") ? pkg.file_name : `${pkg.file_name}.zip`
+      downloadBlob(blob, fileName)
       toast.success("ZIP download started")
     } catch (err) {
       toastApiError(err)
@@ -276,10 +276,7 @@ export default function PackageDetailPage() {
                   packageId={pkg.id}
                   customStatus={pkg.custom_status}
                   userNotes={pkg.user_notes}
-                  userNotesUpdated={
-                    actions.data?.actions.find((a) => a.action_type === "user_notes_updated")
-                      ?.timestamp ?? null
-                  }
+                  userNotesUpdated={userNotesUpdated}
                 />
               </CardContent>
             </Card>

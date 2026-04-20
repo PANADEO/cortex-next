@@ -6,7 +6,7 @@ import {
   useUserPreferences,
   usePackageSourceFiles,
 } from "@cortex/api"
-import type { SourceFileReadModel } from "@cortex/types"
+import type { NormalizedHighlightBox, SourceFileReadModel } from "@cortex/types"
 import { LoadingState } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { useQuery } from "@tanstack/react-query"
@@ -140,7 +140,7 @@ function SourceFileBody({
   packageId: string
   file: SourceFileReadModel
   activePage: number | null
-  highlightBoxes: import("@cortex/types").NormalizedHighlightBox[]
+  highlightBoxes: NormalizedHighlightBox[]
 }) {
   const content = useQuery({
     queryKey: ["idp", "packages", "source-file", packageId, file.path],

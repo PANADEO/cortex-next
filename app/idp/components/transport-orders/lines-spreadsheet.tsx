@@ -1,36 +1,23 @@
 "use client"
 
-import type {
-  Invoice,
-  InvoiceLine,
-  InvoiceLineUpdateRequest,
-  UpdateInvoiceLinesRequest,
-} from "@cortex/types"
+import type { Invoice, UpdateInvoiceLinesRequest } from "@cortex/types"
 import { Button, Input } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { Loader2, RotateCcw, Save } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSourceMaterialSelectionStore } from "@/lib/stores/source-material-selection"
+import {
+  invoiceLineRowToRequest,
+  invoiceLineToRow,
+  type InvoiceLineRow,
+} from "./invoice-line-row"
 
-type RowValues = {
-  line_number: string
-  po_number: string
-  product_code: string
-  description: string
-  cn_code: string
-  hs: string
-  quantity: string
-  unit_of_measure: string
-  invoice_value: string
-  net_weight_kg: string
-  gross_weight_kg: string
-  packages_quantity: string
-  packages_type: string
-  packages_marking: string
-  origin_country: string
-}
-
-const COLUMNS: Array<{ key: keyof RowValues; label: string; width: string; uppercase?: boolean }> = [
+const COLUMNS: Array<{
+  key: keyof InvoiceLineRow
+  label: string
+  width: string
+  uppercase?: boolean
+}> = [
   { key: "line_number", label: "#", width: "w-12" },
   { key: "po_number", label: "PO", width: "w-28" },
   { key: "product_code", label: "Product", width: "w-28" },
@@ -48,48 +35,6 @@ const COLUMNS: Array<{ key: keyof RowValues; label: string; width: string; upper
   { key: "origin_country", label: "Origin", width: "w-20", uppercase: true },
 ]
 
-function lineToRow(line: InvoiceLine): RowValues {
-  return {
-    line_number: line.line_number ?? "",
-    po_number: line.po_number ?? "",
-    product_code: line.product_code ?? "",
-    description: line.description ?? "",
-    cn_code: line.cn_code ?? "",
-    hs: line.hs ?? "",
-    quantity: line.quantity ?? "",
-    unit_of_measure: line.unit_of_measure ?? "",
-    invoice_value: line.invoice_value ?? "",
-    net_weight_kg: line.net_weight_kg ?? "",
-    gross_weight_kg: line.gross_weight_kg ?? "",
-    packages_quantity: line.packages_quantity ?? "",
-    packages_type: line.packages_type ?? "",
-    packages_marking: line.packages_marking ?? "",
-    origin_country: line.origin_country ?? "",
-  }
-}
-
-function rowToRequest(id: string, v: RowValues): InvoiceLineUpdateRequest {
-  const pick = (s: string): string | null => (s.trim() ? s.trim() : null)
-  return {
-    line_id: id,
-    line_number: pick(v.line_number),
-    po_number: pick(v.po_number),
-    product_code: pick(v.product_code),
-    description: pick(v.description),
-    cn_code: pick(v.cn_code),
-    hs: pick(v.hs),
-    quantity: pick(v.quantity),
-    unit_of_measure: pick(v.unit_of_measure),
-    invoice_value: pick(v.invoice_value),
-    net_weight_kg: pick(v.net_weight_kg),
-    gross_weight_kg: pick(v.gross_weight_kg),
-    packages_quantity: pick(v.packages_quantity),
-    packages_type: pick(v.packages_type),
-    packages_marking: pick(v.packages_marking),
-    origin_country: pick(v.origin_country),
-  }
-}
-
 interface Props {
   invoice: Invoice
   canEdit: boolean
@@ -99,48 +44,89 @@ interface Props {
 
 export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) {
   const initial = useMemo(() => {
-    const map: Record<string, RowValues> = {}
-    for (const l of invoice.lines) map[l.id] = lineToRow(l)
+    const map: Record<string, InvoiceLineRow> = {}
+    for (const l of invoice.lines) map[l.id] = invoiceLineToRow(l)
     return map
   }, [invoice.lines])
 
-  const [values, setValues] = useState<Record<string, RowValues>>(initial)
-  useEffect(() => setValues(initial), [initial])
+  const [values, setValues] = useState<Record<string, InvoiceLineRow>>(initial)
+  const [dirtyIds, setDirtyIds] = useState<Set<string>>(() => new Set())
+  const initialRef = useRef(initial)
+
+  // Reset only when the invoice identity or the set of line ids changes; a
+  // polling refetch that returns a new-but-equal array must not clobber edits.
+  const lineIdsKey = useMemo(
+    () => invoice.lines.map((l) => l.id).join("|"),
+    [invoice.lines],
+  )
+  useEffect(() => {
+    initialRef.current = initial
+    setValues(initial)
+    setDirtyIds(new Set())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoice.id, lineIdsKey])
 
   const selectLineRefs = useSourceMaterialSelectionStore((s) => s.selectLineRefs)
 
-  const dirty = useMemo(
-    () =>
-      invoice.lines.some((l) => {
-        const current = values[l.id]
-        const origin = initial[l.id]
-        if (!current || !origin) return false
-        return (Object.keys(origin) as Array<keyof RowValues>).some(
-          (k) => current[k] !== origin[k],
-        )
-      }),
-    [values, initial, invoice.lines],
+  const dirty = dirtyIds.size > 0
+
+  const setCell = useCallback(
+    (rowId: string, key: keyof InvoiceLineRow, value: string) => {
+      setValues((prev) => {
+        const row = prev[rowId]
+        if (!row || row[key] === value) return prev
+        return { ...prev, [rowId]: { ...row, [key]: value } }
+      })
+      setDirtyIds((prev) => {
+        const originRow = initialRef.current[rowId]
+        if (!originRow) return prev
+        const rowNowDirty = value !== originRow[key] || rowHasOtherDirtyFields(rowId, key, value)
+        if (rowNowDirty && prev.has(rowId)) return prev
+        if (!rowNowDirty && !prev.has(rowId)) return prev
+        const next = new Set(prev)
+        if (rowNowDirty) next.add(rowId)
+        else next.delete(rowId)
+        return next
+      })
+    },
+    [],
   )
 
-  const setCell = (rowId: string, key: keyof RowValues, value: string) => {
-    setValues((prev) => {
-      const row = prev[rowId]
-      if (!row) return prev
-      return { ...prev, [rowId]: { ...row, [key]: value } }
-    })
+  // Captured ref avoids stale-closure issues from the setter.
+  const valuesRef = useRef(values)
+  valuesRef.current = values
+  function rowHasOtherDirtyFields(
+    rowId: string,
+    changedKey: keyof InvoiceLineRow,
+    changedValue: string,
+  ): boolean {
+    const current = valuesRef.current[rowId]
+    const origin = initialRef.current[rowId]
+    if (!current || !origin) return false
+    for (const col of COLUMNS) {
+      if (col.key === changedKey) {
+        if (changedValue !== origin[col.key]) return true
+      } else if (current[col.key] !== origin[col.key]) {
+        return true
+      }
+    }
+    return false
   }
 
   const handleSave = async () => {
     const body: UpdateInvoiceLinesRequest = {
       lines: invoice.lines.map((l) => {
-        const v = values[l.id] ?? lineToRow(l)
-        return rowToRequest(l.id, v)
+        const row = values[l.id] ?? invoiceLineToRow(l)
+        return invoiceLineRowToRequest(l.id, row)
       }),
     }
     await onSave(body)
   }
 
-  const handleReset = () => setValues(initial)
+  const handleReset = () => {
+    setValues(initialRef.current)
+    setDirtyIds(new Set())
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -195,8 +181,7 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
           </thead>
           <tbody>
             {invoice.lines.map((line) => {
-              const row = values[line.id] ?? lineToRow(line)
-              const onFocusRow = () => selectLineRefs(line.source_references)
+              const row = values[line.id] ?? invoiceLineToRow(line)
               return (
                 <tr key={line.id} className="border-b border-border/50 hover:bg-muted/30">
                   {COLUMNS.map((c) => (
@@ -210,7 +195,7 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
                             c.uppercase ? e.target.value.toUpperCase() : e.target.value,
                           )
                         }
-                        onFocus={onFocusRow}
+                        onFocus={() => selectLineRefs(line.source_references)}
                         readOnly={!canEdit}
                         disabled={!canEdit}
                         className="h-8 rounded-none border-0 bg-transparent px-2 font-mono text-xs shadow-none focus-visible:ring-1"

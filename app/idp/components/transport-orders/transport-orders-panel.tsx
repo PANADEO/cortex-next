@@ -1,7 +1,6 @@
 "use client"
 
 import {
-  toastApiError,
   usePackageTransportOrders,
   useUpdateBuyer,
   useUpdateConsignee,
@@ -13,20 +12,11 @@ import {
   useUpdateSeller,
   useUpdateTransportInfo,
 } from "@cortex/api"
-import type {
-  Invoice,
-  Party,
-  TransportOrder,
-  UpdateDeliveryTermsRequest,
-  UpdateInvoiceLinesRequest,
-  UpdateInvoiceRequest,
-  UpdateInvoiceTotalsRequest,
-  UpdatePartyRequest,
-  UpdateTransportInfoRequest,
-} from "@cortex/types"
+import type { Invoice, Party, TransportOrder } from "@cortex/types"
 import { EmptyState, LoadingState } from "@cortex/ui"
 import { Truck } from "lucide-react"
-import { toast } from "sonner"
+import { useMemo } from "react"
+import { wrapMutation } from "@/lib/hooks/use-toast-mutation"
 import { useSourceMaterialSelectionStore } from "@/lib/stores/source-material-selection"
 import { InvoiceEditor } from "./invoice-editor"
 import { PartyEditor } from "./party-editor"
@@ -68,7 +58,11 @@ interface SectionProps {
   canEdit: boolean
 }
 
-type PartyRole = "seller" | "buyer" | "consignor" | "consignee"
+interface PartyConfig {
+  label: string
+  role: "seller" | "buyer" | "consignor" | "consignee"
+  value: Party | null
+}
 
 function TransportOrderSection({ order, packageId, canEdit }: SectionProps) {
   const seller = useUpdateSeller()
@@ -82,78 +76,22 @@ function TransportOrderSection({ order, packageId, canEdit }: SectionProps) {
   const invoiceLines = useUpdateInvoiceLines()
   const selectLineRefs = useSourceMaterialSelectionStore((s) => s.selectLineRefs)
 
-  const saveParty = async (role: PartyRole, body: UpdatePartyRequest) => {
-    const mutation = { seller, buyer, consignor, consignee }[role]
-    try {
-      await mutation.mutateAsync({ packageId, orderId: order.id, body })
-      toast.success(`${role.charAt(0).toUpperCase() + role.slice(1)} updated`)
-    } catch (err) {
-      toastApiError(err)
-      throw err
-    }
-  }
+  const partyMutations = { seller, buyer, consignor, consignee }
+  const saveTransportInfo = wrapMutation(transportInfo, "Transport info updated")
+  const saveInvoiceHeader = wrapMutation(invoiceHeader, "Invoice updated")
+  const saveDeliveryTerms = wrapMutation(deliveryTerms, "Delivery terms updated")
+  const saveInvoiceTotals = wrapMutation(invoiceTotals, "Totals updated")
+  const saveInvoiceLines = wrapMutation(invoiceLines, "Lines updated")
 
-  const saveTransportInfo = async (body: UpdateTransportInfoRequest) => {
-    try {
-      await transportInfo.mutateAsync({ packageId, orderId: order.id, body })
-      toast.success("Transport info updated")
-    } catch (err) {
-      toastApiError(err)
-      throw err
-    }
-  }
-
-  const saveInvoiceHeader = async (invoiceId: string, body: UpdateInvoiceRequest) => {
-    try {
-      await invoiceHeader.mutateAsync({ packageId, orderId: order.id, invoiceId, body })
-      toast.success("Invoice updated")
-    } catch (err) {
-      toastApiError(err)
-      throw err
-    }
-  }
-
-  const saveDeliveryTerms = async (invoiceId: string, body: UpdateDeliveryTermsRequest) => {
-    try {
-      await deliveryTerms.mutateAsync({ packageId, orderId: order.id, invoiceId, body })
-      toast.success("Delivery terms updated")
-    } catch (err) {
-      toastApiError(err)
-      throw err
-    }
-  }
-
-  const saveInvoiceTotals = async (invoiceId: string, body: UpdateInvoiceTotalsRequest) => {
-    try {
-      await invoiceTotals.mutateAsync({ packageId, orderId: order.id, invoiceId, body })
-      toast.success("Totals updated")
-    } catch (err) {
-      toastApiError(err)
-      throw err
-    }
-  }
-
-  const saveInvoiceLines = async (invoiceId: string, body: UpdateInvoiceLinesRequest) => {
-    try {
-      await invoiceLines.mutateAsync({ packageId, orderId: order.id, invoiceId, body })
-      toast.success("Lines updated")
-    } catch (err) {
-      toastApiError(err)
-      throw err
-    }
-  }
-
-  const parties: Array<{
-    label: string
-    role: PartyRole
-    value: Party | null
-    isSaving: boolean
-  }> = [
-    { label: "Seller", role: "seller", value: order.seller, isSaving: seller.isPending },
-    { label: "Buyer", role: "buyer", value: order.buyer, isSaving: buyer.isPending },
-    { label: "Consignor", role: "consignor", value: order.consignor, isSaving: consignor.isPending },
-    { label: "Consignee", role: "consignee", value: order.consignee, isSaving: consignee.isPending },
-  ]
+  const parties: readonly PartyConfig[] = useMemo(
+    () => [
+      { label: "Seller", role: "seller", value: order.seller },
+      { label: "Buyer", role: "buyer", value: order.buyer },
+      { label: "Consignor", role: "consignor", value: order.consignor },
+      { label: "Consignee", role: "consignee", value: order.consignee },
+    ],
+    [order.seller, order.buyer, order.consignor, order.consignee],
+  )
 
   return (
     <section className="space-y-6">
@@ -171,20 +109,24 @@ function TransportOrderSection({ order, packageId, canEdit }: SectionProps) {
         order={order}
         canEdit={canEdit}
         isSaving={transportInfo.isPending}
-        onSave={saveTransportInfo}
+        onSave={(body) => saveTransportInfo({ packageId, orderId: order.id, body })}
       />
 
       <div className="grid gap-4 md:grid-cols-2">
-        {parties.map(({ label, role, value, isSaving }) => (
-          <PartyEditor
-            key={role}
-            label={label}
-            value={value}
-            canEdit={canEdit}
-            isSaving={isSaving}
-            onSave={(body) => saveParty(role, body)}
-          />
-        ))}
+        {parties.map(({ label, role, value }) => {
+          const m = partyMutations[role]
+          const save = wrapMutation(m, `${label} updated`)
+          return (
+            <PartyEditor
+              key={role}
+              label={label}
+              value={value}
+              canEdit={canEdit}
+              isSaving={m.isPending}
+              onSave={(body) => save({ packageId, orderId: order.id, body })}
+            />
+          )
+        })}
       </div>
 
       {order.invoices.map((invoice: Invoice) => (
@@ -196,10 +138,18 @@ function TransportOrderSection({ order, packageId, canEdit }: SectionProps) {
           isSavingDelivery={deliveryTerms.isPending}
           isSavingTotals={invoiceTotals.isPending}
           isSavingLines={invoiceLines.isPending}
-          onSaveHeader={(body) => saveInvoiceHeader(invoice.id, body)}
-          onSaveDelivery={(body) => saveDeliveryTerms(invoice.id, body)}
-          onSaveTotals={(body) => saveInvoiceTotals(invoice.id, body)}
-          onSaveLines={(body) => saveInvoiceLines(invoice.id, body)}
+          onSaveHeader={(body) =>
+            saveInvoiceHeader({ packageId, orderId: order.id, invoiceId: invoice.id, body })
+          }
+          onSaveDelivery={(body) =>
+            saveDeliveryTerms({ packageId, orderId: order.id, invoiceId: invoice.id, body })
+          }
+          onSaveTotals={(body) =>
+            saveInvoiceTotals({ packageId, orderId: order.id, invoiceId: invoice.id, body })
+          }
+          onSaveLines={(body) =>
+            saveInvoiceLines({ packageId, orderId: order.id, invoiceId: invoice.id, body })
+          }
           onSelectLine={(line) => selectLineRefs(line.source_references)}
         />
       ))}

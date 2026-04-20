@@ -11,6 +11,7 @@ import {
 import { Download, FileDown, Loader2 } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
+import { downloadBlob } from "@/lib/download"
 
 interface ExportMenuProps {
   packageId: string
@@ -38,14 +39,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
     setDownloading(templateName)
     try {
       const blob = await endpoints.packages.exportResult(packageId, templateName)
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = deriveFileName(fileName, templateName, format)
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
+      downloadBlob(blob, deriveFileName(fileName, templateName, format))
       toast.success(`Exported as ${templateName}`)
     } catch (err) {
       toastApiError(err)

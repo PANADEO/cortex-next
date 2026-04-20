@@ -9,28 +9,21 @@ import type {
   UpdateInvoiceTotalsRequest,
 } from "@cortex/types"
 import { z } from "zod"
+import { countryCodeSchema, mapTrimToNull, numericStringSchema } from "@/lib/form-helpers"
 import { FieldsForm, type FieldSpec } from "./fields-form"
 import { InvoiceLinesGrid } from "./invoice-lines-grid"
 
-const numericString = z
+const currencySchema = z
   .string()
-  .regex(/^$|^-?\d+(\.\d+)?$/, "Must be numeric (decimal with dot)")
+  .max(4)
+  .regex(/^[A-Za-z]{0,3}$/, "ISO currency code")
 
 const headerSchema = z.object({
   invoice_number: z.string().max(64),
   invoice_date: z.string().regex(/^$|^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD"),
-  invoice_currency: z
-    .string()
-    .max(4)
-    .regex(/^[A-Za-z]{0,3}$/, "ISO currency code"),
-  country_of_dispatch: z
-    .string()
-    .max(3)
-    .regex(/^[A-Za-z]{0,3}$/, "ISO country code"),
-  country_of_destination: z
-    .string()
-    .max(3)
-    .regex(/^[A-Za-z]{0,3}$/, "ISO country code"),
+  invoice_currency: currencySchema,
+  country_of_dispatch: countryCodeSchema,
+  country_of_destination: countryCodeSchema,
 })
 
 type HeaderValues = z.infer<typeof headerSchema>
@@ -60,10 +53,10 @@ const DELIVERY_FIELDS: readonly FieldSpec<DeliveryValues>[] = [
 ]
 
 const totalsSchema = z.object({
-  total_invoice_value: numericString,
-  total_net_weight_kg: numericString,
-  total_gross_weight_kg: numericString,
-  total_packages_quantity: numericString,
+  total_invoice_value: numericStringSchema,
+  total_net_weight_kg: numericStringSchema,
+  total_gross_weight_kg: numericStringSchema,
+  total_packages_quantity: numericStringSchema,
 })
 
 type TotalsValues = z.infer<typeof totalsSchema>
@@ -103,11 +96,6 @@ function totalsDefaults(invoice: Invoice): TotalsValues {
     total_gross_weight_kg: t?.total_gross_weight_kg ?? "",
     total_packages_quantity: t?.total_packages_quantity ?? "",
   }
-}
-
-function emptyToNull<T extends Record<string, string>>(values: T): Record<keyof T, string | null> {
-  const entries = Object.entries(values).map(([k, v]) => [k, v.trim() ? v.trim() : null])
-  return Object.fromEntries(entries) as Record<keyof T, string | null>
 }
 
 interface Props {
@@ -159,7 +147,8 @@ export function InvoiceEditor({
           schema={headerSchema}
           canEdit={canEdit}
           isSaving={isSavingHeader}
-          onSave={(v) => onSaveHeader(emptyToNull(v))}
+          resetKey={invoice.id}
+          onSave={(v) => onSaveHeader(mapTrimToNull(v))}
         />
         <FieldsForm
           label="Delivery terms"
@@ -168,7 +157,8 @@ export function InvoiceEditor({
           schema={deliverySchema}
           canEdit={canEdit}
           isSaving={isSavingDelivery}
-          onSave={(v) => onSaveDelivery(emptyToNull(v))}
+          resetKey={invoice.id}
+          onSave={(v) => onSaveDelivery(mapTrimToNull(v))}
         />
         <FieldsForm
           label="Totals"
@@ -177,7 +167,8 @@ export function InvoiceEditor({
           schema={totalsSchema}
           canEdit={canEdit}
           isSaving={isSavingTotals}
-          onSave={(v) => onSaveTotals(emptyToNull(v))}
+          resetKey={invoice.id}
+          onSave={(v) => onSaveTotals(mapTrimToNull(v))}
         />
       </div>
       <InvoiceLinesGrid

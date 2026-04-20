@@ -11,7 +11,6 @@ import {
   DataTable,
   EmptyState,
   Input,
-  Label,
   PageHeader,
   Pagination,
   Select,
@@ -25,6 +24,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { History, RotateCw } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState } from "react"
+import { DateRangeFilter } from "@/components/date-range-filter"
 
 const columns: ColumnDef<ActionLogReadModel, unknown>[] = [
   {
@@ -136,44 +136,16 @@ export default function AuditLogPage() {
             }}
             className="h-9 w-56"
           />
-          <div className="flex items-end gap-2">
-            <div className="space-y-1">
-              <Label
-                htmlFor="audit-date-from"
-                className="text-[10px] uppercase tracking-wide text-muted-foreground"
-              >
-                From
-              </Label>
-              <Input
-                id="audit-date-from"
-                type="date"
-                value={dateFrom}
-                onChange={(e) => {
-                  setPage(0)
-                  setDateFrom(e.target.value)
-                }}
-                className="h-9 w-[160px]"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label
-                htmlFor="audit-date-to"
-                className="text-[10px] uppercase tracking-wide text-muted-foreground"
-              >
-                To
-              </Label>
-              <Input
-                id="audit-date-to"
-                type="date"
-                value={dateTo}
-                onChange={(e) => {
-                  setPage(0)
-                  setDateTo(e.target.value)
-                }}
-                className="h-9 w-[160px]"
-              />
-            </div>
-          </div>
+          <DateRangeFilter
+            idPrefix="audit-date"
+            from={dateFrom}
+            to={dateTo}
+            onChange={({ from, to }) => {
+              setPage(0)
+              setDateFrom(from)
+              setDateTo(to)
+            }}
+          />
           <div className="ml-auto text-xs text-muted-foreground">
             {isFetching ? "Refreshing…" : `${total} events`}
           </div>

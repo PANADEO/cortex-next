@@ -2,6 +2,7 @@
 
 import type { TransportOrder, UpdateTransportInfoRequest } from "@cortex/types"
 import { z } from "zod"
+import { countryCodeSchema, mapTrimToNull } from "@/lib/form-helpers"
 import { FieldsForm, type FieldSpec } from "./fields-form"
 
 const schema = z.object({
@@ -9,14 +10,8 @@ const schema = z.object({
   mode: z.string().max(32),
   truck_plate: z.string().max(32),
   trailer_plate: z.string().max(32),
-  country_of_dispatch: z
-    .string()
-    .max(3)
-    .regex(/^[A-Za-z]{0,3}$/, "ISO country code"),
-  country_of_destination: z
-    .string()
-    .max(3)
-    .regex(/^[A-Za-z]{0,3}$/, "ISO country code"),
+  country_of_dispatch: countryCodeSchema,
+  country_of_destination: countryCodeSchema,
 })
 
 type FormValues = z.infer<typeof schema>
@@ -41,11 +36,6 @@ function toDefaults(order: TransportOrder): FormValues {
   }
 }
 
-function toRequest(values: FormValues): UpdateTransportInfoRequest {
-  const entries = Object.entries(values).map(([k, v]) => [k, v.trim() ? v.trim() : null])
-  return Object.fromEntries(entries) as UpdateTransportInfoRequest
-}
-
 interface Props {
   order: TransportOrder
   canEdit: boolean
@@ -62,7 +52,8 @@ export function TransportInfoEditor({ order, canEdit, isSaving, onSave }: Props)
       schema={schema}
       canEdit={canEdit}
       isSaving={isSaving}
-      onSave={(v) => onSave(toRequest(v))}
+      resetKey={order.id}
+      onSave={(v) => onSave(mapTrimToNull(v))}
     />
   )
 }

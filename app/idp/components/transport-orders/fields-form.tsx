@@ -22,6 +22,10 @@ interface Props<T extends Record<string, string>> {
   schema: ZodType<T>
   canEdit: boolean
   isSaving?: boolean | undefined
+  /** Changes to this key trigger a form reset to `defaults`. Prevents clobbering
+   *  in-flight user edits when the parent re-renders with a structurally-equal
+   *  `defaults` object (e.g. after a polling refetch). */
+  resetKey?: string | number | undefined
   onSave: (values: T) => Promise<void>
 }
 
@@ -32,6 +36,7 @@ export function FieldsForm<T extends Record<string, string>>({
   schema,
   canEdit,
   isSaving = false,
+  resetKey,
   onSave,
 }: Props<T>) {
   const idPrefix = useId()
@@ -42,7 +47,9 @@ export function FieldsForm<T extends Record<string, string>>({
 
   useEffect(() => {
     form.reset(defaults as never)
-  }, [defaults, form])
+    // Intentionally excluding `defaults` — reset only when resetKey flips.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetKey, form])
 
   if (!canEdit) {
     return (

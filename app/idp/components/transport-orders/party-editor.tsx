@@ -2,6 +2,7 @@
 
 import type { Party, UpdatePartyRequest } from "@cortex/types"
 import { z } from "zod"
+import { countryCodeSchema, mapTrimToNull } from "@/lib/form-helpers"
 import { FieldsForm, type FieldSpec } from "./fields-form"
 
 const schema = z.object({
@@ -9,10 +10,7 @@ const schema = z.object({
   street: z.string().max(200),
   postal_code: z.string().max(20),
   city: z.string().max(100),
-  country_code: z
-    .string()
-    .max(3)
-    .regex(/^[A-Za-z]{0,3}$/, "ISO country code"),
+  country_code: countryCodeSchema,
   vat_id: z.string().max(50),
   eori: z.string().max(50),
   partner_id: z.string().max(50),
@@ -44,11 +42,6 @@ function toDefaults(party: Party | null): FormValues {
   }
 }
 
-function toRequest(values: FormValues): UpdatePartyRequest {
-  const entries = Object.entries(values).map(([k, v]) => [k, v.trim() ? v.trim() : null])
-  return Object.fromEntries(entries) as UpdatePartyRequest
-}
-
 interface Props {
   label: string
   value: Party | null
@@ -66,7 +59,8 @@ export function PartyEditor({ label, value, canEdit, isSaving, onSave }: Props) 
       schema={schema}
       canEdit={canEdit}
       isSaving={isSaving}
-      onSave={(v) => onSave(toRequest(v))}
+      resetKey={value?.id}
+      onSave={(v) => onSave(mapTrimToNull(v))}
     />
   )
 }

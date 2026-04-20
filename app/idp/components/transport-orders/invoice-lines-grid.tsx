@@ -18,13 +18,11 @@ import {
 import { formatMoney } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Pencil } from "lucide-react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { z } from "zod"
+import { countryCodeSchema, numericStringSchema } from "@/lib/form-helpers"
 import { FieldsForm, type FieldSpec } from "./fields-form"
-
-const numericString = z
-  .string()
-  .regex(/^$|^-?\d+(\.\d+)?$/, "Must be numeric (decimal with dot)")
+import { invoiceLineRowToRequest, invoiceLineToRow, type InvoiceLineRow } from "./invoice-line-row"
 
 const lineSchema = z.object({
   line_number: z.string().max(16),
@@ -33,23 +31,18 @@ const lineSchema = z.object({
   description: z.string().max(500),
   cn_code: z.string().max(16),
   hs: z.string().max(16),
-  quantity: numericString,
+  quantity: numericStringSchema,
   unit_of_measure: z.string().max(16),
-  invoice_value: numericString,
-  net_weight_kg: numericString,
-  gross_weight_kg: numericString,
-  packages_quantity: numericString,
+  invoice_value: numericStringSchema,
+  net_weight_kg: numericStringSchema,
+  gross_weight_kg: numericStringSchema,
+  packages_quantity: numericStringSchema,
   packages_type: z.string().max(32),
   packages_marking: z.string().max(100),
-  origin_country: z
-    .string()
-    .max(3)
-    .regex(/^[A-Za-z]{0,3}$/, "ISO country code"),
-})
+  origin_country: countryCodeSchema,
+}) satisfies z.ZodType<InvoiceLineRow>
 
-type LineValues = z.infer<typeof lineSchema>
-
-const LINE_FIELDS: readonly FieldSpec<LineValues>[] = [
+const LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
   { name: "line_number", label: "Line #", span: 1 },
   { name: "po_number", label: "PO number", span: 1 },
   { name: "product_code", label: "Product code", span: 1 },
@@ -66,32 +59,6 @@ const LINE_FIELDS: readonly FieldSpec<LineValues>[] = [
   { name: "packages_type", label: "Packages type", span: 1 },
   { name: "packages_marking", label: "Packages marking", span: 2 },
 ]
-
-function lineDefaults(line: InvoiceLine): LineValues {
-  return {
-    line_number: line.line_number ?? "",
-    po_number: line.po_number ?? "",
-    product_code: line.product_code ?? "",
-    description: line.description ?? "",
-    cn_code: line.cn_code ?? "",
-    hs: line.hs ?? "",
-    quantity: line.quantity ?? "",
-    unit_of_measure: line.unit_of_measure ?? "",
-    invoice_value: line.invoice_value ?? "",
-    net_weight_kg: line.net_weight_kg ?? "",
-    gross_weight_kg: line.gross_weight_kg ?? "",
-    packages_quantity: line.packages_quantity ?? "",
-    packages_type: line.packages_type ?? "",
-    packages_marking: line.packages_marking ?? "",
-    origin_country: line.origin_country ?? "",
-  }
-}
-
-function valuesToRequest(id: string, values: LineValues): InvoiceLineUpdateRequest {
-  const entries = Object.entries(values).map(([k, v]) => [k, v.trim() ? v.trim() : null])
-  const base = Object.fromEntries(entries) as Omit<InvoiceLineUpdateRequest, "line_id" | "hs">
-  return { line_id: id, ...base }
-}
 
 interface Props {
   invoice: Invoice
@@ -113,93 +80,96 @@ export function InvoiceLinesGrid({
   const [editingId, setEditingId] = useState<string | null>(null)
   const editingLine = invoice.lines.find((l) => l.id === editingId) ?? null
 
-  const columns: ColumnDef<InvoiceLine, unknown>[] = [
-    {
-      id: "line_number",
-      header: "#",
-      size: 56,
-      cell: ({ row }) => (
-        <span className="font-mono text-xs">{row.original.line_number ?? "—"}</span>
-      ),
-    },
-    {
-      id: "product",
-      header: "Product",
-      cell: ({ row }) => (
-        <div className="space-y-0.5">
-          <div className="truncate font-medium">{row.original.description ?? "—"}</div>
-          <div className="font-mono text-xs text-muted-foreground">
-            {row.original.product_code ?? ""}
+  const columns = useMemo<ColumnDef<InvoiceLine, unknown>[]>(() => {
+    const base: ColumnDef<InvoiceLine, unknown>[] = [
+      {
+        id: "line_number",
+        header: "#",
+        size: 56,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs">{row.original.line_number ?? "—"}</span>
+        ),
+      },
+      {
+        id: "product",
+        header: "Product",
+        cell: ({ row }) => (
+          <div className="space-y-0.5">
+            <div className="truncate font-medium">{row.original.description ?? "—"}</div>
+            <div className="font-mono text-xs text-muted-foreground">
+              {row.original.product_code ?? ""}
+            </div>
           </div>
-        </div>
-      ),
-    },
-    {
-      id: "cn_code",
-      header: "CN",
-      size: 110,
-      cell: ({ row }) => (
-        <span className="font-mono text-xs">{row.original.cn_code ?? "—"}</span>
-      ),
-    },
-    {
-      id: "quantity",
-      header: "Qty",
-      size: 100,
-      cell: ({ row }) => (
-        <span className="font-mono text-xs">
-          {row.original.quantity ?? "—"}
-          {row.original.unit_of_measure ? ` ${row.original.unit_of_measure}` : ""}
-        </span>
-      ),
-    },
-    {
-      id: "net_weight_kg",
-      header: "Net kg",
-      size: 90,
-      cell: ({ row }) => (
-        <span className="font-mono text-xs">{row.original.net_weight_kg ?? "—"}</span>
-      ),
-    },
-    {
-      id: "invoice_value",
-      header: "Value",
-      size: 120,
-      cell: ({ row }) => (
-        <span className="font-mono text-xs">
-          {formatMoney(row.original.invoice_value, currency ? { currency } : {})}
-        </span>
-      ),
-    },
-    ...(canEdit
-      ? [
-          {
-            id: "actions",
-            header: "",
-            size: 56,
-            cell: ({ row }: { row: { original: InvoiceLine } }) => (
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Edit line"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setEditingId(row.original.id)
-                }}
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            ),
-          } satisfies ColumnDef<InvoiceLine, unknown>,
-        ]
-      : []),
-  ]
+        ),
+      },
+      {
+        id: "cn_code",
+        header: "CN",
+        size: 110,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs">{row.original.cn_code ?? "—"}</span>
+        ),
+      },
+      {
+        id: "quantity",
+        header: "Qty",
+        size: 100,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs">
+            {row.original.quantity ?? "—"}
+            {row.original.unit_of_measure ? ` ${row.original.unit_of_measure}` : ""}
+          </span>
+        ),
+      },
+      {
+        id: "net_weight_kg",
+        header: "Net kg",
+        size: 90,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs">{row.original.net_weight_kg ?? "—"}</span>
+        ),
+      },
+      {
+        id: "invoice_value",
+        header: "Value",
+        size: 120,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs">
+            {formatMoney(row.original.invoice_value, currency ? { currency } : {})}
+          </span>
+        ),
+      },
+    ]
+    if (!canEdit) return base
+    return [
+      ...base,
+      {
+        id: "actions",
+        header: "",
+        size: 56,
+        cell: ({ row }) => (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Edit line"
+            onClick={(e) => {
+              e.stopPropagation()
+              setEditingId(row.original.id)
+            }}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+        ),
+      },
+    ]
+  }, [canEdit, currency])
 
-  const handleSaveLine = async (values: LineValues): Promise<void> => {
+  const handleSaveLine = async (values: InvoiceLineRow): Promise<void> => {
     if (!editingLine) return
-    const updatedLine: InvoiceLineUpdateRequest = valuesToRequest(editingLine.id, values)
     const lines: InvoiceLineUpdateRequest[] = invoice.lines.map((l) =>
-      l.id === editingLine.id ? updatedLine : valuesToRequest(l.id, lineDefaults(l)),
+      l.id === editingLine.id
+        ? invoiceLineRowToRequest(l.id, values)
+        : invoiceLineRowToRequest(l.id, invoiceLineToRow(l)),
     )
     await onSaveLines({ lines })
     setEditingId(null)
@@ -235,10 +205,11 @@ export function InvoiceLinesGrid({
               <FieldsForm
                 label=""
                 fields={LINE_FIELDS}
-                defaults={lineDefaults(editingLine)}
+                defaults={invoiceLineToRow(editingLine)}
                 schema={lineSchema}
                 canEdit={canEdit}
                 isSaving={isSaving}
+                resetKey={editingLine.id}
                 onSave={handleSaveLine}
               />
             </div>

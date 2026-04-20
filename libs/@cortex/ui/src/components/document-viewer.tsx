@@ -4,7 +4,7 @@ import type { NormalizedHighlightBox } from "@cortex/types"
 import { cn } from "@cortex/utils"
 import { renderAsync } from "docx-preview"
 import { FileWarning, Loader2 } from "lucide-react"
-import type { PDFDocumentProxy } from "pdfjs-dist"
+import type { PDFDocumentLoadingTask, PDFDocumentProxy, RenderTask } from "pdfjs-dist"
 import { useEffect, useMemo, useRef, useState } from "react"
 import * as XLSX from "xlsx"
 
@@ -111,14 +111,13 @@ function PdfViewer({
   activePage: number | null
   highlightBoxes: NormalizedHighlightBox[]
 }) {
-  const containerRef = useRef<HTMLDivElement>(null)
   const pageRefs = useRef(new Map<number, HTMLDivElement>())
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    let loadingTask: { destroy?: () => void } | null = null
+    let loadingTask: PDFDocumentLoadingTask | null = null
     let loadedDoc: PDFDocumentProxy | null = null
 
     async function load() {
@@ -140,8 +139,7 @@ function PdfViewer({
           cMapPacked: true,
           standardFontDataUrl: PDF_STANDARD_FONT_URL,
         })
-        const task = loadingTask as { promise: Promise<PDFDocumentProxy> }
-        loadedDoc = await task.promise
+        loadedDoc = await loadingTask.promise
         if (cancelled) {
           loadedDoc.destroy()
           return
@@ -157,7 +155,7 @@ function PdfViewer({
     return () => {
       cancelled = true
       loadedDoc?.destroy()
-      loadingTask?.destroy?.()
+      loadingTask?.destroy()
     }
   }, [source])
 
@@ -189,7 +187,7 @@ function PdfViewer({
 
   return (
     <ViewerFrame className={className}>
-      <div ref={containerRef} className="flex-1 space-y-3 overflow-auto bg-muted/20 p-3">
+      <div className="flex-1 space-y-3 overflow-auto bg-muted/20 p-3">
         {pages.map((n) => (
           <div
             key={n}
@@ -224,7 +222,6 @@ function PdfPage({
 
   useEffect(() => {
     let cancelled = false
-    type RenderTask = { cancel: () => void; promise: Promise<void> }
     let renderTask: RenderTask | null = null
 
     async function render() {
@@ -237,7 +234,7 @@ function PdfPage({
       if (!ctx) return
       canvas.width = viewport.width
       canvas.height = viewport.height
-      renderTask = page.render({ canvasContext: ctx, viewport }) as unknown as RenderTask
+      renderTask = page.render({ canvasContext: ctx, viewport })
       try {
         await renderTask.promise
       } catch {

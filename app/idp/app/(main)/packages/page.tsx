@@ -36,6 +36,7 @@ import {
 import { ArrowDown, ArrowUp, FileQuestion, Loader2, Search, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
+import { DateRangeFilter } from "@/components/date-range-filter"
 import { packageColumns } from "@/lib/columns/packages"
 
 const SORT_FIELDS: ReadonlyArray<{ value: PackageSortField; label: string }> = [
@@ -254,42 +255,16 @@ export default function PackagesPage() {
               </Button>
             </div>
           </div>
-          <div className="space-y-1">
-            <Label
-              htmlFor="packages-date-from"
-              className="text-[10px] uppercase tracking-wide text-muted-foreground"
-            >
-              From
-            </Label>
-            <Input
-              id="packages-date-from"
-              type="date"
-              value={dateFrom}
-              onChange={(e) => {
-                resetPage()
-                setDateFrom(e.target.value)
-              }}
-              className="h-9 w-[160px]"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label
-              htmlFor="packages-date-to"
-              className="text-[10px] uppercase tracking-wide text-muted-foreground"
-            >
-              To
-            </Label>
-            <Input
-              id="packages-date-to"
-              type="date"
-              value={dateTo}
-              onChange={(e) => {
-                resetPage()
-                setDateTo(e.target.value)
-              }}
-              className="h-9 w-[160px]"
-            />
-          </div>
+          <DateRangeFilter
+            idPrefix="packages-date"
+            from={dateFrom}
+            to={dateTo}
+            onChange={({ from, to }) => {
+              resetPage()
+              setDateFrom(from)
+              setDateTo(to)
+            }}
+          />
           {(dateFrom || dateTo || customStatus || sortBy !== "created_date" || sortOrder !== "desc") ? (
             <Button
               variant="ghost"
