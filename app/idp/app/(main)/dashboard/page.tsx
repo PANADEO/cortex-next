@@ -73,7 +73,7 @@ export default function DashboardPage() {
       />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <section className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">
           <DataCard
             label="In queue"
             value={stats.data?.in_queue ?? 0}

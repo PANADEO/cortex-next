@@ -36,6 +36,8 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
+import { ExportMenu } from "@/components/export-menu"
+import { PackageMetadataEditors } from "@/components/package-metadata-editors"
 import { SourceMaterialsPanel } from "@/components/source-materials-panel"
 
 const TRANSITION_LABELS: Record<PackageTransition, string> = {
@@ -112,6 +114,7 @@ export default function PackageDetailPage() {
               }}
               isRefreshing={detail.isFetching || actions.isFetching}
             />
+            {pkg ? <ExportMenu packageId={pkg.id} fileName={pkg.file_name} /> : null}
             <Button variant="outline" size="sm" asChild>
               <Link href="/packages">
                 <ArrowLeft className="mr-1 h-4 w-4" /> Back
@@ -199,6 +202,16 @@ export default function PackageDetailPage() {
                 </CardContent>
               </Card>
             </section>
+
+            <Card>
+              <CardContent className="p-5">
+                <PackageMetadataEditors
+                  packageId={pkg.id}
+                  customStatus={pkg.custom_status}
+                  userNotes={pkg.user_notes}
+                />
+              </CardContent>
+            </Card>
 
             <Tabs defaultValue="analysis">
               <TabsList>
