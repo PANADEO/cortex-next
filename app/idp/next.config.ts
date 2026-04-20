@@ -15,8 +15,6 @@ const nextConfig: NextConfig = {
     "@cortex/api",
     "@cortex/types",
     "@cortex/utils",
-    "react-pdf",
-    "pdfjs-dist",
   ],
   webpack: (config) => {
     config.resolve.alias = {

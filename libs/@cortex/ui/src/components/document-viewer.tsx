@@ -2,20 +2,9 @@
 
 import { cn } from "@cortex/utils"
 import { renderAsync } from "docx-preview"
-import { ChevronLeft, ChevronRight, FileWarning, Loader2 } from "lucide-react"
+import { FileText, FileWarning, Loader2 } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Document, Page, pdfjs } from "react-pdf"
-import "react-pdf/dist/Page/AnnotationLayer.css"
-import "react-pdf/dist/Page/TextLayer.css"
 import * as XLSX from "xlsx"
-import { Button } from "./ui/button"
-
-pdfjs.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.min.mjs"
-
-const PDF_OPTIONS = {
-  cMapUrl: "/pdfjs/cmaps/",
-  standardFontDataUrl: "/pdfjs/standard_fonts/",
-}
 
 export type DocumentKind = "pdf" | "docx" | "xlsx" | "image" | "unsupported"
 
@@ -45,10 +34,14 @@ export function DocumentViewer({
   const kind = useMemo(() => detectDocumentKind(fileName, mediaType), [fileName, mediaType])
 
   if (!source) {
-    return <ViewerFrame className={className}><ViewerMessage label="No document selected." /></ViewerFrame>
+    return (
+      <ViewerFrame className={className}>
+        <ViewerMessage label="No document selected." />
+      </ViewerFrame>
+    )
   }
 
-  if (kind === "pdf") return <PdfViewer source={source} className={className} />
+  if (kind === "pdf") return <PdfPlaceholder source={source} fileName={fileName} className={className} />
   if (kind === "docx") return <DocxViewer source={source} className={className} />
   if (kind === "xlsx") return <XlsxViewer source={source} className={className} />
   if (kind === "image") return <ImageViewer source={source} fileName={fileName} className={className} />
@@ -88,71 +81,52 @@ function ViewerMessage({ icon, label }: { icon?: React.ReactNode; label: string 
   )
 }
 
-function PdfViewer({ source, className }: { source: Blob | ArrayBuffer | string; className?: string | undefined }) {
-  const [numPages, setNumPages] = useState(0)
-  const [page, setPage] = useState(1)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState<number | undefined>(undefined)
+function PdfPlaceholder({
+  source,
+  fileName,
+  className,
+}: {
+  source: Blob | ArrayBuffer | string
+  fileName: string
+  className?: string | undefined
+}) {
+  const url = useMemo(() => {
+    if (typeof source === "string") return source
+    if (source instanceof Blob) return URL.createObjectURL(source)
+    return URL.createObjectURL(new Blob([source], { type: "application/pdf" }))
+  }, [source])
 
   useEffect(() => {
-    if (!containerRef.current) return
-    const el = containerRef.current
-    const update = () => setWidth(Math.max(320, el.clientWidth - 24))
-    update()
-    const obs = new ResizeObserver(update)
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
-
-  const file = useMemo(() => {
-    if (typeof source === "string") return source
-    if (source instanceof Blob) return source
-    return { data: source }
-  }, [source])
+    return () => {
+      if (typeof source !== "string") URL.revokeObjectURL(url)
+    }
+  }, [url, source])
 
   return (
     <ViewerFrame className={className}>
-      <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs">
-        <span className="font-mono text-muted-foreground">
-          Page {page} / {numPages || "…"}
-        </span>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page <= 1}
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+        <FileText className="h-10 w-10 text-muted-foreground" />
+        <p className="text-sm font-medium">{fileName}</p>
+        <p className="max-w-sm text-xs text-muted-foreground">
+          Inline PDF viewer is temporarily disabled. Open in a new tab or download below.
+        </p>
+        <div className="flex gap-2">
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-8 items-center rounded-md border border-border bg-background px-3 text-xs font-medium hover:bg-muted"
           >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.min(numPages, p + 1))}
-            disabled={page >= numPages}
+            Open in new tab
+          </a>
+          <a
+            href={url}
+            download={fileName}
+            className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90"
           >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+            Download
+          </a>
         </div>
-      </div>
-      <div ref={containerRef} className="flex-1 overflow-auto p-3">
-        <Document
-          file={file}
-          onLoadSuccess={({ numPages: n }) => {
-            setNumPages(n)
-            setPage((p) => Math.min(p, n))
-          }}
-          loading={<ViewerMessage icon={<Loader2 className="h-4 w-4 animate-spin" />} label="Loading PDF…" />}
-          error={<ViewerMessage icon={<FileWarning className="h-5 w-5" />} label="Failed to load PDF." />}
-          options={PDF_OPTIONS}
-        >
-          <Page
-            pageNumber={page}
-            {...(width !== undefined ? { width } : {})}
-            renderAnnotationLayer={false}
-            renderTextLayer={false}
-          />
-        </Document>
       </div>
     </ViewerFrame>
   )
