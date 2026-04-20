@@ -10,6 +10,7 @@ import type {
   ReprocessRequest,
   SetCustomStatusRequest,
   SetUserNotesRequest,
+  SetUserPreferencesRequest,
   UpdateDeliveryTermsRequest,
   UpdateInvoiceLinesRequest,
   UpdateInvoiceRequest,
@@ -23,6 +24,24 @@ import { queryKeys } from "./query-keys"
 
 export function useUser() {
   return useQuery({ queryKey: queryKeys.user(), queryFn: endpoints.user.me })
+}
+
+export function useUserPreferences() {
+  return useQuery({
+    queryKey: queryKeys.userPreferences(),
+    queryFn: endpoints.user.getPreferences,
+    staleTime: Infinity,
+  })
+}
+
+export function useSetUserPreferences() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (body: SetUserPreferencesRequest) => endpoints.user.setPreferences(body),
+    onSuccess: (res) => {
+      client.setQueryData(queryKeys.userPreferences(), res)
+    },
+  })
 }
 
 export function useDashboardStats() {

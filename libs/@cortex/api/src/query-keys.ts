@@ -3,6 +3,7 @@ import type { GetActionLogsQuery, GetPackagesQuery } from "@cortex/types"
 export const queryKeys = {
   all: ["idp"] as const,
   user: () => [...queryKeys.all, "user", "me"] as const,
+  userPreferences: () => [...queryKeys.all, "user", "preferences"] as const,
   dashboardStats: () => [...queryKeys.all, "dashboard-stats"] as const,
   packages: {
     all: () => [...queryKeys.all, "packages"] as const,

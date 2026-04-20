@@ -5,33 +5,60 @@ import { FileArchive, Upload, X } from "lucide-react"
 import { useCallback, useRef, useState, type DragEvent } from "react"
 import { Button } from "./ui/button"
 
-interface FileUploaderProps {
+interface FileUploaderBaseProps {
   accept?: string
   multiple?: boolean
-  onFilesSelected: (files: File[]) => void
   description?: string
   className?: string
 }
 
-export function FileUploader({
-  accept,
-  multiple = false,
-  onFilesSelected,
-  description,
-  className,
-}: FileUploaderProps) {
+interface FileUploaderControlledProps extends FileUploaderBaseProps {
+  value: File[]
+  onChange: (files: File[]) => void
+  onFilesSelected?: (files: File[]) => void
+}
+
+interface FileUploaderUncontrolledProps extends FileUploaderBaseProps {
+  value?: undefined
+  onChange?: undefined
+  onFilesSelected: (files: File[]) => void
+}
+
+type FileUploaderProps = FileUploaderControlledProps | FileUploaderUncontrolledProps
+
+export function FileUploader(props: FileUploaderProps) {
+  const {
+    accept,
+    multiple = false,
+    description,
+    className,
+  } = props
+  const controlled = props.value !== undefined
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
-  const [selected, setSelected] = useState<File[]>([])
+  const [internalSelected, setInternalSelected] = useState<File[]>([])
+
+  const selected = controlled ? props.value : internalSelected
+
+  const commit = useCallback(
+    (files: File[]) => {
+      if (controlled) {
+        props.onChange(files)
+      } else {
+        setInternalSelected(files)
+      }
+      props.onFilesSelected?.(files)
+    },
+    [controlled, props],
+  )
 
   const handle = useCallback(
     (list: FileList | null) => {
       if (!list || list.length === 0) return
       const files = multiple ? Array.from(list) : [list[0]!]
-      setSelected(files)
-      onFilesSelected(files)
+      commit(files)
     },
-    [multiple, onFilesSelected],
+    [multiple, commit],
   )
 
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
@@ -41,9 +68,7 @@ export function FileUploader({
   }
 
   const remove = (idx: number) => {
-    const next = selected.filter((_, i) => i !== idx)
-    setSelected(next)
-    onFilesSelected(next)
+    commit(selected.filter((_, i) => i !== idx))
   }
 
   return (

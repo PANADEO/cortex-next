@@ -11,9 +11,11 @@ import type {
   ProcessingState,
   SetCustomStatusRequest,
   SetUserNotesRequest,
+  SetUserPreferencesRequest,
   SortOrder,
   SourceFileReadModel,
   UserInfoResponse,
+  UserPreferencesResponse,
   VerificationState,
 } from "@cortex/types"
 import { http, HttpResponse } from "msw"
@@ -27,6 +29,11 @@ import { buildPackageFixtures } from "./fixtures/packages"
 
 const packages = buildPackageFixtures(54)
 const packagesById = new Map(packages.map((p) => [p.id, p]))
+
+const userPreferences: UserPreferencesResponse = {
+  document_panel_ratio: null,
+  theme_mode: null,
+}
 
 let cachedLogs: ReturnType<typeof buildActionLogs> | null = null
 function getActionLogs() {
@@ -127,6 +134,16 @@ export const handlers = [
     const email = authEmail(request) ?? "demo@cortex.local"
     const body: UserInfoResponse = { email, has_access: true }
     return HttpResponse.json(body)
+  }),
+
+  http.get("/user/preferences", () => HttpResponse.json(userPreferences)),
+
+  http.post("/user/preferences", async ({ request }) => {
+    const body = (await request.json()) as SetUserPreferencesRequest
+    if ("theme_mode" in body) userPreferences.theme_mode = body.theme_mode ?? null
+    if ("document_panel_ratio" in body)
+      userPreferences.document_panel_ratio = body.document_panel_ratio ?? null
+    return HttpResponse.json(userPreferences)
   }),
 
   http.get("/packages/dashboard-stats", () => HttpResponse.json(computeStats(packages))),

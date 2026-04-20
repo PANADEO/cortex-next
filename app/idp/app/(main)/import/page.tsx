@@ -54,7 +54,8 @@ export default function ImportPage() {
             </div>
             <FileUploader
               accept=".zip,application/zip"
-              onFilesSelected={(files) => setZipFile(files[0] ?? null)}
+              value={zipFile ? [zipFile] : []}
+              onChange={(files) => setZipFile(files[0] ?? null)}
               description="Max 100 MB"
             />
             <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
@@ -90,7 +91,8 @@ export default function ImportPage() {
             <FileUploader
               multiple
               accept=".pdf,.docx,.xlsx"
-              onFilesSelected={setLoose}
+              value={loose}
+              onChange={setLoose}
               description="Select multiple files"
             />
             <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">

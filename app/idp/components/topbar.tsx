@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
   UserMenu,
 } from "@cortex/ui"
+import { useSetUserPreferences } from "@cortex/api"
 import { Bell, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -30,6 +31,7 @@ export function Topbar() {
   const toggle = useSidebarStore((s) => s.toggle)
   const themeMode = useThemeStore((s) => s.mode)
   const setThemeMode = useThemeStore((s) => s.setMode)
+  const persistPreferences = useSetUserPreferences()
   const [paletteOpen, setPaletteOpen] = useState(false)
 
   const trail = breadcrumbsFromPath(pathname)
@@ -114,7 +116,13 @@ export function Topbar() {
             </TooltipTrigger>
             <TooltipContent side="bottom">Notifications</TooltipContent>
           </Tooltip>
-          <ThemeToggle mode={themeMode} onModeChange={setThemeMode} />
+          <ThemeToggle
+            mode={themeMode}
+            onModeChange={(next) => {
+              setThemeMode(next)
+              persistPreferences.mutate({ theme_mode: next })
+            }}
+          />
           <UserMenu />
         </div>
       </TooltipProvider>

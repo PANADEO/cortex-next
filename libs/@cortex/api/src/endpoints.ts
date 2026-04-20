@@ -18,6 +18,7 @@ import type {
   ReprocessRequest,
   SetCustomStatusRequest,
   SetUserNotesRequest,
+  SetUserPreferencesRequest,
   SourceFileReadModel,
   UpdateDeliveryTermsRequest,
   UpdateInvoiceLinesRequest,
@@ -26,6 +27,7 @@ import type {
   UpdatePartyRequest,
   UpdateTransportInfoRequest,
   UserInfoResponse,
+  UserPreferencesResponse,
 } from "@cortex/types"
 import { apiClient } from "./client"
 
@@ -65,6 +67,9 @@ export const endpoints = {
   health: () => apiClient.get<Record<string, string>>("/health"),
   user: {
     me: () => apiClient.get<UserInfoResponse>("/user/me"),
+    getPreferences: () => apiClient.get<UserPreferencesResponse>("/user/preferences"),
+    setPreferences: (body: SetUserPreferencesRequest) =>
+      apiClient.post<UserPreferencesResponse>("/user/preferences", { jsonBody: body }),
   },
   packages: {
     list: (query: GetPackagesQuery = {}) =>
