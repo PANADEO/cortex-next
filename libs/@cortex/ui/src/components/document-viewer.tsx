@@ -1,8 +1,10 @@
 "use client"
 
+import type { NormalizedHighlightBox } from "@cortex/types"
 import { cn } from "@cortex/utils"
 import { renderAsync } from "docx-preview"
-import { FileText, FileWarning, Loader2 } from "lucide-react"
+import { FileWarning, Loader2 } from "lucide-react"
+import type { PDFDocumentProxy } from "pdfjs-dist"
 import { useEffect, useMemo, useRef, useState } from "react"
 import * as XLSX from "xlsx"
 
@@ -23,6 +25,8 @@ interface DocumentViewerProps {
   fileName: string
   mediaType?: string
   className?: string | undefined
+  activePage?: number | null | undefined
+  highlightBoxes?: NormalizedHighlightBox[] | undefined
 }
 
 export function DocumentViewer({
@@ -30,6 +34,8 @@ export function DocumentViewer({
   fileName,
   mediaType,
   className,
+  activePage,
+  highlightBoxes,
 }: DocumentViewerProps) {
   const kind = useMemo(() => detectDocumentKind(fileName, mediaType), [fileName, mediaType])
 
@@ -41,7 +47,15 @@ export function DocumentViewer({
     )
   }
 
-  if (kind === "pdf") return <PdfPlaceholder source={source} fileName={fileName} className={className} />
+  if (kind === "pdf")
+    return (
+      <PdfViewer
+        source={source}
+        className={className}
+        activePage={activePage ?? null}
+        highlightBoxes={highlightBoxes ?? []}
+      />
+    )
   if (kind === "docx") return <DocxViewer source={source} className={className} />
   if (kind === "xlsx") return <XlsxViewer source={source} className={className} />
   if (kind === "image") return <ImageViewer source={source} fileName={fileName} className={className} />
@@ -81,54 +95,188 @@ function ViewerMessage({ icon, label }: { icon?: React.ReactNode; label: string 
   )
 }
 
-function PdfPlaceholder({
+const PDF_WORKER_SRC = "/pdfjs/pdf.worker.min.js"
+const PDF_CMAP_URL = "/pdfjs/cmaps/"
+const PDF_STANDARD_FONT_URL = "/pdfjs/standard_fonts/"
+const PDF_RENDER_SCALE = 1.25
+
+function PdfViewer({
   source,
-  fileName,
   className,
+  activePage,
+  highlightBoxes,
 }: {
   source: Blob | ArrayBuffer | string
-  fileName: string
   className?: string | undefined
+  activePage: number | null
+  highlightBoxes: NormalizedHighlightBox[]
 }) {
-  const url = useMemo(() => {
-    if (typeof source === "string") return source
-    if (source instanceof Blob) return URL.createObjectURL(source)
-    return URL.createObjectURL(new Blob([source], { type: "application/pdf" }))
+  const containerRef = useRef<HTMLDivElement>(null)
+  const pageRefs = useRef(new Map<number, HTMLDivElement>())
+  const [doc, setDoc] = useState<PDFDocumentProxy | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    let loadingTask: { destroy?: () => void } | null = null
+    let loadedDoc: PDFDocumentProxy | null = null
+
+    async function load() {
+      try {
+        const pdfjs = await import("pdfjs-dist")
+        if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+          pdfjs.GlobalWorkerOptions.workerSrc = PDF_WORKER_SRC
+        }
+        let data: ArrayBuffer | Uint8Array
+        if (source instanceof ArrayBuffer) data = source
+        else if (source instanceof Blob) data = await source.arrayBuffer()
+        else {
+          setError("Remote URL source not supported for PDF; pass a Blob.")
+          return
+        }
+        loadingTask = pdfjs.getDocument({
+          data,
+          cMapUrl: PDF_CMAP_URL,
+          cMapPacked: true,
+          standardFontDataUrl: PDF_STANDARD_FONT_URL,
+        })
+        const task = loadingTask as { promise: Promise<PDFDocumentProxy> }
+        loadedDoc = await task.promise
+        if (cancelled) {
+          loadedDoc.destroy()
+          return
+        }
+        setDoc(loadedDoc)
+        setError(null)
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load PDF")
+      }
+    }
+    void load()
+
+    return () => {
+      cancelled = true
+      loadedDoc?.destroy()
+      loadingTask?.destroy?.()
+    }
   }, [source])
 
   useEffect(() => {
-    return () => {
-      if (typeof source !== "string") URL.revokeObjectURL(url)
-    }
-  }, [url, source])
+    if (!activePage) return
+    const target = pageRefs.current.get(activePage)
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" })
+  }, [activePage, doc])
+
+  if (error) {
+    return (
+      <ViewerFrame className={className}>
+        <ViewerMessage icon={<FileWarning className="h-5 w-5" />} label={error} />
+      </ViewerFrame>
+    )
+  }
+  if (!doc) {
+    return (
+      <ViewerFrame className={className}>
+        <ViewerMessage
+          icon={<Loader2 className="h-4 w-4 animate-spin" />}
+          label="Loading PDF…"
+        />
+      </ViewerFrame>
+    )
+  }
+
+  const pages = Array.from({ length: doc.numPages }, (_, i) => i + 1)
 
   return (
     <ViewerFrame className={className}>
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-        <FileText className="h-10 w-10 text-muted-foreground" />
-        <p className="text-sm font-medium">{fileName}</p>
-        <p className="max-w-sm text-xs text-muted-foreground">
-          Inline PDF viewer is temporarily disabled. Open in a new tab or download below.
-        </p>
-        <div className="flex gap-2">
-          <a
-            href={url}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-8 items-center rounded-md border border-border bg-background px-3 text-xs font-medium hover:bg-muted"
+      <div ref={containerRef} className="flex-1 space-y-3 overflow-auto bg-muted/20 p-3">
+        {pages.map((n) => (
+          <div
+            key={n}
+            ref={(el) => {
+              if (el) pageRefs.current.set(n, el)
+              else pageRefs.current.delete(n)
+            }}
           >
-            Open in new tab
-          </a>
-          <a
-            href={url}
-            download={fileName}
-            className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Download
-          </a>
-        </div>
+            <PdfPage
+              doc={doc}
+              pageNumber={n}
+              boxes={activePage === n ? highlightBoxes : []}
+            />
+          </div>
+        ))}
       </div>
     </ViewerFrame>
+  )
+}
+
+function PdfPage({
+  doc,
+  pageNumber,
+  boxes,
+}: {
+  doc: PDFDocumentProxy
+  pageNumber: number
+  boxes: NormalizedHighlightBox[]
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [dims, setDims] = useState<{ w: number; h: number } | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    type RenderTask = { cancel: () => void; promise: Promise<void> }
+    let renderTask: RenderTask | null = null
+
+    async function render() {
+      const page = await doc.getPage(pageNumber)
+      if (cancelled) return
+      const viewport = page.getViewport({ scale: PDF_RENDER_SCALE })
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
+      canvas.width = viewport.width
+      canvas.height = viewport.height
+      renderTask = page.render({ canvasContext: ctx, viewport }) as unknown as RenderTask
+      try {
+        await renderTask.promise
+      } catch {
+        // render cancelled — ignore
+      }
+      if (!cancelled) setDims({ w: viewport.width, h: viewport.height })
+    }
+    void render()
+
+    return () => {
+      cancelled = true
+      renderTask?.cancel()
+    }
+  }, [doc, pageNumber])
+
+  return (
+    <div className="relative mx-auto w-fit shadow-sm ring-1 ring-border">
+      <canvas ref={canvasRef} className="block bg-background" />
+      {dims && boxes.length > 0 ? (
+        <svg
+          className="pointer-events-none absolute inset-0"
+          width={dims.w}
+          height={dims.h}
+          viewBox={`0 0 ${dims.w} ${dims.h}`}
+        >
+          {boxes.map((b, i) => (
+            <rect
+              key={i}
+              x={b.x * dims.w}
+              y={b.y * dims.h}
+              width={b.width * dims.w}
+              height={b.height * dims.h}
+              className="fill-primary/20 stroke-primary"
+              strokeWidth={2}
+            />
+          ))}
+        </svg>
+      ) : null}
+    </div>
   )
 }
 

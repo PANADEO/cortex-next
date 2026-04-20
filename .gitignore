@@ -10,6 +10,7 @@ app/idp/.env*.local
 *.log
 .vercel
 app/idp/public/pdfjs
+app/idp/public/mock-assets
 app/idp/public/mockServiceWorker.js
 coverage
 .ladle/build

@@ -10,8 +10,8 @@ const publicPdfDir = path.join(repoRoot, "app", "idp", "public", "pdfjs")
 
 await fs.mkdir(publicPdfDir, { recursive: true })
 await fs.cp(
-  path.join(pdfDistDir, "build", "pdf.worker.min.mjs"),
-  path.join(publicPdfDir, "pdf.worker.min.mjs"),
+  path.join(pdfDistDir, "build", "pdf.worker.min.js"),
+  path.join(publicPdfDir, "pdf.worker.min.js"),
   { force: true },
 )
 await fs.cp(path.join(pdfDistDir, "cmaps"), path.join(publicPdfDir, "cmaps"), {

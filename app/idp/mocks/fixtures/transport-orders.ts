@@ -65,13 +65,16 @@ function deliveryTerms(id: string): DeliveryTerms {
   }
 }
 
-function sourceRefs(path: string, page: number): InvoiceLineSourceReference[] {
+function sourceRefs(path: string, lineIndex: number): InvoiceLineSourceReference[] {
+  // Mock PDF has 2 pages — wrap line index so highlight lands on a real page.
+  const page = ((lineIndex - 1) % 2) + 1
+  const baseY = 0.14 + (lineIndex - 1) * 0.08
   return [
     {
       path,
       relation_type: "line_item",
       page_number: page,
-      highlight_boxes: [{ x: 0.08, y: 0.32 + page * 0.02, width: 0.84, height: 0.05 }],
+      highlight_boxes: [{ x: 0.1, y: baseY, width: 0.8, height: 0.05 }],
       label: `Page ${page}`,
     },
   ]

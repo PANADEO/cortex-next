@@ -117,10 +117,15 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
         {highlightBoxes.length > 0 && active.path === activePath ? (
           <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
             Invoice line selected — page {activePage ?? "—"} · {highlightBoxes.length} highlight
-            {highlightBoxes.length > 1 ? "s" : ""}. Rendering pending PDF viewer restore.
+            {highlightBoxes.length > 1 ? "s" : ""}.
           </div>
         ) : null}
-        <SourceFileBody packageId={packageId} file={active} />
+        <SourceFileBody
+          packageId={packageId}
+          file={active}
+          activePage={active.path === activePath ? activePage : null}
+          highlightBoxes={active.path === activePath ? highlightBoxes : []}
+        />
       </Panel>
     </PanelGroup>
   )
@@ -129,9 +134,13 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
 function SourceFileBody({
   packageId,
   file,
+  activePage,
+  highlightBoxes,
 }: {
   packageId: string
   file: SourceFileReadModel
+  activePage: number | null
+  highlightBoxes: import("@cortex/types").NormalizedHighlightBox[]
 }) {
   const content = useQuery({
     queryKey: ["idp", "packages", "source-file", packageId, file.path],
@@ -162,6 +171,8 @@ function SourceFileBody({
       source={content.data}
       fileName={file.file_name}
       mediaType={file.media_type}
+      activePage={activePage}
+      highlightBoxes={highlightBoxes}
     />
   )
 }

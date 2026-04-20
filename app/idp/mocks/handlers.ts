@@ -301,10 +301,19 @@ export const handlers = [
     return HttpResponse.json(body)
   }),
 
-  http.get(
-    "/packages/:id/source-files/content",
-    () => new HttpResponse(new Blob(["mock-bytes"]), { status: 200 }),
-  ),
+  http.get("/packages/:id/source-files/content", async ({ request }) => {
+    const url = new URL(request.url)
+    const path = url.searchParams.get("path") ?? ""
+    if (path.toLowerCase().endsWith(".pdf")) {
+      const asset = await fetch("/mock-assets/sample-invoice.pdf")
+      const blob = await asset.blob()
+      return new HttpResponse(blob, {
+        status: 200,
+        headers: { "Content-Type": "application/pdf" },
+      })
+    }
+    return new HttpResponse(new Blob(["mock-bytes"]), { status: 200 })
+  }),
 
   http.get("/packages/:id/export/validate", () => {
     const body: ExportValidationResponse = { warnings: [] }
