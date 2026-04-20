@@ -9,7 +9,12 @@ Cortex Frontend = monorepo frontend platformy Cortex. IDP to pierwszy kafelek. P
 Branch: `main` (lokalny git). Commity:
 - `55e89c4` initial prototype
 - `0a4a8b4` simplify refactor
-- (uncommitted) Wave 7–9 + DocumentViewer/JsonEditor/dark mode/error boundaries
+- `ebf73e0` Wave 7-9: backend alignment + viewers + dark mode + error boundaries
+- `2e76cbd` Wave 10: custom status/notes, export menu, dashboard overflow fix
+- `7a97f9c` Wave 11: bulk delete + columns dedup
+- `ec89190` Wave 12: user preferences sync, resizable viewer, FileUploader controlled
+- `6f386a4` Wave 13: additional AI context in Import
+- `5ef7aee` Wave 14: reprocess dialog + shared import options
 
 ## Uruchomienie (fresh session)
 
@@ -72,21 +77,42 @@ Two-axis state model + extended action types, oparty o Pydantic contracts.
   - `FeatureErrorBoundary` w `(main)/layout.tsx` — wewnątrz AppShell, reset po zmianie `pathname`, zintegrowany z `QueryErrorResetBoundary` żeby TanStack Query cache też się resetował.
   - Reuse `ErrorState` composition jako UI.
 
-### P3 — deferred
+### Wave 10 — User-facing features (backend ready) ✅
 
-- **BoundingBoxOverlay** (SVG over PDF) — wymaga backend coordinates z analysis_result
-- **Feature flags util** per `§11` (backend ma `is_additional_ai_context_enabled`, na froncie skippujemy do czasu potrzeby)
-- **Playwright E2E** golden path
-- **JsonEditor save wiring** — dekompozycja JSON na transport-order section updates (`updateSeller/Buyer/Invoice/etc.`) albo nowy backend endpoint dla full-document save
-- **Framer-motion** na modale/accordion (150-250ms ease-in-out)
-- **Dashboard 6 tiles** overflow-x-auto na mniejszych ekranach
-- **Rule editor + Classification DnD** (`@dnd-kit`)
-- **FileUploader controlled mode** (`value/onChange`)
-- **ColumnDef dup** — wydzielić `lib/columns/packages.tsx` (Dashboard + Packages)
-- **AppShell + TileMenu `collapsed` prop** consolidation przez SidebarProvider
-- **`useDeletePackages` / `useRestorePackage` UI** — hooki gotowe, brak UI (soft delete w backendzie przez `/packages/delete` + `/packages/:id/restore`)
-- **Custom status + user notes UI** — pola w `PackageReadModel`, hooki (`useSetCustomStatus`, `useSetUserNotes`) gotowe, brak formularzy w Package Details
-- **Export templates UI** — hook `useExportTemplates` gotowy, brak UI dropdown'a w Package Details
+- **10.1** ✅ **Custom status + user notes** inline edit (`PackageMetadataEditors`) w Package Details. Hooki `useSetCustomStatus` / `useSetUserNotes` + cache invalidation.
+- **10.2** ✅ **Export templates dropdown** (`ExportMenu`) w Package Details Actions. `/export-templates` → `/export?template=`, download przez Blob + object URL.
+- **10.3** ✅ **Dashboard overflow** — tiles używają `grid-cols-[repeat(auto-fit,minmax(160px,1fr))]`, adaptują się zamiast wyjeżdżać za viewport.
+
+### Wave 11 — Bulk actions + dedup ✅
+
+- **11.1** ✅ **Bulk delete** w Packages list: row selection (`Set<string>`) z per-page "select all", bar "X selected" + `AlertDialog` confirmation + `useDeletePackages`.
+- **11.2** ✅ **ColumnDef dedup** — `lib/columns/packages.tsx#packageColumns(options)` z opcjami `includeId` + `selection`. Dashboard + Packages używają jednego builder'a.
+
+### Wave 12 — User preferences sync + polish ✅
+
+- **12.1** ✅ **User preferences sync** (`/user/preferences`): types + endpoints + hooki (`useUserPreferences` / `useSetUserPreferences`). `ThemeProvider` adopuje remote `theme_mode` przy pierwszym load, Topbar persystuje lokalne zmiany do backendu. MSW mock w-memory.
+- **12.2** ✅ **Resizable source materials split** — `react-resizable-panels` w `SourceMaterialsPanel`. Ratio ładowany/zapisywany przez `document_panel_ratio` preference (clamp 0.3–0.7).
+- **12.3** ✅ **FileUploader controlled mode** — opcjonalne `value` + `onChange` alongside existing uncontrolled `onFilesSelected`. Import page używa full controlled.
+
+### Wave 13 — Additional AI context in Import ✅
+
+- Toggle + textarea (max 4000 chars) w Import page, per upload card. Wiring do `additional_ai_context_enabled` + `additional_ai_context` w `ImportPackageBody` / `ImportMultiplePackagesBody`. Guard pustego textarea przy enabled.
+
+### Wave 14 — Reprocess dialog + shared options ✅
+
+- `ImportOptionsFields` + `useImportOptions` hook wydzielone do `app/idp/components`. Import page + `ReprocessDialog` używają tego samego komponentu.
+- `ReprocessDialog` w Package Details — reprocess button otwiera dialog z `fast_processing` + AI context, zamiast pustego body.
+
+### P3 — deferred (backend-blocked or explicitly skipped)
+
+- **BoundingBoxOverlay** (SVG over PDF) — wymaga backend coordinates z analysis_result. Explicit skip.
+- **Feature flags util** per `§11`. Explicit skip.
+- **Playwright E2E** golden path. Explicit skip.
+- **JsonEditor save wiring** — dekompozycja JSON na transport-order section updates (`updateSeller/Buyer/Invoice/etc.`) albo nowy backend endpoint dla full-document save. UI gotowe, wiring blokowane przez backend.
+- **Framer-motion** transitions na modale/accordion — Radix już ma CSS animations. Skip do czasu konkretnej potrzeby.
+- **Rule editor + Classification DnD** — brak backend endpointów (`grep rule/classification` w `idp_app/src/api/` = 0 wyników). Stuby "coming soon" są zgodne z backendem.
+- **Restore UI** — hook `useRestorePackage` gotowy, ale `/packages/get_all` nie pokazuje soft-deleted. Wymaga backend `include_deleted` filter albo osobnego endpointu listingu.
+- **AppShell + TileMenu `collapsed` prop** consolidation przez SidebarProvider — premature (tylko IDP, drugi kafelek jeszcze nie istnieje).
 
 ## Znane gotcha / niuanse
 
