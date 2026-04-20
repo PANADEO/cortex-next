@@ -12,8 +12,9 @@ import { cn } from "@cortex/utils"
 import { useQuery } from "@tanstack/react-query"
 import { FileText, Loader2 } from "lucide-react"
 import dynamic from "next/dynamic"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
+import { useSourceMaterialSelectionStore } from "@/lib/stores/source-material-selection"
 
 const DocumentViewer = dynamic(
   () => import("@cortex/ui/components/document-viewer").then((m) => m.DocumentViewer),
@@ -44,7 +45,10 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
   const files = usePackageSourceFiles(packageId)
   const preferences = useUserPreferences()
   const persistPreferences = useSetUserPreferences()
-  const [activePath, setActivePath] = useState<string | null>(null)
+  const activePath = useSourceMaterialSelectionStore((s) => s.activePath)
+  const activePage = useSourceMaterialSelectionStore((s) => s.activePage)
+  const highlightBoxes = useSourceMaterialSelectionStore((s) => s.highlightBoxes)
+  const setActivePath = useSourceMaterialSelectionStore((s) => s.setActivePath)
 
   const ratio = clampRatio(preferences.data?.document_panel_ratio ?? DEFAULT_LIST_RATIO)
   const listPercent = Math.round(ratio * 100)
@@ -53,7 +57,7 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
     if (!activePath && files.data && files.data.length > 0) {
       setActivePath(files.data[0]?.path ?? null)
     }
-  }, [files.data, activePath])
+  }, [files.data, activePath, setActivePath])
 
   const handleLayout = (sizes: number[]) => {
     const next = sizes[0]
@@ -109,7 +113,13 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
         </ul>
       </Panel>
       <PanelResizeHandle className="w-1 shrink-0 rounded bg-border transition-colors hover:bg-primary/40 data-[resize-handle-active]:bg-primary/50" />
-      <Panel minSize={40}>
+      <Panel minSize={40} className="space-y-2">
+        {highlightBoxes.length > 0 && active.path === activePath ? (
+          <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+            Invoice line selected — page {activePage ?? "—"} · {highlightBoxes.length} highlight
+            {highlightBoxes.length > 1 ? "s" : ""}. Rendering pending PDF viewer restore.
+          </div>
+        ) : null}
         <SourceFileBody packageId={packageId} file={active} />
       </Panel>
     </PanelGroup>

@@ -27,6 +27,7 @@ import type {
 import { EmptyState, LoadingState } from "@cortex/ui"
 import { Truck } from "lucide-react"
 import { toast } from "sonner"
+import { useSourceMaterialSelectionStore } from "@/lib/stores/source-material-selection"
 import { InvoiceEditor } from "./invoice-editor"
 import { PartyEditor } from "./party-editor"
 import { TransportInfoEditor } from "./transport-info-editor"
@@ -79,6 +80,7 @@ function TransportOrderSection({ order, packageId, canEdit }: SectionProps) {
   const deliveryTerms = useUpdateDeliveryTerms()
   const invoiceTotals = useUpdateInvoiceTotals()
   const invoiceLines = useUpdateInvoiceLines()
+  const selectLineRefs = useSourceMaterialSelectionStore((s) => s.selectLineRefs)
 
   const saveParty = async (role: PartyRole, body: UpdatePartyRequest) => {
     const mutation = { seller, buyer, consignor, consignee }[role]
@@ -198,6 +200,7 @@ function TransportOrderSection({ order, packageId, canEdit }: SectionProps) {
           onSaveDelivery={(body) => saveDeliveryTerms(invoice.id, body)}
           onSaveTotals={(body) => saveInvoiceTotals(invoice.id, body)}
           onSaveLines={(body) => saveInvoiceLines(invoice.id, body)}
+          onSelectLine={(line) => selectLineRefs(line.source_references)}
         />
       ))}
     </section>
