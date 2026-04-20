@@ -123,18 +123,57 @@ function TimelineRow({
         </div>
         <p className="text-xs text-muted-foreground">by {event.performed_by}</p>
         {hasPayload ? (
-          <>
-            <button
-              type="button"
-              onClick={() => setOpen(!open)}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              {open ? "Hide payload" : "Show payload"}
-            </button>
-            {open ? <JsonViewer data={parsedPayload} initialDepth={1} /> : null}
-          </>
+          isDiffPayload(parsedPayload) ? (
+            <DiffPayload diff={parsedPayload} />
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setOpen(!open)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                {open ? "Hide payload" : "Show payload"}
+              </button>
+              {open ? <JsonViewer data={parsedPayload} initialDepth={1} /> : null}
+            </>
+          )
         ) : null}
       </div>
     </li>
+  )
+}
+
+function isDiffPayload(v: unknown): v is Record<string, { from: unknown; to: unknown }> {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return false
+  const entries = Object.entries(v as Record<string, unknown>)
+  if (entries.length === 0) return false
+  return entries.every(([, val]) => {
+    if (!val || typeof val !== "object" || Array.isArray(val)) return false
+    const keys = Object.keys(val as object)
+    return keys.includes("from") && keys.includes("to")
+  })
+}
+
+function formatDiffValue(value: unknown): string {
+  if (value === null || value === undefined) return "—"
+  if (typeof value === "string") return value.length > 0 ? value : "∅"
+  if (typeof value === "object") return JSON.stringify(value)
+  return String(value)
+}
+
+function DiffPayload({ diff }: { diff: Record<string, { from: unknown; to: unknown }> }) {
+  return (
+    <dl className="space-y-0.5 text-xs">
+      {Object.entries(diff).map(([field, { from, to }]) => (
+        <div key={field} className="flex flex-wrap items-baseline gap-1.5">
+          <dt className="font-mono text-muted-foreground">{field}:</dt>
+          <dd className="flex items-center gap-1 font-mono">
+            <span className="text-destructive/80 line-through">{formatDiffValue(from)}</span>
+            <ArrowRight className="h-3 w-3 text-muted-foreground" />
+            <span className="text-success-foreground">{formatDiffValue(to)}</span>
+          </dd>
+        </div>
+      ))}
+    </dl>
   )
 }

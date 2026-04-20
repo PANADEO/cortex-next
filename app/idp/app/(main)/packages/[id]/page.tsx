@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  endpoints,
   useCancelVerification,
   useFinishVerification,
   usePackage,
@@ -17,6 +18,11 @@ import {
   Button,
   Card,
   CardContent,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
   JsonEditor,
   JsonViewer,
   LoadingState,
@@ -29,7 +35,7 @@ import {
   TabsTrigger,
 } from "@cortex/ui"
 import { emailsMatch, formatAbsolute, formatFileSizeMb, formatMoney } from "@cortex/utils"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft, Braces, FileArchive, Loader2 } from "lucide-react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
@@ -57,6 +63,8 @@ export default function PackageDetailPage() {
   const [pollingEnabled, setPollingEnabled] = useState(true)
 
   const [reprocessOpen, setReprocessOpen] = useState(false)
+  const [structureOpen, setStructureOpen] = useState(false)
+  const [zipDownloading, setZipDownloading] = useState(false)
 
   // Polling pauzuje gdy verification w trakcie (chroni user input) lub gdy
   // otwarty dialog reprocess (pilnuje tekst w additional AI context).
@@ -75,6 +83,27 @@ export default function PackageDetailPage() {
   const pkg = detail.data
   const isActiveVerification = pkg?.verification_state === "in_progress"
   const canEdit = isActiveVerification && emailsMatch(session?.user?.email, pkg?.assignee)
+
+  const handleDownloadZip = async () => {
+    if (!pkg) return
+    setZipDownloading(true)
+    try {
+      const blob = await endpoints.packages.download(pkg.id)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = pkg.file_name.endsWith(".zip") ? pkg.file_name : `${pkg.file_name}.zip`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast.success("ZIP download started")
+    } catch (err) {
+      toastApiError(err)
+    } finally {
+      setZipDownloading(false)
+    }
+  }
 
   const handleTransition = async (t: PackageTransition) => {
     if (t === "reprocess") {
@@ -167,6 +196,30 @@ export default function PackageDetailPage() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Actions
                   </p>
+                  <div className="flex flex-col gap-1.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadZip}
+                      disabled={zipDownloading}
+                    >
+                      {zipDownloading ? (
+                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                      ) : (
+                        <FileArchive className="mr-1.5 h-4 w-4" />
+                      )}
+                      Download ZIP
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setStructureOpen(true)}
+                      disabled={!pkg.analysis_result}
+                    >
+                      <Braces className="mr-1.5 h-4 w-4" />
+                      Show structure
+                    </Button>
+                  </div>
                   {transitions.isLoading ? (
                     <Skeleton className="h-9 w-full" />
                   ) : transitions.data?.transitions.length === 0 ? (
@@ -274,6 +327,23 @@ export default function PackageDetailPage() {
           packageId={pkg.id}
         />
       ) : null}
+      <Dialog open={structureOpen} onOpenChange={setStructureOpen}>
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Analysis structure</DialogTitle>
+            <DialogDescription>
+              Raw extracted JSON. Field-level edits happen via the Transport orders tab.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[65vh] overflow-auto rounded-md border border-border bg-muted/20 p-3">
+            {pkg?.analysis_result ? (
+              <JsonViewer data={pkg.verified_result ?? pkg.analysis_result} initialDepth={3} />
+            ) : (
+              <p className="text-sm text-muted-foreground">No analysis result available.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

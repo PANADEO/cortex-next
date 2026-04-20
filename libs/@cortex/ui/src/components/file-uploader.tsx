@@ -2,7 +2,7 @@
 
 import { cn, formatFileSizeBytes } from "@cortex/utils"
 import { FileArchive, Upload, X } from "lucide-react"
-import { useCallback, useRef, useState, type DragEvent } from "react"
+import { useCallback, useEffect, useRef, useState, type DragEvent } from "react"
 import { Button } from "./ui/button"
 
 interface FileUploaderBaseProps {
@@ -70,6 +70,14 @@ export function FileUploader(props: FileUploaderProps) {
   const remove = (idx: number) => {
     commit(selected.filter((_, i) => i !== idx))
   }
+
+  // Wyczyść native input.value gdy parent zresetuje listę — inaczej reselect
+  // tego samego pliku nie odpala onChange (browser treat as unchanged).
+  useEffect(() => {
+    if (selected.length === 0 && inputRef.current) {
+      inputRef.current.value = ""
+    }
+  }, [selected.length])
 
   return (
     <div className={cn("space-y-3", className)}>
