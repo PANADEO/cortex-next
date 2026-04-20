@@ -1,9 +1,7 @@
 "use client"
 
 import { useDashboardStats, usePackages } from "@cortex/api"
-import { DataCard, DataTable, EmptyState, PackageStatusBadges, PageHeader } from "@cortex/ui"
-import { formatRelative } from "@cortex/utils"
-import type { ColumnDef } from "@tanstack/react-table"
+import { DataCard, DataTable, EmptyState, PageHeader } from "@cortex/ui"
 import {
   AlertTriangle,
   CheckCircle2,
@@ -13,57 +11,14 @@ import {
   PlayCircle,
 } from "lucide-react"
 import Link from "next/link"
-import type { PackageReadModel } from "@cortex/types"
-
-const columns: ColumnDef<PackageReadModel, unknown>[] = [
-  {
-    accessorKey: "file_name",
-    header: "File",
-    cell: ({ row }) => (
-      <Link
-        href={`/packages/${row.original.id}`}
-        className="font-mono text-xs hover:underline"
-      >
-        {row.original.file_name}
-      </Link>
-    ),
-  },
-  {
-    accessorKey: "created_date",
-    header: "Created",
-    size: 180,
-    cell: ({ row }) => (
-      <span className="text-xs text-muted-foreground">
-        {formatRelative(row.original.created_date)}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "processing_state",
-    header: "Status",
-    size: 240,
-    cell: ({ row }) => (
-      <PackageStatusBadges
-        processingState={row.original.processing_state}
-        verificationState={row.original.verification_state}
-      />
-    ),
-  },
-  {
-    accessorKey: "assignee",
-    header: "Assignee",
-    size: 180,
-    cell: ({ row }) => (
-      <span className="text-xs text-muted-foreground">
-        {row.original.assignee ?? "—"}
-      </span>
-    ),
-  },
-]
+import { useMemo } from "react"
+import { packageColumns } from "@/lib/columns/packages"
 
 export default function DashboardPage() {
   const stats = useDashboardStats()
   const recent = usePackages({ limit: 5, sort_by: "created_date", sort_order: "desc" })
+
+  const columns = useMemo(() => packageColumns(), [])
 
   return (
     <>
