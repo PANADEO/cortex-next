@@ -12,7 +12,6 @@ interface AutoRefreshIndicatorProps {
   onToggle: (enabled: boolean) => void
   onRefresh: () => void
   isRefreshing?: boolean
-  lastRefreshedAt?: Date | string | null
   className?: string
 }
 
@@ -22,7 +21,6 @@ export function AutoRefreshIndicator({
   onToggle,
   onRefresh,
   isRefreshing,
-  lastRefreshedAt,
   className,
 }: AutoRefreshIndicatorProps) {
   const [countdown, setCountdown] = useState(intervalMs / 1000)
@@ -32,12 +30,11 @@ export function AutoRefreshIndicator({
       setCountdown(intervalMs / 1000)
       return
     }
-    setCountdown(intervalMs / 1000)
     const id = setInterval(() => {
       setCountdown((c) => (c <= 1 ? intervalMs / 1000 : c - 1))
     }, 1000)
     return () => clearInterval(id)
-  }, [enabled, intervalMs, lastRefreshedAt])
+  }, [enabled, intervalMs])
 
   return (
     <TooltipProvider delayDuration={300}>

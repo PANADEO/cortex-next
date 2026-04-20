@@ -3,11 +3,12 @@
 import { usePackages } from "@cortex/api"
 import { PACKAGE_STATUS, type PackageReadModel, type PackageStatus } from "@cortex/types"
 import {
-  Button,
   DataTable,
   EmptyState,
+  getStatusLabel,
   Input,
   PageHeader,
+  Pagination,
   Select,
   SelectContent,
   SelectItem,
@@ -17,19 +18,9 @@ import {
 } from "@cortex/ui"
 import { formatRelative } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
-import { ChevronLeft, ChevronRight, FileQuestion, Search } from "lucide-react"
+import { FileQuestion, Search } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState } from "react"
-
-const STATUS_LABELS: Record<PackageStatus, string> = {
-  imported: "Imported",
-  imported_with_error: "Import error",
-  analysing: "Analysing",
-  analysis_failed: "Analysis failed",
-  ready_for_verification: "Ready",
-  verification: "In verification",
-  verified: "Verified",
-}
 
 const columns: ColumnDef<PackageReadModel, unknown>[] = [
   {
@@ -136,7 +127,7 @@ export default function PackagesPage() {
               <SelectItem value="all">All statuses</SelectItem>
               {PACKAGE_STATUS.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {STATUS_LABELS[s]}
+                  {getStatusLabel(s)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -160,31 +151,7 @@ export default function PackagesPage() {
           getRowId={(row) => row.id}
         />
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <p>
-            Page {page + 1} of {pageCount}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-              disabled={page + 1 >= pageCount}
-            >
-              Next
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <Pagination page={page} pageCount={pageCount} onChange={setPage} />
       </div>
     </>
   )

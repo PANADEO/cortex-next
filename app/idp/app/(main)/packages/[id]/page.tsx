@@ -53,8 +53,7 @@ export default function PackageDetailPage() {
 
   // Streamlit parity: polling pauzuje podczas verification żeby nie zniszczyć user input
   const detail = usePackage(id, { polling: pollingEnabled })
-  const shouldPause = detail.data?.status === "verification"
-  const effectivePolling = pollingEnabled && !shouldPause
+  const effectivePolling = pollingEnabled && detail.data?.status !== "verification"
 
   const actions = usePackageActions(id, { polling: effectivePolling })
   const transitions = usePackageTransitions(id)

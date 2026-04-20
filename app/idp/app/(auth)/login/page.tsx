@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 
 export default function LoginPage() {
-  const callbackUrl = useSearchParams()?.get("callbackUrl") ?? "/dashboard"
+  const callbackUrl = useSearchParams().get("callbackUrl") ?? "/dashboard"
   const [isPending, setIsPending] = useState(false)
 
   async function handleDemoLogin() {

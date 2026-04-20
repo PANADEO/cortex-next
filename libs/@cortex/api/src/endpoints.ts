@@ -5,6 +5,7 @@ import type {
   GetPackagesQuery,
   PackageActionsResponse,
   PackageDetailsResponse,
+  PackageTransition,
   PackageTransitionsResponse,
   PackageTransportOrdersResponse,
   PaginatedActionLogResponse,
@@ -18,6 +19,16 @@ import type {
   UserInfoResponse,
 } from "@cortex/types"
 import { apiClient } from "./client"
+
+const transitionCall = (t: PackageTransition) => (id: string) =>
+  apiClient.post<EmptyOk>(`/packages/${id}/${t.replace(/_/g, "-")}`)
+
+const transportOrderSection =
+  <TBody>(section: string) =>
+  (pid: string, oid: string, body: TBody) =>
+    apiClient.post<EmptyOk>(`/packages/${pid}/transport-orders/${oid}/${section}`, {
+      jsonBody: body,
+    })
 
 export const endpoints = {
   health: () => apiClient.get<Record<string, string>>("/health"),
@@ -33,8 +44,7 @@ export const endpoints = {
       apiClient.get<PaginatedActionLogResponse>("/packages/action_logs", {
         params: { ...query },
       }),
-    dashboardStats: () =>
-      apiClient.get<DashboardStatsResponse>("/packages/dashboard-stats"),
+    dashboardStats: () => apiClient.get<DashboardStatsResponse>("/packages/dashboard-stats"),
     import: (file: File) => {
       const form = new FormData()
       form.append("file", file)
@@ -52,37 +62,29 @@ export const endpoints = {
       apiClient.get<PackageTransportOrdersResponse>(`/packages/${id}/transport-orders`),
     transitions: (id: string) =>
       apiClient.get<PackageTransitionsResponse>(`/packages/${id}/transitions`),
-    download: (id: string) =>
-      apiClient.get<Blob>(`/packages/${id}/download`, { parse: "blob" }),
+    download: (id: string) => apiClient.get<Blob>(`/packages/${id}/download`, { parse: "blob" }),
     downloadResult: (id: string) =>
       apiClient.get<Blob>(`/packages/${id}/download-result`, { parse: "blob" }),
     exportCsv: (id: string) =>
       apiClient.get<Blob>(`/packages/${id}/export-csv`, { parse: "blob" }),
     exportXml: (id: string) =>
       apiClient.get<Blob>(`/packages/${id}/export-xml`, { parse: "blob" }),
-    startVerification: (id: string) =>
-      apiClient.post<EmptyOk>(`/packages/${id}/start-verification`),
-    cancelVerification: (id: string) =>
-      apiClient.post<EmptyOk>(`/packages/${id}/cancel-verification`),
-    finishVerification: (id: string) =>
-      apiClient.post<EmptyOk>(`/packages/${id}/finish-verification`),
-    resetVerification: (id: string) =>
-      apiClient.post<EmptyOk>(`/packages/${id}/reset-verification`),
-    reprocess: (id: string) => apiClient.post<EmptyOk>(`/packages/${id}/reprocess`),
+    startVerification: transitionCall("start_verification"),
+    cancelVerification: transitionCall("cancel_verification"),
+    finishVerification: transitionCall("finish_verification"),
+    resetVerification: transitionCall("reset_verification"),
+    reprocess: transitionCall("reprocess"),
   },
   transportOrders: {
-    updateSeller: (pid: string, oid: string, body: UpdatePartyRequest) =>
-      apiClient.post<EmptyOk>(`/packages/${pid}/transport-orders/${oid}/seller`, { jsonBody: body }),
-    updateBuyer: (pid: string, oid: string, body: UpdatePartyRequest) =>
-      apiClient.post<EmptyOk>(`/packages/${pid}/transport-orders/${oid}/buyer`, { jsonBody: body }),
-    updateConsignor: (pid: string, oid: string, body: UpdatePartyRequest) =>
-      apiClient.post<EmptyOk>(`/packages/${pid}/transport-orders/${oid}/consignor`, { jsonBody: body }),
-    updateConsignee: (pid: string, oid: string, body: UpdatePartyRequest) =>
-      apiClient.post<EmptyOk>(`/packages/${pid}/transport-orders/${oid}/consignee`, { jsonBody: body }),
-    updateTransportInfo: (pid: string, oid: string, body: UpdateTransportInfoRequest) =>
-      apiClient.post<EmptyOk>(`/packages/${pid}/transport-orders/${oid}/transport-info`, { jsonBody: body }),
+    updateSeller: transportOrderSection<UpdatePartyRequest>("seller"),
+    updateBuyer: transportOrderSection<UpdatePartyRequest>("buyer"),
+    updateConsignor: transportOrderSection<UpdatePartyRequest>("consignor"),
+    updateConsignee: transportOrderSection<UpdatePartyRequest>("consignee"),
+    updateTransportInfo: transportOrderSection<UpdateTransportInfoRequest>("transport-info"),
     updateInvoice: (pid: string, oid: string, iid: string, body: UpdateInvoiceRequest) =>
-      apiClient.post<EmptyOk>(`/packages/${pid}/transport-orders/${oid}/invoices/${iid}`, { jsonBody: body }),
+      apiClient.post<EmptyOk>(`/packages/${pid}/transport-orders/${oid}/invoices/${iid}`, {
+        jsonBody: body,
+      }),
     updateInvoiceLines: (pid: string, oid: string, iid: string, body: UpdateInvoiceLinesRequest) =>
       apiClient.post<EmptyOk>(
         `/packages/${pid}/transport-orders/${oid}/invoices/${iid}/lines`,

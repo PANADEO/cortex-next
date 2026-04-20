@@ -23,7 +23,7 @@ import { useSidebarStore } from "../lib/stores/sidebar-store"
 import { CommandPalette } from "./command-palette"
 
 export function Topbar() {
-  const pathname = usePathname() ?? "/dashboard"
+  const pathname = usePathname()
   const collapsed = useSidebarStore((s) => s.collapsed)
   const toggle = useSidebarStore((s) => s.toggle)
   const [paletteOpen, setPaletteOpen] = useState(false)

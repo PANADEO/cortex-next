@@ -55,6 +55,10 @@ const STATUS_META: Record<PackageStatus, StatusMeta> = {
   },
 }
 
+export function getStatusLabel(status: PackageStatus): string {
+  return STATUS_META[status].label
+}
+
 interface StatusBadgeProps extends HTMLAttributes<HTMLSpanElement> {
   status: PackageStatus
   size?: "sm" | "md"

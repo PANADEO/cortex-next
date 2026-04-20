@@ -1,6 +1,6 @@
 "use client"
 
-import { cn } from "@cortex/utils"
+import { cn, formatFileSizeBytes } from "@cortex/utils"
 import { FileArchive, Upload, X } from "lucide-react"
 import { useCallback, useRef, useState, type DragEvent } from "react"
 import { Button } from "./ui/button"
@@ -90,7 +90,7 @@ export function FileUploader({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-medium">{file.name}</p>
                 <p className="text-[10px] text-muted-foreground">
-                  {(file.size / (1024 * 1024)).toFixed(2)} MB
+                  {formatFileSizeBytes(file.size)}
                 </p>
               </div>
               <Button

@@ -3,18 +3,11 @@
 import { usePackages } from "@cortex/api"
 import { Dialog, DialogContent, DialogTitle, Input } from "@cortex/ui"
 import { cn } from "@cortex/utils"
-import {
-  BarChart3,
-  FileSpreadsheet,
-  History,
-  Package,
-  ScrollText,
-  Search,
-  Upload,
-} from "lucide-react"
+import { Package, Search } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
+import { IDP_NAV } from "@/lib/nav"
 
 interface CommandPaletteProps {
   open: boolean
@@ -30,25 +23,27 @@ interface Entry {
   href: string
 }
 
-const NAV_ENTRIES: Entry[] = [
-  { id: "nav-dashboard", group: "Navigation", label: "Dashboard", icon: BarChart3, href: "/dashboard" },
-  { id: "nav-packages", group: "Navigation", label: "Packages", icon: Package, href: "/packages" },
-  { id: "nav-import", group: "Navigation", label: "Import", icon: Upload, href: "/import" },
-  { id: "nav-audit", group: "Navigation", label: "Audit log", icon: History, href: "/audit-log" },
-  { id: "nav-classification", group: "Navigation", label: "Classification", icon: FileSpreadsheet, href: "/classification" },
-  { id: "nav-rules", group: "Navigation", label: "Rule editor", icon: ScrollText, href: "/rules" },
-]
+const NAV_ENTRIES: Entry[] = IDP_NAV.flatMap((section) =>
+  section.items.map((item) => ({
+    id: `nav-${item.id}`,
+    group: "Navigation",
+    label: item.label,
+    icon: item.icon,
+    href: item.href,
+  })),
+)
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter()
   const [query, setQuery] = useState("")
+  const deferredQuery = useDeferredValue(query)
   const [activeIdx, setActiveIdx] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const packages = usePackages({ limit: 20, search: query || null })
+  const packages = usePackages({ limit: 20, search: deferredQuery || null })
 
   const entries: Entry[] = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = deferredQuery.trim().toLowerCase()
     const nav = q
       ? NAV_ENTRIES.filter((e) => e.label.toLowerCase().includes(q))
       : NAV_ENTRIES
@@ -61,7 +56,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       href: `/packages/${p.id}`,
     }))
     return [...nav, ...pkgEntries]
-  }, [query, packages.data])
+  }, [deferredQuery, packages.data])
 
   useEffect(() => {
     setActiveIdx(0)

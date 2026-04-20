@@ -12,20 +12,18 @@ import {
   EmptyState,
   Input,
   PageHeader,
+  Pagination,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@cortex/ui"
-import { formatAbsolute } from "@cortex/utils"
+import { cn, formatAbsolute, humanizeEnum } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
-import { ChevronLeft, ChevronRight, History, RotateCw } from "lucide-react"
+import { History, RotateCw } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState } from "react"
-
-const humanise = (t: PackageActionType) =>
-  t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 
 const columns: ColumnDef<ActionLogReadModel, unknown>[] = [
   {
@@ -43,7 +41,7 @@ const columns: ColumnDef<ActionLogReadModel, unknown>[] = [
     header: "Event",
     size: 200,
     cell: ({ row }) => (
-      <span className="text-xs">{humanise(row.original.action_type)}</span>
+      <span className="text-xs">{humanizeEnum(row.original.action_type)}</span>
     ),
   },
   {
@@ -98,7 +96,7 @@ export default function AuditLogPage() {
         description="Cross-package event history."
         actions={
           <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RotateCw className={`mr-1 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+            <RotateCw className={cn("mr-1 h-4 w-4", isFetching && "animate-spin")} />
             Refresh
           </Button>
         }
@@ -119,7 +117,7 @@ export default function AuditLogPage() {
               <SelectItem value="all">All events</SelectItem>
               {PACKAGE_ACTION_TYPE.map((t) => (
                 <SelectItem key={t} value={t}>
-                  {humanise(t)}
+                  {humanizeEnum(t)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -148,31 +146,7 @@ export default function AuditLogPage() {
           getRowId={(row) => row.id}
         />
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <p>
-            Page {page + 1} of {pageCount}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-              disabled={page + 1 >= pageCount}
-            >
-              Next
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <Pagination page={page} pageCount={pageCount} onChange={setPage} />
       </div>
     </>
   )

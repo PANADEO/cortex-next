@@ -3,6 +3,7 @@
 import type {
   GetActionLogsQuery,
   GetPackagesQuery,
+  PackageTransition,
   UpdateDeliveryTermsRequest,
   UpdateInvoiceLinesRequest,
   UpdateInvoiceRequest,
@@ -113,142 +114,101 @@ export function useImportMultiplePackages() {
   })
 }
 
-export function useStartVerification(id: string) {
+const TRANSITION_CALLS: Record<PackageTransition, (id: string) => Promise<Record<string, never>>> = {
+  start_verification: endpoints.packages.startVerification,
+  cancel_verification: endpoints.packages.cancelVerification,
+  finish_verification: endpoints.packages.finishVerification,
+  reset_verification: endpoints.packages.resetVerification,
+  reprocess: endpoints.packages.reprocess,
+}
+
+function useTransitionMutation(id: string, transition: PackageTransition) {
   const invalidate = useInvalidatePackage(id)
   return useMutation({
-    mutationFn: () => endpoints.packages.startVerification(id),
+    mutationFn: () => TRANSITION_CALLS[transition](id),
     onSuccess: invalidate,
   })
 }
 
-export function useCancelVerification(id: string) {
-  const invalidate = useInvalidatePackage(id)
-  return useMutation({
-    mutationFn: () => endpoints.packages.cancelVerification(id),
-    onSuccess: invalidate,
-  })
-}
+export const useStartVerification = (id: string) => useTransitionMutation(id, "start_verification")
+export const useCancelVerification = (id: string) =>
+  useTransitionMutation(id, "cancel_verification")
+export const useFinishVerification = (id: string) =>
+  useTransitionMutation(id, "finish_verification")
+export const useResetVerification = (id: string) =>
+  useTransitionMutation(id, "reset_verification")
+export const useReprocessPackage = (id: string) => useTransitionMutation(id, "reprocess")
 
-export function useFinishVerification(id: string) {
-  const invalidate = useInvalidatePackage(id)
-  return useMutation({
-    mutationFn: () => endpoints.packages.finishVerification(id),
-    onSuccess: invalidate,
-  })
-}
-
-export function useResetVerification(id: string) {
-  const invalidate = useInvalidatePackage(id)
-  return useMutation({
-    mutationFn: () => endpoints.packages.resetVerification(id),
-    onSuccess: invalidate,
-  })
-}
-
-export function useReprocessPackage(id: string) {
-  const invalidate = useInvalidatePackage(id)
-  return useMutation({
-    mutationFn: () => endpoints.packages.reprocess(id),
-    onSuccess: invalidate,
-  })
-}
-
-interface TransportOrderMutationArgs<T> {
+interface TransportOrderArgs<T> {
   packageId: string
   orderId: string
   body: T
 }
 
-interface InvoiceMutationArgs<T> {
+interface InvoiceArgs<T> {
   packageId: string
   orderId: string
   invoiceId: string
   body: T
 }
 
-export function useUpdateSeller() {
+function useTransportOrderMutation<Args extends { packageId: string }, R>(
+  fn: (args: Args) => Promise<R>,
+) {
+  const client = useQueryClient()
   return useMutation({
-    mutationFn: ({ packageId, orderId, body }: TransportOrderMutationArgs<UpdatePartyRequest>) =>
-      endpoints.transportOrders.updateSeller(packageId, orderId, body),
+    mutationFn: fn,
+    onSuccess: (_res, args) => {
+      client.invalidateQueries({ queryKey: queryKeys.packages.detail(args.packageId) })
+      client.invalidateQueries({ queryKey: queryKeys.packages.actions(args.packageId) })
+      client.invalidateQueries({
+        queryKey: queryKeys.packages.transportOrders(args.packageId),
+      })
+    },
   })
 }
 
-export function useUpdateBuyer() {
-  return useMutation({
-    mutationFn: ({ packageId, orderId, body }: TransportOrderMutationArgs<UpdatePartyRequest>) =>
-      endpoints.transportOrders.updateBuyer(packageId, orderId, body),
-  })
-}
+export const useUpdateSeller = () =>
+  useTransportOrderMutation((a: TransportOrderArgs<UpdatePartyRequest>) =>
+    endpoints.transportOrders.updateSeller(a.packageId, a.orderId, a.body),
+  )
 
-export function useUpdateConsignor() {
-  return useMutation({
-    mutationFn: ({ packageId, orderId, body }: TransportOrderMutationArgs<UpdatePartyRequest>) =>
-      endpoints.transportOrders.updateConsignor(packageId, orderId, body),
-  })
-}
+export const useUpdateBuyer = () =>
+  useTransportOrderMutation((a: TransportOrderArgs<UpdatePartyRequest>) =>
+    endpoints.transportOrders.updateBuyer(a.packageId, a.orderId, a.body),
+  )
 
-export function useUpdateConsignee() {
-  return useMutation({
-    mutationFn: ({ packageId, orderId, body }: TransportOrderMutationArgs<UpdatePartyRequest>) =>
-      endpoints.transportOrders.updateConsignee(packageId, orderId, body),
-  })
-}
+export const useUpdateConsignor = () =>
+  useTransportOrderMutation((a: TransportOrderArgs<UpdatePartyRequest>) =>
+    endpoints.transportOrders.updateConsignor(a.packageId, a.orderId, a.body),
+  )
 
-export function useUpdateTransportInfo() {
-  return useMutation({
-    mutationFn: ({
-      packageId,
-      orderId,
-      body,
-    }: TransportOrderMutationArgs<UpdateTransportInfoRequest>) =>
-      endpoints.transportOrders.updateTransportInfo(packageId, orderId, body),
-  })
-}
+export const useUpdateConsignee = () =>
+  useTransportOrderMutation((a: TransportOrderArgs<UpdatePartyRequest>) =>
+    endpoints.transportOrders.updateConsignee(a.packageId, a.orderId, a.body),
+  )
 
-export function useUpdateInvoice() {
-  return useMutation({
-    mutationFn: ({
-      packageId,
-      orderId,
-      invoiceId,
-      body,
-    }: InvoiceMutationArgs<UpdateInvoiceRequest>) =>
-      endpoints.transportOrders.updateInvoice(packageId, orderId, invoiceId, body),
-  })
-}
+export const useUpdateTransportInfo = () =>
+  useTransportOrderMutation((a: TransportOrderArgs<UpdateTransportInfoRequest>) =>
+    endpoints.transportOrders.updateTransportInfo(a.packageId, a.orderId, a.body),
+  )
 
-export function useUpdateInvoiceLines() {
-  return useMutation({
-    mutationFn: ({
-      packageId,
-      orderId,
-      invoiceId,
-      body,
-    }: InvoiceMutationArgs<UpdateInvoiceLinesRequest>) =>
-      endpoints.transportOrders.updateInvoiceLines(packageId, orderId, invoiceId, body),
-  })
-}
+export const useUpdateInvoice = () =>
+  useTransportOrderMutation((a: InvoiceArgs<UpdateInvoiceRequest>) =>
+    endpoints.transportOrders.updateInvoice(a.packageId, a.orderId, a.invoiceId, a.body),
+  )
 
-export function useUpdateInvoiceTotals() {
-  return useMutation({
-    mutationFn: ({
-      packageId,
-      orderId,
-      invoiceId,
-      body,
-    }: InvoiceMutationArgs<UpdateInvoiceTotalsRequest>) =>
-      endpoints.transportOrders.updateInvoiceTotals(packageId, orderId, invoiceId, body),
-  })
-}
+export const useUpdateInvoiceLines = () =>
+  useTransportOrderMutation((a: InvoiceArgs<UpdateInvoiceLinesRequest>) =>
+    endpoints.transportOrders.updateInvoiceLines(a.packageId, a.orderId, a.invoiceId, a.body),
+  )
 
-export function useUpdateDeliveryTerms() {
-  return useMutation({
-    mutationFn: ({
-      packageId,
-      orderId,
-      invoiceId,
-      body,
-    }: InvoiceMutationArgs<UpdateDeliveryTermsRequest>) =>
-      endpoints.transportOrders.updateDeliveryTerms(packageId, orderId, invoiceId, body),
-  })
-}
+export const useUpdateInvoiceTotals = () =>
+  useTransportOrderMutation((a: InvoiceArgs<UpdateInvoiceTotalsRequest>) =>
+    endpoints.transportOrders.updateInvoiceTotals(a.packageId, a.orderId, a.invoiceId, a.body),
+  )
+
+export const useUpdateDeliveryTerms = () =>
+  useTransportOrderMutation((a: InvoiceArgs<UpdateDeliveryTermsRequest>) =>
+    endpoints.transportOrders.updateDeliveryTerms(a.packageId, a.orderId, a.invoiceId, a.body),
+  )

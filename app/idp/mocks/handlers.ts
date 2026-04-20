@@ -14,6 +14,16 @@ import { ALLOWED_TRANSITIONS, buildActionLogs, buildDetails, packageActions } fr
 import { buildPackageFixtures } from "./fixtures/packages"
 
 const packages = buildPackageFixtures(54)
+const packagesById = new Map(packages.map((p) => [p.id, p]))
+
+let cachedLogs: ReturnType<typeof buildActionLogs> | null = null
+function getActionLogs() {
+  if (!cachedLogs) cachedLogs = buildActionLogs(packages)
+  return cachedLogs
+}
+function invalidateLogs() {
+  cachedLogs = null
+}
 
 function computeStats(items: PackageReadModel[]): DashboardStatsResponse {
   const counts: Record<PackageStatus, number> = {
@@ -41,14 +51,13 @@ function sortPackages(
   sortBy: PackageSortField,
   order: SortOrder,
 ): PackageReadModel[] {
-  const copy = [...items]
-  copy.sort((a, b) => {
+  const sign = order === "desc" ? -1 : 1
+  return [...items].sort((a, b) => {
     const av = a[sortBy]
     const bv = b[sortBy]
     if (av === bv) return 0
-    return av < bv ? -1 : 1
+    return av < bv ? -sign : sign
   })
-  return order === "desc" ? copy.reverse() : copy
 }
 
 function notFound(id: string | readonly string[] | undefined) {
@@ -116,7 +125,7 @@ export const handlers = [
     const dateFrom = url.searchParams.get("date_from")
     const dateTo = url.searchParams.get("date_to")
 
-    let all = buildActionLogs(packages)
+    let all = getActionLogs()
     if (typeFilter) all = all.filter((e) => e.action_type === typeFilter)
     if (performedBy)
       all = all.filter((e) => e.performed_by.toLowerCase().includes(performedBy))
@@ -133,13 +142,13 @@ export const handlers = [
   }),
 
   http.get("/packages/:id", ({ params }) => {
-    const pkg = packages.find((p) => p.id === params.id)
+    const pkg = packagesById.get(String(params.id))
     if (!pkg) return notFound(params.id)
     return HttpResponse.json(buildDetails(pkg))
   }),
 
   http.get("/packages/:id/actions", ({ params }) => {
-    const pkg = packages.find((p) => p.id === params.id)
+    const pkg = packagesById.get(String(params.id))
     if (!pkg) return notFound(params.id)
     return HttpResponse.json({
       package_id: pkg.id,
@@ -148,13 +157,13 @@ export const handlers = [
   }),
 
   http.get("/packages/:id/transitions", ({ params }) => {
-    const pkg = packages.find((p) => p.id === params.id)
+    const pkg = packagesById.get(String(params.id))
     if (!pkg) return notFound(params.id)
     return HttpResponse.json({ transitions: ALLOWED_TRANSITIONS[pkg.status] })
   }),
 
   http.get("/packages/:id/transport-orders", ({ params }) => {
-    const pkg = packages.find((p) => p.id === params.id)
+    const pkg = packagesById.get(String(params.id))
     if (!pkg) return notFound(params.id)
     return HttpResponse.json({
       package_id: pkg.id,
@@ -166,7 +175,7 @@ export const handlers = [
   ...Object.keys(TRANSITION_MAP).map((transition) => {
     const kebab = transition.replace(/_/g, "-")
     return http.post(`/packages/:id/${kebab}`, ({ params, request }) => {
-      const pkg = packages.find((p) => p.id === params.id)
+      const pkg = packagesById.get(String(params.id))
       if (!pkg) return notFound(params.id)
       const next = TRANSITION_MAP[transition]
       if (next && next !== "same") {
@@ -175,6 +184,7 @@ export const handlers = [
           const email = request.headers.get("X-Auth-Request-Email")
           if (email) pkg.assignee = email
         }
+        invalidateLogs()
       }
       return HttpResponse.json({})
     })

@@ -65,7 +65,8 @@ export { Textarea } from "./components/ui/textarea"
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/ui/tooltip"
 
 // Compositions
-export { StatusBadge } from "./components/status-badge"
+export { StatusBadge, getStatusLabel } from "./components/status-badge"
+export { Pagination } from "./components/pagination"
 export { DataCard } from "./components/data-card"
 export { PageHeader } from "./components/page-header"
 export { DataTable } from "./components/data-table"

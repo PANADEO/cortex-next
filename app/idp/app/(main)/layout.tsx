@@ -14,7 +14,7 @@ function pathToItemId(pathname: string): string {
 }
 
 export default function MainLayout({ children }: { children: ReactNode }) {
-  const pathname = usePathname() ?? "/dashboard"
+  const pathname = usePathname()
   const activeItemId = pathToItemId(pathname)
   const collapsed = useSidebarStore((s) => s.collapsed)
 

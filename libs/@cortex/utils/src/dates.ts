@@ -20,3 +20,8 @@ export function formatFileSizeMb(sizeMb: number | null | undefined, fallback = "
   if (sizeMb < 1) return `${(sizeMb * 1024).toFixed(0)} KB`
   return `${sizeMb.toFixed(2)} MB`
 }
+
+export function formatFileSizeBytes(bytes: number | null | undefined, fallback = "—"): string {
+  if (bytes == null || !Number.isFinite(bytes)) return fallback
+  return formatFileSizeMb(bytes / (1024 * 1024), fallback)
+}

@@ -1,16 +1,13 @@
+import { IDP_NAV } from "./nav"
+
 export interface BreadcrumbEntry {
   label: string
   href?: string
 }
 
-const STATIC_LABELS: Record<string, string> = {
-  dashboard: "Dashboard",
-  packages: "Packages",
-  import: "Import",
-  "audit-log": "Audit log",
-  classification: "Classification",
-  rules: "Rule editor",
-}
+const NAV_LABELS: Record<string, string> = Object.fromEntries(
+  IDP_NAV.flatMap((s) => s.items).map((i) => [i.id, i.label]),
+)
 
 export function breadcrumbsFromPath(pathname: string): BreadcrumbEntry[] {
   const segments = pathname.split("/").filter(Boolean)
@@ -20,7 +17,7 @@ export function breadcrumbsFromPath(pathname: string): BreadcrumbEntry[] {
   let accum = ""
   segments.forEach((seg, idx) => {
     accum += `/${seg}`
-    const label = STATIC_LABELS[seg] ?? seg
+    const label = NAV_LABELS[seg] ?? seg
     const isLast = idx === segments.length - 1
     trail.push(isLast ? { label } : { label, href: accum })
   })
