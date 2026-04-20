@@ -6,6 +6,7 @@ import {
   useSetUserNotes,
 } from "@cortex/api"
 import { Button, Input, Label, Textarea } from "@cortex/ui"
+import { formatRelative } from "@cortex/utils"
 import { Check, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -14,17 +15,23 @@ interface PackageMetadataEditorsProps {
   packageId: string
   customStatus: string | null
   userNotes: string | null
+  userNotesUpdated?: string | null
 }
 
 export function PackageMetadataEditors({
   packageId,
   customStatus,
   userNotes,
+  userNotesUpdated,
 }: PackageMetadataEditorsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <CustomStatusField packageId={packageId} initial={customStatus} />
-      <UserNotesField packageId={packageId} initial={userNotes} />
+      <UserNotesField
+        packageId={packageId}
+        initial={userNotes}
+        lastUpdated={userNotesUpdated ?? null}
+      />
     </div>
   )
 }
@@ -84,9 +91,11 @@ function CustomStatusField({
 function UserNotesField({
   packageId,
   initial,
+  lastUpdated,
 }: {
   packageId: string
   initial: string | null
+  lastUpdated: string | null
 }) {
   const [value, setValue] = useState(initial ?? "")
   const mutate = useSetUserNotes(packageId)
@@ -120,7 +129,10 @@ function UserNotesField({
         rows={3}
         className="resize-none"
       />
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] text-muted-foreground">
+          {lastUpdated ? `Last updated ${formatRelative(lastUpdated)}` : ""}
+        </p>
         <Button size="sm" onClick={handleSave} disabled={!dirty || mutate.isPending}>
           {mutate.isPending ? (
             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />

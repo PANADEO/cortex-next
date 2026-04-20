@@ -144,10 +144,15 @@ function eventsForPackage(pkg: PackageReadModel): PackageActionReadModel[] {
   return events
 }
 
-export function buildActionLogs(packages: PackageReadModel[]): ActionLogReadModel[] {
+export function buildActionLogs(
+  packages: PackageReadModel[],
+  extras?: Map<string, PackageActionReadModel[]>,
+): ActionLogReadModel[] {
   const all: ActionLogReadModel[] = []
   for (const pkg of packages) {
-    for (const e of eventsForPackage(pkg)) {
+    const baseEvents = eventsForPackage(pkg)
+    const extraEvents = extras?.get(pkg.id) ?? []
+    for (const e of [...baseEvents, ...extraEvents]) {
       all.push({
         ...e,
         package_id: pkg.id,
@@ -162,8 +167,11 @@ export function buildActionLogs(packages: PackageReadModel[]): ActionLogReadMode
 export function packageActions(
   packages: PackageReadModel[],
   id: string,
+  extras?: Map<string, PackageActionReadModel[]>,
 ): PackageActionReadModel[] {
   const pkg = packages.find((p) => p.id === id)
   if (!pkg) return []
-  return eventsForPackage(pkg).reverse()
+  const combined = [...eventsForPackage(pkg), ...(extras?.get(id) ?? [])]
+  combined.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1))
+  return combined.reverse()
 }

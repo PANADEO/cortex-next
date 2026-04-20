@@ -4,7 +4,9 @@ import { toastApiError, useDeletePackages, usePackages } from "@cortex/api"
 import {
   PROCESSING_STATE,
   VERIFICATION_STATE,
+  type PackageSortField,
   type ProcessingState,
+  type SortOrder,
   type VerificationState,
 } from "@cortex/types"
 import {
@@ -20,6 +22,7 @@ import {
   DataTable,
   EmptyState,
   Input,
+  Label,
   PageHeader,
   Pagination,
   Select,
@@ -30,10 +33,16 @@ import {
   getProcessingStateLabel,
   getVerificationStateLabel,
 } from "@cortex/ui"
-import { FileQuestion, Loader2, Search, Trash2 } from "lucide-react"
+import { ArrowDown, ArrowUp, FileQuestion, Loader2, Search, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { packageColumns } from "@/lib/columns/packages"
+
+const SORT_FIELDS: ReadonlyArray<{ value: PackageSortField; label: string }> = [
+  { value: "created_date", label: "Created date" },
+  { value: "file_name", label: "File name" },
+  { value: "processing_state", label: "Processing state" },
+]
 
 const PAGE_SIZE = 10
 
@@ -42,6 +51,11 @@ export default function PackagesPage() {
   const [processingState, setProcessingState] = useState<ProcessingState | "all">("all")
   const [verificationState, setVerificationState] = useState<VerificationState | "all">("all")
   const [search, setSearch] = useState("")
+  const [customStatus, setCustomStatus] = useState("")
+  const [sortBy, setSortBy] = useState<PackageSortField>("created_date")
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
+  const [dateFrom, setDateFrom] = useState("")
+  const [dateTo, setDateTo] = useState("")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [confirmOpen, setConfirmOpen] = useState(false)
 
@@ -52,8 +66,13 @@ export default function PackagesPage() {
       processing_state: processingState === "all" ? null : processingState,
       verification_state: verificationState === "all" ? null : verificationState,
       search: search || null,
+      custom_status: customStatus.trim() || null,
+      sort_by: sortBy,
+      sort_order: sortOrder,
+      date_from: dateFrom || null,
+      date_to: dateTo || null,
     }),
-    [page, processingState, verificationState, search],
+    [page, processingState, verificationState, search, customStatus, sortBy, sortOrder, dateFrom, dateTo],
   )
 
   const { data, isLoading, isFetching } = usePackages(query)
@@ -179,9 +198,115 @@ export default function PackagesPage() {
               ))}
             </SelectContent>
           </Select>
+          <Input
+            placeholder="Custom status"
+            value={customStatus}
+            onChange={(e) => {
+              resetPage()
+              setCustomStatus(e.target.value)
+            }}
+            className="h-9 w-[160px]"
+          />
           <div className="ml-auto text-xs text-muted-foreground">
             {isFetching ? "Refreshing…" : `${total} total`}
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Sort by
+            </Label>
+            <div className="flex items-center gap-2">
+              <Select
+                value={sortBy}
+                onValueChange={(v) => {
+                  resetPage()
+                  setSortBy(v as PackageSortField)
+                }}
+              >
+                <SelectTrigger className="h-9 w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SORT_FIELDS.map((f) => (
+                    <SelectItem key={f.value} value={f.value}>
+                      {f.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9"
+                onClick={() => {
+                  resetPage()
+                  setSortOrder((o) => (o === "asc" ? "desc" : "asc"))
+                }}
+                aria-label={sortOrder === "asc" ? "Sort ascending" : "Sort descending"}
+              >
+                {sortOrder === "asc" ? (
+                  <ArrowUp className="h-4 w-4" />
+                ) : (
+                  <ArrowDown className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label
+              htmlFor="packages-date-from"
+              className="text-[10px] uppercase tracking-wide text-muted-foreground"
+            >
+              From
+            </Label>
+            <Input
+              id="packages-date-from"
+              type="date"
+              value={dateFrom}
+              onChange={(e) => {
+                resetPage()
+                setDateFrom(e.target.value)
+              }}
+              className="h-9 w-[160px]"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label
+              htmlFor="packages-date-to"
+              className="text-[10px] uppercase tracking-wide text-muted-foreground"
+            >
+              To
+            </Label>
+            <Input
+              id="packages-date-to"
+              type="date"
+              value={dateTo}
+              onChange={(e) => {
+                resetPage()
+                setDateTo(e.target.value)
+              }}
+              className="h-9 w-[160px]"
+            />
+          </div>
+          {(dateFrom || dateTo || customStatus || sortBy !== "created_date" || sortOrder !== "desc") ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9"
+              onClick={() => {
+                resetPage()
+                setDateFrom("")
+                setDateTo("")
+                setCustomStatus("")
+                setSortBy("created_date")
+                setSortOrder("desc")
+              }}
+            >
+              Reset filters
+            </Button>
+          ) : null}
         </div>
 
         {selectionCount > 0 ? (

@@ -56,10 +56,13 @@ export default function PackageDetailPage() {
 
   const [pollingEnabled, setPollingEnabled] = useState(true)
 
-  // Streamlit parity: polling pauzuje podczas verification żeby nie zniszczyć user input
+  const [reprocessOpen, setReprocessOpen] = useState(false)
+
+  // Polling pauzuje gdy verification w trakcie (chroni user input) lub gdy
+  // otwarty dialog reprocess (pilnuje tekst w additional AI context).
   const detail = usePackage(id, { polling: pollingEnabled })
   const effectivePolling =
-    pollingEnabled && detail.data?.verification_state !== "in_progress"
+    pollingEnabled && detail.data?.verification_state !== "in_progress" && !reprocessOpen
 
   const actions = usePackageActions(id, { polling: effectivePolling })
   const transitions = usePackageTransitions(id)
@@ -68,7 +71,6 @@ export default function PackageDetailPage() {
   const cancel = useCancelVerification(id)
   const finish = useFinishVerification(id)
   const reset = useResetVerification(id)
-  const [reprocessOpen, setReprocessOpen] = useState(false)
 
   const pkg = detail.data
   const isActiveVerification = pkg?.verification_state === "in_progress"
@@ -209,6 +211,10 @@ export default function PackageDetailPage() {
                   packageId={pkg.id}
                   customStatus={pkg.custom_status}
                   userNotes={pkg.user_notes}
+                  userNotesUpdated={
+                    actions.data?.actions.find((a) => a.action_type === "user_notes_updated")
+                      ?.timestamp ?? null
+                  }
                 />
               </CardContent>
             </Card>

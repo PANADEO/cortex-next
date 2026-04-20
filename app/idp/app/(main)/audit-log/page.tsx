@@ -11,6 +11,7 @@ import {
   DataTable,
   EmptyState,
   Input,
+  Label,
   PageHeader,
   Pagination,
   Select,
@@ -74,6 +75,8 @@ export default function AuditLogPage() {
   const [page, setPage] = useState(0)
   const [actionType, setActionType] = useState<PackageActionType | "all">("all")
   const [performedBy, setPerformedBy] = useState("")
+  const [dateFrom, setDateFrom] = useState("")
+  const [dateTo, setDateTo] = useState("")
 
   const query = useMemo(
     () => ({
@@ -81,8 +84,10 @@ export default function AuditLogPage() {
       offset: page * PAGE_SIZE,
       action_type: actionType === "all" ? null : actionType,
       performed_by: performedBy || null,
+      date_from: dateFrom || null,
+      date_to: dateTo || null,
     }),
-    [page, actionType, performedBy],
+    [page, actionType, performedBy, dateFrom, dateTo],
   )
 
   const { data, isLoading, isFetching, refetch } = useActionLogs(query)
@@ -131,6 +136,44 @@ export default function AuditLogPage() {
             }}
             className="h-9 w-56"
           />
+          <div className="flex items-end gap-2">
+            <div className="space-y-1">
+              <Label
+                htmlFor="audit-date-from"
+                className="text-[10px] uppercase tracking-wide text-muted-foreground"
+              >
+                From
+              </Label>
+              <Input
+                id="audit-date-from"
+                type="date"
+                value={dateFrom}
+                onChange={(e) => {
+                  setPage(0)
+                  setDateFrom(e.target.value)
+                }}
+                className="h-9 w-[160px]"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label
+                htmlFor="audit-date-to"
+                className="text-[10px] uppercase tracking-wide text-muted-foreground"
+              >
+                To
+              </Label>
+              <Input
+                id="audit-date-to"
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setPage(0)
+                  setDateTo(e.target.value)
+                }}
+                className="h-9 w-[160px]"
+              />
+            </div>
+          </div>
           <div className="ml-auto text-xs text-muted-foreground">
             {isFetching ? "Refreshing…" : `${total} events`}
           </div>

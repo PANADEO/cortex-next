@@ -3,6 +3,7 @@ import type {
   DeletePackagesRequest,
   ExportTemplateInfo,
   ExportValidationResponse,
+  PackageActionReadModel,
   PackageActionType,
   PackageReadModel,
   PackageSortField,
@@ -36,13 +37,33 @@ const userPreferences: UserPreferencesResponse = {
   theme_mode: null,
 }
 
+const liveActions = new Map<string, PackageActionReadModel[]>()
+
 let cachedLogs: ReturnType<typeof buildActionLogs> | null = null
 function getActionLogs() {
-  if (!cachedLogs) cachedLogs = buildActionLogs(packages)
+  if (!cachedLogs) cachedLogs = buildActionLogs(packages, liveActions)
   return cachedLogs
 }
 function invalidateLogs() {
   cachedLogs = null
+}
+
+function appendLiveAction(
+  pkg: PackageReadModel,
+  type: PackageActionType,
+  actorEmail: string | null,
+  payload?: unknown,
+) {
+  const existing = liveActions.get(pkg.id) ?? []
+  const event: PackageActionReadModel = {
+    id: `${pkg.id}-evt-live-${existing.length}`,
+    action_type: type,
+    timestamp: new Date().toISOString(),
+    performed_by: actorEmail ?? "system@cortex.local",
+    payload: payload ? JSON.stringify(payload) : null,
+  }
+  liveActions.set(pkg.id, [...existing, event])
+  invalidateLogs()
 }
 
 function computeStats(items: PackageReadModel[]): DashboardStatsResponse {
@@ -160,6 +181,9 @@ export const handlers = [
     const sortBy = (url.searchParams.get("sort_by") ?? "created_date") as PackageSortField
     const order = (url.searchParams.get("sort_order") ?? "desc") as SortOrder
 
+    const dateFrom = url.searchParams.get("date_from")
+    const dateTo = url.searchParams.get("date_to")
+
     let filtered = packages
     if (processingFilter) filtered = filtered.filter((p) => p.processing_state === processingFilter)
     if (verificationFilter)
@@ -167,6 +191,8 @@ export const handlers = [
     if (customStatusFilter)
       filtered = filtered.filter((p) => p.custom_status === customStatusFilter)
     if (search) filtered = filtered.filter((p) => p.file_name.toLowerCase().includes(search))
+    if (dateFrom) filtered = filtered.filter((p) => p.created_date.slice(0, 10) >= dateFrom)
+    if (dateTo) filtered = filtered.filter((p) => p.created_date.slice(0, 10) <= dateTo)
 
     const sorted = sortPackages(filtered, sortBy, order)
     const page = sorted.slice(offset, offset + limit)
@@ -193,8 +219,8 @@ export const handlers = [
     if (typeFilter) all = all.filter((e) => e.action_type === typeFilter)
     if (performedBy)
       all = all.filter((e) => e.performed_by.toLowerCase().includes(performedBy))
-    if (dateFrom) all = all.filter((e) => e.timestamp >= dateFrom)
-    if (dateTo) all = all.filter((e) => e.timestamp <= dateTo)
+    if (dateFrom) all = all.filter((e) => e.timestamp.slice(0, 10) >= dateFrom)
+    if (dateTo) all = all.filter((e) => e.timestamp.slice(0, 10) <= dateTo)
 
     const body: PaginatedActionLogResponse = {
       items: all.slice(offset, offset + limit),
@@ -234,7 +260,7 @@ export const handlers = [
     if (!pkg) return notFound(params.id)
     return HttpResponse.json({
       package_id: pkg.id,
-      actions: packageActions(packages, pkg.id),
+      actions: packageActions(packages, pkg.id, liveActions),
     })
   }),
 
@@ -312,7 +338,9 @@ export const handlers = [
     if (!pkg) return notFound(params.id)
     const body = (await request.json()) as SetCustomStatusRequest
     pkg.custom_status = body.custom_status ?? null
-    invalidateLogs()
+    appendLiveAction(pkg, "custom_status_updated", authEmail(request), {
+      custom_status: body.custom_status ?? null,
+    })
     return HttpResponse.json({})
   }),
 
@@ -321,7 +349,7 @@ export const handlers = [
     if (!pkg) return notFound(params.id)
     const body = (await request.json()) as SetUserNotesRequest
     pkg.user_notes = body.user_notes ?? null
-    invalidateLogs()
+    appendLiveAction(pkg, "user_notes_updated", authEmail(request))
     return HttpResponse.json({})
   }),
 
