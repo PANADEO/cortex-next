@@ -152,9 +152,11 @@ export interface UpdateDeliveryTermsRequest {
 export interface InvoiceLineUpdateRequest {
   line_id: string
   line_number?: string | null
+  po_number?: string | null
   product_code?: string | null
   description?: string | null
   cn_code?: string | null
+  hs?: string | null
   quantity?: string | null
   unit_of_measure?: string | null
   invoice_value?: string | null
