@@ -6,7 +6,6 @@ import {
   usePackage,
   usePackageActions,
   usePackageTransitions,
-  useReprocessPackage,
   useResetVerification,
   useStartVerification,
   toastApiError,
@@ -38,6 +37,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { ExportMenu } from "@/components/export-menu"
 import { PackageMetadataEditors } from "@/components/package-metadata-editors"
+import { ReprocessDialog } from "@/components/reprocess-dialog"
 import { SourceMaterialsPanel } from "@/components/source-materials-panel"
 
 const TRANSITION_LABELS: Record<PackageTransition, string> = {
@@ -67,13 +67,17 @@ export default function PackageDetailPage() {
   const cancel = useCancelVerification(id)
   const finish = useFinishVerification(id)
   const reset = useResetVerification(id)
-  const reprocess = useReprocessPackage(id)
+  const [reprocessOpen, setReprocessOpen] = useState(false)
 
   const pkg = detail.data
   const isActiveVerification = pkg?.verification_state === "in_progress"
   const canEdit = isActiveVerification && emailsMatch(session?.user?.email, pkg?.assignee)
 
   const handleTransition = async (t: PackageTransition) => {
+    if (t === "reprocess") {
+      setReprocessOpen(true)
+      return
+    }
     try {
       switch (t) {
         case "start_verification":
@@ -87,9 +91,6 @@ export default function PackageDetailPage() {
           break
         case "reset_verification":
           await reset.mutateAsync()
-          break
-        case "reprocess":
-          await reprocess.mutateAsync({})
           break
       }
       toast.success(TRANSITION_LABELS[t] + " succeeded")
@@ -182,15 +183,13 @@ export default function PackageDetailPage() {
                               start.isPending ||
                               cancel.isPending ||
                               finish.isPending ||
-                              reset.isPending ||
-                              reprocess.isPending
+                              reset.isPending
                             }
                           >
                             {(start.isPending && t === "start_verification") ||
                             (finish.isPending && t === "finish_verification") ||
                             (cancel.isPending && t === "cancel_verification") ||
-                            (reset.isPending && t === "reset_verification") ||
-                            (reprocess.isPending && t === "reprocess") ? (
+                            (reset.isPending && t === "reset_verification") ? (
                               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                             ) : null}
                             {TRANSITION_LABELS[t]}
@@ -257,6 +256,13 @@ export default function PackageDetailPage() {
           <p className="text-sm text-muted-foreground">Package not found.</p>
         )}
       </div>
+      {pkg ? (
+        <ReprocessDialog
+          open={reprocessOpen}
+          onOpenChange={setReprocessOpen}
+          packageId={pkg.id}
+        />
+      ) : null}
     </>
   )
 }
