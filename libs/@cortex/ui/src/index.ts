@@ -65,7 +65,13 @@ export { Textarea } from "./components/ui/textarea"
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/ui/tooltip"
 
 // Compositions
-export { StatusBadge, getStatusLabel } from "./components/status-badge"
+export {
+  PackageStatusBadges,
+  ProcessingStateBadge,
+  VerificationStateBadge,
+  getProcessingStateLabel,
+  getVerificationStateLabel,
+} from "./components/status-badge"
 export { Pagination } from "./components/pagination"
 export { DataCard } from "./components/data-card"
 export { PageHeader } from "./components/page-header"
@@ -75,7 +81,12 @@ export { AppShell } from "./components/app-shell"
 export { TileMenu } from "./components/tile-menu"
 export type { TileMenuItem, TileMenuSection } from "./components/tile-menu"
 export { UserMenu } from "./components/user-menu"
+export { ThemeToggle } from "./components/theme-toggle"
+export type { ThemeMode } from "./components/theme-toggle"
 export { JsonViewer } from "./components/json-viewer"
+export { JsonEditor } from "./components/json-editor"
+// DocumentViewer intentionally NOT reexported — pdfjs-dist breaks SSR.
+// Import via subpath: "@cortex/ui/components/document-viewer" + next/dynamic.
 export { ActionLogTimeline } from "./components/action-log-timeline"
 export { FileUploader } from "./components/file-uploader"
 export { AutoRefreshIndicator } from "./components/auto-refresh-indicator"

@@ -1,9 +1,10 @@
 import type {
   PackageActionType,
   PackageSortField,
-  PackageStatus,
   PackageTransition,
+  ProcessingState,
   SortOrder,
+  VerificationState,
 } from "./enums"
 import type { Paginated } from "./pagination"
 
@@ -12,8 +13,11 @@ export interface PackageReadModel {
   file_name: string
   file_hash: string
   created_date: string
-  status: PackageStatus
+  processing_state: ProcessingState
+  verification_state: VerificationState
   assignee: string | null
+  custom_status: string | null
+  user_notes: string | null
 }
 
 export interface PackageDetailsResponse {
@@ -22,8 +26,12 @@ export interface PackageDetailsResponse {
   file_hash: string
   file_size_mb: number
   created_date: string
-  status: PackageStatus
+  processing_state: ProcessingState
+  verification_state: VerificationState
   assignee: string | null
+  custom_status: string | null
+  user_notes: string | null
+  last_additional_ai_context: string | null
   analysis_result: unknown[] | Record<string, unknown> | null
   verified_result: unknown[] | Record<string, unknown> | null
   total_tokens: number | null
@@ -59,7 +67,9 @@ export interface DashboardStatsResponse {
 export interface GetPackagesQuery {
   limit?: number
   offset?: number
-  status?: PackageStatus | null
+  processing_state?: ProcessingState | null
+  verification_state?: VerificationState | null
+  custom_status?: string | null
   search?: string | null
   sort_by?: PackageSortField
   sort_order?: SortOrder
@@ -69,10 +79,53 @@ export interface GetPackagesQuery {
 
 export interface ImportPackageBody {
   file: File
+  fast_processing?: boolean
+  additional_ai_context_enabled?: boolean
+  additional_ai_context?: string | null
 }
 
 export interface ImportMultiplePackagesBody {
   files: File[]
+  fast_processing?: boolean
+  additional_ai_context_enabled?: boolean
+  additional_ai_context?: string | null
+}
+
+export interface ReprocessRequest {
+  fast_processing?: boolean
+  additional_ai_context_enabled?: boolean
+  additional_ai_context?: string | null
+}
+
+export interface SetCustomStatusRequest {
+  custom_status: string | null
+}
+
+export interface SetUserNotesRequest {
+  user_notes: string | null
+}
+
+export interface DeletePackagesRequest {
+  package_ids: string[]
+}
+
+export interface SourceFileReadModel {
+  path: string
+  file_name: string
+  media_type: string
+  preview_kind: "pdf" | "image" | "download_only"
+  size_bytes: number
+}
+
+export interface ExportTemplateInfo {
+  name: string
+  display_name: string
+  format: string
+  description: string
+}
+
+export interface ExportValidationResponse {
+  warnings: Array<Record<string, unknown>>
 }
 
 export type PaginatedPackageResponse = Paginated<PackageReadModel>

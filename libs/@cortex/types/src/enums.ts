@@ -1,13 +1,18 @@
-export const PACKAGE_STATUS = [
+export const PROCESSING_STATE = [
   "imported",
   "imported_with_error",
   "analysing",
   "analysis_failed",
-  "ready_for_verification",
-  "verification",
-  "verified",
+  "ready",
 ] as const
-export type PackageStatus = (typeof PACKAGE_STATUS)[number]
+export type ProcessingState = (typeof PROCESSING_STATE)[number]
+
+export const VERIFICATION_STATE = [
+  "not_started",
+  "in_progress",
+  "completed",
+] as const
+export type VerificationState = (typeof VERIFICATION_STATE)[number]
 
 export const PACKAGE_TRANSITION = [
   "start_verification",
@@ -37,6 +42,11 @@ export const PACKAGE_ACTION_TYPE = [
   "invoice_totals_updated",
   "delivery_terms_updated",
   "transport_info_updated",
+  "sad_context_updated",
+  "custom_status_updated",
+  "user_notes_updated",
+  "deleted",
+  "restored",
 ] as const
 export type PackageActionType = (typeof PACKAGE_ACTION_TYPE)[number]
 
@@ -55,5 +65,5 @@ export type ErrorCode = (typeof ERROR_CODE)[number]
 export const SORT_ORDER = ["asc", "desc"] as const
 export type SortOrder = (typeof SORT_ORDER)[number]
 
-export const PACKAGE_SORT_FIELD = ["created_date", "file_name", "status"] as const
+export const PACKAGE_SORT_FIELD = ["created_date", "file_name", "processing_state"] as const
 export type PackageSortField = (typeof PACKAGE_SORT_FIELD)[number]

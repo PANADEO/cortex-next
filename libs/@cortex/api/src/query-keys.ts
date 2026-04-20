@@ -13,7 +13,9 @@ export const queryKeys = {
     transportOrders: (id: string) =>
       [...queryKeys.packages.all(), "transport-orders", id] as const,
     transitions: (id: string) => [...queryKeys.packages.all(), "transitions", id] as const,
+    sourceFiles: (id: string) => [...queryKeys.packages.all(), "source-files", id] as const,
   },
+  exportTemplates: () => [...queryKeys.all, "export-templates"] as const,
   actionLogs: (query: GetActionLogsQuery) =>
     [...queryKeys.all, "action-logs", query] as const,
 }

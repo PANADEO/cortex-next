@@ -4,6 +4,7 @@ import { AppShell, TileMenu } from "@cortex/ui"
 import { Boxes } from "lucide-react"
 import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
+import { FeatureErrorBoundary } from "@/components/error-boundaries"
 import { Topbar } from "@/components/topbar"
 import { IDP_NAV } from "@/lib/nav"
 import { useSidebarStore } from "@/lib/stores/sidebar-store"
@@ -46,7 +47,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
       }
       topbar={<Topbar />}
     >
-      {children}
+      <FeatureErrorBoundary>{children}</FeatureErrorBoundary>
     </AppShell>
   )
 }

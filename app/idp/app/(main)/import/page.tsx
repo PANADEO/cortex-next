@@ -18,7 +18,7 @@ export default function ImportPage() {
   const submitZip = async () => {
     if (!zipFile) return
     try {
-      await importOne.mutateAsync(zipFile)
+      await importOne.mutateAsync({ file: zipFile, fast_processing: zipFast })
       toast.success(`Imported ${zipFile.name}`)
       setZipFile(null)
     } catch (err) {
@@ -29,7 +29,7 @@ export default function ImportPage() {
   const submitLoose = async () => {
     if (loose.length === 0) return
     try {
-      await importMany.mutateAsync(loose)
+      await importMany.mutateAsync({ files: loose, fast_processing: looseFast })
       toast.success(`Imported ${loose.length} file(s)`)
       setLoose([])
     } catch (err) {

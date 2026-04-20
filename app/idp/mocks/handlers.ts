@@ -1,16 +1,28 @@
 import type {
   DashboardStatsResponse,
+  DeletePackagesRequest,
+  ExportTemplateInfo,
+  ExportValidationResponse,
   PackageActionType,
   PackageReadModel,
   PackageSortField,
-  PackageStatus,
   PaginatedActionLogResponse,
   PaginatedPackageResponse,
+  ProcessingState,
+  SetCustomStatusRequest,
+  SetUserNotesRequest,
   SortOrder,
+  SourceFileReadModel,
   UserInfoResponse,
+  VerificationState,
 } from "@cortex/types"
 import { http, HttpResponse } from "msw"
-import { ALLOWED_TRANSITIONS, buildActionLogs, buildDetails, packageActions } from "./fixtures/details"
+import {
+  allowedTransitions,
+  buildActionLogs,
+  buildDetails,
+  packageActions,
+} from "./fixtures/details"
 import { buildPackageFixtures } from "./fixtures/packages"
 
 const packages = buildPackageFixtures(54)
@@ -26,24 +38,33 @@ function invalidateLogs() {
 }
 
 function computeStats(items: PackageReadModel[]): DashboardStatsResponse {
-  const counts: Record<PackageStatus, number> = {
-    imported: 0,
-    imported_with_error: 0,
-    analysing: 0,
-    analysis_failed: 0,
-    ready_for_verification: 0,
-    verification: 0,
-    verified: 0,
+  let in_queue = 0
+  let processing = 0
+  let ready_for_verification = 0
+  let in_verification = 0
+  let verified = 0
+  let failed = 0
+
+  for (const p of items) {
+    switch (p.processing_state) {
+      case "imported":
+        in_queue++
+        break
+      case "analysing":
+        processing++
+        break
+      case "imported_with_error":
+      case "analysis_failed":
+        failed++
+        break
+      case "ready":
+        if (p.verification_state === "not_started") ready_for_verification++
+        else if (p.verification_state === "in_progress") in_verification++
+        else verified++
+        break
+    }
   }
-  for (const p of items) counts[p.status]++
-  return {
-    in_queue: counts.imported,
-    processing: counts.analysing,
-    ready_for_verification: counts.ready_for_verification,
-    in_verification: counts.verification,
-    verified: counts.verified,
-    failed: counts.imported_with_error + counts.analysis_failed,
-  }
+  return { in_queue, processing, ready_for_verification, in_verification, verified, failed }
 }
 
 function sortPackages(
@@ -72,19 +93,38 @@ function notFound(id: string | readonly string[] | undefined) {
   )
 }
 
-const TRANSITION_MAP: Record<string, PackageStatus | "same"> = {
-  start_verification: "verification",
-  cancel_verification: "ready_for_verification",
-  finish_verification: "verified",
-  reset_verification: "ready_for_verification",
-  reprocess: "analysing",
+function authEmail(request: Request): string | null {
+  return request.headers.get("X-Auth-Request-Email")
+}
+
+function applyTransition(pkg: PackageReadModel, transition: string, request: Request) {
+  switch (transition) {
+    case "start-verification":
+      pkg.verification_state = "in_progress"
+      pkg.assignee = authEmail(request) ?? pkg.assignee
+      break
+    case "cancel-verification":
+      pkg.verification_state = "not_started"
+      break
+    case "finish-verification":
+      pkg.verification_state = "completed"
+      break
+    case "reset-verification":
+      pkg.verification_state = "not_started"
+      break
+    case "reprocess":
+      pkg.processing_state = "analysing"
+      pkg.verification_state = "not_started"
+      break
+  }
+  invalidateLogs()
 }
 
 export const handlers = [
   http.get("/health", () => HttpResponse.json({ status: "ok" })),
 
   http.get("/user/me", ({ request }) => {
-    const email = request.headers.get("X-Auth-Request-Email") ?? "demo@cortex.local"
+    const email = authEmail(request) ?? "demo@cortex.local"
     const body: UserInfoResponse = { email, has_access: true }
     return HttpResponse.json(body)
   }),
@@ -95,13 +135,19 @@ export const handlers = [
     const url = new URL(request.url)
     const limit = Math.min(100, Number(url.searchParams.get("limit") ?? 10))
     const offset = Math.max(0, Number(url.searchParams.get("offset") ?? 0))
-    const statusFilter = url.searchParams.get("status") as PackageStatus | null
+    const processingFilter = url.searchParams.get("processing_state") as ProcessingState | null
+    const verificationFilter = url.searchParams.get("verification_state") as VerificationState | null
+    const customStatusFilter = url.searchParams.get("custom_status")
     const search = url.searchParams.get("search")?.toLowerCase() ?? null
     const sortBy = (url.searchParams.get("sort_by") ?? "created_date") as PackageSortField
     const order = (url.searchParams.get("sort_order") ?? "desc") as SortOrder
 
     let filtered = packages
-    if (statusFilter) filtered = filtered.filter((p) => p.status === statusFilter)
+    if (processingFilter) filtered = filtered.filter((p) => p.processing_state === processingFilter)
+    if (verificationFilter)
+      filtered = filtered.filter((p) => p.verification_state === verificationFilter)
+    if (customStatusFilter)
+      filtered = filtered.filter((p) => p.custom_status === customStatusFilter)
     if (search) filtered = filtered.filter((p) => p.file_name.toLowerCase().includes(search))
 
     const sorted = sortPackages(filtered, sortBy, order)
@@ -141,6 +187,24 @@ export const handlers = [
     return HttpResponse.json(body)
   }),
 
+  http.get("/packages/export-templates", () => {
+    const body: ExportTemplateInfo[] = [
+      {
+        name: "default_csv",
+        display_name: "Default CSV",
+        format: "csv",
+        description: "Flat line-items export",
+      },
+      {
+        name: "customs_xml",
+        display_name: "Customs XML",
+        format: "xml",
+        description: "XML zgodny z eksportem celnym",
+      },
+    ]
+    return HttpResponse.json(body)
+  }),
+
   http.get("/packages/:id", ({ params }) => {
     const pkg = packagesById.get(String(params.id))
     if (!pkg) return notFound(params.id)
@@ -156,10 +220,10 @@ export const handlers = [
     })
   }),
 
-  http.get("/packages/:id/transitions", ({ params }) => {
+  http.get("/packages/:id/transitions", ({ params, request }) => {
     const pkg = packagesById.get(String(params.id))
     if (!pkg) return notFound(params.id)
-    return HttpResponse.json({ transitions: ALLOWED_TRANSITIONS[pkg.status] })
+    return HttpResponse.json({ transitions: allowedTransitions(pkg, authEmail(request)) })
   }),
 
   http.get("/packages/:id/transport-orders", ({ params }) => {
@@ -172,29 +236,96 @@ export const handlers = [
     })
   }),
 
-  ...Object.keys(TRANSITION_MAP).map((transition) => {
-    const kebab = transition.replace(/_/g, "-")
-    return http.post(`/packages/:id/${kebab}`, ({ params, request }) => {
-      const pkg = packagesById.get(String(params.id))
-      if (!pkg) return notFound(params.id)
-      const next = TRANSITION_MAP[transition]
-      if (next && next !== "same") {
-        pkg.status = next
-        if (transition === "start_verification") {
-          const email = request.headers.get("X-Auth-Request-Email")
-          if (email) pkg.assignee = email
-        }
-        invalidateLogs()
-      }
-      return HttpResponse.json({})
-    })
+  http.get("/packages/:id/source-files", ({ params }) => {
+    const pkg = packagesById.get(String(params.id))
+    if (!pkg) return notFound(params.id)
+    const body: SourceFileReadModel[] = [
+      {
+        path: "invoice.pdf",
+        file_name: "invoice.pdf",
+        media_type: "application/pdf",
+        preview_kind: "pdf",
+        size_bytes: 234_567,
+      },
+      {
+        path: "packing-list.xlsx",
+        file_name: "packing-list.xlsx",
+        media_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        preview_kind: "download_only",
+        size_bytes: 45_120,
+      },
+    ]
+    return HttpResponse.json(body)
+  }),
+
+  http.get(
+    "/packages/:id/source-files/content",
+    () => new HttpResponse(new Blob(["mock-bytes"]), { status: 200 }),
+  ),
+
+  http.get("/packages/:id/export/validate", () => {
+    const body: ExportValidationResponse = { warnings: [] }
+    return HttpResponse.json(body)
+  }),
+
+  http.get(
+    "/packages/:id/export",
+    () => new HttpResponse(new Blob(["mock,export"], { type: "text/csv" })),
+  ),
+
+  ...["start-verification", "cancel-verification", "finish-verification", "reset-verification"].map(
+    (transition) =>
+      http.post(`/packages/:id/${transition}`, ({ params, request }) => {
+        const pkg = packagesById.get(String(params.id))
+        if (!pkg) return notFound(params.id)
+        applyTransition(pkg, transition, request)
+        return HttpResponse.json({})
+      }),
+  ),
+
+  http.post("/packages/:id/reprocess", ({ params, request }) => {
+    const pkg = packagesById.get(String(params.id))
+    if (!pkg) return notFound(params.id)
+    applyTransition(pkg, "reprocess", request)
+    return HttpResponse.json({})
+  }),
+
+  http.post("/packages/:id/custom-status", async ({ params, request }) => {
+    const pkg = packagesById.get(String(params.id))
+    if (!pkg) return notFound(params.id)
+    const body = (await request.json()) as SetCustomStatusRequest
+    pkg.custom_status = body.custom_status ?? null
+    invalidateLogs()
+    return HttpResponse.json({})
+  }),
+
+  http.post("/packages/:id/user-notes", async ({ params, request }) => {
+    const pkg = packagesById.get(String(params.id))
+    if (!pkg) return notFound(params.id)
+    const body = (await request.json()) as SetUserNotesRequest
+    pkg.user_notes = body.user_notes ?? null
+    invalidateLogs()
+    return HttpResponse.json({})
+  }),
+
+  http.post("/packages/:id/restore", ({ params }) => {
+    const pkg = packagesById.get(String(params.id))
+    if (!pkg) return notFound(params.id)
+    invalidateLogs()
+    return HttpResponse.json({})
+  }),
+
+  http.post("/packages/delete", async ({ request }) => {
+    const body = (await request.json()) as DeletePackagesRequest
+    for (const id of body.package_ids) packagesById.delete(id)
+    invalidateLogs()
+    return HttpResponse.json({})
   }),
 
   http.post("/packages/import", () => HttpResponse.json({})),
   http.post("/packages/import-multiple", () => HttpResponse.json({})),
 
-  // Transport-order edits — catch-all returning {} per openapi. Specific handlers
-  // go here once the verification form is wired (Wave 6 follow-up).
+  // Transport-order edits — catch-all returning {} per openapi.
   http.post("/packages/:id/transport-orders/*", () => HttpResponse.json({})),
 
   // Blob downloads — tiny placeholder so dev doesn't hit the network.
@@ -202,13 +333,5 @@ export const handlers = [
   http.get(
     "/packages/:id/download-result",
     () => new HttpResponse(new Blob(["{}"], { type: "application/json" })),
-  ),
-  http.get(
-    "/packages/:id/export-csv",
-    () => new HttpResponse(new Blob(["mock,csv"], { type: "text/csv" })),
-  ),
-  http.get(
-    "/packages/:id/export-xml",
-    () => new HttpResponse(new Blob(["<mock/>"], { type: "application/xml" })),
   ),
 ]

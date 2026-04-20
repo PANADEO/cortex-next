@@ -18,11 +18,12 @@ import {
   Button,
   Card,
   CardContent,
+  JsonEditor,
   JsonViewer,
   LoadingState,
+  PackageStatusBadges,
   PageHeader,
   Skeleton,
-  StatusBadge,
   Tabs,
   TabsContent,
   TabsList,
@@ -35,6 +36,7 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
+import { SourceMaterialsPanel } from "@/components/source-materials-panel"
 
 const TRANSITION_LABELS: Record<PackageTransition, string> = {
   start_verification: "Start verification",
@@ -53,7 +55,8 @@ export default function PackageDetailPage() {
 
   // Streamlit parity: polling pauzuje podczas verification żeby nie zniszczyć user input
   const detail = usePackage(id, { polling: pollingEnabled })
-  const effectivePolling = pollingEnabled && detail.data?.status !== "verification"
+  const effectivePolling =
+    pollingEnabled && detail.data?.verification_state !== "in_progress"
 
   const actions = usePackageActions(id, { polling: effectivePolling })
   const transitions = usePackageTransitions(id)
@@ -65,7 +68,8 @@ export default function PackageDetailPage() {
   const reprocess = useReprocessPackage(id)
 
   const pkg = detail.data
-  const canEdit = pkg?.status === "verification" && emailsMatch(session?.user?.email, pkg.assignee)
+  const isActiveVerification = pkg?.verification_state === "in_progress"
+  const canEdit = isActiveVerification && emailsMatch(session?.user?.email, pkg?.assignee)
 
   const handleTransition = async (t: PackageTransition) => {
     try {
@@ -83,7 +87,7 @@ export default function PackageDetailPage() {
           await reset.mutateAsync()
           break
         case "reprocess":
-          await reprocess.mutateAsync()
+          await reprocess.mutateAsync({})
           break
       }
       toast.success(TRANSITION_LABELS[t] + " succeeded")
@@ -126,7 +130,11 @@ export default function PackageDetailPage() {
               <Card>
                 <CardContent className="space-y-3 p-5">
                   <div className="flex items-center gap-3">
-                    <StatusBadge status={pkg.status} size="md" />
+                    <PackageStatusBadges
+                      processingState={pkg.processing_state}
+                      verificationState={pkg.verification_state}
+                      size="md"
+                    />
                     {pkg.assignee ? (
                       <span className="text-xs text-muted-foreground">
                         Assigned to <span className="font-mono">{pkg.assignee}</span>
@@ -199,13 +207,21 @@ export default function PackageDetailPage() {
                 <TabsTrigger value="source">Source materials</TabsTrigger>
               </TabsList>
               <TabsContent value="analysis" className="space-y-3">
-                {pkg.status === "verification" && !canEdit ? (
+                {isActiveVerification && !canEdit ? (
                   <p className="text-xs text-muted-foreground">
                     Read-only. Only the current assignee ({pkg.assignee}) can edit.
                   </p>
                 ) : null}
                 {pkg.analysis_result ? (
-                  <JsonViewer data={pkg.verified_result ?? pkg.analysis_result} initialDepth={2} />
+                  canEdit ? (
+                    <JsonEditor
+                      value={pkg.verified_result ?? pkg.analysis_result}
+                      saveLabel="Save verified result"
+                      disabledReason="Field-level edits go through transport-order endpoints; full-document save is pending backend support."
+                    />
+                  ) : (
+                    <JsonViewer data={pkg.verified_result ?? pkg.analysis_result} initialDepth={2} />
+                  )
                 ) : (
                   <p className="text-sm text-muted-foreground">
                     Analysis result not available yet.
@@ -220,9 +236,7 @@ export default function PackageDetailPage() {
                 )}
               </TabsContent>
               <TabsContent value="source">
-                <p className="text-sm text-muted-foreground">
-                  PDF viewer + bounding box overlay — coming in a follow-up wave.
-                </p>
+                <SourceMaterialsPanel packageId={pkg.id} />
               </TabsContent>
             </Tabs>
           </>

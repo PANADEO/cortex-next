@@ -4,13 +4,18 @@ import type { PackageActionReadModel, PackageActionType } from "@cortex/types"
 import { cn, formatAbsolute, formatRelative } from "@cortex/utils"
 import {
   AlertCircle,
+  ArchiveRestore,
   ArrowRight,
   CheckCircle2,
   CircleDashed,
   Edit3,
   Loader2,
+  MessageSquare,
   Play,
   RotateCcw,
+  StickyNote,
+  Tag,
+  Trash2,
   XCircle,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
@@ -38,6 +43,11 @@ const ACTION_META: Partial<
   invoice_totals_updated: { icon: Edit3, tone: "text-muted-foreground", label: "Invoice totals updated" },
   delivery_terms_updated: { icon: Edit3, tone: "text-muted-foreground", label: "Delivery terms updated" },
   transport_info_updated: { icon: Edit3, tone: "text-muted-foreground", label: "Transport info updated" },
+  sad_context_updated: { icon: MessageSquare, tone: "text-muted-foreground", label: "SAD context updated" },
+  custom_status_updated: { icon: Tag, tone: "text-muted-foreground", label: "Custom status updated" },
+  user_notes_updated: { icon: StickyNote, tone: "text-muted-foreground", label: "User notes updated" },
+  deleted: { icon: Trash2, tone: "text-destructive", label: "Deleted" },
+  restored: { icon: ArchiveRestore, tone: "text-success-foreground", label: "Restored" },
 }
 
 interface ActionLogTimelineProps {

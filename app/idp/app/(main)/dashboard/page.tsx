@@ -1,7 +1,7 @@
 "use client"
 
 import { useDashboardStats, usePackages } from "@cortex/api"
-import { DataCard, DataTable, EmptyState, PageHeader, StatusBadge } from "@cortex/ui"
+import { DataCard, DataTable, EmptyState, PackageStatusBadges, PageHeader } from "@cortex/ui"
 import { formatRelative } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
 import {
@@ -39,10 +39,15 @@ const columns: ColumnDef<PackageReadModel, unknown>[] = [
     ),
   },
   {
-    accessorKey: "status",
+    accessorKey: "processing_state",
     header: "Status",
-    size: 180,
-    cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    size: 240,
+    cell: ({ row }) => (
+      <PackageStatusBadges
+        processingState={row.original.processing_state}
+        verificationState={row.original.verification_state}
+      />
+    ),
   },
   {
     accessorKey: "assignee",

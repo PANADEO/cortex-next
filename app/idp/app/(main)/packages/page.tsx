@@ -1,12 +1,18 @@
 "use client"
 
 import { usePackages } from "@cortex/api"
-import { PACKAGE_STATUS, type PackageReadModel, type PackageStatus } from "@cortex/types"
+import {
+  PROCESSING_STATE,
+  VERIFICATION_STATE,
+  type PackageReadModel,
+  type ProcessingState,
+  type VerificationState,
+} from "@cortex/types"
 import {
   DataTable,
   EmptyState,
-  getStatusLabel,
   Input,
+  PackageStatusBadges,
   PageHeader,
   Pagination,
   Select,
@@ -14,7 +20,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  StatusBadge,
+  getProcessingStateLabel,
+  getVerificationStateLabel,
 } from "@cortex/ui"
 import { formatRelative } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
@@ -54,10 +61,15 @@ const columns: ColumnDef<PackageReadModel, unknown>[] = [
     ),
   },
   {
-    accessorKey: "status",
+    accessorKey: "processing_state",
     header: "Status",
-    size: 180,
-    cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    size: 260,
+    cell: ({ row }) => (
+      <PackageStatusBadges
+        processingState={row.original.processing_state}
+        verificationState={row.original.verification_state}
+      />
+    ),
   },
   {
     accessorKey: "assignee",
@@ -75,22 +87,26 @@ const PAGE_SIZE = 10
 
 export default function PackagesPage() {
   const [page, setPage] = useState(0)
-  const [status, setStatus] = useState<PackageStatus | "all">("all")
+  const [processingState, setProcessingState] = useState<ProcessingState | "all">("all")
+  const [verificationState, setVerificationState] = useState<VerificationState | "all">("all")
   const [search, setSearch] = useState("")
 
   const query = useMemo(
     () => ({
       limit: PAGE_SIZE,
       offset: page * PAGE_SIZE,
-      status: status === "all" ? null : status,
+      processing_state: processingState === "all" ? null : processingState,
+      verification_state: verificationState === "all" ? null : verificationState,
       search: search || null,
     }),
-    [page, status, search],
+    [page, processingState, verificationState, search],
   )
 
   const { data, isLoading, isFetching } = usePackages(query)
   const total = data?.total ?? 0
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
+
+  const resetPage = () => setPage(0)
 
   return (
     <>
@@ -107,27 +123,46 @@ export default function PackagesPage() {
               placeholder="Search by file name…"
               value={search}
               onChange={(e) => {
-                setPage(0)
+                resetPage()
                 setSearch(e.target.value)
               }}
               className="h-9 w-64 pl-9"
             />
           </div>
           <Select
-            value={status}
+            value={processingState}
             onValueChange={(v) => {
-              setPage(0)
-              setStatus(v as PackageStatus | "all")
+              resetPage()
+              setProcessingState(v as ProcessingState | "all")
             }}
           >
             <SelectTrigger className="h-9 w-[180px]">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder="Processing" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              {PACKAGE_STATUS.map((s) => (
+              <SelectItem value="all">All processing</SelectItem>
+              {PROCESSING_STATE.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {getStatusLabel(s)}
+                  {getProcessingStateLabel(s)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={verificationState}
+            onValueChange={(v) => {
+              resetPage()
+              setVerificationState(v as VerificationState | "all")
+            }}
+          >
+            <SelectTrigger className="h-9 w-[180px]">
+              <SelectValue placeholder="Verification" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All verification</SelectItem>
+              {VERIFICATION_STATE.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {getVerificationStateLabel(s)}
                 </SelectItem>
               ))}
             </SelectContent>

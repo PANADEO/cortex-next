@@ -1,9 +1,15 @@
 "use client"
 
 import type {
+  DeletePackagesRequest,
   GetActionLogsQuery,
   GetPackagesQuery,
+  ImportMultiplePackagesBody,
+  ImportPackageBody,
   PackageTransition,
+  ReprocessRequest,
+  SetCustomStatusRequest,
+  SetUserNotesRequest,
   UpdateDeliveryTermsRequest,
   UpdateInvoiceLinesRequest,
   UpdateInvoiceRequest,
@@ -73,6 +79,21 @@ export function usePackageTransitions(id: string) {
   })
 }
 
+export function usePackageSourceFiles(id: string) {
+  return useQuery({
+    queryKey: queryKeys.packages.sourceFiles(id),
+    queryFn: () => endpoints.packages.sourceFiles(id),
+    enabled: Boolean(id),
+  })
+}
+
+export function useExportTemplates() {
+  return useQuery({
+    queryKey: queryKeys.exportTemplates(),
+    queryFn: endpoints.packages.exportTemplates,
+  })
+}
+
 export function useActionLogs(query: GetActionLogsQuery = {}) {
   return useQuery({
     queryKey: queryKeys.actionLogs(query),
@@ -95,7 +116,7 @@ function useInvalidatePackage(id: string) {
 export function useImportPackage() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (file: File) => endpoints.packages.import(file),
+    mutationFn: (body: ImportPackageBody) => endpoints.packages.import(body),
     onSuccess: () => {
       client.invalidateQueries({ queryKey: queryKeys.packages.all() })
       client.invalidateQueries({ queryKey: queryKeys.dashboardStats() })
@@ -106,7 +127,7 @@ export function useImportPackage() {
 export function useImportMultiplePackages() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (files: File[]) => endpoints.packages.importMultiple(files),
+    mutationFn: (body: ImportMultiplePackagesBody) => endpoints.packages.importMultiple(body),
     onSuccess: () => {
       client.invalidateQueries({ queryKey: queryKeys.packages.all() })
       client.invalidateQueries({ queryKey: queryKeys.dashboardStats() })
@@ -114,15 +135,17 @@ export function useImportMultiplePackages() {
   })
 }
 
-const TRANSITION_CALLS: Record<PackageTransition, (id: string) => Promise<Record<string, never>>> = {
+const TRANSITION_CALLS: Record<
+  Exclude<PackageTransition, "reprocess">,
+  (id: string) => Promise<Record<string, never>>
+> = {
   start_verification: endpoints.packages.startVerification,
   cancel_verification: endpoints.packages.cancelVerification,
   finish_verification: endpoints.packages.finishVerification,
   reset_verification: endpoints.packages.resetVerification,
-  reprocess: endpoints.packages.reprocess,
 }
 
-function useTransitionMutation(id: string, transition: PackageTransition) {
+function useTransitionMutation(id: string, transition: Exclude<PackageTransition, "reprocess">) {
   const invalidate = useInvalidatePackage(id)
   return useMutation({
     mutationFn: () => TRANSITION_CALLS[transition](id),
@@ -137,7 +160,49 @@ export const useFinishVerification = (id: string) =>
   useTransitionMutation(id, "finish_verification")
 export const useResetVerification = (id: string) =>
   useTransitionMutation(id, "reset_verification")
-export const useReprocessPackage = (id: string) => useTransitionMutation(id, "reprocess")
+
+export function useReprocessPackage(id: string) {
+  const invalidate = useInvalidatePackage(id)
+  return useMutation({
+    mutationFn: (body: ReprocessRequest = {}) => endpoints.packages.reprocess(id, body),
+    onSuccess: invalidate,
+  })
+}
+
+export function useSetCustomStatus(id: string) {
+  const invalidate = useInvalidatePackage(id)
+  return useMutation({
+    mutationFn: (body: SetCustomStatusRequest) => endpoints.packages.setCustomStatus(id, body),
+    onSuccess: invalidate,
+  })
+}
+
+export function useSetUserNotes(id: string) {
+  const invalidate = useInvalidatePackage(id)
+  return useMutation({
+    mutationFn: (body: SetUserNotesRequest) => endpoints.packages.setUserNotes(id, body),
+    onSuccess: invalidate,
+  })
+}
+
+export function useDeletePackages() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (body: DeletePackagesRequest) => endpoints.packages.deleteMany(body),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: queryKeys.packages.all() })
+      client.invalidateQueries({ queryKey: queryKeys.dashboardStats() })
+    },
+  })
+}
+
+export function useRestorePackage(id: string) {
+  const invalidate = useInvalidatePackage(id)
+  return useMutation({
+    mutationFn: () => endpoints.packages.restore(id),
+    onSuccess: invalidate,
+  })
+}
 
 interface TransportOrderArgs<T> {
   packageId: string

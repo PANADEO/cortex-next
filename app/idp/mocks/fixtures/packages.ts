@@ -1,13 +1,24 @@
-import type { PackageReadModel, PackageStatus } from "@cortex/types"
+import type {
+  PackageReadModel,
+  ProcessingState,
+  VerificationState,
+} from "@cortex/types"
 
-const STATUSES: PackageStatus[] = [
-  "imported",
-  "imported_with_error",
-  "analysing",
-  "analysis_failed",
-  "ready_for_verification",
-  "verification",
-  "verified",
+// Pojedyncza "faza" pakietu = (processing_state, verification_state).
+// Backend nakłada invariant: verification_state != NOT_STARTED wymaga READY.
+interface PackagePhase {
+  processing_state: ProcessingState
+  verification_state: VerificationState
+}
+
+const PHASES: PackagePhase[] = [
+  { processing_state: "imported", verification_state: "not_started" },
+  { processing_state: "imported_with_error", verification_state: "not_started" },
+  { processing_state: "analysing", verification_state: "not_started" },
+  { processing_state: "analysis_failed", verification_state: "not_started" },
+  { processing_state: "ready", verification_state: "not_started" },
+  { processing_state: "ready", verification_state: "in_progress" },
+  { processing_state: "ready", verification_state: "completed" },
 ]
 
 const SAMPLE_FILES = [
@@ -49,21 +60,26 @@ export function buildPackageFixtures(count = 54): PackageReadModel[] {
   const items: PackageReadModel[] = []
 
   for (let i = 0; i < count; i++) {
-    const status = STATUSES[Math.floor(rand() * STATUSES.length)]!
+    const phase = PHASES[Math.floor(rand() * PHASES.length)]!
     const template = SAMPLE_FILES[Math.floor(rand() * SAMPLE_FILES.length)]!
     const file_name = template.replace("%n", String(1000 + i))
-    const assignee =
-      status === "verification" || status === "verified"
-        ? ASSIGNEES[1 + Math.floor(rand() * 4)]!
-        : ASSIGNEES[Math.floor(rand() * ASSIGNEES.length)]!
+    const requiresAssignee =
+      phase.verification_state === "in_progress" ||
+      phase.verification_state === "completed"
+    const assignee = requiresAssignee
+      ? ASSIGNEES[1 + Math.floor(rand() * 4)]!
+      : ASSIGNEES[Math.floor(rand() * ASSIGNEES.length)]!
 
     items.push({
       id: `pkg-${String(i + 1).padStart(4, "0")}`,
       file_name,
       file_hash: `sha256:${Math.floor(rand() * 1e16).toString(16)}`,
       created_date: daysAgo(Math.floor(rand() * 21)),
-      status,
+      processing_state: phase.processing_state,
+      verification_state: phase.verification_state,
       assignee,
+      custom_status: null,
+      user_notes: null,
     })
   }
 

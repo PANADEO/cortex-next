@@ -8,6 +8,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
   Button,
+  ThemeToggle,
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -20,12 +21,15 @@ import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { breadcrumbsFromPath } from "../lib/breadcrumbs"
 import { useSidebarStore } from "../lib/stores/sidebar-store"
+import { useThemeStore } from "../lib/stores/theme-store"
 import { CommandPalette } from "./command-palette"
 
 export function Topbar() {
   const pathname = usePathname()
   const collapsed = useSidebarStore((s) => s.collapsed)
   const toggle = useSidebarStore((s) => s.toggle)
+  const themeMode = useThemeStore((s) => s.mode)
+  const setThemeMode = useThemeStore((s) => s.setMode)
   const [paletteOpen, setPaletteOpen] = useState(false)
 
   const trail = breadcrumbsFromPath(pathname)
@@ -110,6 +114,7 @@ export function Topbar() {
             </TooltipTrigger>
             <TooltipContent side="bottom">Notifications</TooltipContent>
           </Tooltip>
+          <ThemeToggle mode={themeMode} onModeChange={setThemeMode} />
           <UserMenu />
         </div>
       </TooltipProvider>

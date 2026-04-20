@@ -4,25 +4,34 @@ import type {
   PackageActionType,
   PackageDetailsResponse,
   PackageReadModel,
-  PackageStatus,
   PackageTransition,
 } from "@cortex/types"
 
-export const ALLOWED_TRANSITIONS: Record<PackageStatus, PackageTransition[]> = {
-  imported: [],
-  imported_with_error: ["reprocess"],
-  analysing: [],
-  analysis_failed: ["reprocess"],
-  ready_for_verification: ["start_verification", "reprocess"],
-  verification: ["finish_verification", "cancel_verification"],
-  verified: ["reset_verification", "reprocess"],
+// Mirror domain/package/workflow/package_workflow_service.py:
+//   ANALYSIS_FAILED                          -> [REPROCESS]
+//   READY + NOT_STARTED                      -> [START_VERIFICATION, REPROCESS]
+//   READY + IN_PROGRESS (assignee == user)   -> [CANCEL_VERIFICATION, FINISH_VERIFICATION]
+//   READY + COMPLETED                        -> [RESET_VERIFICATION, REPROCESS]
+export function allowedTransitions(
+  pkg: PackageReadModel,
+  currentUserEmail: string | null,
+): PackageTransition[] {
+  if (pkg.processing_state === "analysis_failed") return ["reprocess"]
+  if (pkg.processing_state !== "ready") return []
+  if (pkg.verification_state === "not_started") {
+    return ["start_verification", "reprocess"]
+  }
+  if (pkg.verification_state === "in_progress") {
+    if (!currentUserEmail || !pkg.assignee) return []
+    if (currentUserEmail.toLowerCase() !== pkg.assignee.toLowerCase()) return []
+    return ["cancel_verification", "finish_verification"]
+  }
+  return ["reset_verification", "reprocess"]
 }
 
 export function buildDetails(pkg: PackageReadModel): PackageDetailsResponse {
-  const hasAnalysis =
-    pkg.status === "ready_for_verification" ||
-    pkg.status === "verification" ||
-    pkg.status === "verified"
+  const hasAnalysis = pkg.processing_state === "ready"
+  const isVerified = pkg.verification_state === "completed"
 
   const analysisResult = hasAnalysis
     ? {
@@ -79,10 +88,14 @@ export function buildDetails(pkg: PackageReadModel): PackageDetailsResponse {
     file_hash: pkg.file_hash,
     file_size_mb: Number((1 + ((Number(pkg.id.slice(-3)) || 1) % 50) / 3).toFixed(2)),
     created_date: pkg.created_date,
-    status: pkg.status,
+    processing_state: pkg.processing_state,
+    verification_state: pkg.verification_state,
     assignee: pkg.assignee,
+    custom_status: pkg.custom_status,
+    user_notes: pkg.user_notes,
+    last_additional_ai_context: null,
     analysis_result: analysisResult,
-    verified_result: pkg.status === "verified" ? analysisResult : null,
+    verified_result: isVerified ? analysisResult : null,
     total_tokens: hasAnalysis ? 2400 + ((Number(pkg.id.slice(-3)) || 0) * 31) : null,
     total_cost_usd: hasAnalysis ? "0.0942" : null,
   }
@@ -102,26 +115,32 @@ function eventsForPackage(pkg: PackageReadModel): PackageActionReadModel[] {
   }
 
   push("imported", 0, pkg.assignee ?? "system@cortex.local")
-  if (pkg.status === "imported_with_error") {
+
+  if (pkg.processing_state === "imported_with_error") {
     push("imported_with_error", 1, "system@cortex.local", { error: "Malformed ZIP" })
     return events
   }
+
   push("analysing", 2, "system@cortex.local")
-  if (pkg.status === "analysing") return events
-  if (pkg.status === "analysis_failed") {
+
+  if (pkg.processing_state === "analysing") return events
+  if (pkg.processing_state === "analysis_failed") {
     push("analysis_failed", 8, "system@cortex.local", { reason: "LLM retry budget exceeded" })
     return events
   }
+
   push("ready_for_verification", 8, "system@cortex.local")
-  if (pkg.status === "ready_for_verification") return events
+
+  if (pkg.verification_state === "not_started") return events
+
   push("verification", 20, pkg.assignee ?? "demo@cortex.local")
   push("seller_updated", 22, pkg.assignee ?? "demo@cortex.local", {
     vat_id: { from: "PL123", to: "PL1234567890" },
   })
-  if (pkg.status === "verification") return events
-  if (pkg.status === "verified") {
-    push("verified", 45, pkg.assignee ?? "demo@cortex.local")
-  }
+
+  if (pkg.verification_state === "in_progress") return events
+
+  push("verified", 45, pkg.assignee ?? "demo@cortex.local")
   return events
 }
 
