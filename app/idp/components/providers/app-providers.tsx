@@ -13,8 +13,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <MswProvider>
       <SessionProvider refetchOnWindowFocus={false}>
         <AuthSync />
-        <ThemeProvider />
         <ApiProvider devtools={process.env.NODE_ENV === "development"}>
+          <ThemeProvider />
           {children}
           <Toaster richColors closeButton position="top-right" />
         </ApiProvider>
