@@ -83,6 +83,8 @@ export type { TileMenuItem, TileMenuSection } from "./components/tile-menu"
 export { UserMenu } from "./components/user-menu"
 export { ThemeToggle } from "./components/theme-toggle"
 export type { ThemeMode } from "./components/theme-toggle"
+export { SkinToggle } from "./components/skin-toggle"
+export type { SkinOption } from "./components/skin-toggle"
 export { JsonViewer } from "./components/json-viewer"
 export { JsonEditor } from "./components/json-editor"
 // DocumentViewer intentionally NOT reexported — pdfjs-dist breaks SSR.

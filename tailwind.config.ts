@@ -9,6 +9,8 @@ const config: Config = {
     "./libs/**/*.{ts,tsx,mdx}",
     "./.ladle/**/*.{ts,tsx}",
   ],
+  // Skin classes applied via classList at runtime — keep them in the bundle.
+  safelist: ["skin-customs"],
   theme: {
     container: {
       center: true,

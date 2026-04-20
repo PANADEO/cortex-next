@@ -8,6 +8,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
   Button,
+  SkinToggle,
+  type SkinOption,
   ThemeToggle,
   Tooltip,
   TooltipContent,
@@ -21,9 +23,22 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Fragment, useEffect, useState } from "react"
 import { breadcrumbsFromPath } from "../lib/breadcrumbs"
+import { SKINS, useSkinStore, type SkinId } from "../lib/stores/skin-store"
 import { useSidebarStore } from "../lib/stores/sidebar-store"
 import { useThemeStore } from "../lib/stores/theme-store"
 import { CommandPalette } from "./command-palette"
+
+const SKIN_SWATCHES: Record<SkinId, readonly [string, string, string]> = {
+  default: ["#0a0a0a", "#f5f5f5", "#a3a3a3"],
+  customs: ["#f97316", "#15803d", "#fbbf24"],
+}
+
+const SKIN_OPTIONS: readonly SkinOption<SkinId>[] = SKINS.map((s) => ({
+  id: s.id,
+  label: s.label,
+  description: s.description,
+  swatch: SKIN_SWATCHES[s.id],
+}))
 
 export function Topbar() {
   const pathname = usePathname()
@@ -31,6 +46,8 @@ export function Topbar() {
   const toggle = useSidebarStore((s) => s.toggle)
   const themeMode = useThemeStore((s) => s.mode)
   const setThemeMode = useThemeStore((s) => s.setMode)
+  const skin = useSkinStore((s) => s.skin)
+  const setSkin = useSkinStore((s) => s.setSkin)
   const persistPreferences = useSetUserPreferences()
   const [paletteOpen, setPaletteOpen] = useState(false)
 
@@ -116,6 +133,7 @@ export function Topbar() {
             </TooltipTrigger>
             <TooltipContent side="bottom">Notifications</TooltipContent>
           </Tooltip>
+          <SkinToggle skin={skin} options={SKIN_OPTIONS} onSkinChange={setSkin} />
           <ThemeToggle
             mode={themeMode}
             onModeChange={(next) => {
