@@ -79,6 +79,21 @@ export interface CompileRuleResponse {
   warnings: string[]
 }
 
+export interface ExplainRuleRequest {
+  nl_definition: string
+  rule_id?: string | null
+  sample_package_id?: string | null
+}
+
+export interface ExplainRuleResponse {
+  is_valid: boolean
+  summary: string
+  worked_example: string
+  affected_columns: string[]
+  concerns: string[]
+  clarifying_questions: string[]
+}
+
 export interface SaveRuleVersionRequest {
   nl_definition: string
   python_code: string

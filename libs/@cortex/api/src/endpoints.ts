@@ -4,6 +4,8 @@ import type {
   CleanPackageDraft,
   CompileRuleRequest,
   CompileRuleResponse,
+  ExplainRuleRequest,
+  ExplainRuleResponse,
   DashboardStatsResponse,
   DeletePackagesRequest,
   DirtyPackageDetailsResponse,
@@ -157,6 +159,11 @@ export const endpoints = {
       }),
     get: (id: string) =>
       apiClient.get<DirtyPackageDetailsResponse>(`/classification/dirty-packages/${id}`),
+    documentContent: (id: string, docId: string) =>
+      apiClient.get<Blob>(
+        `/classification/dirty-packages/${id}/documents/${docId}/content`,
+        { parse: "blob" },
+      ),
     autoClassify: (id: string) =>
       apiClient.post<AutoClassifyResponse>(
         `/classification/dirty-packages/${id}/auto-classify`,
@@ -195,6 +202,8 @@ export const endpoints = {
       apiClient.patch<EmptyOk>(`/rules/${id}`, { jsonBody: body }),
     compile: (body: CompileRuleRequest) =>
       apiClient.post<CompileRuleResponse>("/rules/compile", { jsonBody: body }),
+    explain: (body: ExplainRuleRequest) =>
+      apiClient.post<ExplainRuleResponse>("/rules/explain", { jsonBody: body }),
     preview: (body: RulePreviewRequest) =>
       apiClient.post<RulePreviewResponse>("/rules/preview", { jsonBody: body }),
     saveVersion: (id: string, body: SaveRuleVersionRequest) =>

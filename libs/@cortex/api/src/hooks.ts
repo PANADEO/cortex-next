@@ -3,6 +3,7 @@
 import type {
   AttachRuleRequest,
   CompileRuleRequest,
+  ExplainRuleRequest,
   DeletePackagesRequest,
   GetActionLogsQuery,
   GetDirtyPackagesQuery,
@@ -424,6 +425,12 @@ export function useUpdateRule(id: string) {
 export function useCompileRule() {
   return useMutation({
     mutationFn: (body: CompileRuleRequest) => endpoints.rules.compile(body),
+  })
+}
+
+export function useExplainRule() {
+  return useMutation({
+    mutationFn: (body: ExplainRuleRequest) => endpoints.rules.explain(body),
   })
 }
 

@@ -1,6 +1,10 @@
 "use client"
 
-import { toastApiError, useUpdateDocumentClassification } from "@cortex/api"
+import {
+  endpoints,
+  toastApiError,
+  useUpdateDocumentClassification,
+} from "@cortex/api"
 import {
   DOC_MODE,
   DOC_TYPE,
@@ -13,6 +17,7 @@ import {
   Badge,
   Button,
   Label,
+  LoadingState,
   Select,
   SelectContent,
   SelectItem,
@@ -20,27 +25,22 @@ import {
   SelectValue,
   Textarea,
 } from "@cortex/ui"
-import {
-  CheckCircle2,
-  FileImage,
-  FileSpreadsheet,
-  FileText,
-  Loader2,
-} from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { CheckCircle2, FileX, Loader2 } from "lucide-react"
+import dynamic from "next/dynamic"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { DOC_MODE_LABEL, DOC_TYPE_LABEL } from "./labels"
+
+const DocumentViewer = dynamic(
+  () => import("@cortex/ui/components/document-viewer").then((m) => m.DocumentViewer),
+  { ssr: false, loading: () => <LoadingState label="Loading viewer…" /> },
+)
 
 interface DocumentPreviewProps {
   dirtyPackageId: string
   document: DirtyDocument | null
   drafts: CleanPackageDraft[]
-}
-
-function previewIcon(media: string) {
-  if (media.startsWith("image/")) return FileImage
-  if (media.includes("spreadsheet")) return FileSpreadsheet
-  return FileText
 }
 
 function formatBytes(bytes: number): string {
@@ -68,8 +68,6 @@ export function DocumentPreview({
       </div>
     )
   }
-
-  const Icon = previewIcon(document.media_type)
 
   const apply = (body: Parameters<typeof update.mutate>[0]["body"]) => {
     update.mutate(
@@ -114,21 +112,8 @@ export function DocumentPreview({
         </Button>
       </div>
 
-      <div className="flex-1 overflow-auto bg-muted/30 p-6">
-        <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-background/60 px-6 py-12 text-center">
-          <Icon className="h-10 w-10 text-muted-foreground" />
-          <div className="space-y-1">
-            <p className="text-sm font-medium">Document preview placeholder</p>
-            <p className="max-w-md text-xs text-muted-foreground">
-              MVP scaffold. Inline rendering will hook into the classification
-              file-content endpoint once backend exposes it. For now use the
-              metadata to verify type and routing decisions.
-            </p>
-          </div>
-          <Badge variant="outline" className="text-[10px]">
-            {document.media_type}
-          </Badge>
-        </div>
+      <div className="min-h-0 flex-1 overflow-hidden bg-muted/30 p-3">
+        <DocumentBody dirtyPackageId={dirtyPackageId} document={document} />
       </div>
 
       <div className="grid grid-cols-3 gap-3 border-t border-border bg-background/40 px-4 py-3">
@@ -210,5 +195,56 @@ export function DocumentPreview({
         </div>
       </div>
     </div>
+  )
+}
+
+function DocumentBody({
+  dirtyPackageId,
+  document,
+}: {
+  dirtyPackageId: string
+  document: DirtyDocument
+}) {
+  const content = useQuery({
+    queryKey: ["idp", "classification", "doc-content", dirtyPackageId, document.id],
+    queryFn: () => endpoints.classification.documentContent(dirtyPackageId, document.id),
+    staleTime: Infinity,
+    enabled: document.preview_kind !== "download_only",
+  })
+
+  if (document.preview_kind === "download_only") {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border bg-background/60 px-6 py-12 text-center">
+          <FileX className="h-8 w-8 text-muted-foreground" />
+          <p className="text-sm font-medium">No inline preview</p>
+          <p className="max-w-sm text-xs text-muted-foreground">
+            {document.media_type} files are attached as references — open
+            externally if you need to peek.
+          </p>
+          <Badge variant="outline" className="text-[10px]">
+            {document.media_type}
+          </Badge>
+        </div>
+      </div>
+    )
+  }
+
+  if (content.isLoading) return <LoadingState label={`Loading ${document.file_name}…`} />
+
+  if (content.error || !content.data) {
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-destructive">
+        Failed to load document content.
+      </div>
+    )
+  }
+
+  return (
+    <DocumentViewer
+      source={content.data}
+      fileName={document.file_name}
+      mediaType={document.media_type}
+    />
   )
 }

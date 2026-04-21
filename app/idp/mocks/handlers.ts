@@ -3,6 +3,8 @@ import type {
   AutoClassifyResponse,
   CompileRuleRequest,
   CompileRuleResponse,
+  ExplainRuleRequest,
+  ExplainRuleResponse,
   DashboardStatsResponse,
   DeletePackagesRequest,
   DirtyPackageStatus,
@@ -63,6 +65,7 @@ import {
   buildRules,
   compileRuleStub,
   detachRuleFromPackage,
+  explainRuleStub,
   packageRuleAttachments,
 } from "./fixtures/rules"
 import { buildTransportOrders } from "./fixtures/transport-orders"
@@ -471,6 +474,42 @@ export const handlers = [
     return HttpResponse.json(details)
   }),
 
+  http.get(
+    "/classification/dirty-packages/:id/documents/:docId/content",
+    async ({ params }) => {
+      const details = dirtyDetailsById.get(String(params.id))
+      const doc = details?.documents.find((d) => d.id === String(params.docId))
+      if (!doc) {
+        return HttpResponse.json(
+          { error_code: "ENTITY_NOT_FOUND", message: "Document not found" },
+          { status: 404 },
+        )
+      }
+      if (doc.preview_kind === "pdf") {
+        const asset = await fetch("/mock-assets/sample-invoice.pdf")
+        const blob = await asset.blob()
+        return new HttpResponse(blob, {
+          status: 200,
+          headers: { "Content-Type": "application/pdf" },
+        })
+      }
+      if (doc.preview_kind === "image") {
+        // 1x1 transparent PNG placeholder; real backend returns actual image bytes.
+        const placeholder = Uint8Array.from(
+          atob(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+          ),
+          (c) => c.charCodeAt(0),
+        )
+        return new HttpResponse(placeholder, {
+          status: 200,
+          headers: { "Content-Type": doc.media_type },
+        })
+      }
+      return new HttpResponse(new Blob(["mock-bytes"]), { status: 200 })
+    },
+  ),
+
   http.post("/classification/dirty-packages/:id/auto-classify", ({ params }) => {
     const details = dirtyDetailsById.get(String(params.id))
     const summary = dirtyById.get(String(params.id))
@@ -704,6 +743,13 @@ export const handlers = [
     await new Promise((resolve) => setTimeout(resolve, 500)) // mock LLM latency
     const result = compileRuleStub(body.nl_definition)
     const response: CompileRuleResponse = result
+    return HttpResponse.json(response)
+  }),
+
+  http.post("/rules/explain", async ({ request }) => {
+    const body = (await request.json()) as ExplainRuleRequest
+    await new Promise((resolve) => setTimeout(resolve, 350)) // mock LLM latency
+    const response: ExplainRuleResponse = explainRuleStub(body.nl_definition)
     return HttpResponse.json(response)
   }),
 

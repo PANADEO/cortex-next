@@ -342,6 +342,107 @@ export function detachRuleFromPackage(packageId: string, attachmentId: string): 
   return true
 }
 
+export function explainRuleStub(nl: string): {
+  is_valid: boolean
+  summary: string
+  worked_example: string
+  affected_columns: string[]
+  concerns: string[]
+  clarifying_questions: string[]
+} {
+  const trimmed = nl.trim()
+  if (trimmed.length < 12) {
+    return {
+      is_valid: false,
+      summary: "Definicja jest zbyt krótka.",
+      worked_example: "",
+      affected_columns: [],
+      concerns: ["Reguła musi mieć przynajmniej kilkanaście znaków."],
+      clarifying_questions: [
+        "Co konkretnie ma zostać policzone albo dodane do faktury?",
+        "Z których kolumn źródłowych korzystać?",
+      ],
+    }
+  }
+
+  const lower = trimmed.toLowerCase()
+  const mentionsWeight = /(wag|net_weight|weight)/.test(lower)
+  const mentionsValue = /(wartoś|value|invoice_value|cena)/.test(lower)
+  const mentionsFreight = /(fracht|transport|freight|cost)/.test(lower)
+  const mentionsCn = /(cn[\s_-]?code|cn|kod taryfowy)/.test(lower)
+  const mentionsPln = /(pln|nbp|kurs|exchange)/.test(lower)
+  const mentionsAggregate = /(agreguj|sum|pogrupuj|group)/.test(lower)
+  const mentionsSplit = /(rozdziel|podziel|split)/.test(lower)
+
+  const affected: string[] = []
+  if (mentionsFreight) affected.push("freight_share")
+  if (mentionsPln) affected.push("invoice_value_pln")
+  if (mentionsAggregate && mentionsCn) affected.push("cn_total_weight", "cn_total_value")
+  if (mentionsSplit) affected.push("hs_code", "invoice_value")
+  if (affected.length === 0) affected.push("computed_value")
+
+  const concerns: string[] = []
+  if (mentionsFreight && !mentionsWeight && !mentionsValue) {
+    concerns.push(
+      "Nie wskazano podstawy alokacji frachtu (waga vs wartość). Domyślnie użyję wagi.",
+    )
+  }
+  if (mentionsPln && !/(invoice_date|data faktury)/.test(lower)) {
+    concerns.push("Nie podałeś źródła kursu — założę kurs NBP z dnia faktury.")
+  }
+  if (mentionsAggregate && affected.length === 1) {
+    concerns.push(
+      "Nie wskazano kolumn do zsumowania — zaproponuję net_weight_kg + invoice_value.",
+    )
+  }
+
+  const questions: string[] = []
+  if (mentionsFreight) {
+    questions.push("Czy fracht alokować po wadze netto czy po wartości faktury?")
+  }
+  if (mentionsSplit && !/(udział|propor|share|ratio)/.test(lower)) {
+    questions.push("Po jakim kluczu rozdzielić linie (waga, wartość, ilość)?")
+  }
+
+  let summary = "Rozumiem regułę i mogę ją zastosować."
+  let worked = "Dla faktury z 3 pozycjami: A, B, C — reguła zostanie wywołana per pozycja."
+
+  if (mentionsFreight && mentionsWeight) {
+    summary =
+      "Alokuje koszt frachtu z `transport_info.cost` proporcjonalnie do wagi netto każdej pozycji faktury."
+    worked =
+      "Faktura: 100 PLN frachtu, 3 pozycje (waga 10/20/20 kg). Wynik: pozycja 1 → 20 PLN, pozycja 2 → 40 PLN, pozycja 3 → 40 PLN."
+  } else if (mentionsFreight && mentionsValue) {
+    summary =
+      "Alokuje koszt frachtu z `transport_info.cost` proporcjonalnie do wartości każdej pozycji."
+    worked =
+      "Faktura: 100 PLN frachtu, pozycje o wartości 50/150 PLN. Wynik: 25 PLN i 75 PLN."
+  } else if (mentionsAggregate && mentionsCn) {
+    summary = "Grupuje pozycje po `cn_code` i sumuje wagi netto, brutto oraz wartości."
+    worked =
+      "Pozycje: CN 8471... (waga 5+10), CN 8528... (waga 8). Wynik: dwie linie sumaryczne."
+  } else if (mentionsPln) {
+    summary =
+      "Dodaje kolumnę `invoice_value_pln` przeliczając `invoice_value` po kursie NBP z daty faktury."
+    worked =
+      "Faktura w EUR: 100 EUR, kurs 4.30. Wynik: invoice_value_pln = 430.00."
+  } else if (mentionsSplit) {
+    summary =
+      "Rozdziela pozycje na osobne wiersze proporcjonalnie do udziałów (np. po HS code)."
+    worked =
+      "Pozycja 100 PLN z udziałami HS 8471 (60%) i 8528 (40%). Wynik: dwie linie 60/40 PLN."
+  }
+
+  return {
+    is_valid: true,
+    summary,
+    worked_example: worked,
+    affected_columns: affected,
+    concerns,
+    clarifying_questions: questions,
+  }
+}
+
 export function compileRuleStub(nl: string): {
   python_code: string
   output_columns: { name: string; description: string; data_type: "string" | "number" }[]
