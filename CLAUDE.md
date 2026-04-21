@@ -4,7 +4,7 @@
 
 ## Kontekst
 
-Frontend platformy **Cortex** — monorepo mikroaplikacji ("kafelków"). Pierwszy kafelek: **IDP** (Invoice/Document Processing), migrowany ze Streamlita na Next.js.
+**Prototyp** nowego frontendu platformy **Cortex360** — monorepo modułów ("kafelków"). Pierwszy moduł: **IDP** (Invoice/Document Processing), migrowany ze Streamlita na Next.js. Ten moduł stanowi pierwszą zbudowaną część nowego frontendu — fundament architektoniczny i design-system dla kolejnych modułów Cortex360.
 
 ## General principles
 
