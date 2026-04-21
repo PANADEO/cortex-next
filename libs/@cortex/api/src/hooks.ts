@@ -1,22 +1,31 @@
 "use client"
 
 import type {
+  AttachRuleRequest,
+  CompileRuleRequest,
   DeletePackagesRequest,
   GetActionLogsQuery,
+  GetDirtyPackagesQuery,
   GetPackagesQuery,
+  GetRulesQuery,
   ImportMultiplePackagesBody,
   ImportPackageBody,
   PackageTransition,
   ReprocessRequest,
+  RulePreviewRequest,
+  SaveRuleVersionRequest,
   SetCustomStatusRequest,
   SetUserNotesRequest,
   SetUserPreferencesRequest,
   UpdateDeliveryTermsRequest,
+  UpdateDocumentClassificationRequest,
   UpdateInvoiceLinesRequest,
   UpdateInvoiceRequest,
   UpdateInvoiceTotalsRequest,
   UpdatePartyRequest,
   UpdateTransportInfoRequest,
+  UpsertDraftRequest,
+  UpsertRuleRequest,
 } from "@cortex/types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { endpoints } from "./endpoints"
@@ -296,3 +305,186 @@ export const useUpdateDeliveryTerms = () =>
   useTransportOrderMutation((a: InvoiceArgs<UpdateDeliveryTermsRequest>) =>
     endpoints.transportOrders.updateDeliveryTerms(a.packageId, a.orderId, a.invoiceId, a.body),
   )
+
+// ── Classification ─────────────────────────────────────────────────
+export function useDirtyPackages(query: GetDirtyPackagesQuery = {}) {
+  return useQuery({
+    queryKey: queryKeys.classification.list(query),
+    queryFn: () => endpoints.classification.list(query),
+    refetchInterval: 5_000,
+  })
+}
+
+export function useDirtyPackage(id: string) {
+  return useQuery({
+    queryKey: queryKeys.classification.detail(id),
+    queryFn: () => endpoints.classification.get(id),
+    enabled: Boolean(id),
+  })
+}
+
+function useInvalidateDirtyPackage(id: string) {
+  const client = useQueryClient()
+  return () => {
+    client.invalidateQueries({ queryKey: queryKeys.classification.detail(id) })
+    client.invalidateQueries({ queryKey: queryKeys.classification.all() })
+  }
+}
+
+export function useAutoClassify(id: string) {
+  const invalidate = useInvalidateDirtyPackage(id)
+  return useMutation({
+    mutationFn: () => endpoints.classification.autoClassify(id),
+    onSuccess: invalidate,
+  })
+}
+
+export function useUpdateDocumentClassification(id: string) {
+  const invalidate = useInvalidateDirtyPackage(id)
+  return useMutation({
+    mutationFn: (args: { docId: string; body: UpdateDocumentClassificationRequest }) =>
+      endpoints.classification.updateDocument(id, args.docId, args.body),
+    onSuccess: invalidate,
+  })
+}
+
+export function useUpsertDraft(id: string) {
+  const invalidate = useInvalidateDirtyPackage(id)
+  return useMutation({
+    mutationFn: (body: UpsertDraftRequest) => endpoints.classification.upsertDraft(id, body),
+    onSuccess: invalidate,
+  })
+}
+
+export function useDeleteDraft(id: string) {
+  const invalidate = useInvalidateDirtyPackage(id)
+  return useMutation({
+    mutationFn: (draftId: string) => endpoints.classification.deleteDraft(id, draftId),
+    onSuccess: invalidate,
+  })
+}
+
+export function usePromoteDirtyPackage(id: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: () => endpoints.classification.promote(id),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: queryKeys.classification.all() })
+      client.invalidateQueries({ queryKey: queryKeys.packages.all() })
+      client.invalidateQueries({ queryKey: queryKeys.dashboardStats() })
+    },
+  })
+}
+
+// ── Rules ──────────────────────────────────────────────────────────
+export function useRules(query: GetRulesQuery = {}) {
+  return useQuery({
+    queryKey: queryKeys.rules.list(query),
+    queryFn: () => endpoints.rules.list(query),
+  })
+}
+
+export function useRule(id: string) {
+  return useQuery({
+    queryKey: queryKeys.rules.detail(id),
+    queryFn: () => endpoints.rules.get(id),
+    enabled: Boolean(id),
+  })
+}
+
+export function useRuleTemplates() {
+  return useQuery({
+    queryKey: queryKeys.rules.templates(),
+    queryFn: endpoints.rules.templates,
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useCreateRule() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpsertRuleRequest) => endpoints.rules.create(body),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: queryKeys.rules.all() })
+    },
+  })
+}
+
+export function useUpdateRule(id: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpsertRuleRequest) => endpoints.rules.update(id, body),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: queryKeys.rules.detail(id) })
+      client.invalidateQueries({ queryKey: queryKeys.rules.all() })
+    },
+  })
+}
+
+export function useCompileRule() {
+  return useMutation({
+    mutationFn: (body: CompileRuleRequest) => endpoints.rules.compile(body),
+  })
+}
+
+export function usePreviewRule() {
+  return useMutation({
+    mutationFn: (body: RulePreviewRequest) => endpoints.rules.preview(body),
+  })
+}
+
+export function useSaveRuleVersion(id: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (body: SaveRuleVersionRequest) => endpoints.rules.saveVersion(id, body),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: queryKeys.rules.detail(id) })
+      client.invalidateQueries({ queryKey: queryKeys.rules.all() })
+    },
+  })
+}
+
+export function usePackageRuleAttachments(packageId: string) {
+  return useQuery({
+    queryKey: queryKeys.packages.ruleAttachments(packageId),
+    queryFn: () => endpoints.rules.listAttachments(packageId),
+    enabled: Boolean(packageId),
+  })
+}
+
+export function useAttachRule(packageId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AttachRuleRequest) => endpoints.rules.attach(packageId, body),
+    onSuccess: () => {
+      client.invalidateQueries({
+        queryKey: queryKeys.packages.ruleAttachments(packageId),
+      })
+    },
+  })
+}
+
+export function useDetachRule(packageId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (attachmentId: string) => endpoints.rules.detach(packageId, attachmentId),
+    onSuccess: () => {
+      client.invalidateQueries({
+        queryKey: queryKeys.packages.ruleAttachments(packageId),
+      })
+    },
+  })
+}
+
+export function useRunAttachedRule(packageId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (attachmentId: string) =>
+      endpoints.rules.runAttached(packageId, attachmentId),
+    onSuccess: () => {
+      client.invalidateQueries({
+        queryKey: queryKeys.packages.ruleAttachments(packageId),
+      })
+    },
+  })
+}

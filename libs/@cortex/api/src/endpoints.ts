@@ -1,31 +1,54 @@
 import type {
+  AttachRuleRequest,
+  AutoClassifyResponse,
+  CleanPackageDraft,
+  CompileRuleRequest,
+  CompileRuleResponse,
   DashboardStatsResponse,
   DeletePackagesRequest,
+  DirtyPackageDetailsResponse,
   EmptyOk,
   ExportTemplateInfo,
   ExportValidationResponse,
   GetActionLogsQuery,
+  GetDirtyPackagesQuery,
   GetPackagesQuery,
+  GetRulesQuery,
   ImportMultiplePackagesBody,
   ImportPackageBody,
   PackageActionsResponse,
   PackageDetailsResponse,
+  PackageRuleAttachment,
+  PackageRuleAttachmentsResponse,
   PackageTransition,
   PackageTransitionsResponse,
   PackageTransportOrdersResponse,
   PaginatedActionLogResponse,
+  PaginatedDirtyPackageResponse,
   PaginatedPackageResponse,
+  PaginatedRuleResponse,
+  PromoteDirtyPackageResponse,
   ReprocessRequest,
+  RuleDetailsResponse,
+  RulePreviewRequest,
+  RulePreviewResponse,
+  RuleReadModel,
+  RuleTemplateReadModel,
+  RuleVersionReadModel,
+  SaveRuleVersionRequest,
   SetCustomStatusRequest,
   SetUserNotesRequest,
   SetUserPreferencesRequest,
   SourceFileReadModel,
   UpdateDeliveryTermsRequest,
+  UpdateDocumentClassificationRequest,
   UpdateInvoiceLinesRequest,
   UpdateInvoiceRequest,
   UpdateInvoiceTotalsRequest,
   UpdatePartyRequest,
   UpdateTransportInfoRequest,
+  UpsertDraftRequest,
+  UpsertRuleRequest,
   UserInfoResponse,
   UserPreferencesResponse,
 } from "@cortex/types"
@@ -126,6 +149,66 @@ export const endpoints = {
     deleteMany: (body: DeletePackagesRequest) =>
       apiClient.post<EmptyOk>("/packages/delete", { jsonBody: body }),
     restore: (id: string) => apiClient.post<EmptyOk>(`/packages/${id}/restore`),
+  },
+  classification: {
+    list: (query: GetDirtyPackagesQuery = {}) =>
+      apiClient.get<PaginatedDirtyPackageResponse>("/classification/dirty-packages", {
+        params: { ...query },
+      }),
+    get: (id: string) =>
+      apiClient.get<DirtyPackageDetailsResponse>(`/classification/dirty-packages/${id}`),
+    autoClassify: (id: string) =>
+      apiClient.post<AutoClassifyResponse>(
+        `/classification/dirty-packages/${id}/auto-classify`,
+      ),
+    updateDocument: (
+      id: string,
+      docId: string,
+      body: UpdateDocumentClassificationRequest,
+    ) =>
+      apiClient.patch<EmptyOk>(
+        `/classification/dirty-packages/${id}/documents/${docId}`,
+        { jsonBody: body },
+      ),
+    upsertDraft: (id: string, body: UpsertDraftRequest) =>
+      apiClient.post<CleanPackageDraft>(
+        `/classification/dirty-packages/${id}/drafts`,
+        { jsonBody: body },
+      ),
+    deleteDraft: (id: string, draftId: string) =>
+      apiClient.delete<EmptyOk>(
+        `/classification/dirty-packages/${id}/drafts/${draftId}`,
+      ),
+    promote: (id: string) =>
+      apiClient.post<PromoteDirtyPackageResponse>(
+        `/classification/dirty-packages/${id}/promote`,
+      ),
+  },
+  rules: {
+    list: (query: GetRulesQuery = {}) =>
+      apiClient.get<PaginatedRuleResponse>("/rules", { params: { ...query } }),
+    templates: () => apiClient.get<RuleTemplateReadModel[]>("/rules/templates"),
+    create: (body: UpsertRuleRequest) =>
+      apiClient.post<RuleReadModel>("/rules", { jsonBody: body }),
+    get: (id: string) => apiClient.get<RuleDetailsResponse>(`/rules/${id}`),
+    update: (id: string, body: UpsertRuleRequest) =>
+      apiClient.patch<EmptyOk>(`/rules/${id}`, { jsonBody: body }),
+    compile: (body: CompileRuleRequest) =>
+      apiClient.post<CompileRuleResponse>("/rules/compile", { jsonBody: body }),
+    preview: (body: RulePreviewRequest) =>
+      apiClient.post<RulePreviewResponse>("/rules/preview", { jsonBody: body }),
+    saveVersion: (id: string, body: SaveRuleVersionRequest) =>
+      apiClient.post<RuleVersionReadModel>(`/rules/${id}/versions`, { jsonBody: body }),
+    listAttachments: (packageId: string) =>
+      apiClient.get<PackageRuleAttachmentsResponse>(`/packages/${packageId}/rules`),
+    attach: (packageId: string, body: AttachRuleRequest) =>
+      apiClient.post<PackageRuleAttachment>(`/packages/${packageId}/rules`, {
+        jsonBody: body,
+      }),
+    detach: (packageId: string, attachmentId: string) =>
+      apiClient.delete<EmptyOk>(`/packages/${packageId}/rules/${attachmentId}`),
+    runAttached: (packageId: string, attachmentId: string) =>
+      apiClient.post<EmptyOk>(`/packages/${packageId}/rules/${attachmentId}/run`),
   },
   transportOrders: {
     updateSeller: transportOrderSection<UpdatePartyRequest>("seller"),

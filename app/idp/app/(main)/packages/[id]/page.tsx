@@ -45,6 +45,7 @@ import { downloadBlob } from "@/lib/download"
 import { ExportMenu } from "@/components/export-menu"
 import { PackageMetadataEditors } from "@/components/package-metadata-editors"
 import { ReprocessDialog } from "@/components/reprocess-dialog"
+import { PackageRulesPanel } from "@/components/rules/package-rules-panel"
 import { SourceMaterialsPanel } from "@/components/source-materials-panel"
 import { TransportOrdersPanel } from "@/components/transport-orders/transport-orders-panel"
 
@@ -285,6 +286,7 @@ export default function PackageDetailPage() {
               <TabsList>
                 <TabsTrigger value="transport">Transport orders</TabsTrigger>
                 <TabsTrigger value="analysis">Analysis result</TabsTrigger>
+                <TabsTrigger value="rules">Rules</TabsTrigger>
                 <TabsTrigger value="actions">Action log</TabsTrigger>
                 <TabsTrigger value="source">Source materials</TabsTrigger>
               </TabsList>
@@ -312,6 +314,9 @@ export default function PackageDetailPage() {
                     Analysis result not available yet.
                   </p>
                 )}
+              </TabsContent>
+              <TabsContent value="rules">
+                <PackageRulesPanel packageId={pkg.id} canEdit={canEdit} />
               </TabsContent>
               <TabsContent value="actions">
                 {actions.isLoading ? (

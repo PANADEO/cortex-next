@@ -1,14 +1,10 @@
 # Next steps — Cortex Frontend
 
-> Resumable handoff. Before anything: `CLAUDE.md` + `architecture_rules.md` + `docs/work/STATUS.md` + this. Potem tabela parytetu funkcjonalnego w drugiej sekcji — to mapa roboty.
+> Resumable handoff. Before anything: `CLAUDE.md` + `architecture_rules.md` + `docs/work/STATUS.md` + this. Wave 18 + Wave 19 mają zbudowany **scaffold MVP end-to-end na MSW** — wizja produktowa niżej, status implementacji w sekcji "Co zrobione", lista następnych kroków pod tym.
 
 ## Quick context
 
-Cortex Frontend = Next.js 15 + shadcn/ui port z Streamlita (`idp-next-prototype/streamlit/src/`). Wszystko `"use client"`, MSW mockuje API 1:1 z Pydantic contracts w `idp-next-prototype/idp_app/src/shared/contracts/`.
-
-**Autorytatywne źródła:**
-- Backend API: `idp-next-prototype/idp_app/src/shared/contracts/package_contracts.py` + `package_enums.py` + `api/package/router.py`
-- Legacy UI reference: `idp-next-prototype/streamlit/src/pages/` + `components/`
+Cortex Frontend = Next.js 15 + shadcn/ui port z Streamlita. Wave 1-17 zamknięte (parity, transport orders editor, inline PDF, themes, verification workspace). Wave 18 (Classification) i Wave 19 (Rule Editor) **mają działający scaffold** — clickable end-to-end na danych mockowych (MSW), bez backendu.
 
 ## Uruchomienie
 
@@ -22,233 +18,174 @@ npm run dev   # http://localhost:3000 — "Continue as Demo User"
 
 `app/idp/.env.local` musi mieć `AUTH_SECRET=<32+ znaków>` i `NEXT_PUBLIC_API_MOCKING=enabled`.
 
-Weryfikacja: `npm run typecheck`, `npm run lint`, `npm run build`.
+Weryfikacja: `npm run typecheck`, `npm run lint`, `npm run build`. **Wszystko zielone na main.**
 
 ---
 
-## Cel sesji: **domknąć feature parity ze Streamlitem**
+## Wizja produktowa (decyzje uzgodnione z Cezarym)
 
-Porównanie funkcjonalne (nie wizualne) zrobione. Next.js ma ~80% parity — brakuje głównie edytora transport orders (core verification workflow), kilku filtrów i niuansów polling.
+**Użytkownik:** agent celny. Robi 20-50 zgłoszeń SAD dziennie. Klient wrzuca worek mieszanych dokumentów (faktury, packing listy, świadectwa, korespondencja, screeny). Dziś robi to ręcznie w Excelu + plikach.
 
-### Priorytety (w kolejności wykonania)
+**Hipoteza:** dwa nowe etapy zamieniają godziny dłubaniny w minuty review. LLM gruba robota, człowiek decyduje, audyt zawsze widoczny.
 
-**P0 — transport orders editor (core verification UX)**
-Bez tego verification flow na prod jest bezużyteczny. API gotowe, brakuje tylko UI.
-
-**P1 — reszta gapów blokujących parity**
-Filtry packages list, polling pauza, SAD context, line→PDF nav.
-
-**P2 — polish + inline PDF**
-Export structure dialog, download ZIP button, inline PDF viewer (pdfjs downgrade).
+**Decyzje architektoniczne (z 2026-04-21):**
+1. **Customer = tag** (nie osobna encja). Atrybut na dirty package / clean package / rule.
+2. **Rule DSL = LLM → Python**. Celnik pisze naturalnym językiem ("rozdziel koszt frachtu po wadze netto"), LLM generuje kod Pythona, BE wykonuje w sandbox. Frontend pokazuje NL + wygenerowany Python (read-only debug) + preview na sample.
+3. **Plik = atom klasyfikacji** (NIE strona pliku). Drasticznie prostsze UI, strony znaczą gdy klient sam je rozdzieli przed uploadem.
 
 ---
 
-## P0 — Wave 15: Transport orders editor
+## Co zrobione w tej sesji (Wave 18 + 19 MVP scaffold)
 
-**Kontekst:** `streamlit/src/components/transport_orders.py` (1155 linii) renderuje pełny edytor — party × 4, invoice header, lines grid, delivery terms, transport info, SAD context. API endpointy wszystkie gotowe w `@cortex/api` (`useUpdateSeller`, `useUpdateBuyer`, `useUpdateConsignor`, `useUpdateConsignee`, `useUpdateInvoice`, `useUpdateInvoiceLines`, `useUpdateInvoiceTotals`, `useUpdateDeliveryTerms`, `useUpdateTransportInfo`). MSW ma catch-all `POST /packages/:id/transport-orders/*`.
+### Domain model + types
+- `libs/@cortex/types/src/enums.ts` — dodane `DIRTY_PACKAGE_STATUS`, `DOC_TYPE`, `DOC_MODE`, `RULE_STATUS`, `RULE_CATEGORY`, `RULE_TRIGGER`
+- `libs/@cortex/types/src/classification.ts` — `DirtyDocument`, `DirtyPackageReadModel`, `DirtyPackageDetailsResponse`, `CleanPackageDraft`, request/response types
+- `libs/@cortex/types/src/rules.ts` — `RuleReadModel`, `RuleDetailsResponse`, `RuleVersionReadModel`, `RuleColumnSpec`, `PackageRuleAttachment`, `RuleTemplateReadModel`, request/response types
+- Re-eksport w `index.ts`
 
-### 15.1 `usePackageTransportOrders` integracja
+### MSW fixtures + handlers
+- `app/idp/mocks/fixtures/classification.ts` — 12 dirty packages, deterministic random, 9 typów dokumentów (invoice, packing_list, translation_sheet, code_assignment, BOL, cert_of_origin, correspondence, other, skip), customers (Acme, Müller, Sahara, Polontex), drafts auto-routed
+- `app/idp/mocks/fixtures/rules.ts` — 6 seed rules (allocate freight, aggregate per CN, currency PLN, derive gross, VLOOKUP CN→PL, split by HS), 6 templates, 4 wersje per reguła, attachment store per package, `compileRuleStub()` (mock LLM keyword routing)
+- `app/idp/mocks/handlers.ts` — pełen CRUD: list/get/auto-classify/update-doc/upsert-draft/delete-draft/promote dla classification + list/get/create/update/compile/preview/save-version dla rules + attach/detach/run dla package×rules
+- Dodany `apiClient.patch()` w `client.ts` (brakowało, classification używa PATCH)
 
-- Sprawdź `endpoints.packages.transportOrders(id)` — zwraca `PackageTransportOrdersResponse` z `transport_orders` i `verified_transport_orders`.
-- W MSW aktualnie zwraca `{ transport_orders: null, verified_transport_orders: null }`. **Musisz rozszerzyć fixture** żeby packages w stanie `ready/completed` miały realistyczny `verified_transport_orders`: array z 1 orderem z `seller`, `buyer`, `consignor`, `consignee`, `transport_info`, `invoices[]` (z `lines[]`, `totals`, `delivery_terms`).
-- Źródło shape: `streamlit/src/` + Pydantic `TransportOrder` w backendzie (przeszukaj `idp-next-prototype/idp_app/src/shared/contracts/` dla `TransportOrder`, `Invoice`, `InvoiceLine`, `Party`).
+### API + hooks
+- `endpoints.classification.*` i `endpoints.rules.*` w `endpoints.ts`
+- Query keys: `queryKeys.classification.*`, `queryKeys.rules.*`, `queryKeys.packages.ruleAttachments(id)`
+- Hooks (15 nowych): `useDirtyPackages`, `useDirtyPackage`, `useAutoClassify`, `useUpdateDocumentClassification`, `useUpsertDraft`, `useDeleteDraft`, `usePromoteDirtyPackage`, `useRules`, `useRule`, `useRuleTemplates`, `useCreateRule`, `useUpdateRule`, `useCompileRule`, `usePreviewRule`, `useSaveRuleVersion`, `usePackageRuleAttachments`, `useAttachRule`, `useDetachRule`, `useRunAttachedRule`
 
-### 15.2 Komponenty party editing (Seller/Buyer/Consignor/Consignee)
+### UI — Classification
+- `app/idp/app/(main)/classification/page.tsx` — lista dirty packages: search, status filter, badges, navigacja do workspace
+- `app/idp/app/classification/[id]/page.tsx` (poza grupą `(main)` żeby ominąć sidebar/topbar — analogicznie do `/verify/[id]`) — workspace 3-kolumnowy z `react-resizable-panels`, Auto-classify button, Promote dialog
+- `app/idp/components/classification/document-tree.tsx` — lewa kolumna: lista dokumentów, badges (typ + mode), confidence, target draft pointer
+- `app/idp/components/classification/document-preview.tsx` — środek: placeholder preview + edytor klasyfikacji (typ/mode/target/notes/reviewed flag)
+- `app/idp/components/classification/draft-list.tsx` — prawa kolumna: lista clean package drafts, dokumenty per draft, "+ New draft"
+- `app/idp/components/classification/labels.ts` — wspólne label maps
 
-Pola (z `transport_orders.py:239-309`):
-- `name`, `street`, `postal_code`, `city`, `country_code`, `vat_id`, `eori`, `partner_id`
+### UI — Rules
+- `app/idp/app/(main)/rules/page.tsx` — lista reguł: search, status/category filters, "New rule" dialog z presetami
+- `app/idp/app/(main)/rules/[id]/page.tsx` — editor 2-kolumnowy:
+  - Header: name editable, version badge, save metadata, save as v(n+1)
+  - Metadata card: category, status, trigger, description
+  - Lewa: NL textarea + Compile button + Python (read-only) + new columns + version notes
+  - Prawa: sample package picker + "Run dry" + diff table (before/after, changed columns highlighted)
+  - Dół: version history z "Load" buttonem (rollback do dowolnej wersji)
+- `app/idp/components/rules/package-rules-panel.tsx` — Rules tab w package detail: lista przypisanych reguł, status badges (success/failed/pending), Attach dialog, Run/Detach actions
 
-Jeden generyczny komponent `<PartyEditor>` + 4 użycia. Props: `label`, `value`, `onSave`, `canEdit`. React Hook Form + Zod (deps już w repo).
+### Integration points
+- Tab "Rules" wpięty w `app/idp/app/(main)/packages/[id]/page.tsx` między "Analysis result" a "Action log"
+- Nav (`app/idp/lib/nav.ts`) — Classification i Rules przeniesione z "Coming soon" do main "IDP" sekcji w kolejności: Dashboard → Import → **Classification** → Packages → **Rule editor** → Audit log
 
-Read-only gdy `!canEdit`. Save disabled gdy nic się nie zmieniło. Error toast z `toastApiError`.
-
-Lokacja: `app/idp/components/transport-orders/party-editor.tsx`.
-
-### 15.3 Invoice header + delivery terms + totals
-
-Invoice header pola (Streamlit `render_invoice_details`):
-- `invoice_number`, `invoice_date`, `currency`, `due_date`, `payment_terms`
-
-Delivery terms: `incoterms`, `place`, `terms_detail`
-
-Totals: `total_net`, `total_tax`, `total_gross`, `currency` (read-only od invoice).
-
-**Money/weight/qty zawsze stringi** (reguła w CLAUDE.md) — `formatMoney(value: string)`.
-
-Każda sekcja = osobna mutacja (`updateInvoice`, `updateDeliveryTerms`, `updateInvoiceTotals`).
-
-### 15.4 Invoice lines grid (**najbardziej złożone**)
-
-Pola per linia (`render_invoice_lines_grid`):
-- `line_number`, `po_number` (feature-flagged), `product_code`, `description`, `cn_code`, `hs_code`, `quantity`, `unit_of_measure`, `net_weight_kg`, `gross_weight_kg`, `invoice_value`, `packaging` (nested: `type`, `count`), plus ~5 innych
-
-Streamlit używa `data_editor` (spreadsheet-style). W Next.js najprościej:
-- TanStack Table z editable cells (każda komórka = input on click)
-- LUB expandable rows z `<Sheet>` per linia
-
-Submit przez `useUpdateInvoiceLines` — body to cała lista linii.
-
-Lokacja: `app/idp/components/transport-orders/invoice-lines-grid.tsx`.
-
-### 15.5 Transport info section
-
-Pola z `UpdateTransportInfoRequest` (sprawdź `@cortex/types/src/transport-orders.ts`): mode, carrier, vehicle, route, etc.
-
-### 15.6 SAD context editor (feature-flagged)
-
-Streamlit (`transport_orders.py:834-1053`) ma expander z 40+ polami w 5 sekcjach: header (7), documents (list), defaults, transport, agent_party (4).
-
-API endpoint: sprawdź w backendzie czy jest `/packages/:id/transport-orders/:oid/sad-context` albo coś podobnego. Jeśli nie — skip (brak backend support).
-
-Feature flag w backendzie: `enable_sad_context` — aktualnie na froncie olewamy feature flags (P3 z poprzedniej sesji). Możesz założyć `true` albo sprawdzić `/user/feature-flags` jeśli endpoint istnieje.
-
-### 15.7 Integracja w Package Details page
-
-Nowy komponent `<TransportOrdersPanel packageId={id} canEdit={canEdit}>` renderowany jako **osobna sekcja** między głównym info card a Tabs (albo jako nowy tab "Transport orders" obok Analysis/Action log/Source materials).
-
-Jeśli `transport_orders.length > 0` → lista accordionów per order, każdy z party × 4, transport info, invoices (z lines grid), SAD (jeśli flag).
-
-Gdy brak transport orders → placeholder "No transport orders extracted yet".
-
-### 15.8 Line → PDF highlight (cross-linking)
-
-Streamlit `_set_line_document_navigation_context()` (`package_details.py:167-197`) — klik wiersza w lines grid ustawia `source_material_related_refs` w session, `SourceMaterialsPanel` czyta to i scrolluje PDF do bbox.
-
-Next.js: Zustand store `useSourceMaterialSelectionStore` z `activePath`, `activePage`, `highlightedRefs`. `InvoiceLinesGrid` setuje store na row click. `SourceMaterialsPanel` czyta store i przekazuje do DocumentViewer.
-
-**Blocker:** inline PDF viewer jest wyłączony (pdfjs bug). Cross-linking zbudować ale faktycznie działający highlight dopiero po przywróceniu PDF viewera (P2).
+### Quality gates
+- `npm run typecheck` ✓
+- `npm run lint` — czyste w nowych plikach (pre-existing warnings w packages/page.tsx)
+- `npm run build` ✓ — wszystkie nowe routes zbudowane
 
 ---
 
-## P1 — Wave 16: Parity gaps
+## Co dalej — kierunki rozwoju (priorytety)
 
-### 16.1 Packages list — brakujące filtry
+### P0 — Doszlifować UX classification workspace
 
-Obecnie tylko search + processing + verification. Dodaj:
+Co działa: 3-kol layout, edycja per dokument, drafts, promote. Co brakuje do "wow":
+- **Realny preview pliku** (PDF/image render w środkowej kolumnie). Aktualnie placeholder. Potrzeba mock content endpoint dla classification → `GET /classification/.../documents/:id/content`. Backend muszą dostarczyć fizyczne pliki — albo na MVP można dorobić mock blob (sample-invoice.pdf już jest w `/mock-assets/`, można re-use'ować).
+- **Drag & drop** dokumentów do drafts (right column). Aktualnie jest dropdown w preview. `@dnd-kit` jest już w deps.
+- **Bulk actions** — Shift+click w tree → bulk assign typu/mode/target.
+- **Keyboard nav** — J/K po dokumentach, 1-9 przypisanie do package N, S = mark skip.
+- **Confidence sort/filter** — pokazuj najpierw te wymagające review (`confidence < 0.8 && !human_reviewed`).
 
-- **Sort by dropdown** — opcje: `created_date`, `file_name`, `processing_state` (per `PACKAGE_SORT_FIELD`). Backend query ma `pattern="^(created_date|file_name|processing_state)$"`, więc tylko te 3. Streamlit reklamuje więcej — to jest limit backendu.
-- **Sort order** — asc/desc toggle albo druga ikona obok sort dropdown.
-- **Date range** — dwa DatePicker (from/to). Query param: `date_from` + `date_to` ISO. (shadcn nie ma DatePicker — użyj Popover + react-day-picker, albo natywne `<input type="date">` dla speed.)
-- **Custom status filter** — dropdown z unique values z packages listy (fetch osobnym query albo derive z `packages.data?.items`). Query param: `custom_status`.
+### P0 — Doszlifować Rule editor
 
-Lokacja: rozbuduj `app/idp/app/(main)/packages/page.tsx`.
+Co działa: NL → compile → preview → save z wersjonowaniem. Co brakuje:
+- **Diff version-vs-version** — aktualnie history pokazuje listę z "Load" buttonem. Dodać side-by-side diff dwóch wybranych wersji (NL diff + Python diff).
+- **Expert mode** — toggle żeby user mógł edytować Python ręcznie (gdy LLM compiled coś dziwnego).
+- **Schema introspection** — pickerze sample package powinien wyświetlać dostępne kolumny (po wyborze packageu pokazać listę columns z lines: `cn_code`, `net_weight_kg`, etc.). LLM compile dostaje tę schemę żeby generować poprawne nazwy.
+- **Test cases** — możliwość dodania kilku named scenarios ("With missing weight", "With null currency") i odpalania testów na każdej wersji.
 
-### 16.2 Audit log — date range filter
+### P1 — Templates i auto-attach (customer-driven)
 
-Jw. — `date_from` + `date_to`. Backend `/packages/action_logs` obsługuje.
+Wynika z decyzji "customer = tag":
+- **Customer registry** (po prostu unikalne tagi z wszystkich paczek + reguł). Lista w `/admin/customers` (nowy route) z liczbą paczek per tag.
+- **Auto-attach rules per tag** — gdy promote'ujesz dirty package z `customer_tag: "Acme"`, system automatycznie attach'uje wszystkie active rules gdzie `customer_tag === "Acme"` ze swoim domyślnym trigger.
+- **Classification template per tag** — "Acme zawsze: 1 invoice + 1 packing + 1 BOL". Po N promote tej samej konfiguracji propozycja "Save as template". Template auto-applied przed user reviewuje.
 
-### 16.3 Polling pauza podczas edycji reprocess AI context
+### P1 — Rule execution audit log
 
-Streamlit pauzuje `run_every` gdy user pisze w additional AI context i package jest w `ready`/`analysis_failed`.
+`PackageRuleAttachment` ma `last_executed_at` + `last_status`, ale brak pełnego logu. Dodać:
+- **Execution history per attachment** — kiedy odpalona, która wersja, jakie outputy, czas wykonania, błędy
+- **Retroactive re-run** — gdy reguła ma v5 a paczka miała v3, button "Upgrade to v5" z preview diff outputów
+- **Show which rule generated which column** — w invoice lines grid (`/verify/[id]`) dodaj badge "computed by rule X v3" przy derived columns
 
-Next.js `usePackage` obecnie pauzuje tylko na `verification_state === "in_progress"`. Dodaj:
-- Zustand store `useReprocessDialogStore` z `isOpen: boolean`, `contextBeingEdited: boolean`
-- `ReprocessDialog` setuje store na open + gdy `state.enabled && state.text.length > 0`
-- `usePackage` hook (albo `packages/[id]/page.tsx`) czyta store i łączy z `effectivePolling`
+### P1 — Connection do verification workspace
 
-Lub prostsze: przenieś `reprocessOpen` state do parent → tak już jest → dodaj do `effectivePolling` condition.
+Po promote → verification → reguły aplikują się → derived columns powinny być widoczne w `/verify/[id]` lines spreadsheet. Backend musi:
+1. Zapisywać outputy reguł jako extra columns w invoice lines (lub osobna tabela `derived_columns`)
+2. Zwracać je w response `/packages/:id/transport-orders`
 
-```tsx
-const effectivePolling =
-  pollingEnabled &&
-  pkg?.verification_state !== "in_progress" &&
-  !reprocessOpen
-```
+Frontend potem:
+- Lines spreadsheet pokazuje dodatkowe kolumny z badge "rule output"
+- User może override (lock cell + flag "manual override")
 
-### 16.4 User notes — timestamp "last updated"
+### P2 — Backend RFC
 
-Streamlit pokazuje kiedy notes były ostatnio zapisane. Backend nie ma dedykowanego `user_notes_updated_at` w `PackageReadModel`/`PackageDetailsResponse` — **sprawdź Pydantic czy gdzieś jest**. Jeśli nie — wyciągnij z ostatniego `user_notes_updated` action w `actions` query.
+Wszystko zbudowane na MSW. Przed live integracją spisać RFC:
+- `docs/rfc/dirty-clean-pipeline.md` — model danych dirty/clean, slicing (skoro plik=atom, raczej referencje plików niż kopie), promote transakcyjność
+- `docs/rfc/rule-engine.md` — Python sandbox bezpieczeństwa (timeout, memory limit, allowed imports), schema introspection endpoint, LLM prompt design, koszt cap per workspace
 
-Logika: `actions.data?.actions.find(a => a.action_type === "user_notes_updated")?.timestamp` — renderuj w `PackageMetadataEditors` pod textarea.
+### P3 — Pozostałe (nie ruszamy bez prośby)
 
----
-
-## P2 — Wave 17: Polish + inline PDF
-
-### 17.1 "Show Structure" dialog
-
-Streamlit ma dedykowany button "Show Structure" w Quick Actions który otwiera modal z sformatowaną strukturą JSON (tree view).
-
-Next.js już ma `JsonViewer` w Analysis tab — dodatkowo: Dialog z `<JsonViewer>` otwierany z buttona w Actions card (obok Export). Trivial.
-
-### 17.2 Dedicated "Download ZIP" button
-
-Aktualnie ZIP jest w `ExportMenu` dropdown jako template. Streamlit ma osobny primary button "Download ZIP" (hit direktly `/packages/:id/download`).
-
-Dodaj `<Button>` w Actions card, wywołuje `endpoints.packages.download(id)` + browser download boilerplate z `ExportMenu`.
-
-### 17.3 Inline PDF viewer — przywrócenie
-
-**Aktualny stan:** PDF wyłączony (placeholder z download link) bo `pdfjs-dist@5` + Next.js 15 webpack wali `Object.defineProperty called on non-object`. Próby `transpilePackages` i alias na legacy build nie pomogły.
-
-**Plan ataku (od najbezpieczniejszego):**
-
-1. **Downgrade:** `react-pdf@^8` + `pdfjs-dist@~3.11` (wersje sprzed ESM refactoru). `react-pdf@8` supportuje React 18/19. API Document/Page jest to samo. 90% szans że rozwiąże.
-
-2. Jeśli 1 nie działa — **raw pdfjs legacy**: `import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs"` bez react-pdf, własny viewer: `pdfjs.getDocument().promise` → `page.render({canvasContext})`. ~150 linii kodu.
-
-3. Ostateczność: **iframe embed** — object URL w `<iframe>`. Browser renderuje natywnym viewerem. Zero JS deps, zero kontroli (no page nav, no highlight), ale działa.
-
-Po przywróceniu — zintegruj z Wave 15.8 cross-linking (line click → scroll PDF do page + highlight bbox).
-
-Lokacja: `libs/@cortex/ui/src/components/document-viewer.tsx` (przywróć PdfViewer).
-
-### 17.4 File uploader reset w Import
-
-Streamlit bumpuje key FileUploadera po sukcesie żeby wyczyścić widoczną nazwę pliku. Next `ImportPage` resetuje state ale uploader może nadal pokazywać thumb. Jeśli cosmetyczny glitch — dodaj key increment.
-
-### 17.5 Action log payload expansion
-
-`ActionLogTimeline` aktualnie rozwija payload toggleem. Dopracuj: gdy payload to diff (`{ field: { from, to } }`) renderuj jako "X: Y → Z" zamiast raw JSON.
+- BoundingBoxOverlay (wymaga bbox z BE)
+- Feature flags util
+- Playwright E2E
+- Restore UI (wymaga `include_deleted` filter w BE)
+- AppShell consolidation
+- Customer entity (nie startujemy bez decyzji produktowej)
 
 ---
 
-## Pozostałe P3 (nie ruszamy dopóki nie poproszę)
+## Open questions (do decyzji)
 
-- **BoundingBoxOverlay** (wymaga bbox coordinates z backend)
-- **Feature flags util** per §11
-- **Playwright E2E**
-- **Rule editor + Classification** (0 backend endpointów)
-- **Restore UI** (wymaga backend `include_deleted` filter)
-- **AppShell consolidation** (premature)
-- **JsonEditor save wiring** (wymaga nowego backend endpointu lub decompose w Wave 15)
+1. **Realny preview w classification** — najszybciej re-use `sample-invoice.pdf` z mock-assets dla wszystkich PDF dokumentów w MSW. Akceptowalne na MVP czy chcesz prawdziwą rotację plików?
+2. **Drag & drop priorytety** — wpisać teraz czy zostawić dropdown jako "good enough"?
+3. **Customer registry** — czy startujemy od razu (bo wszystko czego dotyka, dotyka też tagów) czy później jako P1?
+4. **Auto-classify mock** — aktualnie tylko ustawia `confidence = 0.8` na wszystkich. Czy zrobić bardziej realistyczny fake LLM (rozpoznać typ z file_name, bumpnąć confidence per typ)?
+5. **Schema introspection** w Rule editor — jakie kolumny realnie są dostępne na wyjściu extraction? Pewnie zbadać `idp-next-prototype/idp_app/src/shared/contracts/transport_orders.py` i wystawić jako MSW endpoint `GET /packages/:id/data-schema`.
 
 ---
 
 ## Reguły wykonania (przypomnienie)
 
-1. **Pydantic truth** — gdy dotykasz API/types, czytaj `idp-next-prototype/idp_app/src/shared/contracts/`, nie openapi.json.
-2. **Money/weight/qty stringi** — `@cortex/utils/money.ts:formatMoney(value: string)`, NIGDY `Number(v)`.
-3. **Mutations zwracają `{}`** — invalidate przez `useInvalidatePackage(id)`.
-4. **Polling pauza** na `verification_state === "in_progress"` + po Wave 16.3 na otwartym `ReprocessDialog`.
-5. **`emailsMatch` case-insensitive** z `@cortex/utils/email.ts`.
-6. **Transitions server-side** — renderuj tylko co zwraca `/transitions`.
-7. **Minimal diff, shadcn w `@cortex/ui`, no auto-.md**.
-8. **Build check po każdym Wave:** `npm run typecheck && npm run lint && npm run build`.
+1. **MSW-first dla Wave 18-19** — backendu nie ma. Stwórz realistic fixtures, kontrakt zdejmie się sam podczas RFC.
+2. **Pydantic truth gdy istnieje** — tam gdzie BE jest (packages, transport_orders, audit), czytaj `idp-next-prototype/idp_app/src/shared/contracts/`.
+3. **Money/weight/qty stringi** — `formatMoney(value: string)`, NIGDY `Number(v)`. Dotyczy też derived columns z reguł.
+4. **Mutations zwracają `{}`** — invalidate przez query keys (`queryKeys.classification.*`, `queryKeys.rules.*`, `queryKeys.packages.ruleAttachments(id)`).
+5. **Polling pauza** na `verification_state === "in_progress"` + `ReprocessDialog open`.
+6. **Minimal diff, shadcn w `@cortex/ui`, no auto-.md**.
+7. **Build check po każdym podzadaniu:** `npm run typecheck && npm run lint && npm run build`.
+8. **NIE commituj bez explicit "zrob commita".**
 
 ## Git history (ostatnie commity)
 
 ```
-8ceb522 (fix) Disable inline PDF viewer, show download placeholder
-e82fd73 (fix) Transpile react-pdf and pdfjs-dist  [nieefektywny, zostawiony]
-e716f27 (fix) Render BreadcrumbSeparator as sibling of BreadcrumbItem
-a30aeb9 (fix) Move ThemeProvider inside ApiProvider
-d8710a2 (docs) Update NEXT.md with Wave 10-14 completion + refined P3
-5ef7aee (feat) Wave 14: reprocess dialog + shared import options
-6f386a4 (feat) Wave 13: additional AI context toggle in Import
-ec89190 (feat) Wave 12: user preferences sync, resizable viewer, FileUploader controlled mode
-7a97f9c (feat) Wave 11: bulk delete + dedupe Dashboard/Packages columns
-2e76cbd (feat) Wave 10: custom status + notes edit, export menu, dashboard overflow fix
-b476a2a (docs) Add Ladle stories for core UI and domain components
-ebf73e0 (feat) Wave 7-9: align with Python backend, viewers, dark mode, error boundaries
+d34dea3 (feat) Theme skins - dodanie kolorowej "Customs" obok light/dark
+17a6f5d (refactor) Simplify Wave 15-17 - fix edit-reset bug, dedupe, extract helpers
+75e5906 (feat) Verification workspace - inline spreadsheet + side-by-side PDF
+61075f2 (feat) Wave 17.3 restore inline PDF viewer + real Wave 15.8 highlight
+786c1d3 (feat) Wave 17.1-17.2-17.4-17.5 polish - structure dialog, ZIP button, diff payload
+2e580b1 (feat) Wave 16 parity gaps - filters, polling pause, notes timestamp
+646f509 (feat) Wave 15.8 line-to-source cross-linking scaffold
+da706b7 (feat) Wave 15 transport orders editor
 ```
 
 ## Gdy resume'ujesz (next session)
 
 1. `cd /Users/cez/P/new_cortex/cortex_frontend && git status` — clean?
-2. `cat docs/work/STATUS.md` + ta sekcja wyżej ("Cel sesji")
-3. `npm run dev` — sanity check że strona się otwiera + packages/pkg-0031 działa + Source materials otwiera (PDF jako placeholder, DOCX/XLSX inline)
-4. Zacznij od **P0 Wave 15.1** — rozszerz MSW fixture dla transport orders (bez tego reszta Wave 15 jest ślepa)
-5. NIE commituj bez explicit "zrob commita"
+2. Przeczytaj sekcję "Wizja produktowa" + "Co zrobione" wyżej.
+3. `npm run dev` — przeklikaj:
+   - `/classification` → otwórz dowolny → Auto-classify → edytuj → Promote
+   - `/rules` → otwórz dowolny (np. rule-0001) → Compile → Preview → Save as new version
+   - `/packages/pkg-0002` → tab Rules → Attach + Run
+4. Wybierz priorytet z sekcji "Co dalej" — sugeruję **realny preview w classification** + **schema introspection w rules** jako pierwszy round, bo bez tego oba ekrany są tylko ładne, a nie użyteczne.
+5. NIE commituj bez explicit "zrob commita".
 
 🖤

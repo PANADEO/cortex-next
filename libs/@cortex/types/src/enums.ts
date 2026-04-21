@@ -67,3 +67,46 @@ export type SortOrder = (typeof SORT_ORDER)[number]
 
 export const PACKAGE_SORT_FIELD = ["created_date", "file_name", "processing_state"] as const
 export type PackageSortField = (typeof PACKAGE_SORT_FIELD)[number]
+
+export const DIRTY_PACKAGE_STATUS = [
+  "needs_classification",
+  "classifying",
+  "classified",
+  "promoted",
+  "archived",
+] as const
+export type DirtyPackageStatus = (typeof DIRTY_PACKAGE_STATUS)[number]
+
+export const DOC_TYPE = [
+  "invoice",
+  "packing_list",
+  "translation_sheet",
+  "code_assignment",
+  "bill_of_lading",
+  "certificate_of_origin",
+  "correspondence",
+  "other",
+  "skip",
+] as const
+export type DocType = (typeof DOC_TYPE)[number]
+
+export const DOC_MODE = ["process", "pass_through", "skip"] as const
+export type DocMode = (typeof DOC_MODE)[number]
+
+export const RULE_STATUS = ["draft", "active", "archived"] as const
+export type RuleStatus = (typeof RULE_STATUS)[number]
+
+export const RULE_CATEGORY = [
+  "transport_allocation",
+  "aggregation",
+  "split",
+  "lookup",
+  "currency",
+  "tax",
+  "weight_derivation",
+  "custom",
+] as const
+export type RuleCategory = (typeof RULE_CATEGORY)[number]
+
+export const RULE_TRIGGER = ["manual", "auto_on_extraction"] as const
+export type RuleTrigger = (typeof RULE_TRIGGER)[number]

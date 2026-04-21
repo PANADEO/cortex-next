@@ -85,5 +85,6 @@ async function request<T>(method: string, path: string, options: RequestOptions 
 export const apiClient = {
   get: <T>(path: string, opts?: RequestOptions) => request<T>("GET", path, opts),
   post: <T>(path: string, opts?: RequestOptions) => request<T>("POST", path, opts),
+  patch: <T>(path: string, opts?: RequestOptions) => request<T>("PATCH", path, opts),
   delete: <T>(path: string, opts?: RequestOptions) => request<T>("DELETE", path, opts),
 }
