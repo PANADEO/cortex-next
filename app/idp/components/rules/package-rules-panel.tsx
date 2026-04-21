@@ -13,6 +13,7 @@ import {
   type PackageRuleAttachment,
   type RuleTrigger,
 } from "@cortex/types"
+import { formatAbsolute } from "@cortex/utils"
 import {
   Badge,
   Button,
@@ -45,19 +46,25 @@ import {
   Trash2,
 } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { toast } from "sonner"
+import { RULE_TRIGGER_LABEL } from "./labels"
 
-const TRIGGER_LABEL: Record<RuleTrigger, string> = {
-  manual: "Manual",
-  auto_on_extraction: "Auto on extraction",
+const TRIGGER_AUTO: RuleTrigger = "auto_on_extraction"
+
+const STATUS_ICON: Record<
+  NonNullable<PackageRuleAttachment["last_status"]> | "unknown",
+  { icon: typeof CheckCircle2; className: string }
+> = {
+  success: { icon: CheckCircle2, className: "text-emerald-600" },
+  failed: { icon: AlertCircle, className: "text-rose-600" },
+  pending: { icon: Clock, className: "text-amber-600" },
+  unknown: { icon: Clock, className: "text-muted-foreground" },
 }
 
 function StatusIcon({ status }: { status: PackageRuleAttachment["last_status"] }) {
-  if (status === "success") return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-  if (status === "failed") return <AlertCircle className="h-3.5 w-3.5 text-rose-600" />
-  if (status === "pending") return <Clock className="h-3.5 w-3.5 text-amber-600" />
-  return <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+  const { icon: Icon, className } = STATUS_ICON[status ?? "unknown"]
+  return <Icon className={`h-3.5 w-3.5 ${className}`} />
 }
 
 interface PackageRulesPanelProps {
@@ -76,11 +83,11 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
   const [pickedRuleId, setPickedRuleId] = useState("")
   const [pickedTrigger, setPickedTrigger] = useState<RuleTrigger>("manual")
 
-  const items = attachments.data?.attachments ?? []
-  const attachedRuleIds = new Set(items.map((a) => a.rule_id))
-  const availableRules = (ruleList.data?.items ?? []).filter(
-    (r) => !attachedRuleIds.has(r.id),
-  )
+  const items = attachments.data?.attachments
+  const availableRules = useMemo(() => {
+    const attached = new Set((items ?? []).map((a) => a.rule_id))
+    return (ruleList.data?.items ?? []).filter((r) => !attached.has(r.id))
+  }, [items, ruleList.data?.items])
 
   const onAttach = () => {
     if (!pickedRuleId) {
@@ -161,7 +168,7 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
                     <SelectContent>
                       {RULE_TRIGGER.map((t) => (
                         <SelectItem key={t} value={t}>
-                          {TRIGGER_LABEL[t]}
+                          {RULE_TRIGGER_LABEL[t]}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -184,7 +191,7 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
         ) : null}
       </div>
 
-      {items.length === 0 ? (
+      {(items ?? []).length === 0 ? (
         <EmptyState
           icon={ScrollText}
           title="No rules attached"
@@ -192,7 +199,7 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
         />
       ) : (
         <div className="space-y-2">
-          {items.map((att) => (
+          {(items ?? []).map((att) => (
             <Card key={att.id}>
               <CardContent className="flex items-center justify-between gap-3 p-3">
                 <div className="flex items-start gap-3">
@@ -206,15 +213,13 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
                         {att.rule_name}
                       </Link>
                       <Badge variant="outline">v{att.rule_version}</Badge>
-                      <Badge variant={att.trigger === "auto_on_extraction" ? "default" : "secondary"}>
-                        {TRIGGER_LABEL[att.trigger]}
+                      <Badge variant={att.trigger === TRIGGER_AUTO ? "default" : "secondary"}>
+                        {RULE_TRIGGER_LABEL[att.trigger]}
                       </Badge>
                     </div>
                     <span className="text-[11px] text-muted-foreground">
-                      Attached {new Date(att.attached_at).toLocaleDateString()} · last run{" "}
-                      {att.last_executed_at
-                        ? new Date(att.last_executed_at).toLocaleString()
-                        : "never"}
+                      Attached {formatAbsolute(att.attached_at, "yyyy-MM-dd")} · last run{" "}
+                      {att.last_executed_at ? formatAbsolute(att.last_executed_at) : "never"}
                     </span>
                   </div>
                 </div>

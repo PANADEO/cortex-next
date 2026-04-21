@@ -57,32 +57,17 @@ import {
   Save,
   Sparkles,
 } from "lucide-react"
+import { formatAbsolute } from "@cortex/utils"
 import Link from "next/link"
 import { useParams, useSearchParams } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
-
-const CATEGORY_LABEL: Record<RuleCategory, string> = {
-  transport_allocation: "Transport allocation",
-  aggregation: "Aggregation",
-  split: "Split",
-  lookup: "Lookup",
-  currency: "Currency",
-  tax: "Tax",
-  weight_derivation: "Weight derivation",
-  custom: "Custom",
-}
-
-const STATUS_LABEL: Record<RuleStatus, string> = {
-  draft: "Draft",
-  active: "Active",
-  archived: "Archived",
-}
-
-const TRIGGER_LABEL: Record<RuleTrigger, string> = {
-  manual: "Manual",
-  auto_on_extraction: "Auto on extraction",
-}
+import {
+  hasMeaningfulNl,
+  RULE_CATEGORY_LABEL,
+  RULE_STATUS_LABEL,
+  RULE_TRIGGER_LABEL,
+} from "@/components/rules/labels"
 
 interface PreviewRow {
   line_number: number
@@ -128,9 +113,13 @@ export default function RuleEditorPage() {
   const [showPython, setShowPython] = useState(false)
   const [tab, setTab] = useState("definition")
   const explainTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const explainSeq = useRef(0)
+  const initializedId = useRef<string | null>(null)
 
+  // Seed editor state once per rule id — background refetches must not clobber user edits.
   useEffect(() => {
-    if (!rule) return
+    if (!rule || initializedId.current === rule.id) return
+    initializedId.current = rule.id
     const v = rule.versions[0]
     setName(rule.name)
     setDescription(rule.description ?? "")
@@ -141,6 +130,13 @@ export default function RuleEditorPage() {
     setPythonCode(v?.python_code ?? "")
     setOutputColumns(v?.output_columns ?? [])
   }, [rule, initialNl])
+
+  useEffect(
+    () => () => {
+      if (explainTimer.current) clearTimeout(explainTimer.current)
+    },
+    [],
+  )
 
   useEffect(() => {
     if (samplePackageId) return
@@ -173,14 +169,19 @@ export default function RuleEditorPage() {
 
   const triggerExplain = (text: string) => {
     if (explainTimer.current) clearTimeout(explainTimer.current)
-    if (text.trim().length < 8) {
+    if (!hasMeaningfulNl(text)) {
       setExplanation(null)
       return
     }
     explainTimer.current = setTimeout(() => {
+      const seq = ++explainSeq.current
       explain.mutate(
         { nl_definition: text, rule_id: rule.id, sample_package_id: samplePackageId || null },
-        { onSuccess: (res) => setExplanation(res) },
+        {
+          onSuccess: (res) => {
+            if (seq === explainSeq.current) setExplanation(res)
+          },
+        },
       )
     }, 400)
   }
@@ -334,7 +335,7 @@ export default function RuleEditorPage() {
                 <SelectContent>
                   {RULE_CATEGORY.map((c) => (
                     <SelectItem key={c} value={c}>
-                      {CATEGORY_LABEL[c]}
+                      {RULE_CATEGORY_LABEL[c]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -351,7 +352,7 @@ export default function RuleEditorPage() {
                 <SelectContent>
                   {RULE_STATUS.map((s) => (
                     <SelectItem key={s} value={s}>
-                      {STATUS_LABEL[s]}
+                      {RULE_STATUS_LABEL[s]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -368,7 +369,7 @@ export default function RuleEditorPage() {
                 <SelectContent>
                   {RULE_TRIGGER.map((t) => (
                     <SelectItem key={t} value={t}>
-                      {TRIGGER_LABEL[t]}
+                      {RULE_TRIGGER_LABEL[t]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -511,7 +512,11 @@ export default function RuleEditorPage() {
                   ) : null}
                 </CardHeader>
                 <CardContent className="flex-1 overflow-hidden">
-                  <ExplanationPanel data={explanation} pending={explain.isPending} hasNl={nl.trim().length >= 8} />
+                  <ExplanationPanel
+                    data={explanation}
+                    pending={explain.isPending}
+                    hasNl={hasMeaningfulNl(nl)}
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -655,7 +660,7 @@ export default function RuleEditorPage() {
                               </span>
                             ) : null}
                             <span className="text-[11px] text-muted-foreground">
-                              {new Date(v.created_at).toLocaleString()} · {v.created_by}
+                              {formatAbsolute(v.created_at)} · {v.created_by}
                             </span>
                           </div>
                           <p className="line-clamp-2 max-w-2xl text-xs text-muted-foreground">

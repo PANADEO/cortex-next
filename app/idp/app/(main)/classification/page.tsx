@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@cortex/ui"
+import { formatAbsolute } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
 import {
   AlertCircle,
@@ -32,30 +33,41 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState } from "react"
+import { DIRTY_STATUS_LABEL } from "@/components/classification/labels"
 
-const STATUS_LABEL: Record<DirtyPackageStatus, string> = {
-  needs_classification: "Needs classification",
-  classifying: "Classifying",
-  classified: "Classified",
-  promoted: "Promoted",
-  archived: "Archived",
+const STATUS_BADGE_VARIANT: Record<
+  DirtyPackageStatus,
+  { className: string; icon: typeof Sparkles; animate?: boolean }
+> = {
+  needs_classification: {
+    className: "bg-amber-500/15 text-amber-700 border-amber-500/30",
+    icon: AlertCircle,
+  },
+  classifying: {
+    className: "bg-sky-500/15 text-sky-700 border-sky-500/30",
+    icon: Loader2,
+    animate: true,
+  },
+  classified: {
+    className: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
+    icon: Sparkles,
+  },
+  promoted: {
+    className: "bg-violet-500/15 text-violet-700 border-violet-500/30",
+    icon: CheckCircle2,
+  },
+  archived: {
+    className: "bg-muted text-muted-foreground border-border",
+    icon: CheckCircle2,
+  },
 }
 
 function StatusBadge({ status }: { status: DirtyPackageStatus }) {
-  const variant: Record<DirtyPackageStatus, { className: string; icon: typeof Sparkles }> = {
-    needs_classification: { className: "bg-amber-500/15 text-amber-700 border-amber-500/30", icon: AlertCircle },
-    classifying: { className: "bg-sky-500/15 text-sky-700 border-sky-500/30", icon: Loader2 },
-    classified: { className: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30", icon: Sparkles },
-    promoted: { className: "bg-violet-500/15 text-violet-700 border-violet-500/30", icon: CheckCircle2 },
-    archived: { className: "bg-muted text-muted-foreground border-border", icon: CheckCircle2 },
-  }
-  const { className, icon: Icon } = variant[status]
+  const { className, icon: Icon, animate } = STATUS_BADGE_VARIANT[status]
   return (
     <Badge variant="outline" className={className}>
-      <Icon
-        className={`mr-1 h-3 w-3 ${status === "classifying" ? "animate-spin" : ""}`}
-      />
-      {STATUS_LABEL[status]}
+      <Icon className={`mr-1 h-3 w-3 ${animate ? "animate-spin" : ""}`} />
+      {DIRTY_STATUS_LABEL[status]}
     </Badge>
   )
 }
@@ -129,7 +141,7 @@ export default function ClassificationPage() {
         header: "Created",
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground">
-            {new Date(row.original.created_date).toLocaleDateString()}
+            {formatAbsolute(row.original.created_date, "yyyy-MM-dd")}
           </span>
         ),
       },
@@ -183,7 +195,7 @@ export default function ClassificationPage() {
               <SelectItem value="all">All statuses</SelectItem>
               {DIRTY_PACKAGE_STATUS.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {STATUS_LABEL[s]}
+                  {DIRTY_STATUS_LABEL[s]}
                 </SelectItem>
               ))}
             </SelectContent>

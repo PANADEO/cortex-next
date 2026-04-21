@@ -7,6 +7,7 @@ import type {
   DocMode,
   DocType,
 } from "@cortex/types"
+import { daysAgo, pseudoRandom } from "./_shared"
 
 interface DocTemplate {
   file_name: string
@@ -54,21 +55,6 @@ const MEDIA_BY_EXT: Record<string, { media: string; preview: DirtyDocument["prev
   },
   jpg: { media: "image/jpeg", preview: "image" },
   png: { media: "image/png", preview: "image" },
-}
-
-function pseudoRandom(seed: number): () => number {
-  let s = seed
-  return () => {
-    s = (s * 9301 + 49297) % 233280
-    return s / 233280
-  }
-}
-
-function daysAgo(days: number): string {
-  const d = new Date()
-  d.setDate(d.getDate() - days)
-  d.setHours(d.getHours() - ((days * 7) % 24))
-  return d.toISOString()
 }
 
 function mediaFor(file_name: string) {

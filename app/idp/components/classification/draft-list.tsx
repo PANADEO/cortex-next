@@ -16,7 +16,7 @@ import {
   ScrollArea,
 } from "@cortex/ui"
 import { Plus, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { DOC_TYPE_LABEL } from "./labels"
 
 interface DraftListProps {
@@ -30,7 +30,10 @@ export function DraftList({ dirtyPackageId, drafts, documents }: DraftListProps)
   const remove = useDeleteDraft(dirtyPackageId)
   const [newName, setNewName] = useState("")
 
-  const docsById = new Map(documents.map((d) => [d.id, d]))
+  const docsById = useMemo(
+    () => new Map(documents.map((d) => [d.id, d])),
+    [documents],
+  )
 
   const addDraft = () => {
     const name = newName.trim() || `Clean package ${String.fromCharCode(65 + drafts.length)}`

@@ -25,6 +25,7 @@ import {
   SelectValue,
   Textarea,
 } from "@cortex/ui"
+import { formatFileSizeBytes } from "@cortex/utils"
 import { useQuery } from "@tanstack/react-query"
 import { CheckCircle2, FileX, Loader2 } from "lucide-react"
 import dynamic from "next/dynamic"
@@ -43,11 +44,6 @@ interface DocumentPreviewProps {
   drafts: CleanPackageDraft[]
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} kB`
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-}
 
 export function DocumentPreview({
   dirtyPackageId,
@@ -88,7 +84,7 @@ export function DocumentPreview({
           <span className="font-medium text-sm">{document.file_name}</span>
           <span className="text-xs text-muted-foreground">
             {document.page_count} page{document.page_count > 1 ? "s" : ""} ·{" "}
-            {formatBytes(document.size_bytes)}
+            {formatFileSizeBytes(document.size_bytes)}
             {document.confidence !== null
               ? ` · AI confidence ${Math.round(document.confidence * 100)}%`
               : ""}

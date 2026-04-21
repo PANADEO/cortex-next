@@ -13,6 +13,7 @@ import {
   type RuleReadModel,
   type RuleStatus,
   type RuleTemplateReadModel,
+  type RuleTrigger,
 } from "@cortex/types"
 import {
   Badge,
@@ -49,34 +50,18 @@ import {
   ScrollText,
   Sparkles,
 } from "lucide-react"
+import { formatAbsolute } from "@cortex/utils"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
-
-const CATEGORY_LABEL: Record<RuleCategory, string> = {
-  transport_allocation: "Transport allocation",
-  aggregation: "Aggregation",
-  split: "Split",
-  lookup: "Lookup",
-  currency: "Currency",
-  tax: "Tax",
-  weight_derivation: "Weight derivation",
-  custom: "Custom",
-}
-
-const STATUS_LABEL: Record<RuleStatus, string> = {
-  draft: "Draft",
-  active: "Active",
-  archived: "Archived",
-}
-
-const STATUS_TONE: Record<RuleStatus, string> = {
-  draft: "bg-muted text-muted-foreground border-border",
-  active: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
-  archived: "border-border text-muted-foreground",
-}
+import {
+  RULE_CATEGORY_LABEL,
+  RULE_STATUS_LABEL,
+  RULE_STATUS_TONE,
+} from "@/components/rules/labels"
 
 const PAGE_SIZE = 25
+const TRIGGER_AUTO: RuleTrigger = "auto_on_extraction"
 
 export default function RulesPage() {
   const router = useRouter()
@@ -142,15 +127,15 @@ export default function RulesPage() {
         id: "category",
         header: "Category",
         cell: ({ row }) => (
-          <Badge variant="outline">{CATEGORY_LABEL[row.original.category]}</Badge>
+          <Badge variant="outline">{RULE_CATEGORY_LABEL[row.original.category]}</Badge>
         ),
       },
       {
         id: "status",
         header: "Status",
         cell: ({ row }) => (
-          <Badge variant="outline" className={STATUS_TONE[row.original.status]}>
-            {STATUS_LABEL[row.original.status]}
+          <Badge variant="outline" className={RULE_STATUS_TONE[row.original.status]}>
+            {RULE_STATUS_LABEL[row.original.status]}
           </Badge>
         ),
       },
@@ -163,8 +148,8 @@ export default function RulesPage() {
         id: "trigger",
         header: "Trigger",
         cell: ({ row }) => (
-          <Badge variant={row.original.trigger === "auto_on_extraction" ? "default" : "secondary"}>
-            {row.original.trigger === "auto_on_extraction" ? "Auto" : "Manual"}
+          <Badge variant={row.original.trigger === TRIGGER_AUTO ? "default" : "secondary"}>
+            {row.original.trigger === TRIGGER_AUTO ? "Auto" : "Manual"}
           </Badge>
         ),
       },
@@ -181,7 +166,7 @@ export default function RulesPage() {
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground">
             {row.original.last_run_at
-              ? new Date(row.original.last_run_at).toLocaleDateString()
+              ? formatAbsolute(row.original.last_run_at, "yyyy-MM-dd")
               : "—"}
           </span>
         ),
@@ -238,7 +223,7 @@ export default function RulesPage() {
                     </CardHeader>
                     <CardContent>
                       <Badge variant="outline" className="text-[10px]">
-                        {CATEGORY_LABEL[tpl.category]}
+                        {RULE_CATEGORY_LABEL[tpl.category]}
                       </Badge>
                       <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
                         <Sparkles className="mr-1 inline h-3 w-3" />
@@ -296,7 +281,7 @@ export default function RulesPage() {
               <SelectItem value="all">All statuses</SelectItem>
               {RULE_STATUS.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {STATUS_LABEL[s]}
+                  {RULE_STATUS_LABEL[s]}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -315,7 +300,7 @@ export default function RulesPage() {
               <SelectItem value="all">All categories</SelectItem>
               {RULE_CATEGORY.map((c) => (
                 <SelectItem key={c} value={c}>
-                  {CATEGORY_LABEL[c]}
+                  {RULE_CATEGORY_LABEL[c]}
                 </SelectItem>
               ))}
             </SelectContent>

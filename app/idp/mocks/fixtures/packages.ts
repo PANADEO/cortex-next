@@ -3,6 +3,7 @@ import type {
   ProcessingState,
   VerificationState,
 } from "@cortex/types"
+import { daysAgo, pseudoRandom } from "./_shared"
 
 // Pojedyncza "faza" pakietu = (processing_state, verification_state).
 // Backend nakłada invariant: verification_state != NOT_STARTED wymaga READY.
@@ -39,21 +40,6 @@ const ASSIGNEES: (string | null)[] = [
   "hubert@cortex.local",
   "maja@cortex.local",
 ]
-
-function pseudoRandom(seed: number): () => number {
-  let s = seed
-  return () => {
-    s = (s * 9301 + 49297) % 233280
-    return s / 233280
-  }
-}
-
-function daysAgo(days: number): string {
-  const d = new Date()
-  d.setDate(d.getDate() - days)
-  d.setHours(d.getHours() - ((days * 7) % 24))
-  return d.toISOString()
-}
 
 export function buildPackageFixtures(count = 54): PackageReadModel[] {
   const rand = pseudoRandom(42)

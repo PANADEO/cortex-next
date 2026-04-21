@@ -8,6 +8,7 @@ import type {
   RuleTrigger,
   RuleVersionReadModel,
 } from "@cortex/types"
+import { daysAgo } from "./_shared"
 
 interface RuleSeed {
   id: string
@@ -222,12 +223,6 @@ export const RULE_TEMPLATES: RuleTemplateReadModel[] = [
     default_tags: ["tax", "vat"],
   },
 ]
-
-function daysAgo(days: number): string {
-  const d = new Date()
-  d.setDate(d.getDate() - days)
-  return d.toISOString()
-}
 
 export function buildRules(): RuleReadModel[] {
   return RULES.map((seed, idx) => ({
