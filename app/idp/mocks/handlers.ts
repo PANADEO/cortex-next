@@ -173,6 +173,8 @@ export const handlers = [
   // handlerami typu /packages/:id, które inaczej je łapią.
   http.get("/user/me", () => passthrough()),
   http.get("/packages/dashboard-stats", () => passthrough()),
+  http.get("/packages/get_all", () => passthrough()),
+  http.get("/packages/action_logs", () => passthrough()),
 
   http.get("/health", () => HttpResponse.json({ status: "ok" })),
 

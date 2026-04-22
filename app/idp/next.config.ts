@@ -33,6 +33,8 @@ const nextConfig: NextConfig = {
       beforeFiles: [
         { source: "/user/me", destination: `${IDP_BACKEND_URL}/user/me` },
         { source: "/packages/dashboard-stats", destination: `${IDP_BACKEND_URL}/packages/dashboard-stats` },
+        { source: "/packages/get_all", destination: `${IDP_BACKEND_URL}/packages/get_all` },
+        { source: "/packages/action_logs", destination: `${IDP_BACKEND_URL}/packages/action_logs` },
       ],
       afterFiles: [],
       fallback: [],
