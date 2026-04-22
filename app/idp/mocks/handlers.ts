@@ -5,7 +5,6 @@ import type {
   CompileRuleResponse,
   ExplainRuleRequest,
   ExplainRuleResponse,
-  DashboardStatsResponse,
   DeletePackagesRequest,
   DirtyPackageStatus,
   DocMode,
@@ -42,11 +41,10 @@ import type {
   UpdateDocumentClassificationRequest,
   UpsertDraftRequest,
   UpsertRuleRequest,
-  UserInfoResponse,
   UserPreferencesResponse,
   VerificationState,
 } from "@cortex/types"
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse, passthrough } from "msw"
 import {
   buildDirtyPackageDetails,
   buildDirtyPackages,
@@ -117,36 +115,6 @@ function appendLiveAction(
   invalidateLogs()
 }
 
-function computeStats(items: PackageReadModel[]): DashboardStatsResponse {
-  let in_queue = 0
-  let processing = 0
-  let ready_for_verification = 0
-  let in_verification = 0
-  let verified = 0
-  let failed = 0
-
-  for (const p of items) {
-    switch (p.processing_state) {
-      case "imported":
-        in_queue++
-        break
-      case "analysing":
-        processing++
-        break
-      case "imported_with_error":
-      case "analysis_failed":
-        failed++
-        break
-      case "ready":
-        if (p.verification_state === "not_started") ready_for_verification++
-        else if (p.verification_state === "in_progress") in_verification++
-        else verified++
-        break
-    }
-  }
-  return { in_queue, processing, ready_for_verification, in_verification, verified, failed }
-}
-
 function sortPackages(
   items: PackageReadModel[],
   sortBy: PackageSortField,
@@ -201,13 +169,36 @@ function applyTransition(pkg: PackageReadModel, transition: string, request: Req
 }
 
 export const handlers = [
-  http.get("/health", () => HttpResponse.json({ status: "ok" })),
+  // MSW carve-out: explicit passthrough tych endpointów musi być PRZED dynamicznymi
+  // handlerami typu /packages/:id, które inaczej je łapią.
+  http.get("/user/me", () => passthrough()),
+  http.get("/packages/dashboard-stats", () => passthrough()),
+  http.get("/packages/get_all", () => passthrough()),
+  http.get("/packages/action_logs", () => passthrough()),
+  http.get("/packages/:id/actions", () => passthrough()),
+  http.get("/packages/:id/transitions", () => passthrough()),
+  http.get("/packages/:id/transport-orders", () => passthrough()),
+  http.get("/packages/:id/download", () => passthrough()),
+  http.get("/packages/:id/download-result", () => passthrough()),
+  http.get("/packages/:id", () => passthrough()),
+  http.post("/packages/import", () => passthrough()),
+  http.post("/packages/import-multiple", () => passthrough()),
+  http.post("/packages/:id/start-verification", () => passthrough()),
+  http.post("/packages/:id/cancel-verification", () => passthrough()),
+  http.post("/packages/:id/finish-verification", () => passthrough()),
+  http.post("/packages/:id/reset-verification", () => passthrough()),
+  http.post("/packages/:id/reprocess", () => passthrough()),
+  http.post("/packages/:pid/transport-orders/:oid/seller", () => passthrough()),
+  http.post("/packages/:pid/transport-orders/:oid/buyer", () => passthrough()),
+  http.post("/packages/:pid/transport-orders/:oid/consignor", () => passthrough()),
+  http.post("/packages/:pid/transport-orders/:oid/consignee", () => passthrough()),
+  http.post("/packages/:pid/transport-orders/:oid/transport-info", () => passthrough()),
+  http.post("/packages/:pid/transport-orders/:oid/invoices/:iid", () => passthrough()),
+  http.post("/packages/:pid/transport-orders/:oid/invoices/:iid/totals", () => passthrough()),
+  http.post("/packages/:pid/transport-orders/:oid/invoices/:iid/delivery-terms", () => passthrough()),
+  http.post("/packages/:pid/transport-orders/:oid/invoices/:iid/lines", () => passthrough()),
 
-  http.get("/user/me", ({ request }) => {
-    const email = authEmail(request) ?? "demo@cortex.local"
-    const body: UserInfoResponse = { email, has_access: true }
-    return HttpResponse.json(body)
-  }),
+  http.get("/health", () => HttpResponse.json({ status: "ok" })),
 
   http.get("/user/preferences", () => HttpResponse.json(userPreferences)),
 
@@ -218,8 +209,6 @@ export const handlers = [
       userPreferences.document_panel_ratio = body.document_panel_ratio ?? null
     return HttpResponse.json(userPreferences)
   }),
-
-  http.get("/packages/dashboard-stats", () => HttpResponse.json(computeStats(packages))),
 
   http.get("/packages/get_all", ({ request }) => {
     const url = new URL(request.url)
@@ -426,9 +415,6 @@ export const handlers = [
     invalidateLogs()
     return HttpResponse.json({})
   }),
-
-  http.post("/packages/import", () => HttpResponse.json({})),
-  http.post("/packages/import-multiple", () => HttpResponse.json({})),
 
   // Transport-order edits — catch-all returning {} per openapi.
   http.post("/packages/:id/transport-orders/*", () => HttpResponse.json({})),
