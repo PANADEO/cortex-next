@@ -192,6 +192,8 @@ export const handlers = [
   http.post("/packages/:pid/transport-orders/:oid/buyer", () => passthrough()),
   http.post("/packages/:pid/transport-orders/:oid/consignor", () => passthrough()),
   http.post("/packages/:pid/transport-orders/:oid/consignee", () => passthrough()),
+  http.post("/packages/:pid/transport-orders/:oid/transport-info", () => passthrough()),
+  http.post("/packages/:pid/transport-orders/:oid/invoices/:iid", () => passthrough()),
 
   http.get("/health", () => HttpResponse.json({ status: "ok" })),
 
