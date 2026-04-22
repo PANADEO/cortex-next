@@ -117,7 +117,7 @@ Browser: apiClient.get("/packages/get_all")
 4. Zweryfikuj w DevTools Network: request na `http://localhost:3000/your/endpoint` → `200` z danymi z backendu (nie z MSW).
 5. Sprawdź że reszta apki dalej klikana (inne ekrany dostają mocki z MSW).
 
-## Pułapki — trzy rzeczy, które nas tu zjadły
+## Pułapki — cztery rzeczy, które nas tu zjadły
 
 ### Pułapka 1: MSW cross-origin nie interceptuje
 Ustawienie `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000` wyłącza MSW globalnie, bo service worker w browserze interceptuje tylko same-origin. Skutek: wszystko leci do backendu, missing endpoints dają 404.
@@ -133,6 +133,21 @@ Ustawienie `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000` wyłącza MSW global
 `http.get("/packages/:id", ...)` łapie `/packages/dashboard-stats` i zwraca `PACKAGE_NOT_FOUND` (bo nie istnieje paczka o takim id). Request nigdy nie opuszcza MSW, rewrite nie ma szans zadziałać.
 
 **Rozwiązanie:** explicit `passthrough()` handler **na początku** tablicy handlerów.
+
+### Pułapka 4: rewrite dynamic route łapie page navigation
+`{ source: "/packages/:id", destination: "..." }` jest **method- i Accept-agnostic**. Gdy frontend ma page component `app/packages/[id]/page.tsx`, wejście do `/packages/xxx` w browserze (nawigacja) wysyła `GET` matchujący rewrite → Next nie renderuje page, tylko proxuje do IDP → user widzi **surowy JSON** zamiast UI.
+
+Statyczne ścieżki (`/packages/dashboard-stats`, `/user/me`) nie mają tego problemu, bo nie kolidują z page routes. Dotyczy tylko parametrycznych `:id`.
+
+**Rozwiązanie:** `has` condition odsiewający tylko API fetche przez `Accept: application/json` (apiClient ustawia go explicitnie):
+```ts
+{
+  source: "/packages/:id",
+  has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
+  destination: `${IDP_BACKEND_URL}/packages/:id`,
+}
+```
+Page navigation (Accept: `text/html,...`) nie matchuje — Next renderuje page. Fetch z `apiClient` (Accept: `application/json`) matchuje — rewrite proxuje do IDP.
 
 ## Kiedy przełączyć się na "pełny prod"
 

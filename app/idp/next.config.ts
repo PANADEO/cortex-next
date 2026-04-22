@@ -35,6 +35,19 @@ const nextConfig: NextConfig = {
         { source: "/packages/dashboard-stats", destination: `${IDP_BACKEND_URL}/packages/dashboard-stats` },
         { source: "/packages/get_all", destination: `${IDP_BACKEND_URL}/packages/get_all` },
         { source: "/packages/action_logs", destination: `${IDP_BACKEND_URL}/packages/action_logs` },
+        // Dynamic routes kolidują z Next page routes (app/packages/[id]/page.tsx),
+        // więc rewrite ograniczony do API calls (Accept: application/json z apiClient).
+        // Page navigation (Accept: text/html) leci do page componentu bez rewrite'u.
+        {
+          source: "/packages/:id/actions",
+          has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
+          destination: `${IDP_BACKEND_URL}/packages/:id/actions`,
+        },
+        {
+          source: "/packages/:id",
+          has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
+          destination: `${IDP_BACKEND_URL}/packages/:id`,
+        },
       ],
       afterFiles: [],
       fallback: [],
