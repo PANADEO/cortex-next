@@ -127,12 +127,10 @@ const nextConfig: NextConfig = {
         },
         {
           source: "/packages/:id/download",
-          has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
           destination: `${IDP_BACKEND_URL}/packages/:id/download`,
         },
         {
           source: "/packages/:id/download-result",
-          has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
           destination: `${IDP_BACKEND_URL}/packages/:id/download-result`,
         },
         {
