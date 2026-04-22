@@ -37,6 +37,31 @@ const nextConfig: NextConfig = {
         { source: "/packages/action_logs", destination: `${IDP_BACKEND_URL}/packages/action_logs` },
         { source: "/packages/import", destination: `${IDP_BACKEND_URL}/packages/import` },
         { source: "/packages/import-multiple", destination: `${IDP_BACKEND_URL}/packages/import-multiple` },
+        {
+          source: "/packages/:id/start-verification",
+          has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
+          destination: `${IDP_BACKEND_URL}/packages/:id/start-verification`,
+        },
+        {
+          source: "/packages/:id/cancel-verification",
+          has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
+          destination: `${IDP_BACKEND_URL}/packages/:id/cancel-verification`,
+        },
+        {
+          source: "/packages/:id/finish-verification",
+          has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
+          destination: `${IDP_BACKEND_URL}/packages/:id/finish-verification`,
+        },
+        {
+          source: "/packages/:id/reset-verification",
+          has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
+          destination: `${IDP_BACKEND_URL}/packages/:id/reset-verification`,
+        },
+        {
+          source: "/packages/:id/reprocess",
+          has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
+          destination: `${IDP_BACKEND_URL}/packages/:id/reprocess`,
+        },
         // Dynamic routes kolidują z Next page routes (app/packages/[id]/page.tsx),
         // więc rewrite ograniczony do API calls (Accept: application/json z apiClient).
         // Page navigation (Accept: text/html) leci do page componentu bez rewrite'u.

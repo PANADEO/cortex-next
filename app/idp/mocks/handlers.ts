@@ -183,6 +183,11 @@ export const handlers = [
   http.get("/packages/:id", () => passthrough()),
   http.post("/packages/import", () => passthrough()),
   http.post("/packages/import-multiple", () => passthrough()),
+  http.post("/packages/:id/start-verification", () => passthrough()),
+  http.post("/packages/:id/cancel-verification", () => passthrough()),
+  http.post("/packages/:id/finish-verification", () => passthrough()),
+  http.post("/packages/:id/reset-verification", () => passthrough()),
+  http.post("/packages/:id/reprocess", () => passthrough()),
 
   http.get("/health", () => HttpResponse.json({ status: "ok" })),
 
