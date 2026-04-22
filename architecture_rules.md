@@ -102,6 +102,7 @@ Rely on: **`vercel:shadcn`** (CLI, composition, theming), **`frontend-design:fro
 - Błędy mapujemy na `ErrorCode` enum z backendu (shared types w `/libs/@cortex/types/`).
 - Toasty dla 4xx (via `sonner`). 5xx → error boundary + retry option.
 - Podczas prototypu **MSW** mockuje na poziomie network. Przełączenie na real API = wyłączenie MSW w `layout.tsx`, zero zmian w kodzie feature'ów.
+- **Partial carve-out** (gradual migration endpoint po endpoincie) — pattern `MSW passthrough` + `Next rewrites.beforeFiles` + server-side `IDP_BACKEND_URL`. Pełen opis: [`docs/backend-integration.md`](docs/backend-integration.md).
 - Middleware / proxy — zajrzeć do **`vercel:routing-middleware`**.
 
 ---

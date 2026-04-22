@@ -5,7 +5,6 @@ import type {
   CompileRuleResponse,
   ExplainRuleRequest,
   ExplainRuleResponse,
-  DashboardStatsResponse,
   DeletePackagesRequest,
   DirtyPackageStatus,
   DocMode,
@@ -42,11 +41,10 @@ import type {
   UpdateDocumentClassificationRequest,
   UpsertDraftRequest,
   UpsertRuleRequest,
-  UserInfoResponse,
   UserPreferencesResponse,
   VerificationState,
 } from "@cortex/types"
-import { http, HttpResponse } from "msw"
+import { http, HttpResponse, passthrough } from "msw"
 import {
   buildDirtyPackageDetails,
   buildDirtyPackages,
@@ -117,36 +115,6 @@ function appendLiveAction(
   invalidateLogs()
 }
 
-function computeStats(items: PackageReadModel[]): DashboardStatsResponse {
-  let in_queue = 0
-  let processing = 0
-  let ready_for_verification = 0
-  let in_verification = 0
-  let verified = 0
-  let failed = 0
-
-  for (const p of items) {
-    switch (p.processing_state) {
-      case "imported":
-        in_queue++
-        break
-      case "analysing":
-        processing++
-        break
-      case "imported_with_error":
-      case "analysis_failed":
-        failed++
-        break
-      case "ready":
-        if (p.verification_state === "not_started") ready_for_verification++
-        else if (p.verification_state === "in_progress") in_verification++
-        else verified++
-        break
-    }
-  }
-  return { in_queue, processing, ready_for_verification, in_verification, verified, failed }
-}
-
 function sortPackages(
   items: PackageReadModel[],
   sortBy: PackageSortField,
@@ -201,13 +169,12 @@ function applyTransition(pkg: PackageReadModel, transition: string, request: Req
 }
 
 export const handlers = [
-  http.get("/health", () => HttpResponse.json({ status: "ok" })),
+  // MSW carve-out: explicit passthrough tych endpointów musi być PRZED dynamicznymi
+  // handlerami typu /packages/:id, które inaczej je łapią.
+  http.get("/user/me", () => passthrough()),
+  http.get("/packages/dashboard-stats", () => passthrough()),
 
-  http.get("/user/me", ({ request }) => {
-    const email = authEmail(request) ?? "demo@cortex.local"
-    const body: UserInfoResponse = { email, has_access: true }
-    return HttpResponse.json(body)
-  }),
+  http.get("/health", () => HttpResponse.json({ status: "ok" })),
 
   http.get("/user/preferences", () => HttpResponse.json(userPreferences)),
 
@@ -218,8 +185,6 @@ export const handlers = [
       userPreferences.document_panel_ratio = body.document_panel_ratio ?? null
     return HttpResponse.json(userPreferences)
   }),
-
-  http.get("/packages/dashboard-stats", () => HttpResponse.json(computeStats(packages))),
 
   http.get("/packages/get_all", ({ request }) => {
     const url = new URL(request.url)
