@@ -2,7 +2,6 @@
 
 import { cn } from "@cortex/utils"
 import { Pause, Play, RotateCw } from "lucide-react"
-import { useEffect, useState } from "react"
 import { Button } from "./ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
 
@@ -16,31 +15,17 @@ interface AutoRefreshIndicatorProps {
 }
 
 export function AutoRefreshIndicator({
-  intervalMs = 5000,
   enabled,
   onToggle,
   onRefresh,
   isRefreshing,
   className,
 }: AutoRefreshIndicatorProps) {
-  const [countdown, setCountdown] = useState(intervalMs / 1000)
-
-  useEffect(() => {
-    if (!enabled) {
-      setCountdown(intervalMs / 1000)
-      return
-    }
-    const id = setInterval(() => {
-      setCountdown((c) => (c <= 1 ? intervalMs / 1000 : c - 1))
-    }, 1000)
-    return () => clearInterval(id)
-  }, [enabled, intervalMs])
-
   return (
     <TooltipProvider delayDuration={300}>
       <div
         className={cn(
-          "inline-flex items-center gap-1 rounded-md border border-border bg-muted/30 px-2 py-1 text-xs",
+          "inline-flex items-center gap-1 rounded-md border border-border bg-muted/30 px-1 py-0.5",
           className,
         )}
       >
@@ -60,9 +45,6 @@ export function AutoRefreshIndicator({
             {enabled ? "Pause auto-refresh" : "Resume auto-refresh"}
           </TooltipContent>
         </Tooltip>
-        <span className="font-mono text-[10px] text-muted-foreground">
-          {enabled ? `refresh in ${countdown}s` : "paused"}
-        </span>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

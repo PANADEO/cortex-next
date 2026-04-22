@@ -11,7 +11,7 @@ export interface DirtyDocument {
   doc_type: DocType
   mode: DocMode
   confidence: number | null
-  target_clean_package_id: string | null
+  target_clean_package_ids: string[]
   human_reviewed: boolean
   notes: string | null
 }
@@ -60,7 +60,7 @@ export interface GetDirtyPackagesQuery {
 export interface UpdateDocumentClassificationRequest {
   doc_type?: DocType
   mode?: DocMode
-  target_clean_package_id?: string | null
+  target_clean_package_ids?: string[]
   notes?: string | null
   human_reviewed?: boolean
 }

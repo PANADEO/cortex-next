@@ -42,6 +42,7 @@ import { useParams } from "next/navigation"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { downloadBlob } from "@/lib/download"
+import { AiNotificationsPanel } from "@/components/ai-notifications-panel"
 import { ExportMenu } from "@/components/export-menu"
 import { PackageMetadataEditors } from "@/components/package-metadata-editors"
 import { ReprocessDialog } from "@/components/reprocess-dialog"
@@ -271,27 +272,31 @@ export default function PackageDetailPage() {
               </Card>
             </section>
 
-            <Card>
-              <CardContent className="p-5">
-                <PackageMetadataEditors
-                  packageId={pkg.id}
-                  customStatus={pkg.custom_status}
-                  userNotes={pkg.user_notes}
-                  userNotesUpdated={userNotesUpdated}
-                />
-              </CardContent>
-            </Card>
-
             <Tabs defaultValue="transport">
               <TabsList>
                 <TabsTrigger value="transport">Transport orders</TabsTrigger>
+                <TabsTrigger value="metadata">Metadata</TabsTrigger>
                 <TabsTrigger value="analysis">Analysis result</TabsTrigger>
+                <TabsTrigger value="ai-notifications">AI Notifications</TabsTrigger>
                 <TabsTrigger value="rules">Rules</TabsTrigger>
                 <TabsTrigger value="actions">Action log</TabsTrigger>
                 <TabsTrigger value="source">Source materials</TabsTrigger>
               </TabsList>
               <TabsContent value="transport">
                 <TransportOrdersPanel packageId={pkg.id} canEdit={canEdit} />
+              </TabsContent>
+              <TabsContent value="metadata">
+                <Card>
+                  <CardContent className="p-5">
+                    <PackageMetadataEditors
+                      packageId={pkg.id}
+                      customStatus={pkg.custom_status}
+                      userNotes={pkg.user_notes}
+                      additionalAiContext={pkg.last_additional_ai_context}
+                      userNotesUpdated={userNotesUpdated}
+                    />
+                  </CardContent>
+                </Card>
               </TabsContent>
               <TabsContent value="analysis" className="space-y-3">
                 {isActiveVerification && !canEdit ? (
@@ -314,6 +319,12 @@ export default function PackageDetailPage() {
                     Analysis result not available yet.
                   </p>
                 )}
+              </TabsContent>
+              <TabsContent value="ai-notifications">
+                <AiNotificationsPanel
+                  packageId={pkg.id}
+                  hasAnalysis={Boolean(pkg.analysis_result)}
+                />
               </TabsContent>
               <TabsContent value="rules">
                 <PackageRulesPanel packageId={pkg.id} canEdit={canEdit} />

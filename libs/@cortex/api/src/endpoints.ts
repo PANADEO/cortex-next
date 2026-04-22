@@ -38,6 +38,7 @@ import type {
   RuleTemplateReadModel,
   RuleVersionReadModel,
   SaveRuleVersionRequest,
+  SetAdditionalAiContextRequest,
   SetCustomStatusRequest,
   SetUserNotesRequest,
   SetUserPreferencesRequest,
@@ -148,6 +149,8 @@ export const endpoints = {
       apiClient.post<EmptyOk>(`/packages/${id}/custom-status`, { jsonBody: body }),
     setUserNotes: (id: string, body: SetUserNotesRequest) =>
       apiClient.post<EmptyOk>(`/packages/${id}/user-notes`, { jsonBody: body }),
+    setAdditionalAiContext: (id: string, body: SetAdditionalAiContextRequest) =>
+      apiClient.post<EmptyOk>(`/packages/${id}/additional-ai-context`, { jsonBody: body }),
     deleteMany: (body: DeletePackagesRequest) =>
       apiClient.post<EmptyOk>("/packages/delete", { jsonBody: body }),
     restore: (id: string) => apiClient.post<EmptyOk>(`/packages/${id}/restore`),

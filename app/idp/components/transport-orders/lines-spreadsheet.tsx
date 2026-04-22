@@ -163,14 +163,14 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
         ) : null}
       </header>
       <div className="min-h-0 flex-1 overflow-auto">
-        <table className="w-full border-collapse text-xs">
+        <table className="w-full border-collapse text-[11px]">
           <thead className="sticky top-0 z-10 bg-muted/60 backdrop-blur">
             <tr>
               {COLUMNS.map((c) => (
                 <th
                   key={c.key}
                   className={cn(
-                    "border-b border-border px-2 py-1.5 text-left font-medium uppercase tracking-wide text-muted-foreground",
+                    "border-b border-border px-1.5 py-1 text-left text-[10px] font-medium uppercase tracking-wide text-muted-foreground",
                     c.width,
                   )}
                 >
@@ -198,7 +198,7 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
                         onFocus={() => selectLineRefs(line.source_references)}
                         readOnly={!canEdit}
                         disabled={!canEdit}
-                        className="h-8 rounded-none border-0 bg-transparent px-2 font-mono text-xs shadow-none focus-visible:ring-1"
+                        className="h-7 rounded-none border-0 bg-transparent px-1.5 font-mono text-[11px] shadow-none focus-visible:ring-1"
                       />
                     </td>
                   ))}

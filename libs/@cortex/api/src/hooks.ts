@@ -15,6 +15,7 @@ import type {
   ReprocessRequest,
   RulePreviewRequest,
   SaveRuleVersionRequest,
+  SetAdditionalAiContextRequest,
   SetCustomStatusRequest,
   SetUserNotesRequest,
   SetUserPreferencesRequest,
@@ -210,6 +211,15 @@ export function useSetUserNotes(id: string) {
   const invalidate = useInvalidatePackage(id)
   return useMutation({
     mutationFn: (body: SetUserNotesRequest) => endpoints.packages.setUserNotes(id, body),
+    onSuccess: invalidate,
+  })
+}
+
+export function useSetAdditionalAiContext(id: string) {
+  const invalidate = useInvalidatePackage(id)
+  return useMutation({
+    mutationFn: (body: SetAdditionalAiContextRequest) =>
+      endpoints.packages.setAdditionalAiContext(id, body),
     onSuccess: invalidate,
   })
 }

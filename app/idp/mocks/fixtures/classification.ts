@@ -96,7 +96,7 @@ function buildDocuments(
       doc_type: tpl.doc_type,
       mode: defaultMode(tpl.doc_type),
       confidence: tpl.doc_type === "skip" ? 0.42 : 0.7 + rand() * 0.28,
-      target_clean_package_id: null,
+      target_clean_package_ids: [],
       human_reviewed: false,
       notes: null,
     })
@@ -120,7 +120,7 @@ function buildDocuments(
       : 0
     const draft = drafts[targetIdx]!
     draft.document_ids.push(doc.id)
-    doc.target_clean_package_id = draft.id
+    doc.target_clean_package_ids = [draft.id]
   }
 
   return { docs, drafts }

@@ -162,9 +162,9 @@ export default function RuleEditorPage() {
     return nl !== v.nl_definition || pythonCode !== v.python_code
   }, [rule, nl, pythonCode])
 
-  if (isLoading) return <LoadingState label="Loading rule…" />
+  if (isLoading) return <LoadingState label="Ładuję regułę…" />
   if (error || !rule) {
-    return <ErrorState title="Rule not found" message="It may have been removed." />
+    return <ErrorState title="Nie znaleziono reguły" message="Mogła zostać usunięta." />
   }
 
   const triggerExplain = (text: string) => {
@@ -188,7 +188,7 @@ export default function RuleEditorPage() {
 
   const runCompile = () => {
     if (!nl.trim()) {
-      toast.error("Add a natural-language definition first.")
+      toast.error("Najpierw dodaj definicję w naturalnym języku.")
       return
     }
     compile.mutate(
@@ -203,7 +203,7 @@ export default function RuleEditorPage() {
           setOutputColumns(res.output_columns)
           setShowPython(true)
           if (res.warnings.length) toast.warning(res.warnings.join("; "))
-          else toast.success("Compiled. Switch to Simulation to test on data.")
+          else toast.success("Skompilowano. Przejdź do zakładki Symulacja, żeby przetestować.")
         },
         onError: (err) => toastApiError(err),
       },
@@ -212,11 +212,11 @@ export default function RuleEditorPage() {
 
   const runPreview = () => {
     if (!samplePackageId) {
-      toast.error("Select a sample package.")
+      toast.error("Wybierz paczkę próbną.")
       return
     }
     if (!pythonCode.trim()) {
-      toast.error("Compile the rule first (Definition tab).")
+      toast.error("Najpierw skompiluj regułę (zakładka Definicja).")
       return
     }
     preview.mutate(
@@ -247,7 +247,7 @@ export default function RuleEditorPage() {
         status,
       },
       {
-        onSuccess: () => toast.success("Rule metadata saved."),
+        onSuccess: () => toast.success("Metadane reguły zapisane."),
         onError: (err) => toastApiError(err),
       },
     )
@@ -255,7 +255,7 @@ export default function RuleEditorPage() {
 
   const persistVersion = () => {
     if (!pythonCode.trim()) {
-      toast.error("Compile the rule first.")
+      toast.error("Najpierw skompiluj regułę.")
       return
     }
     saveVersion.mutate(
@@ -267,7 +267,7 @@ export default function RuleEditorPage() {
       },
       {
         onSuccess: (v) => {
-          toast.success(`Saved as v${v.version}`)
+          toast.success(`Zapisano jako v${v.version}`)
           setVersionNotes("")
         },
         onError: (err) => toastApiError(err),
@@ -282,7 +282,7 @@ export default function RuleEditorPage() {
           <Button asChild variant="ghost" size="sm" className="-ml-2">
             <Link href="/rules">
               <ArrowLeft className="mr-1.5 h-4 w-4" />
-              Back
+              Wstecz
             </Link>
           </Button>
           <Input
@@ -304,7 +304,7 @@ export default function RuleEditorPage() {
             ) : (
               <Save className="mr-1.5 h-3.5 w-3.5" />
             )}
-            Save metadata
+            Zapisz metadane
           </Button>
           <Button
             size="sm"
@@ -316,7 +316,7 @@ export default function RuleEditorPage() {
             ) : (
               <GitBranch className="mr-1.5 h-3.5 w-3.5" />
             )}
-            Save as v{(rule.versions[0]?.version ?? 0) + 1}
+            Zapisz jako v{(rule.versions[0]?.version ?? 0) + 1}
           </Button>
         </div>
       </header>
@@ -326,7 +326,7 @@ export default function RuleEditorPage() {
           <CardContent className="grid gap-3 p-4 md:grid-cols-4">
             <div className="space-y-1">
               <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Category
+                Kategoria
               </Label>
               <Select value={category} onValueChange={(v) => setCategory(v as RuleCategory)}>
                 <SelectTrigger className="h-9">
@@ -360,7 +360,7 @@ export default function RuleEditorPage() {
             </div>
             <div className="space-y-1">
               <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Default trigger
+                Domyślny trigger
               </Label>
               <Select value={trigger} onValueChange={(v) => setTrigger(v as RuleTrigger)}>
                 <SelectTrigger className="h-9">
@@ -377,13 +377,13 @@ export default function RuleEditorPage() {
             </div>
             <div className="space-y-1">
               <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Description
+                Opis
               </Label>
               <Input
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="h-9"
-                placeholder="Short summary"
+                placeholder="Krótkie podsumowanie"
               />
             </div>
           </CardContent>
@@ -393,15 +393,15 @@ export default function RuleEditorPage() {
           <TabsList className="self-start">
             <TabsTrigger value="definition">
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-              Definition
+              Definicja
             </TabsTrigger>
             <TabsTrigger value="simulation">
               <PlayCircle className="mr-1.5 h-3.5 w-3.5" />
-              Simulation
+              Symulacja
             </TabsTrigger>
             <TabsTrigger value="versions">
               <GitBranch className="mr-1.5 h-3.5 w-3.5" />
-              Versions
+              Wersje
             </TabsTrigger>
           </TabsList>
 
@@ -452,14 +452,14 @@ export default function RuleEditorPage() {
                       <ChevronRight className="h-3 w-3" />
                     )}
                     <Code2 className="h-3 w-3" />
-                    Advanced — generated Python
+                    Zaawansowane — wygenerowany Python
                   </button>
 
                   {showPython ? (
                     <div className="space-y-2 rounded-md border border-border bg-muted/20 p-2">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                          Compiled code (read-only)
+                          Skompilowany kod (tylko do odczytu)
                         </span>
                         <Button
                           size="sm"
@@ -473,14 +473,14 @@ export default function RuleEditorPage() {
                           ) : (
                             <Code2 className="mr-1 h-3 w-3" />
                           )}
-                          Recompile
+                          Kompiluj ponownie
                         </Button>
                       </div>
                       <Textarea
                         readOnly
                         value={pythonCode}
                         rows={10}
-                        placeholder="# Hit Recompile to generate Python from your definition."
+                        placeholder="# Kliknij 'Kompiluj ponownie', żeby wygenerować Python z definicji."
                         className="font-mono text-[11px]"
                       />
                       {outputColumns.length > 0 ? (
@@ -552,7 +552,7 @@ export default function RuleEditorPage() {
                     ) : (
                       <PlayCircle className="mr-1.5 h-3.5 w-3.5" />
                     )}
-                    Run dry
+                    Testowy przebieg
                   </Button>
                 </div>
               </CardHeader>
@@ -560,11 +560,11 @@ export default function RuleEditorPage() {
                 {!pythonCode ? (
                   <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
                     <CircleHelp className="h-8 w-8" />
-                    <p>Najpierw skompiluj regułę w zakładce Definition.</p>
+                    <p>Najpierw skompiluj regułę w zakładce Definicja.</p>
                   </div>
                 ) : previewRows.length === 0 ? (
                   <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                    Wybierz paczkę i kliknij &quot;Run dry&quot; żeby zobaczyć before/after.
+                    Wybierz paczkę i kliknij „Testowy przebieg”, żeby zobaczyć przed/po.
                   </div>
                 ) : (
                   <ScrollArea className="h-full">

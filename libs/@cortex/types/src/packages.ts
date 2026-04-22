@@ -105,6 +105,10 @@ export interface SetUserNotesRequest {
   user_notes: string | null
 }
 
+export interface SetAdditionalAiContextRequest {
+  additional_ai_context: string | null
+}
+
 export interface DeletePackagesRequest {
   package_ids: string[]
 }

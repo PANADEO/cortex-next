@@ -49,9 +49,15 @@ export function DocumentTree({
           {documents.map((doc) => {
             const Icon = doc.mode === "skip" ? FileX : fileIcon(doc.media_type)
             const isSelected = doc.id === selectedId
-            const draftName = doc.target_clean_package_id
-              ? draftLookup.get(doc.target_clean_package_id) ?? "—"
-              : null
+            const targetNames = doc.target_clean_package_ids
+              .map((id) => draftLookup.get(id))
+              .filter((n): n is string => Boolean(n))
+            const draftLabel =
+              targetNames.length === 0
+                ? null
+                : targetNames.length <= 2
+                  ? targetNames.join(", ")
+                  : `${targetNames[0]} +${targetNames.length - 1}`
             const needsReview = !doc.human_reviewed && (doc.confidence ?? 1) < 0.8
             return (
               <li key={doc.id}>
@@ -91,9 +97,9 @@ export function DocumentTree({
                         </span>
                       ) : null}
                     </div>
-                    {draftName ? (
+                    {draftLabel ? (
                       <span className="truncate text-[10px] text-muted-foreground">
-                        → {draftName}
+                        → {draftLabel}
                       </span>
                     ) : null}
                   </div>

@@ -5,6 +5,7 @@ import {
   DIRTY_PACKAGE_STATUS,
   type DirtyPackageReadModel,
   type DirtyPackageStatus,
+  type SortOrder,
 } from "@cortex/types"
 import {
   Badge,
@@ -12,6 +13,7 @@ import {
   DataTable,
   EmptyState,
   Input,
+  Label,
   PageHeader,
   Pagination,
   Select,
@@ -20,11 +22,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@cortex/ui"
-import { formatAbsolute } from "@cortex/utils"
+import { formatRelative } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
 import {
   AlertCircle,
+  ArrowDown,
   ArrowRight,
+  ArrowUp,
   CheckCircle2,
   FileSpreadsheet,
   Loader2,
@@ -34,6 +38,14 @@ import {
 import Link from "next/link"
 import { useMemo, useState } from "react"
 import { DIRTY_STATUS_LABEL } from "@/components/classification/labels"
+
+type DirtySortField = "created_date" | "name" | "status"
+
+const SORT_FIELDS: ReadonlyArray<{ value: DirtySortField; label: string }> = [
+  { value: "created_date", label: "Created date" },
+  { value: "name", label: "Name" },
+  { value: "status", label: "Status" },
+]
 
 const STATUS_BADGE_VARIANT: Record<
   DirtyPackageStatus,
@@ -72,12 +84,14 @@ function StatusBadge({ status }: { status: DirtyPackageStatus }) {
   )
 }
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = 10
 
 export default function ClassificationPage() {
   const [page, setPage] = useState(0)
   const [status, setStatus] = useState<DirtyPackageStatus | "all">("all")
   const [search, setSearch] = useState("")
+  const [sortBy, setSortBy] = useState<DirtySortField>("created_date")
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
 
   const query = useMemo(
     () => ({
@@ -85,9 +99,13 @@ export default function ClassificationPage() {
       offset: page * PAGE_SIZE,
       status: status === "all" ? null : status,
       search: search || null,
+      sort_by: sortBy,
+      sort_order: sortOrder,
     }),
-    [page, status, search],
+    [page, status, search, sortBy, sortOrder],
   )
+
+  const resetPage = () => setPage(0)
 
   const { data, isLoading, isFetching } = useDirtyPackages(query)
   const items = data?.items ?? []
@@ -98,18 +116,32 @@ export default function ClassificationPage() {
     () => [
       {
         id: "name",
-        header: "Name",
         accessorKey: "name",
+        header: "Name",
         cell: ({ row }) => (
-          <div className="flex flex-col">
-            <span className="font-medium">{row.original.name}</span>
-            <span className="text-xs text-muted-foreground">{row.original.id}</span>
-          </div>
+          <Link
+            href={`/classification/${row.original.id}`}
+            className="font-mono text-xs hover:underline"
+          >
+            {row.original.name}
+          </Link>
+        ),
+      },
+      {
+        id: "id",
+        accessorKey: "id",
+        header: "ID",
+        size: 140,
+        cell: ({ row }) => (
+          <span className="font-mono text-[10px] text-muted-foreground">
+            {row.original.id}
+          </span>
         ),
       },
       {
         id: "customer",
         header: "Customer",
+        size: 180,
         cell: ({ row }) =>
           row.original.customer_tag ? (
             <Badge variant="secondary">{row.original.customer_tag}</Badge>
@@ -120,11 +152,13 @@ export default function ClassificationPage() {
       {
         id: "status",
         header: "Status",
+        size: 220,
         cell: ({ row }) => <StatusBadge status={row.original.status} />,
       },
       {
         id: "documents",
         header: "Documents",
+        size: 180,
         cell: ({ row }) => (
           <div className="flex items-center gap-2 text-sm">
             <span>{row.original.document_count}</span>
@@ -139,9 +173,10 @@ export default function ClassificationPage() {
       {
         id: "created",
         header: "Created",
+        size: 160,
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground">
-            {formatAbsolute(row.original.created_date, "yyyy-MM-dd")}
+            {formatRelative(row.original.created_date)}
           </span>
         ),
       },
@@ -161,6 +196,12 @@ export default function ClassificationPage() {
     [],
   )
 
+  const filtersDirty =
+    status !== "all" ||
+    search !== "" ||
+    sortBy !== "created_date" ||
+    sortOrder !== "desc"
+
   return (
     <>
       <PageHeader
@@ -172,10 +213,10 @@ export default function ClassificationPage() {
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search dirty packages…"
+              placeholder="Search by name…"
               value={search}
               onChange={(e) => {
-                setPage(0)
+                resetPage()
                 setSearch(e.target.value)
               }}
               className="h-9 w-64 pl-9"
@@ -184,11 +225,11 @@ export default function ClassificationPage() {
           <Select
             value={status}
             onValueChange={(v) => {
-              setPage(0)
+              resetPage()
               setStatus(v as DirtyPackageStatus | "all")
             }}
           >
-            <SelectTrigger className="h-9 w-[200px]">
+            <SelectTrigger className="h-9 w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -201,8 +242,68 @@ export default function ClassificationPage() {
             </SelectContent>
           </Select>
           <div className="ml-auto text-xs text-muted-foreground">
-            {isFetching ? "Refreshing…" : `${total} dirty packages`}
+            {isFetching ? "Refreshing…" : `${total} total`}
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Sort by
+            </Label>
+            <div className="flex items-center gap-2">
+              <Select
+                value={sortBy}
+                onValueChange={(v) => {
+                  resetPage()
+                  setSortBy(v as DirtySortField)
+                }}
+              >
+                <SelectTrigger className="h-9 w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SORT_FIELDS.map((f) => (
+                    <SelectItem key={f.value} value={f.value}>
+                      {f.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9"
+                onClick={() => {
+                  resetPage()
+                  setSortOrder((o) => (o === "asc" ? "desc" : "asc"))
+                }}
+                aria-label={sortOrder === "asc" ? "Sort ascending" : "Sort descending"}
+              >
+                {sortOrder === "asc" ? (
+                  <ArrowUp className="h-4 w-4" />
+                ) : (
+                  <ArrowDown className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+          {filtersDirty ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9"
+              onClick={() => {
+                resetPage()
+                setStatus("all")
+                setSearch("")
+                setSortBy("created_date")
+                setSortOrder("desc")
+              }}
+            >
+              Reset filters
+            </Button>
+          ) : null}
         </div>
 
         <DataTable

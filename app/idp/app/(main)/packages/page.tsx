@@ -143,7 +143,7 @@ export default function PackagesPage() {
   return (
     <>
       <PageHeader
-        title="Packages"
+        title="Extraction"
         description="Browse, filter, and manage all document packages."
       />
 

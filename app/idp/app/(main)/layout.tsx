@@ -36,7 +36,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
           brand={
             <div className="flex items-center gap-2 font-semibold tracking-tight">
               {brandIcon}
-              <span className="text-sm">Cortex</span>
+              <span className="text-sm">Cortex360 IDP</span>
             </div>
           }
           brandIcon={brandIcon}

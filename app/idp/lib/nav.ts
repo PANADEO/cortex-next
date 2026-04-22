@@ -1,6 +1,7 @@
 import type { TileMenuSection } from "@cortex/ui"
 import {
   BarChart3,
+  FileDown,
   FileSpreadsheet,
   History,
   Package,
@@ -10,8 +11,8 @@ import {
 
 export const IDP_NAV: TileMenuSection[] = [
   {
-    id: "workspace",
-    label: "IDP",
+    id: "pipeline",
+    label: "Pipeline",
     items: [
       { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/dashboard" },
       { id: "import", label: "Import", icon: Upload, href: "/import" },
@@ -21,8 +22,21 @@ export const IDP_NAV: TileMenuSection[] = [
         icon: FileSpreadsheet,
         href: "/classification",
       },
-      { id: "packages", label: "Packages", icon: Package, href: "/packages" },
+      { id: "packages", label: "Extraction", icon: Package, href: "/packages" },
+      { id: "export", label: "Export", icon: FileDown, href: "/export" },
+    ],
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    items: [
       { id: "rules", label: "Rule editor", icon: ScrollText, href: "/rules" },
+    ],
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    items: [
       { id: "audit-log", label: "Audit log", icon: History, href: "/audit-log" },
     ],
   },

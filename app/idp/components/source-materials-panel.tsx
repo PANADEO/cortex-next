@@ -7,12 +7,12 @@ import {
   usePackageSourceFiles,
 } from "@cortex/api"
 import type { NormalizedHighlightBox, SourceFileReadModel } from "@cortex/types"
-import { LoadingState } from "@cortex/ui"
+import { Button, LoadingState, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { useQuery } from "@tanstack/react-query"
-import { FileText, Loader2 } from "lucide-react"
+import { FileText, Loader2, PanelLeftClose, PanelLeftOpen } from "lucide-react"
 import dynamic from "next/dynamic"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { useSourceMaterialSelectionStore } from "@/lib/stores/source-material-selection"
 
@@ -49,6 +49,7 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
   const activePage = useSourceMaterialSelectionStore((s) => s.activePage)
   const highlightBoxes = useSourceMaterialSelectionStore((s) => s.highlightBoxes)
   const setActivePath = useSourceMaterialSelectionStore((s) => s.setActivePath)
+  const [narrow, setNarrow] = useState(false)
 
   const ratio = clampRatio(preferences.data?.document_panel_ratio ?? DEFAULT_LIST_RATIO)
   const listPercent = Math.round(ratio * 100)
@@ -60,6 +61,7 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
   }, [files.data, activePath, setActivePath])
 
   const handleLayout = (sizes: number[]) => {
+    if (narrow) return
     const next = sizes[0]
     if (typeof next !== "number") return
     const nextRatio = Math.round(next) / 100
@@ -75,42 +77,117 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
 
   const active = items.find((f) => f.path === activePath) ?? items[0]!
 
+  const narrowDefault = 6
+  const narrowMin = 5
+  const narrowMax = 12
+
   return (
     <PanelGroup
+      key={narrow ? "narrow" : "wide"}
       direction="horizontal"
       onLayout={handleLayout}
       className="min-h-[560px] gap-3"
     >
       <Panel
-        defaultSize={listPercent}
-        minSize={MIN_PERCENT}
-        maxSize={MAX_PERCENT}
-        className="min-w-[200px]"
+        defaultSize={narrow ? narrowDefault : listPercent}
+        minSize={narrow ? narrowMin : MIN_PERCENT}
+        maxSize={narrow ? narrowMax : MAX_PERCENT}
+        className={narrow ? "min-w-[48px]" : "min-w-[200px]"}
       >
-        <ul className="space-y-1">
-          {items.map((f) => (
-            <li key={f.path}>
-              <button
-                type="button"
-                onClick={() => setActivePath(f.path)}
-                className={cn(
-                  "flex w-full items-start gap-2 rounded-md border border-transparent px-2 py-2 text-left text-xs",
-                  active.path === f.path
-                    ? "border-border bg-muted"
-                    : "hover:bg-muted/60",
-                )}
-              >
-                <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 space-y-0.5">
-                  <span className="block truncate font-mono">{f.file_name}</span>
-                  <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
-                    {f.preview_kind}
-                  </span>
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div className="flex h-full flex-col gap-1">
+          <div
+            className={cn(
+              "flex shrink-0 items-center",
+              narrow ? "justify-center" : "justify-between px-1",
+            )}
+          >
+            {!narrow ? (
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Source files
+              </span>
+            ) : null}
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => setNarrow((v) => !v)}
+                    aria-label={narrow ? "Expand file list" : "Collapse to narrow list"}
+                  >
+                    {narrow ? (
+                      <PanelLeftOpen className="h-3.5 w-3.5" />
+                    ) : (
+                      <PanelLeftClose className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  {narrow ? "Expand" : "Narrow list"}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
+          {narrow ? (
+            <ul className="flex flex-col items-stretch gap-1">
+              {items.map((f) => (
+                <li key={f.path}>
+                  <button
+                    type="button"
+                    onClick={() => setActivePath(f.path)}
+                    title={f.file_name}
+                    className={cn(
+                      "flex w-full flex-col items-center gap-1 rounded-md border border-transparent py-2 text-left",
+                      active.path === f.path
+                        ? "border-border bg-muted"
+                        : "hover:bg-muted/60",
+                    )}
+                  >
+                    <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span
+                      className="truncate font-mono text-[10px] leading-tight"
+                      style={{
+                        writingMode: "vertical-rl",
+                        transform: "rotate(180deg)",
+                        maxHeight: "10rem",
+                      }}
+                    >
+                      {f.file_name}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <ul className="space-y-1">
+              {items.map((f) => (
+                <li key={f.path}>
+                  <button
+                    type="button"
+                    onClick={() => setActivePath(f.path)}
+                    className={cn(
+                      "flex w-full items-start gap-2 rounded-md border border-transparent px-2 py-2 text-left text-xs",
+                      active.path === f.path
+                        ? "border-border bg-muted"
+                        : "hover:bg-muted/60",
+                    )}
+                  >
+                    <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="min-w-0 flex-1 space-y-0.5">
+                      <span className="block truncate font-mono">{f.file_name}</span>
+                      <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {f.preview_kind}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </Panel>
       <PanelResizeHandle className="w-1 shrink-0 rounded bg-border transition-colors hover:bg-primary/40 data-[resize-handle-active]:bg-primary/50" />
       <Panel minSize={40} className="space-y-2">

@@ -131,7 +131,7 @@ export default function ClassificationWorkspacePage() {
             ) : (
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
             )}
-            Auto-classify with AI
+            Auto-reclassify with AI
           </Button>
           <Button
             size="sm"

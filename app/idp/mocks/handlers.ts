@@ -34,6 +34,7 @@ import type {
   RuleTrigger,
   RuleVersionReadModel,
   SaveRuleVersionRequest,
+  SetAdditionalAiContextRequest,
   SetCustomStatusRequest,
   SetUserNotesRequest,
   SetUserPreferencesRequest,
@@ -89,6 +90,7 @@ const userPreferences: UserPreferencesResponse = {
 }
 
 const liveActions = new Map<string, PackageActionReadModel[]>()
+const additionalAiContextById = new Map<string, string | null>()
 
 let cachedLogs: ReturnType<typeof buildActionLogs> | null = null
 function getActionLogs() {
@@ -303,7 +305,10 @@ export const handlers = [
   http.get("/packages/:id", ({ params }) => {
     const pkg = packagesById.get(String(params.id))
     if (!pkg) return notFound(params.id)
-    return HttpResponse.json(buildDetails(pkg))
+    const details = buildDetails(pkg)
+    const override = additionalAiContextById.get(pkg.id)
+    if (override !== undefined) details.last_additional_ai_context = override
+    return HttpResponse.json(details)
   }),
 
   http.get("/packages/:id/actions", ({ params }) => {
@@ -413,6 +418,14 @@ export const handlers = [
     return HttpResponse.json({})
   }),
 
+  http.post("/packages/:id/additional-ai-context", async ({ params, request }) => {
+    const pkg = packagesById.get(String(params.id))
+    if (!pkg) return notFound(params.id)
+    const body = (await request.json()) as SetAdditionalAiContextRequest
+    additionalAiContextById.set(pkg.id, body.additional_ai_context ?? null)
+    return HttpResponse.json({})
+  }),
+
   http.post("/packages/:id/restore", ({ params }) => {
     const pkg = packagesById.get(String(params.id))
     if (!pkg) return notFound(params.id)
@@ -448,11 +461,23 @@ export const handlers = [
     const status = url.searchParams.get("status") as DirtyPackageStatus | null
     const customer = url.searchParams.get("customer_tag")
     const search = url.searchParams.get("search")?.toLowerCase() ?? null
+    const sortBy = (url.searchParams.get("sort_by") ?? "created_date") as
+      | "created_date"
+      | "name"
+      | "status"
+    const sortOrder = (url.searchParams.get("sort_order") ?? "desc") as "asc" | "desc"
 
-    let filtered = dirtyPackages
+    let filtered = [...dirtyPackages]
     if (status) filtered = filtered.filter((p) => p.status === status)
     if (customer) filtered = filtered.filter((p) => p.customer_tag === customer)
     if (search) filtered = filtered.filter((p) => p.name.toLowerCase().includes(search))
+
+    filtered.sort((a, b) => {
+      const av = a[sortBy] ?? ""
+      const bv = b[sortBy] ?? ""
+      if (av === bv) return 0
+      return (av < bv ? -1 : 1) * (sortOrder === "asc" ? 1 : -1)
+    })
 
     const body: PaginatedDirtyPackageResponse = {
       items: filtered.slice(offset, offset + limit),
@@ -554,17 +579,17 @@ export const handlers = [
       const body = (await request.json()) as UpdateDocumentClassificationRequest
       if (body.doc_type !== undefined) doc.doc_type = body.doc_type as DocType
       if (body.mode !== undefined) doc.mode = body.mode as DocMode
-      if (body.target_clean_package_id !== undefined) {
-        const previous = doc.target_clean_package_id
-        if (previous) {
-          const draft = details.drafts.find((d) => d.id === previous)
-          if (draft) draft.document_ids = draft.document_ids.filter((x) => x !== doc.id)
-        }
-        doc.target_clean_package_id = body.target_clean_package_id ?? null
-        if (doc.target_clean_package_id) {
-          const draft = details.drafts.find((d) => d.id === doc.target_clean_package_id)
-          if (draft && !draft.document_ids.includes(doc.id))
-            draft.document_ids.push(doc.id)
+      if (body.target_clean_package_ids !== undefined) {
+        const nextIds = new Set(body.target_clean_package_ids)
+        const previousIds = new Set(doc.target_clean_package_ids)
+        doc.target_clean_package_ids = [...nextIds]
+        for (const draft of details.drafts) {
+          const shouldHave = nextIds.has(draft.id)
+          const currentlyHas = draft.document_ids.includes(doc.id)
+          if (shouldHave && !currentlyHas) draft.document_ids.push(doc.id)
+          else if (!shouldHave && currentlyHas && previousIds.has(draft.id)) {
+            draft.document_ids = draft.document_ids.filter((x) => x !== doc.id)
+          }
         }
       }
       if (body.notes !== undefined) doc.notes = body.notes
@@ -612,8 +637,9 @@ export const handlers = [
       if (!details) return HttpResponse.json({}, { status: 404 })
       details.drafts = details.drafts.filter((d) => d.id !== String(params.draftId))
       for (const doc of details.documents) {
-        if (doc.target_clean_package_id === String(params.draftId))
-          doc.target_clean_package_id = null
+        doc.target_clean_package_ids = doc.target_clean_package_ids.filter(
+          (x) => x !== String(params.draftId),
+        )
       }
       return HttpResponse.json({})
     },
