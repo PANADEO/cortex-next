@@ -44,6 +44,16 @@ const nextConfig: NextConfig = {
           destination: `${IDP_BACKEND_URL}/packages/:id/actions`,
         },
         {
+          source: "/packages/:id/transitions",
+          has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
+          destination: `${IDP_BACKEND_URL}/packages/:id/transitions`,
+        },
+        {
+          source: "/packages/:id/transport-orders",
+          has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
+          destination: `${IDP_BACKEND_URL}/packages/:id/transport-orders`,
+        },
+        {
           source: "/packages/:id",
           has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
           destination: `${IDP_BACKEND_URL}/packages/:id`,

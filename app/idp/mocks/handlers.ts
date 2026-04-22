@@ -176,6 +176,8 @@ export const handlers = [
   http.get("/packages/get_all", () => passthrough()),
   http.get("/packages/action_logs", () => passthrough()),
   http.get("/packages/:id/actions", () => passthrough()),
+  http.get("/packages/:id/transitions", () => passthrough()),
+  http.get("/packages/:id/transport-orders", () => passthrough()),
   http.get("/packages/:id", () => passthrough()),
 
   http.get("/health", () => HttpResponse.json({ status: "ok" })),
