@@ -92,6 +92,16 @@ const nextConfig: NextConfig = {
           has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
           destination: `${IDP_BACKEND_URL}/packages/:pid/transport-orders/:oid/invoices/:iid`,
         },
+        {
+          source: "/packages/:pid/transport-orders/:oid/invoices/:iid/totals",
+          has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
+          destination: `${IDP_BACKEND_URL}/packages/:pid/transport-orders/:oid/invoices/:iid/totals`,
+        },
+        {
+          source: "/packages/:pid/transport-orders/:oid/invoices/:iid/delivery-terms",
+          has: [{ type: "header", key: "accept", value: ".*application/json.*" }],
+          destination: `${IDP_BACKEND_URL}/packages/:pid/transport-orders/:oid/invoices/:iid/delivery-terms`,
+        },
         // Dynamic routes kolidują z Next page routes (app/packages/[id]/page.tsx),
         // więc rewrite ograniczony do API calls (Accept: application/json z apiClient).
         // Page navigation (Accept: text/html) leci do page componentu bez rewrite'u.
