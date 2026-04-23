@@ -11,7 +11,7 @@ services:
       - PORT=80
       - HOSTNAME=0.0.0.0
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80/"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:80/', (r) => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\""]
       interval: 30s
       timeout: 10s
       retries: 3

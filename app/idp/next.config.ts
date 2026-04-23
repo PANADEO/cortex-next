@@ -4,7 +4,7 @@ import type { NextConfig } from "next"
 const isDev = process.env.NODE_ENV === "development"
 const repoRoot = path.resolve(__dirname, "..", "..")
 
-const IDP_BACKEND_URL = process.env.IDP_BACKEND_URL ?? "http://localhost:8000"
+const IDP_BACKEND_URL = process.env.IDP_BACKEND_URL ?? "http://idp-app"
 
 const nextConfig: NextConfig = {
   distDir: isDev ? ".next-dev" : ".next",
