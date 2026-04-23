@@ -2,9 +2,9 @@
 
 import { signIn } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
-import { useState } from "react"
+import { Suspense, useState } from "react"
 
-export default function LoginPage() {
+function LoginButton() {
   const callbackUrl = useSearchParams().get("callbackUrl") ?? "/dashboard"
   const [isPending, setIsPending] = useState(false)
 
@@ -15,6 +15,19 @@ export default function LoginPage() {
   }
 
   return (
+    <button
+      type="button"
+      onClick={handleDemoLogin}
+      disabled={isPending}
+      className="inline-flex h-9 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
+    >
+      {isPending ? "Signing in…" : "Continue as Demo User"}
+    </button>
+  )
+}
+
+export default function LoginPage() {
+  return (
     <main className="flex min-h-screen items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm space-y-6 rounded-lg border border-border bg-card p-8 shadow-sm">
         <div className="space-y-2">
@@ -23,14 +36,19 @@ export default function LoginPage() {
             Prototype build — authenticate as the demo user.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleDemoLogin}
-          disabled={isPending}
-          className="inline-flex h-9 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
+        <Suspense
+          fallback={
+            <button
+              type="button"
+              disabled
+              className="inline-flex h-9 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground opacity-50"
+            >
+              Loading…
+            </button>
+          }
         >
-          {isPending ? "Signing in…" : "Continue as Demo User"}
-        </button>
+          <LoginButton />
+        </Suspense>
       </div>
     </main>
   )
