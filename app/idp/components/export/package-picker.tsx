@@ -49,7 +49,7 @@ export function PackagePicker({ state }: PackagePickerProps) {
   const [readiness, setReadiness] = useState<Readiness>("verified")
 
   const { data, isLoading } = usePackages({
-    limit: 200,
+    limit: 100,
     sort_by: "created_date",
     sort_order: "desc",
   })

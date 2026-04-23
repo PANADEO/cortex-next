@@ -13,7 +13,7 @@ import {
 
 export type KindFilter = "all" | "dirty" | "clean"
 
-const BOARD_PAGE_SIZE = 200
+const BOARD_PAGE_SIZE = 100
 
 export interface PipelineBoardState {
   search: string
