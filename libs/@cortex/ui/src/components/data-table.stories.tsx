@@ -82,7 +82,10 @@ export const Clickable: Story = () => (
       columns={COLUMNS}
       data={ROWS}
       bordered
-      onRowClick={(row) => console.log("row clicked", row.id)}
+      onRowClick={(row) => {
+        // eslint-disable-next-line no-console
+        console.log("row clicked", row.id)
+      }}
     />
   </div>
 )

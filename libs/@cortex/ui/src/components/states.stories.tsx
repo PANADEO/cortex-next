@@ -48,7 +48,10 @@ export const Error: Story = () => (
     <ErrorState
       title="Failed to load packages"
       message="The API returned 503. Check that the backend is reachable."
-      onRetry={() => console.log("retry")}
+      onRetry={() => {
+        // eslint-disable-next-line no-console
+        console.log("retry")
+      }}
     />
   </div>
 )
