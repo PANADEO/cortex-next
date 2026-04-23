@@ -6,16 +6,22 @@ const PUBLIC_PATHS = ["/login"]
 
 const STATIC_IDP_PATHS = new Set([
   "/user/me",
+  "/user/preferences",
   "/packages/dashboard-stats",
   "/packages/get_all",
   "/packages/action_logs",
+  "/packages/export-templates",
+  "/packages/delete",
   "/packages/import",
   "/packages/import-multiple",
+  "/config/custom-statuses",
 ])
 
 const DOWNLOAD_PATTERNS: RegExp[] = [
   /^\/packages\/[^/]+\/download$/,
   /^\/packages\/[^/]+\/download-result$/,
+  /^\/packages\/[^/]+\/source-files\/content$/,
+  /^\/packages\/[^/]+\/export$/,
 ]
 
 const JSON_API_PATTERNS: RegExp[] = [
@@ -36,6 +42,11 @@ const JSON_API_PATTERNS: RegExp[] = [
   /^\/packages\/[^/]+\/transport-orders\/[^/]+\/invoices\/[^/]+\/totals$/,
   /^\/packages\/[^/]+\/transport-orders\/[^/]+\/invoices\/[^/]+\/delivery-terms$/,
   /^\/packages\/[^/]+\/transport-orders\/[^/]+\/invoices\/[^/]+\/lines$/,
+  /^\/packages\/[^/]+\/source-files$/,
+  /^\/packages\/[^/]+\/export\/validate$/,
+  /^\/packages\/[^/]+\/custom-status$/,
+  /^\/packages\/[^/]+\/user-notes$/,
+  /^\/packages\/[^/]+\/restore$/,
   /^\/packages\/[^/]+$/,
 ]
 
