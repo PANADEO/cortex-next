@@ -1,6 +1,9 @@
 import type { Story } from "@ladle/react"
-import type { PackageActionReadModel } from "@cortex/types"
+import type { PackageActionReadModel, PackageActionType } from "@cortex/types"
 import { ActionLogTimeline } from "./action-log-timeline"
+
+// `reprocess` is emitted by backend but not yet present in PackageActionType union.
+const REPROCESS = "reprocess" as PackageActionType
 
 export default {
   title: "Domain / ActionLogTimeline",
@@ -83,6 +86,59 @@ export const WithoutPayloads: Story = () => (
 export const Empty: Story = () => (
   <div className="max-w-xl p-6">
     <ActionLogTimeline events={[]} />
+  </div>
+)
+
+export const ReprocessVariants: Story = () => (
+  <div className="max-w-xl space-y-6 p-6">
+    <ActionLogTimeline
+      events={[
+        {
+          id: "r1",
+          action_type: REPROCESS,
+          timestamp: mins(40),
+          performed_by: "anna.k@cortex",
+          payload: JSON.stringify({
+            fast_processing: false,
+            additional_ai_context_enabled: true,
+            additional_ai_context:
+              "Faktura zawiera dwie pozycje SAD — należy zwrócić uwagę na kod CN 8517.62.00 oraz proszę użyć stawki preferencyjnej dla pozycji 2.",
+          }),
+        },
+        {
+          id: "r2",
+          action_type: REPROCESS,
+          timestamp: mins(30),
+          performed_by: "anna.k@cortex",
+          payload: JSON.stringify({
+            fast_processing: true,
+            additional_ai_context_enabled: false,
+            additional_ai_context: null,
+          }),
+        },
+        {
+          id: "r3",
+          action_type: REPROCESS,
+          timestamp: mins(20),
+          performed_by: "anna.k@cortex",
+          payload: JSON.stringify({
+            fast_processing: true,
+            additional_ai_context_enabled: true,
+            additional_ai_context:
+              "Bardzo długi kontekst który powinien zostać obcięty z opcją 'Show more'. ".repeat(
+                10,
+              ),
+          }),
+        },
+        {
+          id: "r4",
+          action_type: REPROCESS,
+          timestamp: mins(10),
+          performed_by: "system",
+          payload: null,
+        },
+      ]}
+    />
   </div>
 )
 

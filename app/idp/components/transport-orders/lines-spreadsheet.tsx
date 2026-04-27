@@ -201,6 +201,11 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
     document.addEventListener("mouseup", dispose)
   }
 
+  const totalWidth = useMemo(
+    () => COLUMNS.reduce((sum, c) => sum + (widths[c.key] ?? c.width), 0),
+    [widths],
+  )
+
   const sortedLines = useMemo(() => {
     if (!sort) return invoice.lines
     const col = COLUMNS.find((c) => c.key === sort.key)
@@ -258,7 +263,10 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
         ) : null}
       </header>
       <div className="min-h-0 flex-1 overflow-auto">
-        <table className="border-collapse text-[9px]" style={{ tableLayout: "fixed" }}>
+        <table
+          className="border-collapse text-[9px]"
+          style={{ tableLayout: "fixed", width: `${totalWidth}px`, minWidth: "100%" }}
+        >
           <colgroup>
             {COLUMNS.map((c) => (
               <col key={c.key} style={{ width: `${widths[c.key] ?? c.width}px` }} />

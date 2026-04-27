@@ -35,7 +35,7 @@ import {
   TabsTrigger,
 } from "@cortex/ui"
 import { emailsMatch, formatAbsolute, formatFileSizeMb, formatMoney } from "@cortex/utils"
-import { ArrowLeft, Braces, ExternalLink, FileArchive, Loader2 } from "lucide-react"
+import { ArrowLeft, Braces, FileArchive, Loader2, Maximize2 } from "lucide-react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
@@ -200,16 +200,14 @@ export default function PackageDetailPage() {
                   </p>
                   <div className="flex flex-col gap-1.5">
                     <Button asChild variant="outline" size="sm" disabled={!pkg.analysis_result}>
-                      <a
+                      <Link
                         href={`/verify/${pkg.id}`}
-                        target="_blank"
-                        rel="noreferrer"
                         aria-disabled={!pkg.analysis_result}
                         className={!pkg.analysis_result ? "pointer-events-none opacity-50" : ""}
                       >
-                        <ExternalLink className="mr-1.5 h-4 w-4" />
+                        <Maximize2 className="mr-1.5 h-4 w-4" />
                         Open verification workspace
-                      </a>
+                      </Link>
                     </Button>
                     <Button
                       variant="outline"

@@ -13,14 +13,18 @@ import {
   MessageSquare,
   Play,
   RotateCcw,
+  RotateCw,
+  Sparkles,
   StickyNote,
   Tag,
   Trash2,
   XCircle,
+  Zap,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { useState } from "react"
 import { JsonViewer } from "./json-viewer"
+import { Badge } from "./ui/badge"
 
 const ACTION_META: Partial<
   Record<PackageActionType, { icon: LucideIcon; tone: string; label: string }>
@@ -49,6 +53,14 @@ const ACTION_META: Partial<
   deleted: { icon: Trash2, tone: "text-destructive", label: "Deleted" },
   restored: { icon: ArchiveRestore, tone: "text-success-foreground", label: "Restored" },
 }
+
+// `reprocess` is emitted by the backend but not in PackageActionType yet — keyed by string.
+const REPROCESS_ACTION_TYPE = "reprocess"
+const REPROCESS_META = {
+  icon: RotateCw,
+  tone: "text-info",
+  label: "Reprocessed",
+} as const
 
 interface ActionLogTimelineProps {
   events: PackageActionReadModel[]
@@ -83,11 +95,14 @@ function TimelineRow({
   event: PackageActionReadModel
   showPayloads: boolean
 }) {
-  const meta = ACTION_META[event.action_type] ?? {
-    icon: ArrowRight,
-    tone: "text-muted-foreground",
-    label: event.action_type.replace(/_/g, " "),
-  }
+  const isReprocess = (event.action_type as string) === REPROCESS_ACTION_TYPE
+  const meta = isReprocess
+    ? REPROCESS_META
+    : ACTION_META[event.action_type] ?? {
+        icon: ArrowRight,
+        tone: "text-muted-foreground",
+        label: event.action_type.replace(/_/g, " "),
+      }
   const Icon = meta.icon
   const [open, setOpen] = useState(false)
   const hasPayload = showPayloads && event.payload && event.payload !== "null"
@@ -122,7 +137,9 @@ function TimelineRow({
           </time>
         </div>
         <p className="text-xs text-muted-foreground">by {event.performed_by}</p>
-        {hasPayload ? (
+        {showPayloads && isReprocess ? (
+          <ReprocessPayload payload={parsedPayload} />
+        ) : hasPayload ? (
           isDiffPayload(parsedPayload) ? (
             <DiffPayload diff={parsedPayload} />
           ) : (
@@ -140,6 +157,90 @@ function TimelineRow({
         ) : null}
       </div>
     </li>
+  )
+}
+
+interface ReprocessPayloadShape {
+  fast_processing?: boolean
+  additional_ai_context_enabled?: boolean
+  additional_ai_context?: string | null
+}
+
+function isReprocessPayload(v: unknown): v is ReprocessPayloadShape {
+  return !!v && typeof v === "object" && !Array.isArray(v)
+}
+
+function ReprocessPayload({ payload }: { payload: unknown }) {
+  const [expanded, setExpanded] = useState(false)
+
+  if (!isReprocessPayload(payload)) {
+    return (
+      <p className="text-xs italic text-muted-foreground">
+        Reprocess details unavailable
+      </p>
+    )
+  }
+
+  const aiEnabled = payload.additional_ai_context_enabled === true
+  const fastProcessing = payload.fast_processing === true
+  const aiContext = typeof payload.additional_ai_context === "string"
+    ? payload.additional_ai_context.trim()
+    : ""
+  const hasAiContext = aiEnabled && aiContext.length > 0
+  // Long context gets a "Show more" toggle; short fits inline.
+  const isLongContext = aiContext.length > 240
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex flex-wrap gap-1.5">
+        <Badge
+          variant={aiEnabled ? "secondary" : "outline"}
+          className="gap-1 text-[10px]"
+        >
+          <Sparkles className="h-3 w-3" />
+          {aiEnabled ? "AI context used" : "No additional context"}
+        </Badge>
+        {fastProcessing ? (
+          <Badge variant="secondary" className="gap-1 text-[10px]">
+            <Zap className="h-3 w-3" />
+            Fast processing
+          </Badge>
+        ) : null}
+      </div>
+      {hasAiContext ? (
+        <div className="rounded-md border border-border bg-muted/40 p-2 text-xs">
+          {isLongContext && !expanded ? (
+            <>
+              <p className="whitespace-pre-wrap text-foreground">
+                {aiContext.slice(0, 240)}…
+              </p>
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                className="mt-1 text-[11px] text-muted-foreground hover:text-foreground"
+              >
+                Show more
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="max-h-40 overflow-y-auto whitespace-pre-wrap text-foreground">
+                {aiContext}
+              </p>
+              {isLongContext ? (
+                <button
+                  type="button"
+                  onClick={() => setExpanded(false)}
+                  className="mt-1 text-[11px] text-muted-foreground hover:text-foreground"
+                >
+                  Show less
+                </button>
+              ) : null}
+            </>
+          )}
+        </div>
+      ) : null}
+    </div>
   )
 }
 

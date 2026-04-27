@@ -16,6 +16,7 @@ import { useParams } from "next/navigation"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { toast } from "sonner"
 import { SourceMaterialsPanel } from "@/components/source-materials-panel"
+import { InvoiceHeaderPanel } from "@/components/transport-orders/invoice-header-panel"
 import { LinesSpreadsheet } from "@/components/transport-orders/lines-spreadsheet"
 
 export default function VerifyWorkspacePage() {
@@ -87,6 +88,7 @@ export default function VerifyWorkspacePage() {
         ) : (
           <PanelGroup direction="horizontal" className="h-full">
             <Panel defaultSize={55} minSize={30} className="flex min-h-0 flex-col">
+              {order ? <InvoiceHeaderPanel order={order} invoice={invoice} /> : null}
               <LinesSpreadsheet
                 invoice={invoice}
                 canEdit={canEdit}
