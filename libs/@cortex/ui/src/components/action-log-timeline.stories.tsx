@@ -1,9 +1,6 @@
 import type { Story } from "@ladle/react"
-import type { PackageActionReadModel, PackageActionType } from "@cortex/types"
+import type { PackageActionReadModel } from "@cortex/types"
 import { ActionLogTimeline } from "./action-log-timeline"
-
-// `reprocess` is emitted by backend but not yet present in PackageActionType union.
-const REPROCESS = "reprocess" as PackageActionType
 
 export default {
   title: "Domain / ActionLogTimeline",
@@ -95,11 +92,12 @@ export const ReprocessVariants: Story = () => (
       events={[
         {
           id: "r1",
-          action_type: REPROCESS,
+          action_type: "analysing",
           timestamp: mins(40),
           performed_by: "anna.k@cortex",
           payload: JSON.stringify({
-            fast_processing: false,
+            reprocess: true,
+            use_fast_model: false,
             additional_ai_context_enabled: true,
             additional_ai_context:
               "Faktura zawiera dwie pozycje SAD — należy zwrócić uwagę na kod CN 8517.62.00 oraz proszę użyć stawki preferencyjnej dla pozycji 2.",
@@ -107,22 +105,24 @@ export const ReprocessVariants: Story = () => (
         },
         {
           id: "r2",
-          action_type: REPROCESS,
+          action_type: "analysing",
           timestamp: mins(30),
           performed_by: "anna.k@cortex",
           payload: JSON.stringify({
-            fast_processing: true,
+            reprocess: true,
+            use_fast_model: true,
             additional_ai_context_enabled: false,
             additional_ai_context: null,
           }),
         },
         {
           id: "r3",
-          action_type: REPROCESS,
+          action_type: "analysing",
           timestamp: mins(20),
           performed_by: "anna.k@cortex",
           payload: JSON.stringify({
-            fast_processing: true,
+            reprocess: true,
+            use_fast_model: true,
             additional_ai_context_enabled: true,
             additional_ai_context:
               "Bardzo długi kontekst który powinien zostać obcięty z opcją 'Show more'. ".repeat(
@@ -132,10 +132,13 @@ export const ReprocessVariants: Story = () => (
         },
         {
           id: "r4",
-          action_type: REPROCESS,
+          action_type: "analysing",
           timestamp: mins(10),
           performed_by: "system",
-          payload: null,
+          payload: JSON.stringify({
+            reprocess: false,
+            use_fast_model: false,
+          }),
         },
       ]}
     />

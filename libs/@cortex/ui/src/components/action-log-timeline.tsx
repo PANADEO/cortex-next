@@ -54,8 +54,8 @@ const ACTION_META: Partial<
   restored: { icon: ArchiveRestore, tone: "text-success-foreground", label: "Restored" },
 }
 
-// `reprocess` is emitted by the backend but not in PackageActionType yet — keyed by string.
-const REPROCESS_ACTION_TYPE = "reprocess"
+// Backend logs reprocess as action_type "analysing" with payload.reprocess === true,
+// not as a distinct action_type. Detected at render time from the payload.
 const REPROCESS_META = {
   icon: RotateCw,
   tone: "text-info",
@@ -95,15 +95,6 @@ function TimelineRow({
   event: PackageActionReadModel
   showPayloads: boolean
 }) {
-  const isReprocess = (event.action_type as string) === REPROCESS_ACTION_TYPE
-  const meta = isReprocess
-    ? REPROCESS_META
-    : ACTION_META[event.action_type] ?? {
-        icon: ArrowRight,
-        tone: "text-muted-foreground",
-        label: event.action_type.replace(/_/g, " "),
-      }
-  const Icon = meta.icon
   const [open, setOpen] = useState(false)
   const hasPayload = showPayloads && event.payload && event.payload !== "null"
 
@@ -115,6 +106,21 @@ function TimelineRow({
       parsedPayload = event.payload
     }
   }
+
+  const isReprocess =
+    event.action_type === "analysing" &&
+    !!parsedPayload &&
+    typeof parsedPayload === "object" &&
+    (parsedPayload as { reprocess?: boolean }).reprocess === true
+
+  const meta = isReprocess
+    ? REPROCESS_META
+    : ACTION_META[event.action_type] ?? {
+        icon: ArrowRight,
+        tone: "text-muted-foreground",
+        label: event.action_type.replace(/_/g, " "),
+      }
+  const Icon = meta.icon
 
   return (
     <li className="flex gap-3">
@@ -161,7 +167,8 @@ function TimelineRow({
 }
 
 interface ReprocessPayloadShape {
-  fast_processing?: boolean
+  reprocess?: boolean
+  use_fast_model?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null
 }
@@ -182,7 +189,7 @@ function ReprocessPayload({ payload }: { payload: unknown }) {
   }
 
   const aiEnabled = payload.additional_ai_context_enabled === true
-  const fastProcessing = payload.fast_processing === true
+  const fastProcessing = payload.use_fast_model === true
   const aiContext = typeof payload.additional_ai_context === "string"
     ? payload.additional_ai_context.trim()
     : ""
