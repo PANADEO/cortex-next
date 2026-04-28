@@ -1,6 +1,7 @@
 "use client"
 
 import { AppShell, TileMenu } from "@cortex/ui"
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
@@ -25,9 +26,16 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     <Link
       href="/"
       aria-label="Powrót do Cortex360 hub"
-      className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-cortex text-white transition-opacity hover:opacity-80"
+      className="inline-block transition-opacity hover:opacity-80"
     >
-      <span className="text-sm font-semibold">C</span>
+      <Image
+        src="/cortex-logo.png"
+        alt="Cortex360"
+        width={28}
+        height={28}
+        className="dark:invert dark:hue-rotate-180"
+        priority
+      />
     </Link>
   )
 
@@ -45,9 +53,13 @@ export default function MainLayout({ children }: { children: ReactNode }) {
               aria-label="Powrót do Cortex360 hub"
               className="flex items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-80"
             >
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-cortex text-sm font-semibold text-white">
-                C
-              </span>
+              <Image
+                src="/cortex-logo.png"
+                alt="Cortex360"
+                width={28}
+                height={28}
+                className="dark:invert dark:hue-rotate-180"
+              />
               <span className="text-sm">Cortex360 IDP</span>
             </Link>
           }

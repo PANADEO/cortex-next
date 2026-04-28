@@ -63,6 +63,10 @@ const LEGACY_REDIRECTS: ReadonlyArray<{ from: RegExp; to: string }> = [
 ]
 
 function tryLegacyRedirect(req: NextRequest) {
+  // XHR/fetch with Accept: application/json is API traffic — let it fall through
+  // to tryIdpRewrite or 404. Redirecting JSON XHR breaks apiClient (308 → HTML page → parse error).
+  if ((req.headers.get("accept") ?? "").includes("application/json")) return null
+
   const { pathname, search } = req.nextUrl
   for (const { from, to } of LEGACY_REDIRECTS) {
     const match = pathname.match(from)

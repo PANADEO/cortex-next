@@ -2,6 +2,7 @@
 
 import { useSetUserPreferences } from "@cortex/api"
 import { SkinToggle, type SkinOption, ThemeToggle, UserMenu } from "@cortex/ui"
+import Image from "next/image"
 import { SKINS, type SkinId, useSkinStore } from "@/lib/stores/skin-store"
 import { useThemeStore } from "@/lib/stores/theme-store"
 
@@ -28,9 +29,14 @@ export function ShellHeader() {
     <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-6">
         <div className="flex shrink-0 items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-cortex text-sm font-semibold text-white">
-            C
-          </div>
+          <Image
+            src="/cortex-logo.png"
+            alt="Cortex360"
+            width={28}
+            height={28}
+            className="dark:invert dark:hue-rotate-180"
+            priority
+          />
           <div className="flex flex-col leading-tight">
             <span className="text-sm font-semibold">Cortex360</span>
             <span className="text-[10px] text-muted-foreground">Forsped Sp. z o.o.</span>
