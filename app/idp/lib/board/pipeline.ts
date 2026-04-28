@@ -163,7 +163,7 @@ export function toDirtyCard(pkg: DirtyPackageReadModel): DirtyBoardCard | null {
     customer: pkg.customer_tag,
     docCount: pkg.document_count,
     needsReviewCount: pkg.needs_review_count,
-    href: `/classification/${pkg.id}`,
+    href: `/idp/classification/${pkg.id}`,
     subtitle: dirtySubtitle(pkg),
     source: pkg,
   }
@@ -185,7 +185,7 @@ export function toCleanCard(pkg: PackageReadModel): CleanBoardCard {
     processingState: pkg.processing_state,
     verificationState: pkg.verification_state,
     hasError,
-    href: `/packages/${pkg.id}`,
+    href: `/idp/packages/${pkg.id}`,
     subtitle: pkg.assignee ?? "Unassigned",
     source: pkg,
   }

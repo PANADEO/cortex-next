@@ -151,7 +151,7 @@ export default function PackageDetailPage() {
             />
             {pkg ? <ExportMenu packageId={pkg.id} fileName={pkg.file_name} /> : null}
             <Button variant="outline" size="sm" asChild>
-              <Link href="/packages">
+              <Link href="/idp/packages">
                 <ArrowLeft className="mr-1 h-4 w-4" /> Back
               </Link>
             </Button>
@@ -201,7 +201,7 @@ export default function PackageDetailPage() {
                   <div className="flex flex-col gap-1.5">
                     <Button asChild variant="outline" size="sm" disabled={!pkg.analysis_result}>
                       <Link
-                        href={`/verify/${pkg.id}`}
+                        href={`/idp/verify/${pkg.id}`}
                         aria-disabled={!pkg.analysis_result}
                         className={!pkg.analysis_result ? "pointer-events-none opacity-50" : ""}
                       >

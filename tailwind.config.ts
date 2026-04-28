@@ -81,6 +81,11 @@ const config: Config = {
           4: "hsl(var(--chart-4))",
           5: "hsl(var(--chart-5))",
         },
+        cortex: {
+          DEFAULT: "#4A90E2",
+          dark: "#2563eb",
+          light: "#dbeafe",
+        },
       },
       borderRadius: {
         xs: "var(--radius-xs)",

@@ -13,12 +13,17 @@ export function breadcrumbsFromPath(pathname: string): BreadcrumbEntry[] {
   const segments = pathname.split("/").filter(Boolean)
   if (segments.length === 0) return [{ label: "IDP" }]
 
-  const trail: BreadcrumbEntry[] = [{ label: "IDP" }]
-  let accum = ""
-  segments.forEach((seg, idx) => {
+  const root: BreadcrumbEntry =
+    segments[0] === "idp" ? { label: "IDP", href: "/" } : { label: "IDP" }
+  const rest = segments[0] === "idp" ? segments.slice(1) : segments
+  if (rest.length === 0) return [root]
+
+  const trail: BreadcrumbEntry[] = [root]
+  let accum = "/idp"
+  rest.forEach((seg, idx) => {
     accum += `/${seg}`
     const label = NAV_LABELS[seg] ?? seg
-    const isLast = idx === segments.length - 1
+    const isLast = idx === rest.length - 1
     trail.push(isLast ? { label } : { label, href: accum })
   })
   return trail

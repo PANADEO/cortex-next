@@ -102,7 +102,7 @@ export default function RulesPage() {
       {
         onSuccess: (rule) => {
           setNewRuleOpen(false)
-          router.push(`/rules/${rule.id}?nl=${encodeURIComponent(tpl?.example_nl ?? "")}`)
+          router.push(`/idp/rules/${rule.id}?nl=${encodeURIComponent(tpl?.example_nl ?? "")}`)
         },
         onError: (err) => toastApiError(err),
       },
@@ -176,7 +176,7 @@ export default function RulesPage() {
         header: () => <span className="sr-only">Actions</span>,
         cell: ({ row }) => (
           <Button asChild size="sm" variant="ghost">
-            <Link href={`/rules/${row.original.id}`}>
+            <Link href={`/idp/rules/${row.original.id}`}>
               Open
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Link>

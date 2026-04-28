@@ -53,7 +53,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       label: p.file_name,
       hint: p.id,
       icon: Package,
-      href: `/packages/${p.id}`,
+      href: `/idp/packages/${p.id}`,
     }))
     return [...nav, ...pkgEntries]
   }, [deferredQuery, packages.data])

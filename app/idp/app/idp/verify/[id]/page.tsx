@@ -55,7 +55,7 @@ export default function VerifyWorkspacePage() {
       <header className="flex shrink-0 items-center justify-between border-b border-border px-4 py-2.5">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="sm">
-            <Link href={`/packages/${id}`}>
+            <Link href={`/idp/packages/${id}`}>
               <ArrowLeft className="mr-1 h-4 w-4" /> Back to package
             </Link>
           </Button>

@@ -86,7 +86,7 @@ export default auth((req) => {
 
   if (isPublic) {
     if (isLoggedIn && nextUrl.pathname === "/login") {
-      return NextResponse.redirect(new URL("/dashboard", nextUrl))
+      return NextResponse.redirect(new URL("/", nextUrl))
     }
     return NextResponse.next()
   }

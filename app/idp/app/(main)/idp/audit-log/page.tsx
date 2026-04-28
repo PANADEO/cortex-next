@@ -50,7 +50,7 @@ const columns: ColumnDef<ActionLogReadModel, unknown>[] = [
     header: "Package",
     cell: ({ row }) => (
       <Link
-        href={`/packages/${row.original.package_id}`}
+        href={`/idp/packages/${row.original.package_id}`}
         className="font-mono text-xs hover:underline"
       >
         {row.original.package_file_name}

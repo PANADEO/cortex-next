@@ -49,7 +49,7 @@ export function packageColumns(
     header: "File",
     cell: ({ row }) => (
       <Link
-        href={`/packages/${row.original.id}`}
+        href={`/idp/packages/${row.original.id}`}
         className="font-mono text-xs hover:underline"
       >
         {row.original.file_name}

@@ -120,7 +120,7 @@ export default function ClassificationPage() {
         header: "Name",
         cell: ({ row }) => (
           <Link
-            href={`/classification/${row.original.id}`}
+            href={`/idp/classification/${row.original.id}`}
             className="font-mono text-xs hover:underline"
           >
             {row.original.name}
@@ -185,7 +185,7 @@ export default function ClassificationPage() {
         header: () => <span className="sr-only">Actions</span>,
         cell: ({ row }) => (
           <Button asChild size="sm" variant="ghost">
-            <Link href={`/classification/${row.original.id}`}>
+            <Link href={`/idp/classification/${row.original.id}`}>
               Open
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Link>

@@ -280,7 +280,7 @@ export default function RuleEditorPage() {
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background px-6 py-3">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="sm" className="-ml-2">
-            <Link href="/rules">
+            <Link href="/idp/rules">
               <ArrowLeft className="mr-1.5 h-4 w-4" />
               Wstecz
             </Link>

@@ -10,8 +10,10 @@ import { IDP_NAV } from "@/lib/nav"
 import { useSidebarStore } from "@/lib/stores/sidebar-store"
 
 function pathToItemId(pathname: string): string {
-  const segment = pathname.split("/").filter(Boolean)[0] ?? "dashboard"
-  return segment
+  const segments = pathname.split("/").filter(Boolean)
+  const first = segments[0]
+  if (first === "idp") return segments[1] ?? "dashboard"
+  return first ?? "dashboard"
 }
 
 export default function MainLayout({ children }: { children: ReactNode }) {

@@ -89,7 +89,7 @@ export default function ClassificationWorkspacePage() {
               : ""),
         )
         setConfirmPromote(false)
-        router.push("/packages")
+        router.push("/idp/packages")
       },
       onError: (err) => {
         toastApiError(err)
@@ -103,7 +103,7 @@ export default function ClassificationWorkspacePage() {
       <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-2.5">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="sm" className="-ml-2">
-            <Link href="/classification">
+            <Link href="/idp/classification">
               <ArrowLeft className="mr-1.5 h-4 w-4" />
               Back
             </Link>

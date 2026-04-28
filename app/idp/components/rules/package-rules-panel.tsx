@@ -207,7 +207,7 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
                       <Link
-                        href={`/rules/${att.rule_id}`}
+                        href={`/idp/rules/${att.rule_id}`}
                         className="text-sm font-medium hover:underline"
                       >
                         {att.rule_name}
@@ -225,7 +225,7 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
                 </div>
                 <div className="flex items-center gap-1">
                   <Button asChild size="sm" variant="ghost">
-                    <Link href={`/rules/${att.rule_id}`}>
+                    <Link href={`/idp/rules/${att.rule_id}`}>
                       <ExternalLink className="h-3.5 w-3.5" />
                     </Link>
                   </Button>
