@@ -1,7 +1,7 @@
 "use client"
 
 import { AppShell, TileMenu } from "@cortex/ui"
-import { Boxes } from "lucide-react"
+import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
 import { FeatureErrorBoundary } from "@/components/error-boundaries"
@@ -22,9 +22,13 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const collapsed = useSidebarStore((s) => s.collapsed)
 
   const brandIcon = (
-    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-      <Boxes className="h-4 w-4" />
-    </span>
+    <Link
+      href="/"
+      aria-label="Powrót do Cortex360 hub"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-cortex text-white transition-opacity hover:opacity-80"
+    >
+      <span className="text-sm font-semibold">C</span>
+    </Link>
   )
 
   return (
@@ -36,10 +40,16 @@ export default function MainLayout({ children }: { children: ReactNode }) {
           activeItemId={activeItemId}
           collapsed={collapsed}
           brand={
-            <div className="flex items-center gap-2 font-semibold tracking-tight">
-              {brandIcon}
+            <Link
+              href="/"
+              aria-label="Powrót do Cortex360 hub"
+              className="flex items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-80"
+            >
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-cortex text-sm font-semibold text-white">
+                C
+              </span>
               <span className="text-sm">Cortex360 IDP</span>
-            </div>
+            </Link>
           }
           brandIcon={brandIcon}
           footerSlot={

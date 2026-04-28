@@ -50,6 +50,30 @@ const JSON_API_PATTERNS: RegExp[] = [
   /^\/packages\/[^/]+$/,
 ]
 
+const LEGACY_REDIRECTS: ReadonlyArray<{ from: RegExp; to: string }> = [
+  { from: /^\/dashboard(\/.*)?$/, to: "/idp/dashboard" },
+  { from: /^\/packages(\/.*)?$/, to: "/idp/packages" },
+  { from: /^\/import(\/.*)?$/, to: "/idp/import" },
+  { from: /^\/export(\/.*)?$/, to: "/idp/export" },
+  { from: /^\/audit-log(\/.*)?$/, to: "/idp/audit-log" },
+  { from: /^\/rules(\/.*)?$/, to: "/idp/rules" },
+  { from: /^\/board(\/.*)?$/, to: "/idp/board" },
+  { from: /^\/verify(\/.*)?$/, to: "/idp/verify" },
+  { from: /^\/classification(\/.*)?$/, to: "/idp/classification" },
+]
+
+function tryLegacyRedirect(req: NextRequest) {
+  const { pathname, search } = req.nextUrl
+  for (const { from, to } of LEGACY_REDIRECTS) {
+    const match = pathname.match(from)
+    if (match) {
+      const rest = match[1] ?? ""
+      return NextResponse.redirect(new URL(to + rest + search, req.nextUrl), 308)
+    }
+  }
+  return null
+}
+
 function tryIdpRewrite(req: NextRequest) {
   const idpBackend = process.env.IDP_BACKEND_URL ?? "http://idp-app"
   const { pathname, search } = req.nextUrl
@@ -79,6 +103,9 @@ function tryIdpRewrite(req: NextRequest) {
 export default auth((req) => {
   const rewrite = tryIdpRewrite(req)
   if (rewrite) return rewrite
+
+  const legacyRedirect = tryLegacyRedirect(req)
+  if (legacyRedirect) return legacyRedirect
 
   const { nextUrl } = req
   const isLoggedIn = !!req.auth
