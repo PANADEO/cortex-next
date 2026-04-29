@@ -2,27 +2,34 @@
 
 import { signIn } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
-import { Suspense, useState } from "react"
+import { Suspense, useEffect } from "react"
 
-function LoginButton() {
-  const callbackUrl = useSearchParams().get("callbackUrl") ?? "/"
-  const [isPending, setIsPending] = useState(false)
+function AutoSignIn() {
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/"
+  const error = searchParams.get("error")
 
-  async function handleDemoLogin() {
-    setIsPending(true)
-    // SWAP POINT #2 — replace "credentials" with real provider id (e.g. "keycloak").
-    await signIn("credentials", { callbackUrl })
+  useEffect(() => {
+    if (error) return
+    void signIn("credentials", { callbackUrl, redirect: true })
+  }, [callbackUrl, error])
+
+  if (error) {
+    return (
+      <div className="space-y-2">
+        <h2 className="text-base font-semibold">Authentication unavailable</h2>
+        <p className="text-sm text-muted-foreground">
+          We could not verify your session. Please contact your administrator.
+        </p>
+      </div>
+    )
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleDemoLogin}
-      disabled={isPending}
-      className="inline-flex h-9 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
-    >
-      {isPending ? "Signing in…" : "Continue as Demo User"}
-    </button>
+    <div className="space-y-2">
+      <p className="text-sm font-medium">Signing in…</p>
+      <p className="text-xs text-muted-foreground">Connecting to your session</p>
+    </div>
   )
 }
 
@@ -33,21 +40,11 @@ export default function LoginPage() {
         <div className="space-y-2">
           <h1 className="text-xl font-semibold tracking-tight">Cortex IDP</h1>
           <p className="text-sm text-muted-foreground">
-            Prototype build — authenticate as the demo user.
+            Authenticating against your identity provider…
           </p>
         </div>
-        <Suspense
-          fallback={
-            <button
-              type="button"
-              disabled
-              className="inline-flex h-9 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground opacity-50"
-            >
-              Loading…
-            </button>
-          }
-        >
-          <LoginButton />
+        <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+          <AutoSignIn />
         </Suspense>
       </div>
     </main>

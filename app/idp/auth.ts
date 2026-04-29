@@ -1,22 +1,44 @@
 import NextAuth, { type NextAuthConfig, type User } from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 
-// ===== SWAP POINT #1 — fake user; replace with OIDC provider (e.g. Keycloak) =====
-const FAKE_USER: User & { role: string; tileAccess: string[] } = {
-  id: "demo-user-001",
-  email: "demo@cortex.local",
-  name: "Demo User",
-  role: "admin",
-  tileAccess: ["idp"],
+// Identity contract: read X-Auth-Request-Email injected by oauth2-proxy in prod;
+// fall back to DEV_AUTH_USER_EMAIL env for local dev; null → CredentialsSignin.
+// See docs/backend-integration.md.
+function readHeader(request: Request, name: string): string | null {
+  const value = (request.headers.get(name) ?? "").trim()
+  return value || null
 }
 
-const fakeCredentialsProvider = Credentials({
+function formatName(email: string): string {
+  const local = email.split("@")[0] ?? email
+  return local
+    .split(/[._-]/)
+    .filter(Boolean)
+    .map((s) => s[0]!.toUpperCase() + s.slice(1))
+    .join(" ")
+}
+
+const proxyCredentialsProvider = Credentials({
   id: "credentials",
-  name: "Demo Login",
+  name: "Proxy",
   credentials: {},
-  authorize: async () => FAKE_USER,
+  authorize: async (_credentials, request) => {
+    const headerEmail = readHeader(request, "x-auth-request-email")
+    const envEmail = (process.env.DEV_AUTH_USER_EMAIL ?? "").trim() || null
+    const email = headerEmail ?? envEmail
+    if (!email) return null
+
+    const name = readHeader(request, "x-auth-request-user") ?? formatName(email)
+
+    return {
+      id: email,
+      email,
+      name,
+      role: "admin",
+      tileAccess: ["idp"],
+    } satisfies User & { role: "admin" | "operator" | "viewer"; tileAccess: string[] }
+  },
 })
-// ===== END SWAP POINT #1 =====
 
 const authSecret = process.env.AUTH_SECRET
 
@@ -25,7 +47,7 @@ export const authConfig = {
   trustHost: true,
   session: { strategy: "jwt", maxAge: 60 * 60 * 8 },
   pages: { signIn: "/login" },
-  providers: [fakeCredentialsProvider],
+  providers: [proxyCredentialsProvider],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

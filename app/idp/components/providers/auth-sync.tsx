@@ -8,8 +8,10 @@ import { useEffect, useRef } from "react"
  * Syncs NextAuth session email into the shared apiClient so outgoing requests
  * carry the X-Auth-Request-Email header without each feature reaching into auth.
  *
- * SWAP POINT: behind a real auth proxy, headers are injected at the edge;
- * this component becomes a no-op (or configureApiClient with getAuthEmail → null).
+ * In prod behind oauth2-proxy, the proxy injects X-Auth-Request-Email at the
+ * edge, so the value set here is harmlessly overwritten.
+ * In dev with DEV_AUTH_USER_EMAIL, NextAuth populates session.user.email from
+ * env so MSW handlers see the same email the backend would in prod.
  */
 export function AuthSync() {
   const { data: session } = useSession()
