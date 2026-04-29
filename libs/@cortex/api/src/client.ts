@@ -15,6 +15,21 @@ export function configureApiClient(next: Partial<ApiClientConfig>): void {
   config = { ...config, ...next }
 }
 
+class ProxySessionLostError extends Error {
+  constructor() {
+    super("Proxy session lost")
+    this.name = "ProxySessionLostError"
+  }
+}
+
+function redirectToAuthSignIn(): never {
+  if (typeof window !== "undefined") {
+    const target = `/oauth2/start?rd=${encodeURIComponent(window.location.pathname + window.location.search)}`
+    window.location.assign(target)
+  }
+  throw new ProxySessionLostError()
+}
+
 function buildAuthHeaders(): Record<string, string> {
   const email = config.getAuthEmail()
   return email ? { [AUTH_HEADER]: email } : {}
@@ -56,6 +71,7 @@ async function request<T>(method: string, path: string, options: RequestOptions 
     method,
     headers,
     credentials: "include",
+    redirect: "manual",
   }
 
   if (options.signal) init.signal = options.signal
@@ -67,7 +83,15 @@ async function request<T>(method: string, path: string, options: RequestOptions 
     init.body = options.body
   }
 
-  const response = await fetch(buildUrl(path, options.params), init)
+  let response: Response
+  try {
+    response = await fetch(buildUrl(path, options.params), init)
+  } catch (err) {
+    if (err instanceof TypeError) redirectToAuthSignIn()
+    throw err
+  }
+
+  if (response.type === "opaqueredirect") redirectToAuthSignIn()
 
   if (!response.ok) {
     throw await ApiError.fromResponse(response)
