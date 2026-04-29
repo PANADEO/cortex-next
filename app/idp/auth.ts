@@ -1,5 +1,8 @@
 import NextAuth, { type NextAuthConfig, type User } from "next-auth"
 import Credentials from "next-auth/providers/credentials"
+import { resolveDisplayName, resolveUserId } from "./lib/auth-identity"
+
+export { resolveDisplayName, resolveUserId } from "./lib/auth-identity"
 
 // Identity contract: read X-Auth-Request-Email injected by oauth2-proxy in prod;
 // fall back to DEV_AUTH_USER_EMAIL env for local dev; null → CredentialsSignin.
@@ -7,15 +10,6 @@ import Credentials from "next-auth/providers/credentials"
 function readHeader(request: Request, name: string): string | null {
   const value = (request.headers.get(name) ?? "").trim()
   return value || null
-}
-
-function formatName(email: string): string {
-  const local = email.split("@")[0] ?? email
-  return local
-    .split(/[._-]/)
-    .filter(Boolean)
-    .map((s) => s[0]!.toUpperCase() + s.slice(1))
-    .join(" ")
 }
 
 const proxyCredentialsProvider = Credentials({
@@ -28,10 +22,13 @@ const proxyCredentialsProvider = Credentials({
     const email = headerEmail ?? envEmail
     if (!email) return null
 
-    const name = readHeader(request, "x-auth-request-user") ?? formatName(email)
+    const preferredUsername = readHeader(request, "x-auth-request-preferred-username")
+    const authRequestUser = readHeader(request, "x-auth-request-user")
+    const name = resolveDisplayName(preferredUsername, email)
+    const id = resolveUserId(authRequestUser, email)
 
     return {
-      id: email,
+      id,
       email,
       name,
       role: "admin",
