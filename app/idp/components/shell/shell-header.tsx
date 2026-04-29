@@ -3,6 +3,7 @@
 import { useSetUserPreferences } from "@cortex/api"
 import { SkinToggle, type SkinOption, ThemeToggle, UserMenu } from "@cortex/ui"
 import Image from "next/image"
+import { buildLogoutChainUrl } from "@/lib/logout"
 import { SKINS, type SkinId, useSkinStore } from "@/lib/stores/skin-store"
 import { useThemeStore } from "@/lib/stores/theme-store"
 
@@ -24,6 +25,10 @@ export function ShellHeader() {
   const skin = useSkinStore((s) => s.skin)
   const setSkin = useSkinStore((s) => s.setSkin)
   const persistPreferences = useSetUserPreferences()
+  const logoutHref =
+    typeof window !== "undefined"
+      ? buildLogoutChainUrl(`${window.location.origin}/login`)
+      : null
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur">
@@ -52,7 +57,7 @@ export function ShellHeader() {
               persistPreferences.mutate({ theme_mode: next })
             }}
           />
-          <UserMenu />
+          <UserMenu logoutHref={logoutHref} />
         </div>
       </div>
     </header>

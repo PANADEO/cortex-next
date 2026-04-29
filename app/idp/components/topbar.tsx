@@ -23,6 +23,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Fragment, useEffect, useState } from "react"
 import { breadcrumbsFromPath } from "../lib/breadcrumbs"
+import { buildLogoutChainUrl } from "../lib/logout"
 import { SKINS, useSkinStore, type SkinId } from "../lib/stores/skin-store"
 import { useSidebarStore } from "../lib/stores/sidebar-store"
 import { useThemeStore } from "../lib/stores/theme-store"
@@ -50,6 +51,10 @@ export function Topbar() {
   const setSkin = useSkinStore((s) => s.setSkin)
   const persistPreferences = useSetUserPreferences()
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const logoutHref =
+    typeof window !== "undefined"
+      ? buildLogoutChainUrl(`${window.location.origin}/login`)
+      : null
 
   const trail = breadcrumbsFromPath(pathname)
 
@@ -141,7 +146,7 @@ export function Topbar() {
               persistPreferences.mutate({ theme_mode: next })
             }}
           />
-          <UserMenu />
+          <UserMenu logoutHref={logoutHref} />
         </div>
       </TooltipProvider>
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />

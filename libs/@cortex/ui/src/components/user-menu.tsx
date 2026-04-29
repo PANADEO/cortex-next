@@ -15,6 +15,7 @@ import {
 
 interface UserMenuProps {
   logoutCallbackUrl?: string
+  logoutHref?: string | null
 }
 
 function initials(name: string | null | undefined, email: string | null | undefined): string {
@@ -28,9 +29,21 @@ function initials(name: string | null | undefined, email: string | null | undefi
     .join("")
 }
 
-export function UserMenu({ logoutCallbackUrl = "/login" }: UserMenuProps) {
+export function UserMenu({ logoutCallbackUrl = "/login", logoutHref = null }: UserMenuProps) {
   const { data: session } = useSession()
   const user = session?.user
+
+  const handleLogout = () => {
+    if (logoutHref) {
+      // Fire-and-forget NextAuth cookie clear before the full-page redirect.
+      // Belt-and-braces: if the user closes the tab mid-chain, the stale
+      // NextAuth session is gone too (otherwise valid for the JWT maxAge).
+      void signOut({ redirect: false })
+      window.location.href = logoutHref
+      return
+    }
+    void signOut({ callbackUrl: logoutCallbackUrl })
+  }
 
   return (
     <DropdownMenu>
@@ -52,7 +65,7 @@ export function UserMenu({ logoutCallbackUrl = "/login" }: UserMenuProps) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut({ callbackUrl: logoutCallbackUrl })}>
+        <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           Sign out
         </DropdownMenuItem>
