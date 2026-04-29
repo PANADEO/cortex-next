@@ -25,24 +25,6 @@ export interface BoardColumnMeta {
 
 export const BOARD_COLUMNS: readonly BoardColumnMeta[] = [
   {
-    id: "intake",
-    label: "Intake",
-    description: "Dirty bundles awaiting classification",
-    accent: "before:bg-amber-500",
-    headerBg: "bg-amber-50 dark:bg-amber-950/40",
-    headerText: "text-amber-800 dark:text-amber-200",
-    countBg: "bg-amber-500/20 text-amber-900 dark:text-amber-100",
-  },
-  {
-    id: "classified",
-    label: "Classified",
-    description: "Triage finished, ready to promote",
-    accent: "before:bg-sky-500",
-    headerBg: "bg-sky-50 dark:bg-sky-950/40",
-    headerText: "text-sky-800 dark:text-sky-200",
-    countBg: "bg-sky-500/20 text-sky-900 dark:text-sky-100",
-  },
-  {
     id: "processing",
     label: "Processing",
     description: "Clean packages being analysed by AI",

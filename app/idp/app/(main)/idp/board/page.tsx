@@ -10,7 +10,7 @@ export default function BoardPage() {
         title="Pipeline board"
         description="Full journey of dirty and clean packages from intake to export."
       />
-      <div className="flex min-h-0 flex-1 flex-col px-8 py-6">
+      <div className="flex flex-col px-8 py-6">
         <PipelineBoard />
       </div>
     </>

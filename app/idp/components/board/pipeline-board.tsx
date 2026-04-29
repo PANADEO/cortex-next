@@ -14,7 +14,7 @@ interface PipelineBoardProps {
 export function PipelineBoard({ compact = false, hideSearch = false, className }: PipelineBoardProps) {
   const board = usePipelineBoard()
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col gap-4", className)}>
+    <div className={cn("flex flex-col gap-4", className)}>
       <BoardFilters board={board} hideSearch={hideSearch} />
       <BoardColumns board={board} compact={compact} />
     </div>

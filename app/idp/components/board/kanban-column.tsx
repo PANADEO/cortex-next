@@ -1,6 +1,5 @@
 "use client"
 
-import { ScrollArea } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { Inbox } from "lucide-react"
 import type { BoardCard, BoardColumnMeta } from "@/lib/board/pipeline"
@@ -45,18 +44,16 @@ export function KanbanColumn({ meta, cards }: KanbanColumnProps) {
       </header>
 
       {cards.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-1 px-3 py-10 text-center text-xs text-muted-foreground">
+        <div className="flex min-h-[120px] flex-col items-center justify-center gap-1 px-3 py-10 text-center text-xs text-muted-foreground">
           <Inbox className="h-4 w-4 opacity-50" />
           <span>No packages here</span>
         </div>
       ) : (
-        <ScrollArea className="flex-1">
-          <div className="flex flex-col gap-2 p-2">
-            {cards.map((card) => (
-              <KanbanCard key={`${card.kind}-${card.id}`} card={card} />
-            ))}
-          </div>
-        </ScrollArea>
+        <div className="flex flex-col gap-2 p-2">
+          {cards.map((card) => (
+            <KanbanCard key={`${card.kind}-${card.id}`} card={card} />
+          ))}
+        </div>
       )}
     </section>
   )

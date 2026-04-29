@@ -2,7 +2,6 @@ import type { TileMenuSection } from "@cortex/ui"
 import {
   BarChart3,
   FileDown,
-  FileSpreadsheet,
   History,
   Package,
   ScrollText,
@@ -16,12 +15,6 @@ export const IDP_NAV: TileMenuSection[] = [
     items: [
       { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/idp/dashboard" },
       { id: "import", label: "Import", icon: Upload, href: "/idp/import" },
-      {
-        id: "classification",
-        label: "Classification",
-        icon: FileSpreadsheet,
-        href: "/idp/classification",
-      },
       { id: "packages", label: "Extraction", icon: Package, href: "/idp/packages" },
       { id: "export", label: "Export", icon: FileDown, href: "/idp/export" },
     ],
