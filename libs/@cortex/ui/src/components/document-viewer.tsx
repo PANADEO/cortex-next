@@ -3,10 +3,20 @@
 import type { NormalizedHighlightBox } from "@cortex/types"
 import { cn } from "@cortex/utils"
 import { renderAsync } from "docx-preview"
-import { FileWarning, Loader2 } from "lucide-react"
+import {
+  ChevronDown,
+  ChevronUp,
+  FileWarning,
+  Loader2,
+  Maximize2,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react"
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, RenderTask } from "pdfjs-dist"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import * as XLSX from "xlsx"
+import { Button } from "./ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
 
 export type DocumentKind = "pdf" | "docx" | "xlsx" | "image" | "unsupported"
 
@@ -77,7 +87,7 @@ function ViewerFrame({
   return (
     <div
       className={cn(
-        "flex min-h-[480px] w-full flex-col overflow-hidden rounded-md border border-border bg-muted/30",
+        "flex h-full min-h-[480px] w-full flex-col overflow-hidden rounded-md border border-border bg-muted/30",
         className,
       )}
     >
@@ -99,6 +109,11 @@ const PDF_WORKER_SRC = "/pdfjs/pdf.worker.min.js"
 const PDF_CMAP_URL = "/pdfjs/cmaps/"
 const PDF_STANDARD_FONT_URL = "/pdfjs/standard_fonts/"
 const PDF_RENDER_SCALE = 1.25
+const PDF_MIN_SCALE = 0.5
+const PDF_MAX_SCALE = 3.0
+const PDF_SCALE_STEP = 1.25
+const PDF_FIT_PADDING_PX = 24
+const PDF_TOOLBAR_TOOLTIP_DELAY = 300
 
 function PdfViewer({
   source,
@@ -111,9 +126,13 @@ function PdfViewer({
   activePage: number | null
   highlightBoxes: NormalizedHighlightBox[]
 }) {
+  const containerRef = useRef<HTMLDivElement>(null)
   const pageRefs = useRef(new Map<number, HTMLDivElement>())
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [scale, setScale] = useState(PDF_RENDER_SCALE)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [unscaledFirstPageWidth, setUnscaledFirstPageWidth] = useState<number | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -144,7 +163,16 @@ function PdfViewer({
           loadedDoc.destroy()
           return
         }
+        const firstPage = await loadedDoc.getPage(1)
+        if (cancelled) {
+          loadedDoc.destroy()
+          return
+        }
+        const firstViewport = firstPage.getViewport({ scale: 1 })
         setDoc(loadedDoc)
+        setUnscaledFirstPageWidth(firstViewport.width)
+        setCurrentPage(1)
+        setScale(PDF_RENDER_SCALE)
         setError(null)
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load PDF")
@@ -164,6 +192,57 @@ function PdfViewer({
     const target = pageRefs.current.get(activePage)
     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" })
   }, [activePage, doc])
+
+  useEffect(() => {
+    if (!doc) return
+    const root = containerRef.current
+    if (!root) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        let bestPage: number | null = null
+        let bestRatio = 0
+        for (const entry of entries) {
+          if (entry.intersectionRatio <= bestRatio) continue
+          const pageAttr = entry.target.getAttribute("data-page")
+          const n = pageAttr ? Number(pageAttr) : NaN
+          if (Number.isFinite(n)) {
+            bestRatio = entry.intersectionRatio
+            bestPage = n
+          }
+        }
+        if (bestPage !== null && bestRatio > 0) setCurrentPage(bestPage)
+      },
+      { root, threshold: [0.1, 0.5, 0.9] },
+    )
+    for (const el of pageRefs.current.values()) observer.observe(el)
+    return () => observer.disconnect()
+  }, [doc])
+
+  const handleZoomIn = useCallback(() => {
+    setScale((s) => Math.min(PDF_MAX_SCALE, s * PDF_SCALE_STEP))
+  }, [])
+
+  const handleZoomOut = useCallback(() => {
+    setScale((s) => Math.max(PDF_MIN_SCALE, s / PDF_SCALE_STEP))
+  }, [])
+
+  const handleFitToWidth = useCallback(() => {
+    const container = containerRef.current
+    if (!container || !unscaledFirstPageWidth) return
+    const target = (container.clientWidth - PDF_FIT_PADDING_PX) / unscaledFirstPageWidth
+    setScale(Math.min(PDF_MAX_SCALE, Math.max(PDF_MIN_SCALE, target)))
+  }, [unscaledFirstPageWidth])
+
+  const handlePrevPage = useCallback(() => {
+    const n = Math.max(1, currentPage - 1)
+    pageRefs.current.get(n)?.scrollIntoView({ block: "start", behavior: "smooth" })
+  }, [currentPage])
+
+  const handleNextPage = useCallback(() => {
+    if (!doc) return
+    const n = Math.min(doc.numPages, currentPage + 1)
+    pageRefs.current.get(n)?.scrollIntoView({ block: "start", behavior: "smooth" })
+  }, [doc, currentPage])
 
   if (error) {
     return (
@@ -187,10 +266,22 @@ function PdfViewer({
 
   return (
     <ViewerFrame className={className}>
-      <div className="flex-1 space-y-3 overflow-auto bg-muted/20 p-3">
+      <PdfToolbar
+        currentPage={currentPage}
+        numPages={doc.numPages}
+        scale={scale}
+        canFitToWidth={unscaledFirstPageWidth !== null}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onFitToWidth={handleFitToWidth}
+        onPrevPage={handlePrevPage}
+        onNextPage={handleNextPage}
+      />
+      <div ref={containerRef} className="flex-1 space-y-3 overflow-auto bg-muted/20 p-3">
         {pages.map((n) => (
           <div
             key={n}
+            data-page={n}
             ref={(el) => {
               if (el) pageRefs.current.set(n, el)
               else pageRefs.current.delete(n)
@@ -199,6 +290,7 @@ function PdfViewer({
             <PdfPage
               doc={doc}
               pageNumber={n}
+              scale={scale}
               boxes={activePage === n ? highlightBoxes : []}
             />
           </div>
@@ -208,13 +300,136 @@ function PdfViewer({
   )
 }
 
+function PdfToolbar({
+  currentPage,
+  numPages,
+  scale,
+  canFitToWidth,
+  onZoomIn,
+  onZoomOut,
+  onFitToWidth,
+  onPrevPage,
+  onNextPage,
+}: {
+  currentPage: number
+  numPages: number
+  scale: number
+  canFitToWidth: boolean
+  onZoomIn: () => void
+  onZoomOut: () => void
+  onFitToWidth: () => void
+  onPrevPage: () => void
+  onNextPage: () => void
+}) {
+  const atFirstPage = currentPage <= 1
+  const atLastPage = currentPage >= numPages
+  const atMinScale = scale <= PDF_MIN_SCALE + 1e-6
+  const atMaxScale = scale >= PDF_MAX_SCALE - 1e-6
+
+  return (
+    <TooltipProvider delayDuration={PDF_TOOLBAR_TOOLTIP_DELAY}>
+      <div className="flex shrink-0 items-center gap-1 border-b border-border bg-background/60 px-2 py-1.5 text-xs">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onPrevPage}
+              disabled={atFirstPage}
+              aria-label="Previous page"
+            >
+              <ChevronUp className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Previous page</TooltipContent>
+        </Tooltip>
+        <span className="px-1 tabular-nums text-muted-foreground">
+          {currentPage} / {numPages}
+        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onNextPage}
+              disabled={atLastPage}
+              aria-label="Next page"
+            >
+              <ChevronDown className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Next page</TooltipContent>
+        </Tooltip>
+        <span className="mx-1 h-4 w-px bg-border" />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onZoomOut}
+              disabled={atMinScale}
+              aria-label="Zoom out"
+            >
+              <ZoomOut className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Zoom out</TooltipContent>
+        </Tooltip>
+        <span className="min-w-[3rem] px-1 text-center tabular-nums text-muted-foreground">
+          {Math.round(scale * 100)}%
+        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onZoomIn}
+              disabled={atMaxScale}
+              aria-label="Zoom in"
+            >
+              <ZoomIn className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Zoom in</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onFitToWidth}
+              disabled={!canFitToWidth}
+              aria-label="Fit to width"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Fit to width</TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
+  )
+}
+
 function PdfPage({
   doc,
   pageNumber,
+  scale,
   boxes,
 }: {
   doc: PDFDocumentProxy
   pageNumber: number
+  scale: number
   boxes: NormalizedHighlightBox[]
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -227,7 +442,7 @@ function PdfPage({
     async function render() {
       const page = await doc.getPage(pageNumber)
       if (cancelled) return
-      const viewport = page.getViewport({ scale: PDF_RENDER_SCALE })
+      const viewport = page.getViewport({ scale })
       const canvas = canvasRef.current
       if (!canvas) return
       const ctx = canvas.getContext("2d")
@@ -248,7 +463,7 @@ function PdfPage({
       cancelled = true
       renderTask?.cancel()
     }
-  }, [doc, pageNumber])
+  }, [doc, pageNumber, scale])
 
   return (
     <div className="relative mx-auto w-fit shadow-sm ring-1 ring-border">
@@ -367,7 +582,7 @@ function XlsxViewer({ source, className }: { source: Blob | ArrayBuffer | string
 
   return (
     <ViewerFrame className={className}>
-      <div className="flex items-center gap-1 overflow-x-auto border-b border-border px-3 py-2">
+      <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-border px-3 py-2">
         {sheets.map((s, i) => (
           <button
             key={s.name}

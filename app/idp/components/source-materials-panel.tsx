@@ -86,7 +86,7 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
       key={narrow ? "narrow" : "wide"}
       direction="horizontal"
       onLayout={handleLayout}
-      className="min-h-[560px] gap-3"
+      className="h-full min-h-[560px] gap-3"
     >
       <Panel
         defaultSize={narrow ? narrowDefault : listPercent}
@@ -190,19 +190,21 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
         </div>
       </Panel>
       <PanelResizeHandle className="w-1 shrink-0 rounded bg-border transition-colors hover:bg-primary/40 data-[resize-handle-active]:bg-primary/50" />
-      <Panel minSize={40} className="space-y-2">
+      <Panel minSize={40} className="flex min-h-0 flex-col gap-2">
         {highlightBoxes.length > 0 && active.path === activePath ? (
-          <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+          <div className="shrink-0 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
             Invoice line selected — page {activePage ?? "—"} · {highlightBoxes.length} highlight
             {highlightBoxes.length > 1 ? "s" : ""}.
           </div>
         ) : null}
-        <SourceFileBody
-          packageId={packageId}
-          file={active}
-          activePage={active.path === activePath ? activePage : null}
-          highlightBoxes={active.path === activePath ? highlightBoxes : []}
-        />
+        <div className="min-h-0 flex-1">
+          <SourceFileBody
+            packageId={packageId}
+            file={active}
+            activePage={active.path === activePath ? activePage : null}
+            highlightBoxes={active.path === activePath ? highlightBoxes : []}
+          />
+        </div>
       </Panel>
     </PanelGroup>
   )
