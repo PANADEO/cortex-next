@@ -8,7 +8,7 @@ import {
 } from "@cortex/api"
 import type { NormalizedHighlightBox, SourceFileReadModel } from "@cortex/types"
 import { Button, LoadingState, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@cortex/ui"
-import { cn } from "@cortex/utils"
+import { canPreviewInline, cn } from "@cortex/utils"
 import { useQuery } from "@tanstack/react-query"
 import { FileText, Loader2, PanelLeftClose, PanelLeftOpen } from "lucide-react"
 import dynamic from "next/dynamic"
@@ -221,14 +221,15 @@ function SourceFileBody({
   activePage: number | null
   highlightBoxes: NormalizedHighlightBox[]
 }) {
+  const previewable = canPreviewInline(file.file_name, file.media_type, file.preview_kind)
   const content = useQuery({
     queryKey: ["idp", "packages", "source-file", packageId, file.path],
     queryFn: () => endpoints.packages.sourceFileContent(packageId, file.path),
     staleTime: Infinity,
-    enabled: file.preview_kind !== "download_only",
+    enabled: previewable,
   })
 
-  if (file.preview_kind === "download_only") {
+  if (!previewable) {
     return (
       <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
         No inline preview. Download via the export actions above.

@@ -20,6 +20,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/t
 
 export type DocumentKind = "pdf" | "docx" | "xlsx" | "image" | "unsupported"
 
+// Mirrored as `detectPreviewableKind` in libs/@cortex/utils/src/preview-kind.ts
+// for consumers that need to decide preview routing without loading pdfjs.
+// Update both when adding formats.
 export function detectDocumentKind(fileName: string, mediaType?: string): DocumentKind {
   const lower = fileName.toLowerCase()
   if (mediaType?.includes("pdf") || lower.endsWith(".pdf")) return "pdf"

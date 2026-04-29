@@ -48,6 +48,7 @@ import type {
   VerificationState,
 } from "@cortex/types"
 import { http, HttpResponse, passthrough } from "msw"
+import * as XLSX from "xlsx"
 import {
   buildDirtyPackageDetails,
   buildDirtyPackages,
@@ -200,6 +201,20 @@ function applyTransition(pkg: PackageReadModel, transition: string, request: Req
       break
   }
   invalidateLogs()
+}
+
+const XLSX_CONTENT_TYPE =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+function syntheticXlsxResponse(rows: (string | number)[][]) {
+  const wb = XLSX.utils.book_new()
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  XLSX.utils.book_append_sheet(wb, ws, "Sheet1")
+  const buffer = XLSX.write(wb, { type: "array", bookType: "xlsx" }) as ArrayBuffer
+  return new HttpResponse(buffer, {
+    status: 200,
+    headers: { "Content-Type": XLSX_CONTENT_TYPE },
+  })
 }
 
 export const handlers = [
@@ -414,6 +429,14 @@ export const handlers = [
         preview_kind: "download_only",
         size_bytes: 45_120,
       },
+      {
+        path: "summary.docx",
+        file_name: "summary.docx",
+        media_type:
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        preview_kind: "download_only",
+        size_bytes: 18_240,
+      },
     ]
     return HttpResponse.json(body)
   }),
@@ -421,13 +444,22 @@ export const handlers = [
   http.get("/packages/:id/source-files/content", async ({ request }) => {
     const url = new URL(request.url)
     const path = url.searchParams.get("path") ?? ""
-    if (path.toLowerCase().endsWith(".pdf")) {
+    const lower = path.toLowerCase()
+    if (lower.endsWith(".pdf")) {
       const asset = await fetch("/mock-assets/sample-invoice.pdf")
       const blob = await asset.blob()
       return new HttpResponse(blob, {
         status: 200,
         headers: { "Content-Type": "application/pdf" },
       })
+    }
+    if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
+      return syntheticXlsxResponse([
+        ["CN code", "Description", "Qty", "Net (kg)", "Value (EUR)"],
+        ["8541", "Electronic components", 250, 18.5, 4820.0],
+        ["7307", "Steel fittings", 85, 142.3, 2910.5],
+        ["3926", "Plastic housings", 500, 43.1, 4720.25],
+      ])
     }
     return new HttpResponse(new Blob(["mock-bytes"]), { status: 200 })
   }),
@@ -591,6 +623,12 @@ export const handlers = [
           status: 200,
           headers: { "Content-Type": doc.media_type },
         })
+      }
+      if (doc.file_name.toLowerCase().endsWith(".xlsx")) {
+        return syntheticXlsxResponse([
+          ["CN code", "Description", "Qty"],
+          ["8541", "Sample row", 100],
+        ])
       }
       return new HttpResponse(new Blob(["mock-bytes"]), { status: 200 })
     },

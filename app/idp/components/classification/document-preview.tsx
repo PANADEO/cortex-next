@@ -30,7 +30,7 @@ import {
   Separator,
   Textarea,
 } from "@cortex/ui"
-import { cn, formatFileSizeBytes } from "@cortex/utils"
+import { canPreviewInline, cn, formatFileSizeBytes } from "@cortex/utils"
 import { useQuery } from "@tanstack/react-query"
 import { CheckCircle2, ChevronDown, FileX, Layers, Loader2 } from "lucide-react"
 import dynamic from "next/dynamic"
@@ -307,14 +307,19 @@ function DocumentBody({
   dirtyPackageId: string
   document: DirtyDocument
 }) {
+  const previewable = canPreviewInline(
+    document.file_name,
+    document.media_type,
+    document.preview_kind,
+  )
   const content = useQuery({
     queryKey: ["idp", "classification", "doc-content", dirtyPackageId, document.id],
     queryFn: () => endpoints.classification.documentContent(dirtyPackageId, document.id),
     staleTime: Infinity,
-    enabled: document.preview_kind !== "download_only",
+    enabled: previewable,
   })
 
-  if (document.preview_kind === "download_only") {
+  if (!previewable) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border bg-background/60 px-6 py-12 text-center">
