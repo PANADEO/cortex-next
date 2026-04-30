@@ -63,10 +63,11 @@ export default function VerifyWorkspacePage() {
             <h1 className="text-sm font-semibold">
               {pkg?.file_name ?? "Verification workspace"}
             </h1>
-            <p className="text-[10px] text-muted-foreground">
-              {pkg ? `ID ${pkg.id}` : "Loading…"}
-              {pkg && !canEdit ? " · Read-only" : ""}
-            </p>
+            {!pkg ? (
+              <p className="text-[10px] text-muted-foreground">Loading…</p>
+            ) : !canEdit ? (
+              <p className="text-[10px] text-muted-foreground">Read-only</p>
+            ) : null}
           </div>
         </div>
         {pkg && !canEdit ? (

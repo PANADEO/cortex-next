@@ -137,7 +137,6 @@ export default function PackageDetailPage() {
     <>
       <PageHeader
         title={pkg?.file_name ?? "Loading…"}
-        description={pkg ? `ID ${pkg.id}` : "Fetching package details"}
         actions={
           <>
             <AutoRefreshIndicator

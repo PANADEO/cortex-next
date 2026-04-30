@@ -22,7 +22,7 @@ import { Bell, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Fragment, useEffect, useState } from "react"
-import { breadcrumbsFromPath } from "../lib/breadcrumbs"
+import { useResolvedBreadcrumbs } from "../lib/breadcrumbs"
 import { SKINS, useSkinStore, type SkinId } from "../lib/stores/skin-store"
 import { useSidebarStore } from "../lib/stores/sidebar-store"
 import { useThemeStore } from "../lib/stores/theme-store"
@@ -52,7 +52,7 @@ export function Topbar() {
   const me = useMe()
   const [paletteOpen, setPaletteOpen] = useState(false)
 
-  const trail = breadcrumbsFromPath(pathname)
+  const trail = useResolvedBreadcrumbs(pathname)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

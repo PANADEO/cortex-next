@@ -204,9 +204,8 @@ function PackageRow({
       />
       <div className="min-w-0 flex-1">
         <p className="truncate text-xs font-medium">{pkg.file_name}</p>
-        <p className="truncate font-mono text-[10px] text-muted-foreground">
-          {pkg.id} · {formatRelative(pkg.created_date)} ·{" "}
-          {pkg.assignee ?? "unassigned"}
+        <p className="truncate text-[10px] text-muted-foreground">
+          {formatRelative(pkg.created_date)} · {pkg.assignee ?? "unassigned"}
         </p>
       </div>
       <span

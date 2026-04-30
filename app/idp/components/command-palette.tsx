@@ -51,7 +51,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       id: `pkg-${p.id}`,
       group: "Extraction",
       label: p.file_name,
-      hint: p.id,
       icon: Package,
       href: `/idp/packages/${p.id}`,
     }))
