@@ -1,7 +1,7 @@
 "use client"
 
-import { LogOut, User } from "lucide-react"
-import { signOut, useSession } from "next-auth/react"
+import type { User } from "@cortex/types"
+import { LogOut, User as UserIcon } from "lucide-react"
 import { Avatar, AvatarFallback } from "./ui/avatar"
 import { Button } from "./ui/button"
 import {
@@ -14,8 +14,7 @@ import {
 } from "./ui/dropdown-menu"
 
 interface UserMenuProps {
-  logoutCallbackUrl?: string
-  logoutHref?: string | null
+  user: User | null
 }
 
 function initials(name: string | null | undefined, email: string | null | undefined): string {
@@ -29,20 +28,9 @@ function initials(name: string | null | undefined, email: string | null | undefi
     .join("")
 }
 
-export function UserMenu({ logoutCallbackUrl = "/login", logoutHref = null }: UserMenuProps) {
-  const { data: session } = useSession()
-  const user = session?.user
-
-  const handleLogout = async () => {
-    if (logoutHref) {
-      try {
-        await signOut({ redirect: false })
-      } finally {
-        window.location.replace(logoutHref)
-      }
-      return
-    }
-    await signOut({ callbackUrl: logoutCallbackUrl })
+export function UserMenu({ user }: UserMenuProps) {
+  const handleLogout = () => {
+    window.location.assign("/logout")
   }
 
   return (
@@ -58,14 +46,14 @@ export function UserMenu({ logoutCallbackUrl = "/login", logoutHref = null }: Us
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="flex items-center gap-2">
-          <User className="h-4 w-4" />
+          <UserIcon className="h-4 w-4" />
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{user?.name ?? "—"}</p>
             <p className="truncate text-xs text-muted-foreground">{user?.email ?? ""}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => void handleLogout()}>
+        <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           Sign out
         </DropdownMenuItem>

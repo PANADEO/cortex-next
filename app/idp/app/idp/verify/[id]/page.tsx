@@ -2,6 +2,7 @@
 
 import {
   toastApiError,
+  useMe,
   usePackage,
   usePackageTransportOrders,
   useUpdateInvoiceLines,
@@ -10,7 +11,6 @@ import type { UpdateInvoiceLinesRequest } from "@cortex/types"
 import { Button, LoadingState } from "@cortex/ui"
 import { emailsMatch } from "@cortex/utils"
 import { ArrowLeft, Lock } from "lucide-react"
-import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
@@ -22,7 +22,7 @@ import { LinesSpreadsheet } from "@/components/transport-orders/lines-spreadshee
 export default function VerifyWorkspacePage() {
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ""
-  const { data: session } = useSession()
+  const me = useMe()
 
   const pkgQuery = usePackage(id, { polling: false })
   const toQuery = usePackageTransportOrders(id, { polling: false })
@@ -30,7 +30,7 @@ export default function VerifyWorkspacePage() {
 
   const pkg = pkgQuery.data
   const isActiveVerification = pkg?.verification_state === "in_progress"
-  const canEdit = isActiveVerification && emailsMatch(session?.user?.email, pkg?.assignee)
+  const canEdit = isActiveVerification && emailsMatch(me.data?.email, pkg?.assignee)
 
   const order = toQuery.data?.transport_orders?.[0]
   const invoice = order?.invoices?.[0]

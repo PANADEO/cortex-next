@@ -33,10 +33,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { endpoints } from "./endpoints"
 import { queryKeys } from "./query-keys"
 
-export function useUser() {
-  return useQuery({ queryKey: queryKeys.user(), queryFn: endpoints.user.me })
-}
-
 export function useUserPreferences() {
   return useQuery({
     queryKey: queryKeys.userPreferences(),

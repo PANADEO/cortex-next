@@ -10,7 +10,7 @@ Prototyp funkcjonalny. Aplikacja działa end-to-end na mockowanym backendzie (MS
 - workspace weryfikacji z inline spreadsheet + side-by-side PDF
 - scaffold MVP klasyfikacji dokumentów (dirty → clean packages)
 - scaffold MVP edytora reguł (NL → kompilacja → preview → wersjonowanie)
-- auth stub (NextAuth v5 beta, Credentials provider) gotowy pod swap na OIDC/SSO
+- auth deferred do oauth2-proxy (Caddy `forward_auth`); frontend identyfikuje usera przez `useMe()` → `/user/me`
 
 Integracja z realnym backendem, pełne coverage testów, accessibility audit — poza scope'em prototypu.
 
@@ -24,7 +24,7 @@ Integracja z realnym backendem, pełne coverage testów, accessibility audit —
 - **Dokumenty:** `react-pdf` + `pdfjs-dist`, `docx-preview`, `xlsx`
 - **Interakcja:** `@dnd-kit`, `sonner`, `framer-motion`, `lucide-react`, `date-fns`
 - **Dev/QA:** Ladle (component dev), Vitest + Testing Library + jsdom, MSW (mock API)
-- **Auth:** NextAuth v5 beta
+- **Auth:** oauth2-proxy (przy edge'u, poza appem) + `useMe()` over `/user/me`
 - **Deployment:** self-hosted Docker (Next.js standalone)
 
 Szczegółowe decyzje i uzasadnienia — [docs/frontend-architecture.md](docs/frontend-architecture.md).
@@ -52,7 +52,7 @@ Brak workspace managera (pnpm/turbo) na tym etapie — dorzucimy gdy duplikacja 
 
 ```bash
 npm install
-cp .env.example app/idp/.env.local   # ustaw AUTH_SECRET (min. 32 znaki)
+cp .env.example app/idp/.env.local
 npm run msw-init                     # inicjalizuje MSW service worker
 npm run assets                       # kopiuje PDF.js workery + generuje mock PDF
 ```
@@ -60,14 +60,13 @@ npm run assets                       # kopiuje PDF.js workery + generuje mock PD
 Minimalne `app/idp/.env.local`:
 
 ```bash
-AUTH_SECRET=<32+ znaków — wygeneruj przez: npx auth secret>
 NEXT_PUBLIC_API_MOCKING=enabled
 ```
 
 ### Dev
 
 ```bash
-npm run dev           # http://localhost:3000 — zaloguj "Continue as Demo User"
+npm run dev           # http://localhost:3000
 ```
 
 ### Weryfikacja

@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { auth } from "./auth"
-
-const PUBLIC_PATHS = ["/login"]
 
 const STATIC_IDP_PATHS = new Set([
   "/user/me",
@@ -104,30 +101,15 @@ function tryIdpRewrite(req: NextRequest) {
   return null
 }
 
-export default auth((req) => {
+export default function middleware(req: NextRequest) {
   const rewrite = tryIdpRewrite(req)
   if (rewrite) return rewrite
 
   const legacyRedirect = tryLegacyRedirect(req)
   if (legacyRedirect) return legacyRedirect
 
-  const { nextUrl } = req
-  const isLoggedIn = !!req.auth
-  const isPublic = PUBLIC_PATHS.some((p) => nextUrl.pathname.startsWith(p))
-
-  if (isPublic) {
-    if (isLoggedIn && nextUrl.pathname === "/login") {
-      return NextResponse.redirect(new URL("/", nextUrl))
-    }
-    return NextResponse.next()
-  }
-  if (!isLoggedIn) {
-    const loginUrl = new URL("/login", nextUrl)
-    loginUrl.searchParams.set("callbackUrl", nextUrl.pathname + nextUrl.search)
-    return NextResponse.redirect(loginUrl)
-  }
   return NextResponse.next()
-})
+}
 
 export const config = {
   matcher: [

@@ -51,12 +51,17 @@ Brak workspace managera na tym etapie (pnpm/turbo dorzucamy gdy zacznie boleć).
 - Route groups w `app/idp/app/`:
   - `(shell)` — landing (header + tile-grid + footer, brak sidebara)
   - `(main)` — moduły z app-shell (sidebar `TileMenu` + `Topbar`)
-  - `(auth)` — login
   - `idp/<route>` poza `(main)` — fullscreen workspace pages (np. `verify/[id]`, `classification/[id]`)
 - **Tiles są hardcoded w kodzie**, nie przez API. Rejestr: `app/idp/lib/tiles.ts` (typowany `Tile[]`).
   Decyzja: tiles zmieniają się rzadko, code-driven jest szybsze niż backend + admin panel.
-- Login redirect: `/login` → `/` (landing).
-- `auth.ts` ma pole `tileAccess: string[]` na sesji — placeholder na przyszłą filtrację per-user.
+
+## Auth
+
+- **Single source of truth = oauth2-proxy** (Caddy `forward_auth` na demo-dev). Frontend NIE ma własnej sesji ani NextAuth.
+- Proxy wstrzykuje `X-Auth-Request-Email` na każdym requeście. Backend (`/user/me`) czyta header i zwraca tożsamość.
+- Frontend dowiaduje się "kto jestem" przez `useMe()` hook (`@cortex/api`) → `GET /user/me`. Cookie `_oauth2_proxy_*` leci przez `credentials: "include"` w `apiClient`.
+- Logout: `window.location.assign("/logout")` → Caddy snippet redirectuje na `/oauth2/sign_out?rd=<post-logout>`. Brak ręcznego budowania chainu w kodzie.
+- Lokalny dev: `NEXT_PUBLIC_DEV_USER_EMAIL` w env nadpisuje email w MSW handlerze `/user/me`.
 
 ## Brand & theming
 
@@ -92,7 +97,8 @@ Pełen pattern integracji: [`docs/backend-integration.md`](docs/backend-integrat
 1. `tryIdpRewrite` — proxy ścieżek backendowych do `IDP_BACKEND_URL` (matchowane przez patterns).
 2. `tryLegacyRedirect` — 308 z legacy URL (`/dashboard`, `/packages` itd.) na `/idp/*`.
    **Skip dla `Accept: application/json`** — XHR z apiClient nie powinno dostać 308 → HTML page.
-3. Auth — login redirect, `PUBLIC_PATHS`, `callbackUrl`.
+
+Page-level auth jest poza middleware — oauth2-proxy + Caddy zatrzymują nieautoryzowany ruch przed dotarciem do Next.js.
 
 Dodanie nowego pattern proxy / legacy redirect:
 - proxy backend → `tryIdpRewrite`

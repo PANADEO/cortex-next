@@ -1,6 +1,6 @@
 "use client"
 
-import { useDirtyPackages, usePackages, useUser } from "@cortex/api"
+import { useDirtyPackages, useMe, usePackages } from "@cortex/api"
 import { useDeferredValue, useMemo, useState } from "react"
 import { UNASSIGNED, type OwnerSelection } from "@/components/board/owner-filter"
 import {
@@ -44,7 +44,7 @@ export function usePipelineBoard(): PipelineBoardState {
     sort_order: "desc",
   })
   const dirty = useDirtyPackages({ limit: BOARD_PAGE_SIZE })
-  const me = useUser()
+  const me = useMe()
   const currentUser = me.data?.email ?? null
 
   const rawColumns = useMemo<BoardColumns>(

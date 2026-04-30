@@ -1,39 +1,15 @@
-import { AUTH_HEADER } from "@cortex/types"
 import { ApiError } from "./error"
 
 interface ApiClientConfig {
   baseUrl: string
-  getAuthEmail: () => string | null
 }
 
 let config: ApiClientConfig = {
   baseUrl: "",
-  getAuthEmail: () => null,
 }
 
 export function configureApiClient(next: Partial<ApiClientConfig>): void {
   config = { ...config, ...next }
-}
-
-class ProxySessionLostError extends Error {
-  constructor() {
-    super("Proxy session lost")
-    this.name = "ProxySessionLostError"
-  }
-}
-
-function redirectToAuthSignIn(): never {
-  if (typeof window !== "undefined") {
-    const rd = `${window.location.origin}${window.location.pathname}${window.location.search}`
-    const target = `/oauth2/start?rd=${encodeURIComponent(rd)}`
-    window.location.assign(target)
-  }
-  throw new ProxySessionLostError()
-}
-
-function buildAuthHeaders(): Record<string, string> {
-  const email = config.getAuthEmail()
-  return email ? { [AUTH_HEADER]: email } : {}
 }
 
 type QueryValue = string | number | boolean | null | undefined
@@ -64,7 +40,6 @@ async function request<T>(method: string, path: string, options: RequestOptions 
   const parseMode = options.parse ?? "json"
   const headers: Record<string, string> = {
     Accept: "application/json",
-    ...buildAuthHeaders(),
     ...options.headers,
   }
 
@@ -72,7 +47,6 @@ async function request<T>(method: string, path: string, options: RequestOptions 
     method,
     headers,
     credentials: "include",
-    redirect: "manual",
   }
 
   if (options.signal) init.signal = options.signal
@@ -84,15 +58,7 @@ async function request<T>(method: string, path: string, options: RequestOptions 
     init.body = options.body
   }
 
-  let response: Response
-  try {
-    response = await fetch(buildUrl(path, options.params), init)
-  } catch (err) {
-    if (err instanceof TypeError) redirectToAuthSignIn()
-    throw err
-  }
-
-  if (response.type === "opaqueredirect") redirectToAuthSignIn()
+  const response = await fetch(buildUrl(path, options.params), init)
 
   if (!response.ok) {
     throw await ApiError.fromResponse(response)

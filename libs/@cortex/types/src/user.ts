@@ -1,3 +1,9 @@
+export interface User {
+  id: string
+  email: string
+  name: string
+}
+
 export interface UserInfoResponse {
   email: string
   has_access: boolean

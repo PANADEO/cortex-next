@@ -17,13 +17,12 @@ import {
   TooltipTrigger,
   UserMenu,
 } from "@cortex/ui"
-import { useSetUserPreferences } from "@cortex/api"
+import { useMe, useSetUserPreferences } from "@cortex/api"
 import { Bell, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Fragment, useEffect, useState } from "react"
 import { breadcrumbsFromPath } from "../lib/breadcrumbs"
-import { buildLogoutChainUrl } from "../lib/logout"
 import { SKINS, useSkinStore, type SkinId } from "../lib/stores/skin-store"
 import { useSidebarStore } from "../lib/stores/sidebar-store"
 import { useThemeStore } from "../lib/stores/theme-store"
@@ -50,11 +49,8 @@ export function Topbar() {
   const skin = useSkinStore((s) => s.skin)
   const setSkin = useSkinStore((s) => s.setSkin)
   const persistPreferences = useSetUserPreferences()
+  const me = useMe()
   const [paletteOpen, setPaletteOpen] = useState(false)
-  const logoutHref =
-    typeof window !== "undefined"
-      ? buildLogoutChainUrl(`${window.location.origin}/login`)
-      : null
 
   const trail = breadcrumbsFromPath(pathname)
 
@@ -146,7 +142,7 @@ export function Topbar() {
               persistPreferences.mutate({ theme_mode: next })
             }}
           />
-          <UserMenu logoutHref={logoutHref} />
+          <UserMenu user={me.data ?? null} />
         </div>
       </TooltipProvider>
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />

@@ -4,6 +4,7 @@ import {
   endpoints,
   useCancelVerification,
   useFinishVerification,
+  useMe,
   usePackage,
   usePackageActions,
   usePackageTransitions,
@@ -36,7 +37,6 @@ import {
 } from "@cortex/ui"
 import { emailsMatch, formatAbsolute, formatFileSizeMb, formatMoney } from "@cortex/utils"
 import { ArrowLeft, Braces, FileArchive, Loader2, Maximize2 } from "lucide-react"
-import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useMemo, useState } from "react"
@@ -61,7 +61,7 @@ const TRANSITION_LABELS: Record<PackageTransition, string> = {
 export default function PackageDetailPage() {
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ""
-  const { data: session } = useSession()
+  const me = useMe()
 
   const [pollingEnabled, setPollingEnabled] = useState(true)
 
@@ -83,7 +83,7 @@ export default function PackageDetailPage() {
 
   const pkg = detail.data
   const isActiveVerification = pkg?.verification_state === "in_progress"
-  const canEdit = isActiveVerification && emailsMatch(session?.user?.email, pkg?.assignee)
+  const canEdit = isActiveVerification && emailsMatch(me.data?.email, pkg?.assignee)
 
   const userNotesUpdated = useMemo(
     () =>
