@@ -4,6 +4,8 @@ import { signIn } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { Suspense, useEffect } from "react"
 
+const isProxyAuthMode = !!process.env.NEXT_PUBLIC_AUTH0_DOMAIN
+
 function AutoSignIn() {
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") ?? "/"
@@ -11,6 +13,10 @@ function AutoSignIn() {
 
   useEffect(() => {
     if (error) return
+    if (isProxyAuthMode) {
+      window.location.replace(`/oauth2/start?rd=${encodeURIComponent(callbackUrl)}`)
+      return
+    }
     void signIn("credentials", { callbackUrl, redirect: true })
   }, [callbackUrl, error])
 
