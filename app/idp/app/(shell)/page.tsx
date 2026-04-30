@@ -1,11 +1,12 @@
 "use client"
 
-import { TileGrid } from "@/components/shell/tile-grid"
+import { useMe } from "@cortex/api"
+import { AuthedHome } from "@/components/shell/authed-home"
+import { LandingHero } from "@/components/shell/landing-hero"
 
 export default function HomePage() {
-  return (
-    <div className="mx-auto max-w-7xl px-6 pb-20 pt-9">
-      <TileGrid />
-    </div>
-  )
+  const me = useMe()
+  if (me.isPending) return null
+  if (me.data) return <AuthedHome />
+  return <LandingHero />
 }
