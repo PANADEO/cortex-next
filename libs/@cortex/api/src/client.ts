@@ -24,7 +24,8 @@ class ProxySessionLostError extends Error {
 
 function redirectToAuthSignIn(): never {
   if (typeof window !== "undefined") {
-    const target = `/oauth2/start?rd=${encodeURIComponent(window.location.pathname + window.location.search)}`
+    const rd = `${window.location.origin}${window.location.pathname}${window.location.search}`
+    const target = `/oauth2/start?rd=${encodeURIComponent(rd)}`
     window.location.assign(target)
   }
   throw new ProxySessionLostError()

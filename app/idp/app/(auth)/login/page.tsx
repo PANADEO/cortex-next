@@ -14,7 +14,10 @@ function AutoSignIn() {
   useEffect(() => {
     if (error) return
     if (isProxyAuthMode) {
-      window.location.replace(`/oauth2/start?rd=${encodeURIComponent(callbackUrl)}`)
+      const rd = callbackUrl.startsWith("http")
+        ? callbackUrl
+        : `${window.location.origin}${callbackUrl}`
+      window.location.replace(`/oauth2/start?rd=${encodeURIComponent(rd)}`)
       return
     }
     void signIn("credentials", { callbackUrl, redirect: true })
