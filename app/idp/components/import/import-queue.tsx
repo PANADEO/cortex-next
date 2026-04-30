@@ -3,11 +3,12 @@
 import { toastApiError, useImportMultiplePackages, useImportPackage } from "@cortex/api"
 import { Button } from "@cortex/ui"
 import { Loader2, Send } from "lucide-react"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { emptyImportOptions, type ImportOptions } from "@/components/import-options-fields"
 import { detectIntakeKind } from "./file-intake"
 import { ImportSlot, type ImportSlotValue } from "./import-slot"
+import { resolveImportedPackageId } from "./resolve-imported-package-id"
 
 function makeEmptySlot(): ImportSlotValue {
   return {
@@ -22,6 +23,10 @@ export function ImportQueue() {
   const [slots, setSlots] = useState<ImportSlotValue[]>(() => [makeEmptySlot()])
   const importOne = useImportPackage()
   const importMany = useImportMultiplePackages()
+  // Tracks ids already resolved by sibling slots so concurrent multi-slot imports
+  // (e.g. "Import all" with two folder slots) don't cross-contaminate by all
+  // settling on the same most-recent `import_*.zip`.
+  const claimedPackageIdsRef = useRef<Set<string>>(new Set<string>())
 
   const patchSlot = useCallback(
     (id: string, patch: Partial<ImportSlotValue>) => {
@@ -93,6 +98,7 @@ export function ImportQueue() {
             ? slot.options.additional_ai_context.trim()
             : null,
       }
+      const submittedAt = new Date().toISOString()
       patchSlot(slot.id, { status: "uploading", errorMessage: undefined })
       try {
         if (kind === "zip") {
@@ -103,6 +109,16 @@ export function ImportQueue() {
           toast.success(`Imported ${slot.files.length} file(s)`)
         }
         patchSlot(slot.id, { status: "done" })
+        void resolveImportedPackageId(
+          slot.files,
+          submittedAt,
+          claimedPackageIdsRef.current,
+        ).then((packageId) => {
+          if (packageId) {
+            claimedPackageIdsRef.current.add(packageId)
+            patchSlot(slot.id, { packageId })
+          }
+        })
       } catch (err) {
         toastApiError(err)
         const message =

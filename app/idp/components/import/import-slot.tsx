@@ -4,6 +4,7 @@ import { Badge, Button } from "@cortex/ui"
 import { cn, formatFileSizeBytes } from "@cortex/utils"
 import {
   AlertCircle,
+  ArrowUpRight,
   CheckCircle2,
   FileArchive,
   FilePlus2,
@@ -13,6 +14,7 @@ import {
   Upload,
   X,
 } from "lucide-react"
+import Link from "next/link"
 import { useEffect, useRef, useState, type DragEvent } from "react"
 import {
   ImportOptionsFields,
@@ -28,6 +30,7 @@ export interface ImportSlotValue {
   options: ImportOptions
   status: ImportSlotStatus
   errorMessage?: string | undefined
+  packageId?: string | undefined
 }
 
 interface ImportSlotProps {
@@ -131,15 +134,29 @@ export function ImportSlot({
       )}
     >
       <div className="flex items-start gap-3 px-4 pt-3">
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium",
-            statusMeta.tone,
-          )}
-        >
-          <StatusIcon className={cn("h-3 w-3", statusMeta.animate && "animate-spin")} />
-          {statusMeta.label}
-        </span>
+        {slot.status === "done" && slot.packageId ? (
+          <Link
+            href={`/idp/packages/${slot.packageId}`}
+            aria-label="Open package details"
+            className={cn(
+              "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors hover:bg-emerald-500/30 cursor-pointer",
+              statusMeta.tone,
+            )}
+          >
+            <StatusIcon className={cn("h-3 w-3", statusMeta.animate && "animate-spin")} />
+            {statusMeta.label}
+          </Link>
+        ) : (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium",
+              statusMeta.tone,
+            )}
+          >
+            <StatusIcon className={cn("h-3 w-3", statusMeta.animate && "animate-spin")} />
+            {statusMeta.label}
+          </span>
+        )}
 
         {kind ? (
           <Badge variant="outline" className="gap-1 text-[10px]">
@@ -267,41 +284,79 @@ export function ImportSlot({
           ) : null}
 
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isBusy || slot.status === "done"}
-            >
-              <FilePlus2 className="mr-1.5 h-3.5 w-3.5" />
-              Add more
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8"
-              onClick={() => setShowOptions((v) => !v)}
-              disabled={isBusy || slot.status === "done"}
-            >
-              {showOptions ? "Hide options" : "Advanced options"}
-            </Button>
-            <div className="ml-auto">
-              <Button
-                type="button"
-                size="sm"
-                className="h-8"
-                onClick={onSubmit}
-                disabled={!isActionable}
-              >
-                {slot.status === "uploading" ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : null}
-                {slot.status === "error" ? "Retry" : "Import"}
-              </Button>
-            </div>
+            {slot.status === "done" ? (
+              <div className="ml-auto">
+                {slot.packageId ? (
+                  <Button asChild size="sm" className="h-8">
+                    <Link
+                      href={`/idp/packages/${slot.packageId}`}
+                      aria-label="Open package details"
+                    >
+                      Open package
+                      <ArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
+                ) : (
+                  // shadcn Button has `disabled:pointer-events-none`, which suppresses
+                  // hover and prevents the native title tooltip from showing. The
+                  // wrapper span receives pointer events instead, so hover surfaces
+                  // the tooltip while the Button itself stays inert.
+                  <span
+                    title="Package id not available — open Extraction to find it"
+                    className="inline-block"
+                  >
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-8"
+                      disabled
+                      aria-label="Open package details (unavailable)"
+                    >
+                      Open package
+                      <ArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
+                    </Button>
+                  </span>
+                )}
+              </div>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isBusy}
+                >
+                  <FilePlus2 className="mr-1.5 h-3.5 w-3.5" />
+                  Add more
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => setShowOptions((v) => !v)}
+                  disabled={isBusy}
+                >
+                  {showOptions ? "Hide options" : "Advanced options"}
+                </Button>
+                <div className="ml-auto">
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8"
+                    onClick={onSubmit}
+                    disabled={!isActionable}
+                  >
+                    {slot.status === "uploading" ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : null}
+                    {slot.status === "error" ? "Retry" : "Import"}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
 
           {showOptions ? (
