@@ -2,14 +2,16 @@
 
 import { Button } from "@cortex/ui"
 import Image from "next/image"
-import { AnimatedAuroraBackground } from "./animated-aurora-background"
 
 export function LandingHero() {
-  return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden">
-      <AnimatedAuroraBackground />
+  const handleSignIn = () => {
+    const rd = `${window.location.origin}/`
+    window.location.assign(`/oauth2/start?rd=${encodeURIComponent(rd)}`)
+  }
 
-      <header className="relative z-10 flex items-center gap-2.5 px-6 py-5">
+  return (
+    <div className="flex min-h-screen flex-col bg-background text-foreground [background-image:radial-gradient(hsl(var(--foreground)/0.06)_1px,transparent_1px)] [background-size:18px_18px]">
+      <header className="flex items-center gap-2.5 px-6 py-5">
         <Image
           src="/cortex-logo.png"
           alt="Cortex360"
@@ -24,7 +26,7 @@ export function LandingHero() {
         </div>
       </header>
 
-      <main className="relative z-10 flex flex-1 items-center justify-center px-6">
+      <main className="flex flex-1 items-center justify-center px-6">
         <div className="mx-auto max-w-2xl space-y-6 text-center">
           <h1 className="text-5xl font-bold tracking-tight md:text-7xl">Cortex360</h1>
           <p className="text-xl font-medium text-foreground/80 md:text-2xl">
@@ -36,11 +38,11 @@ export function LandingHero() {
           </p>
           <div className="pt-4">
             <Button
-              asChild
               size="lg"
+              onClick={handleSignIn}
               className="bg-cortex px-8 text-base text-white shadow-lg shadow-cortex/30 hover:bg-cortex-dark"
             >
-              <a href="/oauth2/start?rd=/">Zaloguj się</a>
+              Zaloguj się
             </Button>
           </div>
         </div>
