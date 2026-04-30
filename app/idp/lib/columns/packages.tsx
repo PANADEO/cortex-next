@@ -7,7 +7,6 @@ import type { ColumnDef } from "@tanstack/react-table"
 import Link from "next/link"
 
 export interface PackageColumnsOptions {
-  includeId?: boolean
   selection?: {
     selected: Set<string>
     allSelectedOnPage: boolean
@@ -19,7 +18,7 @@ export interface PackageColumnsOptions {
 export function packageColumns(
   options: PackageColumnsOptions = {},
 ): ColumnDef<PackageReadModel, unknown>[] {
-  const { includeId = false, selection } = options
+  const { selection } = options
   const cols: ColumnDef<PackageReadModel, unknown>[] = []
 
   if (selection) {
@@ -57,16 +56,16 @@ export function packageColumns(
     ),
   })
 
-  if (includeId) {
-    cols.push({
-      accessorKey: "id",
-      header: "ID",
-      size: 140,
-      cell: ({ row }) => (
-        <span className="font-mono text-[10px] text-muted-foreground">{row.original.id}</span>
-      ),
-    })
-  }
+  cols.push({
+    accessorKey: "uploaded_by",
+    header: "Wprowadzający paczkę",
+    size: 200,
+    cell: ({ row }) => (
+      <span className="text-xs text-muted-foreground">
+        {row.original.uploaded_by ?? "—"}
+      </span>
+    ),
+  })
 
   cols.push(
     {

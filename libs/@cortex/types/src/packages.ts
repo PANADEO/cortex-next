@@ -16,6 +16,7 @@ export interface PackageReadModel {
   processing_state: ProcessingState
   verification_state: VerificationState
   assignee: string | null
+  uploaded_by: string | null
   custom_status: string | null
   user_notes: string | null
 }

@@ -114,7 +114,6 @@ export default function PackagesPage() {
   const columns = useMemo(
     () =>
       packageColumns({
-        includeId: true,
         selection: {
           selected: selectedIds,
           allSelectedOnPage,

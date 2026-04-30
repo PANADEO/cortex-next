@@ -55,6 +55,7 @@ export function buildPackageFixtures(count = 54): PackageReadModel[] {
     const assignee = requiresAssignee
       ? ASSIGNEES[1 + Math.floor(rand() * 4)]!
       : ASSIGNEES[Math.floor(rand() * ASSIGNEES.length)]!
+    const uploaded_by = ASSIGNEES[Math.floor(rand() * ASSIGNEES.length)]!
 
     items.push({
       id: `pkg-${String(i + 1).padStart(4, "0")}`,
@@ -64,6 +65,7 @@ export function buildPackageFixtures(count = 54): PackageReadModel[] {
       processing_state: phase.processing_state,
       verification_state: phase.verification_state,
       assignee,
+      uploaded_by,
       custom_status: null,
       user_notes: null,
     })
