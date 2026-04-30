@@ -1,19 +1,23 @@
 "use client"
 
-import {
-  endpoints,
-  useSetUserPreferences,
-  useUserPreferences,
-  usePackageSourceFiles,
-} from "@cortex/api"
+import { endpoints, usePackageSourceFiles } from "@cortex/api"
 import type { NormalizedHighlightBox, SourceFileReadModel } from "@cortex/types"
-import { Button, LoadingState, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@cortex/ui"
-import { canPreviewInline, cn } from "@cortex/utils"
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  LoadingState,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from "@cortex/ui"
+import { canPreviewInline, cn, getFileTypeIcon } from "@cortex/utils"
 import { useQuery } from "@tanstack/react-query"
-import { FileText, Loader2, PanelLeftClose, PanelLeftOpen } from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import dynamic from "next/dynamic"
-import { useEffect, useState } from "react"
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useSourceMaterialSelectionStore } from "@/lib/stores/source-material-selection"
 
 const DocumentViewer = dynamic(
@@ -32,27 +36,16 @@ interface SourceMaterialsPanelProps {
   packageId: string
 }
 
-const DEFAULT_LIST_RATIO = 0.35
-const MIN_PERCENT = 25
-const MAX_PERCENT = 60
-
-function clampRatio(raw: number | null | undefined): number {
-  if (typeof raw !== "number" || Number.isNaN(raw)) return DEFAULT_LIST_RATIO
-  return Math.min(0.7, Math.max(0.3, raw))
-}
-
 export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
   const files = usePackageSourceFiles(packageId)
-  const preferences = useUserPreferences()
-  const persistPreferences = useSetUserPreferences()
   const activePath = useSourceMaterialSelectionStore((s) => s.activePath)
   const activePage = useSourceMaterialSelectionStore((s) => s.activePage)
   const highlightBoxes = useSourceMaterialSelectionStore((s) => s.highlightBoxes)
   const setActivePath = useSourceMaterialSelectionStore((s) => s.setActivePath)
-  const [narrow, setNarrow] = useState(false)
 
-  const ratio = clampRatio(preferences.data?.document_panel_ratio ?? DEFAULT_LIST_RATIO)
-  const listPercent = Math.round(ratio * 100)
+  const scrollerRef = useRef<HTMLDivElement | null>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
 
   useEffect(() => {
     if (!activePath && files.data && files.data.length > 0) {
@@ -60,153 +53,160 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
     }
   }, [files.data, activePath, setActivePath])
 
-  const handleLayout = (sizes: number[]) => {
-    if (narrow) return
-    const next = sizes[0]
-    if (typeof next !== "number") return
-    const nextRatio = Math.round(next) / 100
-    if (Math.abs(nextRatio - ratio) < 0.01) return
-    persistPreferences.mutate({ document_panel_ratio: clampRatio(nextRatio) })
-  }
+  const items = files.data ?? []
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollerRef.current
+    if (!el) return
+    setCanScrollLeft(el.scrollLeft > 0)
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+  }, [])
+
+  useEffect(() => {
+    const el = scrollerRef.current
+    if (!el) return
+    updateScrollState()
+    el.addEventListener("scroll", updateScrollState, { passive: true })
+    const observer = new ResizeObserver(() => updateScrollState())
+    observer.observe(el)
+    return () => {
+      el.removeEventListener("scroll", updateScrollState)
+      observer.disconnect()
+    }
+  }, [updateScrollState, items.length])
+
+  useEffect(() => {
+    if (!activePath) return
+    const el = scrollerRef.current
+    if (!el) return
+    const trigger = el.querySelector<HTMLElement>(`[data-tab-path="${CSS.escape(activePath)}"]`)
+    trigger?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" })
+  }, [activePath])
 
   if (files.isLoading) return <LoadingState label="Loading source files…" />
-  const items = files.data ?? []
   if (items.length === 0) {
     return <p className="text-sm text-muted-foreground">No source files for this package.</p>
   }
 
   const active = items.find((f) => f.path === activePath) ?? items[0]!
+  const showDropdown = items.length > 1
 
-  const narrowDefault = 6
-  const narrowMin = 5
-  const narrowMax = 12
+  const handleScrollBy = (delta: number) => {
+    scrollerRef.current?.scrollBy({ left: delta, behavior: "smooth" })
+  }
+
+  const handleSelectFromDropdown = (path: string) => {
+    setActivePath(path)
+    requestAnimationFrame(() => {
+      const el = scrollerRef.current
+      if (!el) return
+      el.querySelector<HTMLElement>(`[data-tab-path="${CSS.escape(path)}"]`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "nearest",
+      })
+    })
+  }
 
   return (
-    <PanelGroup
-      key={narrow ? "narrow" : "wide"}
-      direction="horizontal"
-      onLayout={handleLayout}
-      className="h-full min-h-[560px] gap-3"
-    >
-      <Panel
-        defaultSize={narrow ? narrowDefault : listPercent}
-        minSize={narrow ? narrowMin : MIN_PERCENT}
-        maxSize={narrow ? narrowMax : MAX_PERCENT}
-        className={narrow ? "min-w-[48px]" : "min-w-[200px]"}
-      >
-        <div className="flex h-full flex-col gap-1">
-          <div
-            className={cn(
-              "flex shrink-0 items-center",
-              narrow ? "justify-center" : "justify-between px-1",
-            )}
+    <div className="flex h-full min-h-0 flex-col gap-2">
+      <Tabs value={active.path} onValueChange={setActivePath}>
+        <div className="relative flex items-center gap-1 border-b border-border">
+          {canScrollLeft ? (
+            <button
+              type="button"
+              onClick={() => handleScrollBy(-200)}
+              aria-label="Scroll tabs left"
+              className="flex h-8 w-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          ) : null}
+          <TabsList
+            ref={scrollerRef}
+            className="flex h-auto flex-1 justify-start overflow-x-auto rounded-none bg-transparent p-0 text-muted-foreground [&::-webkit-scrollbar]:hidden"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           >
-            {!narrow ? (
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Source files
-              </span>
-            ) : null}
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => setNarrow((v) => !v)}
-                    aria-label={narrow ? "Expand file list" : "Collapse to narrow list"}
-                  >
-                    {narrow ? (
-                      <PanelLeftOpen className="h-3.5 w-3.5" />
-                    ) : (
-                      <PanelLeftClose className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  {narrow ? "Expand" : "Narrow list"}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-
-          {narrow ? (
-            <ul className="flex flex-col items-stretch gap-1">
-              {items.map((f) => (
-                <li key={f.path}>
-                  <button
-                    type="button"
-                    onClick={() => setActivePath(f.path)}
-                    title={f.file_name}
-                    className={cn(
-                      "flex w-full flex-col items-center gap-1 rounded-md border border-transparent py-2 text-left",
-                      active.path === f.path
-                        ? "border-border bg-muted"
-                        : "hover:bg-muted/60",
-                    )}
-                  >
-                    <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    <span
-                      className="truncate font-mono text-[10px] leading-tight"
-                      style={{
-                        writingMode: "vertical-rl",
-                        transform: "rotate(180deg)",
-                        maxHeight: "10rem",
-                      }}
+            {items.map((f) => {
+              const { Icon, toneClass } = getFileTypeIcon(f.file_name, f.media_type)
+              return (
+                <TabsTrigger
+                  key={f.path}
+                  value={f.path}
+                  data-tab-path={f.path}
+                  title={f.file_name}
+                  className={cn(
+                    "inline-flex max-w-[220px] shrink-0 items-center gap-1.5 rounded-none rounded-t-md border-x border-t border-transparent px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-border data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-none",
+                  )}
+                >
+                  <Icon className={cn("h-3.5 w-3.5 shrink-0", toneClass)} />
+                  <span className="truncate">{f.file_name}</span>
+                </TabsTrigger>
+              )
+            })}
+          </TabsList>
+          {canScrollRight ? (
+            <button
+              type="button"
+              onClick={() => handleScrollBy(200)}
+              aria-label="Scroll tabs right"
+              className="flex h-8 w-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          ) : null}
+          {showDropdown ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  aria-label="Show all files"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
+                {items.map((f) => {
+                  const { Icon, toneClass } = getFileTypeIcon(f.file_name, f.media_type)
+                  const isActive = f.path === active.path
+                  return (
+                    <DropdownMenuItem
+                      key={f.path}
+                      onSelect={() => handleSelectFromDropdown(f.path)}
+                      className={cn("gap-2", isActive && "bg-accent")}
                     >
-                      {f.file_name}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <ul className="space-y-1">
-              {items.map((f) => (
-                <li key={f.path}>
-                  <button
-                    type="button"
-                    onClick={() => setActivePath(f.path)}
-                    className={cn(
-                      "flex w-full items-start gap-2 rounded-md border border-transparent px-2 py-2 text-left text-xs",
-                      active.path === f.path
-                        ? "border-border bg-muted"
-                        : "hover:bg-muted/60",
-                    )}
-                  >
-                    <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 flex-1 space-y-0.5">
-                      <span className="block truncate font-mono">{f.file_name}</span>
-                      <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
-                        {f.preview_kind}
+                      <Icon className={cn("h-3.5 w-3.5 shrink-0", toneClass)} />
+                      <span className="max-w-[280px] truncate" title={f.file_name}>
+                        {f.file_name}
                       </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+                    </DropdownMenuItem>
+                  )
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
         </div>
-      </Panel>
-      <PanelResizeHandle className="w-1 shrink-0 rounded bg-border transition-colors hover:bg-primary/40 data-[resize-handle-active]:bg-primary/50" />
-      <Panel minSize={40} className="flex min-h-0 flex-col gap-2">
-        {highlightBoxes.length > 0 && active.path === activePath ? (
-          <div className="shrink-0 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-            Invoice line selected — page {activePage ?? "—"} · {highlightBoxes.length} highlight
-            {highlightBoxes.length > 1 ? "s" : ""}.
-          </div>
-        ) : null}
-        <div className="min-h-0 flex-1">
-          <SourceFileBody
-            packageId={packageId}
-            file={active}
-            activePage={active.path === activePath ? activePage : null}
-            highlightBoxes={active.path === activePath ? highlightBoxes : []}
-          />
+      </Tabs>
+
+      {highlightBoxes.length > 0 && active.path === activePath ? (
+        <div className="shrink-0 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+          Invoice line selected — page {activePage ?? "—"} · {highlightBoxes.length} highlight
+          {highlightBoxes.length > 1 ? "s" : ""}.
         </div>
-      </Panel>
-    </PanelGroup>
+      ) : null}
+
+      <div className="min-h-0 flex-1">
+        <SourceFileBody
+          packageId={packageId}
+          file={active}
+          activePage={active.path === activePath ? activePage : null}
+          highlightBoxes={active.path === activePath ? highlightBoxes : []}
+        />
+      </div>
+    </div>
   )
 }
 
