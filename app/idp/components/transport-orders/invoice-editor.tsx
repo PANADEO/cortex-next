@@ -8,6 +8,9 @@ import type {
   UpdateInvoiceRequest,
   UpdateInvoiceTotalsRequest,
 } from "@cortex/types"
+import { Button } from "@cortex/ui"
+import { ChevronDown, ChevronRight, FileText } from "lucide-react"
+import { useState } from "react"
 import { z } from "zod"
 import { countryCodeSchema, mapTrimToNull, numericStringSchema } from "@/lib/form-helpers"
 import { FieldsForm, type FieldSpec } from "./fields-form"
@@ -125,60 +128,95 @@ export function InvoiceEditor({
   onSaveLines,
   onSelectLine,
 }: Props) {
+  const [open, setOpen] = useState(true)
+  const Chevron = open ? ChevronDown : ChevronRight
+  const route = formatRoute(invoice.country_of_dispatch, invoice.country_of_destination)
+  const summaryBits = [
+    invoice.invoice_number ? `Invoice ${invoice.invoice_number}` : null,
+    invoice.invoice_date,
+    invoice.invoice_currency,
+    route,
+  ].filter(Boolean) as string[]
+  const contentId = `invoice-editor-content-${invoice.id}`
+
   return (
-    <section className="space-y-4">
-      <header>
-        <h3 className="text-sm font-semibold">
-          Invoice {invoice.invoice_number ?? invoice.id}
-        </h3>
-        {invoice.warnings.length > 0 ? (
-          <ul className="mt-2 list-inside list-disc text-xs text-destructive">
-            {invoice.warnings.map((w, i) => (
-              <li key={i}>{w}</li>
-            ))}
-          </ul>
-        ) : null}
-      </header>
-      <div className="grid gap-4 md:grid-cols-2">
-        <FieldsForm
-          label="Header"
-          fields={HEADER_FIELDS}
-          defaults={headerDefaults(invoice)}
-          schema={headerSchema}
-          canEdit={canEdit}
-          isSaving={isSavingHeader}
-          resetKey={invoice.id}
-          onSave={(v) => onSaveHeader(mapTrimToNull(v))}
-        />
-        <FieldsForm
-          label="Delivery terms"
-          fields={DELIVERY_FIELDS}
-          defaults={deliveryDefaults(invoice)}
-          schema={deliverySchema}
-          canEdit={canEdit}
-          isSaving={isSavingDelivery}
-          resetKey={invoice.id}
-          onSave={(v) => onSaveDelivery(mapTrimToNull(v))}
-        />
-        <FieldsForm
-          label="Totals"
-          fields={TOTALS_FIELDS}
-          defaults={totalsDefaults(invoice)}
-          schema={totalsSchema}
-          canEdit={canEdit}
-          isSaving={isSavingTotals}
-          resetKey={invoice.id}
-          onSave={(v) => onSaveTotals(mapTrimToNull(v))}
-        />
+    <section className="space-y-3">
+      <div className="overflow-hidden rounded-md border border-border bg-muted/20">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setOpen((v) => !v)}
+          className="h-auto w-full justify-start gap-2 rounded-none px-3 py-2 text-left hover:bg-muted/40"
+          aria-expanded={open}
+          aria-controls={contentId}
+        >
+          <Chevron className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="text-xs font-semibold">
+            Invoice {invoice.invoice_number ?? invoice.id}
+          </span>
+          <span className="truncate text-xs font-normal text-muted-foreground">
+            {summaryBits.length > 0 ? summaryBits.join(" · ") : "No invoice data"}
+          </span>
+        </Button>
       </div>
-      <InvoiceLinesGrid
-        invoice={invoice}
-        currency={invoice.invoice_currency}
-        canEdit={canEdit}
-        isSaving={isSavingLines}
-        onSaveLines={onSaveLines}
-        {...(onSelectLine ? { onSelectLine } : {})}
-      />
+      {invoice.warnings.length > 0 ? (
+        <ul className="list-inside list-disc text-xs text-destructive">
+          {invoice.warnings.map((w, i) => (
+            <li key={i}>{w}</li>
+          ))}
+        </ul>
+      ) : null}
+      {open ? (
+        <div id={contentId} className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <FieldsForm
+              label="Header"
+              fields={HEADER_FIELDS}
+              defaults={headerDefaults(invoice)}
+              schema={headerSchema}
+              canEdit={canEdit}
+              isSaving={isSavingHeader}
+              resetKey={invoice.id}
+              onSave={(v) => onSaveHeader(mapTrimToNull(v))}
+            />
+            <FieldsForm
+              label="Delivery terms"
+              fields={DELIVERY_FIELDS}
+              defaults={deliveryDefaults(invoice)}
+              schema={deliverySchema}
+              canEdit={canEdit}
+              isSaving={isSavingDelivery}
+              resetKey={invoice.id}
+              onSave={(v) => onSaveDelivery(mapTrimToNull(v))}
+            />
+            <FieldsForm
+              label="Totals"
+              fields={TOTALS_FIELDS}
+              defaults={totalsDefaults(invoice)}
+              schema={totalsSchema}
+              canEdit={canEdit}
+              isSaving={isSavingTotals}
+              resetKey={invoice.id}
+              onSave={(v) => onSaveTotals(mapTrimToNull(v))}
+            />
+          </div>
+          <InvoiceLinesGrid
+            invoice={invoice}
+            currency={invoice.invoice_currency}
+            canEdit={canEdit}
+            isSaving={isSavingLines}
+            onSaveLines={onSaveLines}
+            {...(onSelectLine ? { onSelectLine } : {})}
+          />
+        </div>
+      ) : null}
     </section>
   )
+}
+
+function formatRoute(from: string | null, to: string | null): string | null {
+  if (!from && !to) return null
+  return `${from ?? "?"} → ${to ?? "?"}`
 }
