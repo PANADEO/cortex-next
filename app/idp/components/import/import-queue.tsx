@@ -3,7 +3,7 @@
 import { toastApiError, useImportMultiplePackages, useImportPackage } from "@cortex/api"
 import { Button } from "@cortex/ui"
 import { Loader2, Send } from "lucide-react"
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
 import {
   emptyImportOptions,
@@ -12,7 +12,6 @@ import {
 } from "@/components/import-options-fields"
 import { detectIntakeKind } from "./file-intake"
 import { ImportSlot, type ImportSlotValue } from "./import-slot"
-import { resolveImportedPackageId } from "./resolve-imported-package-id"
 
 function makeEmptySlot(): ImportSlotValue {
   return {
@@ -27,10 +26,6 @@ export function ImportQueue() {
   const [slots, setSlots] = useState<ImportSlotValue[]>(() => [makeEmptySlot()])
   const importOne = useImportPackage()
   const importMany = useImportMultiplePackages()
-  // Tracks ids already resolved by sibling slots so concurrent multi-slot imports
-  // (e.g. "Import all" with two folder slots) don't cross-contaminate by all
-  // settling on the same most-recent `import_*.zip`.
-  const claimedPackageIdsRef = useRef<Set<string>>(new Set<string>())
 
   const patchSlot = useCallback(
     (id: string, patch: Partial<ImportSlotValue>) => {
@@ -94,35 +89,17 @@ export function ImportQueue() {
       if (slot.files.length === 0) return
       const kind = detectIntakeKind(slot.files)
       const serialized = serializeImportOptions(slot.options)
-      const submittedAt = new Date().toISOString()
       patchSlot(slot.id, { status: "uploading", errorMessage: undefined })
       try {
+        let result: { id: string }
         if (kind === "zip") {
-          await importOne.mutateAsync({ file: slot.files[0]!, ...serialized })
+          result = await importOne.mutateAsync({ file: slot.files[0]!, ...serialized })
           toast.success(`Imported ${slot.files[0]!.name}`)
         } else {
-          await importMany.mutateAsync({ files: slot.files, ...serialized })
+          result = await importMany.mutateAsync({ files: slot.files, ...serialized })
           toast.success(`Imported ${slot.files.length} file(s)`)
         }
-        patchSlot(slot.id, { status: "done" })
-        void resolveImportedPackageId(
-          slot.files,
-          submittedAt,
-          claimedPackageIdsRef.current,
-        ).then((packageId) => {
-          if (packageId) {
-            claimedPackageIdsRef.current.add(packageId)
-            patchSlot(slot.id, { packageId })
-          } else {
-            console.warn(
-              "[import] Package id resolution failed for slot",
-              slot.id,
-              "— files:",
-              slot.files.map((f) => f.name).join(", "),
-              "— user fallback: Find in Extraction",
-            )
-          }
-        })
+        patchSlot(slot.id, { status: "done", packageId: result.id })
       } catch (err) {
         toastApiError(err)
         const message =

@@ -547,8 +547,10 @@ export const handlers = [
     return HttpResponse.json({})
   }),
 
-  http.post("/packages/import", () => HttpResponse.json({})),
-  http.post("/packages/import-multiple", () => HttpResponse.json({})),
+  http.post("/packages/import", () => HttpResponse.json({ id: crypto.randomUUID() })),
+  http.post("/packages/import-multiple", () =>
+    HttpResponse.json({ id: crypto.randomUUID() }),
+  ),
 
   // Transport-order edits — catch-all returning {} per openapi.
   http.post("/packages/:id/transport-orders/*", () => HttpResponse.json({})),

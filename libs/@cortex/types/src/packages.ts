@@ -94,6 +94,10 @@ export interface ImportMultiplePackagesBody {
   additional_ai_context?: string | null
 }
 
+export interface ImportPackageResponse {
+  id: string
+}
+
 export interface ReprocessRequest {
   fast_processing?: boolean
   additional_ai_context_enabled?: boolean

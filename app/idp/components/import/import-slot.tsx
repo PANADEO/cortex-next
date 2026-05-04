@@ -286,35 +286,15 @@ export function ImportSlot({
           <div className="flex items-center gap-2">
             {slot.status === "done" ? (
               <div className="ml-auto">
-                {slot.packageId ? (
-                  <Button asChild size="sm" className="h-8">
-                    <Link
-                      href={`/idp/packages/${slot.packageId}`}
-                      aria-label="Open package details"
-                    >
-                      Open package
-                      <ArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
-                    </Link>
-                  </Button>
-                ) : (
-                  // Fallback when package id resolution failed (race / naming mismatch):
-                  // link to Extraction with a search hint so user can locate the import.
-                  // Variant=outline visually differentiates from the enabled "Open package".
-                  <Button asChild size="sm" variant="outline" className="h-8">
-                    <Link
-                      href={`/idp/packages?search=${encodeURIComponent(
-                        kind === "zip" && slot.files[0]
-                          ? slot.files[0].name
-                          : "import_",
-                      )}`}
-                      aria-label="Find imported package in Extraction"
-                      title="Package id not available — open Extraction to find it"
-                    >
-                      Find in Extraction
-                      <ArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
-                    </Link>
-                  </Button>
-                )}
+                <Button asChild size="sm" className="h-8">
+                  <Link
+                    href={`/idp/packages/${slot.packageId}`}
+                    aria-label="Open package details"
+                  >
+                    Open package
+                    <ArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
+                  </Link>
+                </Button>
               </div>
             ) : (
               <>

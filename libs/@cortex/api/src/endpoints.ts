@@ -18,6 +18,7 @@ import type {
   GetRulesQuery,
   ImportMultiplePackagesBody,
   ImportPackageBody,
+  ImportPackageResponse,
   PackageActionsResponse,
   PackageDetailsResponse,
   PackageRuleAttachment,
@@ -108,9 +109,13 @@ export const endpoints = {
       }),
     dashboardStats: () => apiClient.get<DashboardStatsResponse>("/packages/dashboard-stats"),
     import: (body: ImportPackageBody) =>
-      apiClient.post<EmptyOk>("/packages/import", { body: buildImportForm(body) }),
+      apiClient.post<ImportPackageResponse>("/packages/import", {
+        body: buildImportForm(body),
+      }),
     importMultiple: (body: ImportMultiplePackagesBody) =>
-      apiClient.post<EmptyOk>("/packages/import-multiple", { body: buildImportForm(body) }),
+      apiClient.post<ImportPackageResponse>("/packages/import-multiple", {
+        body: buildImportForm(body),
+      }),
     get: (id: string) => apiClient.get<PackageDetailsResponse>(`/packages/${id}`),
     actions: (id: string) =>
       apiClient.get<PackageActionsResponse>(`/packages/${id}/actions`),
