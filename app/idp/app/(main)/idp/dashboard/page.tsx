@@ -16,13 +16,6 @@ export default function DashboardPage() {
       />
 
       <div className="flex flex-col gap-6 px-8 py-6">
-        <div>
-          <h2 className="text-sm font-semibold">Pipeline</h2>
-          <p className="text-xs text-muted-foreground">
-            Dirty and clean packages across every stage.
-          </p>
-        </div>
-
         <BoardFilters board={board} />
 
         <BoardColumns board={board} />
