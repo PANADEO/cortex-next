@@ -58,8 +58,8 @@ export function packageColumns(
 
   cols.push({
     accessorKey: "uploaded_by",
-    header: "Wprowadzający paczkę",
-    size: 200,
+    header: "Uploader",
+    size: 140,
     cell: ({ row }) => (
       <span className="text-xs text-muted-foreground">
         {row.original.uploaded_by ?? "—"}
