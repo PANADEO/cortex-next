@@ -129,8 +129,53 @@ function totals(id: string): InvoiceTotals {
   }
 }
 
+type Template = string | ((seed: number) => string)
+
+const WARNING_TEMPLATES: ReadonlyArray<Template> = [
+  (s) => `Net weight (${(s % 50) + 1} kg) exceeds gross weight (${(s % 30) + 1} kg) on line 2.`,
+  (s) =>
+    `Sum of line items (${12000 + (s % 500)}.00 EUR) differs from invoice total (${12450 + (s % 200)}.00 EUR).`,
+  (s) =>
+    `Packing list declares ${250 + (s % 5)} units but invoice reports 250 — verify with shipper.`,
+  "Buyer postal code missing — customs declaration requires a 5-digit code for DE importers.",
+  "Certificate of origin lists a different shipper legal form than the invoice.",
+  (s) =>
+    `Unusual weight-per-unit on line 2: ${(1 + (s % 3)).toFixed(2)} kg/pc — outside historical range.`,
+]
+
+const NOTE_TEMPLATES: ReadonlyArray<Template> = [
+  "Currency inferred from line item column headers (no explicit invoice-level value).",
+  "Incoterm defaulted to DAP based on prior shipments from this seller.",
+  (s) =>
+    `Delivery date 04/05/${2025 + (s % 3)} parsed as EU format (4 May) based on consignor country.`,
+  "HS sub-heading inferred from CN code prefix; please confirm before declaration.",
+]
+
+function renderTemplate(template: Template, seed: number): string {
+  return typeof template === "string" ? template : template(seed)
+}
+
+function sampleObservations(pkg: PackageReadModel): {
+  warnings: string[]
+  notes: string[]
+} {
+  const seed = pkgSeed(pkg.id)
+  // Every 5th package stays empty so the empty-state UI is reachable in dev.
+  if (seed % 5 === 0) return { warnings: [], notes: [] }
+  const warningCount = (seed % 3) + 1
+  const noteCount = ((seed >> 3) % 3) + 1
+  const warnings = Array.from({ length: warningCount }, (_, i) =>
+    renderTemplate(WARNING_TEMPLATES[(seed + i * 7) % WARNING_TEMPLATES.length]!, seed + i),
+  )
+  const notes = Array.from({ length: noteCount }, (_, i) =>
+    renderTemplate(NOTE_TEMPLATES[(seed + i * 11) % NOTE_TEMPLATES.length]!, seed + i),
+  )
+  return { warnings, notes }
+}
+
 function invoice(pkg: PackageReadModel): Invoice {
   const id = `${pkg.id}-inv-1`
+  const { warnings, notes } = sampleObservations(pkg)
   return {
     id,
     invoice_number: `INV-${pkg.id.slice(-4)}`,
@@ -145,8 +190,8 @@ function invoice(pkg: PackageReadModel): Invoice {
       line(id, 3, "Plastic housings — CN 3926", "3926909790", "500", "43.1", "4720.25"),
     ],
     invoice_totals: totals(id),
-    warnings: [],
-    notes: [],
+    warnings,
+    notes,
   }
 }
 

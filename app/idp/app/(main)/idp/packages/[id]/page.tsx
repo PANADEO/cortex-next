@@ -1,7 +1,16 @@
 "use client"
 
+import { AiNotificationsPanel } from "@/components/ai-notifications-panel"
+import { ExportMenu } from "@/components/export-menu"
+import { PackageMetadataEditors } from "@/components/package-metadata-editors"
+import { ReprocessDialog } from "@/components/reprocess-dialog"
+import { PackageRulesPanel } from "@/components/rules/package-rules-panel"
+import { SourceMaterialsPanel } from "@/components/source-materials-panel"
+import { TransportOrdersPanel } from "@/components/transport-orders/transport-orders-panel"
+import { downloadBlob } from "@/lib/download"
 import {
   endpoints,
+  toastApiError,
   useCancelVerification,
   useFinishVerification,
   useMe,
@@ -10,7 +19,6 @@ import {
   usePackageTransitions,
   useResetVerification,
   useStartVerification,
-  toastApiError,
 } from "@cortex/api"
 import type { PackageTransition } from "@cortex/types"
 import {
@@ -41,14 +49,6 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
-import { downloadBlob } from "@/lib/download"
-import { AiNotificationsPanel } from "@/components/ai-notifications-panel"
-import { ExportMenu } from "@/components/export-menu"
-import { PackageMetadataEditors } from "@/components/package-metadata-editors"
-import { ReprocessDialog } from "@/components/reprocess-dialog"
-import { PackageRulesPanel } from "@/components/rules/package-rules-panel"
-import { SourceMaterialsPanel } from "@/components/source-materials-panel"
-import { TransportOrdersPanel } from "@/components/transport-orders/transport-orders-panel"
 
 const TRANSITION_LABELS: Record<PackageTransition, string> = {
   start_verification: "Start verification",
@@ -87,8 +87,7 @@ export default function PackageDetailPage() {
 
   const userNotesUpdated = useMemo(
     () =>
-      actions.data?.actions.find((a) => a.action_type === "user_notes_updated")?.timestamp ??
-      null,
+      actions.data?.actions.find((a) => a.action_type === "user_notes_updated")?.timestamp ?? null,
     [actions.data],
   )
 
@@ -238,8 +237,7 @@ export default function PackageDetailPage() {
                   ) : (
                     <div className="flex flex-col gap-1.5">
                       {transitions.data?.transitions.map((t) => {
-                        const isPrimary =
-                          t === "finish_verification" || t === "start_verification"
+                        const isPrimary = t === "finish_verification" || t === "start_verification"
                         return (
                           <Button
                             key={t}
@@ -309,7 +307,10 @@ export default function PackageDetailPage() {
                       disabledReason="Field-level edits go through transport-order endpoints; full-document save is pending backend support."
                     />
                   ) : (
-                    <JsonViewer data={pkg.verified_result ?? pkg.analysis_result} initialDepth={2} />
+                    <JsonViewer
+                      data={pkg.verified_result ?? pkg.analysis_result}
+                      initialDepth={2}
+                    />
                   )
                 ) : (
                   <p className="text-sm text-muted-foreground">
@@ -318,10 +319,7 @@ export default function PackageDetailPage() {
                 )}
               </TabsContent>
               <TabsContent value="ai-notifications">
-                <AiNotificationsPanel
-                  packageId={pkg.id}
-                  hasAnalysis={Boolean(pkg.analysis_result)}
-                />
+                <AiNotificationsPanel packageId={pkg.id} />
               </TabsContent>
               <TabsContent value="rules">
                 <PackageRulesPanel packageId={pkg.id} canEdit={canEdit} />
@@ -343,11 +341,7 @@ export default function PackageDetailPage() {
         )}
       </div>
       {pkg ? (
-        <ReprocessDialog
-          open={reprocessOpen}
-          onOpenChange={setReprocessOpen}
-          packageId={pkg.id}
-        />
+        <ReprocessDialog open={reprocessOpen} onOpenChange={setReprocessOpen} packageId={pkg.id} />
       ) : null}
       <Dialog open={structureOpen} onOpenChange={setStructureOpen}>
         <DialogContent className="max-h-[85vh] max-w-3xl overflow-hidden">
