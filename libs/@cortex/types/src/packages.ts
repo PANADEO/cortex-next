@@ -71,6 +71,8 @@ export interface GetPackagesQuery {
   processing_state?: ProcessingState | null
   verification_state?: VerificationState | null
   custom_status?: string | null
+  assignee?: string | null
+  uploaded_by?: string | null
   search?: string | null
   sort_by?: PackageSortField
   sort_order?: SortOrder

@@ -306,6 +306,8 @@ export const handlers = [
     const processingFilter = url.searchParams.get("processing_state") as ProcessingState | null
     const verificationFilter = url.searchParams.get("verification_state") as VerificationState | null
     const customStatusFilter = url.searchParams.get("custom_status")
+    const assigneeFilter = url.searchParams.get("assignee")
+    const uploadedByFilter = url.searchParams.get("uploaded_by")
     const search = url.searchParams.get("search")?.toLowerCase() ?? null
     const sortBy = (url.searchParams.get("sort_by") ?? "created_date") as PackageSortField
     const order = (url.searchParams.get("sort_order") ?? "desc") as SortOrder
@@ -319,6 +321,18 @@ export const handlers = [
       filtered = filtered.filter((p) => p.verification_state === verificationFilter)
     if (customStatusFilter)
       filtered = filtered.filter((p) => p.custom_status === customStatusFilter)
+    if (assigneeFilter) {
+      const needle = assigneeFilter.toLowerCase()
+      filtered = filtered.filter(
+        (p) => p.assignee != null && p.assignee.toLowerCase() === needle,
+      )
+    }
+    if (uploadedByFilter) {
+      const needle = uploadedByFilter.toLowerCase()
+      filtered = filtered.filter(
+        (p) => p.uploaded_by != null && p.uploaded_by.toLowerCase() === needle,
+      )
+    }
     if (search) filtered = filtered.filter((p) => p.file_name.toLowerCase().includes(search))
     if (dateFrom) filtered = filtered.filter((p) => p.created_date.slice(0, 10) >= dateFrom)
     if (dateTo) filtered = filtered.filter((p) => p.created_date.slice(0, 10) <= dateTo)

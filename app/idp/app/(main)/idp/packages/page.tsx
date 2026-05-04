@@ -1,6 +1,6 @@
 "use client"
 
-import { toastApiError, useDeletePackages, usePackages } from "@cortex/api"
+import { toastApiError, useDeletePackages, useMe, usePackages } from "@cortex/api"
 import {
   PROCESSING_STATE,
   VERIFICATION_STATE,
@@ -33,7 +33,16 @@ import {
   getProcessingStateLabel,
   getVerificationStateLabel,
 } from "@cortex/ui"
-import { ArrowDown, ArrowUp, FileQuestion, Loader2, Search, Trash2 } from "lucide-react"
+import {
+  ArrowDown,
+  ArrowUp,
+  FileQuestion,
+  Loader2,
+  Search,
+  Trash2,
+  Upload,
+  UserCheck,
+} from "lucide-react"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { DateRangeFilter } from "@/components/date-range-filter"
@@ -48,11 +57,16 @@ const SORT_FIELDS: ReadonlyArray<{ value: PackageSortField; label: string }> = [
 const PAGE_SIZE = 10
 
 export default function PackagesPage() {
+  const me = useMe()
+  const currentEmail = me.data?.email ?? null
+
   const [page, setPage] = useState(0)
   const [processingState, setProcessingState] = useState<ProcessingState | "all">("all")
   const [verificationState, setVerificationState] = useState<VerificationState | "all">("all")
   const [search, setSearch] = useState("")
   const [customStatus, setCustomStatus] = useState("")
+  const [assignedToMe, setAssignedToMe] = useState(false)
+  const [uploadedByMe, setUploadedByMe] = useState(false)
   const [sortBy, setSortBy] = useState<PackageSortField>("created_date")
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
   const [dateFrom, setDateFrom] = useState("")
@@ -68,12 +82,27 @@ export default function PackagesPage() {
       verification_state: verificationState === "all" ? null : verificationState,
       search: search || null,
       custom_status: customStatus.trim() || null,
+      assignee: assignedToMe && currentEmail ? currentEmail : null,
+      uploaded_by: uploadedByMe && currentEmail ? currentEmail : null,
       sort_by: sortBy,
       sort_order: sortOrder,
       date_from: dateFrom || null,
       date_to: dateTo || null,
     }),
-    [page, processingState, verificationState, search, customStatus, sortBy, sortOrder, dateFrom, dateTo],
+    [
+      page,
+      processingState,
+      verificationState,
+      search,
+      customStatus,
+      assignedToMe,
+      uploadedByMe,
+      currentEmail,
+      sortBy,
+      sortOrder,
+      dateFrom,
+      dateTo,
+    ],
   )
 
   const { data, isLoading, isFetching } = usePackages(query)
@@ -207,6 +236,34 @@ export default function PackagesPage() {
             }}
             className="h-9 w-[160px]"
           />
+          <Button
+            variant={assignedToMe ? "default" : "outline"}
+            size="sm"
+            className="h-9"
+            disabled={!currentEmail}
+            onClick={() => {
+              resetPage()
+              setAssignedToMe((v) => !v)
+            }}
+            aria-pressed={assignedToMe}
+          >
+            <UserCheck className="mr-1.5 h-3.5 w-3.5" />
+            Assigned to me
+          </Button>
+          <Button
+            variant={uploadedByMe ? "default" : "outline"}
+            size="sm"
+            className="h-9"
+            disabled={!currentEmail}
+            onClick={() => {
+              resetPage()
+              setUploadedByMe((v) => !v)
+            }}
+            aria-pressed={uploadedByMe}
+          >
+            <Upload className="mr-1.5 h-3.5 w-3.5" />
+            Uploaded by me
+          </Button>
           <div className="ml-auto text-xs text-muted-foreground">
             {isFetching ? "Refreshing…" : `${total} total`}
           </div>
@@ -264,7 +321,13 @@ export default function PackagesPage() {
               setDateTo(to)
             }}
           />
-          {(dateFrom || dateTo || customStatus || sortBy !== "created_date" || sortOrder !== "desc") ? (
+          {(dateFrom ||
+            dateTo ||
+            customStatus ||
+            assignedToMe ||
+            uploadedByMe ||
+            sortBy !== "created_date" ||
+            sortOrder !== "desc") ? (
             <Button
               variant="ghost"
               size="sm"
@@ -274,6 +337,8 @@ export default function PackagesPage() {
                 setDateFrom("")
                 setDateTo("")
                 setCustomStatus("")
+                setAssignedToMe(false)
+                setUploadedByMe(false)
                 setSortBy("created_date")
                 setSortOrder("desc")
               }}
