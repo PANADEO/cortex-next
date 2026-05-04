@@ -17,22 +17,29 @@ export const emptyImportOptions: ImportOptions = {
   additional_ai_context: "",
 }
 
+export interface SerializedImportOptions {
+  fast_processing: boolean
+  additional_ai_context_enabled: boolean
+  additional_ai_context: string | null
+}
+
+export function serializeImportOptions(state: ImportOptions): SerializedImportOptions {
+  const trimmed = state.additional_ai_context.trim()
+  const hasContext = state.additional_ai_context_enabled && trimmed !== ""
+  return {
+    fast_processing: state.fast_processing,
+    additional_ai_context_enabled: hasContext,
+    additional_ai_context: hasContext ? trimmed : null,
+  }
+}
+
 export function useImportOptions(initial: ImportOptions = emptyImportOptions) {
   const [state, setState] = useState<ImportOptions>(initial)
   const update = (patch: Partial<ImportOptions>) =>
     setState((prev) => ({ ...prev, ...patch }))
   const reset = () => setState(initial)
-  const serialize = () => ({
-    fast_processing: state.fast_processing,
-    additional_ai_context_enabled: state.additional_ai_context_enabled,
-    additional_ai_context:
-      state.additional_ai_context_enabled && state.additional_ai_context.trim()
-        ? state.additional_ai_context.trim()
-        : null,
-  })
-  const isValid =
-    !state.additional_ai_context_enabled || state.additional_ai_context.trim() !== ""
-  return { state, update, reset, serialize, isValid }
+  const serialize = () => serializeImportOptions(state)
+  return { state, update, reset, serialize }
 }
 
 interface ImportOptionsFieldsProps {

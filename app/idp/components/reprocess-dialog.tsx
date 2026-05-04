@@ -29,10 +29,6 @@ export function ReprocessDialog({
   const mutate = useReprocessPackage(packageId)
 
   const handleSubmit = async () => {
-    if (!options.isValid) {
-      toast.error("Additional AI context is enabled but empty")
-      return
-    }
     try {
       await mutate.mutateAsync(options.serialize())
       toast.success("Reprocess started")

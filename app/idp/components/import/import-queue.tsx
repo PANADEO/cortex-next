@@ -5,7 +5,11 @@ import { Button } from "@cortex/ui"
 import { Loader2, Send } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
-import { emptyImportOptions, type ImportOptions } from "@/components/import-options-fields"
+import {
+  emptyImportOptions,
+  serializeImportOptions,
+  type ImportOptions,
+} from "@/components/import-options-fields"
 import { detectIntakeKind } from "./file-intake"
 import { ImportSlot, type ImportSlotValue } from "./import-slot"
 import { resolveImportedPackageId } from "./resolve-imported-package-id"
@@ -89,15 +93,7 @@ export function ImportQueue() {
     async (slot: ImportSlotValue) => {
       if (slot.files.length === 0) return
       const kind = detectIntakeKind(slot.files)
-      const serialized = {
-        fast_processing: slot.options.fast_processing,
-        additional_ai_context_enabled: slot.options.additional_ai_context_enabled,
-        additional_ai_context:
-          slot.options.additional_ai_context_enabled &&
-          slot.options.additional_ai_context.trim()
-            ? slot.options.additional_ai_context.trim()
-            : null,
-      }
+      const serialized = serializeImportOptions(slot.options)
       const submittedAt = new Date().toISOString()
       patchSlot(slot.id, { status: "uploading", errorMessage: undefined })
       try {
