@@ -117,6 +117,14 @@ export function ImportQueue() {
           if (packageId) {
             claimedPackageIdsRef.current.add(packageId)
             patchSlot(slot.id, { packageId })
+          } else {
+            console.warn(
+              "[import] Package id resolution failed for slot",
+              slot.id,
+              "— files:",
+              slot.files.map((f) => f.name).join(", "),
+              "— user fallback: Find in Extraction",
+            )
           }
         })
       } catch (err) {

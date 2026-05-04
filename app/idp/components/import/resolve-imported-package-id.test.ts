@@ -1,5 +1,5 @@
 import type { PackageReadModel, PaginatedPackageResponse } from "@cortex/types"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 const listMock = vi.fn<(query: unknown) => Promise<PaginatedPackageResponse>>()
 
@@ -40,6 +40,11 @@ function makeFile(name: string): File {
 describe("resolveImportedPackageId", () => {
   beforeEach(() => {
     listMock.mockReset()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it("returns id for zip kind when filename matches exactly within tolerance", async () => {
@@ -54,10 +59,12 @@ describe("resolveImportedPackageId", () => {
       ]),
     )
 
-    const result = await resolveImportedPackageId(
+    const promise = resolveImportedPackageId(
       [makeFile("shipment-2026-04.zip")],
       submittedAt,
     )
+    await vi.runAllTimersAsync()
+    const result = await promise
 
     expect(result).toBe("pkg-zip-1")
     expect(listMock).toHaveBeenCalledWith({
@@ -80,10 +87,12 @@ describe("resolveImportedPackageId", () => {
       ]),
     )
 
-    const result = await resolveImportedPackageId(
+    const promise = resolveImportedPackageId(
       [makeFile("invoice.pdf"), makeFile("packing.pdf")],
       submittedAt,
     )
+    await vi.runAllTimersAsync()
+    const result = await promise
 
     expect(result).toBe("pkg-loose-1")
     expect(listMock).toHaveBeenCalledWith({
@@ -97,7 +106,7 @@ describe("resolveImportedPackageId", () => {
   it("rejects packages whose created_date is older than tolerance window", async () => {
     const submittedAt = "2026-04-30T10:00:00.000Z"
     // Tolerance is 5s, so anything created before 2026-04-30T09:59:55.000Z is rejected.
-    listMock.mockResolvedValueOnce(
+    listMock.mockResolvedValue(
       paginated([
         pkg({
           id: "stale-pkg",
@@ -107,16 +116,20 @@ describe("resolveImportedPackageId", () => {
       ]),
     )
 
-    const result = await resolveImportedPackageId([makeFile("shipment.zip")], submittedAt)
+    const promise = resolveImportedPackageId([makeFile("shipment.zip")], submittedAt)
+    await vi.runAllTimersAsync()
+    const result = await promise
 
     expect(result).toBeUndefined()
   })
 
   it("returns undefined when endpoints.packages.list rejects (does not throw)", async () => {
     const submittedAt = "2026-04-30T10:00:00.000Z"
-    listMock.mockRejectedValueOnce(new Error("network down"))
+    listMock.mockRejectedValue(new Error("network down"))
 
-    const result = await resolveImportedPackageId([makeFile("shipment.zip")], submittedAt)
+    const promise = resolveImportedPackageId([makeFile("shipment.zip")], submittedAt)
+    await vi.runAllTimersAsync()
+    const result = await promise
 
     expect(result).toBeUndefined()
   })
@@ -142,25 +155,29 @@ describe("resolveImportedPackageId", () => {
     listMock.mockResolvedValue(paginated(items))
 
     const claimed = new Set<string>()
-    const firstResult = await resolveImportedPackageId(
+    const firstPromise = resolveImportedPackageId(
       [makeFile("a.pdf"), makeFile("b.pdf")],
       submittedAt,
       claimed,
     )
+    await vi.runAllTimersAsync()
+    const firstResult = await firstPromise
     expect(firstResult).toBe("pkg-loose-A")
     claimed.add(firstResult!)
 
-    const secondResult = await resolveImportedPackageId(
+    const secondPromise = resolveImportedPackageId(
       [makeFile("c.pdf"), makeFile("d.pdf")],
       submittedAt,
       claimed,
     )
+    await vi.runAllTimersAsync()
+    const secondResult = await secondPromise
     expect(secondResult).toBe("pkg-loose-B")
   })
 
   it("excludes claimed ids in zip branch", async () => {
     const submittedAt = "2026-04-30T10:00:00.000Z"
-    listMock.mockResolvedValueOnce(
+    listMock.mockResolvedValue(
       paginated([
         pkg({
           id: "pkg-already-claimed",
@@ -170,12 +187,48 @@ describe("resolveImportedPackageId", () => {
       ]),
     )
 
-    const result = await resolveImportedPackageId(
+    const promise = resolveImportedPackageId(
       [makeFile("shipment.zip")],
       submittedAt,
       new Set(["pkg-already-claimed"]),
     )
+    await vi.runAllTimersAsync()
+    const result = await promise
 
     expect(result).toBeUndefined()
+  })
+
+  it("resolves on second attempt when first returns no match (backend race)", async () => {
+    const submittedAt = "2026-04-30T10:00:00.000Z"
+    listMock
+      .mockResolvedValueOnce(paginated([])) // first attempt: backend not yet ready
+      .mockResolvedValueOnce(
+        paginated([
+          pkg({
+            id: "pkg-zip-late",
+            file_name: "shipment.zip",
+            created_date: "2026-04-30T10:00:01.000Z",
+          }),
+        ]),
+      )
+
+    const promise = resolveImportedPackageId([makeFile("shipment.zip")], submittedAt)
+    await vi.runAllTimersAsync()
+    const result = await promise
+
+    expect(result).toBe("pkg-zip-late")
+    expect(listMock).toHaveBeenCalledTimes(2)
+  })
+
+  it("returns undefined after all retries exhausted", async () => {
+    const submittedAt = "2026-04-30T10:00:00.000Z"
+    listMock.mockResolvedValue(paginated([]))
+
+    const promise = resolveImportedPackageId([makeFile("shipment.zip")], submittedAt)
+    await vi.runAllTimersAsync()
+    const result = await promise
+
+    expect(result).toBeUndefined()
+    expect(listMock).toHaveBeenCalledTimes(4)
   })
 })
