@@ -46,6 +46,21 @@ describe("stripLeadingV", () => {
   })
 })
 
+describe("SHELL_VERSION export", () => {
+  it("returns env value when NEXT_PUBLIC_SHELL_VERSION is set", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SHELL_VERSION", "v0.2.10")
+    const { SHELL_VERSION } = await import("./version-label")
+    expect(SHELL_VERSION).toBe("v0.2.10")
+  })
+
+  it("falls back to 'dev' when NEXT_PUBLIC_SHELL_VERSION is not set", async () => {
+    vi.unstubAllEnvs()
+    delete process.env.NEXT_PUBLIC_SHELL_VERSION
+    const { SHELL_VERSION } = await import("./version-label")
+    expect(SHELL_VERSION).toBe("dev")
+  })
+})
+
 describe("VersionLabel", () => {
   it("renders FE version stripped of leading 'v' regardless of env format", async () => {
     vi.stubEnv("NEXT_PUBLIC_SHELL_VERSION", "v0.2.10")

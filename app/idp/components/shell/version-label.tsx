@@ -3,7 +3,7 @@
 import { useModuleVersion } from "@cortex/api"
 import { TILES } from "@/lib/tiles"
 
-const SHELL_VERSION = process.env.NEXT_PUBLIC_SHELL_VERSION ?? "dev"
+export const SHELL_VERSION = process.env.NEXT_PUBLIC_SHELL_VERSION ?? "dev"
 
 export function stripLeadingV(s: string): string {
   return s.startsWith("v") ? s.slice(1) : s

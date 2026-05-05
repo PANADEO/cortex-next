@@ -5,6 +5,7 @@ import { ArrowRight, ShieldCheck, Sparkles, Workflow } from "lucide-react"
 import Image from "next/image"
 import { useThemeStore } from "@/lib/stores/theme-store"
 import { DotGrid } from "./dot-grid"
+import { ShellFooter } from "./shell-footer"
 import { SplitText } from "./split-text"
 
 export function LandingHero() {
@@ -132,9 +133,7 @@ export function LandingHero() {
         </div>
       </main>
 
-      <footer className="relative z-10 px-6 pb-6 text-center text-[11px] text-muted-foreground md:px-10">
-        Cortex360 v1.0 &middot; Forsped Sp. z o.o.
-      </footer>
+      <ShellFooter />
     </div>
   )
 }
