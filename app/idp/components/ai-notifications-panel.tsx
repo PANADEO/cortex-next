@@ -52,10 +52,28 @@ export function buildNotifications(invoices: readonly Invoice[]): AiNotification
   return items
 }
 
-function summarize(items: readonly AiNotification[]) {
+export function summarize(items: readonly AiNotification[]): { warning: number; info: number } {
   const warning = items.filter((n) => n.severity === "warning").length
   const info = items.filter((n) => n.severity === "info").length
   return { warning, info }
+}
+
+interface AiNotificationCounts {
+  warning: number
+  info: number
+  isLoaded: boolean
+}
+
+export function useAiNotificationCounts(packageId: string): AiNotificationCounts {
+  const { data, isLoading } = usePackageTransportOrders(packageId, { polling: false })
+
+  if (isLoading) return { warning: 0, info: 0, isLoaded: false }
+
+  const orders = data?.verified_transport_orders ?? data?.transport_orders ?? null
+  if (orders === null) return { warning: 0, info: 0, isLoaded: true }
+
+  const items = buildNotifications(orders.flatMap((o) => o.invoices))
+  return { ...summarize(items), isLoaded: true }
 }
 
 interface AiNotificationsPanelProps {

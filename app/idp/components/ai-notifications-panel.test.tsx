@@ -1,6 +1,6 @@
 import type { Invoice } from "@cortex/types"
 import { describe, expect, it } from "vitest"
-import { buildNotifications } from "./ai-notifications-panel"
+import { buildNotifications, summarize } from "./ai-notifications-panel"
 
 function invoice(overrides: Partial<Invoice> & Pick<Invoice, "id">): Invoice {
   return {
@@ -64,5 +64,30 @@ describe("buildNotifications", () => {
     expect(result).toHaveLength(2)
     expect(result[0]?.sourceField).toBe("Invoice INV-0001")
     expect(result[1]?.sourceField).toBe("Invoice inv-2-uuid")
+  })
+})
+
+describe("summarize", () => {
+  it("returns 0/0 for an empty list", () => {
+    expect(summarize([])).toEqual({ warning: 0, info: 0 })
+  })
+
+  it("counts warnings and infos separately across multiple items", () => {
+    const items = buildNotifications([
+      invoice({
+        id: "inv-1",
+        warnings: ["a", "b", "c"],
+        notes: ["x", "y"],
+      }),
+    ])
+    expect(summarize(items)).toEqual({ warning: 3, info: 2 })
+  })
+
+  it("aggregates across multiple invoices", () => {
+    const items = buildNotifications([
+      invoice({ id: "inv-1", warnings: ["a"], notes: ["x"] }),
+      invoice({ id: "inv-2", warnings: ["b", "c"], notes: ["y"] }),
+    ])
+    expect(summarize(items)).toEqual({ warning: 3, info: 2 })
   })
 })

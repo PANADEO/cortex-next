@@ -1,6 +1,11 @@
 "use client"
 
-import { AiNotificationsPanel } from "@/components/ai-notifications-panel"
+import {
+  AiNotificationsPanel,
+  useAiNotificationCounts,
+} from "@/components/ai-notifications-panel"
+import { AiNotificationsChip } from "@/components/ai-notifications-chip"
+import { AiNotificationsTabTrigger } from "@/components/ai-notifications-tab-trigger"
 import { ExportMenu } from "@/components/export-menu"
 import { PackageMetadataEditors } from "@/components/package-metadata-editors"
 import { ReprocessDialog } from "@/components/reprocess-dialog"
@@ -8,6 +13,7 @@ import { PackageRulesPanel } from "@/components/rules/package-rules-panel"
 import { SourceMaterialsPanel } from "@/components/source-materials-panel"
 import { TransportOrdersPanel } from "@/components/transport-orders/transport-orders-panel"
 import { downloadBlob } from "@/lib/download"
+import { useAiNotificationsReadStore } from "@/lib/stores/ai-notifications-read-store"
 import {
   endpoints,
   toastApiError,
@@ -47,7 +53,7 @@ import { emailsMatch, formatAbsolute, formatFileSizeMb, formatMoney } from "@cor
 import { ArrowLeft, Braces, FileArchive, Loader2, Maximize2 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
 
 const TRANSITION_LABELS: Record<PackageTransition, string> = {
@@ -68,6 +74,7 @@ export default function PackageDetailPage() {
   const [reprocessOpen, setReprocessOpen] = useState(false)
   const [structureOpen, setStructureOpen] = useState(false)
   const [zipDownloading, setZipDownloading] = useState(false)
+  const [activeTab, setActiveTab] = useState("transport")
 
   const detail = usePackage(id, { polling: pollingEnabled })
   const effectivePolling =
@@ -84,6 +91,13 @@ export default function PackageDetailPage() {
   const pkg = detail.data
   const isActiveVerification = pkg?.verification_state === "in_progress"
   const canEdit = isActiveVerification && emailsMatch(me.data?.email, pkg?.assignee)
+
+  const aiCounts = useAiNotificationCounts(id)
+  const markAiRead = useAiNotificationsReadStore((s) => s.markRead)
+  const handleAiNotificationsRead = useCallback(() => {
+    if (!id || !aiCounts.isLoaded) return
+    markAiRead(id, aiCounts.warning)
+  }, [id, aiCounts.isLoaded, aiCounts.warning, markAiRead])
 
   const userNotesUpdated = useMemo(
     () =>
@@ -165,12 +179,21 @@ export default function PackageDetailPage() {
             <section className="grid gap-4 md:grid-cols-[1fr_auto]">
               <Card>
                 <CardContent className="space-y-3 p-5">
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <PackageStatusBadges
                       processingState={pkg.processing_state}
                       verificationState={pkg.verification_state}
                       size="md"
                     />
+                    {pkg.processing_state === "ready" ? (
+                      <AiNotificationsChip
+                        packageId={pkg.id}
+                        onJumpToTab={() => {
+                          setActiveTab("ai-notifications")
+                          handleAiNotificationsRead()
+                        }}
+                      />
+                    ) : null}
                     {pkg.assignee ? (
                       <span className="text-xs text-muted-foreground">
                         Assigned to <span className="font-mono">{pkg.assignee}</span>
@@ -267,12 +290,18 @@ export default function PackageDetailPage() {
               </Card>
             </section>
 
-            <Tabs defaultValue="transport">
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => {
+                setActiveTab(v)
+                if (v === "ai-notifications") handleAiNotificationsRead()
+              }}
+            >
               <TabsList>
                 <TabsTrigger value="transport">Transport orders</TabsTrigger>
                 <TabsTrigger value="metadata">Metadata</TabsTrigger>
                 <TabsTrigger value="analysis">Analysis result</TabsTrigger>
-                <TabsTrigger value="ai-notifications">AI Notifications</TabsTrigger>
+                <AiNotificationsTabTrigger packageId={pkg.id} />
                 <TabsTrigger value="rules">Rules</TabsTrigger>
                 <TabsTrigger value="actions">Action log</TabsTrigger>
                 <TabsTrigger value="source">Source materials</TabsTrigger>
