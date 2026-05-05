@@ -10,6 +10,8 @@ export const queryKeys = {
   user: () => [...queryKeys.all, "user", "me"] as const,
   userPreferences: () => [...queryKeys.all, "user", "preferences"] as const,
   dashboardStats: () => [...queryKeys.all, "dashboard-stats"] as const,
+  moduleVersion: (endpoint: string) =>
+    [...queryKeys.all, "module-version", endpoint] as const,
   packages: {
     all: () => [...queryKeys.all, "packages"] as const,
     list: (query: GetPackagesQuery) =>

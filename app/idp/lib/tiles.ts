@@ -26,6 +26,7 @@ export interface Tile {
   iconFg: string
   categoryFunctional: TileCategoryFunctional
   categoryDepartment: TileCategoryDepartment[]
+  versionEndpoint?: string
 }
 
 export const FUNCTIONAL_CATEGORIES: ReadonlyArray<{
@@ -61,5 +62,6 @@ export const TILES: ReadonlyArray<Tile> = [
     iconFg: "text-rose-700 dark:text-rose-300",
     categoryFunctional: "misc",
     categoryDepartment: ["operations"],
+    versionEndpoint: "/idp/version",
   },
 ]

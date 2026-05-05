@@ -230,6 +230,9 @@ export const handlers = [
   // Config
   http.get("/config/custom-statuses", () => passthrough()),
 
+  // Module version (proxied to backend /version)
+  http.get("/idp/version", () => passthrough()),
+
   // Packages — static paths
   http.get("/packages/dashboard-stats", () => passthrough()),
   http.get("/packages/get_all", () => passthrough()),
@@ -286,6 +289,8 @@ export const handlers = [
     const body: User = { id: "dev-user", email, name: "Dev User" }
     return HttpResponse.json(body)
   }),
+
+  http.get("/idp/version", () => HttpResponse.json({ version: "1.13.0" })),
 
   http.get("/user/preferences", () => HttpResponse.json(userPreferences)),
 

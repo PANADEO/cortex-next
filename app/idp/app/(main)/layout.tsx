@@ -6,6 +6,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
 import { FeatureErrorBoundary } from "@/components/error-boundaries"
+import { VersionLabel } from "@/components/shell/version-label"
 import { Topbar } from "@/components/topbar"
 import { IDP_NAV } from "@/lib/nav"
 import { useSidebarStore } from "@/lib/stores/sidebar-store"
@@ -64,9 +65,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
             </Link>
           }
           brandIcon={brandIcon}
-          footerSlot={
-            <p className="px-2 text-[10px] text-muted-foreground">IDP v0.1 · prototype</p>
-          }
+          footerSlot={<VersionLabel tileId="idp" />}
         />
       }
       topbar={<Topbar />}

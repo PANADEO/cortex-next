@@ -79,6 +79,13 @@ function tryIdpRewrite(req: NextRequest) {
   const idpBackend = process.env.IDP_BACKEND_URL ?? "http://idp-app"
   const { pathname, search } = req.nextUrl
 
+  // Tile-namespaced module version: /idp/version → backend /version (no tile prefix).
+  // Backend (PANADEO/idp#52) exposes /version at root; frontend uses /idp/version
+  // for cross-tile namespacing.
+  if (pathname === "/idp/version") {
+    return NextResponse.rewrite(new URL("/version" + search, idpBackend))
+  }
+
   if (STATIC_IDP_PATHS.has(pathname)) {
     return NextResponse.rewrite(new URL(pathname + search, idpBackend))
   }

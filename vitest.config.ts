@@ -14,6 +14,9 @@ export default defineConfig({
       "@": a("app/idp"),
     },
   },
+  esbuild: {
+    jsx: "automatic",
+  },
   test: {
     environment: "node",
     globals: true,
