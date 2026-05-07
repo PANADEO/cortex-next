@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Issue #40 — Option F (Gmail conversation thread)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              cortex: { DEFAULT: "#4A90E2", dark: "#2F6FB5", light: "#7CB1EC" },
+              border: "hsl(214 32% 91%)",
+              card: "hsl(0 0% 100%)",
+              muted: { DEFAULT: "hsl(210 40% 96%)", foreground: "hsl(215 16% 47%)" },
+              foreground: "hsl(222 47% 11%)",
+              background: "hsl(0 0% 100%)",
+            },
+            fontFamily: {
+              sans: ["system-ui", "Segoe UI", "sans-serif"],
+              mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body { font-family: system-ui, "Segoe UI", sans-serif; }
+
+      /* Conversation row — like a Gmail message in a thread */
+      details.conv-row {
+        border-bottom: 1px solid hsl(214 32% 92%);
+        background: #ffffff;
+        transition: background-color .15s ease;
+      }
+      details.conv-row:last-of-type { border-bottom: none; }
+      details.conv-row > summary {
+        list-style: none;
+        cursor: pointer;
+        padding: .8rem 1.25rem;
+        display: grid;
+        grid-template-columns: 2rem 11rem 1fr auto;
+        align-items: start;
+        gap: .9rem;
+      }
+      details.conv-row > summary::-webkit-details-marker { display: none; }
+      details.conv-row:hover { background: #fafbfc; }
+      details.conv-row[open] { background: #fbfcfe; }
+      details.conv-row[open] > summary {
+        background: #f3f7fc;
+        border-bottom: 1px solid hsl(214 32% 92%);
+      }
+
+      /* Avatar — circular initial badge / icon */
+      .avatar {
+        width: 2rem; height: 2rem; border-radius: 9999px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: .72rem; font-weight: 600;
+        flex-shrink: 0;
+      }
+      .avatar-user   { background: #dbeafe; color: #1e3a8a; }
+      .avatar-system { background: #e2e8f0; color: #475569; }
+
+      /* Sender / subject typography */
+      .sender {
+        font-size: .85rem; font-weight: 600; color: #0f172a;
+        line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .sender-system { color: #475569; font-weight: 500; }
+      .sender-sub {
+        font-size: .7rem; color: #94a3b8; line-height: 1.2;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .subject {
+        font-size: .88rem; color: #0f172a; line-height: 1.3;
+        font-weight: 500;
+      }
+      .subject-system { color: #475569; font-weight: 400; }
+      .preview {
+        font-size: .78rem; color: #64748b; line-height: 1.3;
+        margin-top: .15rem;
+      }
+      .preview-diff { font-family: ui-monospace, "SFMono-Regular", monospace; font-size: .76rem; }
+      .diff-from { color: #b91c1c; text-decoration: line-through; text-decoration-color: rgba(185,28,28,.45); }
+      .diff-arrow { color: #94a3b8; margin: 0 .3rem; }
+      .diff-to   { color: #047857; font-weight: 500; }
+
+      .timestamp {
+        font-size: .72rem; color: #94a3b8;
+        white-space: nowrap; line-height: 1.2;
+        text-align: right;
+      }
+
+      /* Edit-event accent — left rail color */
+      details.conv-row.is-edit > summary {
+        box-shadow: inset 3px 0 0 0 #4A90E2;
+      }
+      details.conv-row.is-system > summary {
+        box-shadow: inset 3px 0 0 0 #cbd5e1;
+      }
+      details.conv-row.is-verify > summary {
+        box-shadow: inset 3px 0 0 0 #10b981;
+      }
+
+      /* Expanded body — like email body */
+      .conv-body {
+        padding: 1.1rem 1.25rem 1.25rem calc(2rem + 1.25rem + .9rem);
+        background: #fbfcfe;
+        font-size: .82rem; color: #334155;
+        line-height: 1.55;
+      }
+
+      .field-table {
+        margin-top: .9rem;
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .78rem;
+      }
+      .field-table th {
+        text-align: left; font-weight: 600; color: #64748b;
+        padding: .35rem .6rem; background: #f1f5f9;
+        border-bottom: 1px solid hsl(214 32% 90%);
+        font-size: .68rem; text-transform: uppercase; letter-spacing: .05em;
+      }
+      .field-table td {
+        padding: .5rem .6rem;
+        border-bottom: 1px solid hsl(214 32% 94%);
+        vertical-align: top;
+        font-family: ui-monospace, "SFMono-Regular", monospace;
+        font-size: .76rem;
+      }
+      .field-table td.label-col {
+        font-family: system-ui, sans-serif; color: #475569; font-weight: 500;
+        width: 30%;
+      }
+      .field-table tr:last-child td { border-bottom: none; }
+
+      .meta-line {
+        display: flex; flex-wrap: wrap; gap: 1rem;
+        font-size: .72rem; color: #64748b;
+        padding-bottom: .25rem;
+        border-bottom: 1px dashed hsl(214 32% 92%);
+        margin-bottom: .8rem;
+      }
+      .meta-line dt { color: #94a3b8; font-weight: 500; margin-right: .35rem; }
+      .meta-line dd { display: inline; color: #334155; }
+      .meta-line .meta-item { display: inline-flex; align-items: baseline; gap: .25rem; }
+
+      /* Caret indicator */
+      .caret {
+        color: #94a3b8; transition: transform .15s ease;
+        flex-shrink: 0;
+      }
+      details[open] .caret { transform: rotate(90deg); color: #475569; }
+
+      /* Tabs */
+      .tab { padding: .55rem .9rem; font-size: .85rem; color: #475569; cursor: pointer; }
+      .tab:hover { color: #0f172a; }
+      .tab-active { color: #0f172a; font-weight: 500; box-shadow: inset 0 -2px 0 0 #4A90E2; }
+
+      /* Filter chips */
+      .filter-chip {
+        display: inline-flex; align-items: center; gap: .35rem;
+        padding: .3rem .6rem;
+        border: 1px solid hsl(214 32% 90%);
+        background: #fff;
+        border-radius: 9999px;
+        font-size: .72rem; color: #475569;
+        cursor: pointer;
+      }
+      .filter-chip:hover { background: #f8fafc; }
+      .filter-chip.is-active {
+        background: #eff6ff; color: #1e3a8a; border-color: #bfdbfe;
+      }
+      .filter-chip .count {
+        font-size: .65rem; color: #94a3b8; font-weight: 500;
+      }
+      .filter-chip.is-active .count { color: #3b82f6; }
+
+      /* Tag pill on subject side */
+      .tag {
+        display: inline-flex; align-items: center;
+        padding: .1rem .4rem;
+        border-radius: .25rem;
+        font-size: .64rem; font-weight: 600;
+        text-transform: uppercase; letter-spacing: .04em;
+        font-family: ui-monospace, monospace;
+        margin-right: .45rem;
+        flex-shrink: 0;
+      }
+      .tag-edit   { background: #eff6ff; color: #1e3a8a; }
+      .tag-system { background: #f1f5f9; color: #64748b; }
+      .tag-verify { background: #ecfdf5; color: #047857; }
+
+      .empty-stub {
+        font-size: .76rem; color: #94a3b8;
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-[hsl(210_40%_98%)] text-foreground">
+    <div class="flex min-h-screen">
+      <!-- Sidebar (TileMenu, faked) -->
+      <aside class="hidden w-56 shrink-0 border-r border-border bg-white md:flex md:flex-col">
+        <div class="flex items-center gap-2 px-5 py-4 border-b border-border">
+          <div class="h-8 w-8 rounded-md bg-cortex/10 flex items-center justify-center">
+            <span class="text-cortex text-sm font-bold">C</span>
+          </div>
+          <span class="font-semibold text-sm">Cortex360</span>
+        </div>
+        <nav class="flex flex-col gap-1 p-3 text-sm">
+          <a class="rounded-md px-3 py-2 text-slate-500 hover:bg-slate-100">Dashboard</a>
+          <a class="rounded-md px-3 py-2 bg-cortex/10 text-cortex font-medium">Packages</a>
+          <a class="rounded-md px-3 py-2 text-slate-500 hover:bg-slate-100">Import</a>
+          <a class="rounded-md px-3 py-2 text-slate-500 hover:bg-slate-100">Rules</a>
+          <a class="rounded-md px-3 py-2 text-slate-500 hover:bg-slate-100">Reports</a>
+        </nav>
+      </aside>
+
+      <!-- Main -->
+      <div class="flex flex-1 flex-col">
+        <!-- Topbar -->
+        <header class="border-b border-border bg-white/90 backdrop-blur">
+          <div class="flex items-center justify-between gap-4 px-8 py-3">
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+              <a class="hover:text-slate-900">IDP</a> <span>/</span>
+              <a class="hover:text-slate-900">Packages</a> <span>/</span>
+              <span class="text-slate-700 font-mono">PKG-2026-04-19-014</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+              <span>hubert.ciebiada@panadeo.com</span>
+              <div class="h-7 w-7 rounded-full bg-cortex/15 text-cortex flex items-center justify-center text-[11px] font-semibold">HC</div>
+            </div>
+          </div>
+        </header>
+
+        <!-- PageHeader (slim) -->
+        <div class="border-b border-border bg-white">
+          <div class="flex items-center justify-between gap-4 px-8 py-4">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 text-[11px] uppercase tracking-wider text-slate-400 font-mono">
+                <span>Package</span>
+                <span>&middot;</span>
+                <span class="text-slate-500">PKG-2026-04-19-014</span>
+              </div>
+              <h1 class="truncate text-lg font-semibold text-slate-900">PKG-2026-04-19-014.zip</h1>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="rounded-md border border-border bg-white px-3 py-1.5 text-xs hover:bg-slate-50">Export log</button>
+              <button class="rounded-md border border-border bg-white px-3 py-1.5 text-xs hover:bg-slate-50">&larr; Back</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="border-b border-border bg-white">
+          <div class="flex items-center gap-1 px-8">
+            <a class="tab">Overview</a>
+            <a class="tab">Invoices</a>
+            <a class="tab">Files</a>
+            <a class="tab">AI notes</a>
+            <a class="tab tab-active">Action log</a>
+          </div>
+        </div>
+
+        <!-- Page body -->
+        <div class="flex flex-1 flex-col gap-5 px-8 py-6">
+
+          <!-- Toolbar: filters + count -->
+          <section class="flex items-center justify-between gap-4 flex-wrap">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs text-slate-500 mr-1">Show:</span>
+              <button class="filter-chip is-active">All <span class="count">8</span></button>
+              <button class="filter-chip">User edits <span class="count">3</span></button>
+              <button class="filter-chip">System <span class="count">3</span></button>
+              <button class="filter-chip">Verification <span class="count">2</span></button>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+              <span>Sort:</span>
+              <select class="rounded-md border border-border bg-white px-2 py-1 text-xs">
+                <option>Newest first</option>
+                <option>Oldest first</option>
+              </select>
+            </div>
+          </section>
+
+          <!-- ============================================================== -->
+          <!-- CONVERSATION THREAD                                              -->
+          <!-- Each event = a "message". Sender + subject + diff preview        -->
+          <!-- on one row. Click to expand into "email body" with full detail.  -->
+          <!-- Newest is open by default.                                       -->
+          <!-- ============================================================== -->
+          <section class="rounded-xl border border-border bg-white overflow-hidden">
+            <div class="flex items-center justify-between border-b border-border px-5 py-3 bg-slate-50/60">
+              <div class="flex items-center gap-2">
+                <h2 class="text-sm font-semibold text-slate-900">Action log</h2>
+                <span class="text-xs text-slate-400">8 events &middot; 90 minutes</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-slate-500">
+                <button class="hover:text-slate-900" title="Collapse all">Collapse all</button>
+                <span class="text-slate-300">|</span>
+                <button class="hover:text-slate-900" title="Expand all">Expand all</button>
+              </div>
+            </div>
+
+            <!-- 8. verified — 2 min ago — anna.k (OPEN BY DEFAULT) -->
+            <details class="conv-row is-verify" open>
+              <summary>
+                <span class="avatar avatar-user">AK</span>
+                <span class="min-w-0">
+                  <span class="sender block">anna.k@cortex</span>
+                  <span class="sender-sub block">Anna Kowalska</span>
+                </span>
+                <span class="min-w-0">
+                  <span class="subject block">
+                    <span class="tag tag-verify">Verified</span>Marked package as verified
+                  </span>
+                  <span class="preview block">All 5 invoices passed verification &middot; no outstanding AI notes</span>
+                </span>
+                <span class="timestamp">
+                  2 min ago<br>
+                  <span class="text-[.65rem]">12:48</span>
+                </span>
+              </summary>
+              <div class="conv-body">
+                <dl class="meta-line">
+                  <span class="meta-item"><dt>Event</dt><dd class="font-mono text-xs">verified</dd></span>
+                  <span class="meta-item"><dt>By</dt><dd>anna.k@cortex</dd></span>
+                  <span class="meta-item"><dt>At</dt><dd>2026-04-19 12:48:11</dd></span>
+                  <span class="meta-item"><dt>Source</dt><dd>web ui</dd></span>
+                </dl>
+                <p>Package transitioned to <strong>verified</strong>. All invoices in the package were individually approved and the package is now ready for downstream processing.</p>
+                <table class="field-table">
+                  <thead>
+                    <tr><th>Field</th><th>Before</th><th>After</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="label-col">status</td>
+                      <td><span class="diff-from">in_verification</span></td>
+                      <td><span class="diff-to">verified</span></td>
+                    </tr>
+                    <tr>
+                      <td class="label-col">verified_at</td>
+                      <td class="text-slate-400">&mdash;</td>
+                      <td><span class="diff-to">2026-04-19 12:48:11</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+            <!-- 7. verification — 10 min ago — anna.k -->
+            <details class="conv-row is-verify">
+              <summary>
+                <span class="avatar avatar-user">AK</span>
+                <span class="min-w-0">
+                  <span class="sender block">anna.k@cortex</span>
+                  <span class="sender-sub block">Anna Kowalska</span>
+                </span>
+                <span class="min-w-0">
+                  <span class="subject block">
+                    <span class="tag tag-verify">Verifying</span>Started package verification
+                  </span>
+                  <span class="preview block">Opened verification workspace &middot; 5 invoices in queue</span>
+                </span>
+                <span class="timestamp">
+                  10 min ago<br>
+                  <span class="text-[.65rem]">12:40</span>
+                </span>
+              </summary>
+              <div class="conv-body">
+                <dl class="meta-line">
+                  <span class="meta-item"><dt>Event</dt><dd class="font-mono text-xs">verification</dd></span>
+                  <span class="meta-item"><dt>By</dt><dd>anna.k@cortex</dd></span>
+                  <span class="meta-item"><dt>At</dt><dd>2026-04-19 12:40:02</dd></span>
+                </dl>
+                <p>User opened the verification workspace for this package. No data was modified at this point &mdash; only an audit-trail marker.</p>
+              </div>
+            </details>
+
+            <!-- 6. invoice_totals_updated — 18 min ago — anna.k -->
+            <details class="conv-row is-edit">
+              <summary>
+                <span class="avatar avatar-user">AK</span>
+                <span class="min-w-0">
+                  <span class="sender block">anna.k@cortex</span>
+                  <span class="sender-sub block">Anna Kowalska</span>
+                </span>
+                <span class="min-w-0">
+                  <span class="subject block">
+                    <span class="tag tag-edit">Edit</span>Updated invoice totals on INV-2026-0418-03
+                  </span>
+                  <span class="preview block preview-diff">
+                    total:
+                    <span class="diff-from">1240.00</span>
+                    <span class="diff-arrow">&rarr;</span>
+                    <span class="diff-to">1302.00</span>
+                    <span class="text-slate-400 ml-1 font-sans">EUR &middot; auto-recalculated</span>
+                  </span>
+                </span>
+                <span class="timestamp">
+                  18 min ago<br>
+                  <span class="text-[.65rem]">12:32</span>
+                </span>
+              </summary>
+              <div class="conv-body">
+                <dl class="meta-line">
+                  <span class="meta-item"><dt>Event</dt><dd class="font-mono text-xs">invoice_totals_updated</dd></span>
+                  <span class="meta-item"><dt>By</dt><dd>anna.k@cortex</dd></span>
+                  <span class="meta-item"><dt>Invoice</dt><dd class="font-mono text-xs">INV-2026-0418-03</dd></span>
+                  <span class="meta-item"><dt>At</dt><dd>2026-04-19 12:32:47</dd></span>
+                  <span class="meta-item"><dt>Source</dt><dd>auto-recalc after line edit</dd></span>
+                </dl>
+                <p>Triggered automatically as a side-effect of the previous line-2 quantity change. The recalculation re-summed all line totals and updated VAT subtotals.</p>
+                <table class="field-table">
+                  <thead>
+                    <tr><th>Field</th><th>Before</th><th>After</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="label-col">net_total</td>
+                      <td>1000.00</td>
+                      <td><span class="diff-to">1050.00</span></td>
+                    </tr>
+                    <tr>
+                      <td class="label-col">vat_total</td>
+                      <td>240.00</td>
+                      <td><span class="diff-to">252.00</span></td>
+                    </tr>
+                    <tr>
+                      <td class="label-col">gross_total</td>
+                      <td><span class="diff-from">1240.00</span></td>
+                      <td><span class="diff-to">1302.00</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+            <!-- 5. invoice_line_updated — 20 min ago — anna.k -->
+            <details class="conv-row is-edit">
+              <summary>
+                <span class="avatar avatar-user">AK</span>
+                <span class="min-w-0">
+                  <span class="sender block">anna.k@cortex</span>
+                  <span class="sender-sub block">Anna Kowalska</span>
+                </span>
+                <span class="min-w-0">
+                  <span class="subject block">
+                    <span class="tag tag-edit">Edit</span>Updated invoice line 2 quantity on INV-2026-0418-03
+                  </span>
+                  <span class="preview block preview-diff">
+                    line 2 qty:
+                    <span class="diff-from">40</span>
+                    <span class="diff-arrow">&rarr;</span>
+                    <span class="diff-to">42</span>
+                    <span class="text-slate-400 ml-1 font-sans">pcs &middot; matches transport order</span>
+                  </span>
+                </span>
+                <span class="timestamp">
+                  20 min ago<br>
+                  <span class="text-[.65rem]">12:30</span>
+                </span>
+              </summary>
+              <div class="conv-body">
+                <dl class="meta-line">
+                  <span class="meta-item"><dt>Event</dt><dd class="font-mono text-xs">invoice_line_updated</dd></span>
+                  <span class="meta-item"><dt>By</dt><dd>anna.k@cortex</dd></span>
+                  <span class="meta-item"><dt>Invoice</dt><dd class="font-mono text-xs">INV-2026-0418-03</dd></span>
+                  <span class="meta-item"><dt>Line</dt><dd>2</dd></span>
+                  <span class="meta-item"><dt>At</dt><dd>2026-04-19 12:30:14</dd></span>
+                </dl>
+                <p>Quantity for <strong>line 2</strong> (Item: <span class="font-mono text-xs">SKU-7741 &mdash; Steel bracket M8</span>) was corrected to align with the transport order.</p>
+                <table class="field-table">
+                  <thead>
+                    <tr><th>Field</th><th>Before</th><th>After</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="label-col">quantity</td>
+                      <td><span class="diff-from">40</span></td>
+                      <td><span class="diff-to">42</span></td>
+                    </tr>
+                    <tr>
+                      <td class="label-col">unit_price</td>
+                      <td>25.00</td>
+                      <td>25.00 <span class="text-slate-400">(unchanged)</span></td>
+                    </tr>
+                    <tr>
+                      <td class="label-col">line_total</td>
+                      <td>1000.00</td>
+                      <td><span class="diff-to">1050.00</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+            <!-- 4. seller_updated — 35 min ago — anna.k -->
+            <details class="conv-row is-edit">
+              <summary>
+                <span class="avatar avatar-user">AK</span>
+                <span class="min-w-0">
+                  <span class="sender block">anna.k@cortex</span>
+                  <span class="sender-sub block">Anna Kowalska</span>
+                </span>
+                <span class="min-w-0">
+                  <span class="subject block">
+                    <span class="tag tag-edit">Edit</span>Updated seller VAT on INV-2026-0418-03
+                  </span>
+                  <span class="preview block preview-diff">
+                    vat:
+                    <span class="diff-from">DE000000000</span>
+                    <span class="diff-arrow">&rarr;</span>
+                    <span class="diff-to">DE123456789</span>
+                    <span class="text-slate-400 ml-1 font-sans">corrected from OCR placeholder</span>
+                  </span>
+                </span>
+                <span class="timestamp">
+                  35 min ago<br>
+                  <span class="text-[.65rem]">12:15</span>
+                </span>
+              </summary>
+              <div class="conv-body">
+                <dl class="meta-line">
+                  <span class="meta-item"><dt>Event</dt><dd class="font-mono text-xs">seller_updated</dd></span>
+                  <span class="meta-item"><dt>By</dt><dd>anna.k@cortex</dd></span>
+                  <span class="meta-item"><dt>Invoice</dt><dd class="font-mono text-xs">INV-2026-0418-03</dd></span>
+                  <span class="meta-item"><dt>At</dt><dd>2026-04-19 12:15:33</dd></span>
+                </dl>
+                <p>Seller VAT identifier replaced. The previous value was an OCR placeholder; the correct VAT was retrieved from the seller's master record.</p>
+                <table class="field-table">
+                  <thead>
+                    <tr><th>Field</th><th>Before</th><th>After</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="label-col">seller.vat</td>
+                      <td><span class="diff-from">DE000000000</span></td>
+                      <td><span class="diff-to">DE123456789</span></td>
+                    </tr>
+                    <tr>
+                      <td class="label-col">seller.name</td>
+                      <td>Mustermann GmbH</td>
+                      <td>Mustermann GmbH <span class="text-slate-400">(unchanged)</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+            <!-- 3. ready_for_verification — 60 min ago — system -->
+            <details class="conv-row is-system">
+              <summary>
+                <span class="avatar avatar-system" title="System">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+                    <rect x="3" y="3" width="14" height="14" rx="2"/>
+                    <path d="M7 7h6M7 10h6M7 13h4"/>
+                  </svg>
+                </span>
+                <span class="min-w-0">
+                  <span class="sender sender-system block">system</span>
+                  <span class="sender-sub block">cortex.idp</span>
+                </span>
+                <span class="min-w-0">
+                  <span class="subject subject-system block">
+                    <span class="tag tag-system">System</span>Package ready for verification
+                  </span>
+                  <span class="preview block">5 invoices parsed &middot; 3 AI notes generated &middot; awaiting reviewer</span>
+                </span>
+                <span class="timestamp">
+                  60 min ago<br>
+                  <span class="text-[.65rem]">11:50</span>
+                </span>
+              </summary>
+              <div class="conv-body">
+                <dl class="meta-line">
+                  <span class="meta-item"><dt>Event</dt><dd class="font-mono text-xs">ready_for_verification</dd></span>
+                  <span class="meta-item"><dt>By</dt><dd>system</dd></span>
+                  <span class="meta-item"><dt>At</dt><dd>2026-04-19 11:50:08</dd></span>
+                </dl>
+                <p>Pipeline finished extraction and validation. Package transitioned to <strong>in_verification</strong> and was added to the reviewer queue.</p>
+                <table class="field-table">
+                  <thead>
+                    <tr><th>Field</th><th>Before</th><th>After</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="label-col">status</td>
+                      <td><span class="diff-from">analysing</span></td>
+                      <td><span class="diff-to">in_verification</span></td>
+                    </tr>
+                    <tr>
+                      <td class="label-col">ai_notes_count</td>
+                      <td>0</td>
+                      <td><span class="diff-to">3</span></td>
+                    </tr>
+                    <tr>
+                      <td class="label-col">invoices_parsed</td>
+                      <td>0</td>
+                      <td><span class="diff-to">5</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+            <!-- 2. analysing — 85 min ago — system -->
+            <details class="conv-row is-system">
+              <summary>
+                <span class="avatar avatar-system" title="System">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+                    <rect x="3" y="3" width="14" height="14" rx="2"/>
+                    <path d="M7 7h6M7 10h6M7 13h4"/>
+                  </svg>
+                </span>
+                <span class="min-w-0">
+                  <span class="sender sender-system block">system</span>
+                  <span class="sender-sub block">cortex.idp</span>
+                </span>
+                <span class="min-w-0">
+                  <span class="subject subject-system block">
+                    <span class="tag tag-system">System</span>Started analysis pipeline
+                  </span>
+                  <span class="preview block">OCR + classification + extraction running on 5 documents</span>
+                </span>
+                <span class="timestamp">
+                  85 min ago<br>
+                  <span class="text-[.65rem]">11:25</span>
+                </span>
+              </summary>
+              <div class="conv-body">
+                <dl class="meta-line">
+                  <span class="meta-item"><dt>Event</dt><dd class="font-mono text-xs">analysing</dd></span>
+                  <span class="meta-item"><dt>By</dt><dd>system</dd></span>
+                  <span class="meta-item"><dt>At</dt><dd>2026-04-19 11:25:41</dd></span>
+                </dl>
+                <p>Analysis pipeline kicked off. Status moved to <strong>analysing</strong>. Estimated completion: 25 min.</p>
+                <table class="field-table">
+                  <thead>
+                    <tr><th>Field</th><th>Before</th><th>After</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="label-col">status</td>
+                      <td><span class="diff-from">imported</span></td>
+                      <td><span class="diff-to">analysing</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+            <!-- 1. imported — 90 min ago — system -->
+            <details class="conv-row is-system">
+              <summary>
+                <span class="avatar avatar-system" title="System">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+                    <rect x="3" y="3" width="14" height="14" rx="2"/>
+                    <path d="M7 7h6M7 10h6M7 13h4"/>
+                  </svg>
+                </span>
+                <span class="min-w-0">
+                  <span class="sender sender-system block">system</span>
+                  <span class="sender-sub block">cortex.idp</span>
+                </span>
+                <span class="min-w-0">
+                  <span class="subject subject-system block">
+                    <span class="tag tag-system">System</span>Package imported
+                  </span>
+                  <span class="preview block">5 PDF invoices uploaded by anna.k@cortex &middot; 2.4 MB total</span>
+                </span>
+                <span class="timestamp">
+                  90 min ago<br>
+                  <span class="text-[.65rem]">11:20</span>
+                </span>
+              </summary>
+              <div class="conv-body">
+                <dl class="meta-line">
+                  <span class="meta-item"><dt>Event</dt><dd class="font-mono text-xs">imported</dd></span>
+                  <span class="meta-item"><dt>By</dt><dd>system</dd></span>
+                  <span class="meta-item"><dt>Uploaded by</dt><dd>anna.k@cortex</dd></span>
+                  <span class="meta-item"><dt>At</dt><dd>2026-04-19 11:20:02</dd></span>
+                </dl>
+                <p>New package <span class="font-mono text-xs">PKG-2026-04-19-014</span> created from a ZIP upload. Initial status: <strong>imported</strong>.</p>
+                <table class="field-table">
+                  <thead>
+                    <tr><th>Field</th><th>Value</th><th></th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="label-col">files</td>
+                      <td>5 PDF invoices</td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="label-col">size</td>
+                      <td>2,452,318 bytes</td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="label-col">hash</td>
+                      <td>a3f9c8d2b1e7440f9a8e2c1d0b7e6a5f4c3d2e1f</td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+          </section>
+
+          <p class="text-center text-xs text-slate-400 pt-2">End of action log &middot; package created 90 minutes ago</p>
+
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>
