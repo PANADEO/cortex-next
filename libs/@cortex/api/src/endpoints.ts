@@ -4,18 +4,19 @@ import type {
   CleanPackageDraft,
   CompileRuleRequest,
   CompileRuleResponse,
-  ExplainRuleRequest,
-  ExplainRuleResponse,
   DashboardStatsResponse,
   DeletePackagesRequest,
   DirtyPackageDetailsResponse,
   EmptyOk,
+  ExplainRuleRequest,
+  ExplainRuleResponse,
   ExportTemplateInfo,
   ExportValidationResponse,
   GetActionLogsQuery,
   GetDirtyPackagesQuery,
   GetPackagesQuery,
   GetRulesQuery,
+  ImportEmailPackageBody,
   ImportMultiplePackagesBody,
   ImportPackageBody,
   ImportPackageResponse,
@@ -68,7 +69,9 @@ const transportOrderSection =
       jsonBody: body,
     })
 
-function buildImportForm(body: ImportPackageBody | ImportMultiplePackagesBody): FormData {
+function buildImportForm(
+  body: ImportPackageBody | ImportEmailPackageBody | ImportMultiplePackagesBody,
+): FormData {
   const form = new FormData()
   if ("file" in body) {
     form.append("file", body.file)
@@ -79,10 +82,7 @@ function buildImportForm(body: ImportPackageBody | ImportMultiplePackagesBody): 
     form.append("fast_processing", String(body.fast_processing))
   }
   if (body.additional_ai_context_enabled !== undefined) {
-    form.append(
-      "additional_ai_context_enabled",
-      String(body.additional_ai_context_enabled),
-    )
+    form.append("additional_ai_context_enabled", String(body.additional_ai_context_enabled))
   }
   if (body.additional_ai_context) {
     form.append("additional_ai_context", body.additional_ai_context)
@@ -112,13 +112,16 @@ export const endpoints = {
       apiClient.post<ImportPackageResponse>("/packages/import", {
         body: buildImportForm(body),
       }),
+    importEmail: (body: ImportEmailPackageBody) =>
+      apiClient.post<ImportPackageResponse>("/packages/import-email", {
+        body: buildImportForm(body),
+      }),
     importMultiple: (body: ImportMultiplePackagesBody) =>
       apiClient.post<ImportPackageResponse>("/packages/import-multiple", {
         body: buildImportForm(body),
       }),
     get: (id: string) => apiClient.get<PackageDetailsResponse>(`/packages/${id}`),
-    actions: (id: string) =>
-      apiClient.get<PackageActionsResponse>(`/packages/${id}/actions`),
+    actions: (id: string) => apiClient.get<PackageActionsResponse>(`/packages/${id}/actions`),
     transportOrders: (id: string) =>
       apiClient.get<PackageTransportOrdersResponse>(`/packages/${id}/transport-orders`),
     transitions: (id: string) =>
@@ -133,8 +136,7 @@ export const endpoints = {
     download: (id: string) => apiClient.get<Blob>(`/packages/${id}/download`, { parse: "blob" }),
     downloadResult: (id: string) =>
       apiClient.get<Blob>(`/packages/${id}/download-result`, { parse: "blob" }),
-    exportTemplates: () =>
-      apiClient.get<ExportTemplateInfo[]>("/packages/export-templates"),
+    exportTemplates: () => apiClient.get<ExportTemplateInfo[]>("/packages/export-templates"),
     validateExport: (id: string, template: string) =>
       apiClient.get<ExportValidationResponse>(`/packages/${id}/export/validate`, {
         params: { template },
@@ -168,36 +170,23 @@ export const endpoints = {
     get: (id: string) =>
       apiClient.get<DirtyPackageDetailsResponse>(`/classification/dirty-packages/${id}`),
     documentContent: (id: string, docId: string) =>
-      apiClient.get<Blob>(
-        `/classification/dirty-packages/${id}/documents/${docId}/content`,
-        { parse: "blob" },
-      ),
+      apiClient.get<Blob>(`/classification/dirty-packages/${id}/documents/${docId}/content`, {
+        parse: "blob",
+      }),
     autoClassify: (id: string) =>
-      apiClient.post<AutoClassifyResponse>(
-        `/classification/dirty-packages/${id}/auto-classify`,
-      ),
-    updateDocument: (
-      id: string,
-      docId: string,
-      body: UpdateDocumentClassificationRequest,
-    ) =>
-      apiClient.patch<EmptyOk>(
-        `/classification/dirty-packages/${id}/documents/${docId}`,
-        { jsonBody: body },
-      ),
+      apiClient.post<AutoClassifyResponse>(`/classification/dirty-packages/${id}/auto-classify`),
+    updateDocument: (id: string, docId: string, body: UpdateDocumentClassificationRequest) =>
+      apiClient.patch<EmptyOk>(`/classification/dirty-packages/${id}/documents/${docId}`, {
+        jsonBody: body,
+      }),
     upsertDraft: (id: string, body: UpsertDraftRequest) =>
-      apiClient.post<CleanPackageDraft>(
-        `/classification/dirty-packages/${id}/drafts`,
-        { jsonBody: body },
-      ),
+      apiClient.post<CleanPackageDraft>(`/classification/dirty-packages/${id}/drafts`, {
+        jsonBody: body,
+      }),
     deleteDraft: (id: string, draftId: string) =>
-      apiClient.delete<EmptyOk>(
-        `/classification/dirty-packages/${id}/drafts/${draftId}`,
-      ),
+      apiClient.delete<EmptyOk>(`/classification/dirty-packages/${id}/drafts/${draftId}`),
     promote: (id: string) =>
-      apiClient.post<PromoteDirtyPackageResponse>(
-        `/classification/dirty-packages/${id}/promote`,
-      ),
+      apiClient.post<PromoteDirtyPackageResponse>(`/classification/dirty-packages/${id}/promote`),
   },
   rules: {
     list: (query: GetRulesQuery = {}) =>
@@ -238,16 +227,24 @@ export const endpoints = {
         jsonBody: body,
       }),
     updateInvoiceLines: (pid: string, oid: string, iid: string, body: UpdateInvoiceLinesRequest) =>
-      apiClient.post<EmptyOk>(
-        `/packages/${pid}/transport-orders/${oid}/invoices/${iid}/lines`,
-        { jsonBody: body },
-      ),
-    updateInvoiceTotals: (pid: string, oid: string, iid: string, body: UpdateInvoiceTotalsRequest) =>
-      apiClient.post<EmptyOk>(
-        `/packages/${pid}/transport-orders/${oid}/invoices/${iid}/totals`,
-        { jsonBody: body },
-      ),
-    updateDeliveryTerms: (pid: string, oid: string, iid: string, body: UpdateDeliveryTermsRequest) =>
+      apiClient.post<EmptyOk>(`/packages/${pid}/transport-orders/${oid}/invoices/${iid}/lines`, {
+        jsonBody: body,
+      }),
+    updateInvoiceTotals: (
+      pid: string,
+      oid: string,
+      iid: string,
+      body: UpdateInvoiceTotalsRequest,
+    ) =>
+      apiClient.post<EmptyOk>(`/packages/${pid}/transport-orders/${oid}/invoices/${iid}/totals`, {
+        jsonBody: body,
+      }),
+    updateDeliveryTerms: (
+      pid: string,
+      oid: string,
+      iid: string,
+      body: UpdateDeliveryTermsRequest,
+    ) =>
       apiClient.post<EmptyOk>(
         `/packages/${pid}/transport-orders/${oid}/invoices/${iid}/delivery-terms`,
         { jsonBody: body },

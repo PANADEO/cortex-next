@@ -1,5 +1,6 @@
 "use client"
 
+import { ImportOptionsFields, type ImportOptions } from "@/components/import-options-fields"
 import { Badge, Button } from "@cortex/ui"
 import { cn, formatFileSizeBytes } from "@cortex/utils"
 import {
@@ -11,16 +12,21 @@ import {
   Files,
   FolderPlus,
   Loader2,
+  Mail,
   Upload,
   X,
 } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useRef, useState, type DragEvent } from "react"
 import {
-  ImportOptionsFields,
-  type ImportOptions,
-} from "@/components/import-options-fields"
-import { detectIntakeKind, filesFromDataTransfer, type IntakeKind } from "./file-intake"
+  detectIntakeKind,
+  filesFromDataTransfer,
+  isEmailFile,
+  isZipFile,
+  type IntakeKind,
+} from "./file-intake"
+
+const ACCEPTED_IMPORT_FILES = ".zip,.eml,.msg,.pdf,.docx,.xlsx,.png,.jpg,.jpeg"
 
 export type ImportSlotStatus = "pending" | "ready" | "uploading" | "done" | "error"
 
@@ -99,6 +105,7 @@ export function ImportSlot({
   const statusMeta = STATUS_META[slot.status]
   const StatusIcon = statusMeta.icon
   const kind: IntakeKind | null = isEmpty ? null : detectIntakeKind(slot.files)
+  const isEmailContainer = kind === "email"
 
   const addFiles = (incoming: File[]) => {
     if (incoming.length === 0) return
@@ -139,7 +146,7 @@ export function ImportSlot({
             href={`/idp/packages/${slot.packageId}`}
             aria-label="Open package details"
             className={cn(
-              "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors hover:bg-emerald-500/30 cursor-pointer",
+              "inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors hover:bg-emerald-500/30",
               statusMeta.tone,
             )}
           >
@@ -162,10 +169,16 @@ export function ImportSlot({
           <Badge variant="outline" className="gap-1 text-[10px]">
             {kind === "zip" ? (
               <FileArchive className="h-3 w-3" />
+            ) : kind === "email" ? (
+              <Mail className="h-3 w-3" />
             ) : (
               <Files className="h-3 w-3" />
             )}
-            {kind === "zip" ? "ZIP bundle" : `${slot.files.length} files → auto-zip`}
+            {kind === "zip"
+              ? "ZIP bundle"
+              : kind === "email"
+                ? "Email container"
+                : `${slot.files.length} files → one package`}
           </Badge>
         ) : null}
 
@@ -206,9 +219,9 @@ export function ImportSlot({
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-background">
             <Upload className="h-4 w-4 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium">Drop a ZIP, files or folders here</p>
+          <p className="text-sm font-medium">Drop a ZIP, EML, MSG, files or folders here</p>
           <p className="text-[11px] text-muted-foreground">
-            Either a single ZIP or multiple files / folders — system will detect automatically.
+            Single email files are unpacked by the backend; other files are grouped as one package.
           </p>
           <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
@@ -234,7 +247,7 @@ export function ImportSlot({
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".zip,.pdf,.docx,.xlsx,.png,.jpg,.jpeg"
+            accept={ACCEPTED_IMPORT_FILES}
             className="hidden"
             onChange={(e) => handleInput(e.target.files)}
           />
@@ -254,8 +267,10 @@ export function ImportSlot({
                 key={`${file.name}-${idx}`}
                 className="flex items-center gap-2 rounded-sm px-2 py-1 text-xs"
               >
-                {/\.zip$/i.test(file.name) ? (
+                {isZipFile(file) ? (
                   <FileArchive className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                ) : isEmailFile(file) ? (
+                  <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 ) : (
                   <Files className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 )}
@@ -287,10 +302,7 @@ export function ImportSlot({
             {slot.status === "done" ? (
               <div className="ml-auto">
                 <Button asChild size="sm" className="h-8">
-                  <Link
-                    href={`/idp/packages/${slot.packageId}`}
-                    aria-label="Open package details"
-                  >
+                  <Link href={`/idp/packages/${slot.packageId}`} aria-label="Open package details">
                     Open package
                     <ArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
                   </Link>
@@ -298,17 +310,19 @@ export function ImportSlot({
               </div>
             ) : (
               <>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isBusy}
-                >
-                  <FilePlus2 className="mr-1.5 h-3.5 w-3.5" />
-                  Add more
-                </Button>
+                {!isEmailContainer ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isBusy}
+                  >
+                    <FilePlus2 className="mr-1.5 h-3.5 w-3.5" />
+                    Add more
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
                   variant="ghost"
@@ -349,7 +363,7 @@ export function ImportSlot({
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".zip,.pdf,.docx,.xlsx,.png,.jpg,.jpeg"
+            accept={ACCEPTED_IMPORT_FILES}
             className="hidden"
             onChange={(e) => handleInput(e.target.files)}
           />

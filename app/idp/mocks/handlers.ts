@@ -3,13 +3,13 @@ import type {
   AutoClassifyResponse,
   CompileRuleRequest,
   CompileRuleResponse,
-  ExplainRuleRequest,
-  ExplainRuleResponse,
   DashboardStatsResponse,
   DeletePackagesRequest,
   DirtyPackageStatus,
   DocMode,
   DocType,
+  ExplainRuleRequest,
+  ExplainRuleResponse,
   ExportTemplateInfo,
   ExportValidationResponse,
   PackageActionReadModel,
@@ -49,10 +49,7 @@ import type {
 } from "@cortex/types"
 import { http, HttpResponse, passthrough } from "msw"
 import * as XLSX from "xlsx"
-import {
-  buildDirtyPackageDetails,
-  buildDirtyPackages,
-} from "./fixtures/classification"
+import { buildDirtyPackageDetails, buildDirtyPackages } from "./fixtures/classification"
 import {
   allowedTransitions,
   buildActionLogs,
@@ -61,7 +58,6 @@ import {
 } from "./fixtures/details"
 import { buildPackageFixtures } from "./fixtures/packages"
 import {
-  RULE_TEMPLATES,
   attachRuleToPackage,
   buildRuleDetails,
   buildRules,
@@ -69,6 +65,7 @@ import {
   detachRuleFromPackage,
   explainRuleStub,
   packageRuleAttachments,
+  RULE_TEMPLATES,
 } from "./fixtures/rules"
 import { buildTransportOrders } from "./fixtures/transport-orders"
 
@@ -77,9 +74,7 @@ const packagesById = new Map(packages.map((p) => [p.id, p]))
 
 const dirtyPackages = buildDirtyPackages(12)
 const dirtyById = new Map(dirtyPackages.map((p) => [p.id, p]))
-const dirtyDetailsById = new Map(
-  dirtyPackages.map((p) => [p.id, buildDirtyPackageDetails(p)]),
-)
+const dirtyDetailsById = new Map(dirtyPackages.map((p) => [p.id, buildDirtyPackageDetails(p)]))
 
 const rules = buildRules()
 const rulesById = new Map(rules.map((r) => [r.id, r]))
@@ -203,8 +198,7 @@ function applyTransition(pkg: PackageReadModel, transition: string, request: Req
   invalidateLogs()
 }
 
-const XLSX_CONTENT_TYPE =
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+const XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 function syntheticXlsxResponse(rows: (string | number)[][]) {
   const wb = XLSX.utils.book_new()
@@ -239,6 +233,7 @@ export const handlers = [
   http.get("/packages/action_logs", () => passthrough()),
   http.get("/packages/export-templates", () => passthrough()),
   http.post("/packages/import", () => passthrough()),
+  http.post("/packages/import-email", () => passthrough()),
   http.post("/packages/import-multiple", () => passthrough()),
   http.post("/packages/delete", () => passthrough()),
 
@@ -274,7 +269,9 @@ export const handlers = [
   http.post("/packages/:pid/transport-orders/:oid/transport-info", () => passthrough()),
   http.post("/packages/:pid/transport-orders/:oid/invoices/:iid", () => passthrough()),
   http.post("/packages/:pid/transport-orders/:oid/invoices/:iid/totals", () => passthrough()),
-  http.post("/packages/:pid/transport-orders/:oid/invoices/:iid/delivery-terms", () => passthrough()),
+  http.post("/packages/:pid/transport-orders/:oid/invoices/:iid/delivery-terms", () =>
+    passthrough(),
+  ),
   http.post("/packages/:pid/transport-orders/:oid/invoices/:iid/lines", () => passthrough()),
 
   // ── Dev-only helpers ───────────────────────────────────────────
@@ -309,7 +306,9 @@ export const handlers = [
     const limit = Math.min(100, Number(url.searchParams.get("limit") ?? 10))
     const offset = Math.max(0, Number(url.searchParams.get("offset") ?? 0))
     const processingFilter = url.searchParams.get("processing_state") as ProcessingState | null
-    const verificationFilter = url.searchParams.get("verification_state") as VerificationState | null
+    const verificationFilter = url.searchParams.get(
+      "verification_state",
+    ) as VerificationState | null
     const customStatusFilter = url.searchParams.get("custom_status")
     const assigneeFilter = url.searchParams.get("assignee")
     const uploadedByFilter = url.searchParams.get("uploaded_by")
@@ -328,9 +327,7 @@ export const handlers = [
       filtered = filtered.filter((p) => p.custom_status === customStatusFilter)
     if (assigneeFilter) {
       const needle = assigneeFilter.toLowerCase()
-      filtered = filtered.filter(
-        (p) => p.assignee != null && p.assignee.toLowerCase() === needle,
-      )
+      filtered = filtered.filter((p) => p.assignee != null && p.assignee.toLowerCase() === needle)
     }
     if (uploadedByFilter) {
       const needle = uploadedByFilter.toLowerCase()
@@ -365,8 +362,7 @@ export const handlers = [
 
     let all = getActionLogs()
     if (typeFilter) all = all.filter((e) => e.action_type === typeFilter)
-    if (performedBy)
-      all = all.filter((e) => e.performed_by.toLowerCase().includes(performedBy))
+    if (performedBy) all = all.filter((e) => e.performed_by.toLowerCase().includes(performedBy))
     if (dateFrom) all = all.filter((e) => e.timestamp.slice(0, 10) >= dateFrom)
     if (dateTo) all = all.filter((e) => e.timestamp.slice(0, 10) <= dateTo)
 
@@ -451,8 +447,7 @@ export const handlers = [
       {
         path: "summary.docx",
         file_name: "summary.docx",
-        media_type:
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        media_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         preview_kind: "download_only",
         size_bytes: 18_240,
       },
@@ -553,9 +548,8 @@ export const handlers = [
   }),
 
   http.post("/packages/import", () => HttpResponse.json({ id: crypto.randomUUID() })),
-  http.post("/packages/import-multiple", () =>
-    HttpResponse.json({ id: crypto.randomUUID() }),
-  ),
+  http.post("/packages/import-email", () => HttpResponse.json({ id: crypto.randomUUID() })),
+  http.post("/packages/import-multiple", () => HttpResponse.json({ id: crypto.randomUUID() })),
 
   // Transport-order edits — catch-all returning {} per openapi.
   http.post("/packages/:id/transport-orders/*", () => HttpResponse.json({})),
@@ -613,47 +607,44 @@ export const handlers = [
     return HttpResponse.json(details)
   }),
 
-  http.get(
-    "/classification/dirty-packages/:id/documents/:docId/content",
-    async ({ params }) => {
-      const details = dirtyDetailsById.get(String(params.id))
-      const doc = details?.documents.find((d) => d.id === String(params.docId))
-      if (!doc) {
-        return HttpResponse.json(
-          { error_code: "ENTITY_NOT_FOUND", message: "Document not found" },
-          { status: 404 },
-        )
-      }
-      if (doc.preview_kind === "pdf") {
-        const asset = await fetch("/mock-assets/sample-invoice.pdf")
-        const blob = await asset.blob()
-        return new HttpResponse(blob, {
-          status: 200,
-          headers: { "Content-Type": "application/pdf" },
-        })
-      }
-      if (doc.preview_kind === "image") {
-        // 1x1 transparent PNG placeholder; real backend returns actual image bytes.
-        const placeholder = Uint8Array.from(
-          atob(
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-          ),
-          (c) => c.charCodeAt(0),
-        )
-        return new HttpResponse(placeholder, {
-          status: 200,
-          headers: { "Content-Type": doc.media_type },
-        })
-      }
-      if (doc.file_name.toLowerCase().endsWith(".xlsx")) {
-        return syntheticXlsxResponse([
-          ["CN code", "Description", "Qty"],
-          ["8541", "Sample row", 100],
-        ])
-      }
-      return new HttpResponse(new Blob(["mock-bytes"]), { status: 200 })
-    },
-  ),
+  http.get("/classification/dirty-packages/:id/documents/:docId/content", async ({ params }) => {
+    const details = dirtyDetailsById.get(String(params.id))
+    const doc = details?.documents.find((d) => d.id === String(params.docId))
+    if (!doc) {
+      return HttpResponse.json(
+        { error_code: "ENTITY_NOT_FOUND", message: "Document not found" },
+        { status: 404 },
+      )
+    }
+    if (doc.preview_kind === "pdf") {
+      const asset = await fetch("/mock-assets/sample-invoice.pdf")
+      const blob = await asset.blob()
+      return new HttpResponse(blob, {
+        status: 200,
+        headers: { "Content-Type": "application/pdf" },
+      })
+    }
+    if (doc.preview_kind === "image") {
+      // 1x1 transparent PNG placeholder; real backend returns actual image bytes.
+      const placeholder = Uint8Array.from(
+        atob(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        ),
+        (c) => c.charCodeAt(0),
+      )
+      return new HttpResponse(placeholder, {
+        status: 200,
+        headers: { "Content-Type": doc.media_type },
+      })
+    }
+    if (doc.file_name.toLowerCase().endsWith(".xlsx")) {
+      return syntheticXlsxResponse([
+        ["CN code", "Description", "Qty"],
+        ["8541", "Sample row", 100],
+      ])
+    }
+    return new HttpResponse(new Blob(["mock-bytes"]), { status: 200 })
+  }),
 
   http.post("/classification/dirty-packages/:id/auto-classify", ({ params }) => {
     const details = dirtyDetailsById.get(String(params.id))
@@ -679,91 +670,82 @@ export const handlers = [
     return HttpResponse.json(body)
   }),
 
-  http.patch(
-    "/classification/dirty-packages/:id/documents/:docId",
-    async ({ params, request }) => {
-      const details = dirtyDetailsById.get(String(params.id))
-      if (!details) {
-        return HttpResponse.json(
-          { error_code: "ENTITY_NOT_FOUND", message: "Dirty package not found" },
-          { status: 404 },
-        )
-      }
-      const doc = details.documents.find((d) => d.id === String(params.docId))
-      if (!doc) {
-        return HttpResponse.json(
-          { error_code: "ENTITY_NOT_FOUND", message: "Document not found" },
-          { status: 404 },
-        )
-      }
-      const body = (await request.json()) as UpdateDocumentClassificationRequest
-      if (body.doc_type !== undefined) doc.doc_type = body.doc_type as DocType
-      if (body.mode !== undefined) doc.mode = body.mode as DocMode
-      if (body.target_clean_package_ids !== undefined) {
-        const nextIds = new Set(body.target_clean_package_ids)
-        const previousIds = new Set(doc.target_clean_package_ids)
-        doc.target_clean_package_ids = [...nextIds]
-        for (const draft of details.drafts) {
-          const shouldHave = nextIds.has(draft.id)
-          const currentlyHas = draft.document_ids.includes(doc.id)
-          if (shouldHave && !currentlyHas) draft.document_ids.push(doc.id)
-          else if (!shouldHave && currentlyHas && previousIds.has(draft.id)) {
-            draft.document_ids = draft.document_ids.filter((x) => x !== doc.id)
-          }
+  http.patch("/classification/dirty-packages/:id/documents/:docId", async ({ params, request }) => {
+    const details = dirtyDetailsById.get(String(params.id))
+    if (!details) {
+      return HttpResponse.json(
+        { error_code: "ENTITY_NOT_FOUND", message: "Dirty package not found" },
+        { status: 404 },
+      )
+    }
+    const doc = details.documents.find((d) => d.id === String(params.docId))
+    if (!doc) {
+      return HttpResponse.json(
+        { error_code: "ENTITY_NOT_FOUND", message: "Document not found" },
+        { status: 404 },
+      )
+    }
+    const body = (await request.json()) as UpdateDocumentClassificationRequest
+    if (body.doc_type !== undefined) doc.doc_type = body.doc_type as DocType
+    if (body.mode !== undefined) doc.mode = body.mode as DocMode
+    if (body.target_clean_package_ids !== undefined) {
+      const nextIds = new Set(body.target_clean_package_ids)
+      const previousIds = new Set(doc.target_clean_package_ids)
+      doc.target_clean_package_ids = [...nextIds]
+      for (const draft of details.drafts) {
+        const shouldHave = nextIds.has(draft.id)
+        const currentlyHas = draft.document_ids.includes(doc.id)
+        if (shouldHave && !currentlyHas) draft.document_ids.push(doc.id)
+        else if (!shouldHave && currentlyHas && previousIds.has(draft.id)) {
+          draft.document_ids = draft.document_ids.filter((x) => x !== doc.id)
         }
       }
-      if (body.notes !== undefined) doc.notes = body.notes
-      if (body.human_reviewed !== undefined) doc.human_reviewed = body.human_reviewed
-      return HttpResponse.json({})
-    },
-  ),
+    }
+    if (body.notes !== undefined) doc.notes = body.notes
+    if (body.human_reviewed !== undefined) doc.human_reviewed = body.human_reviewed
+    return HttpResponse.json({})
+  }),
 
-  http.post(
-    "/classification/dirty-packages/:id/drafts",
-    async ({ params, request }) => {
-      const details = dirtyDetailsById.get(String(params.id))
-      if (!details) {
-        return HttpResponse.json(
-          { error_code: "ENTITY_NOT_FOUND", message: "Dirty package not found" },
-          { status: 404 },
-        )
+  http.post("/classification/dirty-packages/:id/drafts", async ({ params, request }) => {
+    const details = dirtyDetailsById.get(String(params.id))
+    if (!details) {
+      return HttpResponse.json(
+        { error_code: "ENTITY_NOT_FOUND", message: "Dirty package not found" },
+        { status: 404 },
+      )
+    }
+    const body = (await request.json()) as UpsertDraftRequest
+    if (body.id) {
+      const existing = details.drafts.find((d) => d.id === body.id)
+      if (existing) {
+        existing.name = body.name
+        existing.customer_tag = body.customer_tag ?? null
+        existing.notes = body.notes ?? null
+        return HttpResponse.json(existing)
       }
-      const body = (await request.json()) as UpsertDraftRequest
-      if (body.id) {
-        const existing = details.drafts.find((d) => d.id === body.id)
-        if (existing) {
-          existing.name = body.name
-          existing.customer_tag = body.customer_tag ?? null
-          existing.notes = body.notes ?? null
-          return HttpResponse.json(existing)
-        }
-      }
-      const draft = {
-        id: `${details.id}-draft-${details.drafts.length}`,
-        name: body.name,
-        document_ids: [],
-        customer_tag: body.customer_tag ?? null,
-        notes: body.notes ?? null,
-      }
-      details.drafts.push(draft)
-      return HttpResponse.json(draft)
-    },
-  ),
+    }
+    const draft = {
+      id: `${details.id}-draft-${details.drafts.length}`,
+      name: body.name,
+      document_ids: [],
+      customer_tag: body.customer_tag ?? null,
+      notes: body.notes ?? null,
+    }
+    details.drafts.push(draft)
+    return HttpResponse.json(draft)
+  }),
 
-  http.delete(
-    "/classification/dirty-packages/:id/drafts/:draftId",
-    ({ params }) => {
-      const details = dirtyDetailsById.get(String(params.id))
-      if (!details) return HttpResponse.json({}, { status: 404 })
-      details.drafts = details.drafts.filter((d) => d.id !== String(params.draftId))
-      for (const doc of details.documents) {
-        doc.target_clean_package_ids = doc.target_clean_package_ids.filter(
-          (x) => x !== String(params.draftId),
-        )
-      }
-      return HttpResponse.json({})
-    },
-  ),
+  http.delete("/classification/dirty-packages/:id/drafts/:draftId", ({ params }) => {
+    const details = dirtyDetailsById.get(String(params.id))
+    if (!details) return HttpResponse.json({}, { status: 404 })
+    details.drafts = details.drafts.filter((d) => d.id !== String(params.draftId))
+    for (const doc of details.documents) {
+      doc.target_clean_package_ids = doc.target_clean_package_ids.filter(
+        (x) => x !== String(params.draftId),
+      )
+    }
+    return HttpResponse.json({})
+  }),
 
   http.post("/classification/dirty-packages/:id/promote", ({ params }) => {
     const details = dirtyDetailsById.get(String(params.id))

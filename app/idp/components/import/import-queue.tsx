@@ -1,15 +1,20 @@
 "use client"
 
-import { toastApiError, useImportMultiplePackages, useImportPackage } from "@cortex/api"
-import { Button } from "@cortex/ui"
-import { Loader2, Send } from "lucide-react"
-import { useCallback, useMemo, useState } from "react"
-import { toast } from "sonner"
 import {
   emptyImportOptions,
   serializeImportOptions,
   type ImportOptions,
 } from "@/components/import-options-fields"
+import {
+  toastApiError,
+  useImportEmailPackage,
+  useImportMultiplePackages,
+  useImportPackage,
+} from "@cortex/api"
+import { Button } from "@cortex/ui"
+import { Loader2, Send } from "lucide-react"
+import { useCallback, useMemo, useState } from "react"
+import { toast } from "sonner"
 import { detectIntakeKind } from "./file-intake"
 import { ImportSlot, type ImportSlotValue } from "./import-slot"
 
@@ -25,14 +30,12 @@ function makeEmptySlot(): ImportSlotValue {
 export function ImportQueue() {
   const [slots, setSlots] = useState<ImportSlotValue[]>(() => [makeEmptySlot()])
   const importOne = useImportPackage()
+  const importEmail = useImportEmailPackage()
   const importMany = useImportMultiplePackages()
 
-  const patchSlot = useCallback(
-    (id: string, patch: Partial<ImportSlotValue>) => {
-      setSlots((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
-    },
-    [],
-  )
+  const patchSlot = useCallback((id: string, patch: Partial<ImportSlotValue>) => {
+    setSlots((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
+  }, [])
 
   const ensureTrailingEmpty = useCallback(() => {
     setSlots((prev) => {
@@ -63,16 +66,11 @@ export function ImportQueue() {
     [ensureTrailingEmpty],
   )
 
-  const setOptions = useCallback(
-    (id: string, patch: Partial<ImportOptions>) => {
-      setSlots((prev) =>
-        prev.map((s) =>
-          s.id === id ? { ...s, options: { ...s.options, ...patch } } : s,
-        ),
-      )
-    },
-    [],
-  )
+  const setOptions = useCallback((id: string, patch: Partial<ImportOptions>) => {
+    setSlots((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, options: { ...s.options, ...patch } } : s)),
+    )
+  }, [])
 
   const removeSlot = useCallback((id: string) => {
     setSlots((prev) => {
@@ -95,6 +93,9 @@ export function ImportQueue() {
         if (kind === "zip") {
           result = await importOne.mutateAsync({ file: slot.files[0]!, ...serialized })
           toast.success(`Imported ${slot.files[0]!.name}`)
+        } else if (kind === "email") {
+          result = await importEmail.mutateAsync({ file: slot.files[0]!, ...serialized })
+          toast.success(`Imported email ${slot.files[0]!.name}`)
         } else {
           result = await importMany.mutateAsync({ files: slot.files, ...serialized })
           toast.success(`Imported ${slot.files.length} file(s)`)
@@ -102,12 +103,11 @@ export function ImportQueue() {
         patchSlot(slot.id, { status: "done", packageId: result.id })
       } catch (err) {
         toastApiError(err)
-        const message =
-          err instanceof Error ? err.message : "Upload failed — please retry."
+        const message = err instanceof Error ? err.message : "Upload failed — please retry."
         patchSlot(slot.id, { status: "error", errorMessage: message })
       }
     },
-    [importOne, importMany, patchSlot],
+    [importOne, importEmail, importMany, patchSlot],
   )
 
   const submitAll = useCallback(async () => {
@@ -121,12 +121,9 @@ export function ImportQueue() {
     [slots],
   )
 
-  const doneCount = useMemo(
-    () => slots.filter((s) => s.status === "done").length,
-    [slots],
-  )
+  const doneCount = useMemo(() => slots.filter((s) => s.status === "done").length, [slots])
 
-  const isUploading = importOne.isPending || importMany.isPending
+  const isUploading = importOne.isPending || importEmail.isPending || importMany.isPending
 
   return (
     <div className="flex flex-col gap-4">
@@ -147,23 +144,18 @@ export function ImportQueue() {
       <div className="sticky bottom-0 -mx-2 flex items-center justify-between gap-3 rounded-lg border border-border bg-background/80 px-4 py-3 shadow-sm backdrop-blur">
         <div className="text-xs text-muted-foreground">
           {pendingCount === 0 && doneCount === 0
-            ? "Drop a ZIP, files or folders to start — a new slot appears automatically."
+            ? "Drop a ZIP, EML, MSG, files or folders to start — a new slot appears automatically."
             : null}
           {pendingCount > 0 ? (
             <>
-              <span className="font-medium text-foreground">{pendingCount}</span>{" "}
-              ready to import
+              <span className="font-medium text-foreground">{pendingCount}</span> ready to import
             </>
           ) : null}
           {doneCount > 0 ? (
             <span className="ml-2 text-emerald-600">· {doneCount} imported</span>
           ) : null}
         </div>
-        <Button
-          onClick={submitAll}
-          disabled={pendingCount === 0 || isUploading}
-          className="h-9"
-        >
+        <Button onClick={submitAll} disabled={pendingCount === 0 || isUploading} className="h-9">
           {isUploading ? (
             <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
           ) : (

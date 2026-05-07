@@ -87,6 +87,13 @@ export interface ImportPackageBody {
   additional_ai_context?: string | null
 }
 
+export interface ImportEmailPackageBody {
+  file: File
+  fast_processing?: boolean
+  additional_ai_context_enabled?: boolean
+  additional_ai_context?: string | null
+}
+
 export interface ImportMultiplePackagesBody {
   files: File[]
   fast_processing?: boolean

@@ -3,12 +3,13 @@
 import type {
   AttachRuleRequest,
   CompileRuleRequest,
-  ExplainRuleRequest,
   DeletePackagesRequest,
+  ExplainRuleRequest,
   GetActionLogsQuery,
   GetDirtyPackagesQuery,
   GetPackagesQuery,
   GetRulesQuery,
+  ImportEmailPackageBody,
   ImportMultiplePackagesBody,
   ImportPackageBody,
   PackageTransition,
@@ -150,6 +151,17 @@ export function useImportPackage() {
   })
 }
 
+export function useImportEmailPackage() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (body: ImportEmailPackageBody) => endpoints.packages.importEmail(body),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: queryKeys.packages.all() })
+      client.invalidateQueries({ queryKey: queryKeys.dashboardStats() })
+    },
+  })
+}
+
 export function useImportMultiplePackages() {
   const client = useQueryClient()
   return useMutation({
@@ -184,8 +196,7 @@ export const useCancelVerification = (id: string) =>
   useTransitionMutation(id, "cancel_verification")
 export const useFinishVerification = (id: string) =>
   useTransitionMutation(id, "finish_verification")
-export const useResetVerification = (id: string) =>
-  useTransitionMutation(id, "reset_verification")
+export const useResetVerification = (id: string) => useTransitionMutation(id, "reset_verification")
 
 export function useReprocessPackage(id: string) {
   const invalidate = useInvalidatePackage(id)
@@ -492,8 +503,7 @@ export function useDetachRule(packageId: string) {
 export function useRunAttachedRule(packageId: string) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (attachmentId: string) =>
-      endpoints.rules.runAttached(packageId, attachmentId),
+    mutationFn: (attachmentId: string) => endpoints.rules.runAttached(packageId, attachmentId),
     onSuccess: () => {
       client.invalidateQueries({
         queryKey: queryKeys.packages.ruleAttachments(packageId),

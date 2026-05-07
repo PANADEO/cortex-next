@@ -1,14 +1,26 @@
-export type IntakeKind = "zip" | "loose"
+const EMAIL_FILE_RE = /\.(eml|msg)$/i
+const ZIP_FILE_RE = /\.zip$/i
+
+export type IntakeKind = "zip" | "email" | "loose"
 
 export function detectIntakeKind(files: readonly File[]): IntakeKind {
-  return files.length === 1 && /\.zip$/i.test(files[0]!.name) ? "zip" : "loose"
+  if (files.length !== 1) return "loose"
+  const fileName = files[0]!.name
+  if (ZIP_FILE_RE.test(fileName)) return "zip"
+  if (EMAIL_FILE_RE.test(fileName)) return "email"
+  return "loose"
+}
+
+export function isEmailFile(file: File): boolean {
+  return EMAIL_FILE_RE.test(file.name)
+}
+
+export function isZipFile(file: File): boolean {
+  return ZIP_FILE_RE.test(file.name)
 }
 
 interface FileSystemFileEntryLike extends FileSystemEntry {
-  file: (
-    successCallback: (file: File) => void,
-    errorCallback?: (err: unknown) => void,
-  ) => void
+  file: (successCallback: (file: File) => void, errorCallback?: (err: unknown) => void) => void
 }
 
 interface FileSystemDirectoryEntryLike extends FileSystemEntry {
@@ -24,9 +36,7 @@ function isFileEntry(entry: FileSystemEntry): entry is FileSystemFileEntryLike {
   return entry.isFile
 }
 
-function isDirectoryEntry(
-  entry: FileSystemEntry,
-): entry is FileSystemDirectoryEntryLike {
+function isDirectoryEntry(entry: FileSystemEntry): entry is FileSystemDirectoryEntryLike {
   return entry.isDirectory
 }
 
@@ -39,9 +49,7 @@ async function readAll(
 ): Promise<FileSystemEntry[]> {
   const all: FileSystemEntry[] = []
   const readBatch = () =>
-    new Promise<FileSystemEntry[]>((resolve, reject) =>
-      reader.readEntries(resolve, reject),
-    )
+    new Promise<FileSystemEntry[]>((resolve, reject) => reader.readEntries(resolve, reject))
   // readEntries zwraca partiami po ~100 — trzeba pętlić do pustego wyniku.
   for (;;) {
     const batch = await readBatch()
