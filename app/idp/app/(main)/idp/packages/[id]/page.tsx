@@ -1,10 +1,7 @@
 "use client"
 
-import {
-  AiNotificationsPanel,
-  useAiNotificationCounts,
-} from "@/components/ai-notifications-panel"
 import { AiNotificationsChip } from "@/components/ai-notifications-chip"
+import { AiNotificationsPanel, useAiNotificationCounts } from "@/components/ai-notifications-panel"
 import { AiNotificationsTabTrigger } from "@/components/ai-notifications-tab-trigger"
 import { ExportMenu } from "@/components/export-menu"
 import { PackageMetadataEditors } from "@/components/package-metadata-editors"
@@ -57,6 +54,8 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
+
+const TAB_PANEL_CLASS = "mt-2 md:flex md:min-h-0 md:flex-1 md:flex-col md:overflow-auto md:pb-4"
 
 const TRANSITION_LABELS: Record<PackageTransition, string> = {
   start_verification: "Start verification",
@@ -173,12 +172,12 @@ export default function PackageDetailPage() {
         }
       />
 
-      <div className="flex flex-1 flex-col gap-6 px-8 py-6">
+      <div className="flex flex-1 flex-col gap-6 px-8 py-6 md:min-h-0">
         {detail.isLoading ? (
           <LoadingState label="Loading package details…" />
         ) : pkg ? (
           <>
-            <section className="grid gap-4 md:grid-cols-[1fr_auto]">
+            <section className="grid gap-4 md:shrink-0 md:grid-cols-[1fr_auto]">
               <Card>
                 <CardContent className="space-y-4 p-5">
                   <div className="flex flex-wrap items-center gap-3">
@@ -305,8 +304,9 @@ export default function PackageDetailPage() {
                 setActiveTab(v)
                 if (v === "ai-notifications") handleAiNotificationsRead()
               }}
+              className="md:flex md:min-h-0 md:flex-1 md:flex-col"
             >
-              <TabsList>
+              <TabsList className="md:shrink-0">
                 <TabsTrigger value="transport">Transport orders</TabsTrigger>
                 <TabsTrigger value="metadata">Metadata</TabsTrigger>
                 <TabsTrigger value="analysis">Analysis result</TabsTrigger>
@@ -315,10 +315,10 @@ export default function PackageDetailPage() {
                 <TabsTrigger value="actions">Action log</TabsTrigger>
                 <TabsTrigger value="source">Source materials</TabsTrigger>
               </TabsList>
-              <TabsContent value="transport">
+              <TabsContent value="transport" className={TAB_PANEL_CLASS}>
                 <TransportOrdersPanel packageId={pkg.id} canEdit={canEdit} />
               </TabsContent>
-              <TabsContent value="metadata">
+              <TabsContent value="metadata" className={TAB_PANEL_CLASS}>
                 <Card>
                   <CardContent className="p-5">
                     <dl className="grid grid-cols-[8rem_1fr] gap-y-1 text-sm">
@@ -342,45 +342,47 @@ export default function PackageDetailPage() {
                   </CardContent>
                 </Card>
               </TabsContent>
-              <TabsContent value="analysis" className="space-y-3">
-                {isActiveVerification && !canEdit ? (
-                  <p className="text-xs text-muted-foreground">
-                    Read-only. Only the current assignee ({pkg.assignee}) can edit.
-                  </p>
-                ) : null}
-                {pkg.analysis_result ? (
-                  canEdit ? (
-                    <JsonEditor
-                      value={pkg.verified_result ?? pkg.analysis_result}
-                      saveLabel="Save verified result"
-                      disabledReason="Field-level edits go through transport-order endpoints; full-document save is pending backend support."
-                    />
+              <TabsContent value="analysis" className={TAB_PANEL_CLASS}>
+                <div className="space-y-3">
+                  {isActiveVerification && !canEdit ? (
+                    <p className="text-xs text-muted-foreground">
+                      Read-only. Only the current assignee ({pkg.assignee}) can edit.
+                    </p>
+                  ) : null}
+                  {pkg.analysis_result ? (
+                    canEdit ? (
+                      <JsonEditor
+                        value={pkg.verified_result ?? pkg.analysis_result}
+                        saveLabel="Save verified result"
+                        disabledReason="Field-level edits go through transport-order endpoints; full-document save is pending backend support."
+                      />
+                    ) : (
+                      <JsonViewer
+                        data={pkg.verified_result ?? pkg.analysis_result}
+                        initialDepth={2}
+                      />
+                    )
                   ) : (
-                    <JsonViewer
-                      data={pkg.verified_result ?? pkg.analysis_result}
-                      initialDepth={2}
-                    />
-                  )
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Analysis result not available yet.
-                  </p>
-                )}
+                    <p className="text-sm text-muted-foreground">
+                      Analysis result not available yet.
+                    </p>
+                  )}
+                </div>
               </TabsContent>
-              <TabsContent value="ai-notifications">
+              <TabsContent value="ai-notifications" className={TAB_PANEL_CLASS}>
                 <AiNotificationsPanel packageId={pkg.id} />
               </TabsContent>
-              <TabsContent value="rules">
+              <TabsContent value="rules" className={TAB_PANEL_CLASS}>
                 <PackageRulesPanel packageId={pkg.id} canEdit={canEdit} />
               </TabsContent>
-              <TabsContent value="actions">
+              <TabsContent value="actions" className={TAB_PANEL_CLASS}>
                 {actions.isLoading ? (
                   <LoadingState variant="skeleton" rows={5} />
                 ) : (
                   <ActionLogTimeline events={actions.data?.actions ?? []} />
                 )}
               </TabsContent>
-              <TabsContent value="source">
+              <TabsContent value="source" className={TAB_PANEL_CLASS}>
                 <SourceMaterialsPanel packageId={pkg.id} />
               </TabsContent>
             </Tabs>
