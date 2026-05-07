@@ -1,31 +1,26 @@
 "use client"
 
-import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@cortex/ui"
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@cortex/ui"
 import { cn } from "@cortex/utils"
-import { Search } from "lucide-react"
+import { Search, X } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import type { KeyboardEvent } from "react"
 import type { PipelineBoardState } from "@/lib/board/use-pipeline-board"
 import { OwnerFilter } from "./owner-filter"
 
+type SearchMode = "input" | "trigger" | "none"
+
 interface BoardFiltersProps {
   board: PipelineBoardState
-  hideSearch?: boolean
+  searchMode?: SearchMode
   className?: string
 }
 
-export function BoardFilters({ board, hideSearch = false, className }: BoardFiltersProps) {
+export function BoardFilters({ board, searchMode = "input", className }: BoardFiltersProps) {
   return (
-    <div className={cn("flex flex-wrap items-center gap-3", className)}>
-      {!hideSearch ? (
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={board.search}
-            onChange={(e) => board.setSearch(e.target.value)}
-            placeholder="Search by name, ID, customer…"
-            className="h-9 w-72 pl-9"
-          />
-        </div>
-      ) : null}
+    <div className={cn("flex items-center gap-3", className)}>
+      {searchMode === "input" ? <SearchInput board={board} /> : null}
+      {searchMode === "trigger" ? <SearchTrigger board={board} /> : null}
 
       <Select
         value={board.kindFilter}
@@ -52,5 +47,90 @@ export function BoardFilters({ board, hideSearch = false, className }: BoardFilt
         <span>{board.isLoading ? "Loading…" : `${board.totalCount} on board`}</span>
       </div>
     </div>
+  )
+}
+
+function SearchInput({ board }: { board: PipelineBoardState }) {
+  return (
+    <div className="relative">
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        value={board.search}
+        onChange={(e) => board.setSearch(e.target.value)}
+        placeholder="Search by name, ID, customer…"
+        className="h-9 w-72 pl-9"
+      />
+    </div>
+  )
+}
+
+function SearchTrigger({ board }: { board: PipelineBoardState }) {
+  const hasValue = board.search.length > 0
+  const [expanded, setExpanded] = useState(hasValue)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (expanded) {
+      inputRef.current?.focus()
+    }
+  }, [expanded])
+
+  function handleBlur() {
+    if (board.search.length === 0) {
+      setExpanded(false)
+    }
+  }
+
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Escape") {
+      e.stopPropagation()
+      board.setSearch("")
+      setExpanded(false)
+    }
+  }
+
+  function handleClear() {
+    board.setSearch("")
+    setExpanded(false)
+  }
+
+  if (expanded) {
+    return (
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          ref={inputRef}
+          value={board.search}
+          onChange={(e) => board.setSearch(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          placeholder="Search by name, ID, customer…"
+          className="h-9 w-72 pl-9 pr-9"
+        />
+        {hasValue ? (
+          <button
+            type="button"
+            onClick={handleClear}
+            aria-label="Clear search"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
+      </div>
+    )
+  }
+
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      onClick={() => setExpanded(true)}
+      aria-label="Open search"
+      className={cn("h-9 w-9", hasValue && "bg-accent text-accent-foreground")}
+    >
+      <Search className="h-4 w-4" />
+    </Button>
   )
 }

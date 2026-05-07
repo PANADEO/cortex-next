@@ -73,11 +73,21 @@ export function getVerificationStateLabel(state: VerificationState): string {
   return VERIFICATION_META[state].label
 }
 
-type BadgeSize = "sm" | "md"
+type BadgeSize = "xs" | "sm" | "md"
 
 interface BaseBadgeProps extends HTMLAttributes<HTMLSpanElement> {
   size?: BadgeSize
   showIcon?: boolean
+}
+
+function sizeClasses(size: BadgeSize): string {
+  if (size === "xs") return "px-1.5 py-0.5 text-[10px]"
+  if (size === "sm") return "px-2 py-0.5 text-xs"
+  return "px-2.5 py-1 text-sm"
+}
+
+function iconClasses(size: BadgeSize): string {
+  return size === "xs" ? "h-2.5 w-2.5" : "h-3 w-3"
 }
 
 function renderBadge(
@@ -90,14 +100,14 @@ function renderBadge(
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-[4px] font-medium leading-tight",
-        size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-sm",
+        sizeClasses(size),
         meta.className,
         className,
       )}
       {...rest}
     >
       {showIcon ? (
-        <Icon className={cn("h-3 w-3", spin && "animate-spin")} />
+        <Icon className={cn(iconClasses(size), spin && "animate-spin")} />
       ) : null}
       {meta.label}
     </span>

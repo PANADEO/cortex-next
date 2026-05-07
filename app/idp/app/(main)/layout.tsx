@@ -22,6 +22,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const activeItemId = pathToItemId(pathname)
   const collapsed = useSidebarStore((s) => s.collapsed)
+  const isBoardRoute = pathname === "/idp/dashboard" || pathname === "/idp/board"
 
   const brandIcon = (
     <Link
@@ -43,6 +44,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   return (
     <AppShell
       sidebarCollapsed={collapsed}
+      {...(isBoardRoute ? { mainClassName: "overflow-hidden" } : {})}
       sidebar={
         <TileMenu
           sections={IDP_NAV}

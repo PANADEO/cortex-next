@@ -7,15 +7,14 @@ import { BoardFilters } from "./board-filters"
 
 interface PipelineBoardProps {
   compact?: boolean
-  hideSearch?: boolean
   className?: string
 }
 
-export function PipelineBoard({ compact = false, hideSearch = false, className }: PipelineBoardProps) {
+export function PipelineBoard({ compact = false, className }: PipelineBoardProps) {
   const board = usePipelineBoard()
   return (
     <div className={cn("flex flex-col gap-4", className)}>
-      <BoardFilters board={board} hideSearch={hideSearch} />
+      <BoardFilters board={board} />
       <BoardColumns board={board} compact={compact} />
     </div>
   )

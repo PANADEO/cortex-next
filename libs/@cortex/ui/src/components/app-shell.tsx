@@ -8,6 +8,7 @@ interface AppShellProps {
   topbar?: ReactNode
   children: ReactNode
   className?: string
+  mainClassName?: string
   sidebarCollapsed?: boolean
 }
 
@@ -16,6 +17,7 @@ export function AppShell({
   topbar,
   children,
   className,
+  mainClassName,
   sidebarCollapsed = false,
 }: AppShellProps) {
   return (
@@ -35,7 +37,9 @@ export function AppShell({
             {topbar}
           </header>
         ) : null}
-        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</main>
+        <main className={cn("flex min-h-0 flex-1 flex-col overflow-y-auto", mainClassName)}>
+          {children}
+        </main>
       </div>
     </div>
   )

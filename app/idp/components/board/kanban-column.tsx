@@ -14,14 +14,14 @@ export function KanbanColumn({ meta, cards }: KanbanColumnProps) {
   return (
     <section
       className={cn(
-        "relative flex w-[280px] shrink-0 flex-col rounded-xl border border-border bg-muted/30",
-        "before:absolute before:inset-x-0 before:top-0 before:h-1 before:rounded-t-xl before:content-['']",
+        "relative flex h-full min-w-[200px] flex-1 flex-col overflow-hidden rounded-xl border border-border bg-muted/30",
+        "before:absolute before:inset-x-0 before:top-0 before:z-20 before:h-1 before:rounded-t-xl before:content-['']",
         meta.accent,
       )}
     >
       <header
         className={cn(
-          "flex items-center justify-between gap-2 rounded-t-xl px-3 py-2.5",
+          "sticky top-0 z-10 flex items-center justify-between gap-2 rounded-t-xl px-3 py-2.5",
           meta.headerBg,
         )}
       >
@@ -44,12 +44,12 @@ export function KanbanColumn({ meta, cards }: KanbanColumnProps) {
       </header>
 
       {cards.length === 0 ? (
-        <div className="flex min-h-[120px] flex-col items-center justify-center gap-1 px-3 py-10 text-center text-xs text-muted-foreground">
+        <div className="flex min-h-[120px] flex-1 flex-col items-center justify-center gap-1 px-3 py-10 text-center text-xs text-muted-foreground">
           <Inbox className="h-4 w-4 opacity-50" />
           <span>No packages here</span>
         </div>
       ) : (
-        <div className="flex flex-col gap-2 p-2">
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2">
           {cards.map((card) => (
             <KanbanCard key={`${card.kind}-${card.id}`} card={card} />
           ))}

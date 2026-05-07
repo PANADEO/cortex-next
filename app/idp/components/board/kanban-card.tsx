@@ -63,7 +63,7 @@ export function KanbanCard({ card }: KanbanCardProps) {
           <PackageStatusBadges
             processingState={card.processingState}
             verificationState={card.verificationState}
-            size="sm"
+            size="xs"
             showIcon
           />
         ) : (
@@ -119,11 +119,11 @@ function DirtyStatusRow({ card }: { card: Extract<BoardCard, { kind: "dirty" }> 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-[4px] px-2 py-0.5 text-xs font-medium leading-tight",
+        "inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-[10px] font-medium leading-tight",
         className,
       )}
     >
-      <Icon className={cn("h-3 w-3", card.source.status === "classifying" && "animate-pulse")} />
+      <Icon className={cn("h-2.5 w-2.5", card.source.status === "classifying" && "animate-pulse")} />
       <span className="capitalize">{label}</span>
     </span>
   )

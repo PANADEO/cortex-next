@@ -1,18 +1,23 @@
 "use client"
 
 import { PageHeader } from "@cortex/ui"
-import { PipelineBoard } from "@/components/board/pipeline-board"
+import { BoardColumns } from "@/components/board/board-columns"
+import { BoardFilters } from "@/components/board/board-filters"
+import { usePipelineBoard } from "@/lib/board/use-pipeline-board"
 
 export default function BoardPage() {
+  const board = usePipelineBoard()
+
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader
         title="Pipeline board"
-        description="Full journey of dirty and clean packages from intake to export."
+        actions={<BoardFilters board={board} searchMode="trigger" />}
       />
-      <div className="flex flex-col px-8 py-6">
-        <PipelineBoard />
+
+      <div className="flex min-h-0 flex-1 flex-col px-8 py-6">
+        <BoardColumns board={board} />
       </div>
-    </>
+    </div>
   )
 }

@@ -35,10 +35,12 @@ export const AllVerificationStates: Story = () => (
 export const Sizes: Story = () => (
   <div className="flex flex-col gap-3 p-6">
     <div className="flex items-center gap-3">
+      <ProcessingStateBadge state="ready" size="xs" showIcon />
       <ProcessingStateBadge state="ready" size="sm" showIcon />
       <ProcessingStateBadge state="ready" size="md" showIcon />
     </div>
     <div className="flex items-center gap-3">
+      <VerificationStateBadge state="in_progress" size="xs" showIcon />
       <VerificationStateBadge state="in_progress" size="sm" showIcon />
       <VerificationStateBadge state="in_progress" size="md" showIcon />
     </div>

@@ -9,17 +9,15 @@ export default function DashboardPage() {
   const board = usePipelineBoard()
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader
         title="Dashboard"
-        description="Live pipeline — filters drive the board."
+        actions={<BoardFilters board={board} searchMode="trigger" />}
       />
 
-      <div className="flex flex-col gap-6 px-8 py-6">
-        <BoardFilters board={board} />
-
+      <div className="flex min-h-0 flex-1 flex-col px-8 py-6">
         <BoardColumns board={board} />
       </div>
-    </>
+    </div>
   )
 }
