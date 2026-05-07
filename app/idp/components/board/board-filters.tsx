@@ -2,7 +2,7 @@
 
 import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@cortex/ui"
 import { cn } from "@cortex/utils"
-import { Loader2, Search } from "lucide-react"
+import { Search } from "lucide-react"
 import type { PipelineBoardState } from "@/lib/board/use-pipeline-board"
 import { OwnerFilter } from "./owner-filter"
 
@@ -48,13 +48,7 @@ export function BoardFilters({ board, hideSearch = false, className }: BoardFilt
         onChange={board.setOwnerSelection}
       />
 
-      <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-        {board.isRefreshing ? (
-          <span className="inline-flex items-center gap-1">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Refreshing
-          </span>
-        ) : null}
+      <div className="ml-auto text-xs text-muted-foreground">
         <span>{board.isLoading ? "Loading…" : `${board.totalCount} on board`}</span>
       </div>
     </div>

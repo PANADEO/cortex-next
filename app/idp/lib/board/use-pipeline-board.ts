@@ -29,7 +29,6 @@ export interface PipelineBoardState {
   totalCount: number
   errorCount: number
   isLoading: boolean
-  isRefreshing: boolean
 }
 
 export function usePipelineBoard(): PipelineBoardState {
@@ -121,6 +120,5 @@ export function usePipelineBoard(): PipelineBoardState {
     totalCount,
     errorCount,
     isLoading: packages.isLoading || dirty.isLoading,
-    isRefreshing: packages.isFetching || dirty.isFetching,
   }
 }

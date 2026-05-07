@@ -30,7 +30,7 @@ import type {
   UpsertDraftRequest,
   UpsertRuleRequest,
 } from "@cortex/types"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { endpoints } from "./endpoints"
 import { queryKeys } from "./query-keys"
 
@@ -57,6 +57,7 @@ export function useDashboardStats() {
     queryKey: queryKeys.dashboardStats(),
     queryFn: endpoints.packages.dashboardStats,
     refetchInterval: 5_000,
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -65,6 +66,7 @@ export function usePackages(query: GetPackagesQuery = {}) {
     queryKey: queryKeys.packages.list(query),
     queryFn: () => endpoints.packages.list(query),
     refetchInterval: 5_000,
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -75,6 +77,7 @@ export function usePackage(id: string, options: { polling?: boolean } = {}) {
     queryFn: () => endpoints.packages.get(id),
     refetchInterval: polling ? 5_000 : false,
     enabled: Boolean(id),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -85,6 +88,7 @@ export function usePackageActions(id: string, options: { polling?: boolean } = {
     queryFn: () => endpoints.packages.actions(id),
     refetchInterval: polling ? 5_000 : false,
     enabled: Boolean(id),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -95,6 +99,7 @@ export function usePackageTransportOrders(id: string, options: { polling?: boole
     queryFn: () => endpoints.packages.transportOrders(id),
     refetchInterval: polling ? 5_000 : false,
     enabled: Boolean(id),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -330,6 +335,7 @@ export function useDirtyPackages(query: GetDirtyPackagesQuery = {}) {
     queryKey: queryKeys.classification.list(query),
     queryFn: () => endpoints.classification.list(query),
     refetchInterval: 5_000,
+    placeholderData: keepPreviousData,
   })
 }
 
