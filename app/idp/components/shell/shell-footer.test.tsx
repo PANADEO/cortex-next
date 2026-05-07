@@ -13,13 +13,13 @@ afterEach(() => {
 })
 
 describe("ShellFooter", () => {
-  it("renders FE version stripped of leading 'v' and Forsped suffix", async () => {
+  it("renders FE version stripped of leading 'v'", async () => {
     const { ShellFooter } = await import("./shell-footer")
 
     render(createElement(ShellFooter))
 
     const node = screen.getByText(/FE v/)
-    expect(node.textContent ?? "").toBe("FE v0.2.10 · Forsped Sp. z o.o.")
+    expect(node.textContent ?? "").toBe("FE v0.2.10")
   })
 
   it("renders Pomoc and Polityka prywatności links", async () => {

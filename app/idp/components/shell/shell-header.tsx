@@ -38,10 +38,7 @@ export function ShellHeader() {
             className="dark:invert dark:hue-rotate-180"
             priority
           />
-          <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold">Cortex360</span>
-            <span className="text-[10px] text-muted-foreground">Forsped Sp. z o.o.</span>
-          </div>
+          <span className="text-sm font-semibold">Cortex360</span>
         </div>
         <div className="flex-1" />
         <div className="flex items-center gap-1">
