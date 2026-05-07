@@ -69,25 +69,25 @@ const EVENTS: PackageActionReadModel[] = [
 ]
 
 export const FullLifecycle: Story = () => (
-  <div className="max-w-xl p-6">
+  <div className="max-w-3xl p-6">
     <ActionLogTimeline events={EVENTS} />
   </div>
 )
 
 export const WithoutPayloads: Story = () => (
-  <div className="max-w-xl p-6">
+  <div className="max-w-3xl p-6">
     <ActionLogTimeline events={EVENTS} showPayloads={false} />
   </div>
 )
 
 export const Empty: Story = () => (
-  <div className="max-w-xl p-6">
+  <div className="max-w-3xl p-6">
     <ActionLogTimeline events={[]} />
   </div>
 )
 
 export const ReprocessVariants: Story = () => (
-  <div className="max-w-xl space-y-6 p-6">
+  <div className="max-w-3xl space-y-6 p-6">
     <ActionLogTimeline
       events={[
         {
@@ -146,7 +146,7 @@ export const ReprocessVariants: Story = () => (
 )
 
 export const FailurePath: Story = () => (
-  <div className="max-w-xl p-6">
+  <div className="max-w-3xl p-6">
     <ActionLogTimeline
       events={[
         {
@@ -172,5 +172,93 @@ export const FailurePath: Story = () => (
         },
       ]}
     />
+  </div>
+)
+
+export const EditHeavy: Story = () => (
+  <div className="max-w-3xl p-6">
+    <ActionLogTimeline
+      events={[
+        {
+          id: "e1",
+          action_type: "seller_updated",
+          timestamp: mins(60),
+          performed_by: "anna.k@cortex",
+          // Shape (a): flat
+          payload: JSON.stringify({
+            field: "vat",
+            previous: "DE000000000",
+            next: "DE123456789",
+          }),
+        },
+        {
+          id: "e2",
+          action_type: "invoice_line_updated",
+          timestamp: mins(50),
+          performed_by: "anna.k@cortex",
+          // Shape (b): nested with line_no
+          payload: JSON.stringify({
+            line_no: 2,
+            changes: {
+              qty: { prev: 40, next: 42 },
+              unit_price: { prev: 25.0, next: 25.5 },
+            },
+          }),
+        },
+        {
+          id: "e3",
+          action_type: "invoice_totals_updated",
+          timestamp: mins(45),
+          performed_by: "anna.k@cortex",
+          // Shape (c): diff
+          payload: JSON.stringify({
+            net_total: { from: 1000.0, to: 1050.0 },
+            vat_total: { from: 240.0, to: 252.0 },
+            gross_total: { from: 1240.0, to: 1302.0 },
+          }),
+        },
+        {
+          id: "e4",
+          action_type: "buyer_updated",
+          timestamp: mins(35),
+          performed_by: "anna.k@cortex",
+          // Shape (b): nested without line_no
+          payload: JSON.stringify({
+            changes: {
+              email: { previous: "old@buyer.com", next: "buyer@new.com" },
+              phone: { prev: null, next: "+48 600 123 456" },
+            },
+          }),
+        },
+        {
+          id: "e5",
+          action_type: "user_notes_updated",
+          timestamp: mins(20),
+          performed_by: "anna.k@cortex",
+          // Malformed payload — non-recognised shape, should fall back to JsonViewer
+          payload: JSON.stringify({
+            arbitrary: { nested: { thing: "without-diff-shape" } },
+            another: "string",
+          }),
+        },
+        {
+          id: "e6",
+          action_type: "delivery_terms_updated",
+          timestamp: mins(10),
+          performed_by: "anna.k@cortex",
+          payload: JSON.stringify({
+            field: "incoterm",
+            previous: "DAP",
+            next: "DDP",
+          }),
+        },
+      ]}
+    />
+  </div>
+)
+
+export const FilteredAndSorted: Story = () => (
+  <div className="max-w-3xl p-6">
+    <ActionLogTimeline events={EVENTS} />
   </div>
 )
