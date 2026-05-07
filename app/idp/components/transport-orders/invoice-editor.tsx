@@ -9,6 +9,7 @@ import type {
   UpdateInvoiceTotalsRequest,
 } from "@cortex/types"
 import { Button } from "@cortex/ui"
+import { formatRoute } from "@cortex/utils"
 import { ChevronDown, ChevronRight, FileText } from "lucide-react"
 import { useState } from "react"
 import { z } from "zod"
@@ -214,9 +215,4 @@ export function InvoiceEditor({
       ) : null}
     </section>
   )
-}
-
-function formatRoute(from: string | null, to: string | null): string | null {
-  if (!from && !to) return null
-  return `${from ?? "?"} → ${to ?? "?"}`
 }

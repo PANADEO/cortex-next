@@ -91,6 +91,7 @@ export function buildDetails(pkg: PackageReadModel): PackageDetailsResponse {
     processing_state: pkg.processing_state,
     verification_state: pkg.verification_state,
     assignee: pkg.assignee,
+    uploaded_by: pkg.uploaded_by,
     custom_status: pkg.custom_status,
     user_notes: pkg.user_notes,
     last_additional_ai_context: null,

@@ -2,7 +2,7 @@
 
 import type { Invoice, Party, TransportOrder } from "@cortex/types"
 import { Button } from "@cortex/ui"
-import { cn } from "@cortex/utils"
+import { cn, formatRoute } from "@cortex/utils"
 import {
   Building2,
   ChevronDown,
@@ -153,11 +153,6 @@ function Row({ label, value, emphasize }: RowProps): ReactNode {
       </dd>
     </Fragment>
   )
-}
-
-function formatRoute(from: string | null, to: string | null): string | null {
-  if (!from && !to) return null
-  return `${from ?? "?"} → ${to ?? "?"}`
 }
 
 function formatCity(

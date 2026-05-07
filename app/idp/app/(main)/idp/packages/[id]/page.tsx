@@ -8,6 +8,7 @@ import { AiNotificationsChip } from "@/components/ai-notifications-chip"
 import { AiNotificationsTabTrigger } from "@/components/ai-notifications-tab-trigger"
 import { ExportMenu } from "@/components/export-menu"
 import { PackageMetadataEditors } from "@/components/package-metadata-editors"
+import { PackageTransportSummary } from "@/components/package-transport-summary"
 import { ReprocessDialog } from "@/components/reprocess-dialog"
 import { PackageRulesPanel } from "@/components/rules/package-rules-panel"
 import { SourceMaterialsPanel } from "@/components/source-materials-panel"
@@ -43,6 +44,7 @@ import {
   LoadingState,
   PackageStatusBadges,
   PageHeader,
+  Separator,
   Skeleton,
   Tabs,
   TabsContent,
@@ -178,7 +180,7 @@ export default function PackageDetailPage() {
           <>
             <section className="grid gap-4 md:grid-cols-[1fr_auto]">
               <Card>
-                <CardContent className="space-y-3 p-5">
+                <CardContent className="space-y-4 p-5">
                   <div className="flex flex-wrap items-center gap-3">
                     <PackageStatusBadges
                       processingState={pkg.processing_state}
@@ -200,18 +202,25 @@ export default function PackageDetailPage() {
                       </span>
                     ) : null}
                   </div>
-                  <dl className="grid grid-cols-[8rem_1fr] gap-y-1 text-sm">
-                    <dt className="text-muted-foreground">Imported</dt>
-                    <dd>{formatAbsolute(pkg.created_date)}</dd>
-                    <dt className="text-muted-foreground">Size</dt>
-                    <dd>{formatFileSizeMb(pkg.file_size_mb)}</dd>
-                    <dt className="text-muted-foreground">Hash</dt>
-                    <dd className="truncate font-mono text-xs">{pkg.file_hash}</dd>
-                    <dt className="text-muted-foreground">Tokens</dt>
-                    <dd>{pkg.total_tokens?.toLocaleString() ?? "—"}</dd>
-                    <dt className="text-muted-foreground">LLM cost</dt>
-                    <dd>{formatMoney(pkg.total_cost_usd, { currency: "USD" })}</dd>
-                  </dl>
+                  {pkg.processing_state === "ready" ? (
+                    <PackageTransportSummary packageId={pkg.id} />
+                  ) : null}
+                  <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span>
+                      <span className="text-muted-foreground/70">Uploaded</span>{" "}
+                      <span className="text-foreground">{formatAbsolute(pkg.created_date)}</span>
+                    </span>
+                    {pkg.uploaded_by ? (
+                      <span>
+                        <span className="text-muted-foreground/70">by</span>{" "}
+                        <span className="font-mono text-foreground">{pkg.uploaded_by}</span>
+                      </span>
+                    ) : null}
+                    <span className="min-w-0 truncate">
+                      <span className="text-muted-foreground/70">Hash</span>{" "}
+                      <span className="font-mono text-foreground">{pkg.file_hash}</span>
+                    </span>
+                  </p>
                 </CardContent>
               </Card>
               <Card className="min-w-64">
@@ -312,6 +321,17 @@ export default function PackageDetailPage() {
               <TabsContent value="metadata">
                 <Card>
                   <CardContent className="p-5">
+                    <dl className="grid grid-cols-[8rem_1fr] gap-y-1 text-sm">
+                      <dt className="text-muted-foreground">Uploaded at</dt>
+                      <dd>{formatAbsolute(pkg.created_date)}</dd>
+                      <dt className="text-muted-foreground">Size</dt>
+                      <dd>{formatFileSizeMb(pkg.file_size_mb)}</dd>
+                      <dt className="text-muted-foreground">Tokens</dt>
+                      <dd>{pkg.total_tokens?.toLocaleString() ?? "—"}</dd>
+                      <dt className="text-muted-foreground">LLM cost</dt>
+                      <dd>{formatMoney(pkg.total_cost_usd, { currency: "USD" })}</dd>
+                    </dl>
+                    <Separator className="my-4" />
                     <PackageMetadataEditors
                       packageId={pkg.id}
                       customStatus={pkg.custom_status}
