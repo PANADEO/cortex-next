@@ -222,6 +222,7 @@ export const handlers = [
   http.post("/user/preferences", () => passthrough()),
 
   // Config
+  http.get("/config", () => passthrough()),
   http.get("/config/custom-statuses", () => passthrough()),
 
   // Module version (proxied to backend /version)
@@ -288,6 +289,8 @@ export const handlers = [
   }),
 
   http.get("/idp/version", () => HttpResponse.json({ version: "1.13.0" })),
+
+  http.get("/config", () => HttpResponse.json({ enable_classification: false })),
 
   http.get("/user/preferences", () => HttpResponse.json(userPreferences)),
 

@@ -52,6 +52,16 @@ export function useSetUserPreferences() {
   })
 }
 
+export function useFeatureFlags() {
+  return useQuery({
+    queryKey: queryKeys.featureFlags(),
+    queryFn: endpoints.config.featureFlags,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+    retry: false,
+  })
+}
+
 export function useDashboardStats() {
   return useQuery({
     queryKey: queryKeys.dashboardStats(),

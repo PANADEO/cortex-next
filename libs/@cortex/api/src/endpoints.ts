@@ -12,6 +12,7 @@ import type {
   ExplainRuleResponse,
   ExportTemplateInfo,
   ExportValidationResponse,
+  FeatureFlagsResponse,
   GetActionLogsQuery,
   GetDirtyPackagesQuery,
   GetPackagesQuery,
@@ -97,6 +98,9 @@ export const endpoints = {
     getPreferences: () => apiClient.get<UserPreferencesResponse>("/user/preferences"),
     setPreferences: (body: SetUserPreferencesRequest) =>
       apiClient.post<UserPreferencesResponse>("/user/preferences", { jsonBody: body }),
+  },
+  config: {
+    featureFlags: () => apiClient.get<FeatureFlagsResponse>("/config"),
   },
   packages: {
     list: (query: GetPackagesQuery = {}) =>

@@ -12,6 +12,7 @@ export const queryKeys = {
   dashboardStats: () => [...queryKeys.all, "dashboard-stats"] as const,
   moduleVersion: (endpoint: string) =>
     [...queryKeys.all, "module-version", endpoint] as const,
+  featureFlags: () => [...queryKeys.all, "feature-flags"] as const,
   packages: {
     all: () => [...queryKeys.all, "packages"] as const,
     list: (query: GetPackagesQuery) =>

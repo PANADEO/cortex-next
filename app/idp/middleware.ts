@@ -11,6 +11,7 @@ const STATIC_IDP_PATHS = new Set([
   "/packages/delete",
   "/packages/import",
   "/packages/import-multiple",
+  "/config",
   "/config/custom-statuses",
 ])
 
