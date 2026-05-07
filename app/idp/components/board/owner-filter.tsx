@@ -25,12 +25,7 @@ interface OwnerFilterProps {
 }
 
 function initials(identifier: string): string {
-  const source = identifier.split("@")[0] ?? identifier
-  const parts = source.split(/[._\s-]+/).filter(Boolean)
-  if (parts.length >= 2) {
-    return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase()
-  }
-  return (source.slice(0, 2) || "??").toUpperCase()
+  return (identifier[0] ?? "?").toUpperCase()
 }
 
 function describeSelection(

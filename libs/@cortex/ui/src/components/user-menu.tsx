@@ -20,12 +20,7 @@ interface UserMenuProps {
 function initials(name: string | null | undefined, email: string | null | undefined): string {
   const source = name?.trim() || email?.trim() || ""
   if (!source) return "·"
-  const parts = source.split(/[\s@.]+/).filter(Boolean)
-  if (parts.length === 0) return source.slice(0, 2).toUpperCase()
-  return parts
-    .slice(0, 2)
-    .map((p) => p[0]!.toUpperCase())
-    .join("")
+  return source[0]!.toUpperCase()
 }
 
 export function UserMenu({ user }: UserMenuProps) {
