@@ -340,20 +340,28 @@ export const useUpdateDeliveryTerms = () =>
   )
 
 // ── Classification ─────────────────────────────────────────────────
-export function useDirtyPackages(query: GetDirtyPackagesQuery = {}) {
+export function useDirtyPackages(
+  query: GetDirtyPackagesQuery = {},
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: queryKeys.classification.list(query),
     queryFn: () => endpoints.classification.list(query),
     refetchInterval: 5_000,
     placeholderData: keepPreviousData,
+    enabled: options.enabled ?? true,
   })
 }
 
-export function useDirtyPackage(id: string) {
+export function useDirtyPackage(
+  id: string,
+  options: { enabled?: boolean } = {},
+) {
+  const enabledByCaller = options.enabled ?? true
   return useQuery({
     queryKey: queryKeys.classification.detail(id),
     queryFn: () => endpoints.classification.get(id),
-    enabled: Boolean(id),
+    enabled: enabledByCaller && Boolean(id),
   })
 }
 

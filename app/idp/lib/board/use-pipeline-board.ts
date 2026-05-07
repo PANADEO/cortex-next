@@ -1,6 +1,7 @@
 "use client"
 
 import { useDirtyPackages, useMe, usePackages } from "@cortex/api"
+import { useFeatureFlag } from "@cortex/utils"
 import { useDeferredValue, useMemo, useState } from "react"
 import { UNASSIGNED, type OwnerSelection } from "@/components/board/owner-filter"
 import {
@@ -37,12 +38,17 @@ export function usePipelineBoard(): PipelineBoardState {
   const [ownerSelection, setOwnerSelection] = useState<OwnerSelection>("all")
   const deferredSearch = useDeferredValue(search.trim().toLowerCase())
 
+  const classificationEnabled = useFeatureFlag("idp.classification")
+
   const packages = usePackages({
     limit: BOARD_PAGE_SIZE,
     sort_by: "created_date",
     sort_order: "desc",
   })
-  const dirty = useDirtyPackages({ limit: BOARD_PAGE_SIZE })
+  const dirty = useDirtyPackages(
+    { limit: BOARD_PAGE_SIZE },
+    { enabled: classificationEnabled },
+  )
   const me = useMe()
   const currentUser = me.data?.email ?? null
 

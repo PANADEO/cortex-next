@@ -14,6 +14,7 @@ import {
   EmptyState,
   Input,
   Label,
+  LoadingState,
   PageHeader,
   Pagination,
   Select,
@@ -22,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@cortex/ui"
-import { formatRelative } from "@cortex/utils"
+import { formatRelative, useFeatureFlagState } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
 import {
   AlertCircle,
@@ -36,6 +37,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import Link from "next/link"
+import { notFound } from "next/navigation"
 import { useMemo, useState } from "react"
 import { DIRTY_STATUS_LABEL } from "@/components/classification/labels"
 
@@ -87,6 +89,7 @@ function StatusBadge({ status }: { status: DirtyPackageStatus }) {
 const PAGE_SIZE = 10
 
 export default function ClassificationPage() {
+  const flagState = useFeatureFlagState("idp.classification")
   const [page, setPage] = useState(0)
   const [status, setStatus] = useState<DirtyPackageStatus | "all">("all")
   const [search, setSearch] = useState("")
@@ -107,7 +110,9 @@ export default function ClassificationPage() {
 
   const resetPage = () => setPage(0)
 
-  const { data, isLoading, isFetching } = useDirtyPackages(query)
+  const { data, isLoading, isFetching } = useDirtyPackages(query, {
+    enabled: flagState.enabled,
+  })
   const items = data?.items ?? []
   const total = data?.total ?? 0
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -195,6 +200,13 @@ export default function ClassificationPage() {
     ],
     [],
   )
+
+  if (flagState.isPending) {
+    return <LoadingState label="Loading classification…" />
+  }
+  if (!flagState.enabled) {
+    notFound()
+  }
 
   const filtersDirty =
     status !== "all" ||

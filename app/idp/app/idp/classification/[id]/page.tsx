@@ -20,9 +20,10 @@ import {
   ErrorState,
   LoadingState,
 } from "@cortex/ui"
+import { useFeatureFlagState } from "@cortex/utils"
 import { ArrowLeft, Loader2, Rocket, Sparkles } from "lucide-react"
 import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
+import { notFound, useParams, useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { toast } from "sonner"
@@ -32,10 +33,13 @@ import { DraftList } from "@/components/classification/draft-list"
 import { DIRTY_STATUS_LABEL } from "@/components/classification/labels"
 
 export default function ClassificationWorkspacePage() {
+  const flagState = useFeatureFlagState("idp.classification")
   const params = useParams<{ id: string }>()
   const id = params.id
   const router = useRouter()
-  const { data, isLoading, error } = useDirtyPackage(id)
+  const { data, isLoading, error } = useDirtyPackage(id, {
+    enabled: flagState.enabled,
+  })
   const autoClassify = useAutoClassify(id)
   const promote = usePromoteDirtyPackage(id)
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null)
@@ -46,6 +50,13 @@ export default function ClassificationWorkspacePage() {
     for (const draft of data?.drafts ?? []) map.set(draft.id, draft.name)
     return map
   }, [data?.drafts])
+
+  if (flagState.isPending) {
+    return <LoadingState label="Loading classification…" />
+  }
+  if (!flagState.enabled) {
+    notFound()
+  }
 
   if (isLoading) {
     return <LoadingState label="Loading dirty package…" />
