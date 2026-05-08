@@ -55,7 +55,8 @@ import { useParams } from "next/navigation"
 import { useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
 
-const TAB_PANEL_CLASS = "mt-2 md:flex md:min-h-0 md:flex-1 md:flex-col md:overflow-auto md:pb-4"
+const TAB_PANEL_CLASS =
+  "mt-2 data-[state=active]:md:flex md:min-h-0 md:flex-1 md:flex-col md:overflow-auto md:pb-4"
 
 const TRANSITION_LABELS: Record<PackageTransition, string> = {
   start_verification: "Start verification",
