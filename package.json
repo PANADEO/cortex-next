@@ -13,6 +13,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:install": "playwright install chromium",
     "lint": "eslint \"{app,libs}/**/*.{ts,tsx}\"",
     "format": "prettier --write \"{app,libs,docs,scripts}/**/*.{ts,tsx,md,json,css}\"",
     "ladle": "ladle serve",
@@ -61,6 +64,7 @@
   },
   "devDependencies": {
     "@ladle/react": "^4.1.2",
+    "@playwright/test": "^1.48.0",
     "@testing-library/jest-dom": "^6.7.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",

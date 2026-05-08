@@ -18,6 +18,12 @@ coverage
 tsconfig.tsbuildinfo
 *.tsbuildinfo
 
+# Playwright
+/e2e/issue-66/screenshots
+/playwright-report
+/test-results
+/e2e/.auth
+
 # Fleet Commander managed files
 .claude/agents/fleet-dev.md
 .claude/agents/fleet-planner.md
