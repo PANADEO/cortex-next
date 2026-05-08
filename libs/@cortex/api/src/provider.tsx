@@ -2,7 +2,10 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
-import { useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
+import { toast } from "sonner"
+import { setForbiddenHandler } from "./client"
+import { queryKeys } from "./query-keys"
 
 interface ApiProviderProps {
   children: ReactNode
@@ -22,6 +25,15 @@ export function ApiProvider({ children, devtools = false }: ApiProviderProps) {
         },
       }),
   )
+
+  useEffect(() => {
+    setForbiddenHandler(() => {
+      client.invalidateQueries({ queryKey: queryKeys.user() })
+      client.invalidateQueries({ queryKey: queryKeys.authorizedApps() })
+      toast.error("Brak uprawnień")
+    })
+    return () => setForbiddenHandler(null)
+  }, [client])
 
   return (
     <QueryClientProvider client={client}>

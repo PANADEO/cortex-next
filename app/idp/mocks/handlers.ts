@@ -43,7 +43,6 @@ import type {
   UpdateDocumentClassificationRequest,
   UpsertDraftRequest,
   UpsertRuleRequest,
-  User,
   UserPreferencesResponse,
   VerificationState,
 } from "@cortex/types"
@@ -282,10 +281,20 @@ export const handlers = [
   // Te handlery działają tylko gdy passthrough nie jest aktywny.
   // W prod (demo-dev) mocki są wyłączone globalnie.
 
-  http.get("/user/me", () => {
+  http.get("/user/me", ({ request }) => {
     const email = process.env.NEXT_PUBLIC_DEV_USER_EMAIL ?? "dev@cortex.local"
-    const body: User = { id: "dev-user", email, name: "Dev User" }
-    return HttpResponse.json(body)
+    const url = new URL(request.url)
+    const hasAccessFlag = url.searchParams.get("has_access")
+    const has_access = hasAccessFlag === "false" ? false : true
+    return HttpResponse.json({ email, has_access })
+  }),
+
+  http.get("/api/me/access", ({ request }) => {
+    const email = process.env.NEXT_PUBLIC_DEV_USER_EMAIL ?? "dev@cortex.local"
+    const url = new URL(request.url)
+    const allowedFlag = url.searchParams.get("allowed")
+    const allowed = allowedFlag === "false" ? false : true
+    return HttpResponse.json({ allowed, email })
   }),
 
   http.get("/idp/version", () => HttpResponse.json({ version: "1.13.0" })),

@@ -12,6 +12,22 @@ export function configureApiClient(next: Partial<ApiClientConfig>): void {
   config = { ...config, ...next }
 }
 
+type ForbiddenHandler = (path: string) => void
+let forbiddenHandler: ForbiddenHandler | null = null
+
+export function setForbiddenHandler(handler: ForbiddenHandler | null): void {
+  forbiddenHandler = handler
+}
+
+const FORBIDDEN_HANDLER_EXEMPT_PATHS: ReadonlySet<string> = new Set([
+  "/user/me",
+  "/api/me/access",
+])
+
+function shouldNotifyForbidden(path: string): boolean {
+  return !FORBIDDEN_HANDLER_EXEMPT_PATHS.has(path)
+}
+
 type QueryValue = string | number | boolean | null | undefined
 
 function buildUrl(path: string, params?: Record<string, QueryValue>): string {
@@ -61,6 +77,9 @@ async function request<T>(method: string, path: string, options: RequestOptions 
   const response = await fetch(buildUrl(path, options.params), init)
 
   if (!response.ok) {
+    if (response.status === 403 && forbiddenHandler && shouldNotifyForbidden(path)) {
+      forbiddenHandler(path)
+    }
     throw await ApiError.fromResponse(response)
   }
 

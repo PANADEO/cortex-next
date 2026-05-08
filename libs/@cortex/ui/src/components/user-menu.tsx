@@ -1,6 +1,5 @@
 "use client"
 
-import type { User } from "@cortex/types"
 import { LogOut, User as UserIcon } from "lucide-react"
 import { Avatar, AvatarFallback } from "./ui/avatar"
 import { Button } from "./ui/button"
@@ -13,8 +12,13 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu"
 
+export interface UserMenuUser {
+  email: string
+  name?: string | null
+}
+
 interface UserMenuProps {
-  user: User | null
+  user: UserMenuUser | null
 }
 
 function initials(name: string | null | undefined, email: string | null | undefined): string {
@@ -43,7 +47,7 @@ export function UserMenu({ user }: UserMenuProps) {
         <DropdownMenuLabel className="flex items-center gap-2">
           <UserIcon className="h-4 w-4" />
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{user?.name ?? "—"}</p>
+            <p className="truncate text-sm font-medium">{user?.name ?? user?.email ?? "—"}</p>
             <p className="truncate text-xs text-muted-foreground">{user?.email ?? ""}</p>
           </div>
         </DropdownMenuLabel>

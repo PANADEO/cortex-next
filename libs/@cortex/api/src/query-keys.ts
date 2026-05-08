@@ -8,6 +8,7 @@ import type {
 export const queryKeys = {
   all: ["idp"] as const,
   user: () => [...queryKeys.all, "user", "me"] as const,
+  authorizedApps: () => [...queryKeys.all, "user", "authorized-apps"] as const,
   userPreferences: () => [...queryKeys.all, "user", "preferences"] as const,
   dashboardStats: () => [...queryKeys.all, "dashboard-stats"] as const,
   moduleVersion: (endpoint: string) =>
