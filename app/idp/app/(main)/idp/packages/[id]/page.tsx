@@ -58,6 +58,9 @@ import { toast } from "sonner"
 const TAB_PANEL_CLASS =
   "mt-2 data-[state=active]:md:flex md:min-h-0 md:flex-1 md:flex-col md:overflow-auto md:pb-4"
 
+const TAB_PANEL_CLASS_SOURCE =
+  "mt-2 data-[state=active]:md:flex md:min-h-0 md:flex-1 md:flex-col md:overflow-hidden"
+
 const TRANSITION_LABELS: Record<PackageTransition, string> = {
   start_verification: "Start verification",
   cancel_verification: "Cancel verification",
@@ -383,7 +386,7 @@ export default function PackageDetailPage() {
                   <ActionLogTimeline events={actions.data?.actions ?? []} />
                 )}
               </TabsContent>
-              <TabsContent value="source" className={TAB_PANEL_CLASS}>
+              <TabsContent value="source" className={TAB_PANEL_CLASS_SOURCE}>
                 <SourceMaterialsPanel packageId={pkg.id} />
               </TabsContent>
             </Tabs>
