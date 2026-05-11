@@ -155,6 +155,10 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
       }),
     }
     await onSave(body)
+    const snapshot: Record<string, InvoiceLineRow> = {}
+    for (const [id, row] of Object.entries(values)) snapshot[id] = { ...row }
+    initialRef.current = snapshot
+    setDirtyIds(new Set())
   }
 
   const handleReset = () => {

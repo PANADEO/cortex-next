@@ -47,6 +47,7 @@ export default function VerifyWorkspacePage() {
       toast.success(`Saved ${body.lines.length} line(s)`)
     } catch (err) {
       toastApiError(err)
+      throw err
     }
   }
 
