@@ -71,12 +71,17 @@ export function useDashboardStats() {
   })
 }
 
-export function usePackages(query: GetPackagesQuery = {}) {
+export function usePackages(
+  query: GetPackagesQuery = {},
+  options: { enabled?: boolean; polling?: boolean } = {},
+) {
+  const { enabled = true, polling = true } = options
   return useQuery({
     queryKey: queryKeys.packages.list(query),
     queryFn: () => endpoints.packages.list(query),
-    refetchInterval: 5_000,
+    refetchInterval: polling ? 5_000 : false,
     placeholderData: keepPreviousData,
+    enabled,
   })
 }
 

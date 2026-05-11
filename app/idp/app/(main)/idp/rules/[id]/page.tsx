@@ -89,7 +89,7 @@ export default function RuleEditorPage() {
   const preview = usePreviewRule()
   const saveVersion = useSaveRuleVersion(id)
 
-  const packagesQuery = usePackages({ limit: 20 })
+  const packagesQuery = usePackages({ limit: 20 }, { polling: false })
 
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")

@@ -40,7 +40,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [activeIdx, setActiveIdx] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const packages = usePackages({ limit: 20, search: deferredQuery || null })
+  const packages = usePackages(
+    { limit: 20, search: deferredQuery || null },
+    { enabled: open },
+  )
 
   const entries: Entry[] = useMemo(() => {
     const q = deferredQuery.trim().toLowerCase()
