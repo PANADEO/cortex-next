@@ -21,7 +21,7 @@ export function KanbanColumn({ meta, cards }: KanbanColumnProps) {
     >
       <header
         className={cn(
-          "sticky top-0 z-10 flex items-center justify-between gap-2 rounded-t-xl px-3 py-2.5",
+          "sticky top-0 z-10 flex items-center justify-between gap-2 rounded-t-xl px-3 pt-4 pb-2.5",
           meta.headerBg,
         )}
       >
