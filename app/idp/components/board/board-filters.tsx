@@ -1,7 +1,7 @@
 "use client"
 
 import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@cortex/ui"
-import { cn } from "@cortex/utils"
+import { cn, useFeatureFlag } from "@cortex/utils"
 import { Search, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import type { KeyboardEvent } from "react"
@@ -17,24 +17,27 @@ interface BoardFiltersProps {
 }
 
 export function BoardFilters({ board, searchMode = "input", className }: BoardFiltersProps) {
+  const classificationEnabled = useFeatureFlag("idp.classification")
   return (
     <div className={cn("flex items-center gap-3", className)}>
       {searchMode === "input" ? <SearchInput board={board} /> : null}
       {searchMode === "trigger" ? <SearchTrigger board={board} /> : null}
 
-      <Select
-        value={board.kindFilter}
-        onValueChange={(v) => board.setKindFilter(v as typeof board.kindFilter)}
-      >
-        <SelectTrigger className="h-9 w-[150px]">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All packages</SelectItem>
-          <SelectItem value="dirty">Dirty only</SelectItem>
-          <SelectItem value="clean">Clean only</SelectItem>
-        </SelectContent>
-      </Select>
+      {classificationEnabled ? (
+        <Select
+          value={board.kindFilter}
+          onValueChange={(v) => board.setKindFilter(v as typeof board.kindFilter)}
+        >
+          <SelectTrigger className="h-9 w-[150px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All packages</SelectItem>
+            <SelectItem value="dirty">Dirty only</SelectItem>
+            <SelectItem value="clean">Clean only</SelectItem>
+          </SelectContent>
+        </Select>
+      ) : null}
 
       <OwnerFilter
         currentUser={board.currentUser}

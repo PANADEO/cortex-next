@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
   Separator,
 } from "@cortex/ui"
-import { cn } from "@cortex/utils"
+import { cn, useFeatureFlag } from "@cortex/utils"
 import { Check, UserCog, Users } from "lucide-react"
 import { useMemo, useState } from "react"
 
@@ -52,6 +52,7 @@ export function OwnerFilter({
   className,
 }: OwnerFilterProps) {
   const [open, setOpen] = useState(false)
+  const classificationEnabled = useFeatureFlag("idp.classification")
 
   const options = useMemo(() => {
     const rest = knownOwners.filter((o) => o !== currentUser).sort()
@@ -162,7 +163,7 @@ export function OwnerFilter({
             <OwnerRow
               value={UNASSIGNED}
               label="Unassigned"
-              hint="no owner (incl. dirty)"
+              hint={classificationEnabled ? "no owner (incl. dirty)" : "no owner"}
               checked={isSelected(UNASSIGNED)}
               onToggle={() => toggle(UNASSIGNED)}
               isMeta

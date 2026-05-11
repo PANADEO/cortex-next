@@ -1,7 +1,7 @@
 "use client"
 
 import { PackageStatusBadges } from "@cortex/ui"
-import { cn, formatRelative } from "@cortex/utils"
+import { cn, formatRelative, useFeatureFlag } from "@cortex/utils"
 import { AlertTriangle, ArchiveRestore, Files, Flag, UserRound } from "lucide-react"
 import Link from "next/link"
 import type { BoardCard } from "@/lib/board/pipeline"
@@ -25,6 +25,7 @@ interface KanbanCardProps {
 }
 
 export function KanbanCard({ card }: KanbanCardProps) {
+  const classificationEnabled = useFeatureFlag("idp.classification")
   const assignee = card.kind === "clean" ? card.assignee : null
   return (
     <Link
@@ -38,14 +39,16 @@ export function KanbanCard({ card }: KanbanCardProps) {
         <span className="font-mono text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           {card.badgeId}
         </span>
-        <span
-          className={cn(
-            "inline-flex items-center rounded-sm px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide",
-            KIND_STYLES[card.kind],
-          )}
-        >
-          {KIND_LABEL[card.kind]}
-        </span>
+        {classificationEnabled ? (
+          <span
+            className={cn(
+              "inline-flex items-center rounded-sm px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide",
+              KIND_STYLES[card.kind],
+            )}
+          >
+            {KIND_LABEL[card.kind]}
+          </span>
+        ) : null}
       </div>
 
       <p className="mt-1.5 line-clamp-2 text-sm font-medium leading-snug text-foreground">

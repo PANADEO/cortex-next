@@ -27,7 +27,7 @@ export const BOARD_COLUMNS: readonly BoardColumnMeta[] = [
   {
     id: "processing",
     label: "Processing",
-    description: "Clean packages being analysed by AI",
+    description: "Packages being analysed by AI",
     accent: "before:bg-indigo-500",
     headerBg: "bg-indigo-50 dark:bg-indigo-950/40",
     headerText: "text-indigo-800 dark:text-indigo-200",
