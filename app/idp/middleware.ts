@@ -60,17 +60,38 @@ const LEGACY_REDIRECTS: ReadonlyArray<{ from: RegExp; to: string }> = [
   { from: /^\/classification(\/.*)?$/, to: "/idp/classification" },
 ]
 
+const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH)
+
+function normalizeBasePath(value: string | undefined): string {
+  if (!value) return ""
+  const trimmed = value.trim()
+  if (!trimmed || trimmed === "/") return ""
+  return trimmed.startsWith("/") ? trimmed.replace(/\/+$/, "") : `/${trimmed.replace(/\/+$/, "")}`
+}
+
+function stripBasePath(pathname: string): string {
+  if (!basePath) return pathname
+  if (pathname === basePath) return "/"
+  if (pathname.startsWith(`${basePath}/`)) return pathname.slice(basePath.length)
+  return pathname
+}
+
+function withBasePath(pathname: string): string {
+  return basePath ? `${basePath}${pathname}` : pathname
+}
+
 function tryLegacyRedirect(req: NextRequest) {
   // XHR/fetch with Accept: application/json is API traffic — let it fall through
   // to tryIdpRewrite or 404. Redirecting JSON XHR breaks apiClient (308 → HTML page → parse error).
   if ((req.headers.get("accept") ?? "").includes("application/json")) return null
 
-  const { pathname, search } = req.nextUrl
+  const pathname = stripBasePath(req.nextUrl.pathname)
+  const { search } = req.nextUrl
   for (const { from, to } of LEGACY_REDIRECTS) {
     const match = pathname.match(from)
     if (match) {
       const rest = match[1] ?? ""
-      return NextResponse.redirect(new URL(to + rest + search, req.nextUrl), 308)
+      return NextResponse.redirect(new URL(withBasePath(to + rest) + search, req.nextUrl), 308)
     }
   }
   return null
@@ -78,7 +99,8 @@ function tryLegacyRedirect(req: NextRequest) {
 
 function tryIdpRewrite(req: NextRequest) {
   const idpBackend = process.env.IDP_BACKEND_URL ?? "http://idp-app"
-  const { pathname, search } = req.nextUrl
+  const pathname = stripBasePath(req.nextUrl.pathname)
+  const { search } = req.nextUrl
 
   // Tile-namespaced module version: /idp/version → backend /version (no tile prefix).
   // Backend (PANADEO/idp#52) exposes /version at root; frontend uses /idp/version

@@ -4,6 +4,15 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Optional Docker image tag override'
+        required: false
+        type: string
+      base_path:
+        description: 'Optional Next.js basePath, e.g. /idp-next-uat'
+        required: false
+        type: string
 
 env:
   REGISTRY: ghcr.io
@@ -26,13 +35,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Validate workflow inputs
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.base_path != '' && github.event.inputs.image_tag == '' }}
+        run: |
+          echo "base_path builds must use image_tag to avoid overwriting regular release images."
+          exit 1
+
       - id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=tag
-            type=ref,event=branch
+            type=raw,value=${{ github.event.inputs.image_tag }},enable=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.image_tag != '' }}
+            type=ref,event=tag,enable=${{ github.event_name != 'workflow_dispatch' || github.event.inputs.image_tag == '' }}
+            type=ref,event=branch,enable=${{ github.event_name != 'workflow_dispatch' || github.event.inputs.image_tag == '' }}
             type=raw,value=latest,enable={{is_default_branch}}
 
       - uses: docker/build-push-action@v6
@@ -43,5 +59,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             VERSION=${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
+            NEXT_PUBLIC_BASE_PATH=${{ github.event.inputs.base_path || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

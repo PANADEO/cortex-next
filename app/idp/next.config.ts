@@ -3,8 +3,17 @@ import type { NextConfig } from "next"
 
 const isDev = process.env.NODE_ENV === "development"
 const repoRoot = path.resolve(__dirname, "..", "..")
+const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH)
+
+function normalizeBasePath(value: string | undefined): string {
+  if (!value) return ""
+  const trimmed = value.trim()
+  if (!trimmed || trimmed === "/") return ""
+  return trimmed.startsWith("/") ? trimmed.replace(/\/+$/, "") : `/${trimmed.replace(/\/+$/, "")}`
+}
 
 const nextConfig: NextConfig = {
+  ...(basePath ? { basePath } : {}),
   distDir: isDev ? ".next-dev" : ".next",
   output: "standalone",
   reactStrictMode: true,

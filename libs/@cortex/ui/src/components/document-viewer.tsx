@@ -108,15 +108,27 @@ function ViewerMessage({ icon, label }: { icon?: React.ReactNode; label: string 
   )
 }
 
-const PDF_WORKER_SRC = "/pdfjs/pdf.worker.min.js"
-const PDF_CMAP_URL = "/pdfjs/cmaps/"
-const PDF_STANDARD_FONT_URL = "/pdfjs/standard_fonts/"
+const PUBLIC_BASE_PATH = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH)
+const PDF_WORKER_SRC = publicAssetPath("/pdfjs/pdf.worker.min.js")
+const PDF_CMAP_URL = publicAssetPath("/pdfjs/cmaps/")
+const PDF_STANDARD_FONT_URL = publicAssetPath("/pdfjs/standard_fonts/")
 const PDF_RENDER_SCALE = 1.25
 const PDF_MIN_SCALE = 0.5
 const PDF_MAX_SCALE = 3.0
 const PDF_SCALE_STEP = 1.25
 const PDF_FIT_PADDING_PX = 24
 const PDF_TOOLBAR_TOOLTIP_DELAY = 300
+
+function normalizeBasePath(value: string | undefined): string {
+  if (!value) return ""
+  const trimmed = value.trim()
+  if (!trimmed || trimmed === "/") return ""
+  return trimmed.startsWith("/") ? trimmed.replace(/\/+$/, "") : `/${trimmed.replace(/\/+$/, "")}`
+}
+
+function publicAssetPath(pathname: string): string {
+  return `${PUBLIC_BASE_PATH}${pathname}`
+}
 
 function PdfViewer({
   source,
