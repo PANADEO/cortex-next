@@ -5,7 +5,7 @@ interface ApiClientConfig {
 }
 
 let config: ApiClientConfig = {
-  baseUrl: "",
+  baseUrl: normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH),
 }
 
 export function configureApiClient(next: Partial<ApiClientConfig>): void {
@@ -13,6 +13,13 @@ export function configureApiClient(next: Partial<ApiClientConfig>): void {
 }
 
 type QueryValue = string | number | boolean | null | undefined
+
+function normalizeBasePath(value: string | undefined): string {
+  if (!value) return ""
+  const trimmed = value.trim()
+  if (!trimmed || trimmed === "/") return ""
+  return trimmed.startsWith("/") ? trimmed.replace(/\/+$/, "") : `/${trimmed.replace(/\/+$/, "")}`
+}
 
 function buildUrl(path: string, params?: Record<string, QueryValue>): string {
   const url = `${config.baseUrl}${path}`
