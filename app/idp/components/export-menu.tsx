@@ -1,17 +1,19 @@
 "use client"
 
+import { downloadBlob } from "@/lib/download"
 import { endpoints, toastApiError, useExportTemplates } from "@cortex/api"
 import {
   Button,
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@cortex/ui"
 import { Download, FileDown, Loader2 } from "lucide-react"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { toast } from "sonner"
-import { downloadBlob } from "@/lib/download"
 
 interface ExportMenuProps {
   packageId: string
@@ -31,17 +33,59 @@ function deriveFileName(baseName: string, templateName: string, format: string):
   return `${stripped}_${templateName}.${ext}`
 }
 
+function buildMailtoHref(fileName: string): string {
+  const params = new URLSearchParams({
+    subject: fileName,
+  })
+
+  return `mailto:?${params.toString()}`
+}
+
+async function openMailExport(blob: Blob, fileName: string): Promise<"shared" | "mailto"> {
+  const file = new File([blob], fileName, {
+    type: blob.type || "application/octet-stream",
+  })
+  const shareData: ShareData = {
+    files: [file],
+    title: fileName,
+  }
+
+  if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    await navigator.share(shareData)
+    return "shared"
+  }
+
+  // mailto cannot attach browser blobs, so the fallback keeps the draft minimal.
+  window.location.href = buildMailtoHref(fileName)
+  return "mailto"
+}
+
 export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
   const templates = useExportTemplates()
   const [downloading, setDownloading] = useState<string | null>(null)
+  const [mailMode, setMailMode] = useState(false)
+  const mailModeRef = useRef(mailMode)
+
+  const setMailModeValue = (value: boolean) => {
+    mailModeRef.current = value
+    setMailMode(value)
+  }
 
   const handleExport = async (templateName: string, format: string) => {
     setDownloading(templateName)
     try {
       const blob = await endpoints.packages.exportResult(packageId, templateName)
-      downloadBlob(blob, deriveFileName(fileName, templateName, format))
-      toast.success(`Exported as ${templateName}`)
+      const exportFileName = deriveFileName(fileName, templateName, format)
+
+      if (mailModeRef.current) {
+        await openMailExport(blob, exportFileName)
+        toast.success("Email draft opened")
+      } else {
+        downloadBlob(blob, exportFileName)
+        toast.success(`Exported as ${templateName}`)
+      }
     } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return
       toastApiError(err)
     } finally {
       setDownloading(null)
@@ -78,6 +122,16 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuCheckboxItem
+          checked={mailMode}
+          onSelect={(event) => {
+            event.preventDefault()
+            setMailModeValue(!mailModeRef.current)
+          }}
+        >
+          Email
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuSeparator />
         {items.map((t) => (
           <DropdownMenuItem
             key={t.name}
@@ -86,9 +140,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
           >
             <div className="min-w-0 flex-1 space-y-0.5">
               <p className="truncate text-sm">{t.display_name}</p>
-              <p className="truncate text-[10px] uppercase text-muted-foreground">
-                {t.format}
-              </p>
+              <p className="truncate text-[10px] uppercase text-muted-foreground">{t.format}</p>
             </div>
           </DropdownMenuItem>
         ))}
