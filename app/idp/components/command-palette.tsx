@@ -1,13 +1,13 @@
 "use client"
 
+import { IDP_NAV_SECTIONS } from "@/lib/nav"
 import { usePackages } from "@cortex/api"
 import { Dialog, DialogContent, DialogTitle, Input } from "@cortex/ui"
 import { cn } from "@cortex/utils"
-import { Package, Search } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { Package, Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
-import { IDP_NAV } from "@/lib/nav"
 
 interface CommandPaletteProps {
   open: boolean
@@ -23,7 +23,7 @@ interface Entry {
   href: string
 }
 
-const NAV_ENTRIES: Entry[] = IDP_NAV.flatMap((section) =>
+const NAV_ENTRIES: Entry[] = IDP_NAV_SECTIONS.flatMap((section) =>
   section.items.map((item) => ({
     id: `nav-${item.id}`,
     group: "Navigation",
@@ -40,16 +40,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [activeIdx, setActiveIdx] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const packages = usePackages(
-    { limit: 20, search: deferredQuery || null },
-    { enabled: open },
-  )
+  const packages = usePackages({ limit: 20, search: deferredQuery || null }, { enabled: open })
 
   const entries: Entry[] = useMemo(() => {
     const q = deferredQuery.trim().toLowerCase()
-    const nav = q
-      ? NAV_ENTRIES.filter((e) => e.label.toLowerCase().includes(q))
-      : NAV_ENTRIES
+    const nav = q ? NAV_ENTRIES.filter((e) => e.label.toLowerCase().includes(q)) : NAV_ENTRIES
     const pkgEntries: Entry[] = (packages.data?.items ?? []).map((p) => ({
       id: `pkg-${p.id}`,
       group: "Extraction",
@@ -112,15 +107,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             placeholder="Search packages or jump to…"
             className="h-12 border-0 bg-transparent text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
           />
-          <kbd className="pointer-events-none hidden rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground md:inline-block">
+          <kbd className="pointer-events-none hidden rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground md:inline-block">
             Esc
           </kbd>
         </div>
         <div className="max-h-80 overflow-y-auto p-2">
           {entries.length === 0 ? (
-            <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-              No results.
-            </p>
+            <p className="px-3 py-6 text-center text-sm text-muted-foreground">No results.</p>
           ) : (
             entries.map((entry, i) => {
               const showGroup = entry.group !== currentGroup
@@ -139,9 +132,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     onClick={() => go(entry)}
                     className={cn(
                       "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
-                      activeIdx === i
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-accent/60",
+                      activeIdx === i ? "bg-accent text-accent-foreground" : "hover:bg-accent/60",
                     )}
                   >
                     <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -163,8 +154,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             navigate
           </span>
           <span>
-            <kbd className="rounded border border-border bg-background px-1 font-mono">↵</kbd>{" "}
-            open
+            <kbd className="rounded border border-border bg-background px-1 font-mono">↵</kbd> open
           </span>
         </div>
       </DialogContent>

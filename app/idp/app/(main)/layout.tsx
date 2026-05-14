@@ -1,16 +1,16 @@
 "use client"
 
+import { FeatureErrorBoundary } from "@/components/error-boundaries"
+import { AppGate } from "@/components/shell/app-gate"
+import { VersionLabel } from "@/components/shell/version-label"
+import { Topbar } from "@/components/topbar"
+import { IDP_NAV_SECTIONS } from "@/lib/nav"
+import { useSidebarStore } from "@/lib/stores/sidebar-store"
 import { AppShell, TileMenu } from "@cortex/ui"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
-import { FeatureErrorBoundary } from "@/components/error-boundaries"
-import { AppGate } from "@/components/shell/app-gate"
-import { VersionLabel } from "@/components/shell/version-label"
-import { Topbar } from "@/components/topbar"
-import { IDP_NAV } from "@/lib/nav"
-import { useSidebarStore } from "@/lib/stores/sidebar-store"
 
 function pathToItemId(pathname: string): string {
   const segments = pathname.split("/").filter(Boolean)
@@ -36,9 +36,26 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         alt="Cortex360"
         width={28}
         height={28}
-        className="dark:invert dark:hue-rotate-180"
+        className="dark:hue-rotate-180 dark:invert"
         priority
       />
+    </Link>
+  )
+
+  const brand = (
+    <Link
+      href="/"
+      aria-label="Powrót do Cortex360 hub"
+      className="flex items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-80"
+    >
+      <Image
+        src="/cortex-logo.png"
+        alt="Cortex360"
+        width={28}
+        height={28}
+        className="dark:hue-rotate-180 dark:invert"
+      />
+      <span className="text-sm">Cortex360 IDP</span>
     </Link>
   )
 
@@ -49,25 +66,10 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         {...(isBoardRoute ? { mainClassName: "overflow-hidden" } : {})}
         sidebar={
           <TileMenu
-            sections={IDP_NAV}
+            sections={IDP_NAV_SECTIONS}
             activeItemId={activeItemId}
             collapsed={collapsed}
-            brand={
-              <Link
-                href="/"
-                aria-label="Powrót do Cortex360 hub"
-                className="flex items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-80"
-              >
-                <Image
-                  src="/cortex-logo.png"
-                  alt="Cortex360"
-                  width={28}
-                  height={28}
-                  className="dark:invert dark:hue-rotate-180"
-                />
-                <span className="text-sm">Cortex360 IDP</span>
-              </Link>
-            }
+            brand={brand}
             brandIcon={brandIcon}
             footerSlot={<VersionLabel tileId="idp" />}
           />

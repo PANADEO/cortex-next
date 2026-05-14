@@ -1,5 +1,5 @@
-import path from "node:path"
 import type { NextConfig } from "next"
+import path from "node:path"
 
 const isDev = process.env.NODE_ENV === "development"
 const repoRoot = path.resolve(__dirname, "..", "..")
@@ -14,6 +14,10 @@ function normalizeBasePath(value: string | undefined): string {
 
 const nextConfig: NextConfig = {
   ...(basePath ? { basePath } : {}),
+  env: {
+    NEXT_PUBLIC_HIDE_MENU_ITEMS:
+      process.env.NEXT_PUBLIC_HIDE_MENU_ITEMS ?? process.env.HIDE_MENU_ITEMS ?? "",
+  },
   distDir: isDev ? ".next-dev" : ".next",
   output: "standalone",
   reactStrictMode: true,
