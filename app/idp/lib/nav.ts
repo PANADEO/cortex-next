@@ -1,5 +1,8 @@
+import { useFeatureFlags } from "@cortex/api"
+import type { FeatureFlagsResponse } from "@cortex/types"
 import type { TileMenuItem, TileMenuSection } from "@cortex/ui"
 import { BarChart3, FileDown, History, Package, ScrollText, Upload } from "lucide-react"
+import { useMemo } from "react"
 
 export const IDP_NAV: TileMenuSection[] = [
   {
@@ -44,8 +47,11 @@ function normalizeMenuKey(value: string): string {
     .replace(/[\s_]+/g, "-")
 }
 
-export function parseHiddenMenuItems(value: string | undefined): ReadonlySet<string> {
-  return new Set((value ?? "").split(",").map(normalizeMenuKey).filter(Boolean))
+type HiddenMenuItemsConfig = FeatureFlagsResponse["hide_menu_items"]
+
+export function parseHiddenMenuItems(value: HiddenMenuItemsConfig): ReadonlySet<string> {
+  const items = Array.isArray(value) ? value : (value ?? "").split(",")
+  return new Set(items.map(normalizeMenuKey).filter(Boolean))
 }
 
 function itemKeys(item: TileMenuItem): string[] {
@@ -65,7 +71,12 @@ export function filterNavSections(
     .filter((section) => section.items.length > 0)
 }
 
-export const IDP_NAV_SECTIONS = filterNavSections(
-  IDP_NAV,
-  parseHiddenMenuItems(process.env.NEXT_PUBLIC_HIDE_MENU_ITEMS),
-)
+export function useIdpNavSections(): TileMenuSection[] {
+  const { data } = useFeatureFlags()
+  const hiddenMenuItems = data?.hide_menu_items
+
+  return useMemo(
+    () => filterNavSections(IDP_NAV, parseHiddenMenuItems(hiddenMenuItems)),
+    [hiddenMenuItems],
+  )
+}

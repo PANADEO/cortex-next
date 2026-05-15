@@ -1,6 +1,6 @@
 "use client"
 
-import { IDP_NAV_SECTIONS } from "@/lib/nav"
+import { useIdpNavSections } from "@/lib/nav"
 import { usePackages } from "@cortex/api"
 import { Dialog, DialogContent, DialogTitle, Input } from "@cortex/ui"
 import { cn } from "@cortex/utils"
@@ -23,28 +23,32 @@ interface Entry {
   href: string
 }
 
-const NAV_ENTRIES: Entry[] = IDP_NAV_SECTIONS.flatMap((section) =>
-  section.items.map((item) => ({
-    id: `nav-${item.id}`,
-    group: "Navigation",
-    label: item.label,
-    icon: item.icon,
-    href: item.href,
-  })),
-)
-
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter()
   const [query, setQuery] = useState("")
   const deferredQuery = useDeferredValue(query)
   const [activeIdx, setActiveIdx] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
+  const navSections = useIdpNavSections()
+  const navEntries = useMemo<Entry[]>(
+    () =>
+      navSections.flatMap((section) =>
+        section.items.map((item) => ({
+          id: `nav-${item.id}`,
+          group: "Navigation",
+          label: item.label,
+          icon: item.icon,
+          href: item.href,
+        })),
+      ),
+    [navSections],
+  )
 
   const packages = usePackages({ limit: 20, search: deferredQuery || null }, { enabled: open })
 
   const entries: Entry[] = useMemo(() => {
     const q = deferredQuery.trim().toLowerCase()
-    const nav = q ? NAV_ENTRIES.filter((e) => e.label.toLowerCase().includes(q)) : NAV_ENTRIES
+    const nav = q ? navEntries.filter((e) => e.label.toLowerCase().includes(q)) : navEntries
     const pkgEntries: Entry[] = (packages.data?.items ?? []).map((p) => ({
       id: `pkg-${p.id}`,
       group: "Extraction",
@@ -53,7 +57,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       href: `/idp/packages/${p.id}`,
     }))
     return [...nav, ...pkgEntries]
-  }, [deferredQuery, packages.data])
+  }, [deferredQuery, navEntries, packages.data])
 
   useEffect(() => {
     setActiveIdx(0)

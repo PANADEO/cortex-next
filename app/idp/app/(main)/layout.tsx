@@ -4,7 +4,7 @@ import { FeatureErrorBoundary } from "@/components/error-boundaries"
 import { AppGate } from "@/components/shell/app-gate"
 import { VersionLabel } from "@/components/shell/version-label"
 import { Topbar } from "@/components/topbar"
-import { IDP_NAV_SECTIONS } from "@/lib/nav"
+import { useIdpNavSections } from "@/lib/nav"
 import { useSidebarStore } from "@/lib/stores/sidebar-store"
 import { AppShell, TileMenu } from "@cortex/ui"
 import Image from "next/image"
@@ -24,6 +24,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const activeItemId = pathToItemId(pathname)
   const collapsed = useSidebarStore((s) => s.collapsed)
   const isBoardRoute = pathname === "/idp/dashboard" || pathname === "/idp/board"
+  const navSections = useIdpNavSections()
 
   const brandIcon = (
     <Link
@@ -66,7 +67,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         {...(isBoardRoute ? { mainClassName: "overflow-hidden" } : {})}
         sidebar={
           <TileMenu
-            sections={IDP_NAV_SECTIONS}
+            sections={navSections}
             activeItemId={activeItemId}
             collapsed={collapsed}
             brand={brand}

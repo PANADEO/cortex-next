@@ -6,7 +6,7 @@ function itemIds(sections: ReturnType<typeof filterNavSections>): string[] {
 }
 
 describe("filterNavSections", () => {
-  it("hides Export, Rule editor, and empty Settings from a comma-separated env list", () => {
+  it("hides Export, Rule editor, and empty Settings from a comma-separated backend list", () => {
     const sections = filterNavSections(IDP_NAV, parseHiddenMenuItems("export,rules"))
 
     expect(itemIds(sections)).not.toContain("export")
@@ -14,8 +14,8 @@ describe("filterNavSections", () => {
     expect(sections.some((section) => section.id === "settings")).toBe(false)
   })
 
-  it("shows Export and Rule editor when the env list is empty", () => {
-    const sections = filterNavSections(IDP_NAV, parseHiddenMenuItems(""))
+  it("shows Export and Rule editor when the backend list is empty", () => {
+    const sections = filterNavSections(IDP_NAV, parseHiddenMenuItems(undefined))
 
     expect(itemIds(sections)).toContain("export")
     expect(itemIds(sections)).toContain("rules")
@@ -25,6 +25,14 @@ describe("filterNavSections", () => {
   it("accepts labels with spaces and mixed case", () => {
     const sections = filterNavSections(IDP_NAV, parseHiddenMenuItems(" Rule Editor "))
 
+    expect(itemIds(sections)).not.toContain("rules")
+    expect(sections.some((section) => section.id === "settings")).toBe(false)
+  })
+
+  it("accepts an array from backend config", () => {
+    const sections = filterNavSections(IDP_NAV, parseHiddenMenuItems(["export", "Rule editor"]))
+
+    expect(itemIds(sections)).not.toContain("export")
     expect(itemIds(sections)).not.toContain("rules")
     expect(sections.some((section) => section.id === "settings")).toBe(false)
   })

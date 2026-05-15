@@ -14,10 +14,6 @@ function normalizeBasePath(value: string | undefined): string {
 
 const nextConfig: NextConfig = {
   ...(basePath ? { basePath } : {}),
-  env: {
-    NEXT_PUBLIC_HIDE_MENU_ITEMS:
-      process.env.NEXT_PUBLIC_HIDE_MENU_ITEMS ?? process.env.HIDE_MENU_ITEMS ?? "",
-  },
   distDir: isDev ? ".next-dev" : ".next",
   output: "standalone",
   reactStrictMode: true,
