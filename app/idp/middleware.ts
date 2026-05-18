@@ -25,6 +25,7 @@ const DOWNLOAD_PATTERNS: RegExp[] = [
 const JSON_API_PATTERNS: RegExp[] = [
   /^\/packages\/[^/]+\/start-verification$/,
   /^\/packages\/[^/]+\/cancel-verification$/,
+  /^\/packages\/[^/]+\/unlock-verification$/,
   /^\/packages\/[^/]+\/finish-verification$/,
   /^\/packages\/[^/]+\/reset-verification$/,
   /^\/packages\/[^/]+\/reprocess$/,

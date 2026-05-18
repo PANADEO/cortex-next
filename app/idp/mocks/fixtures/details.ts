@@ -11,10 +11,12 @@ import type {
 //   ANALYSIS_FAILED                          -> [REPROCESS]
 //   READY + NOT_STARTED                      -> [START_VERIFICATION, REPROCESS]
 //   READY + IN_PROGRESS (assignee == user)   -> [CANCEL_VERIFICATION, FINISH_VERIFICATION]
+//   READY + IN_PROGRESS (admin, not assignee) -> [UNLOCK_VERIFICATION]
 //   READY + COMPLETED                        -> [RESET_VERIFICATION, REPROCESS]
 export function allowedTransitions(
   pkg: PackageReadModel,
   currentUserEmail: string | null,
+  canUnlockVerification = false,
 ): PackageTransition[] {
   if (pkg.processing_state === "analysis_failed") return ["reprocess"]
   if (pkg.processing_state !== "ready") return []
@@ -22,8 +24,12 @@ export function allowedTransitions(
     return ["start_verification", "reprocess"]
   }
   if (pkg.verification_state === "in_progress") {
-    if (!currentUserEmail || !pkg.assignee) return []
-    if (currentUserEmail.toLowerCase() !== pkg.assignee.toLowerCase()) return []
+    if (!currentUserEmail || !pkg.assignee) {
+      return canUnlockVerification ? ["unlock_verification"] : []
+    }
+    if (currentUserEmail.toLowerCase() !== pkg.assignee.toLowerCase()) {
+      return canUnlockVerification ? ["unlock_verification"] : []
+    }
     return ["cancel_verification", "finish_verification"]
   }
   return ["reset_verification", "reprocess"]

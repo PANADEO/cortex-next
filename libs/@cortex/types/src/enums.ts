@@ -17,6 +17,7 @@ export type VerificationState = (typeof VERIFICATION_STATE)[number]
 export const PACKAGE_TRANSITION = [
   "start_verification",
   "cancel_verification",
+  "unlock_verification",
   "finish_verification",
   "reset_verification",
   "reprocess",
@@ -31,6 +32,7 @@ export const PACKAGE_ACTION_TYPE = [
   "ready_for_verification",
   "verification",
   "cancel_verification",
+  "unlock_verification",
   "verified",
   "reset_verification",
   "seller_updated",
@@ -59,6 +61,7 @@ export const ERROR_CODE = [
   "RESULT_NOT_FOUND",
   "ENTITY_NOT_FOUND",
   "CSV_EXPORT_VALIDATION_FAILED",
+  "PERMISSION_DENIED",
 ] as const
 export type ErrorCode = (typeof ERROR_CODE)[number]
 

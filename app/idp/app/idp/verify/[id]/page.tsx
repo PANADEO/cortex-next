@@ -7,13 +7,15 @@ import {
   toastApiError,
   useMe,
   usePackage,
+  usePackageTransitions,
   usePackageTransportOrders,
+  useUnlockVerification,
   useUpdateInvoiceLines,
 } from "@cortex/api"
 import type { UpdateInvoiceLinesRequest } from "@cortex/types"
 import { Button, LoadingState } from "@cortex/ui"
 import { emailsMatch } from "@cortex/utils"
-import { ArrowLeft, Eye, EyeOff, Lock } from "lucide-react"
+import { ArrowLeft, Eye, EyeOff, Lock, LockOpen, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useState } from "react"
@@ -26,13 +28,16 @@ export default function VerifyWorkspacePage() {
   const me = useMe()
 
   const pkgQuery = usePackage(id, { polling: false })
+  const transitions = usePackageTransitions(id)
   const toQuery = usePackageTransportOrders(id, { polling: false })
   const updateLines = useUpdateInvoiceLines()
+  const unlock = useUnlockVerification(id)
   const [documentPreviewVisible, setDocumentPreviewVisible] = useState(true)
 
   const pkg = pkgQuery.data
   const isActiveVerification = pkg?.verification_state === "in_progress"
   const canEdit = isActiveVerification && emailsMatch(me.data?.email, pkg?.assignee)
+  const canUnlock = transitions.data?.transitions.includes("unlock_verification") ?? false
 
   const order = toQuery.data?.transport_orders?.[0]
   const invoice = order?.invoices?.[0]
@@ -50,6 +55,16 @@ export default function VerifyWorkspacePage() {
     } catch (err) {
       toastApiError(err)
       throw err
+    }
+  }
+
+  const handleUnlock = async () => {
+    try {
+      await unlock.mutateAsync()
+      toast.success("Package unlocked")
+      await Promise.all([pkgQuery.refetch(), transitions.refetch()])
+    } catch (err) {
+      toastApiError(err)
     }
   }
 
@@ -92,6 +107,21 @@ export default function VerifyWorkspacePage() {
                 ? `Only ${pkg.assignee ?? "assignee"} can edit`
                 : "Start verification to edit"}
             </span>
+          ) : null}
+          {pkg && !canEdit && canUnlock ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleUnlock}
+              disabled={unlock.isPending}
+            >
+              {unlock.isPending ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <LockOpen className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Unlock package
+            </Button>
           ) : null}
         </div>
       </header>

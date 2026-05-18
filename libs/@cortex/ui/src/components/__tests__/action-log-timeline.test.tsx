@@ -124,6 +124,7 @@ describe("categorise", () => {
   it("categorises verification actions as verification", () => {
     expect(categorise("verification")).toBe("verification")
     expect(categorise("cancel_verification")).toBe("verification")
+    expect(categorise("unlock_verification")).toBe("verification")
     expect(categorise("verified")).toBe("verification")
     expect(categorise("reset_verification")).toBe("verification")
   })

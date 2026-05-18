@@ -23,6 +23,7 @@ import {
   usePackageTransitions,
   useResetVerification,
   useStartVerification,
+  useUnlockVerification,
 } from "@cortex/api"
 import type { PackageTransition } from "@cortex/types"
 import {
@@ -64,6 +65,7 @@ const TAB_PANEL_CLASS_SOURCE =
 const TRANSITION_LABELS: Record<PackageTransition, string> = {
   start_verification: "Start verification",
   cancel_verification: "Cancel verification",
+  unlock_verification: "Unlock package",
   finish_verification: "Finish verification",
   reset_verification: "Reset verification",
   reprocess: "Reprocess",
@@ -90,6 +92,7 @@ export default function PackageDetailPage() {
 
   const start = useStartVerification(id)
   const cancel = useCancelVerification(id)
+  const unlock = useUnlockVerification(id)
   const finish = useFinishVerification(id)
   const reset = useResetVerification(id)
 
@@ -137,6 +140,9 @@ export default function PackageDetailPage() {
           break
         case "cancel_verification":
           await cancel.mutateAsync()
+          break
+        case "unlock_verification":
+          await unlock.mutateAsync()
           break
         case "finish_verification":
           await finish.mutateAsync()
@@ -282,6 +288,7 @@ export default function PackageDetailPage() {
                             disabled={
                               start.isPending ||
                               cancel.isPending ||
+                              unlock.isPending ||
                               finish.isPending ||
                               reset.isPending
                             }
@@ -289,6 +296,7 @@ export default function PackageDetailPage() {
                             {(start.isPending && t === "start_verification") ||
                             (finish.isPending && t === "finish_verification") ||
                             (cancel.isPending && t === "cancel_verification") ||
+                            (unlock.isPending && t === "unlock_verification") ||
                             (reset.isPending && t === "reset_verification") ? (
                               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                             ) : null}

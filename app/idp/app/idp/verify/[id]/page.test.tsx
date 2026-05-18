@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import type { PackageDetailsResponse, PackageTransportOrdersResponse } from "@cortex/types"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { cleanup, render, screen } from "@testing-library/react"
+import { cleanup, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import type { ReactNode } from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
@@ -143,6 +143,7 @@ describe("VerifyWorkspacePage — document preview toggle", () => {
       makeFetchMock({
         "/user/me": { body: { email: "dev@cortex.local", has_access: true } },
         "/packages/test-1": { body: makePackage() },
+        "/packages/test-1/transitions": { body: { transitions: [] } },
         "/packages/test-1/transport-orders": { body: makeTransportOrders() },
         "/packages/test-1/source-files": { body: [] },
       }),
@@ -164,5 +165,34 @@ describe("VerifyWorkspacePage — document preview toggle", () => {
     await userEvent.click(screen.getByRole("button", { name: /show document preview/i }))
 
     expect(await screen.findByTestId("document-preview-panel")).not.toBeNull()
+  })
+
+  it("shows and calls admin unlock when backend returns unlock transition", async () => {
+    const fetchMock = makeFetchMock({
+      "/user/me": { body: { email: "admin@cortex.local", has_access: true } },
+      "/packages/test-1": {
+        body: { ...makePackage(), assignee: "dev@cortex.local" },
+      },
+      "/packages/test-1/transitions": { body: { transitions: ["unlock_verification"] } },
+      "/packages/test-1/transport-orders": { body: makeTransportOrders() },
+      "/packages/test-1/source-files": { body: [] },
+      "/packages/test-1/unlock-verification": { body: {} },
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    render(
+      <Wrapper client={freshClient()}>
+        <VerifyWorkspacePage />
+      </Wrapper>,
+    )
+
+    await userEvent.click(await screen.findByRole("button", { name: /unlock package/i }))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/packages/test-1/unlock-verification",
+        expect.objectContaining({ method: "POST" }),
+      )
+    })
   })
 })

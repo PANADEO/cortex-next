@@ -152,6 +152,7 @@ export const endpoints = {
       }),
     startVerification: transitionCall("start_verification"),
     cancelVerification: transitionCall("cancel_verification"),
+    unlockVerification: transitionCall("unlock_verification"),
     finishVerification: transitionCall("finish_verification"),
     resetVerification: transitionCall("reset_verification"),
     reprocess: (id: string, body: ReprocessRequest = {}) =>

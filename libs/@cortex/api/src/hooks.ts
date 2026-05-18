@@ -199,6 +199,7 @@ const TRANSITION_CALLS: Record<
 > = {
   start_verification: endpoints.packages.startVerification,
   cancel_verification: endpoints.packages.cancelVerification,
+  unlock_verification: endpoints.packages.unlockVerification,
   finish_verification: endpoints.packages.finishVerification,
   reset_verification: endpoints.packages.resetVerification,
 }
@@ -214,6 +215,8 @@ function useTransitionMutation(id: string, transition: Exclude<PackageTransition
 export const useStartVerification = (id: string) => useTransitionMutation(id, "start_verification")
 export const useCancelVerification = (id: string) =>
   useTransitionMutation(id, "cancel_verification")
+export const useUnlockVerification = (id: string) =>
+  useTransitionMutation(id, "unlock_verification")
 export const useFinishVerification = (id: string) =>
   useTransitionMutation(id, "finish_verification")
 export const useResetVerification = (id: string) => useTransitionMutation(id, "reset_verification")

@@ -174,6 +174,17 @@ function authEmail(request: Request): string | null {
   return request.headers.get("X-Auth-Request-Email")
 }
 
+function hasMockScope(request: Request, scope: string): boolean {
+  const raw =
+    request.headers.get("X-Auth-Request-Scopes") ??
+    process.env.NEXT_PUBLIC_DEV_USER_SCOPES ??
+    ""
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .includes(scope)
+}
+
 function applyTransition(pkg: PackageReadModel, transition: string, request: Request) {
   switch (transition) {
     case "start-verification":
@@ -182,16 +193,23 @@ function applyTransition(pkg: PackageReadModel, transition: string, request: Req
       break
     case "cancel-verification":
       pkg.verification_state = "not_started"
+      pkg.assignee = null
+      break
+    case "unlock-verification":
+      pkg.verification_state = "not_started"
+      pkg.assignee = null
       break
     case "finish-verification":
       pkg.verification_state = "completed"
       break
     case "reset-verification":
       pkg.verification_state = "not_started"
+      pkg.assignee = null
       break
     case "reprocess":
       pkg.processing_state = "analysing"
       pkg.verification_state = "not_started"
+      pkg.assignee = null
       break
   }
   invalidateLogs()
@@ -252,6 +270,7 @@ export const handlers = [
   // Packages — verification workflow
   http.post("/packages/:id/start-verification", () => passthrough()),
   http.post("/packages/:id/cancel-verification", () => passthrough()),
+  http.post("/packages/:id/unlock-verification", () => passthrough()),
   http.post("/packages/:id/finish-verification", () => passthrough()),
   http.post("/packages/:id/reset-verification", () => passthrough()),
   http.post("/packages/:id/reprocess", () => passthrough()),
@@ -426,7 +445,13 @@ export const handlers = [
   http.get("/packages/:id/transitions", ({ params, request }) => {
     const pkg = packagesById.get(String(params.id))
     if (!pkg) return notFound(params.id)
-    return HttpResponse.json({ transitions: allowedTransitions(pkg, authEmail(request)) })
+    return HttpResponse.json({
+      transitions: allowedTransitions(
+        pkg,
+        authEmail(request),
+        hasMockScope(request, "package_unlock"),
+      ),
+    })
   }),
 
   http.get("/packages/:id/transport-orders", ({ params }) => {
@@ -500,14 +525,19 @@ export const handlers = [
     () => new HttpResponse(new Blob(["mock,export"], { type: "text/csv" })),
   ),
 
-  ...["start-verification", "cancel-verification", "finish-verification", "reset-verification"].map(
-    (transition) =>
-      http.post(`/packages/:id/${transition}`, ({ params, request }) => {
-        const pkg = packagesById.get(String(params.id))
-        if (!pkg) return notFound(params.id)
-        applyTransition(pkg, transition, request)
-        return HttpResponse.json({})
-      }),
+  ...[
+    "start-verification",
+    "cancel-verification",
+    "unlock-verification",
+    "finish-verification",
+    "reset-verification",
+  ].map((transition) =>
+    http.post(`/packages/:id/${transition}`, ({ params, request }) => {
+      const pkg = packagesById.get(String(params.id))
+      if (!pkg) return notFound(params.id)
+      applyTransition(pkg, transition, request)
+      return HttpResponse.json({})
+    }),
   ),
 
   http.post("/packages/:id/reprocess", ({ params, request }) => {
