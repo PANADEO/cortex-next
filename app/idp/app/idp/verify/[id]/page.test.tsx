@@ -1,0 +1,168 @@
+// @vitest-environment jsdom
+import type { PackageDetailsResponse, PackageTransportOrdersResponse } from "@cortex/types"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { cleanup, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import type { ReactNode } from "react"
+import { afterEach, describe, expect, it, vi } from "vitest"
+
+const { useParams } = vi.hoisted(() => ({
+  useParams: vi.fn(() => ({ id: "test-1" })),
+}))
+
+vi.mock("next/navigation", () => ({
+  useParams,
+}))
+
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
+
+function freshClient(): QueryClient {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
+  })
+}
+
+function Wrapper({ client, children }: { client: QueryClient; children: ReactNode }) {
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>
+}
+
+interface RouteResponse {
+  status?: number
+  body: unknown
+}
+
+function makeFetchMock(routes: Record<string, RouteResponse>) {
+  return vi.fn((input: RequestInfo | URL) => {
+    const url = typeof input === "string" ? input : input.toString()
+    const path = url.startsWith("http") ? new URL(url).pathname : (url.split("?")[0] ?? url)
+    const route = routes[path ?? ""]
+    if (!route) {
+      return new Promise<Response>(() => {})
+    }
+    return Promise.resolve(
+      new Response(JSON.stringify(route.body), {
+        status: route.status ?? 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    )
+  })
+}
+
+function makePackage(): PackageDetailsResponse {
+  return {
+    id: "test-1",
+    file_name: "invoice-bundle.zip",
+    file_hash: "hash",
+    file_size_mb: 1,
+    created_date: "2026-05-18T10:00:00Z",
+    processing_state: "ready",
+    verification_state: "in_progress",
+    assignee: "dev@cortex.local",
+    uploaded_by: "dev@cortex.local",
+    custom_status: null,
+    user_notes: null,
+    last_additional_ai_context: null,
+    analysis_result: {},
+    verified_result: null,
+    total_tokens: null,
+    total_cost_usd: null,
+  }
+}
+
+function makeTransportOrders(): PackageTransportOrdersResponse {
+  return {
+    package_id: "test-1",
+    verified_transport_orders: null,
+    transport_orders: [
+      {
+        id: "order-1",
+        transport_order_number: "TO-1",
+        mode: null,
+        truck_plate: null,
+        trailer_plate: null,
+        country_of_dispatch: "DE",
+        country_of_destination: "PL",
+        seller: null,
+        buyer: null,
+        consignor: null,
+        consignee: null,
+        sad_context: null,
+        invoice_processing: null,
+        invoices: [
+          {
+            id: "invoice-1",
+            invoice_number: "FV-1",
+            invoice_date: "2026-05-18",
+            invoice_currency: "EUR",
+            country_of_dispatch: "DE",
+            country_of_destination: "PL",
+            delivery_terms: null,
+            invoice_totals: null,
+            warnings: [],
+            notes: [],
+            lines: [
+              {
+                id: "line-1",
+                line_number: "1",
+                po_number: null,
+                product_code: "SKU-1",
+                description: "Product",
+                description_pl: null,
+                cn_code: null,
+                hs: null,
+                quantity: "1",
+                unit_of_measure: "pcs",
+                unit_price: null,
+                invoice_value: "10",
+                net_weight_kg: null,
+                gross_weight_kg: null,
+                packages_quantity: null,
+                packages_type: null,
+                packages_marking: null,
+                origin_country: "DE",
+                source_references: [],
+                notes: [],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  }
+}
+
+import VerifyWorkspacePage from "./page"
+
+describe("VerifyWorkspacePage — document preview toggle", () => {
+  it("hides and shows the source materials preview panel", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetchMock({
+        "/user/me": { body: { email: "dev@cortex.local", has_access: true } },
+        "/packages/test-1": { body: makePackage() },
+        "/packages/test-1/transport-orders": { body: makeTransportOrders() },
+        "/packages/test-1/source-files": { body: [] },
+      }),
+    )
+
+    render(
+      <Wrapper client={freshClient()}>
+        <VerifyWorkspacePage />
+      </Wrapper>,
+    )
+
+    expect(await screen.findByTestId("document-preview-panel")).not.toBeNull()
+
+    await userEvent.click(screen.getByRole("button", { name: /hide document preview/i }))
+
+    expect(screen.queryByTestId("document-preview-panel")).toBeNull()
+    expect(screen.getByRole("button", { name: /show document preview/i })).not.toBeNull()
+
+    await userEvent.click(screen.getByRole("button", { name: /show document preview/i }))
+
+    expect(await screen.findByTestId("document-preview-panel")).not.toBeNull()
+  })
+})

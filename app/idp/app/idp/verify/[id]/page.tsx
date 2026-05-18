@@ -1,5 +1,8 @@
 "use client"
 
+import { SourceMaterialsPanel } from "@/components/source-materials-panel"
+import { InvoiceHeaderPanel } from "@/components/transport-orders/invoice-header-panel"
+import { LinesSpreadsheet } from "@/components/transport-orders/lines-spreadsheet"
 import {
   toastApiError,
   useMe,
@@ -10,14 +13,12 @@ import {
 import type { UpdateInvoiceLinesRequest } from "@cortex/types"
 import { Button, LoadingState } from "@cortex/ui"
 import { emailsMatch } from "@cortex/utils"
-import { ArrowLeft, Lock } from "lucide-react"
+import { ArrowLeft, Eye, EyeOff, Lock } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
+import { useState } from "react"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { toast } from "sonner"
-import { SourceMaterialsPanel } from "@/components/source-materials-panel"
-import { InvoiceHeaderPanel } from "@/components/transport-orders/invoice-header-panel"
-import { LinesSpreadsheet } from "@/components/transport-orders/lines-spreadsheet"
 
 export default function VerifyWorkspacePage() {
   const params = useParams<{ id: string }>()
@@ -27,6 +28,7 @@ export default function VerifyWorkspacePage() {
   const pkgQuery = usePackage(id, { polling: false })
   const toQuery = usePackageTransportOrders(id, { polling: false })
   const updateLines = useUpdateInvoiceLines()
+  const [documentPreviewVisible, setDocumentPreviewVisible] = useState(true)
 
   const pkg = pkgQuery.data
   const isActiveVerification = pkg?.verification_state === "in_progress"
@@ -61,9 +63,7 @@ export default function VerifyWorkspacePage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-sm font-semibold">
-              {pkg?.file_name ?? "Verification workspace"}
-            </h1>
+            <h1 className="text-sm font-semibold">{pkg?.file_name ?? "Verification workspace"}</h1>
             {!pkg ? (
               <p className="text-[10px] text-muted-foreground">Loading…</p>
             ) : !canEdit ? (
@@ -71,14 +71,29 @@ export default function VerifyWorkspacePage() {
             ) : null}
           </div>
         </div>
-        {pkg && !canEdit ? (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Lock className="h-3.5 w-3.5" />
-            {isActiveVerification
-              ? `Only ${pkg.assignee ?? "assignee"} can edit`
-              : "Start verification to edit"}
-          </span>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setDocumentPreviewVisible((visible) => !visible)}
+            aria-label={documentPreviewVisible ? "Hide document preview" : "Show document preview"}
+          >
+            {documentPreviewVisible ? (
+              <EyeOff className="mr-1.5 h-3.5 w-3.5" />
+            ) : (
+              <Eye className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            {documentPreviewVisible ? "Hide preview" : "Show preview"}
+          </Button>
+          {pkg && !canEdit ? (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Lock className="h-3.5 w-3.5" />
+              {isActiveVerification
+                ? `Only ${pkg.assignee ?? "assignee"} can edit`
+                : "Start verification to edit"}
+            </span>
+          ) : null}
+        </div>
       </header>
       <div className="min-h-0 flex-1">
         {pkgQuery.isLoading || toQuery.isLoading ? (
@@ -88,8 +103,16 @@ export default function VerifyWorkspacePage() {
             No invoice lines extracted for this package.
           </div>
         ) : (
-          <PanelGroup direction="horizontal" className="h-full">
-            <Panel defaultSize={55} minSize={30} className="flex min-h-0 flex-col">
+          <PanelGroup
+            key={documentPreviewVisible ? "with-document-preview" : "without-document-preview"}
+            direction="horizontal"
+            className="h-full"
+          >
+            <Panel
+              defaultSize={documentPreviewVisible ? 55 : 100}
+              minSize={30}
+              className="flex min-h-0 flex-col"
+            >
               {order ? <InvoiceHeaderPanel order={order} invoice={invoice} /> : null}
               <LinesSpreadsheet
                 invoice={invoice}
@@ -98,10 +121,16 @@ export default function VerifyWorkspacePage() {
                 onSave={handleSaveLines}
               />
             </Panel>
-            <PanelResizeHandle className="w-1 shrink-0 bg-border transition-colors hover:bg-primary/40 data-[resize-handle-active]:bg-primary/50" />
-            <Panel defaultSize={45} minSize={30} className="min-h-0 overflow-hidden p-3">
-              <SourceMaterialsPanel packageId={id} />
-            </Panel>
+            {documentPreviewVisible ? (
+              <>
+                <PanelResizeHandle className="w-1 shrink-0 bg-border transition-colors hover:bg-primary/40 data-[resize-handle-active]:bg-primary/50" />
+                <Panel defaultSize={45} minSize={30} className="min-h-0 overflow-hidden p-3">
+                  <div data-testid="document-preview-panel" className="h-full">
+                    <SourceMaterialsPanel packageId={id} />
+                  </div>
+                </Panel>
+              </>
+            ) : null}
           </PanelGroup>
         )}
       </div>
