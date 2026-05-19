@@ -60,6 +60,7 @@ describe("breadcrumbsFromPath", () => {
 interface SeededPackage {
   id: string
   file_name: string
+  package_name?: string | null
 }
 
 function seededClient(seeds: SeededPackage[] = []): QueryClient {
@@ -84,17 +85,28 @@ function wrapper(client: QueryClient) {
 
 describe("useResolvedBreadcrumbs", () => {
   it("swaps the last entry's label with file_name when package is in cache", () => {
-    const client = seededClient([
-      { id: "abc-123", file_name: "INV-2026-001.zip" },
-    ])
-    const { result } = renderHook(
-      () => useResolvedBreadcrumbs("/idp/packages/abc-123"),
-      { wrapper: wrapper(client) },
-    )
+    const client = seededClient([{ id: "abc-123", file_name: "INV-2026-001.zip" }])
+    const { result } = renderHook(() => useResolvedBreadcrumbs("/idp/packages/abc-123"), {
+      wrapper: wrapper(client),
+    })
     expect(result.current).toEqual([
       { label: "IDP", href: "/" },
       { label: "Extraction", href: "/idp/packages" },
       { label: "INV-2026-001.zip" },
+    ])
+  })
+
+  it("prefers package_name over file_name when package has a display name", () => {
+    const client = seededClient([
+      { id: "abc-123", file_name: "INV-2026-001.zip", package_name: "May shipment" },
+    ])
+    const { result } = renderHook(() => useResolvedBreadcrumbs("/idp/packages/abc-123"), {
+      wrapper: wrapper(client),
+    })
+    expect(result.current).toEqual([
+      { label: "IDP", href: "/" },
+      { label: "Extraction", href: "/idp/packages" },
+      { label: "May shipment" },
     ])
   })
 
@@ -103,18 +115,14 @@ describe("useResolvedBreadcrumbs", () => {
     const { result } = renderHook(() => useResolvedBreadcrumbs("/idp/dashboard"), {
       wrapper: wrapper(client),
     })
-    expect(result.current).toEqual([
-      { label: "IDP", href: "/" },
-      { label: "Dashboard" },
-    ])
+    expect(result.current).toEqual([{ label: "IDP", href: "/" }, { label: "Dashboard" }])
   })
 
   it("returns unchanged trail when package data is unavailable (cold cache)", () => {
     const client = seededClient()
-    const { result } = renderHook(
-      () => useResolvedBreadcrumbs("/idp/packages/missing-id"),
-      { wrapper: wrapper(client) },
-    )
+    const { result } = renderHook(() => useResolvedBreadcrumbs("/idp/packages/missing-id"), {
+      wrapper: wrapper(client),
+    })
     expect(result.current).toEqual([
       { label: "IDP", href: "/" },
       { label: "Extraction", href: "/idp/packages" },

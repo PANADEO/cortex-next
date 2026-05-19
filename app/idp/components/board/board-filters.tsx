@@ -1,11 +1,19 @@
 "use client"
 
-import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@cortex/ui"
+import type { PipelineBoardState } from "@/lib/board/use-pipeline-board"
+import {
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@cortex/ui"
 import { cn, useFeatureFlag } from "@cortex/utils"
 import { Search, X } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
 import type { KeyboardEvent } from "react"
-import type { PipelineBoardState } from "@/lib/board/use-pipeline-board"
+import { useEffect, useRef, useState } from "react"
 import { OwnerFilter } from "./owner-filter"
 
 type SearchMode = "input" | "trigger" | "none"
@@ -60,7 +68,7 @@ function SearchInput({ board }: { board: PipelineBoardState }) {
       <Input
         value={board.search}
         onChange={(e) => board.setSearch(e.target.value)}
-        placeholder="Search by name, ID, customer…"
+        placeholder="Search by package name, ID, customer…"
         className="h-9 w-72 pl-9"
       />
     </div>
@@ -107,7 +115,7 @@ function SearchTrigger({ board }: { board: PipelineBoardState }) {
           onChange={(e) => board.setSearch(e.target.value)}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          placeholder="Search by name, ID, customer…"
+          placeholder="Search by package name, ID, customer…"
           className="h-9 w-72 pl-9 pr-9"
         />
         {hasValue ? (

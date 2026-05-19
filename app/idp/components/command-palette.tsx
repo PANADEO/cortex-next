@@ -52,7 +52,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     const pkgEntries: Entry[] = (packages.data?.items ?? []).map((p) => ({
       id: `pkg-${p.id}`,
       group: "Extraction",
-      label: p.file_name,
+      label: p.package_name ?? p.file_name,
+      ...(p.package_name ? { hint: p.file_name } : {}),
       icon: Package,
       href: `/idp/packages/${p.id}`,
     }))

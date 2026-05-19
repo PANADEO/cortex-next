@@ -160,7 +160,8 @@ export default function PackageDetailPage() {
   return (
     <>
       <PageHeader
-        title={pkg?.file_name ?? "Loading…"}
+        title={pkg?.package_name ?? pkg?.file_name ?? "Loading…"}
+        {...(pkg?.package_name ? { description: pkg.file_name } : {})}
         actions={
           <>
             <AutoRefreshIndicator

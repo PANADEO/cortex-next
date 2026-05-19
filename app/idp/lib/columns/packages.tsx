@@ -37,7 +37,7 @@ export function packageColumns(
           checked={selection.selected.has(row.original.id)}
           onCheckedChange={() => selection.toggleRow(row.original.id)}
           onClick={(e) => e.stopPropagation()}
-          aria-label={`Select ${row.original.file_name}`}
+          aria-label={`Select ${row.original.package_name ?? row.original.file_name}`}
         />
       ),
     })
@@ -47,11 +47,15 @@ export function packageColumns(
     accessorKey: "file_name",
     header: "File",
     cell: ({ row }) => (
-      <Link
-        href={`/idp/packages/${row.original.id}`}
-        className="font-mono text-xs hover:underline"
-      >
-        {row.original.file_name}
+      <Link href={`/idp/packages/${row.original.id}`} className="block min-w-0 hover:underline">
+        <span className="block truncate text-xs font-medium">
+          {row.original.package_name ?? row.original.file_name}
+        </span>
+        {row.original.package_name ? (
+          <span className="block truncate font-mono text-[10px] text-muted-foreground">
+            {row.original.file_name}
+          </span>
+        ) : null}
       </Link>
     ),
   })
@@ -61,9 +65,7 @@ export function packageColumns(
     header: "Uploader",
     size: 140,
     cell: ({ row }) => (
-      <span className="text-xs text-muted-foreground">
-        {row.original.uploaded_by ?? "—"}
-      </span>
+      <span className="text-xs text-muted-foreground">{row.original.uploaded_by ?? "—"}</span>
     ),
   })
 
@@ -94,9 +96,7 @@ export function packageColumns(
       header: "Assignee",
       size: 180,
       cell: ({ row }) => (
-        <span className="text-xs text-muted-foreground">
-          {row.original.assignee ?? "—"}
-        </span>
+        <span className="text-xs text-muted-foreground">{row.original.assignee ?? "—"}</span>
       ),
     },
   )

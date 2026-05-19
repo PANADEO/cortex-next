@@ -91,6 +91,7 @@ export function buildDetails(pkg: PackageReadModel): PackageDetailsResponse {
   return {
     id: pkg.id,
     file_name: pkg.file_name,
+    package_name: pkg.package_name,
     file_hash: pkg.file_hash,
     file_size_mb: Number((1 + ((Number(pkg.id.slice(-3)) || 1) % 50) / 3).toFixed(2)),
     created_date: pkg.created_date,
@@ -103,7 +104,7 @@ export function buildDetails(pkg: PackageReadModel): PackageDetailsResponse {
     last_additional_ai_context: null,
     analysis_result: analysisResult,
     verified_result: isVerified ? analysisResult : null,
-    total_tokens: hasAnalysis ? 2400 + ((Number(pkg.id.slice(-3)) || 0) * 31) : null,
+    total_tokens: hasAnalysis ? 2400 + (Number(pkg.id.slice(-3)) || 0) * 31 : null,
     total_cost_usd: hasAnalysis ? "0.0942" : null,
   }
 }

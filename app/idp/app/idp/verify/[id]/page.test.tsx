@@ -55,6 +55,7 @@ function makePackage(): PackageDetailsResponse {
   return {
     id: "test-1",
     file_name: "invoice-bundle.zip",
+    package_name: null,
     file_hash: "hash",
     file_size_mb: 1,
     created_date: "2026-05-18T10:00:00Z",

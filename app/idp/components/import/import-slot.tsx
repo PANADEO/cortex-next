@@ -1,7 +1,7 @@
 "use client"
 
 import { ImportOptionsFields, type ImportOptions } from "@/components/import-options-fields"
-import { Badge, Button } from "@cortex/ui"
+import { Badge, Button, Input, Label } from "@cortex/ui"
 import { cn, formatFileSizeBytes } from "@cortex/utils"
 import {
   AlertCircle,
@@ -33,6 +33,7 @@ export type ImportSlotStatus = "pending" | "ready" | "uploading" | "done" | "err
 export interface ImportSlotValue {
   id: string
   files: File[]
+  packageName: string
   options: ImportOptions
   status: ImportSlotStatus
   errorMessage?: string | undefined
@@ -43,6 +44,7 @@ interface ImportSlotProps {
   slot: ImportSlotValue
   canRemove: boolean
   onFilesChange: (files: File[]) => void
+  onPackageNameChange: (packageName: string) => void
   onOptionsChange: (patch: Partial<ImportOptions>) => void
   onRemove: () => void
   onSubmit: () => void
@@ -84,6 +86,7 @@ export function ImportSlot({
   slot,
   canRemove,
   onFilesChange,
+  onPackageNameChange,
   onOptionsChange,
   onRemove,
   onSubmit,
@@ -261,6 +264,26 @@ export function ImportSlot({
         </div>
       ) : (
         <div className="space-y-3 px-4 pb-4 pt-3">
+          {slot.status !== "done" ? (
+            <div className="space-y-1.5">
+              <Label
+                htmlFor={`package-name-${slot.id}`}
+                className="text-[10px] uppercase tracking-wide text-muted-foreground"
+              >
+                Package name
+              </Label>
+              <Input
+                id={`package-name-${slot.id}`}
+                value={slot.packageName}
+                onChange={(e) => onPackageNameChange(e.target.value)}
+                maxLength={255}
+                placeholder="Optional display name"
+                className="h-8 text-xs"
+                disabled={isBusy}
+              />
+            </div>
+          ) : null}
+
           <ul className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/30 p-1.5">
             {slot.files.map((file, idx) => (
               <li

@@ -1,8 +1,4 @@
-import type {
-  PackageReadModel,
-  ProcessingState,
-  VerificationState,
-} from "@cortex/types"
+import type { PackageReadModel, ProcessingState, VerificationState } from "@cortex/types"
 import { daysAgo, pseudoRandom } from "./_shared"
 
 // Pojedyncza "faza" pakietu = (processing_state, verification_state).
@@ -33,6 +29,17 @@ const SAMPLE_FILES = [
   "kn-container-%n.zip",
 ]
 
+const SAMPLE_PACKAGE_NAMES = [
+  "DHL customs batch",
+  "Invoice batch",
+  "Maersk export set",
+  "Kuehne import review",
+  "FedEx air shipment",
+  "EU customs documents",
+  "Transport order set",
+  "KN container clearance",
+]
+
 const ASSIGNEES: (string | null)[] = [
   null,
   "demo@cortex.local",
@@ -48,10 +55,11 @@ export function buildPackageFixtures(count = 54): PackageReadModel[] {
   for (let i = 0; i < count; i++) {
     const phase = PHASES[Math.floor(rand() * PHASES.length)]!
     const template = SAMPLE_FILES[Math.floor(rand() * SAMPLE_FILES.length)]!
+    const nameTemplate = SAMPLE_PACKAGE_NAMES[SAMPLE_FILES.indexOf(template)]!
     const file_name = template.replace("%n", String(1000 + i))
+    const package_name = i % 3 === 0 ? `${nameTemplate} ${1000 + i}` : null
     const requiresAssignee =
-      phase.verification_state === "in_progress" ||
-      phase.verification_state === "completed"
+      phase.verification_state === "in_progress" || phase.verification_state === "completed"
     const assignee = requiresAssignee
       ? ASSIGNEES[1 + Math.floor(rand() * 4)]!
       : ASSIGNEES[Math.floor(rand() * ASSIGNEES.length)]!
@@ -60,6 +68,7 @@ export function buildPackageFixtures(count = 54): PackageReadModel[] {
     items.push({
       id: `pkg-${String(i + 1).padStart(4, "0")}`,
       file_name,
+      package_name,
       file_hash: `sha256:${Math.floor(rand() * 1e16).toString(16)}`,
       created_date: daysAgo(Math.floor(rand() * 21)),
       processing_state: phase.processing_state,

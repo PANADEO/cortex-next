@@ -88,6 +88,9 @@ function buildImportForm(
   if (body.additional_ai_context) {
     form.append("additional_ai_context", body.additional_ai_context)
   }
+  if (body.package_name) {
+    form.append("package_name", body.package_name)
+  }
   return form
 }
 

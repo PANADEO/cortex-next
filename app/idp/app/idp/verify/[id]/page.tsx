@@ -15,7 +15,7 @@ import {
 import type { UpdateInvoiceLinesRequest } from "@cortex/types"
 import { Button, LoadingState } from "@cortex/ui"
 import { emailsMatch } from "@cortex/utils"
-import { ArrowLeft, Eye, EyeOff, Lock, LockOpen, Loader2 } from "lucide-react"
+import { ArrowLeft, Eye, EyeOff, Loader2, Lock, LockOpen } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useState } from "react"
@@ -78,9 +78,16 @@ export default function VerifyWorkspacePage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-sm font-semibold">{pkg?.file_name ?? "Verification workspace"}</h1>
+            <h1 className="text-sm font-semibold">
+              {pkg?.package_name ?? pkg?.file_name ?? "Verification workspace"}
+            </h1>
             {!pkg ? (
               <p className="text-[10px] text-muted-foreground">Loading…</p>
+            ) : pkg.package_name ? (
+              <p className="text-[10px] text-muted-foreground">
+                {pkg.file_name}
+                {!canEdit ? " · Read-only" : ""}
+              </p>
             ) : !canEdit ? (
               <p className="text-[10px] text-muted-foreground">Read-only</p>
             ) : null}
@@ -109,12 +116,7 @@ export default function VerifyWorkspacePage() {
             </span>
           ) : null}
           {pkg && !canEdit && canUnlock ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleUnlock}
-              disabled={unlock.isPending}
-            >
+            <Button size="sm" variant="outline" onClick={handleUnlock} disabled={unlock.isPending}>
               {unlock.isPending ? (
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
               ) : (

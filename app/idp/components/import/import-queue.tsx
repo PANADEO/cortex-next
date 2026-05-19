@@ -22,6 +22,7 @@ function makeEmptySlot(): ImportSlotValue {
   return {
     id: `slot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     files: [],
+    packageName: "",
     options: { ...emptyImportOptions },
     status: "pending",
   }
@@ -72,6 +73,10 @@ export function ImportQueue() {
     )
   }, [])
 
+  const setPackageName = useCallback((id: string, packageName: string) => {
+    setSlots((prev) => prev.map((s) => (s.id === id ? { ...s, packageName } : s)))
+  }, [])
+
   const removeSlot = useCallback((id: string) => {
     setSlots((prev) => {
       const next = prev.filter((s) => s.id !== id)
@@ -87,17 +92,30 @@ export function ImportQueue() {
       if (slot.files.length === 0) return
       const kind = detectIntakeKind(slot.files)
       const serialized = serializeImportOptions(slot.options)
+      const packageName = slot.packageName.trim() || null
       patchSlot(slot.id, { status: "uploading", errorMessage: undefined })
       try {
         let result: { id: string }
         if (kind === "zip") {
-          result = await importOne.mutateAsync({ file: slot.files[0]!, ...serialized })
+          result = await importOne.mutateAsync({
+            file: slot.files[0]!,
+            package_name: packageName,
+            ...serialized,
+          })
           toast.success(`Imported ${slot.files[0]!.name}`)
         } else if (kind === "email") {
-          result = await importEmail.mutateAsync({ file: slot.files[0]!, ...serialized })
+          result = await importEmail.mutateAsync({
+            file: slot.files[0]!,
+            package_name: packageName,
+            ...serialized,
+          })
           toast.success(`Imported email ${slot.files[0]!.name}`)
         } else {
-          result = await importMany.mutateAsync({ files: slot.files, ...serialized })
+          result = await importMany.mutateAsync({
+            files: slot.files,
+            package_name: packageName,
+            ...serialized,
+          })
           toast.success(`Imported ${slot.files.length} file(s)`)
         }
         patchSlot(slot.id, { status: "done", packageId: result.id })
@@ -134,6 +152,7 @@ export function ImportQueue() {
             slot={slot}
             canRemove={slots.length > 1 || idx > 0}
             onFilesChange={(files) => setFiles(slot.id, files)}
+            onPackageNameChange={(packageName) => setPackageName(slot.id, packageName)}
             onOptionsChange={(patch) => setOptions(slot.id, patch)}
             onRemove={() => removeSlot(slot.id)}
             onSubmit={() => submitSlot(slot)}

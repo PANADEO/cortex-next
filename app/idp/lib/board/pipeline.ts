@@ -5,13 +5,7 @@ import type {
   VerificationState,
 } from "@cortex/types"
 
-export type BoardStage =
-  | "intake"
-  | "classified"
-  | "processing"
-  | "ready"
-  | "verifying"
-  | "done"
+export type BoardStage = "intake" | "classified" | "processing" | "ready" | "verifying" | "done"
 
 export interface BoardColumnMeta {
   id: BoardStage
@@ -154,13 +148,16 @@ export function toDirtyCard(pkg: DirtyPackageReadModel): DirtyBoardCard | null {
 export function toCleanCard(pkg: PackageReadModel): CleanBoardCard {
   const stage = cleanStage(pkg)
   const hasError =
-    pkg.processing_state === "imported_with_error" ||
-    pkg.processing_state === "analysis_failed"
+    pkg.processing_state === "imported_with_error" || pkg.processing_state === "analysis_failed"
+  const title = pkg.package_name ?? pkg.file_name
+  const subtitle = pkg.package_name
+    ? `${pkg.file_name} · ${pkg.assignee ?? "Unassigned"}`
+    : (pkg.assignee ?? "Unassigned")
   return {
     kind: "clean",
     id: pkg.id,
     stage,
-    title: pkg.file_name,
+    title,
     badgeId: `PKG-${shortId(pkg.id)}`,
     createdDate: pkg.created_date,
     assignee: pkg.assignee,
@@ -168,7 +165,7 @@ export function toCleanCard(pkg: PackageReadModel): CleanBoardCard {
     verificationState: pkg.verification_state,
     hasError,
     href: `/idp/packages/${pkg.id}`,
-    subtitle: pkg.assignee ?? "Unassigned",
+    subtitle,
     source: pkg,
   }
 }

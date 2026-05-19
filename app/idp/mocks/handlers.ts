@@ -151,8 +151,8 @@ function sortPackages(
 ): PackageReadModel[] {
   const sign = order === "desc" ? -1 : 1
   return [...items].sort((a, b) => {
-    const av = a[sortBy]
-    const bv = b[sortBy]
+    const av = a[sortBy] ?? ""
+    const bv = b[sortBy] ?? ""
     if (av === bv) return 0
     return av < bv ? -sign : sign
   })
@@ -176,9 +176,7 @@ function authEmail(request: Request): string | null {
 
 function hasMockScope(request: Request, scope: string): boolean {
   const raw =
-    request.headers.get("X-Auth-Request-Scopes") ??
-    process.env.NEXT_PUBLIC_DEV_USER_SCOPES ??
-    ""
+    request.headers.get("X-Auth-Request-Scopes") ?? process.env.NEXT_PUBLIC_DEV_USER_SCOPES ?? ""
   return raw
     .split(",")
     .map((s) => s.trim())
@@ -366,7 +364,13 @@ export const handlers = [
         (p) => p.uploaded_by != null && p.uploaded_by.toLowerCase() === needle,
       )
     }
-    if (search) filtered = filtered.filter((p) => p.file_name.toLowerCase().includes(search))
+    if (search) {
+      filtered = filtered.filter(
+        (p) =>
+          p.file_name.toLowerCase().includes(search) ||
+          (p.package_name?.toLowerCase().includes(search) ?? false),
+      )
+    }
     if (dateFrom) filtered = filtered.filter((p) => p.created_date.slice(0, 10) >= dateFrom)
     if (dateTo) filtered = filtered.filter((p) => p.created_date.slice(0, 10) <= dateTo)
 

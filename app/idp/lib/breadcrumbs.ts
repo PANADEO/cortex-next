@@ -37,13 +37,13 @@ export function useResolvedBreadcrumbs(pathname: string): BreadcrumbEntry[] {
   const match = pathname.match(PACKAGE_DETAIL_PATTERN)
   const packageId = match?.[1] ?? ""
   const pkg = usePackage(packageId, { polling: false })
-  const fileName = pkg.data?.file_name
+  const displayName = pkg.data ? (pkg.data.package_name ?? pkg.data.file_name) : undefined
 
   return useMemo(() => {
     const trail = breadcrumbsFromPath(pathname)
-    if (!packageId || !fileName) return trail
+    if (!packageId || !displayName) return trail
     const last = trail[trail.length - 1]
     if (!last || last.label !== packageId) return trail
-    return [...trail.slice(0, -1), { ...last, label: fileName }]
-  }, [pathname, packageId, fileName])
+    return [...trail.slice(0, -1), { ...last, label: displayName }]
+  }, [pathname, packageId, displayName])
 }

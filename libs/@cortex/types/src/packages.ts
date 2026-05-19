@@ -11,6 +11,7 @@ import type { Paginated } from "./pagination"
 export interface PackageReadModel {
   id: string
   file_name: string
+  package_name: string | null
   file_hash: string
   created_date: string
   processing_state: ProcessingState
@@ -24,6 +25,7 @@ export interface PackageReadModel {
 export interface PackageDetailsResponse {
   id: string
   file_name: string
+  package_name: string | null
   file_hash: string
   file_size_mb: number
   created_date: string
@@ -83,6 +85,7 @@ export interface GetPackagesQuery {
 
 export interface ImportPackageBody {
   file: File
+  package_name?: string | null
   fast_processing?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null
@@ -90,6 +93,7 @@ export interface ImportPackageBody {
 
 export interface ImportEmailPackageBody {
   file: File
+  package_name?: string | null
   fast_processing?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null
@@ -97,6 +101,7 @@ export interface ImportEmailPackageBody {
 
 export interface ImportMultiplePackagesBody {
   files: File[]
+  package_name?: string | null
   fast_processing?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null

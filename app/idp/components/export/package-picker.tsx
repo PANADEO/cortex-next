@@ -1,5 +1,6 @@
 "use client"
 
+import type { ExportBuilderState } from "@/lib/export/use-export-builder"
 import { usePackages } from "@cortex/api"
 import type { PackageReadModel } from "@cortex/types"
 import {
@@ -16,7 +17,6 @@ import {
 import { cn, formatRelative } from "@cortex/utils"
 import { CheckCircle2, Loader2, PlayCircle, Search } from "lucide-react"
 import { useMemo, useState } from "react"
-import type { ExportBuilderState } from "@/lib/export/use-export-builder"
 
 type Readiness = "verified" | "ready" | "all"
 
@@ -61,6 +61,7 @@ export function PackagePicker({ state }: PackagePickerProps) {
       if (!matchReadiness(pkg, readiness)) return false
       if (!needle) return true
       return (
+        (pkg.package_name?.toLowerCase().includes(needle) ?? false) ||
         pkg.file_name.toLowerCase().includes(needle) ||
         pkg.id.toLowerCase().includes(needle) ||
         (pkg.assignee?.toLowerCase().includes(needle) ?? false)
@@ -108,10 +109,7 @@ export function PackagePicker({ state }: PackagePickerProps) {
               className="h-8 pl-8 text-xs"
             />
           </div>
-          <Select
-            value={readiness}
-            onValueChange={(v) => setReadiness(v as Readiness)}
-          >
+          <Select value={readiness} onValueChange={(v) => setReadiness(v as Readiness)}>
             <SelectTrigger className="h-8 w-[160px] text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -200,11 +198,12 @@ function PackageRow({
         checked={checked}
         onCheckedChange={onToggle}
         onClick={(e) => e.stopPropagation()}
-        aria-label={`Select ${pkg.file_name}`}
+        aria-label={`Select ${pkg.package_name ?? pkg.file_name}`}
       />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-xs font-medium">{pkg.file_name}</p>
+        <p className="truncate text-xs font-medium">{pkg.package_name ?? pkg.file_name}</p>
         <p className="truncate text-[10px] text-muted-foreground">
+          {pkg.package_name ? `${pkg.file_name} · ` : ""}
           {formatRelative(pkg.created_date)} · {pkg.assignee ?? "unassigned"}
         </p>
       </div>

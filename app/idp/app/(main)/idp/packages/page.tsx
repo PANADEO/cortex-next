@@ -1,5 +1,7 @@
 "use client"
 
+import { DateRangeFilter } from "@/components/date-range-filter"
+import { packageColumns } from "@/lib/columns/packages"
 import { toastApiError, useDeletePackages, useMe, usePackages } from "@cortex/api"
 import {
   PROCESSING_STATE,
@@ -43,13 +45,12 @@ import {
   Upload,
   UserCheck,
 } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
-import { DateRangeFilter } from "@/components/date-range-filter"
-import { packageColumns } from "@/lib/columns/packages"
 
 const SORT_FIELDS: ReadonlyArray<{ value: PackageSortField; label: string }> = [
   { value: "created_date", label: "Created date" },
+  { value: "package_name", label: "Package name" },
   { value: "file_name", label: "File name" },
   { value: "processing_state", label: "Processing state" },
 ]
@@ -107,26 +108,25 @@ export default function PackagesPage() {
 
   const { data, isLoading, isFetching } = usePackages(query)
   const deleteMutation = useDeletePackages()
-  const items = data?.items ?? []
+  const items = useMemo(() => data?.items ?? [], [data?.items])
   const total = data?.total ?? 0
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   const resetPage = () => setPage(0)
 
   const visibleIds = useMemo(() => items.map((p) => p.id), [items])
-  const allSelectedOnPage =
-    visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id))
+  const allSelectedOnPage = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id))
 
-  const toggleRow = (id: string) => {
+  const toggleRow = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
       return next
     })
-  }
+  }, [])
 
-  const toggleAll = () => {
+  const toggleAll = useCallback(() => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (allSelectedOnPage) {
@@ -136,7 +136,7 @@ export default function PackagesPage() {
       }
       return next
     })
-  }
+  }, [allSelectedOnPage, visibleIds])
 
   const clearSelection = () => setSelectedIds(new Set())
 
@@ -150,7 +150,7 @@ export default function PackagesPage() {
           toggleAll,
         },
       }),
-    [selectedIds, allSelectedOnPage, visibleIds],
+    [selectedIds, allSelectedOnPage, toggleRow, toggleAll],
   )
 
   const handleDelete = async () => {
@@ -180,7 +180,7 @@ export default function PackagesPage() {
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by file name…"
+              placeholder="Search by package or file name…"
               value={search}
               onChange={(e) => {
                 resetPage()
@@ -321,13 +321,13 @@ export default function PackagesPage() {
               setDateTo(to)
             }}
           />
-          {(dateFrom ||
-            dateTo ||
-            customStatus ||
-            assignedToMe ||
-            uploadedByMe ||
-            sortBy !== "created_date" ||
-            sortOrder !== "desc") ? (
+          {dateFrom ||
+          dateTo ||
+          customStatus ||
+          assignedToMe ||
+          uploadedByMe ||
+          sortBy !== "created_date" ||
+          sortOrder !== "desc" ? (
             <Button
               variant="ghost"
               size="sm"
@@ -396,18 +396,13 @@ export default function PackagesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {selectionCount} package(s)?</AlertDialogTitle>
             <AlertDialogDescription>
-              Packages are soft-deleted — they can be restored later via the API.
-              Proceed with delete?
+              Packages are soft-deleted — they can be restored later via the API. Proceed with
+              delete?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-            >
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleteMutation.isPending}>
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -7,11 +7,7 @@ export const PROCESSING_STATE = [
 ] as const
 export type ProcessingState = (typeof PROCESSING_STATE)[number]
 
-export const VERIFICATION_STATE = [
-  "not_started",
-  "in_progress",
-  "completed",
-] as const
+export const VERIFICATION_STATE = ["not_started", "in_progress", "completed"] as const
 export type VerificationState = (typeof VERIFICATION_STATE)[number]
 
 export const PACKAGE_TRANSITION = [
@@ -68,7 +64,12 @@ export type ErrorCode = (typeof ERROR_CODE)[number]
 export const SORT_ORDER = ["asc", "desc"] as const
 export type SortOrder = (typeof SORT_ORDER)[number]
 
-export const PACKAGE_SORT_FIELD = ["created_date", "file_name", "processing_state"] as const
+export const PACKAGE_SORT_FIELD = [
+  "created_date",
+  "file_name",
+  "package_name",
+  "processing_state",
+] as const
 export type PackageSortField = (typeof PACKAGE_SORT_FIELD)[number]
 
 export const DIRTY_PACKAGE_STATUS = [
