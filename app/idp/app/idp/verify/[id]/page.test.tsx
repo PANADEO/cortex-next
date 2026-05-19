@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { PackageDetailsResponse, PackageTransportOrdersResponse } from "@cortex/types"
+import type { Invoice, PackageDetailsResponse, PackageTransportOrdersResponse } from "@cortex/types"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { cleanup, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -73,6 +73,45 @@ function makePackage(): PackageDetailsResponse {
   }
 }
 
+function makeInvoice(overrides: Partial<Invoice> & Pick<Invoice, "id">): Invoice {
+  return {
+    invoice_number: "FV-1",
+    invoice_date: "2026-05-18",
+    invoice_currency: "EUR",
+    country_of_dispatch: "DE",
+    country_of_destination: "PL",
+    delivery_terms: null,
+    invoice_totals: null,
+    warnings: [],
+    notes: [],
+    lines: [
+      {
+        id: `${overrides.id}-line-1`,
+        line_number: "1",
+        po_number: null,
+        product_code: "SKU-1",
+        description: "Product",
+        description_pl: null,
+        cn_code: null,
+        hs: null,
+        quantity: "1",
+        unit_of_measure: "pcs",
+        unit_price: null,
+        invoice_value: "10",
+        net_weight_kg: null,
+        gross_weight_kg: null,
+        packages_quantity: null,
+        packages_type: null,
+        packages_marking: null,
+        origin_country: "DE",
+        source_references: [],
+        notes: [],
+      },
+    ],
+    ...overrides,
+  }
+}
+
 function makeTransportOrders(): PackageTransportOrdersResponse {
   return {
     package_id: "test-1",
@@ -93,31 +132,46 @@ function makeTransportOrders(): PackageTransportOrdersResponse {
         sad_context: null,
         invoice_processing: null,
         invoices: [
-          {
-            id: "invoice-1",
-            invoice_number: "FV-1",
-            invoice_date: "2026-05-18",
-            invoice_currency: "EUR",
-            country_of_dispatch: "DE",
-            country_of_destination: "PL",
-            delivery_terms: null,
-            invoice_totals: null,
-            warnings: [],
-            notes: [],
+          makeInvoice({ id: "invoice-1", invoice_number: "FV-1" }),
+          makeInvoice({
+            id: "invoice-2",
+            invoice_number: "FV-2",
             lines: [
               {
-                id: "line-1",
+                id: "line-2",
                 line_number: "1",
                 po_number: null,
-                product_code: "SKU-1",
-                description: "Product",
+                product_code: "SKU-2",
+                description: "Second product",
                 description_pl: null,
                 cn_code: null,
                 hs: null,
-                quantity: "1",
+                quantity: "2",
                 unit_of_measure: "pcs",
                 unit_price: null,
-                invoice_value: "10",
+                invoice_value: "20",
+                net_weight_kg: null,
+                gross_weight_kg: null,
+                packages_quantity: null,
+                packages_type: null,
+                packages_marking: null,
+                origin_country: "DE",
+                source_references: [],
+                notes: [],
+              },
+              {
+                id: "line-3",
+                line_number: "2",
+                po_number: null,
+                product_code: "SKU-3",
+                description: "Third product",
+                description_pl: null,
+                cn_code: null,
+                hs: null,
+                quantity: "3",
+                unit_of_measure: "pcs",
+                unit_price: null,
+                invoice_value: "30",
                 net_weight_kg: null,
                 gross_weight_kg: null,
                 packages_quantity: null,
@@ -128,7 +182,7 @@ function makeTransportOrders(): PackageTransportOrdersResponse {
                 notes: [],
               },
             ],
-          },
+          }),
         ],
       },
     ],
@@ -166,6 +220,33 @@ describe("VerifyWorkspacePage — document preview toggle", () => {
     await userEvent.click(screen.getByRole("button", { name: /show document preview/i }))
 
     expect(await screen.findByTestId("document-preview-panel")).not.toBeNull()
+  })
+
+  it("shows every invoice as a tab and switches the left invoice data panel", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetchMock({
+        "/user/me": { body: { email: "dev@cortex.local", has_access: true } },
+        "/packages/test-1": { body: makePackage() },
+        "/packages/test-1/transitions": { body: { transitions: [] } },
+        "/packages/test-1/transport-orders": { body: makeTransportOrders() },
+        "/packages/test-1/source-files": { body: [] },
+      }),
+    )
+
+    render(
+      <Wrapper client={freshClient()}>
+        <VerifyWorkspacePage />
+      </Wrapper>,
+    )
+
+    expect(await screen.findByRole("tab", { name: /invoice fv-1/i })).not.toBeNull()
+    expect(screen.getByRole("tab", { name: /invoice fv-2/i })).not.toBeNull()
+    expect(screen.getByRole("heading", { name: /invoice fv-1.*1 lines/i })).not.toBeNull()
+
+    await userEvent.click(screen.getByRole("tab", { name: /invoice fv-2/i }))
+
+    expect(screen.getByRole("heading", { name: /invoice fv-2.*2 lines/i })).not.toBeNull()
   })
 
   it("shows and calls admin unlock when backend returns unlock transition", async () => {
