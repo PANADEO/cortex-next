@@ -34,6 +34,37 @@ export function createMailExportFile(blob: Blob, fileName: string): File {
   })
 }
 
+function isShareAbortError(err: unknown): boolean {
+  return err instanceof DOMException && err.name === "AbortError"
+}
+
+function shouldFallbackFromShareError(err: unknown): boolean {
+  if (err instanceof DOMException) {
+    return err.name === "NotAllowedError" || err.name === "DataError"
+  }
+
+  if (err instanceof TypeError) return true
+  if (!(err instanceof Error)) return false
+
+  return err.name === "NotAllowedError" || /permission denied/i.test(err.message)
+}
+
+function openMailDraft(fileName: string): void {
+  if (typeof window === "undefined") return
+
+  try {
+    window.location.href = buildMailtoHref(fileName)
+  } catch {
+    // The file was already downloaded; some test/browser contexts block external protocol navigation.
+  }
+}
+
+function openMailDownloadFallback(blob: Blob, fileName: string): MailExportResult {
+  downloadBlob(blob, fileName)
+  openMailDraft(fileName)
+  return "downloaded-mailto"
+}
+
 export async function openMailExport(blob: Blob, fileName: string): Promise<MailExportResult> {
   if (typeof navigator !== "undefined" && typeof File !== "undefined") {
     const file = createMailExportFile(blob, fileName)
@@ -41,14 +72,17 @@ export async function openMailExport(blob: Blob, fileName: string): Promise<Mail
 
     if (typeof navigator.share === "function" && navigator.canShare?.(shareData)) {
       // Keep this payload file-only. Some Windows share targets treat mixed title/text+files as a text share.
-      await navigator.share(shareData)
-      return "shared"
+      try {
+        await navigator.share(shareData)
+        return "shared"
+      } catch (err) {
+        if (isShareAbortError(err)) throw err
+        if (!shouldFallbackFromShareError(err)) throw err
+
+        return openMailDownloadFallback(blob, fileName)
+      }
     }
   }
 
-  downloadBlob(blob, fileName)
-  if (typeof window !== "undefined") {
-    window.location.href = buildMailtoHref(fileName)
-  }
-  return "downloaded-mailto"
+  return openMailDownloadFallback(blob, fileName)
 }
