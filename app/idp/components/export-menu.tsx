@@ -1,6 +1,7 @@
 "use client"
 
 import { downloadBlob } from "@/lib/download"
+import { openMailExport } from "@/lib/export/mail-export"
 import { endpoints, toastApiError, useExportTemplates } from "@cortex/api"
 import {
   Button,
@@ -33,33 +34,6 @@ function deriveFileName(baseName: string, templateName: string, format: string):
   return `${stripped}_${templateName}.${ext}`
 }
 
-function buildMailtoHref(fileName: string): string {
-  const params = new URLSearchParams({
-    subject: fileName,
-  })
-
-  return `mailto:?${params.toString()}`
-}
-
-async function openMailExport(blob: Blob, fileName: string): Promise<"shared" | "mailto"> {
-  const file = new File([blob], fileName, {
-    type: blob.type || "application/octet-stream",
-  })
-  const shareData: ShareData = {
-    files: [file],
-    title: fileName,
-  }
-
-  if (navigator.share && navigator.canShare?.({ files: [file] })) {
-    await navigator.share(shareData)
-    return "shared"
-  }
-
-  // mailto cannot attach browser blobs, so the fallback keeps the draft minimal.
-  window.location.href = buildMailtoHref(fileName)
-  return "mailto"
-}
-
 export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
   const templates = useExportTemplates()
   const [downloading, setDownloading] = useState<string | null>(null)
@@ -78,8 +52,8 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
       const exportFileName = deriveFileName(fileName, templateName, format)
 
       if (mailModeRef.current) {
-        await openMailExport(blob, exportFileName)
-        toast.success("Email draft opened")
+        const result = await openMailExport(blob, exportFileName)
+        toast.success(result === "shared" ? "Email draft opened" : "File downloaded; email draft opened")
       } else {
         downloadBlob(blob, exportFileName)
         toast.success(`Exported as ${templateName}`)
