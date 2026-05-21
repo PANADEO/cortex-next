@@ -46,6 +46,8 @@ const ERROR_MESSAGES: Record<ErrorCode, string> = {
   ENTITY_NOT_FOUND: "Entity not found.",
   CSV_EXPORT_VALIDATION_FAILED: "CSV export failed validation. Fix the highlighted issues and retry.",
   PERMISSION_DENIED: "You do not have permission to perform this action.",
+  EMAIL_DELIVERY_NOT_CONFIGURED: "Email delivery is not configured.",
+  EMAIL_DELIVERY_FAILED: "Email delivery failed.",
 }
 
 export function errorCodeToMessage(code: ErrorCode | null, fallback = "Unexpected error"): string {

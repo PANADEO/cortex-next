@@ -58,6 +58,8 @@ export const ERROR_CODE = [
   "ENTITY_NOT_FOUND",
   "CSV_EXPORT_VALIDATION_FAILED",
   "PERMISSION_DENIED",
+  "EMAIL_DELIVERY_NOT_CONFIGURED",
+  "EMAIL_DELIVERY_FAILED",
 ] as const
 export type ErrorCode = (typeof ERROR_CODE)[number]
 

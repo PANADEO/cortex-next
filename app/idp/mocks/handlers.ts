@@ -272,6 +272,7 @@ export const handlers = [
   http.post("/packages/:id/finish-verification", () => passthrough()),
   http.post("/packages/:id/reset-verification", () => passthrough()),
   http.post("/packages/:id/reprocess", () => passthrough()),
+  http.post("/packages/:id/export/email", () => passthrough()),
 
   // Packages — ops (custom status / notes / restore)
   http.post("/packages/:id/custom-status", () => passthrough()),
@@ -528,6 +529,16 @@ export const handlers = [
     "/packages/:id/export",
     () => new HttpResponse(new Blob(["mock,export"], { type: "text/csv" })),
   ),
+
+  http.post("/packages/:id/export/email", async ({ request }) => {
+    const url = new URL(request.url)
+    const template = url.searchParams.get("template") ?? "export"
+    const body = (await request.json().catch(() => ({}))) as { to_email?: string }
+    return HttpResponse.json({
+      sent_to: body.to_email?.trim() || process.env.NEXT_PUBLIC_DEV_USER_EMAIL || "dev@cortex.local",
+      file_name: `mock_${template}.csv`,
+    })
+  }),
 
   ...[
     "start-verification",

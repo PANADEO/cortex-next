@@ -10,6 +10,8 @@ import type {
   EmptyOk,
   ExplainRuleRequest,
   ExplainRuleResponse,
+  ExportEmailRequest,
+  ExportEmailResponse,
   ExportTemplateInfo,
   ExportValidationResponse,
   FeatureFlagsResponse,
@@ -152,6 +154,11 @@ export const endpoints = {
       apiClient.get<Blob>(`/packages/${id}/export`, {
         params: { template },
         parse: "blob",
+      }),
+    sendExportEmail: (id: string, template: string, body: ExportEmailRequest) =>
+      apiClient.post<ExportEmailResponse>(`/packages/${id}/export/email`, {
+        params: { template },
+        jsonBody: body,
       }),
     startVerification: transitionCall("start_verification"),
     cancelVerification: transitionCall("cancel_verification"),

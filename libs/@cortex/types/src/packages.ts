@@ -152,4 +152,15 @@ export interface ExportValidationResponse {
   warnings: Array<Record<string, unknown>>
 }
 
+export interface ExportEmailResponse {
+  sent_to: string
+  file_name: string
+}
+
+export interface ExportEmailRequest {
+  to_email?: string | null
+  subject: string
+  body: string
+}
+
 export type PaginatedPackageResponse = Paginated<PackageReadModel>

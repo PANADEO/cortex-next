@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
 
 const STATIC_IDP_PATHS = new Set([
   "/user/me",
@@ -43,6 +43,7 @@ const JSON_API_PATTERNS: RegExp[] = [
   /^\/packages\/[^/]+\/transport-orders\/[^/]+\/invoices\/[^/]+\/lines$/,
   /^\/packages\/[^/]+\/source-files$/,
   /^\/packages\/[^/]+\/export\/validate$/,
+  /^\/packages\/[^/]+\/export\/email$/,
   /^\/packages\/[^/]+\/custom-status$/,
   /^\/packages\/[^/]+\/user-notes$/,
   /^\/packages\/[^/]+\/restore$/,
