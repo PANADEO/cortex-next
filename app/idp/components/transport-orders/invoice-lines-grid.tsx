@@ -1,5 +1,6 @@
 "use client"
 
+import { countryCodeSchema, numericStringSchema } from "@/lib/form-helpers"
 import type {
   Invoice,
   InvoiceLine,
@@ -15,12 +16,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@cortex/ui"
-import { formatMoney } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Pencil } from "lucide-react"
 import { useMemo, useState } from "react"
 import { z } from "zod"
-import { countryCodeSchema, numericStringSchema } from "@/lib/form-helpers"
 import { FieldsForm, type FieldSpec } from "./fields-form"
 import { invoiceLineRowToRequest, invoiceLineToRow, type InvoiceLineRow } from "./invoice-line-row"
 
@@ -62,21 +61,13 @@ const LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
 
 interface Props {
   invoice: Invoice
-  currency: string | null
   canEdit: boolean
   isSaving: boolean
   onSaveLines: (body: UpdateInvoiceLinesRequest) => Promise<void>
   onSelectLine?: (line: InvoiceLine) => void
 }
 
-export function InvoiceLinesGrid({
-  invoice,
-  currency,
-  canEdit,
-  isSaving,
-  onSaveLines,
-  onSelectLine,
-}: Props) {
+export function InvoiceLinesGrid({ invoice, canEdit, isSaving, onSaveLines, onSelectLine }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const editingLine = invoice.lines.find((l) => l.id === editingId) ?? null
 
@@ -91,42 +82,55 @@ export function InvoiceLinesGrid({
         ),
       },
       {
-        id: "product",
-        header: "Product",
+        id: "po_number",
+        header: "PO Number",
+        size: 150,
         cell: ({ row }) => (
-          <div className="space-y-0.5">
-            <div className="truncate font-medium">{row.original.description ?? "—"}</div>
-            <div className="font-mono text-xs text-muted-foreground">
-              {row.original.product_code ?? ""}
-            </div>
-          </div>
+          <span className="font-mono text-xs">{row.original.po_number ?? "—"}</span>
+        ),
+      },
+      {
+        id: "product_code",
+        header: "Product Code",
+        size: 160,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs">{row.original.product_code ?? "—"}</span>
+        ),
+      },
+      {
+        id: "description",
+        header: "Description",
+        size: 240,
+        cell: ({ row }) => (
+          <span className="block truncate text-xs">{row.original.description ?? "—"}</span>
         ),
       },
       {
         id: "cn_code",
-        header: "CN",
+        header: "CN Code",
         size: 110,
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.cn_code ?? "—"}</span>
-        ),
+        cell: ({ row }) => <span className="font-mono text-xs">{row.original.cn_code ?? "—"}</span>,
+      },
+      {
+        id: "hs",
+        header: "HS Code",
+        size: 110,
+        cell: ({ row }) => <span className="font-mono text-xs">{row.original.hs ?? "—"}</span>,
       },
       {
         id: "quantity",
         header: "Qty",
-        size: 100,
+        size: 90,
         cell: ({ row }) => (
-          <span className="font-mono text-xs">
-            {row.original.quantity ?? "—"}
-            {row.original.unit_of_measure ? ` ${row.original.unit_of_measure}` : ""}
-          </span>
+          <span className="font-mono text-xs">{row.original.quantity ?? "—"}</span>
         ),
       },
       {
-        id: "net_weight_kg",
-        header: "Net kg",
-        size: 90,
+        id: "unit_of_measure",
+        header: "UoM",
+        size: 80,
         cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.net_weight_kg ?? "—"}</span>
+          <span className="font-mono text-xs">{row.original.unit_of_measure ?? "—"}</span>
         ),
       },
       {
@@ -134,9 +138,31 @@ export function InvoiceLinesGrid({
         header: "Value",
         size: 120,
         cell: ({ row }) => (
-          <span className="font-mono text-xs">
-            {formatMoney(row.original.invoice_value, currency ? { currency } : {})}
-          </span>
+          <span className="font-mono text-xs">{row.original.invoice_value ?? "—"}</span>
+        ),
+      },
+      {
+        id: "net_weight_kg",
+        header: "Net Wt (kg)",
+        size: 130,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs">{row.original.net_weight_kg ?? "—"}</span>
+        ),
+      },
+      {
+        id: "gross_weight_kg",
+        header: "Gross Wt (kg)",
+        size: 140,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs">{row.original.gross_weight_kg ?? "—"}</span>
+        ),
+      },
+      {
+        id: "origin_country",
+        header: "Origin",
+        size: 90,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs uppercase">{row.original.origin_country ?? "—"}</span>
         ),
       },
     ]
@@ -162,7 +188,7 @@ export function InvoiceLinesGrid({
         ),
       },
     ]
-  }, [canEdit, currency])
+  }, [canEdit])
 
   const handleSaveLine = async (values: InvoiceLineRow): Promise<void> => {
     if (!editingLine) return
@@ -178,12 +204,13 @@ export function InvoiceLinesGrid({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold">Lines ({invoice.lines.length})</h4>
+        <h4 className="text-sm font-semibold">Invoice Lines</h4>
       </div>
       <DataTable
         columns={columns}
         data={invoice.lines}
         bordered
+        className="overflow-x-auto [&_table]:min-w-[1480px] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap [&_th]:font-semibold [&_th]:normal-case [&_th]:tracking-normal [&_th]:text-foreground"
         getRowId={(row) => row.id}
         {...(onSelectLine ? { onRowClick: onSelectLine } : {})}
         emptyState={

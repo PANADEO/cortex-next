@@ -1,5 +1,6 @@
 "use client"
 
+import { countryCodeSchema, mapTrimToNull, numericStringSchema } from "@/lib/form-helpers"
 import type {
   Invoice,
   InvoiceLine,
@@ -13,7 +14,6 @@ import { formatRoute } from "@cortex/utils"
 import { ChevronDown, ChevronRight, FileText } from "lucide-react"
 import { useState } from "react"
 import { z } from "zod"
-import { countryCodeSchema, mapTrimToNull, numericStringSchema } from "@/lib/form-helpers"
 import { FieldsForm, type FieldSpec } from "./fields-form"
 import { InvoiceLinesGrid } from "./invoice-lines-grid"
 
@@ -41,7 +41,10 @@ const HEADER_FIELDS: readonly FieldSpec<HeaderValues>[] = [
 ]
 
 const deliverySchema = z.object({
-  incoterms_code: z.string().max(8).regex(/^[A-Za-z]{0,4}$/, "e.g. CIP, DAP"),
+  incoterms_code: z
+    .string()
+    .max(8)
+    .regex(/^[A-Za-z]{0,4}$/, "e.g. CIP, DAP"),
   incoterms_place: z.string().max(100),
   delivery_area: z.string().max(100),
   base_of_delivery: z.string().max(100),
@@ -205,7 +208,6 @@ export function InvoiceEditor({
           </div>
           <InvoiceLinesGrid
             invoice={invoice}
-            currency={invoice.invoice_currency}
             canEdit={canEdit}
             isSaving={isSavingLines}
             onSaveLines={onSaveLines}
