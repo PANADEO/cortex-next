@@ -28,6 +28,8 @@ const COLUMNS: ColumnDef[] = [
   { key: "description", label: "Description", width: 320 },
   { key: "cn_code", label: "CN", width: 112 },
   { key: "hs", label: "HS", width: 96 },
+  { key: "preference_code", label: "Pref.", width: 64 },
+  { key: "atr_documents", label: "ATR", width: 200 },
   { key: "quantity", label: "Qty", width: 80, numeric: true },
   { key: "unit_of_measure", label: "UoM", width: 64 },
   { key: "invoice_value", label: "Value", width: 96, numeric: true },
@@ -151,7 +153,7 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
     const body: UpdateInvoiceLinesRequest = {
       lines: invoice.lines.map((l) => {
         const row = values[l.id] ?? invoiceLineToRow(l)
-        return invoiceLineRowToRequest(l.id, row)
+        return invoiceLineRowToRequest(l.id, row, l)
       }),
     }
     await onSave(body)

@@ -39,6 +39,8 @@ const lineSchema = z.object({
   packages_type: z.string().max(32),
   packages_marking: z.string().max(100),
   origin_country: countryCodeSchema,
+  preference_code: z.string().max(8),
+  atr_documents: z.string().max(2000),
 }) satisfies z.ZodType<InvoiceLineRow>
 
 const LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
@@ -48,6 +50,7 @@ const LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
   { name: "cn_code", label: "CN code", span: 1 },
   { name: "hs", label: "HS code", span: 1 },
   { name: "origin_country", label: "Origin", span: 1, uppercase: true },
+  { name: "preference_code", label: "Pref.", span: 1 },
   { name: "description", label: "Description", span: 2 },
   { name: "quantity", label: "Quantity", span: 1 },
   { name: "unit_of_measure", label: "UoM", span: 1 },
@@ -57,6 +60,7 @@ const LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
   { name: "packages_quantity", label: "Packages qty", span: 1 },
   { name: "packages_type", label: "Packages type", span: 1 },
   { name: "packages_marking", label: "Packages marking", span: 2 },
+  { name: "atr_documents", label: "ATR documents", span: 2 },
 ]
 
 interface Props {
@@ -116,6 +120,32 @@ export function InvoiceLinesGrid({ invoice, canEdit, isSaving, onSaveLines, onSe
         header: "HS Code",
         size: 110,
         cell: ({ row }) => <span className="font-mono text-xs">{row.original.hs ?? "—"}</span>,
+      },
+      {
+        id: "preference_code",
+        header: "Pref.",
+        size: 72,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs">
+            {row.original.sad_override?.preference_code ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "atr_documents",
+        header: "ATR",
+        size: 220,
+        cell: ({ row }) => {
+          const documents = row.original.sad_override?.atr_documents ?? []
+          const label = documents
+            .map((document) =>
+              [document.document_code || "N018", document.document_number, document.quantity]
+                .filter(Boolean)
+                .join(" / "),
+            )
+            .join("; ")
+          return <span className="block truncate font-mono text-xs">{label || "—"}</span>
+        },
       },
       {
         id: "quantity",
@@ -194,8 +224,8 @@ export function InvoiceLinesGrid({ invoice, canEdit, isSaving, onSaveLines, onSe
     if (!editingLine) return
     const lines: InvoiceLineUpdateRequest[] = invoice.lines.map((l) =>
       l.id === editingLine.id
-        ? invoiceLineRowToRequest(l.id, values)
-        : invoiceLineRowToRequest(l.id, invoiceLineToRow(l)),
+        ? invoiceLineRowToRequest(l.id, values, l)
+        : invoiceLineRowToRequest(l.id, invoiceLineToRow(l), l),
     )
     await onSaveLines({ lines })
     setEditingId(null)
@@ -210,7 +240,7 @@ export function InvoiceLinesGrid({ invoice, canEdit, isSaving, onSaveLines, onSe
         columns={columns}
         data={invoice.lines}
         bordered
-        className="overflow-x-auto [&_table]:min-w-[1480px] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap [&_th]:font-semibold [&_th]:normal-case [&_th]:tracking-normal [&_th]:text-foreground"
+        className="overflow-x-auto [&_table]:min-w-[1760px] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap [&_th]:font-semibold [&_th]:normal-case [&_th]:tracking-normal [&_th]:text-foreground"
         getRowId={(row) => row.id}
         {...(onSelectLine ? { onRowClick: onSelectLine } : {})}
         emptyState={

@@ -33,6 +33,29 @@ export interface InvoiceLineSourceReference {
   label: string
 }
 
+export interface AtrDocument {
+  product_code: string
+  document_code: string
+  document_number: string
+  quantity: string
+  origin_country?: string | null
+  source_references?: InvoiceLineSourceReference[]
+}
+
+export interface InvoiceLineSadOverride {
+  tariff_code?: string | null
+  taric_code?: string | null
+  coo?: string | null
+  gross_weight_kg?: string | null
+  net_weight_kg?: string | null
+  value?: string | null
+  item_description?: string | null
+  preference_code?: string | null
+  atr_documents?: AtrDocument[]
+  atr_split?: Record<string, string | null>
+  packages?: Record<string, unknown> | null
+}
+
 export interface InvoiceLine {
   id: string
   line_number: string | null
@@ -54,6 +77,7 @@ export interface InvoiceLine {
   origin_country: string | null
   source_references: InvoiceLineSourceReference[]
   notes: string[]
+  sad_override?: InvoiceLineSadOverride | null
 }
 
 export interface InvoiceTotals {
@@ -166,6 +190,7 @@ export interface InvoiceLineUpdateRequest {
   packages_type?: string | null
   packages_marking?: string | null
   origin_country?: string | null
+  sad_override?: InvoiceLineSadOverride | null
 }
 
 export interface UpdateInvoiceLinesRequest {

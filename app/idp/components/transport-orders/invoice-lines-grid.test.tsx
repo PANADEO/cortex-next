@@ -38,6 +38,17 @@ function makeInvoice(): Invoice {
         origin_country: "CN",
         source_references: [],
         notes: [],
+        sad_override: {
+          preference_code: "400",
+          atr_documents: [
+            {
+              product_code: "AX2486029",
+              document_code: "N018",
+              document_number: "ATR-123",
+              quantity: "1144",
+            },
+          ],
+        },
       },
     ],
   }
@@ -62,6 +73,8 @@ describe("InvoiceLinesGrid", () => {
       "Description",
       "CN Code",
       "HS Code",
+      "Pref.",
+      "ATR",
       "Qty",
       "UoM",
       "Value",
@@ -71,5 +84,7 @@ describe("InvoiceLinesGrid", () => {
     ]) {
       expect(screen.getByRole("columnheader", { name })).not.toBeNull()
     }
+    expect(screen.getByText("400")).not.toBeNull()
+    expect(screen.getByText("N018 / ATR-123 / 1144")).not.toBeNull()
   })
 })
