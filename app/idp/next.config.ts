@@ -33,6 +33,9 @@ const nextConfig: NextConfig = {
     return config
   },
   experimental: {
+    // Backend validates import payloads at 100 MB total file size. Next needs a
+    // slightly higher middleware clone limit so multipart overhead can pass.
+    middlewareClientMaxBodySize: "110mb",
     optimizePackageImports: ["lucide-react", "date-fns"],
   },
 }
