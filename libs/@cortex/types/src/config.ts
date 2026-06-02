@@ -7,5 +7,6 @@
  */
 export interface FeatureFlagsResponse {
   enable_classification?: boolean
+  enable_customs_code?: boolean
   hide_menu_items?: string | string[] | null
 }

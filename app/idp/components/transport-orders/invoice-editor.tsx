@@ -117,6 +117,7 @@ interface Props {
   onSaveTotals: (body: UpdateInvoiceTotalsRequest) => Promise<void>
   onSaveLines: (body: UpdateInvoiceLinesRequest) => Promise<void>
   onSelectLine?: ((line: InvoiceLine) => void) | undefined
+  useCustomsCode?: boolean
 }
 
 export function InvoiceEditor({
@@ -131,6 +132,7 @@ export function InvoiceEditor({
   onSaveTotals,
   onSaveLines,
   onSelectLine,
+  useCustomsCode = false,
 }: Props) {
   const [open, setOpen] = useState(true)
   const Chevron = open ? ChevronDown : ChevronRight
@@ -211,6 +213,7 @@ export function InvoiceEditor({
             canEdit={canEdit}
             isSaving={isSavingLines}
             onSaveLines={onSaveLines}
+            useCustomsCode={useCustomsCode}
             {...(onSelectLine ? { onSelectLine } : {})}
           />
         </div>

@@ -54,6 +54,20 @@ function makeInvoice(): Invoice {
   }
 }
 
+function makeInvoiceWithHsFallback(): Invoice {
+  const invoice = makeInvoice()
+  return {
+    ...invoice,
+    lines: [
+      {
+        ...invoice.lines[0]!,
+        cn_code: null,
+        hs: "8536",
+      },
+    ],
+  }
+}
+
 describe("InvoiceLinesGrid", () => {
   it("renders the full invoice-line preview column set", () => {
     render(
@@ -86,5 +100,22 @@ describe("InvoiceLinesGrid", () => {
     }
     expect(screen.getByText("400")).not.toBeNull()
     expect(screen.getByText("N018 / ATR-123 / 1144")).not.toBeNull()
+  })
+
+  it("renders one Customs Code column when customs-code mode is enabled", () => {
+    render(
+      <InvoiceLinesGrid
+        invoice={makeInvoiceWithHsFallback()}
+        canEdit={false}
+        isSaving={false}
+        onSaveLines={async () => undefined}
+        useCustomsCode
+      />,
+    )
+
+    expect(screen.getByRole("columnheader", { name: "Customs Code" })).not.toBeNull()
+    expect(screen.queryByRole("columnheader", { name: "CN Code" })).toBeNull()
+    expect(screen.queryByRole("columnheader", { name: "HS Code" })).toBeNull()
+    expect(screen.getByText("8536")).not.toBeNull()
   })
 })

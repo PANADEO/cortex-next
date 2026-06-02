@@ -24,7 +24,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@cortex/ui"
-import { cn, emailsMatch } from "@cortex/utils"
+import { cn, emailsMatch, useFeatureFlag } from "@cortex/utils"
 import {
   ArrowLeft,
   ChevronDown,
@@ -60,6 +60,7 @@ export default function VerifyWorkspacePage() {
   const toQuery = usePackageTransportOrders(id, { polling: false })
   const updateLines = useUpdateInvoiceLines()
   const unlock = useUnlockVerification(id)
+  const useCustomsCode = useFeatureFlag("idp.customs-code")
   const [documentPreviewVisible, setDocumentPreviewVisible] = useState(true)
   const [activeInvoiceKey, setActiveInvoiceKey] = useState<string | null>(null)
 
@@ -215,6 +216,7 @@ export default function VerifyWorkspacePage() {
                 canEdit={canEdit}
                 isSaving={updateLines.isPending}
                 onSave={handleSaveLines}
+                useCustomsCode={useCustomsCode}
               />
             </Panel>
             {documentPreviewVisible ? (

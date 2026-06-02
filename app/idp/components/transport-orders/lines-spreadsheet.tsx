@@ -1,17 +1,13 @@
 "use client"
 
+import { useSourceMaterialSelectionStore } from "@/lib/stores/source-material-selection"
 import type { Invoice, UpdateInvoiceLinesRequest } from "@cortex/types"
 import { Button, Input } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import type { LucideIcon } from "lucide-react"
 import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, RotateCcw, Save } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { useSourceMaterialSelectionStore } from "@/lib/stores/source-material-selection"
-import {
-  invoiceLineRowToRequest,
-  invoiceLineToRow,
-  type InvoiceLineRow,
-} from "./invoice-line-row"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { invoiceLineRowToRequest, invoiceLineToRow, type InvoiceLineRow } from "./invoice-line-row"
 
 interface ColumnDef {
   key: keyof InvoiceLineRow
@@ -21,13 +17,32 @@ interface ColumnDef {
   numeric?: boolean
 }
 
-const COLUMNS: ColumnDef[] = [
+const DEFAULT_COLUMNS: ColumnDef[] = [
   { key: "line_number", label: "#", width: 48, numeric: true },
   { key: "po_number", label: "PO", width: 112 },
   { key: "product_code", label: "Product", width: 112 },
   { key: "description", label: "Description", width: 320 },
   { key: "cn_code", label: "CN", width: 112 },
   { key: "hs", label: "HS", width: 96 },
+  { key: "preference_code", label: "Pref.", width: 64 },
+  { key: "atr_documents", label: "ATR", width: 200 },
+  { key: "quantity", label: "Qty", width: 80, numeric: true },
+  { key: "unit_of_measure", label: "UoM", width: 64 },
+  { key: "invoice_value", label: "Value", width: 96, numeric: true },
+  { key: "net_weight_kg", label: "Net kg", width: 96, numeric: true },
+  { key: "gross_weight_kg", label: "Gross kg", width: 96, numeric: true },
+  { key: "packages_quantity", label: "Pkg qty", width: 80, numeric: true },
+  { key: "packages_type", label: "Pkg type", width: 96 },
+  { key: "packages_marking", label: "Pkg mark", width: 112 },
+  { key: "origin_country", label: "Origin", width: 80, uppercase: true },
+]
+
+const CUSTOMS_CODE_COLUMNS: ColumnDef[] = [
+  { key: "line_number", label: "#", width: 48, numeric: true },
+  { key: "po_number", label: "PO", width: 112 },
+  { key: "product_code", label: "Product", width: 112 },
+  { key: "description", label: "Description", width: 320 },
+  { key: "cn_code", label: "Customs Code", width: 132 },
   { key: "preference_code", label: "Pref.", width: 64 },
   { key: "atr_documents", label: "ATR", width: 200 },
   { key: "quantity", label: "Qty", width: 80, numeric: true },
@@ -61,19 +76,30 @@ interface Props {
   canEdit: boolean
   isSaving: boolean
   onSave: (body: UpdateInvoiceLinesRequest) => Promise<void>
+  useCustomsCode?: boolean
 }
 
-export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) {
+export function LinesSpreadsheet({
+  invoice,
+  canEdit,
+  isSaving,
+  onSave,
+  useCustomsCode = false,
+}: Props) {
+  const columns = useMemo(
+    () => (useCustomsCode ? CUSTOMS_CODE_COLUMNS : DEFAULT_COLUMNS),
+    [useCustomsCode],
+  )
   const initial = useMemo(() => {
     const map: Record<string, InvoiceLineRow> = {}
-    for (const l of invoice.lines) map[l.id] = invoiceLineToRow(l)
+    for (const l of invoice.lines) map[l.id] = invoiceLineToRow(l, { useCustomsCode })
     return map
-  }, [invoice.lines])
+  }, [invoice.lines, useCustomsCode])
 
   const [values, setValues] = useState<Record<string, InvoiceLineRow>>(initial)
   const [dirtyIds, setDirtyIds] = useState<Set<string>>(() => new Set())
   const [widths, setWidths] = useState<Record<string, number>>(() =>
-    Object.fromEntries(COLUMNS.map((c) => [c.key, c.width])),
+    Object.fromEntries(columns.map((c) => [c.key, c.width])),
   )
   const [sort, setSort] = useState<SortState | null>(null)
   const [resizingKey, setResizingKey] = useState<keyof InvoiceLineRow | null>(null)
@@ -89,46 +115,39 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
 
   useEffect(() => () => resizeDisposerRef.current?.(), [])
 
-  const lineIdsKey = useMemo(
-    () => invoice.lines.map((l) => l.id).join("|"),
-    [invoice.lines],
-  )
-  // Reset only when invoice identity or its line set changes — a polling
-  // refetch that returns equal-but-new arrays must not clobber user edits.
+  const lineIdsKey = useMemo(() => invoice.lines.map((l) => l.id).join("|"), [invoice.lines])
+  // Reset only when invoice identity, its line set, or the visible code mode changes —
+  // a polling refetch that returns equal-but-new arrays must not clobber user edits.
   useEffect(() => {
     initialRef.current = initial
     setValues(initial)
     setDirtyIds(new Set())
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [invoice.id, lineIdsKey])
+  }, [invoice.id, lineIdsKey, useCustomsCode])
 
   const selectLineRefs = useSourceMaterialSelectionStore((s) => s.selectLineRefs)
 
   const dirty = dirtyIds.size > 0
 
-  const setCell = useCallback(
-    (rowId: string, key: keyof InvoiceLineRow, value: string) => {
-      setValues((prev) => {
-        const row = prev[rowId]
-        if (!row || row[key] === value) return prev
-        return { ...prev, [rowId]: { ...row, [key]: value } }
-      })
-      setDirtyIds((prev) => {
-        const originRow = initialRef.current[rowId]
-        if (!originRow) return prev
-        const rowNowDirty = value !== originRow[key] || rowHasOtherDirtyFields(rowId, key, value)
-        if (rowNowDirty && prev.has(rowId)) return prev
-        if (!rowNowDirty && !prev.has(rowId)) return prev
-        const next = new Set(prev)
-        if (rowNowDirty) next.add(rowId)
-        else next.delete(rowId)
-        return next
-      })
-    },
-    [],
-  )
+  const setCell = (rowId: string, key: keyof InvoiceLineRow, value: string) => {
+    setValues((prev) => {
+      const row = prev[rowId]
+      if (!row || row[key] === value) return prev
+      return { ...prev, [rowId]: { ...row, [key]: value } }
+    })
+    setDirtyIds((prev) => {
+      const originRow = initialRef.current[rowId]
+      if (!originRow) return prev
+      const rowNowDirty = value !== originRow[key] || rowHasOtherDirtyFields(rowId, key, value)
+      if (rowNowDirty && prev.has(rowId)) return prev
+      if (!rowNowDirty && !prev.has(rowId)) return prev
+      const next = new Set(prev)
+      if (rowNowDirty) next.add(rowId)
+      else next.delete(rowId)
+      return next
+    })
+  }
 
-  // Ref keeps rowHasOtherDirtyFields out of setCell's dep array.
   const valuesRef = useRef(values)
   valuesRef.current = values
   function rowHasOtherDirtyFields(
@@ -139,7 +158,7 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
     const current = valuesRef.current[rowId]
     const origin = initialRef.current[rowId]
     if (!current || !origin) return false
-    for (const col of COLUMNS) {
+    for (const col of columns) {
       if (col.key === changedKey) {
         if (changedValue !== origin[col.key]) return true
       } else if (current[col.key] !== origin[col.key]) {
@@ -152,8 +171,8 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
   const handleSave = async () => {
     const body: UpdateInvoiceLinesRequest = {
       lines: invoice.lines.map((l) => {
-        const row = values[l.id] ?? invoiceLineToRow(l)
-        return invoiceLineRowToRequest(l.id, row, l)
+        const row = values[l.id] ?? invoiceLineToRow(l, { useCustomsCode })
+        return invoiceLineRowToRequest(l.id, row, l, { useCustomsCode })
       }),
     }
     await onSave(body)
@@ -208,13 +227,13 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
   }
 
   const totalWidth = useMemo(
-    () => COLUMNS.reduce((sum, c) => sum + (widths[c.key] ?? c.width), 0),
-    [widths],
+    () => columns.reduce((sum, c) => sum + (widths[c.key] ?? c.width), 0),
+    [columns, widths],
   )
 
   const sortedLines = useMemo(() => {
     if (!sort) return invoice.lines
-    const col = COLUMNS.find((c) => c.key === sort.key)
+    const col = columns.find((c) => c.key === sort.key)
     const copy = [...invoice.lines]
     copy.sort((a, b) => {
       const av = (values[a.id] ?? initial[a.id])?.[sort.key] ?? ""
@@ -232,7 +251,7 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
       return sort.direction === "asc" ? cmp : -cmp
     })
     return copy
-  }, [invoice.lines, values, initial, sort])
+  }, [invoice.lines, values, initial, columns, sort])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -249,12 +268,7 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
         </div>
         {canEdit ? (
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleReset}
-              disabled={!dirty || isSaving}
-            >
+            <Button variant="outline" size="sm" onClick={handleReset} disabled={!dirty || isSaving}>
               <RotateCcw className="mr-1.5 h-4 w-4" /> Reset
             </Button>
             <Button size="sm" onClick={handleSave} disabled={!dirty || isSaving}>
@@ -274,13 +288,13 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
           style={{ tableLayout: "fixed", width: `${totalWidth}px`, minWidth: "100%" }}
         >
           <colgroup>
-            {COLUMNS.map((c) => (
+            {columns.map((c) => (
               <col key={c.key} style={{ width: `${widths[c.key] ?? c.width}px` }} />
             ))}
           </colgroup>
           <thead className="sticky top-0 z-10 bg-muted/60 backdrop-blur">
             <tr>
-              {COLUMNS.map((c) => {
+              {columns.map((c) => {
                 const sortActive = sort?.key === c.key
                 const SortIcon = SORT_ICONS[sortActive ? sort!.direction : "none"]
                 const isResizing = resizingKey === c.key
@@ -299,10 +313,7 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
                     >
                       <span className="truncate">{c.label}</span>
                       <SortIcon
-                        className={cn(
-                          "h-3 w-3 shrink-0",
-                          sortActive ? "opacity-80" : "opacity-30",
-                        )}
+                        className={cn("h-3 w-3 shrink-0", sortActive ? "opacity-80" : "opacity-30")}
                       />
                     </button>
                     <span
@@ -324,10 +335,10 @@ export function LinesSpreadsheet({ invoice, canEdit, isSaving, onSave }: Props) 
           </thead>
           <tbody>
             {sortedLines.map((line) => {
-              const row = values[line.id] ?? invoiceLineToRow(line)
+              const row = values[line.id] ?? invoiceLineToRow(line, { useCustomsCode })
               return (
                 <tr key={line.id} className="border-b border-border/50 hover:bg-muted/30">
-                  {COLUMNS.map((c) => (
+                  {columns.map((c) => (
                     <td key={c.key} className="align-top">
                       <Input
                         value={row[c.key]}

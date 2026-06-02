@@ -63,19 +63,77 @@ const LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
   { name: "atr_documents", label: "ATR documents", span: 2 },
 ]
 
+const CUSTOMS_CODE_LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
+  { name: "line_number", label: "Line #", span: 1 },
+  { name: "po_number", label: "PO number", span: 1 },
+  { name: "product_code", label: "Product code", span: 1 },
+  { name: "cn_code", label: "Customs Code", span: 1 },
+  { name: "origin_country", label: "Origin", span: 1, uppercase: true },
+  { name: "preference_code", label: "Pref.", span: 1 },
+  { name: "description", label: "Description", span: 2 },
+  { name: "quantity", label: "Quantity", span: 1 },
+  { name: "unit_of_measure", label: "UoM", span: 1 },
+  { name: "invoice_value", label: "Invoice value", span: 1 },
+  { name: "net_weight_kg", label: "Net weight (kg)", span: 1 },
+  { name: "gross_weight_kg", label: "Gross weight (kg)", span: 1 },
+  { name: "packages_quantity", label: "Packages qty", span: 1 },
+  { name: "packages_type", label: "Packages type", span: 1 },
+  { name: "packages_marking", label: "Packages marking", span: 2 },
+  { name: "atr_documents", label: "ATR documents", span: 2 },
+]
+
 interface Props {
   invoice: Invoice
   canEdit: boolean
   isSaving: boolean
   onSaveLines: (body: UpdateInvoiceLinesRequest) => Promise<void>
   onSelectLine?: (line: InvoiceLine) => void
+  useCustomsCode?: boolean
 }
 
-export function InvoiceLinesGrid({ invoice, canEdit, isSaving, onSaveLines, onSelectLine }: Props) {
+function displayCustomsCode(line: InvoiceLine): string {
+  return line.cn_code || line.hs || "—"
+}
+
+export function InvoiceLinesGrid({
+  invoice,
+  canEdit,
+  isSaving,
+  onSaveLines,
+  onSelectLine,
+  useCustomsCode = false,
+}: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const editingLine = invoice.lines.find((l) => l.id === editingId) ?? null
 
   const columns = useMemo<ColumnDef<InvoiceLine, unknown>[]>(() => {
+    const codeColumns: ColumnDef<InvoiceLine, unknown>[] = useCustomsCode
+      ? [
+          {
+            id: "customs_code",
+            header: "Customs Code",
+            size: 132,
+            cell: ({ row }) => (
+              <span className="font-mono text-xs">{displayCustomsCode(row.original)}</span>
+            ),
+          },
+        ]
+      : [
+          {
+            id: "cn_code",
+            header: "CN Code",
+            size: 110,
+            cell: ({ row }) => (
+              <span className="font-mono text-xs">{row.original.cn_code ?? "—"}</span>
+            ),
+          },
+          {
+            id: "hs",
+            header: "HS Code",
+            size: 110,
+            cell: ({ row }) => <span className="font-mono text-xs">{row.original.hs ?? "—"}</span>,
+          },
+        ]
     const base: ColumnDef<InvoiceLine, unknown>[] = [
       {
         id: "line_number",
@@ -109,18 +167,7 @@ export function InvoiceLinesGrid({ invoice, canEdit, isSaving, onSaveLines, onSe
           <span className="block truncate text-xs">{row.original.description ?? "—"}</span>
         ),
       },
-      {
-        id: "cn_code",
-        header: "CN Code",
-        size: 110,
-        cell: ({ row }) => <span className="font-mono text-xs">{row.original.cn_code ?? "—"}</span>,
-      },
-      {
-        id: "hs",
-        header: "HS Code",
-        size: 110,
-        cell: ({ row }) => <span className="font-mono text-xs">{row.original.hs ?? "—"}</span>,
-      },
+      ...codeColumns,
       {
         id: "preference_code",
         header: "Pref.",
@@ -218,14 +265,16 @@ export function InvoiceLinesGrid({ invoice, canEdit, isSaving, onSaveLines, onSe
         ),
       },
     ]
-  }, [canEdit])
+  }, [canEdit, useCustomsCode])
 
   const handleSaveLine = async (values: InvoiceLineRow): Promise<void> => {
     if (!editingLine) return
     const lines: InvoiceLineUpdateRequest[] = invoice.lines.map((l) =>
       l.id === editingLine.id
-        ? invoiceLineRowToRequest(l.id, values, l)
-        : invoiceLineRowToRequest(l.id, invoiceLineToRow(l), l),
+        ? invoiceLineRowToRequest(l.id, values, l, { useCustomsCode })
+        : invoiceLineRowToRequest(l.id, invoiceLineToRow(l, { useCustomsCode }), l, {
+            useCustomsCode,
+          }),
     )
     await onSaveLines({ lines })
     setEditingId(null)
@@ -261,8 +310,8 @@ export function InvoiceLinesGrid({ invoice, canEdit, isSaving, onSaveLines, onSe
             <div className="mt-4">
               <FieldsForm
                 label=""
-                fields={LINE_FIELDS}
-                defaults={invoiceLineToRow(editingLine)}
+                fields={useCustomsCode ? CUSTOMS_CODE_LINE_FIELDS : LINE_FIELDS}
+                defaults={invoiceLineToRow(editingLine, { useCustomsCode })}
                 schema={lineSchema}
                 canEdit={canEdit}
                 isSaving={isSaving}

@@ -318,7 +318,9 @@ export const handlers = [
 
   http.get("/idp/version", () => HttpResponse.json({ version: "1.13.0" })),
 
-  http.get("/config", () => HttpResponse.json({ enable_classification: false })),
+  http.get("/config", () =>
+    HttpResponse.json({ enable_classification: false, enable_customs_code: false }),
+  ),
 
   http.get("/user/preferences", () => HttpResponse.json(userPreferences)),
 

@@ -1,10 +1,10 @@
+import { mapTrimToNull, trimToNull } from "@/lib/form-helpers"
 import type {
   AtrDocument,
   InvoiceLine,
   InvoiceLineSadOverride,
   InvoiceLineUpdateRequest,
 } from "@cortex/types"
-import { mapTrimToNull, trimToNull } from "@/lib/form-helpers"
 
 export interface InvoiceLineRow {
   line_number: string
@@ -26,14 +26,22 @@ export interface InvoiceLineRow {
   atr_documents: string
 }
 
-export function invoiceLineToRow(line: InvoiceLine): InvoiceLineRow {
+interface InvoiceLineCodeOptions {
+  useCustomsCode?: boolean
+}
+
+export function invoiceLineToRow(
+  line: InvoiceLine,
+  options: InvoiceLineCodeOptions = {},
+): InvoiceLineRow {
+  const customsCode = line.cn_code || line.hs || ""
   return {
     line_number: line.line_number ?? "",
     po_number: line.po_number ?? "",
     product_code: line.product_code ?? "",
     description: line.description ?? "",
-    cn_code: line.cn_code ?? "",
-    hs: line.hs ?? "",
+    cn_code: options.useCustomsCode ? customsCode : (line.cn_code ?? ""),
+    hs: options.useCustomsCode ? customsCode : (line.hs ?? ""),
     quantity: line.quantity ?? "",
     unit_of_measure: line.unit_of_measure ?? "",
     invoice_value: line.invoice_value ?? "",
@@ -52,8 +60,12 @@ export function invoiceLineRowToRequest(
   id: string,
   row: InvoiceLineRow,
   originalLine?: InvoiceLine,
+  options: InvoiceLineCodeOptions = {},
 ): InvoiceLineUpdateRequest {
   const { preference_code, atr_documents, ...lineFields } = row
+  if (options.useCustomsCode) {
+    lineFields.hs = row.cn_code
+  }
   const request: InvoiceLineUpdateRequest = { line_id: id, ...mapTrimToNull(lineFields) }
   const sadOverride = buildSadOverride({
     preferenceCode: preference_code,

@@ -18,6 +18,7 @@ import {
 } from "@cortex/api"
 import type { Invoice, Party, TransportOrder } from "@cortex/types"
 import { EmptyState, LoadingState } from "@cortex/ui"
+import { useFeatureFlag } from "@cortex/utils"
 import { Truck } from "lucide-react"
 import { useMemo } from "react"
 import { InvoiceEditor } from "./invoice-editor"
@@ -33,6 +34,7 @@ interface Props {
 export function TransportOrdersPanel({ packageId, canEdit }: Props) {
   const { data, isLoading } = usePackageTransportOrders(packageId, { polling: false })
   const exportTemplates = useExportTemplates()
+  const useCustomsCode = useFeatureFlag("idp.customs-code")
 
   if (isLoading) return <LoadingState variant="skeleton" rows={6} />
 
@@ -60,6 +62,7 @@ export function TransportOrdersPanel({ packageId, canEdit }: Props) {
         packageId={packageId}
         canEdit={canEdit}
         hasHuzarExport={hasHuzarExport}
+        useCustomsCode={useCustomsCode}
       />
     </div>
   )
@@ -70,6 +73,7 @@ interface SectionProps {
   packageId: string
   canEdit: boolean
   hasHuzarExport: boolean
+  useCustomsCode: boolean
 }
 
 interface PartyConfig {
@@ -78,7 +82,13 @@ interface PartyConfig {
   value: Party | null
 }
 
-function TransportOrderSection({ order, packageId, canEdit, hasHuzarExport }: SectionProps) {
+function TransportOrderSection({
+  order,
+  packageId,
+  canEdit,
+  hasHuzarExport,
+  useCustomsCode,
+}: SectionProps) {
   const seller = useUpdateSeller()
   const buyer = useUpdateBuyer()
   const consignor = useUpdateConsignor()
@@ -176,6 +186,7 @@ function TransportOrderSection({ order, packageId, canEdit, hasHuzarExport }: Se
             saveInvoiceLines({ packageId, orderId: order.id, invoiceId: invoice.id, body })
           }
           onSelectLine={(line) => selectLineRefs(line.source_references)}
+          useCustomsCode={useCustomsCode}
         />
       ))}
     </section>
