@@ -56,6 +56,85 @@ export interface InvoiceLineSadOverride {
   packages?: Record<string, unknown> | null
 }
 
+export interface SadPreviousDocument {
+  doc_type?: string | null
+  doc_code?: string | null
+  doc_additional_code?: string | null
+  doc_no?: string | null
+  doc_date?: string | null
+}
+
+export interface SadAttachedDocument {
+  document_type?: string | null
+  document_no?: string | null
+  document_date?: string | null
+  remarks?: string | null
+}
+
+export interface SadContextHeader {
+  hs_decl_type?: string | null
+  _type?: string | null
+  decl_code1?: string | null
+  decl_code2?: string | null
+  decl_code3?: string | null
+  sub_type?: string | null
+  trans_type?: string | null
+  proc_code?: string | null
+  representation_type?: string | null
+  decl_customs_off_no?: string | null
+  border_office?: string | null
+  decl_date?: string | null
+  currency?: string | null
+  internal_currency_unit?: string | null
+  issued_by_name?: string | null
+  issued_by_place?: string | null
+  issued_by_position?: string | null
+  issued_by_phone?: string | null
+}
+
+export interface SadContextTransport {
+  transp_disp_arr_mode?: string | null
+  transp_bord_mode?: string | null
+  transp_bord_ctry?: string | null
+  transp_disp_arr_marks?: string | null
+  transport_doc_no?: string | null
+}
+
+export interface SadContextDocuments {
+  invoice_doc_type?: string | null
+  previous_documents?: SadPreviousDocument[] | null
+  attached_documents?: SadAttachedDocument[] | null
+}
+
+export interface SadContextDefaults {
+  taric_default?: string | null
+  add_codes_nat?: string[] | null
+  packages?: {
+    total_pack?: string | null
+  } | null
+}
+
+export interface SadAgentParty {
+  name?: string | null
+  street?: string | null
+  city?: string | null
+  postal_code?: string | null
+  country_code?: string | null
+  eori?: string | null
+  tin?: string | null
+  regon?: string | null
+  type_of_person?: string | null
+}
+
+export interface SadContext {
+  header?: SadContextHeader | null
+  transport?: SadContextTransport | null
+  documents?: SadContextDocuments | null
+  defaults?: SadContextDefaults | null
+  agent_party?: SadAgentParty | null
+  [key: string]: unknown
+}
+
 export interface InvoiceLine {
   id: string
   line_number: string | null
@@ -121,7 +200,7 @@ export interface TransportOrder {
   consignor: Party | null
   consignee: Party | null
   invoices: Invoice[]
-  sad_context: Record<string, unknown> | null
+  sad_context: SadContext | null
   invoice_processing: Record<string, unknown> | null
 }
 
@@ -149,6 +228,10 @@ export interface UpdateTransportInfoRequest {
   trailer_plate?: string | null
   country_of_dispatch?: string | null
   country_of_destination?: string | null
+}
+
+export interface UpdateSadContextRequest {
+  sad_context?: SadContext | null
 }
 
 export interface UpdateInvoiceRequest {

@@ -54,6 +54,7 @@ import type {
   UpdateInvoiceRequest,
   UpdateInvoiceTotalsRequest,
   UpdatePartyRequest,
+  UpdateSadContextRequest,
   UpdateTransportInfoRequest,
   UpsertDraftRequest,
   UpsertRuleRequest,
@@ -237,6 +238,7 @@ export const endpoints = {
     updateConsignor: transportOrderSection<UpdatePartyRequest>("consignor"),
     updateConsignee: transportOrderSection<UpdatePartyRequest>("consignee"),
     updateTransportInfo: transportOrderSection<UpdateTransportInfoRequest>("transport-info"),
+    updateSadContext: transportOrderSection<UpdateSadContextRequest>("sad-context"),
     updateInvoice: (pid: string, oid: string, iid: string, body: UpdateInvoiceRequest) =>
       apiClient.post<EmptyOk>(`/packages/${pid}/transport-orders/${oid}/invoices/${iid}`, {
         jsonBody: body,

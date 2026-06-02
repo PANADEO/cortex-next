@@ -38,6 +38,7 @@ const JSON_API_PATTERNS: RegExp[] = [
   /^\/packages\/[^/]+\/transport-orders\/[^/]+\/consignor$/,
   /^\/packages\/[^/]+\/transport-orders\/[^/]+\/consignee$/,
   /^\/packages\/[^/]+\/transport-orders\/[^/]+\/transport-info$/,
+  /^\/packages\/[^/]+\/transport-orders\/[^/]+\/sad-context$/,
   /^\/packages\/[^/]+\/transport-orders\/[^/]+\/invoices\/[^/]+$/,
   /^\/packages\/[^/]+\/transport-orders\/[^/]+\/invoices\/[^/]+\/totals$/,
   /^\/packages\/[^/]+\/transport-orders\/[^/]+\/invoices\/[^/]+\/delivery-terms$/,

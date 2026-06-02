@@ -26,6 +26,7 @@ import type {
   UpdateInvoiceRequest,
   UpdateInvoiceTotalsRequest,
   UpdatePartyRequest,
+  UpdateSadContextRequest,
   UpdateTransportInfoRequest,
   UpsertDraftRequest,
   UpsertRuleRequest,
@@ -327,6 +328,11 @@ export const useUpdateTransportInfo = () =>
     endpoints.transportOrders.updateTransportInfo(a.packageId, a.orderId, a.body),
   )
 
+export const useUpdateSadContext = () =>
+  useTransportOrderMutation((a: TransportOrderArgs<UpdateSadContextRequest>) =>
+    endpoints.transportOrders.updateSadContext(a.packageId, a.orderId, a.body),
+  )
+
 export const useUpdateInvoice = () =>
   useTransportOrderMutation((a: InvoiceArgs<UpdateInvoiceRequest>) =>
     endpoints.transportOrders.updateInvoice(a.packageId, a.orderId, a.invoiceId, a.body),
@@ -361,10 +367,7 @@ export function useDirtyPackages(
   })
 }
 
-export function useDirtyPackage(
-  id: string,
-  options: { enabled?: boolean } = {},
-) {
+export function useDirtyPackage(id: string, options: { enabled?: boolean } = {}) {
   const enabledByCaller = options.enabled ?? true
   return useQuery({
     queryKey: queryKeys.classification.detail(id),

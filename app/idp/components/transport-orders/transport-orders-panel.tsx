@@ -1,6 +1,9 @@
 "use client"
 
+import { wrapMutation } from "@/lib/hooks/use-toast-mutation"
+import { useSourceMaterialSelectionStore } from "@/lib/stores/source-material-selection"
 import {
+  useExportTemplates,
   usePackageTransportOrders,
   useUpdateBuyer,
   useUpdateConsignee,
@@ -9,6 +12,7 @@ import {
   useUpdateInvoice,
   useUpdateInvoiceLines,
   useUpdateInvoiceTotals,
+  useUpdateSadContext,
   useUpdateSeller,
   useUpdateTransportInfo,
 } from "@cortex/api"
@@ -16,10 +20,9 @@ import type { Invoice, Party, TransportOrder } from "@cortex/types"
 import { EmptyState, LoadingState } from "@cortex/ui"
 import { Truck } from "lucide-react"
 import { useMemo } from "react"
-import { wrapMutation } from "@/lib/hooks/use-toast-mutation"
-import { useSourceMaterialSelectionStore } from "@/lib/stores/source-material-selection"
 import { InvoiceEditor } from "./invoice-editor"
 import { PartyEditor } from "./party-editor"
+import { SadContextEditor } from "./sad-context-editor"
 import { TransportInfoEditor } from "./transport-info-editor"
 
 interface Props {
@@ -29,11 +32,16 @@ interface Props {
 
 export function TransportOrdersPanel({ packageId, canEdit }: Props) {
   const { data, isLoading } = usePackageTransportOrders(packageId, { polling: false })
+  const exportTemplates = useExportTemplates()
 
   if (isLoading) return <LoadingState variant="skeleton" rows={6} />
 
   const orders = data?.verified_transport_orders ?? data?.transport_orders ?? null
   const order = orders?.[0]
+  const hasHuzarExport =
+    exportTemplates.data?.some(
+      (template) => template.name === "sad_xml" || template.name.startsWith("huzar_xml"),
+    ) ?? false
 
   if (!order) {
     return (
@@ -47,7 +55,12 @@ export function TransportOrdersPanel({ packageId, canEdit }: Props) {
 
   return (
     <div className="space-y-8">
-      <TransportOrderSection order={order} packageId={packageId} canEdit={canEdit} />
+      <TransportOrderSection
+        order={order}
+        packageId={packageId}
+        canEdit={canEdit}
+        hasHuzarExport={hasHuzarExport}
+      />
     </div>
   )
 }
@@ -56,6 +69,7 @@ interface SectionProps {
   order: TransportOrder
   packageId: string
   canEdit: boolean
+  hasHuzarExport: boolean
 }
 
 interface PartyConfig {
@@ -64,12 +78,13 @@ interface PartyConfig {
   value: Party | null
 }
 
-function TransportOrderSection({ order, packageId, canEdit }: SectionProps) {
+function TransportOrderSection({ order, packageId, canEdit, hasHuzarExport }: SectionProps) {
   const seller = useUpdateSeller()
   const buyer = useUpdateBuyer()
   const consignor = useUpdateConsignor()
   const consignee = useUpdateConsignee()
   const transportInfo = useUpdateTransportInfo()
+  const sadContext = useUpdateSadContext()
   const invoiceHeader = useUpdateInvoice()
   const deliveryTerms = useUpdateDeliveryTerms()
   const invoiceTotals = useUpdateInvoiceTotals()
@@ -78,6 +93,7 @@ function TransportOrderSection({ order, packageId, canEdit }: SectionProps) {
 
   const partyMutations = { seller, buyer, consignor, consignee }
   const saveTransportInfo = wrapMutation(transportInfo, "Transport info updated")
+  const saveSadContext = wrapMutation(sadContext, "SAD context updated")
   const saveInvoiceHeader = wrapMutation(invoiceHeader, "Invoice updated")
   const saveDeliveryTerms = wrapMutation(deliveryTerms, "Delivery terms updated")
   const saveInvoiceTotals = wrapMutation(invoiceTotals, "Totals updated")
@@ -111,6 +127,15 @@ function TransportOrderSection({ order, packageId, canEdit }: SectionProps) {
         isSaving={transportInfo.isPending}
         onSave={(body) => saveTransportInfo({ packageId, orderId: order.id, body })}
       />
+
+      {hasHuzarExport ? (
+        <SadContextEditor
+          order={order}
+          canEdit={canEdit}
+          isSaving={sadContext.isPending}
+          onSave={(body) => saveSadContext({ packageId, orderId: order.id, body })}
+        />
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         {parties.map(({ label, role, value }) => {

@@ -285,6 +285,7 @@ export const handlers = [
   http.post("/packages/:pid/transport-orders/:oid/consignor", () => passthrough()),
   http.post("/packages/:pid/transport-orders/:oid/consignee", () => passthrough()),
   http.post("/packages/:pid/transport-orders/:oid/transport-info", () => passthrough()),
+  http.post("/packages/:pid/transport-orders/:oid/sad-context", () => passthrough()),
   http.post("/packages/:pid/transport-orders/:oid/invoices/:iid", () => passthrough()),
   http.post("/packages/:pid/transport-orders/:oid/invoices/:iid/totals", () => passthrough()),
   http.post("/packages/:pid/transport-orders/:oid/invoices/:iid/delivery-terms", () =>
@@ -535,7 +536,8 @@ export const handlers = [
     const template = url.searchParams.get("template") ?? "export"
     const body = (await request.json().catch(() => ({}))) as { to_email?: string }
     return HttpResponse.json({
-      sent_to: body.to_email?.trim() || process.env.NEXT_PUBLIC_DEV_USER_EMAIL || "dev@cortex.local",
+      sent_to:
+        body.to_email?.trim() || process.env.NEXT_PUBLIC_DEV_USER_EMAIL || "dev@cortex.local",
       file_name: `mock_${template}.csv`,
     })
   }),
