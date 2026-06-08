@@ -1,9 +1,28 @@
 // @vitest-environment jsdom
+import { queryKeys } from "@cortex/api"
 import type { Invoice, UpdateInvoiceLinesRequest } from "@cortex/types"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import type { ReactNode } from "react"
 import { describe, expect, it, vi } from "vitest"
 import { LinesSpreadsheet } from "./lines-spreadsheet"
+
+function freshClient(): QueryClient {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
+}
+
+function renderWithPreferences(ui: ReactNode, hiddenColumns: string[] | null = null) {
+  const client = freshClient()
+  client.setQueryData(queryKeys.userPreferences(), {
+    document_panel_ratio: null,
+    theme_mode: null,
+    invoice_line_hidden_columns: hiddenColumns,
+  })
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
+}
 
 function makeInvoice(): Invoice {
   return {
@@ -49,7 +68,7 @@ describe("LinesSpreadsheet", () => {
   it("renders and saves one Customs Code field in customs-code mode", async () => {
     const onSave = vi.fn<(body: UpdateInvoiceLinesRequest) => Promise<void>>(async () => undefined)
 
-    render(
+    renderWithPreferences(
       <LinesSpreadsheet
         invoice={makeInvoice()}
         canEdit
@@ -79,5 +98,21 @@ describe("LinesSpreadsheet", () => {
       cn_code: "9999999999",
       hs: "9999999999",
     })
+  })
+
+  it("hides configured columns from the editable spreadsheet", () => {
+    renderWithPreferences(
+      <LinesSpreadsheet
+        invoice={makeInvoice()}
+        canEdit
+        isSaving={false}
+        onSave={async () => undefined}
+      />,
+      ["product_code"],
+    )
+
+    expect(screen.queryByRole("button", { name: /product/i })).toBeNull()
+    expect(screen.queryByDisplayValue("AX2486029")).toBeNull()
+    expect(screen.getByRole("button", { name: /^qty/i })).not.toBeNull()
   })
 })

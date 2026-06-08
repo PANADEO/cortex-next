@@ -30,6 +30,7 @@ import type {
   UpdateTransportInfoRequest,
   UpsertDraftRequest,
   UpsertRuleRequest,
+  UserPreferencesResponse,
 } from "@cortex/types"
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { endpoints } from "./endpoints"
@@ -47,8 +48,24 @@ export function useSetUserPreferences() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (body: SetUserPreferencesRequest) => endpoints.user.setPreferences(body),
-    onSuccess: (res) => {
-      client.setQueryData(queryKeys.userPreferences(), res)
+    onSuccess: (res, body) => {
+      client.setQueryData<UserPreferencesResponse | undefined>(
+        queryKeys.userPreferences(),
+        (prev) => ({
+          document_panel_ratio:
+            "document_panel_ratio" in body
+              ? (body.document_panel_ratio ?? null)
+              : (res.document_panel_ratio ?? prev?.document_panel_ratio ?? null),
+          theme_mode:
+            "theme_mode" in body
+              ? (body.theme_mode ?? null)
+              : (res.theme_mode ?? prev?.theme_mode ?? null),
+          invoice_line_hidden_columns:
+            "invoice_line_hidden_columns" in body
+              ? (body.invoice_line_hidden_columns ?? null)
+              : (res.invoice_line_hidden_columns ?? prev?.invoice_line_hidden_columns ?? null),
+        }),
+      )
     },
   })
 }

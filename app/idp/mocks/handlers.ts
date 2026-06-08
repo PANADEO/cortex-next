@@ -82,6 +82,7 @@ const ruleDetailsById = new Map(rules.map((r) => [r.id, buildRuleDetails(r)]))
 const userPreferences: UserPreferencesResponse = {
   document_panel_ratio: null,
   theme_mode: null,
+  invoice_line_hidden_columns: null,
 }
 
 const liveActions = new Map<string, PackageActionReadModel[]>()
@@ -329,6 +330,8 @@ export const handlers = [
     if ("theme_mode" in body) userPreferences.theme_mode = body.theme_mode ?? null
     if ("document_panel_ratio" in body)
       userPreferences.document_panel_ratio = body.document_panel_ratio ?? null
+    if ("invoice_line_hidden_columns" in body)
+      userPreferences.invoice_line_hidden_columns = body.invoice_line_hidden_columns ?? null
     return HttpResponse.json(userPreferences)
   }),
 

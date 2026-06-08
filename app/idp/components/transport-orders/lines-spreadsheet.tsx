@@ -7,9 +7,15 @@ import { cn } from "@cortex/utils"
 import type { LucideIcon } from "lucide-react"
 import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, RotateCcw, Save } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
+import {
+  INVOICE_LINE_COLUMNS,
+  InvoiceLineColumnsDialog,
+  useVisibleInvoiceLineColumns,
+  type InvoiceLineColumnConfig,
+} from "./invoice-line-columns"
 import { invoiceLineRowToRequest, invoiceLineToRow, type InvoiceLineRow } from "./invoice-line-row"
 
-interface ColumnDef {
+interface SpreadsheetColumnDef {
   key: keyof InvoiceLineRow
   label: string
   width: number
@@ -17,44 +23,36 @@ interface ColumnDef {
   numeric?: boolean
 }
 
-const DEFAULT_COLUMNS: ColumnDef[] = [
-  { key: "line_number", label: "#", width: 48, numeric: true },
-  { key: "po_number", label: "PO", width: 112 },
-  { key: "product_code", label: "Product", width: 112 },
-  { key: "description", label: "Description", width: 320 },
-  { key: "cn_code", label: "CN", width: 112 },
-  { key: "hs", label: "HS", width: 96 },
-  { key: "preference_code", label: "Pref.", width: 64 },
-  { key: "atr_documents", label: "ATR", width: 200 },
-  { key: "quantity", label: "Qty", width: 80, numeric: true },
-  { key: "unit_of_measure", label: "UoM", width: 64 },
-  { key: "invoice_value", label: "Value", width: 96, numeric: true },
-  { key: "net_weight_kg", label: "Net kg", width: 96, numeric: true },
-  { key: "gross_weight_kg", label: "Gross kg", width: 96, numeric: true },
-  { key: "packages_quantity", label: "Pkg qty", width: 80, numeric: true },
-  { key: "packages_type", label: "Pkg type", width: 96 },
-  { key: "packages_marking", label: "Pkg mark", width: 112 },
-  { key: "origin_country", label: "Origin", width: 80, uppercase: true },
-]
-
-const CUSTOMS_CODE_COLUMNS: ColumnDef[] = [
-  { key: "line_number", label: "#", width: 48, numeric: true },
-  { key: "po_number", label: "PO", width: 112 },
-  { key: "product_code", label: "Product", width: 112 },
-  { key: "description", label: "Description", width: 320 },
-  { key: "cn_code", label: "Customs Code", width: 132 },
-  { key: "preference_code", label: "Pref.", width: 64 },
-  { key: "atr_documents", label: "ATR", width: 200 },
-  { key: "quantity", label: "Qty", width: 80, numeric: true },
-  { key: "unit_of_measure", label: "UoM", width: 64 },
-  { key: "invoice_value", label: "Value", width: 96, numeric: true },
-  { key: "net_weight_kg", label: "Net kg", width: 96, numeric: true },
-  { key: "gross_weight_kg", label: "Gross kg", width: 96, numeric: true },
-  { key: "packages_quantity", label: "Pkg qty", width: 80, numeric: true },
-  { key: "packages_type", label: "Pkg type", width: 96 },
-  { key: "packages_marking", label: "Pkg mark", width: 112 },
-  { key: "origin_country", label: "Origin", width: 80, uppercase: true },
-]
+function buildSpreadsheetColumns(
+  columns: readonly InvoiceLineColumnConfig[],
+  useCustomsCode: boolean,
+): SpreadsheetColumnDef[] {
+  return columns.flatMap<SpreadsheetColumnDef>((column) => {
+    if (column.key === "customs_code") {
+      return useCustomsCode
+        ? [
+            {
+              key: "cn_code",
+              label: column.spreadsheetLabel,
+              width: column.width,
+            },
+          ]
+        : [
+            { key: "cn_code", label: "CN", width: 112 },
+            { key: "hs", label: "HS", width: 96 },
+          ]
+    }
+    const key = column.key as keyof InvoiceLineRow
+    const next: SpreadsheetColumnDef = {
+      key,
+      label: column.spreadsheetLabel,
+      width: column.width,
+    }
+    if (column.uppercase !== undefined) next.uppercase = column.uppercase
+    if (column.numeric !== undefined) next.numeric = column.numeric
+    return [next]
+  })
+}
 
 const MIN_COLUMN_WIDTH = 48
 
@@ -86,9 +84,14 @@ export function LinesSpreadsheet({
   onSave,
   useCustomsCode = false,
 }: Props) {
-  const columns = useMemo(
-    () => (useCustomsCode ? CUSTOMS_CODE_COLUMNS : DEFAULT_COLUMNS),
+  const { columns: visibleLineColumns } = useVisibleInvoiceLineColumns()
+  const allColumns = useMemo(
+    () => buildSpreadsheetColumns(INVOICE_LINE_COLUMNS, useCustomsCode),
     [useCustomsCode],
+  )
+  const columns = useMemo(
+    () => buildSpreadsheetColumns(visibleLineColumns, useCustomsCode),
+    [useCustomsCode, visibleLineColumns],
   )
   const initial = useMemo(() => {
     const map: Record<string, InvoiceLineRow> = {}
@@ -114,6 +117,17 @@ export function LinesSpreadsheet({
   const resizeDisposerRef = useRef<(() => void) | null>(null)
 
   useEffect(() => () => resizeDisposerRef.current?.(), [])
+
+  useEffect(() => {
+    setWidths((prev) => ({
+      ...Object.fromEntries(columns.map((c) => [c.key, c.width])),
+      ...prev,
+    }))
+  }, [columns])
+
+  useEffect(() => {
+    if (sort && !columns.some((c) => c.key === sort.key)) setSort(null)
+  }, [columns, sort])
 
   const lineIdsKey = useMemo(() => invoice.lines.map((l) => l.id).join("|"), [invoice.lines])
   // Reset only when invoice identity, its line set, or the visible code mode changes —
@@ -158,7 +172,7 @@ export function LinesSpreadsheet({
     const current = valuesRef.current[rowId]
     const origin = initialRef.current[rowId]
     if (!current || !origin) return false
-    for (const col of columns) {
+    for (const col of allColumns) {
       if (col.key === changedKey) {
         if (changedValue !== origin[col.key]) return true
       } else if (current[col.key] !== origin[col.key]) {
@@ -266,21 +280,29 @@ export function LinesSpreadsheet({
             </p>
           ) : null}
         </div>
-        {canEdit ? (
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleReset} disabled={!dirty || isSaving}>
-              <RotateCcw className="mr-1.5 h-4 w-4" /> Reset
-            </Button>
-            <Button size="sm" onClick={handleSave} disabled={!dirty || isSaving}>
-              {isSaving ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-1.5 h-4 w-4" />
-              )}
-              Save lines
-            </Button>
-          </div>
-        ) : null}
+        <div className="flex gap-2">
+          <InvoiceLineColumnsDialog />
+          {canEdit ? (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+                disabled={!dirty || isSaving}
+              >
+                <RotateCcw className="mr-1.5 h-4 w-4" /> Reset
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={!dirty || isSaving}>
+                {isSaving ? (
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-1.5 h-4 w-4" />
+                )}
+                Save lines
+              </Button>
+            </>
+          ) : null}
+        </div>
       </header>
       <div className="min-h-0 flex-1 overflow-auto">
         <table

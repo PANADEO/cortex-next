@@ -21,6 +21,7 @@ import { Pencil } from "lucide-react"
 import { useMemo, useState } from "react"
 import { z } from "zod"
 import { FieldsForm, type FieldSpec } from "./fields-form"
+import { InvoiceLineColumnsDialog, useVisibleInvoiceLineColumns } from "./invoice-line-columns"
 import { invoiceLineRowToRequest, invoiceLineToRow, type InvoiceLineRow } from "./invoice-line-row"
 
 const lineSchema = z.object({
@@ -95,6 +96,23 @@ function displayCustomsCode(line: InvoiceLine): string {
   return line.cn_code || line.hs || "—"
 }
 
+function displayLineValue(line: InvoiceLine, key: keyof InvoiceLineRow): string {
+  if (key === "preference_code") return line.sad_override?.preference_code ?? "—"
+  if (key === "atr_documents") {
+    const documents = line.sad_override?.atr_documents ?? []
+    return (
+      documents
+        .map((document) =>
+          [document.document_code || "N018", document.document_number, document.quantity]
+            .filter(Boolean)
+            .join(" / "),
+        )
+        .join("; ") || "—"
+    )
+  }
+  return line[key] ?? "—"
+}
+
 export function InvoiceLinesGrid({
   invoice,
   canEdit,
@@ -105,20 +123,24 @@ export function InvoiceLinesGrid({
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const editingLine = invoice.lines.find((l) => l.id === editingId) ?? null
+  const { columns: visibleLineColumns } = useVisibleInvoiceLineColumns()
 
   const columns = useMemo<ColumnDef<InvoiceLine, unknown>[]>(() => {
-    const codeColumns: ColumnDef<InvoiceLine, unknown>[] = useCustomsCode
-      ? [
-          {
-            id: "customs_code",
-            header: "Customs Code",
-            size: 132,
-            cell: ({ row }) => (
-              <span className="font-mono text-xs">{displayCustomsCode(row.original)}</span>
-            ),
-          },
-        ]
-      : [
+    const base = visibleLineColumns.flatMap<ColumnDef<InvoiceLine, unknown>>((column) => {
+      if (column.key === "customs_code") {
+        if (useCustomsCode) {
+          return [
+            {
+              id: "customs_code",
+              header: column.gridLabel,
+              size: column.width,
+              cell: ({ row }) => (
+                <span className="font-mono text-xs">{displayCustomsCode(row.original)}</span>
+              ),
+            },
+          ]
+        }
+        return [
           {
             id: "cn_code",
             header: "CN Code",
@@ -134,115 +156,28 @@ export function InvoiceLinesGrid({
             cell: ({ row }) => <span className="font-mono text-xs">{row.original.hs ?? "—"}</span>,
           },
         ]
-    const base: ColumnDef<InvoiceLine, unknown>[] = [
-      {
-        id: "line_number",
-        header: "#",
-        size: 56,
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.line_number ?? "—"}</span>
-        ),
-      },
-      {
-        id: "po_number",
-        header: "PO Number",
-        size: 150,
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.po_number ?? "—"}</span>
-        ),
-      },
-      {
-        id: "product_code",
-        header: "Product Code",
-        size: 160,
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.product_code ?? "—"}</span>
-        ),
-      },
-      {
-        id: "description",
-        header: "Description",
-        size: 240,
-        cell: ({ row }) => (
-          <span className="block truncate text-xs">{row.original.description ?? "—"}</span>
-        ),
-      },
-      ...codeColumns,
-      {
-        id: "preference_code",
-        header: "Pref.",
-        size: 72,
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">
-            {row.original.sad_override?.preference_code ?? "—"}
-          </span>
-        ),
-      },
-      {
-        id: "atr_documents",
-        header: "ATR",
-        size: 220,
-        cell: ({ row }) => {
-          const documents = row.original.sad_override?.atr_documents ?? []
-          const label = documents
-            .map((document) =>
-              [document.document_code || "N018", document.document_number, document.quantity]
-                .filter(Boolean)
-                .join(" / "),
+      }
+      const key = column.key as keyof InvoiceLineRow
+      return [
+        {
+          id: key,
+          header: column.gridLabel,
+          size: column.width,
+          cell: ({ row }) => {
+            const isDescription = key === "description"
+            return (
+              <span
+                className={
+                  isDescription ? "block truncate text-xs" : "block truncate font-mono text-xs"
+                }
+              >
+                {displayLineValue(row.original, key)}
+              </span>
             )
-            .join("; ")
-          return <span className="block truncate font-mono text-xs">{label || "—"}</span>
+          },
         },
-      },
-      {
-        id: "quantity",
-        header: "Qty",
-        size: 90,
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.quantity ?? "—"}</span>
-        ),
-      },
-      {
-        id: "unit_of_measure",
-        header: "UoM",
-        size: 80,
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.unit_of_measure ?? "—"}</span>
-        ),
-      },
-      {
-        id: "invoice_value",
-        header: "Value",
-        size: 120,
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.invoice_value ?? "—"}</span>
-        ),
-      },
-      {
-        id: "net_weight_kg",
-        header: "Net Wt (kg)",
-        size: 130,
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.net_weight_kg ?? "—"}</span>
-        ),
-      },
-      {
-        id: "gross_weight_kg",
-        header: "Gross Wt (kg)",
-        size: 140,
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.gross_weight_kg ?? "—"}</span>
-        ),
-      },
-      {
-        id: "origin_country",
-        header: "Origin",
-        size: 90,
-        cell: ({ row }) => (
-          <span className="font-mono text-xs uppercase">{row.original.origin_country ?? "—"}</span>
-        ),
-      },
-    ]
+      ]
+    })
     if (!canEdit) return base
     return [
       ...base,
@@ -265,7 +200,7 @@ export function InvoiceLinesGrid({
         ),
       },
     ]
-  }, [canEdit, useCustomsCode])
+  }, [canEdit, useCustomsCode, visibleLineColumns])
 
   const handleSaveLine = async (values: InvoiceLineRow): Promise<void> => {
     if (!editingLine) return
@@ -284,6 +219,7 @@ export function InvoiceLinesGrid({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Invoice Lines</h4>
+        <InvoiceLineColumnsDialog />
       </div>
       <DataTable
         columns={columns}

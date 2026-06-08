@@ -1,8 +1,27 @@
 // @vitest-environment jsdom
+import { queryKeys } from "@cortex/api"
 import type { Invoice } from "@cortex/types"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { render, screen } from "@testing-library/react"
+import type { ReactNode } from "react"
 import { describe, expect, it } from "vitest"
 import { InvoiceLinesGrid } from "./invoice-lines-grid"
+
+function freshClient(): QueryClient {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
+}
+
+function renderWithPreferences(ui: ReactNode, hiddenColumns: string[] | null = null) {
+  const client = freshClient()
+  client.setQueryData(queryKeys.userPreferences(), {
+    document_panel_ratio: null,
+    theme_mode: null,
+    invoice_line_hidden_columns: hiddenColumns,
+  })
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
+}
 
 function makeInvoice(): Invoice {
   return {
@@ -70,7 +89,7 @@ function makeInvoiceWithHsFallback(): Invoice {
 
 describe("InvoiceLinesGrid", () => {
   it("renders the full invoice-line preview column set", () => {
-    render(
+    renderWithPreferences(
       <InvoiceLinesGrid
         invoice={makeInvoice()}
         canEdit={false}
@@ -103,7 +122,7 @@ describe("InvoiceLinesGrid", () => {
   })
 
   it("renders one Customs Code column when customs-code mode is enabled", () => {
-    render(
+    renderWithPreferences(
       <InvoiceLinesGrid
         invoice={makeInvoiceWithHsFallback()}
         canEdit={false}
@@ -117,5 +136,21 @@ describe("InvoiceLinesGrid", () => {
     expect(screen.queryByRole("columnheader", { name: "CN Code" })).toBeNull()
     expect(screen.queryByRole("columnheader", { name: "HS Code" })).toBeNull()
     expect(screen.getByText("8536")).not.toBeNull()
+  })
+
+  it("hides configured data columns without hiding the edit action", () => {
+    renderWithPreferences(
+      <InvoiceLinesGrid
+        invoice={makeInvoice()}
+        canEdit
+        isSaving={false}
+        onSaveLines={async () => undefined}
+      />,
+      ["description"],
+    )
+
+    expect(screen.queryByRole("columnheader", { name: "Description" })).toBeNull()
+    expect(screen.queryByText("Sample product")).toBeNull()
+    expect(screen.getByRole("button", { name: "Edit line" })).not.toBeNull()
   })
 })

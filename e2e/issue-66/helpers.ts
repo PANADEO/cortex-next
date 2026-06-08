@@ -1,5 +1,5 @@
-import path from "node:path"
 import { expect, type Page } from "@playwright/test"
+import path from "node:path"
 
 export const PACKAGE_ID = "pkg-0001"
 
@@ -212,7 +212,11 @@ export async function mockBackendApi(page: Page): Promise<void> {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ document_panel_ratio: null, theme_mode: null }),
+      body: JSON.stringify({
+        document_panel_ratio: null,
+        theme_mode: null,
+        invoice_line_hidden_columns: null,
+      }),
     })
   })
 
