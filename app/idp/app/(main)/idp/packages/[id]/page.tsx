@@ -50,7 +50,15 @@ import {
   TabsTrigger,
 } from "@cortex/ui"
 import { emailsMatch, formatAbsolute, formatFileSizeMb, formatMoney } from "@cortex/utils"
-import { ArrowLeft, Braces, FileArchive, Loader2, Maximize2 } from "lucide-react"
+import {
+  ArrowLeft,
+  Braces,
+  ChevronDown,
+  ChevronUp,
+  FileArchive,
+  Loader2,
+  Maximize2,
+} from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useCallback, useMemo, useState } from "react"
@@ -82,6 +90,7 @@ export default function PackageDetailPage() {
   const [structureOpen, setStructureOpen] = useState(false)
   const [zipDownloading, setZipDownloading] = useState(false)
   const [activeTab, setActiveTab] = useState("transport")
+  const [summaryCollapsed, setSummaryCollapsed] = useState(false)
 
   const detail = usePackage(id, { polling: pollingEnabled })
   const effectivePolling =
@@ -157,6 +166,79 @@ export default function PackageDetailPage() {
     }
   }
 
+  const transitionPending =
+    start.isPending || cancel.isPending || unlock.isPending || finish.isPending || reset.isPending
+
+  const renderPackageActions = (layout: "row" | "column") => {
+    if (!pkg) return null
+    return (
+      <>
+        <Button asChild variant="outline" size="sm" disabled={!pkg.analysis_result}>
+          <Link
+            href={`/idp/verify/${pkg.id}`}
+            aria-disabled={!pkg.analysis_result}
+            className={!pkg.analysis_result ? "pointer-events-none opacity-50" : ""}
+          >
+            <Maximize2 className="mr-1.5 h-4 w-4" />
+            Open verification workspace
+          </Link>
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleDownloadZip} disabled={zipDownloading}>
+          {zipDownloading ? (
+            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+          ) : (
+            <FileArchive className="mr-1.5 h-4 w-4" />
+          )}
+          Download ZIP
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setStructureOpen(true)}
+          disabled={!pkg.analysis_result}
+        >
+          <Braces className="mr-1.5 h-4 w-4" />
+          Show structure
+        </Button>
+        {transitions.isLoading ? (
+          <Skeleton className={layout === "row" ? "h-8 w-32" : "h-9 w-full"} />
+        ) : transitions.data?.transitions.length === 0 ? (
+          <span
+            className={
+              layout === "row"
+                ? "px-2 text-xs text-muted-foreground"
+                : "text-xs text-muted-foreground"
+            }
+          >
+            No transitions available.
+          </span>
+        ) : (
+          transitions.data?.transitions.map((t) => {
+            const isPrimary = t === "finish_verification" || t === "start_verification"
+            const isPending =
+              (start.isPending && t === "start_verification") ||
+              (finish.isPending && t === "finish_verification") ||
+              (cancel.isPending && t === "cancel_verification") ||
+              (unlock.isPending && t === "unlock_verification") ||
+              (reset.isPending && t === "reset_verification")
+            return (
+              <Button
+                key={t}
+                variant={isPrimary ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleTransition(t)}
+                disabled={transitionPending}
+              >
+                {isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+                {TRANSITION_LABELS[t]}
+              </Button>
+            )
+          })
+        )}
+      </>
+    )
+  }
+
   return (
     <>
       <PageHeader
@@ -188,127 +270,109 @@ export default function PackageDetailPage() {
           <LoadingState label="Loading package details…" />
         ) : pkg ? (
           <>
-            <section className="grid gap-4 md:shrink-0 md:grid-cols-[1fr_auto]">
+            <section
+              className={
+                summaryCollapsed ? "md:shrink-0" : "grid gap-4 md:shrink-0 md:grid-cols-[1fr_auto]"
+              }
+            >
               <Card>
                 <CardContent className="space-y-4 p-5">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <PackageStatusBadges
-                      processingState={pkg.processing_state}
-                      verificationState={pkg.verification_state}
-                      size="md"
-                    />
-                    {pkg.processing_state === "ready" ? (
-                      <AiNotificationsChip
-                        packageId={pkg.id}
-                        onJumpToTab={() => {
-                          setActiveTab("ai-notifications")
-                          handleAiNotificationsRead()
-                        }}
+                  <div
+                    className={
+                      summaryCollapsed
+                        ? "flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"
+                        : "flex flex-wrap items-center gap-3"
+                    }
+                  >
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+                      <PackageStatusBadges
+                        processingState={pkg.processing_state}
+                        verificationState={pkg.verification_state}
+                        size="md"
                       />
-                    ) : null}
-                    {pkg.assignee ? (
-                      <span className="text-xs text-muted-foreground">
-                        Assigned to <span className="font-mono">{pkg.assignee}</span>
-                      </span>
-                    ) : null}
-                  </div>
-                  {pkg.processing_state === "ready" ? (
-                    <PackageTransportSummary packageId={pkg.id} />
-                  ) : null}
-                  <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    <span>
-                      <span className="text-muted-foreground/70">Uploaded</span>{" "}
-                      <span className="text-foreground">{formatAbsolute(pkg.created_date)}</span>
-                    </span>
-                    {pkg.uploaded_by ? (
-                      <span>
-                        <span className="text-muted-foreground/70">by</span>{" "}
-                        <span className="font-mono text-foreground">{pkg.uploaded_by}</span>
-                      </span>
-                    ) : null}
-                    <span className="min-w-0 truncate">
-                      <span className="text-muted-foreground/70">Hash</span>{" "}
-                      <span className="font-mono text-foreground">{pkg.file_hash}</span>
-                    </span>
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="min-w-64">
-                <CardContent className="space-y-2 p-5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Actions
-                  </p>
-                  <div className="flex flex-col gap-1.5">
-                    <Button asChild variant="outline" size="sm" disabled={!pkg.analysis_result}>
-                      <Link
-                        href={`/idp/verify/${pkg.id}`}
-                        aria-disabled={!pkg.analysis_result}
-                        className={!pkg.analysis_result ? "pointer-events-none opacity-50" : ""}
-                      >
-                        <Maximize2 className="mr-1.5 h-4 w-4" />
-                        Open verification workspace
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDownloadZip}
-                      disabled={zipDownloading}
-                    >
-                      {zipDownloading ? (
-                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                      ) : (
-                        <FileArchive className="mr-1.5 h-4 w-4" />
-                      )}
-                      Download ZIP
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setStructureOpen(true)}
-                      disabled={!pkg.analysis_result}
-                    >
-                      <Braces className="mr-1.5 h-4 w-4" />
-                      Show structure
-                    </Button>
-                  </div>
-                  {transitions.isLoading ? (
-                    <Skeleton className="h-9 w-full" />
-                  ) : transitions.data?.transitions.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No transitions available.</p>
-                  ) : (
-                    <div className="flex flex-col gap-1.5">
-                      {transitions.data?.transitions.map((t) => {
-                        const isPrimary = t === "finish_verification" || t === "start_verification"
-                        return (
-                          <Button
-                            key={t}
-                            variant={isPrimary ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => handleTransition(t)}
-                            disabled={
-                              start.isPending ||
-                              cancel.isPending ||
-                              unlock.isPending ||
-                              finish.isPending ||
-                              reset.isPending
-                            }
-                          >
-                            {(start.isPending && t === "start_verification") ||
-                            (finish.isPending && t === "finish_verification") ||
-                            (cancel.isPending && t === "cancel_verification") ||
-                            (unlock.isPending && t === "unlock_verification") ||
-                            (reset.isPending && t === "reset_verification") ? (
-                              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                            ) : null}
-                            {TRANSITION_LABELS[t]}
-                          </Button>
-                        )
-                      })}
+                      {pkg.processing_state === "ready" ? (
+                        <AiNotificationsChip
+                          packageId={pkg.id}
+                          onJumpToTab={() => {
+                            setActiveTab("ai-notifications")
+                            handleAiNotificationsRead()
+                          }}
+                        />
+                      ) : null}
+                      {pkg.assignee ? (
+                        <span className="min-w-0 text-xs text-muted-foreground">
+                          Assigned to <span className="font-mono">{pkg.assignee}</span>
+                        </span>
+                      ) : null}
                     </div>
-                  )}
+
+                    {summaryCollapsed ? (
+                      <div className="flex min-w-0 flex-wrap items-center gap-1.5 lg:max-w-[62%] lg:justify-end">
+                        {renderPackageActions("row")}
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          aria-label="Expand package summary"
+                          title="Expand package summary"
+                          onClick={() => setSummaryCollapsed(false)}
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {!summaryCollapsed ? (
+                    <>
+                      {pkg.processing_state === "ready" ? (
+                        <PackageTransportSummary packageId={pkg.id} />
+                      ) : null}
+                      <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        <span>
+                          <span className="text-muted-foreground/70">Uploaded</span>{" "}
+                          <span className="text-foreground">
+                            {formatAbsolute(pkg.created_date)}
+                          </span>
+                        </span>
+                        {pkg.uploaded_by ? (
+                          <span>
+                            <span className="text-muted-foreground/70">by</span>{" "}
+                            <span className="font-mono text-foreground">{pkg.uploaded_by}</span>
+                          </span>
+                        ) : null}
+                        <span className="min-w-0 truncate">
+                          <span className="text-muted-foreground/70">Hash</span>{" "}
+                          <span className="font-mono text-foreground">{pkg.file_hash}</span>
+                        </span>
+                      </p>
+                    </>
+                  ) : null}
                 </CardContent>
               </Card>
+
+              {!summaryCollapsed ? (
+                <Card className="min-w-64">
+                  <CardContent className="space-y-2 p-5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Actions
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        aria-label="Collapse package summary"
+                        title="Collapse package summary"
+                        onClick={() => setSummaryCollapsed(true)}
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-col gap-1.5">{renderPackageActions("column")}</div>
+                  </CardContent>
+                </Card>
+              ) : null}
             </section>
 
             <Tabs
