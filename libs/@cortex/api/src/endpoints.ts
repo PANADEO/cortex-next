@@ -85,6 +85,9 @@ function buildImportForm(
   if (body.fast_processing !== undefined) {
     form.append("fast_processing", String(body.fast_processing))
   }
+  if (body.atr_processing_enabled !== undefined) {
+    form.append("atr_processing_enabled", String(body.atr_processing_enabled))
+  }
   if (body.additional_ai_context_enabled !== undefined) {
     form.append("additional_ai_context_enabled", String(body.additional_ai_context_enabled))
   }

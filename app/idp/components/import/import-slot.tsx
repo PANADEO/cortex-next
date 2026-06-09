@@ -48,6 +48,7 @@ interface ImportSlotProps {
   onOptionsChange: (patch: Partial<ImportOptions>) => void
   onRemove: () => void
   onSubmit: () => void
+  showAtrProcessing?: boolean
 }
 
 const STATUS_META: Record<
@@ -90,6 +91,7 @@ export function ImportSlot({
   onOptionsChange,
   onRemove,
   onSubmit,
+  showAtrProcessing = false,
 }: ImportSlotProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
@@ -379,6 +381,7 @@ export function ImportSlot({
               idPrefix={`slot-${slot.id}`}
               state={slot.options}
               onChange={onOptionsChange}
+              showAtrProcessing={showAtrProcessing}
             />
           ) : null}
 

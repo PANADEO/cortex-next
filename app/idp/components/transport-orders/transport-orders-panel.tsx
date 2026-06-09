@@ -35,6 +35,7 @@ export function TransportOrdersPanel({ packageId, canEdit }: Props) {
   const { data, isLoading } = usePackageTransportOrders(packageId, { polling: false })
   const exportTemplates = useExportTemplates()
   const useCustomsCode = useFeatureFlag("idp.customs-code")
+  const showAtrProcessing = useFeatureFlag("idp.atr-processing")
 
   if (isLoading) return <LoadingState variant="skeleton" rows={6} />
 
@@ -63,6 +64,7 @@ export function TransportOrdersPanel({ packageId, canEdit }: Props) {
         canEdit={canEdit}
         hasHuzarExport={hasHuzarExport}
         useCustomsCode={useCustomsCode}
+        showAtrProcessing={showAtrProcessing}
       />
     </div>
   )
@@ -74,6 +76,7 @@ interface SectionProps {
   canEdit: boolean
   hasHuzarExport: boolean
   useCustomsCode: boolean
+  showAtrProcessing: boolean
 }
 
 interface PartyConfig {
@@ -88,6 +91,7 @@ function TransportOrderSection({
   canEdit,
   hasHuzarExport,
   useCustomsCode,
+  showAtrProcessing,
 }: SectionProps) {
   const seller = useUpdateSeller()
   const buyer = useUpdateBuyer()
@@ -187,6 +191,7 @@ function TransportOrderSection({
           }
           onSelectLine={(line) => selectLineRefs(line.source_references)}
           useCustomsCode={useCustomsCode}
+          showAtrProcessing={showAtrProcessing}
         />
       ))}
     </section>

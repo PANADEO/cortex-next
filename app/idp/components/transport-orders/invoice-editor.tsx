@@ -118,6 +118,7 @@ interface Props {
   onSaveLines: (body: UpdateInvoiceLinesRequest) => Promise<void>
   onSelectLine?: ((line: InvoiceLine) => void) | undefined
   useCustomsCode?: boolean
+  showAtrProcessing?: boolean
 }
 
 export function InvoiceEditor({
@@ -133,6 +134,7 @@ export function InvoiceEditor({
   onSaveLines,
   onSelectLine,
   useCustomsCode = false,
+  showAtrProcessing = true,
 }: Props) {
   const [open, setOpen] = useState(true)
   const Chevron = open ? ChevronDown : ChevronRight
@@ -214,6 +216,7 @@ export function InvoiceEditor({
             isSaving={isSavingLines}
             onSaveLines={onSaveLines}
             useCustomsCode={useCustomsCode}
+            showAtrProcessing={showAtrProcessing}
             {...(onSelectLine ? { onSelectLine } : {})}
           />
         </div>

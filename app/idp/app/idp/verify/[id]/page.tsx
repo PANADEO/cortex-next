@@ -61,6 +61,7 @@ export default function VerifyWorkspacePage() {
   const updateLines = useUpdateInvoiceLines()
   const unlock = useUnlockVerification(id)
   const useCustomsCode = useFeatureFlag("idp.customs-code")
+  const showAtrProcessing = useFeatureFlag("idp.atr-processing")
   const [documentPreviewVisible, setDocumentPreviewVisible] = useState(true)
   const [activeInvoiceKey, setActiveInvoiceKey] = useState<string | null>(null)
 
@@ -217,6 +218,7 @@ export default function VerifyWorkspacePage() {
                 isSaving={updateLines.isPending}
                 onSave={handleSaveLines}
                 useCustomsCode={useCustomsCode}
+                showAtrProcessing={showAtrProcessing}
               />
             </Panel>
             {documentPreviewVisible ? (

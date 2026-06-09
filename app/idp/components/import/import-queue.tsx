@@ -12,6 +12,7 @@ import {
   useImportPackage,
 } from "@cortex/api"
 import { Button } from "@cortex/ui"
+import { useFeatureFlag } from "@cortex/utils"
 import { Loader2, Send } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
@@ -33,6 +34,7 @@ export function ImportQueue() {
   const importOne = useImportPackage()
   const importEmail = useImportEmailPackage()
   const importMany = useImportMultiplePackages()
+  const showAtrProcessing = useFeatureFlag("idp.atr-processing")
 
   const patchSlot = useCallback((id: string, patch: Partial<ImportSlotValue>) => {
     setSlots((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
@@ -91,7 +93,9 @@ export function ImportQueue() {
     async (slot: ImportSlotValue) => {
       if (slot.files.length === 0) return
       const kind = detectIntakeKind(slot.files)
-      const serialized = serializeImportOptions(slot.options)
+      const serialized = serializeImportOptions(slot.options, {
+        atrProcessingAvailable: showAtrProcessing,
+      })
       const packageName = slot.packageName.trim() || null
       patchSlot(slot.id, { status: "uploading", errorMessage: undefined })
       try {
@@ -125,7 +129,7 @@ export function ImportQueue() {
         patchSlot(slot.id, { status: "error", errorMessage: message })
       }
     },
-    [importOne, importEmail, importMany, patchSlot],
+    [importOne, importEmail, importMany, patchSlot, showAtrProcessing],
   )
 
   const submitAll = useCallback(async () => {
@@ -156,6 +160,7 @@ export function ImportQueue() {
             onOptionsChange={(patch) => setOptions(slot.id, patch)}
             onRemove={() => removeSlot(slot.id)}
             onSubmit={() => submitSlot(slot)}
+            showAtrProcessing={showAtrProcessing}
           />
         ))}
       </div>

@@ -155,6 +155,7 @@ export const INVOICE_LINE_COLUMNS: readonly InvoiceLineColumnConfig[] = [
 ]
 
 const ALL_COLUMN_KEYS = new Set<InvoiceLineColumnKey>(INVOICE_LINE_COLUMN_KEYS)
+const ATR_COLUMN_KEYS = new Set<InvoiceLineColumnKey>(["preference_code", "atr_documents"])
 const STORAGE_KEY = "idp.invoiceLineHiddenColumns"
 const STORAGE_EVENT = "idp:invoice-line-hidden-columns"
 
@@ -162,6 +163,12 @@ export function getInvoiceLineHiddenColumns(
   preferences: UserPreferencesResponse | undefined,
 ): InvoiceLineColumnKey[] {
   return (preferences?.invoice_line_hidden_columns ?? []).filter((key) => ALL_COLUMN_KEYS.has(key))
+}
+
+export function getAvailableInvoiceLineColumns(showAtrColumns = true) {
+  return showAtrColumns
+    ? INVOICE_LINE_COLUMNS
+    : INVOICE_LINE_COLUMNS.filter((column) => !ATR_COLUMN_KEYS.has(column.key))
 }
 
 function preferencesIncludeInvoiceLineColumns(
@@ -212,7 +219,7 @@ function getLocalStorage(): Storage | null {
     : null
 }
 
-export function useVisibleInvoiceLineColumns() {
+export function useVisibleInvoiceLineColumns(showAtrColumns = true) {
   const preferences = useUserPreferences()
   const [storedHiddenColumns, setStoredHiddenColumns] = useState<InvoiceLineColumnKey[]>(() =>
     readStoredHiddenColumns(),
@@ -241,22 +248,34 @@ export function useVisibleInvoiceLineColumns() {
     [preferences.data, storedHiddenColumns],
   )
   const hiddenColumns = useMemo(() => new Set(hiddenColumnValues), [hiddenColumnValues])
+  const availableColumns = useMemo(
+    () => getAvailableInvoiceLineColumns(showAtrColumns),
+    [showAtrColumns],
+  )
   return {
     preferences,
     hiddenColumns,
     columns: useMemo(
-      () => INVOICE_LINE_COLUMNS.filter((column) => !hiddenColumns.has(column.key)),
-      [hiddenColumns],
+      () => availableColumns.filter((column) => !hiddenColumns.has(column.key)),
+      [availableColumns, hiddenColumns],
     ),
   }
 }
 
 interface InvoiceLineColumnsDialogProps {
   className?: string
+  showAtrColumns?: boolean
 }
 
-export function InvoiceLineColumnsDialog({ className }: InvoiceLineColumnsDialogProps) {
-  const { hiddenColumns } = useVisibleInvoiceLineColumns()
+export function InvoiceLineColumnsDialog({
+  className,
+  showAtrColumns = true,
+}: InvoiceLineColumnsDialogProps) {
+  const { hiddenColumns } = useVisibleInvoiceLineColumns(showAtrColumns)
+  const availableColumns = useMemo(
+    () => getAvailableInvoiceLineColumns(showAtrColumns),
+    [showAtrColumns],
+  )
   const persist = useSetUserPreferences()
   const [open, setOpen] = useState(false)
   const [draftHiddenColumns, setDraftHiddenColumns] = useState<Set<InvoiceLineColumnKey>>(
@@ -268,7 +287,9 @@ export function InvoiceLineColumnsDialog({ className }: InvoiceLineColumnsDialog
     setDraftHiddenColumns(new Set(hiddenColumns))
   }, [hiddenColumns, open])
 
-  const visibleCount = INVOICE_LINE_COLUMNS.length - draftHiddenColumns.size
+  const visibleCount = availableColumns.filter(
+    (column) => !draftHiddenColumns.has(column.key),
+  ).length
   const canSave = visibleCount > 0 && !persist.isPending
 
   const setColumnVisible = (key: InvoiceLineColumnKey, visible: boolean) => {
@@ -318,7 +339,7 @@ export function InvoiceLineColumnsDialog({ className }: InvoiceLineColumnsDialog
           </DialogDescription>
         </DialogHeader>
         <div className="grid max-h-[52vh] gap-2 overflow-y-auto pr-1">
-          {INVOICE_LINE_COLUMNS.map((column) => {
+          {availableColumns.map((column) => {
             const visible = !draftHiddenColumns.has(column.key)
             const disabled = visible && visibleCount === 1
             return (

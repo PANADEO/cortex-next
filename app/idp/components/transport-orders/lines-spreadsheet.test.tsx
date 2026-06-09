@@ -58,7 +58,17 @@ function makeInvoice(): Invoice {
         origin_country: "CN",
         source_references: [],
         notes: [],
-        sad_override: null,
+        sad_override: {
+          preference_code: "400",
+          atr_documents: [
+            {
+              product_code: "AX2486029",
+              document_code: "N018",
+              document_number: "ATR-123",
+              quantity: "1",
+            },
+          ],
+        },
       },
     ],
   }
@@ -114,5 +124,22 @@ describe("LinesSpreadsheet", () => {
     expect(screen.queryByRole("button", { name: /product/i })).toBeNull()
     expect(screen.queryByDisplayValue("AX2486029")).toBeNull()
     expect(screen.getByRole("button", { name: /^qty/i })).not.toBeNull()
+  })
+
+  it("hides A.TR spreadsheet columns when A.TR processing is disabled", () => {
+    renderWithPreferences(
+      <LinesSpreadsheet
+        invoice={makeInvoice()}
+        canEdit
+        isSaving={false}
+        onSave={async () => undefined}
+        showAtrProcessing={false}
+      />,
+    )
+
+    expect(screen.queryByRole("button", { name: /^pref/i })).toBeNull()
+    expect(screen.queryByRole("button", { name: /^atr/i })).toBeNull()
+    expect(screen.queryByDisplayValue("400")).toBeNull()
+    expect(screen.queryByDisplayValue("N018 / ATR-123 / 1")).toBeNull()
   })
 })

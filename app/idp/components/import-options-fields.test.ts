@@ -10,6 +10,12 @@ function options(overrides: Partial<ImportOptions> = {}): ImportOptions {
 }
 
 describe("serializeImportOptions", () => {
+  it("defaults A.TR processing to on when the backend feature flag exposes the control", () => {
+    expect(serializeImportOptions(options(), { atrProcessingAvailable: true })).toMatchObject({
+      atr_processing_enabled: true,
+    })
+  })
+
   it("returns enabled=false and context=null when toggle is off, regardless of textarea content", () => {
     const result = serializeImportOptions(
       options({
@@ -20,6 +26,7 @@ describe("serializeImportOptions", () => {
 
     expect(result).toEqual({
       fast_processing: false,
+      atr_processing_enabled: false,
       additional_ai_context_enabled: false,
       additional_ai_context: null,
     })
@@ -35,6 +42,7 @@ describe("serializeImportOptions", () => {
 
     expect(result).toEqual({
       fast_processing: false,
+      atr_processing_enabled: false,
       additional_ai_context_enabled: true,
       additional_ai_context: "Batch is from DHL — invoice totals in EUR.",
     })
@@ -50,6 +58,7 @@ describe("serializeImportOptions", () => {
 
     expect(result).toEqual({
       fast_processing: false,
+      atr_processing_enabled: false,
       additional_ai_context_enabled: false,
       additional_ai_context: null,
     })
@@ -65,6 +74,7 @@ describe("serializeImportOptions", () => {
 
     expect(result).toEqual({
       fast_processing: false,
+      atr_processing_enabled: false,
       additional_ai_context_enabled: false,
       additional_ai_context: null,
     })
@@ -80,6 +90,7 @@ describe("serializeImportOptions", () => {
 
     expect(result).toEqual({
       fast_processing: false,
+      atr_processing_enabled: false,
       additional_ai_context_enabled: true,
       additional_ai_context: "real content here",
     })
@@ -106,5 +117,16 @@ describe("serializeImportOptions", () => {
     expect(withFilledContext.fast_processing).toBe(true)
     expect(withFilledContext.additional_ai_context_enabled).toBe(true)
     expect(withFilledContext.additional_ai_context).toBe("hint")
+  })
+
+  it("sends A.TR processing only when the control is available", () => {
+    const state = options({ atr_processing_enabled: true })
+
+    expect(serializeImportOptions(state)).toMatchObject({
+      atr_processing_enabled: false,
+    })
+    expect(serializeImportOptions(state, { atrProcessingAvailable: true })).toMatchObject({
+      atr_processing_enabled: true,
+    })
   })
 })

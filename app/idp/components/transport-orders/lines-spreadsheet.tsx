@@ -8,7 +8,7 @@ import type { LucideIcon } from "lucide-react"
 import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, RotateCcw, Save } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
-  INVOICE_LINE_COLUMNS,
+  getAvailableInvoiceLineColumns,
   InvoiceLineColumnsDialog,
   useVisibleInvoiceLineColumns,
   type InvoiceLineColumnConfig,
@@ -75,6 +75,7 @@ interface Props {
   isSaving: boolean
   onSave: (body: UpdateInvoiceLinesRequest) => Promise<void>
   useCustomsCode?: boolean
+  showAtrProcessing?: boolean
 }
 
 export function LinesSpreadsheet({
@@ -83,11 +84,16 @@ export function LinesSpreadsheet({
   isSaving,
   onSave,
   useCustomsCode = false,
+  showAtrProcessing = true,
 }: Props) {
-  const { columns: visibleLineColumns } = useVisibleInvoiceLineColumns()
+  const { columns: visibleLineColumns } = useVisibleInvoiceLineColumns(showAtrProcessing)
+  const availableLineColumns = useMemo(
+    () => getAvailableInvoiceLineColumns(showAtrProcessing),
+    [showAtrProcessing],
+  )
   const allColumns = useMemo(
-    () => buildSpreadsheetColumns(INVOICE_LINE_COLUMNS, useCustomsCode),
-    [useCustomsCode],
+    () => buildSpreadsheetColumns(availableLineColumns, useCustomsCode),
+    [availableLineColumns, useCustomsCode],
   )
   const columns = useMemo(
     () => buildSpreadsheetColumns(visibleLineColumns, useCustomsCode),
@@ -137,7 +143,7 @@ export function LinesSpreadsheet({
     setValues(initial)
     setDirtyIds(new Set())
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [invoice.id, lineIdsKey, useCustomsCode])
+  }, [invoice.id, lineIdsKey, useCustomsCode, showAtrProcessing])
 
   const selectLineRefs = useSourceMaterialSelectionStore((s) => s.selectLineRefs)
 
@@ -281,7 +287,7 @@ export function LinesSpreadsheet({
           ) : null}
         </div>
         <div className="flex gap-2">
-          <InvoiceLineColumnsDialog />
+          <InvoiceLineColumnsDialog showAtrColumns={showAtrProcessing} />
           {canEdit ? (
             <>
               <Button

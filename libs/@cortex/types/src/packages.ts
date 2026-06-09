@@ -87,6 +87,7 @@ export interface ImportPackageBody {
   file: File
   package_name?: string | null
   fast_processing?: boolean
+  atr_processing_enabled?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null
 }
@@ -95,6 +96,7 @@ export interface ImportEmailPackageBody {
   file: File
   package_name?: string | null
   fast_processing?: boolean
+  atr_processing_enabled?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null
 }
@@ -103,6 +105,7 @@ export interface ImportMultiplePackagesBody {
   files: File[]
   package_name?: string | null
   fast_processing?: boolean
+  atr_processing_enabled?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null
 }
@@ -113,6 +116,7 @@ export interface ImportPackageResponse {
 
 export interface ReprocessRequest {
   fast_processing?: boolean
+  atr_processing_enabled?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null
 }

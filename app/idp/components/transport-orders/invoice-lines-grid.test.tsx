@@ -153,4 +153,21 @@ describe("InvoiceLinesGrid", () => {
     expect(screen.queryByText("Sample product")).toBeNull()
     expect(screen.getByRole("button", { name: "Edit line" })).not.toBeNull()
   })
+
+  it("hides A.TR columns when A.TR processing is disabled", () => {
+    renderWithPreferences(
+      <InvoiceLinesGrid
+        invoice={makeInvoice()}
+        canEdit={false}
+        isSaving={false}
+        onSaveLines={async () => undefined}
+        showAtrProcessing={false}
+      />,
+    )
+
+    expect(screen.queryByRole("columnheader", { name: "Pref." })).toBeNull()
+    expect(screen.queryByRole("columnheader", { name: "ATR" })).toBeNull()
+    expect(screen.queryByText("400")).toBeNull()
+    expect(screen.queryByText("N018 / ATR-123 / 1144")).toBeNull()
+  })
 })

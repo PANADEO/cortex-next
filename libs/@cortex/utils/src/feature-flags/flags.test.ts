@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { BACKEND_FIELD, DEFAULTS, type FeatureFlag } from "./flags"
 
-const KNOWN_FLAGS: FeatureFlag[] = ["idp.classification", "idp.customs-code"]
+const KNOWN_FLAGS: FeatureFlag[] = ["idp.classification", "idp.customs-code", "idp.atr-processing"]
 
 describe("DEFAULTS", () => {
   it("contains every known flag with a false default (safe-by-default)", () => {
@@ -29,6 +29,10 @@ describe("BACKEND_FIELD", () => {
 
   it("maps idp.customs-code to enable_customs_code", () => {
     expect(BACKEND_FIELD["idp.customs-code"]).toBe("enable_customs_code")
+  })
+
+  it("maps idp.atr-processing to enable_atr_processing", () => {
+    expect(BACKEND_FIELD["idp.atr-processing"]).toBe("enable_atr_processing")
   })
 })
 

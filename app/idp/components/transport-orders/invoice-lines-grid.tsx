@@ -83,6 +83,12 @@ const CUSTOMS_CODE_LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
   { name: "atr_documents", label: "ATR documents", span: 2 },
 ]
 
+const ATR_FIELD_NAMES = new Set<keyof InvoiceLineRow>(["preference_code", "atr_documents"])
+
+function filterAtrFields(fields: readonly FieldSpec<InvoiceLineRow>[], showAtrProcessing: boolean) {
+  return showAtrProcessing ? fields : fields.filter((field) => !ATR_FIELD_NAMES.has(field.name))
+}
+
 interface Props {
   invoice: Invoice
   canEdit: boolean
@@ -90,6 +96,7 @@ interface Props {
   onSaveLines: (body: UpdateInvoiceLinesRequest) => Promise<void>
   onSelectLine?: (line: InvoiceLine) => void
   useCustomsCode?: boolean
+  showAtrProcessing?: boolean
 }
 
 function displayCustomsCode(line: InvoiceLine): string {
@@ -120,10 +127,16 @@ export function InvoiceLinesGrid({
   onSaveLines,
   onSelectLine,
   useCustomsCode = false,
+  showAtrProcessing = true,
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const editingLine = invoice.lines.find((l) => l.id === editingId) ?? null
-  const { columns: visibleLineColumns } = useVisibleInvoiceLineColumns()
+  const { columns: visibleLineColumns } = useVisibleInvoiceLineColumns(showAtrProcessing)
+  const lineFields = useMemo(
+    () =>
+      filterAtrFields(useCustomsCode ? CUSTOMS_CODE_LINE_FIELDS : LINE_FIELDS, showAtrProcessing),
+    [showAtrProcessing, useCustomsCode],
+  )
 
   const columns = useMemo<ColumnDef<InvoiceLine, unknown>[]>(() => {
     const base = visibleLineColumns.flatMap<ColumnDef<InvoiceLine, unknown>>((column) => {
@@ -219,7 +232,7 @@ export function InvoiceLinesGrid({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Invoice Lines</h4>
-        <InvoiceLineColumnsDialog />
+        <InvoiceLineColumnsDialog showAtrColumns={showAtrProcessing} />
       </div>
       <DataTable
         columns={columns}
@@ -246,7 +259,7 @@ export function InvoiceLinesGrid({
             <div className="mt-4">
               <FieldsForm
                 label=""
-                fields={useCustomsCode ? CUSTOMS_CODE_LINE_FIELDS : LINE_FIELDS}
+                fields={lineFields}
                 defaults={invoiceLineToRow(editingLine, { useCustomsCode })}
                 schema={lineSchema}
                 canEdit={canEdit}
