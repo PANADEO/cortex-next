@@ -45,6 +45,8 @@ function renderWithClient(
 
 function mockPreferencesPost() {
   const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => {
+    void _input
+    void _init
     return new Response(
       JSON.stringify({
         document_panel_ratio: null,
