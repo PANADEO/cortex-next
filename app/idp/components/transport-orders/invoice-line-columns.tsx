@@ -123,6 +123,14 @@ export const INVOICE_LINE_COLUMNS: readonly InvoiceLineColumnConfig[] = [
     numeric: true,
   },
   {
+    key: "estimated_gross_weight_kg",
+    label: "Estimated gross weight (kg)",
+    gridLabel: "Est. Gross Wt (kg)",
+    spreadsheetLabel: "Est. gross kg",
+    width: 150,
+    numeric: true,
+  },
+  {
     key: "packages_quantity",
     label: "Packages quantity",
     gridLabel: "Packages Qty",

@@ -36,6 +36,7 @@ const lineSchema = z.object({
   invoice_value: numericStringSchema,
   net_weight_kg: numericStringSchema,
   gross_weight_kg: numericStringSchema,
+  estimated_gross_weight_kg: numericStringSchema,
   packages_quantity: numericStringSchema,
   packages_type: z.string().max(32),
   packages_marking: z.string().max(100),
@@ -58,6 +59,7 @@ const LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
   { name: "invoice_value", label: "Invoice value", span: 1 },
   { name: "net_weight_kg", label: "Net weight (kg)", span: 1 },
   { name: "gross_weight_kg", label: "Gross weight (kg)", span: 1 },
+  { name: "estimated_gross_weight_kg", label: "Estimated gross weight (kg)", span: 1 },
   { name: "packages_quantity", label: "Packages qty", span: 1 },
   { name: "packages_type", label: "Packages type", span: 1 },
   { name: "packages_marking", label: "Packages marking", span: 2 },
@@ -77,6 +79,7 @@ const CUSTOMS_CODE_LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
   { name: "invoice_value", label: "Invoice value", span: 1 },
   { name: "net_weight_kg", label: "Net weight (kg)", span: 1 },
   { name: "gross_weight_kg", label: "Gross weight (kg)", span: 1 },
+  { name: "estimated_gross_weight_kg", label: "Estimated gross weight (kg)", span: 1 },
   { name: "packages_quantity", label: "Packages qty", span: 1 },
   { name: "packages_type", label: "Packages type", span: 1 },
   { name: "packages_marking", label: "Packages marking", span: 2 },
@@ -238,7 +241,7 @@ export function InvoiceLinesGrid({
         columns={columns}
         data={invoice.lines}
         bordered
-        className="overflow-x-auto [&_table]:min-w-[1760px] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap [&_th]:font-semibold [&_th]:normal-case [&_th]:tracking-normal [&_th]:text-foreground"
+        className="overflow-x-auto [&_table]:min-w-[1910px] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap [&_th]:font-semibold [&_th]:normal-case [&_th]:tracking-normal [&_th]:text-foreground"
         getRowId={(row) => row.id}
         {...(onSelectLine ? { onRowClick: onSelectLine } : {})}
         emptyState={

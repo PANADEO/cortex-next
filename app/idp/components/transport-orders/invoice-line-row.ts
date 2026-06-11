@@ -18,6 +18,7 @@ export interface InvoiceLineRow {
   invoice_value: string
   net_weight_kg: string
   gross_weight_kg: string
+  estimated_gross_weight_kg: string
   packages_quantity: string
   packages_type: string
   packages_marking: string
@@ -47,6 +48,7 @@ export function invoiceLineToRow(
     invoice_value: line.invoice_value ?? "",
     net_weight_kg: line.net_weight_kg ?? "",
     gross_weight_kg: line.gross_weight_kg ?? "",
+    estimated_gross_weight_kg: line.estimated_gross_weight_kg ?? "",
     packages_quantity: line.packages_quantity ?? "",
     packages_type: line.packages_type ?? "",
     packages_marking: line.packages_marking ?? "",

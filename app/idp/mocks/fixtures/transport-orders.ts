@@ -104,6 +104,7 @@ function line(
     invoice_value: value,
     net_weight_kg: weight,
     gross_weight_kg: String((Number(weight) * 1.08).toFixed(2)),
+    estimated_gross_weight_kg: String((Number(weight) * 1.08).toFixed(2)),
     packages_quantity: String(Math.max(1, Math.round(Number(qty) / 25))),
     packages_type: "box",
     packages_marking: `MARK-${n}`,

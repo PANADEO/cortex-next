@@ -52,6 +52,7 @@ function makeInvoice(): Invoice {
         invoice_value: "10",
         net_weight_kg: null,
         gross_weight_kg: null,
+        estimated_gross_weight_kg: null,
         packages_quantity: null,
         packages_type: null,
         packages_marking: null,

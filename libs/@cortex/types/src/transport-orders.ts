@@ -150,6 +150,7 @@ export interface InvoiceLine {
   invoice_value: string | null
   net_weight_kg: string | null
   gross_weight_kg: string | null
+  estimated_gross_weight_kg: string | null
   packages_quantity: string | null
   packages_type: string | null
   packages_marking: string | null
@@ -269,6 +270,7 @@ export interface InvoiceLineUpdateRequest {
   invoice_value?: string | null
   net_weight_kg?: string | null
   gross_weight_kg?: string | null
+  estimated_gross_weight_kg?: string | null
   packages_quantity?: string | null
   packages_type?: string | null
   packages_marking?: string | null

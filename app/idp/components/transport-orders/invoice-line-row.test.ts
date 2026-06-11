@@ -18,6 +18,7 @@ function makeLine(overrides: Partial<InvoiceLine> = {}): InvoiceLine {
     invoice_value: "10",
     net_weight_kg: null,
     gross_weight_kg: null,
+    estimated_gross_weight_kg: null,
     packages_quantity: null,
     packages_type: null,
     packages_marking: null,
@@ -35,6 +36,14 @@ describe("invoice line row code mapping", () => {
 
     expect(row.cn_code).toBe("850440")
     expect(row.hs).toBe("8504")
+  })
+
+  it("maps estimated gross weight from API line to update request", () => {
+    const row = invoiceLineToRow(makeLine({ estimated_gross_weight_kg: "12.345" }))
+    const request = invoiceLineRowToRequest("line-1", row, makeLine())
+
+    expect(row.estimated_gross_weight_kg).toBe("12.345")
+    expect(request.estimated_gross_weight_kg).toBe("12.345")
   })
 
   it("uses CN as Customs Code and mirrors it into HS in customs-code mode", () => {

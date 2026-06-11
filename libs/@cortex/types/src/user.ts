@@ -25,6 +25,7 @@ export const INVOICE_LINE_COLUMN_KEYS = [
   "invoice_value",
   "net_weight_kg",
   "gross_weight_kg",
+  "estimated_gross_weight_kg",
   "packages_quantity",
   "packages_type",
   "packages_marking",

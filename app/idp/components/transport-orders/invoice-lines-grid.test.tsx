@@ -51,6 +51,7 @@ function makeInvoice(): Invoice {
         invoice_value: "3077.36",
         net_weight_kg: "92.51",
         gross_weight_kg: "113.51",
+        estimated_gross_weight_kg: "115.25",
         packages_quantity: null,
         packages_type: null,
         packages_marking: null,
@@ -113,11 +114,13 @@ describe("InvoiceLinesGrid", () => {
       "Value",
       "Net Wt (kg)",
       "Gross Wt (kg)",
+      "Est. Gross Wt (kg)",
       "Origin",
     ]) {
       expect(screen.getByRole("columnheader", { name })).not.toBeNull()
     }
     expect(screen.getByText("400")).not.toBeNull()
+    expect(screen.getByText("115.25")).not.toBeNull()
     expect(screen.getByText("N018 / ATR-123 / 1144")).not.toBeNull()
   })
 
