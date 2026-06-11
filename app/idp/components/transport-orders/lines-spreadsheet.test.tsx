@@ -43,7 +43,7 @@ function makeInvoice(): Invoice {
         po_number: null,
         product_code: "AX2486029",
         description: "Sample product",
-        description_pl: null,
+        description_pl: "Produkt testowy",
         cn_code: "850440",
         hs: "8504",
         quantity: "1",
@@ -90,6 +90,7 @@ describe("LinesSpreadsheet", () => {
     )
 
     expect(screen.getByRole("button", { name: /customs code/i })).not.toBeNull()
+    expect(screen.getByRole("button", { name: /polish name/i })).not.toBeNull()
     expect(screen.queryByRole("button", { name: /^cn$/i })).toBeNull()
     expect(screen.queryByRole("button", { name: /^hs$/i })).toBeNull()
 
@@ -106,6 +107,7 @@ describe("LinesSpreadsheet", () => {
     const savedLine = savedBody.lines[0]
     if (!savedLine) throw new Error("Expected onSave to receive one line")
     expect(savedLine).toMatchObject({
+      description_pl: "Produkt testowy",
       cn_code: "9999999999",
       hs: "9999999999",
     })

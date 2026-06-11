@@ -63,6 +63,13 @@ export const INVOICE_LINE_COLUMNS: readonly InvoiceLineColumnConfig[] = [
     width: 320,
   },
   {
+    key: "description_pl",
+    label: "Polish name",
+    gridLabel: "Polish Name",
+    spreadsheetLabel: "Polish Name",
+    width: 240,
+  },
+  {
     key: "customs_code",
     label: "Customs code",
     gridLabel: "Customs Code",

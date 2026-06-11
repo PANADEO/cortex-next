@@ -29,6 +29,7 @@ const lineSchema = z.object({
   po_number: z.string().max(64),
   product_code: z.string().max(64),
   description: z.string().max(500),
+  description_pl: z.string().max(500),
   cn_code: z.string().max(16),
   hs: z.string().max(16),
   quantity: numericStringSchema,
@@ -54,6 +55,7 @@ const LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
   { name: "origin_country", label: "Origin", span: 1, uppercase: true },
   { name: "preference_code", label: "Pref.", span: 1 },
   { name: "description", label: "Description", span: 2 },
+  { name: "description_pl", label: "Polish name", span: 2 },
   { name: "quantity", label: "Quantity", span: 1 },
   { name: "unit_of_measure", label: "UoM", span: 1 },
   { name: "invoice_value", label: "Invoice value", span: 1 },
@@ -74,6 +76,7 @@ const CUSTOMS_CODE_LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
   { name: "origin_country", label: "Origin", span: 1, uppercase: true },
   { name: "preference_code", label: "Pref.", span: 1 },
   { name: "description", label: "Description", span: 2 },
+  { name: "description_pl", label: "Polish name", span: 2 },
   { name: "quantity", label: "Quantity", span: 1 },
   { name: "unit_of_measure", label: "UoM", span: 1 },
   { name: "invoice_value", label: "Invoice value", span: 1 },
@@ -180,7 +183,7 @@ export function InvoiceLinesGrid({
           header: column.gridLabel,
           size: column.width,
           cell: ({ row }) => {
-            const isDescription = key === "description"
+            const isDescription = key === "description" || key === "description_pl"
             return (
               <span
                 className={

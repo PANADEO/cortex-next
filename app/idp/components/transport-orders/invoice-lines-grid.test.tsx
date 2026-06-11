@@ -42,7 +42,7 @@ function makeInvoice(): Invoice {
         po_number: "1302773684",
         product_code: "AX2486029",
         description: "Sample product",
-        description_pl: null,
+        description_pl: "Produkt testowy",
         cn_code: "850440",
         hs: "8504",
         quantity: "1144",
@@ -105,6 +105,7 @@ describe("InvoiceLinesGrid", () => {
       "PO Number",
       "Product Code",
       "Description",
+      "Polish Name",
       "CN Code",
       "HS Code",
       "Pref.",
@@ -120,6 +121,7 @@ describe("InvoiceLinesGrid", () => {
       expect(screen.getByRole("columnheader", { name })).not.toBeNull()
     }
     expect(screen.getByText("400")).not.toBeNull()
+    expect(screen.getByText("Produkt testowy")).not.toBeNull()
     expect(screen.getByText("115.25")).not.toBeNull()
     expect(screen.getByText("N018 / ATR-123 / 1144")).not.toBeNull()
   })

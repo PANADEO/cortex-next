@@ -11,6 +11,7 @@ export interface InvoiceLineRow {
   po_number: string
   product_code: string
   description: string
+  description_pl: string
   cn_code: string
   hs: string
   quantity: string
@@ -41,6 +42,7 @@ export function invoiceLineToRow(
     po_number: line.po_number ?? "",
     product_code: line.product_code ?? "",
     description: line.description ?? "",
+    description_pl: line.description_pl ?? "",
     cn_code: options.useCustomsCode ? customsCode : (line.cn_code ?? ""),
     hs: options.useCustomsCode ? customsCode : (line.hs ?? ""),
     quantity: line.quantity ?? "",

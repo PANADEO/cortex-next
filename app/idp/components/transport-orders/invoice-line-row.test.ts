@@ -46,6 +46,14 @@ describe("invoice line row code mapping", () => {
     expect(request.estimated_gross_weight_kg).toBe("12.345")
   })
 
+  it("maps Polish name from API line to update request", () => {
+    const row = invoiceLineToRow(makeLine({ description_pl: "Produkt testowy" }))
+    const request = invoiceLineRowToRequest("line-1", row, makeLine())
+
+    expect(row.description_pl).toBe("Produkt testowy")
+    expect(request.description_pl).toBe("Produkt testowy")
+  })
+
   it("uses CN as Customs Code and mirrors it into HS in customs-code mode", () => {
     const row = invoiceLineToRow(makeLine(), { useCustomsCode: true })
     row.cn_code = "9999999999"

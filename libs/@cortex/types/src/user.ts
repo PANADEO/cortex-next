@@ -17,6 +17,7 @@ export const INVOICE_LINE_COLUMN_KEYS = [
   "po_number",
   "product_code",
   "description",
+  "description_pl",
   "customs_code",
   "preference_code",
   "atr_documents",

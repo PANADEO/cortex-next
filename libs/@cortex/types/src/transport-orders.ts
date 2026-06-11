@@ -263,6 +263,7 @@ export interface InvoiceLineUpdateRequest {
   po_number?: string | null
   product_code?: string | null
   description?: string | null
+  description_pl?: string | null
   cn_code?: string | null
   hs?: string | null
   quantity?: string | null
