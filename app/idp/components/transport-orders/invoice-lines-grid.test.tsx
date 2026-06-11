@@ -1,11 +1,17 @@
 // @vitest-environment jsdom
+import { downloadBlob } from "@/lib/download"
 import { queryKeys } from "@cortex/api"
 import type { Invoice } from "@cortex/types"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import type { ReactNode } from "react"
-import { describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { InvoiceLinesGrid } from "./invoice-lines-grid"
+
+vi.mock("@/lib/download", () => ({
+  downloadBlob: vi.fn(),
+}))
 
 function freshClient(): QueryClient {
   return new QueryClient({
@@ -88,7 +94,20 @@ function makeInvoiceWithHsFallback(): Invoice {
   }
 }
 
+function readBlobText(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(reader.error)
+    reader.readAsText(blob)
+  })
+}
+
 describe("InvoiceLinesGrid", () => {
+  beforeEach(() => {
+    vi.mocked(downloadBlob).mockClear()
+  })
+
   it("renders the full invoice-line preview column set", () => {
     renderWithPreferences(
       <InvoiceLinesGrid
@@ -174,5 +193,27 @@ describe("InvoiceLinesGrid", () => {
     expect(screen.queryByRole("columnheader", { name: "Pref. Docs" })).toBeNull()
     expect(screen.queryByText("400")).toBeNull()
     expect(screen.queryByText("N018 / ATR-123 / 1144")).toBeNull()
+  })
+
+  it("downloads visible invoice-line columns as CSV", async () => {
+    renderWithPreferences(
+      <InvoiceLinesGrid
+        invoice={makeInvoice()}
+        canEdit={false}
+        isSaving={false}
+        onSaveLines={async () => undefined}
+      />,
+      ["description"],
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: /download csv/i }))
+
+    expect(downloadBlob).toHaveBeenCalledTimes(1)
+    const [blob, fileName] = vi.mocked(downloadBlob).mock.calls[0] ?? []
+    expect(fileName).toBe("FV-1_invoice_lines.csv")
+    const csv = await readBlobText(blob as Blob)
+    expect(csv).toContain("PO Number")
+    expect(csv).not.toContain("Description")
+    expect(csv).toContain("N018 / ATR-123 / 1144")
   })
 })

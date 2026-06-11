@@ -1,12 +1,17 @@
 // @vitest-environment jsdom
+import { downloadBlob } from "@/lib/download"
 import { queryKeys } from "@cortex/api"
 import type { Invoice, UpdateInvoiceLinesRequest } from "@cortex/types"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import type { ReactNode } from "react"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { LinesSpreadsheet } from "./lines-spreadsheet"
+
+vi.mock("@/lib/download", () => ({
+  downloadBlob: vi.fn(),
+}))
 
 function freshClient(): QueryClient {
   return new QueryClient({
@@ -75,7 +80,20 @@ function makeInvoice(): Invoice {
   }
 }
 
+function readBlobText(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(reader.error)
+    reader.readAsText(blob)
+  })
+}
+
 describe("LinesSpreadsheet", () => {
+  beforeEach(() => {
+    vi.mocked(downloadBlob).mockClear()
+  })
+
   it("renders and saves one Customs Code field in customs-code mode", async () => {
     const onSave = vi.fn<(body: UpdateInvoiceLinesRequest) => Promise<void>>(async () => undefined)
 
@@ -144,5 +162,28 @@ describe("LinesSpreadsheet", () => {
     expect(screen.queryByRole("button", { name: /^pref\. docs/i })).toBeNull()
     expect(screen.queryByDisplayValue("400")).toBeNull()
     expect(screen.queryByDisplayValue("N018 / ATR-123 / 1")).toBeNull()
+  })
+
+  it("downloads the current spreadsheet values as CSV", async () => {
+    renderWithPreferences(
+      <LinesSpreadsheet
+        invoice={makeInvoice()}
+        canEdit
+        isSaving={false}
+        onSave={async () => undefined}
+      />,
+    )
+
+    const productInput = screen.getByDisplayValue("AX2486029")
+    await userEvent.clear(productInput)
+    await userEvent.type(productInput, "UPDATED-SKU")
+    await userEvent.click(screen.getByRole("button", { name: /download csv/i }))
+
+    expect(downloadBlob).toHaveBeenCalledTimes(1)
+    const [blob, fileName] = vi.mocked(downloadBlob).mock.calls[0] ?? []
+    expect(fileName).toBe("FV-1_invoice_lines.csv")
+    const csv = await readBlobText(blob as Blob)
+    expect(csv).toContain("UPDATED-SKU")
+    expect(csv).toContain("N018 | ATR-123 | 1")
   })
 })

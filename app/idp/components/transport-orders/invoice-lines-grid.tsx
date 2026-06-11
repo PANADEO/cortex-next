@@ -1,5 +1,6 @@
 "use client"
 
+import { downloadBlob } from "@/lib/download"
 import { countryCodeSchema, numericStringSchema } from "@/lib/form-helpers"
 import type {
   Invoice,
@@ -17,11 +18,16 @@ import {
   SheetTitle,
 } from "@cortex/ui"
 import type { ColumnDef } from "@tanstack/react-table"
-import { Pencil } from "lucide-react"
+import { Download, Pencil } from "lucide-react"
 import { useMemo, useState } from "react"
 import { z } from "zod"
 import { FieldsForm, type FieldSpec } from "./fields-form"
 import { InvoiceLineColumnsDialog, useVisibleInvoiceLineColumns } from "./invoice-line-columns"
+import {
+  buildInvoiceLinesCsv,
+  buildInvoiceLinesCsvFileName,
+  INVOICE_LINES_CSV_MIME,
+} from "./invoice-line-csv"
 import { invoiceLineRowToRequest, invoiceLineToRow, type InvoiceLineRow } from "./invoice-line-row"
 
 const lineSchema = z.object({
@@ -234,11 +240,34 @@ export function InvoiceLinesGrid({
     setEditingId(null)
   }
 
+  const handleDownloadCsv = () => {
+    const csv = buildInvoiceLinesCsv(invoice.lines, {
+      columns: visibleLineColumns,
+      useCustomsCode,
+      label: "grid",
+    })
+    downloadBlob(
+      new Blob([csv], { type: INVOICE_LINES_CSV_MIME }),
+      buildInvoiceLinesCsvFileName(invoice),
+    )
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Invoice Lines</h4>
-        <InvoiceLineColumnsDialog showAtrColumns={showAtrProcessing} />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadCsv}
+            disabled={invoice.lines.length === 0}
+          >
+            <Download className="mr-1.5 h-4 w-4" />
+            Download CSV
+          </Button>
+          <InvoiceLineColumnsDialog showAtrColumns={showAtrProcessing} />
+        </div>
       </div>
       <DataTable
         columns={columns}

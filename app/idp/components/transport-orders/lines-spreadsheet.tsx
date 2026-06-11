@@ -1,11 +1,12 @@
 "use client"
 
+import { downloadBlob } from "@/lib/download"
 import { useSourceMaterialSelectionStore } from "@/lib/stores/source-material-selection"
 import type { Invoice, UpdateInvoiceLinesRequest } from "@cortex/types"
 import { Button, Input } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import type { LucideIcon } from "lucide-react"
-import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, RotateCcw, Save } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, Loader2, RotateCcw, Save } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
   getAvailableInvoiceLineColumns,
@@ -13,6 +14,11 @@ import {
   useVisibleInvoiceLineColumns,
   type InvoiceLineColumnConfig,
 } from "./invoice-line-columns"
+import {
+  buildInvoiceLinesCsv,
+  buildInvoiceLinesCsvFileName,
+  INVOICE_LINES_CSV_MIME,
+} from "./invoice-line-csv"
 import { invoiceLineRowToRequest, invoiceLineToRow, type InvoiceLineRow } from "./invoice-line-row"
 
 interface SpreadsheetColumnDef {
@@ -273,6 +279,19 @@ export function LinesSpreadsheet({
     return copy
   }, [invoice.lines, values, initial, columns, sort])
 
+  const handleDownloadCsv = () => {
+    const csv = buildInvoiceLinesCsv(sortedLines, {
+      columns: visibleLineColumns,
+      useCustomsCode,
+      label: "spreadsheet",
+      rowOverrides: values,
+    })
+    downloadBlob(
+      new Blob([csv], { type: INVOICE_LINES_CSV_MIME }),
+      buildInvoiceLinesCsvFileName(invoice),
+    )
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <header className="flex items-center justify-between border-b border-border px-3 py-2">
@@ -287,6 +306,15 @@ export function LinesSpreadsheet({
           ) : null}
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadCsv}
+            disabled={invoice.lines.length === 0}
+          >
+            <Download className="mr-1.5 h-4 w-4" />
+            Download CSV
+          </Button>
           <InvoiceLineColumnsDialog showAtrColumns={showAtrProcessing} />
           {canEdit ? (
             <>
