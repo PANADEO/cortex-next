@@ -17,10 +17,10 @@ import {
   useUpdateTransportInfo,
 } from "@cortex/api"
 import type { Invoice, Party, TransportOrder } from "@cortex/types"
-import { EmptyState, LoadingState } from "@cortex/ui"
+import { EmptyState, LoadingState, Tabs, TabsContent, TabsList, TabsTrigger } from "@cortex/ui"
 import { useFeatureFlag } from "@cortex/utils"
 import { Truck } from "lucide-react"
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { InvoiceEditor } from "./invoice-editor"
 import { PartyEditor } from "./party-editor"
 import { SadContextEditor } from "./sad-context-editor"
@@ -36,17 +36,29 @@ export function TransportOrdersPanel({ packageId, canEdit }: Props) {
   const exportTemplates = useExportTemplates()
   const useCustomsCode = useFeatureFlag("idp.customs-code")
   const showAtrProcessing = useFeatureFlag("idp.atr-processing")
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null)
 
-  if (isLoading) return <LoadingState variant="skeleton" rows={6} />
+  const orders = useMemo(
+    () => data?.verified_transport_orders ?? data?.transport_orders ?? [],
+    [data?.verified_transport_orders, data?.transport_orders],
+  )
 
-  const orders = data?.verified_transport_orders ?? data?.transport_orders ?? null
-  const order = orders?.[0]
+  useEffect(() => {
+    setActiveOrderId((current) => {
+      if (orders.length === 0) return current === null ? current : null
+      if (current && orders.some((order) => order.id === current)) return current
+      return orders[0]?.id ?? null
+    })
+  }, [orders])
+
   const hasHuzarExport =
     exportTemplates.data?.some(
       (template) => template.name === "sad_xml" || template.name.startsWith("huzar_xml"),
     ) ?? false
 
-  if (!order) {
+  if (isLoading) return <LoadingState variant="skeleton" rows={6} />
+
+  if (!orders.length) {
     return (
       <EmptyState
         icon={Truck}
@@ -56,18 +68,56 @@ export function TransportOrdersPanel({ packageId, canEdit }: Props) {
     )
   }
 
+  const firstOrder = orders[0]
+  if (!firstOrder) return null
+
+  const selectedOrder = orders.find((order) => order.id === activeOrderId) ?? firstOrder
+  const selectedOrderId = selectedOrder.id
+  const hasOrderTabs = orders.length > 1
+
   return (
-    <div className="space-y-8">
-      <TransportOrderSection
-        order={order}
-        packageId={packageId}
-        canEdit={canEdit}
-        hasHuzarExport={hasHuzarExport}
-        useCustomsCode={useCustomsCode}
-        showAtrProcessing={showAtrProcessing}
-      />
-    </div>
+    <Tabs value={selectedOrderId} onValueChange={setActiveOrderId} className="space-y-6">
+      {hasOrderTabs ? (
+        <TabsList className="flex h-auto max-w-full justify-start overflow-x-auto rounded-lg p-1">
+          {orders.map((order) => (
+            <TabsTrigger
+              key={order.id}
+              value={order.id}
+              title={transportOrderMeta(order)}
+              className="min-w-28 shrink-0 flex-col items-start gap-0.5 px-3 py-2 text-left"
+            >
+              <span className="max-w-40 truncate text-sm">{transportOrderLabel(order)}</span>
+              <span className="text-[10px] font-normal text-muted-foreground">
+                {transportOrderMeta(order)}
+              </span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      ) : null}
+      {orders.map((order) => (
+        <TabsContent key={order.id} value={order.id} className="mt-0">
+          <TransportOrderSection
+            order={order}
+            packageId={packageId}
+            canEdit={canEdit}
+            hasHuzarExport={hasHuzarExport}
+            useCustomsCode={useCustomsCode}
+            showAtrProcessing={showAtrProcessing}
+            showHeader={!hasOrderTabs}
+          />
+        </TabsContent>
+      ))}
+    </Tabs>
   )
+}
+
+function transportOrderLabel(order: TransportOrder): string {
+  return order.transport_order_number?.trim() || order.id
+}
+
+function transportOrderMeta(order: TransportOrder): string {
+  const route = `${order.country_of_dispatch ?? "?"} → ${order.country_of_destination ?? "?"}`
+  return order.mode ? `${route} · ${order.mode}` : route
 }
 
 interface SectionProps {
@@ -77,6 +127,7 @@ interface SectionProps {
   hasHuzarExport: boolean
   useCustomsCode: boolean
   showAtrProcessing: boolean
+  showHeader: boolean
 }
 
 interface PartyConfig {
@@ -92,6 +143,7 @@ function TransportOrderSection({
   hasHuzarExport,
   useCustomsCode,
   showAtrProcessing,
+  showHeader,
 }: SectionProps) {
   const seller = useUpdateSeller()
   const buyer = useUpdateBuyer()
@@ -125,15 +177,14 @@ function TransportOrderSection({
 
   return (
     <section className="space-y-6">
-      <header>
-        <h2 className="text-sm font-semibold">
-          Transport order {order.transport_order_number ?? order.id}
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          {order.country_of_dispatch ?? "?"} → {order.country_of_destination ?? "?"}
-          {order.mode ? ` · ${order.mode}` : ""}
-        </p>
-      </header>
+      {showHeader ? (
+        <header>
+          <h2 className="text-sm font-semibold">
+            Transport order {order.transport_order_number ?? order.id}
+          </h2>
+          <p className="text-xs text-muted-foreground">{transportOrderMeta(order)}</p>
+        </header>
+      ) : null}
 
       <TransportInfoEditor
         order={order}
