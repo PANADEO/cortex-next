@@ -109,7 +109,7 @@ describe("InvoiceLinesGrid", () => {
       "CN Code",
       "HS Code",
       "Pref.",
-      "ATR",
+      "Pref. Docs",
       "Qty",
       "UoM",
       "Value",
@@ -171,7 +171,7 @@ describe("InvoiceLinesGrid", () => {
     )
 
     expect(screen.queryByRole("columnheader", { name: "Pref." })).toBeNull()
-    expect(screen.queryByRole("columnheader", { name: "ATR" })).toBeNull()
+    expect(screen.queryByRole("columnheader", { name: "Pref. Docs" })).toBeNull()
     expect(screen.queryByText("400")).toBeNull()
     expect(screen.queryByText("N018 / ATR-123 / 1144")).toBeNull()
   })

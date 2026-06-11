@@ -141,7 +141,7 @@ describe("LinesSpreadsheet", () => {
     )
 
     expect(screen.queryByRole("button", { name: /^pref/i })).toBeNull()
-    expect(screen.queryByRole("button", { name: /^atr/i })).toBeNull()
+    expect(screen.queryByRole("button", { name: /^pref\. docs/i })).toBeNull()
     expect(screen.queryByDisplayValue("400")).toBeNull()
     expect(screen.queryByDisplayValue("N018 / ATR-123 / 1")).toBeNull()
   })

@@ -65,7 +65,7 @@ const LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
   { name: "packages_quantity", label: "Packages qty", span: 1 },
   { name: "packages_type", label: "Packages type", span: 1 },
   { name: "packages_marking", label: "Packages marking", span: 2 },
-  { name: "atr_documents", label: "ATR documents", span: 2 },
+  { name: "atr_documents", label: "Pref. Docs", span: 2 },
 ]
 
 const CUSTOMS_CODE_LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
@@ -86,7 +86,7 @@ const CUSTOMS_CODE_LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
   { name: "packages_quantity", label: "Packages qty", span: 1 },
   { name: "packages_type", label: "Packages type", span: 1 },
   { name: "packages_marking", label: "Packages marking", span: 2 },
-  { name: "atr_documents", label: "ATR documents", span: 2 },
+  { name: "atr_documents", label: "Pref. Docs", span: 2 },
 ]
 
 const ATR_FIELD_NAMES = new Set<keyof InvoiceLineRow>(["preference_code", "atr_documents"])

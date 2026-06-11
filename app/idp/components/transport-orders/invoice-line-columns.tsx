@@ -85,9 +85,9 @@ export const INVOICE_LINE_COLUMNS: readonly InvoiceLineColumnConfig[] = [
   },
   {
     key: "atr_documents",
-    label: "ATR documents",
-    gridLabel: "ATR",
-    spreadsheetLabel: "ATR",
+    label: "Pref. Docs",
+    gridLabel: "Pref. Docs",
+    spreadsheetLabel: "Pref. Docs",
     width: 220,
   },
   {
