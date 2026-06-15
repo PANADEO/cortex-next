@@ -1,14 +1,18 @@
 "use client"
 
-import { Button, ThemeToggle } from "@cortex/ui"
-import { ArrowRight, ShieldCheck, Sparkles, Workflow } from "lucide-react"
-import Image from "next/image"
 import { useThemeStore } from "@/lib/stores/theme-store"
+import { Alert, AlertDescription, AlertTitle, Button, ThemeToggle } from "@cortex/ui"
+import { AlertTriangle, ArrowRight, ShieldCheck, Sparkles, Workflow } from "lucide-react"
+import Image from "next/image"
 import { DotGrid } from "./dot-grid"
 import { ShellFooter } from "./shell-footer"
 import { SplitText } from "./split-text"
 
-export function LandingHero() {
+interface LandingHeroProps {
+  authErrorMessage?: string | null
+}
+
+export function LandingHero({ authErrorMessage }: LandingHeroProps) {
   const themeMode = useThemeStore((s) => s.mode)
   const setThemeMode = useThemeStore((s) => s.setMode)
 
@@ -110,6 +114,14 @@ export function LandingHero() {
                       Uzyskaj dostęp do swoich modułów Cortex360
                     </p>
                   </div>
+
+                  {authErrorMessage ? (
+                    <Alert variant="destructive" className="text-left">
+                      <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+                      <AlertTitle>Logowanie przerwane</AlertTitle>
+                      <AlertDescription>{authErrorMessage}</AlertDescription>
+                    </Alert>
+                  ) : null}
 
                   <Button
                     size="lg"
