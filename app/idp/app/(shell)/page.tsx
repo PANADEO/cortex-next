@@ -6,8 +6,17 @@ import { LandingHero } from "@/components/shell/landing-hero"
 import { getAuthErrorMessage } from "@/lib/auth-error-message"
 import { useMe } from "@cortex/api"
 import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 
 export default function HomePage() {
+  return (
+    <Suspense fallback={null}>
+      <HomeShell />
+    </Suspense>
+  )
+}
+
+function HomeShell() {
   const searchParams = useSearchParams()
   const authErrorMessage = getAuthErrorMessage(searchParams)
 
