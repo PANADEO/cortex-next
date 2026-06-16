@@ -107,11 +107,11 @@ function emptySettings(): FeatureFlagSettingsResponse {
     smtp_use_tls: true,
     smtp_use_ssl: false,
     smtp_timeout_seconds: 10,
-    gemini_model: "gemini-2.5-pro-preview-05-06",
-    gemini_fast_model: null,
-    gemini_temperature: null,
-    gemini_fast_temperature: null,
-    gemini_thinking_budget: null,
+    gemini_model: "gemini-2.5-pro",
+    gemini_fast_model: "gemini-3.5-flash",
+    gemini_temperature: 0.1,
+    gemini_fast_temperature: 0.4,
+    gemini_thinking_budget: 12000,
   }
 }
 
@@ -342,7 +342,7 @@ export default function ConfigurationPage() {
                     gemini_model: event.target.value,
                   }))
                 }
-                placeholder="gemini-2.5-pro-preview-05-06"
+                placeholder="gemini-2.5-pro"
                 className="mt-2"
               />
             </div>
