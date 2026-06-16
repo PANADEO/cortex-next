@@ -49,6 +49,7 @@ interface ImportSlotProps {
   onRemove: () => void
   onSubmit: () => void
   showAtrProcessing?: boolean
+  showAdditionalAiContext?: boolean
 }
 
 const STATUS_META: Record<
@@ -92,6 +93,7 @@ export function ImportSlot({
   onRemove,
   onSubmit,
   showAtrProcessing = false,
+  showAdditionalAiContext = false,
 }: ImportSlotProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
@@ -382,6 +384,7 @@ export function ImportSlot({
               state={slot.options}
               onChange={onOptionsChange}
               showAtrProcessing={showAtrProcessing}
+              showAdditionalAiContext={showAdditionalAiContext}
             />
           ) : null}
 

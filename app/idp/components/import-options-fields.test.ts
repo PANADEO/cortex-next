@@ -1,6 +1,10 @@
+/* @vitest-environment jsdom */
+import { render, screen } from "@testing-library/react"
+import { createElement } from "react"
 import { describe, expect, it } from "vitest"
 import {
   emptyImportOptions,
+  ImportOptionsFields,
   serializeImportOptions,
   type ImportOptions,
 } from "./import-options-fields"
@@ -32,12 +36,29 @@ describe("serializeImportOptions", () => {
     })
   })
 
-  it("sends the trimmed context when toggle is on and textarea has content", () => {
+  it("does not send additional context when the backend feature flag hides the control", () => {
     const result = serializeImportOptions(
       options({
         additional_ai_context_enabled: true,
         additional_ai_context: "Batch is from DHL — invoice totals in EUR.",
       }),
+    )
+
+    expect(result).toEqual({
+      fast_processing: false,
+      atr_processing_enabled: false,
+      additional_ai_context_enabled: false,
+      additional_ai_context: null,
+    })
+  })
+
+  it("sends the trimmed context when the control is available and textarea has content", () => {
+    const result = serializeImportOptions(
+      options({
+        additional_ai_context_enabled: true,
+        additional_ai_context: "Batch is from DHL — invoice totals in EUR.",
+      }),
+      { additionalAiContextAvailable: true },
     )
 
     expect(result).toEqual({
@@ -54,6 +75,7 @@ describe("serializeImportOptions", () => {
         additional_ai_context_enabled: true,
         additional_ai_context: "",
       }),
+      { additionalAiContextAvailable: true },
     )
 
     expect(result).toEqual({
@@ -70,6 +92,7 @@ describe("serializeImportOptions", () => {
         additional_ai_context_enabled: true,
         additional_ai_context: "   \n\t  \n",
       }),
+      { additionalAiContextAvailable: true },
     )
 
     expect(result).toEqual({
@@ -86,6 +109,7 @@ describe("serializeImportOptions", () => {
         additional_ai_context_enabled: true,
         additional_ai_context: "   real content here   \n",
       }),
+      { additionalAiContextAvailable: true },
     )
 
     expect(result).toEqual({
@@ -103,6 +127,7 @@ describe("serializeImportOptions", () => {
         additional_ai_context_enabled: true,
         additional_ai_context: "",
       }),
+      { additionalAiContextAvailable: true },
     )
     expect(withEmptyContext.fast_processing).toBe(true)
     expect(withEmptyContext.additional_ai_context_enabled).toBe(false)
@@ -113,6 +138,7 @@ describe("serializeImportOptions", () => {
         additional_ai_context_enabled: true,
         additional_ai_context: "hint",
       }),
+      { additionalAiContextAvailable: true },
     )
     expect(withFilledContext.fast_processing).toBe(true)
     expect(withFilledContext.additional_ai_context_enabled).toBe(true)
@@ -128,5 +154,32 @@ describe("serializeImportOptions", () => {
     expect(serializeImportOptions(state, { atrProcessingAvailable: true })).toMatchObject({
       atr_processing_enabled: true,
     })
+  })
+})
+
+describe("ImportOptionsFields", () => {
+  it("hides Additional AI context when the feature flag does not expose it", () => {
+    render(
+      createElement(ImportOptionsFields, {
+        idPrefix: "test",
+        state: options(),
+        onChange: () => undefined,
+      }),
+    )
+
+    expect(screen.queryByText("Additional AI context")).toBeNull()
+  })
+
+  it("renders Additional AI context when the feature flag exposes it", () => {
+    render(
+      createElement(ImportOptionsFields, {
+        idPrefix: "test",
+        state: options(),
+        onChange: () => undefined,
+        showAdditionalAiContext: true,
+      }),
+    )
+
+    expect(screen.getByText("Additional AI context")).not.toBeNull()
   })
 })

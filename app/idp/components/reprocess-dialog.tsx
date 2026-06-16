@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@cortex/ui"
+import { useFeatureFlag } from "@cortex/utils"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { ImportOptionsFields, useImportOptions } from "./import-options-fields"
@@ -27,10 +28,13 @@ export function ReprocessDialog({
 }: ReprocessDialogProps) {
   const options = useImportOptions()
   const mutate = useReprocessPackage(packageId)
+  const showAdditionalAiContext = useFeatureFlag("idp.additional-ai-context")
 
   const handleSubmit = async () => {
     try {
-      await mutate.mutateAsync(options.serialize())
+      await mutate.mutateAsync(
+        options.serialize({ additionalAiContextAvailable: showAdditionalAiContext }),
+      )
       toast.success("Reprocess started")
       options.reset()
       onOpenChange(false)
@@ -57,6 +61,7 @@ export function ReprocessDialog({
           idPrefix={`reprocess-${packageId}`}
           state={options.state}
           onChange={options.update}
+          showAdditionalAiContext={showAdditionalAiContext}
         />
         <DialogFooter>
           <Button

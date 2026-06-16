@@ -35,6 +35,7 @@ export function ImportQueue() {
   const importEmail = useImportEmailPackage()
   const importMany = useImportMultiplePackages()
   const showAtrProcessing = useFeatureFlag("idp.atr-processing")
+  const showAdditionalAiContext = useFeatureFlag("idp.additional-ai-context")
 
   const patchSlot = useCallback((id: string, patch: Partial<ImportSlotValue>) => {
     setSlots((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
@@ -95,6 +96,7 @@ export function ImportQueue() {
       const kind = detectIntakeKind(slot.files)
       const serialized = serializeImportOptions(slot.options, {
         atrProcessingAvailable: showAtrProcessing,
+        additionalAiContextAvailable: showAdditionalAiContext,
       })
       const packageName = slot.packageName.trim() || null
       patchSlot(slot.id, { status: "uploading", errorMessage: undefined })
@@ -129,7 +131,7 @@ export function ImportQueue() {
         patchSlot(slot.id, { status: "error", errorMessage: message })
       }
     },
-    [importOne, importEmail, importMany, patchSlot, showAtrProcessing],
+    [importOne, importEmail, importMany, patchSlot, showAtrProcessing, showAdditionalAiContext],
   )
 
   const submitAll = useCallback(async () => {
@@ -161,6 +163,7 @@ export function ImportQueue() {
             onRemove={() => removeSlot(slot.id)}
             onSubmit={() => submitSlot(slot)}
             showAtrProcessing={showAtrProcessing}
+            showAdditionalAiContext={showAdditionalAiContext}
           />
         ))}
       </div>
