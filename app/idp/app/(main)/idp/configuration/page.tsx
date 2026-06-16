@@ -222,6 +222,42 @@ export default function ConfigurationPage() {
     })
   }
 
+  const headerActions = query.isSuccess ? (
+    <>
+      <Button
+        type="button"
+        size="sm"
+        onClick={onSave}
+        disabled={!canSave}
+        title="Save"
+        className="h-8 w-8 px-0 sm:w-auto sm:px-3"
+      >
+        {update.isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin sm:mr-1.5" />
+        ) : (
+          <Save className="h-4 w-4 sm:mr-1.5" />
+        )}
+        <span className="hidden sm:inline">Save</span>
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        onClick={onReloadFromEnv}
+        disabled={isBusy}
+        title="Load from env"
+        className="h-8 w-8 px-0 sm:w-auto sm:px-3"
+      >
+        {reload.isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin sm:mr-1.5" />
+        ) : (
+          <Download className="h-4 w-4 sm:mr-1.5" />
+        )}
+        <span className="hidden sm:inline">Load from env</span>
+      </Button>
+    </>
+  ) : null
+
   let content = null
   if (query.isLoading) {
     content = <LoadingState label="Loading configuration" />
@@ -239,9 +275,9 @@ export default function ConfigurationPage() {
     )
   } else {
     content = (
-      <div className="grid min-h-0 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid min-h-0 gap-3 xl:grid-cols-[minmax(360px,0.85fr)_minmax(520px,1.15fr)]">
         <div className="overflow-hidden rounded-lg border border-border bg-background">
-          <div className="grid grid-cols-[minmax(0,1fr)_120px] border-b border-border bg-muted/30 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="grid grid-cols-[minmax(0,1fr)_96px] border-b border-border bg-muted/30 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             <span>Flag</span>
             <span className="text-right">State</span>
           </div>
@@ -249,7 +285,7 @@ export default function ConfigurationPage() {
             {BOOLEAN_FLAGS.map((flag) => (
               <div
                 key={flag.key}
-                className="grid grid-cols-[minmax(0,1fr)_120px] items-center gap-4 px-4 py-3"
+                className="grid grid-cols-[minmax(0,1fr)_96px] items-center gap-3 px-3 py-2"
               >
                 <div className="min-w-0">
                   <Label htmlFor={flag.key} className="text-sm font-medium">
@@ -274,20 +310,19 @@ export default function ConfigurationPage() {
           </div>
         </div>
 
-        <aside className="space-y-4">
-          <div className="rounded-lg border border-border bg-background p-4">
-            <Label htmlFor="hide-menu-items">Hidden menu items</Label>
-            <Input
-              id="hide-menu-items"
-              value={hiddenMenuItemsText}
-              disabled={isBusy}
-              onChange={(event) => setHiddenMenuItemsText(event.target.value)}
-              placeholder="export, rules"
-              className="mt-2"
-            />
-          </div>
-
-          <div className="space-y-3 rounded-lg border border-border bg-background p-4">
+        <aside className="grid auto-rows-max gap-3 lg:grid-cols-2">
+          <div className="space-y-2 rounded-lg border border-border bg-background p-3">
+            <div>
+              <Label htmlFor="hide-menu-items">Hidden menu items</Label>
+              <Input
+                id="hide-menu-items"
+                value={hiddenMenuItemsText}
+                disabled={isBusy}
+                onChange={(event) => setHiddenMenuItemsText(event.target.value)}
+                placeholder="export, rules"
+                className="mt-1.5"
+              />
+            </div>
             <div>
               <Label htmlFor="custom-statuses">Custom statuses</Label>
               <Textarea
@@ -296,7 +331,7 @@ export default function ConfigurationPage() {
                 disabled={isBusy}
                 onChange={(event) => setCustomStatusesText(event.target.value)}
                 placeholder="Accounting Department, Controling Department"
-                className="mt-2 min-h-[84px]"
+                className="mt-1.5 min-h-[48px]"
               />
             </div>
             <div>
@@ -307,7 +342,7 @@ export default function ConfigurationPage() {
                 disabled={isBusy}
                 onChange={(event) => setExportTemplatesText(event.target.value)}
                 placeholder="csv_new, standard_xml, sad_xml"
-                className="mt-2 min-h-[84px]"
+                className="mt-1.5 min-h-[48px]"
               />
             </div>
             <div>
@@ -323,44 +358,46 @@ export default function ConfigurationPage() {
                   }))
                 }
                 placeholder='{"header":{"decl_customs_off_no":"PL000000"}}'
-                className="mt-2 min-h-[104px] font-mono text-xs"
+                className="mt-1.5 min-h-[56px] font-mono text-xs"
               />
             </div>
           </div>
 
-          <div className="space-y-3 rounded-lg border border-border bg-background p-4">
+          <div className="space-y-2 rounded-lg border border-border bg-background p-3">
             <h3 className="text-sm font-semibold">Worker Gemini</h3>
-            <div>
-              <Label htmlFor="gemini-model">Model</Label>
-              <Input
-                id="gemini-model"
-                value={form.gemini_model}
-                disabled={isBusy}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    gemini_model: event.target.value,
-                  }))
-                }
-                placeholder="gemini-2.5-pro"
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <Label htmlFor="gemini-fast-model">Fast model</Label>
-              <Input
-                id="gemini-fast-model"
-                value={form.gemini_fast_model ?? ""}
-                disabled={isBusy}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    gemini_fast_model: event.target.value,
-                  }))
-                }
-                placeholder="gemini-2.5-flash"
-                className="mt-2"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="gemini-model">Model</Label>
+                <Input
+                  id="gemini-model"
+                  value={form.gemini_model}
+                  disabled={isBusy}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      gemini_model: event.target.value,
+                    }))
+                  }
+                  placeholder="gemini-2.5-pro"
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="gemini-fast-model">Fast model</Label>
+                <Input
+                  id="gemini-fast-model"
+                  value={form.gemini_fast_model ?? ""}
+                  disabled={isBusy}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      gemini_fast_model: event.target.value,
+                    }))
+                  }
+                  placeholder="gemini-2.5-flash"
+                  className="mt-1.5"
+                />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -374,7 +411,7 @@ export default function ConfigurationPage() {
                   value={geminiTemperatureText}
                   disabled={isBusy}
                   onChange={(event) => setGeminiTemperatureText(event.target.value)}
-                  className="mt-2"
+                  className="mt-1.5"
                 />
               </div>
               <div>
@@ -390,7 +427,7 @@ export default function ConfigurationPage() {
                   onChange={(event) =>
                     setGeminiFastTemperatureText(event.target.value)
                   }
-                  className="mt-2"
+                  className="mt-1.5"
                 />
               </div>
             </div>
@@ -404,29 +441,29 @@ export default function ConfigurationPage() {
                 value={geminiThinkingBudgetText}
                 disabled={isBusy}
                 onChange={(event) => setGeminiThinkingBudgetText(event.target.value)}
-                className="mt-2"
+                className="mt-1.5"
               />
             </div>
           </div>
 
-          <div className="space-y-3 rounded-lg border border-border bg-background p-4">
-            <div>
-              <Label htmlFor="smtp-host">SMTP host</Label>
-              <Input
-                id="smtp-host"
-                value={form.smtp_host ?? ""}
-                disabled={isBusy}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    smtp_host: event.target.value.trim() || null,
-                  }))
-                }
-                placeholder="smtp.gmail.com"
-                className="mt-2"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2 rounded-lg border border-border bg-background p-3 lg:col-span-2">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_110px_120px]">
+              <div>
+                <Label htmlFor="smtp-host">SMTP host</Label>
+                <Input
+                  id="smtp-host"
+                  value={form.smtp_host ?? ""}
+                  disabled={isBusy}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      smtp_host: event.target.value.trim() || null,
+                    }))
+                  }
+                  placeholder="smtp.gmail.com"
+                  className="mt-1.5"
+                />
+              </div>
               <div>
                 <Label htmlFor="smtp-port">SMTP port</Label>
                 <Input
@@ -442,7 +479,7 @@ export default function ConfigurationPage() {
                       smtp_port: Number(event.target.value || 587),
                     }))
                   }
-                  className="mt-2"
+                  className="mt-1.5"
                 />
               </div>
               <div>
@@ -460,42 +497,42 @@ export default function ConfigurationPage() {
                       smtp_timeout_seconds: Number(event.target.value || 10),
                     }))
                   }
-                  className="mt-2"
+                  className="mt-1.5"
                 />
               </div>
             </div>
-            <div>
-              <Label htmlFor="smtp-from-email">From email</Label>
-              <Input
-                id="smtp-from-email"
-                value={form.smtp_from_email ?? ""}
-                disabled={isBusy}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    smtp_from_email: event.target.value.trim() || null,
-                  }))
-                }
-                placeholder="idp@example.com"
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <Label htmlFor="smtp-from-name">From name</Label>
-              <Input
-                id="smtp-from-name"
-                value={form.smtp_from_name}
-                disabled={isBusy}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    smtp_from_name: event.target.value,
-                  }))
-                }
-                className="mt-2"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_96px_96px]">
+              <div>
+                <Label htmlFor="smtp-from-email">From email</Label>
+                <Input
+                  id="smtp-from-email"
+                  value={form.smtp_from_email ?? ""}
+                  disabled={isBusy}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      smtp_from_email: event.target.value.trim() || null,
+                    }))
+                  }
+                  placeholder="idp@example.com"
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="smtp-from-name">From name</Label>
+                <Input
+                  id="smtp-from-name"
+                  value={form.smtp_from_name}
+                  disabled={isBusy}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      smtp_from_name: event.target.value,
+                    }))
+                  }
+                  className="mt-1.5"
+                />
+              </div>
               <label className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm">
                 TLS
                 <Switch
@@ -519,29 +556,6 @@ export default function ConfigurationPage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 rounded-lg border border-border bg-background p-4">
-            <Button type="button" onClick={onSave} disabled={!canSave}>
-              {update.isPending ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-1.5 h-4 w-4" />
-              )}
-              Save
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onReloadFromEnv}
-              disabled={isBusy}
-            >
-              {reload.isPending ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="mr-1.5 h-4 w-4" />
-              )}
-              Load from env
-            </Button>
-          </div>
         </aside>
       </div>
     )
@@ -552,8 +566,9 @@ export default function ConfigurationPage() {
       <PageHeader
         title="Configuration"
         description="Runtime IDP settings stored in the database."
+        actions={headerActions}
       />
-      <div className="min-h-0 flex-1 px-8 py-6">{content}</div>
+      <div className="min-h-0 flex-1 px-6 py-4">{content}</div>
     </>
   )
 }
