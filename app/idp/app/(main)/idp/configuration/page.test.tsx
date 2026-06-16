@@ -37,6 +37,11 @@ function settings(overrides: Record<string, unknown> = {}) {
     smtp_use_tls: true,
     smtp_use_ssl: false,
     smtp_timeout_seconds: 10,
+    gemini_model: "gemini-pro",
+    gemini_fast_model: "gemini-fast",
+    gemini_temperature: 0.2,
+    gemini_fast_temperature: null,
+    gemini_thinking_budget: 1024,
     ...overrides,
   }
 }
@@ -89,6 +94,21 @@ describe("ConfigurationPage", () => {
     fireEvent.change(screen.getByLabelText("SAD context defaults"), {
       target: { value: '{"header":{"decl_customs_off_no":"PL123456"}}' },
     })
+    fireEvent.change(screen.getByLabelText("Model"), {
+      target: { value: "gemini-custom" },
+    })
+    fireEvent.change(screen.getByLabelText("Fast model"), {
+      target: { value: "" },
+    })
+    fireEvent.change(screen.getByLabelText("Temperature"), {
+      target: { value: "0.4" },
+    })
+    fireEvent.change(screen.getByLabelText("Fast temperature"), {
+      target: { value: "" },
+    })
+    fireEvent.change(screen.getByLabelText("Thinking budget"), {
+      target: { value: "-1" },
+    })
     fireEvent.click(screen.getByRole("button", { name: /^save$/i }))
 
     await waitFor(() => {
@@ -105,6 +125,11 @@ describe("ConfigurationPage", () => {
       custom_statuses: ["Accepted", "Controling Department"],
       export_templates: ["standard_xml", "sad_xml"],
       sad_context_defaults: '{"header":{"decl_customs_off_no":"PL123456"}}',
+      gemini_model: "gemini-custom",
+      gemini_fast_model: null,
+      gemini_temperature: 0.4,
+      gemini_fast_temperature: null,
+      gemini_thinking_budget: -1,
     })
   })
 
@@ -112,7 +137,9 @@ describe("ConfigurationPage", () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input.toString()
       if (init?.method === "POST" && url.includes("/reload-from-env")) {
-        return Promise.resolve(jsonResponse(settings({ hide_menu_items: ["rules"] })))
+        return Promise.resolve(
+          jsonResponse(settings({ hide_menu_items: ["rules"], gemini_model: "env-model" })),
+        )
       }
       if (url.includes("/config/feature-flags")) {
         return Promise.resolve(jsonResponse(settings()))
@@ -134,5 +161,6 @@ describe("ConfigurationPage", () => {
       const input = screen.getByLabelText("Hidden menu items") as HTMLInputElement
       expect(input.value).toBe("rules")
     })
+    expect((screen.getByLabelText("Model") as HTMLInputElement).value).toBe("env-model")
   })
 })

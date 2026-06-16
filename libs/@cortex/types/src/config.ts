@@ -39,6 +39,11 @@ export interface FeatureFlagSettingsResponse {
   smtp_use_tls: boolean
   smtp_use_ssl: boolean
   smtp_timeout_seconds: number
+  gemini_model: string
+  gemini_fast_model: string | null
+  gemini_temperature: number | null
+  gemini_fast_temperature: number | null
+  gemini_thinking_budget: number | null
 }
 
 export type UpdateFeatureFlagSettingsRequest = FeatureFlagSettingsResponse

@@ -107,6 +107,11 @@ function emptySettings(): FeatureFlagSettingsResponse {
     smtp_use_tls: true,
     smtp_use_ssl: false,
     smtp_timeout_seconds: 10,
+    gemini_model: "gemini-2.5-pro-preview-05-06",
+    gemini_fast_model: null,
+    gemini_temperature: null,
+    gemini_fast_temperature: null,
+    gemini_thinking_budget: null,
   }
 }
 
@@ -115,6 +120,21 @@ function parseCsvList(value: string): string[] {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean)
+}
+
+function numberText(value: number | null): string {
+  return value === null ? "" : String(value)
+}
+
+function parseOptionalNumber(value: string): number | null {
+  if (!value.trim()) return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function parseOptionalInteger(value: string): number | null {
+  const parsed = parseOptionalNumber(value)
+  return parsed === null ? null : Math.trunc(parsed)
 }
 
 function isForbidden(error: unknown): boolean {
@@ -129,6 +149,9 @@ export default function ConfigurationPage() {
   const [hiddenMenuItemsText, setHiddenMenuItemsText] = useState("")
   const [customStatusesText, setCustomStatusesText] = useState("")
   const [exportTemplatesText, setExportTemplatesText] = useState("")
+  const [geminiTemperatureText, setGeminiTemperatureText] = useState("")
+  const [geminiFastTemperatureText, setGeminiFastTemperatureText] = useState("")
+  const [geminiThinkingBudgetText, setGeminiThinkingBudgetText] = useState("")
 
   useEffect(() => {
     if (!query.data) return
@@ -136,6 +159,9 @@ export default function ConfigurationPage() {
     setHiddenMenuItemsText(query.data.hide_menu_items.join(", "))
     setCustomStatusesText(query.data.custom_statuses.join(", "))
     setExportTemplatesText(query.data.export_templates.join(", "))
+    setGeminiTemperatureText(numberText(query.data.gemini_temperature))
+    setGeminiFastTemperatureText(numberText(query.data.gemini_fast_temperature))
+    setGeminiThinkingBudgetText(numberText(query.data.gemini_thinking_budget))
   }, [query.data])
 
   const payload = useMemo<FeatureFlagSettingsResponse>(
@@ -144,11 +170,25 @@ export default function ConfigurationPage() {
       hide_menu_items: parseCsvList(hiddenMenuItemsText),
       custom_statuses: parseCsvList(customStatusesText),
       export_templates: parseCsvList(exportTemplatesText),
+      gemini_model: form.gemini_model.trim(),
+      gemini_fast_model: form.gemini_fast_model?.trim() || null,
+      gemini_temperature: parseOptionalNumber(geminiTemperatureText),
+      gemini_fast_temperature: parseOptionalNumber(geminiFastTemperatureText),
+      gemini_thinking_budget: parseOptionalInteger(geminiThinkingBudgetText),
     }),
-    [customStatusesText, exportTemplatesText, form, hiddenMenuItemsText],
+    [
+      customStatusesText,
+      exportTemplatesText,
+      form,
+      geminiFastTemperatureText,
+      geminiTemperatureText,
+      geminiThinkingBudgetText,
+      hiddenMenuItemsText,
+    ],
   )
 
   const isBusy = update.isPending || reload.isPending
+  const canSave = !isBusy && Boolean(form.gemini_model.trim())
 
   const onSave = () => {
     update.mutate(payload, {
@@ -157,6 +197,9 @@ export default function ConfigurationPage() {
         setHiddenMenuItemsText(settings.hide_menu_items.join(", "))
         setCustomStatusesText(settings.custom_statuses.join(", "))
         setExportTemplatesText(settings.export_templates.join(", "))
+        setGeminiTemperatureText(numberText(settings.gemini_temperature))
+        setGeminiFastTemperatureText(numberText(settings.gemini_fast_temperature))
+        setGeminiThinkingBudgetText(numberText(settings.gemini_thinking_budget))
         toast.success("Configuration saved.")
       },
       onError: (err) => toastApiError(err),
@@ -170,6 +213,9 @@ export default function ConfigurationPage() {
         setHiddenMenuItemsText(settings.hide_menu_items.join(", "))
         setCustomStatusesText(settings.custom_statuses.join(", "))
         setExportTemplatesText(settings.export_templates.join(", "))
+        setGeminiTemperatureText(numberText(settings.gemini_temperature))
+        setGeminiFastTemperatureText(numberText(settings.gemini_fast_temperature))
+        setGeminiThinkingBudgetText(numberText(settings.gemini_thinking_budget))
         toast.success("Configuration loaded from env.")
       },
       onError: (err) => toastApiError(err),
@@ -278,6 +324,87 @@ export default function ConfigurationPage() {
                 }
                 placeholder='{"header":{"decl_customs_off_no":"PL000000"}}'
                 className="mt-2 min-h-[104px] font-mono text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-border bg-background p-4">
+            <h3 className="text-sm font-semibold">Worker Gemini</h3>
+            <div>
+              <Label htmlFor="gemini-model">Model</Label>
+              <Input
+                id="gemini-model"
+                value={form.gemini_model}
+                disabled={isBusy}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    gemini_model: event.target.value,
+                  }))
+                }
+                placeholder="gemini-2.5-pro-preview-05-06"
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label htmlFor="gemini-fast-model">Fast model</Label>
+              <Input
+                id="gemini-fast-model"
+                value={form.gemini_fast_model ?? ""}
+                disabled={isBusy}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    gemini_fast_model: event.target.value,
+                  }))
+                }
+                placeholder="gemini-2.5-flash"
+                className="mt-2"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="gemini-temperature">Temperature</Label>
+                <Input
+                  id="gemini-temperature"
+                  type="number"
+                  min={0}
+                  max={2}
+                  step={0.01}
+                  value={geminiTemperatureText}
+                  disabled={isBusy}
+                  onChange={(event) => setGeminiTemperatureText(event.target.value)}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label htmlFor="gemini-fast-temperature">Fast temperature</Label>
+                <Input
+                  id="gemini-fast-temperature"
+                  type="number"
+                  min={0}
+                  max={2}
+                  step={0.01}
+                  value={geminiFastTemperatureText}
+                  disabled={isBusy}
+                  onChange={(event) =>
+                    setGeminiFastTemperatureText(event.target.value)
+                  }
+                  className="mt-2"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="gemini-thinking-budget">Thinking budget</Label>
+              <Input
+                id="gemini-thinking-budget"
+                type="number"
+                min={-1}
+                step={1}
+                value={geminiThinkingBudgetText}
+                disabled={isBusy}
+                onChange={(event) => setGeminiThinkingBudgetText(event.target.value)}
+                className="mt-2"
               />
             </div>
           </div>
@@ -393,7 +520,7 @@ export default function ConfigurationPage() {
           </div>
 
           <div className="flex flex-col gap-2 rounded-lg border border-border bg-background p-4">
-            <Button type="button" onClick={onSave} disabled={isBusy}>
+            <Button type="button" onClick={onSave} disabled={!canSave}>
               {update.isPending ? (
                 <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
               ) : (
