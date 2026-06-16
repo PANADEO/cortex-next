@@ -19,7 +19,16 @@ describe("filterNavSections", () => {
 
     expect(itemIds(sections)).toContain("export")
     expect(itemIds(sections)).toContain("rules")
+    expect(itemIds(sections)).not.toContain("configuration")
     expect(sections.some((section) => section.id === "settings")).toBe(true)
+  })
+
+  it("shows Configuration only for admin navigation", () => {
+    const sections = filterNavSections(IDP_NAV, parseHiddenMenuItems(undefined), {
+      showAdminItems: true,
+    })
+
+    expect(itemIds(sections)).toContain("configuration")
   })
 
   it("accepts labels with spaces and mixed case", () => {

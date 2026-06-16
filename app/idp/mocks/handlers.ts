@@ -239,6 +239,9 @@ export const handlers = [
 
   // Config
   http.get("/config", () => passthrough()),
+  http.get("/config/feature-flags", () => passthrough()),
+  http.put("/config/feature-flags", () => passthrough()),
+  http.post("/config/feature-flags/reload-from-env", () => passthrough()),
   http.get("/config/custom-statuses", () => passthrough()),
 
   // Module version (proxied to backend /version)
@@ -324,6 +327,31 @@ export const handlers = [
       enable_classification: false,
       enable_customs_code: false,
       enable_atr_processing: false,
+    }),
+  ),
+
+  http.get("/config/feature-flags", () =>
+    HttpResponse.json({
+      enable_verification_process: true,
+      package_custom_statuses: false,
+      enable_user_notes: false,
+      enable_po_number: false,
+      enable_customs_code: false,
+      enable_additional_ai_context: false,
+      enable_atr_processing: false,
+      enable_document_preview: true,
+      enable_classification: false,
+      hide_menu_items: [],
+      custom_statuses: ["Accounting Department", "Controling Department", "Accepted"],
+      export_templates: ["csv_new", "standard_xml", "standard_json", "sad_xml"],
+      sad_context_defaults: "",
+      smtp_host: "smtp.gmail.com",
+      smtp_port: 587,
+      smtp_from_email: "idp@example.com",
+      smtp_from_name: "Cortex IDP",
+      smtp_use_tls: true,
+      smtp_use_ssl: false,
+      smtp_timeout_seconds: 10,
     }),
   ),
 

@@ -22,6 +22,7 @@ export function setForbiddenHandler(handler: ForbiddenHandler | null): void {
 const FORBIDDEN_HANDLER_EXEMPT_PATHS: ReadonlySet<string> = new Set([
   "/user/me",
   "/api/me/access",
+  "/config/feature-flags",
 ])
 
 function shouldNotifyForbidden(path: string): boolean {
@@ -102,6 +103,7 @@ async function request<T>(method: string, path: string, options: RequestOptions 
 export const apiClient = {
   get: <T>(path: string, opts?: RequestOptions) => request<T>("GET", path, opts),
   post: <T>(path: string, opts?: RequestOptions) => request<T>("POST", path, opts),
+  put: <T>(path: string, opts?: RequestOptions) => request<T>("PUT", path, opts),
   patch: <T>(path: string, opts?: RequestOptions) => request<T>("PATCH", path, opts),
   delete: <T>(path: string, opts?: RequestOptions) => request<T>("DELETE", path, opts),
 }

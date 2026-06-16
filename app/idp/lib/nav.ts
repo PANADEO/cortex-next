@@ -1,7 +1,15 @@
-import { useFeatureFlags } from "@cortex/api"
+import { useFeatureFlags, useFeatureFlagSettings } from "@cortex/api"
 import type { FeatureFlagsResponse } from "@cortex/types"
 import type { TileMenuItem, TileMenuSection } from "@cortex/ui"
-import { BarChart3, FileDown, History, Package, ScrollText, Upload } from "lucide-react"
+import {
+  BarChart3,
+  FileDown,
+  History,
+  Package,
+  ScrollText,
+  Settings,
+  Upload,
+} from "lucide-react"
 import { useMemo } from "react"
 
 export const IDP_NAV: TileMenuSection[] = [
@@ -30,6 +38,12 @@ export const IDP_NAV: TileMenuSection[] = [
         icon: ScrollText,
         href: "/idp/rules",
       },
+      {
+        id: "configuration",
+        label: "Configuration",
+        icon: Settings,
+        href: "/idp/configuration",
+      },
     ],
   },
   {
@@ -48,6 +62,7 @@ function normalizeMenuKey(value: string): string {
 }
 
 type HiddenMenuItemsConfig = FeatureFlagsResponse["hide_menu_items"]
+const ADMIN_ITEM_IDS = new Set(["configuration"])
 
 export function parseHiddenMenuItems(value: HiddenMenuItemsConfig): ReadonlySet<string> {
   const items = Array.isArray(value) ? value : (value ?? "").split(",")
@@ -62,21 +77,30 @@ function itemKeys(item: TileMenuItem): string[] {
 export function filterNavSections(
   sections: readonly TileMenuSection[],
   hiddenItems: ReadonlySet<string>,
+  options: { showAdminItems?: boolean } = {},
 ): TileMenuSection[] {
+  const showAdminItems = options.showAdminItems ?? false
   return sections
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => !itemKeys(item).some((key) => hiddenItems.has(key))),
+      items: section.items.filter((item) => {
+        if (ADMIN_ITEM_IDS.has(item.id) && !showAdminItems) return false
+        return !itemKeys(item).some((key) => hiddenItems.has(key))
+      }),
     }))
     .filter((section) => section.items.length > 0)
 }
 
 export function useIdpNavSections(): TileMenuSection[] {
   const { data } = useFeatureFlags()
+  const settings = useFeatureFlagSettings()
   const hiddenMenuItems = data?.hide_menu_items
 
   return useMemo(
-    () => filterNavSections(IDP_NAV, parseHiddenMenuItems(hiddenMenuItems)),
-    [hiddenMenuItems],
+    () =>
+      filterNavSections(IDP_NAV, parseHiddenMenuItems(hiddenMenuItems), {
+        showAdminItems: settings.isSuccess,
+      }),
+    [hiddenMenuItems, settings.isSuccess],
   )
 }

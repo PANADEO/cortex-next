@@ -22,6 +22,7 @@ import type {
   SetUserPreferencesRequest,
   UpdateDeliveryTermsRequest,
   UpdateDocumentClassificationRequest,
+  UpdateFeatureFlagSettingsRequest,
   UpdateInvoiceLinesRequest,
   UpdateInvoiceRequest,
   UpdateInvoiceTotalsRequest,
@@ -77,6 +78,40 @@ export function useFeatureFlags() {
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
     retry: false,
+  })
+}
+
+export function useFeatureFlagSettings() {
+  return useQuery({
+    queryKey: queryKeys.featureFlagSettings(),
+    queryFn: endpoints.config.featureFlagSettings,
+    refetchOnWindowFocus: false,
+    retry: false,
+  })
+}
+
+export function useUpdateFeatureFlagSettings() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateFeatureFlagSettingsRequest) =>
+      endpoints.config.updateFeatureFlagSettings(body),
+    onSuccess: (settings) => {
+      client.setQueryData(queryKeys.featureFlagSettings(), settings)
+      client.invalidateQueries({ queryKey: queryKeys.featureFlags() })
+      client.invalidateQueries({ queryKey: queryKeys.exportTemplates() })
+    },
+  })
+}
+
+export function useReloadFeatureFlagSettingsFromEnv() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: endpoints.config.reloadFeatureFlagSettingsFromEnv,
+    onSuccess: (settings) => {
+      client.setQueryData(queryKeys.featureFlagSettings(), settings)
+      client.invalidateQueries({ queryKey: queryKeys.featureFlags() })
+      client.invalidateQueries({ queryKey: queryKeys.exportTemplates() })
+    },
   })
 }
 

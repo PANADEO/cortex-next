@@ -13,6 +13,8 @@ const STATIC_IDP_PATHS = new Set([
   "/packages/import-email",
   "/packages/import-multiple",
   "/config",
+  "/config/feature-flags",
+  "/config/feature-flags/reload-from-env",
   "/config/custom-statuses",
 ])
 

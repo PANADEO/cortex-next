@@ -14,6 +14,7 @@ import type {
   ExportEmailResponse,
   ExportTemplateInfo,
   ExportValidationResponse,
+  FeatureFlagSettingsResponse,
   FeatureFlagsResponse,
   GetActionLogsQuery,
   GetDirtyPackagesQuery,
@@ -50,6 +51,7 @@ import type {
   SourceFileReadModel,
   UpdateDeliveryTermsRequest,
   UpdateDocumentClassificationRequest,
+  UpdateFeatureFlagSettingsRequest,
   UpdateInvoiceLinesRequest,
   UpdateInvoiceRequest,
   UpdateInvoiceTotalsRequest,
@@ -110,6 +112,12 @@ export const endpoints = {
   },
   config: {
     featureFlags: () => apiClient.get<FeatureFlagsResponse>("/config"),
+    featureFlagSettings: () =>
+      apiClient.get<FeatureFlagSettingsResponse>("/config/feature-flags"),
+    updateFeatureFlagSettings: (body: UpdateFeatureFlagSettingsRequest) =>
+      apiClient.put<FeatureFlagSettingsResponse>("/config/feature-flags", { jsonBody: body }),
+    reloadFeatureFlagSettingsFromEnv: () =>
+      apiClient.post<FeatureFlagSettingsResponse>("/config/feature-flags/reload-from-env"),
   },
   packages: {
     list: (query: GetPackagesQuery = {}) =>

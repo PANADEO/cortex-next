@@ -14,6 +14,7 @@ export const queryKeys = {
   moduleVersion: (endpoint: string) =>
     [...queryKeys.all, "module-version", endpoint] as const,
   featureFlags: () => [...queryKeys.all, "feature-flags"] as const,
+  featureFlagSettings: () => [...queryKeys.all, "feature-flag-settings"] as const,
   packages: {
     all: () => [...queryKeys.all, "packages"] as const,
     list: (query: GetPackagesQuery) =>
