@@ -59,6 +59,37 @@ function mockPreferencesPost() {
   return fetchMock
 }
 
+function mockLegacyPreferencesPost() {
+  const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+    const body = JSON.parse(String(init?.body ?? "{}")) as {
+      invoice_line_hidden_columns?: string[] | null
+    }
+    if (body.invoice_line_hidden_columns?.includes("description_pl")) {
+      return new Response(
+        JSON.stringify({
+          detail: [
+            {
+              loc: ["body", "invoice_line_hidden_columns", 0],
+              msg: "Input should be a supported invoice line column",
+            },
+          ],
+        }),
+        { status: 422, statusText: "Unprocessable Content" },
+      )
+    }
+    return new Response(
+      JSON.stringify({
+        document_panel_ratio: null,
+        theme_mode: null,
+        invoice_line_hidden_columns: body.invoice_line_hidden_columns ?? null,
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    )
+  })
+  vi.stubGlobal("fetch", fetchMock)
+  return fetchMock
+}
+
 beforeEach(() => {
   installLocalStorageMock()
 })
@@ -115,6 +146,49 @@ describe("InvoiceLineColumnsDialog", () => {
     await user.click(screen.getByRole("button", { name: /columns/i }))
 
     expect(screen.getByRole("checkbox", { name: /product code/i }).getAttribute("data-state")).toBe(
+      "unchecked",
+    )
+  })
+
+  it("saves Polish name as a hidden invoice-line column", async () => {
+    const fetchMock = mockPreferencesPost()
+    const user = userEvent.setup()
+
+    renderWithClient(<InvoiceLineColumnsDialog />)
+
+    await user.click(screen.getByRole("button", { name: /columns/i }))
+    await user.click(screen.getByRole("checkbox", { name: /polish name/i }))
+    await user.click(screen.getByRole("button", { name: /^save$/i }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
+      invoice_line_hidden_columns: ["description_pl"],
+    })
+  })
+
+  it("keeps Polish name hidden locally when a legacy backend rejects that column key", async () => {
+    const fetchMock = mockLegacyPreferencesPost()
+    const user = userEvent.setup()
+
+    renderWithClient(<InvoiceLineColumnsDialog />)
+
+    await user.click(screen.getByRole("button", { name: /columns/i }))
+    await user.click(screen.getByRole("checkbox", { name: /polish name/i }))
+    await user.click(screen.getByRole("button", { name: /^save$/i }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
+      invoice_line_hidden_columns: ["description_pl"],
+    })
+    expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toMatchObject({
+      invoice_line_hidden_columns: null,
+    })
+    expect(window.localStorage.getItem("idp.invoiceLineHiddenColumns")).toBe(
+      JSON.stringify(["description_pl"]),
+    )
+
+    await user.click(screen.getByRole("button", { name: /columns/i }))
+    expect(screen.getByRole("checkbox", { name: /polish name/i }).getAttribute("data-state")).toBe(
       "unchecked",
     )
   })

@@ -147,6 +147,22 @@ describe("LinesSpreadsheet", () => {
     expect(screen.getByRole("button", { name: /^qty/i })).not.toBeNull()
   })
 
+  it("hides Polish name from the editable spreadsheet", () => {
+    renderWithPreferences(
+      <LinesSpreadsheet
+        invoice={makeInvoice()}
+        canEdit
+        isSaving={false}
+        onSave={async () => undefined}
+      />,
+      ["description_pl"],
+    )
+
+    expect(screen.queryByRole("button", { name: /polish name/i })).toBeNull()
+    expect(screen.queryByDisplayValue("Produkt testowy")).toBeNull()
+    expect(screen.getByRole("button", { name: /description/i })).not.toBeNull()
+  })
+
   it("hides A.TR spreadsheet columns when A.TR processing is disabled", () => {
     renderWithPreferences(
       <LinesSpreadsheet
@@ -185,5 +201,26 @@ describe("LinesSpreadsheet", () => {
     const csv = await readBlobText(blob as Blob)
     expect(csv).toContain("UPDATED-SKU")
     expect(csv).toContain("N018 | ATR-123 | 1")
+  })
+
+  it("excludes hidden Polish name from the spreadsheet CSV", async () => {
+    renderWithPreferences(
+      <LinesSpreadsheet
+        invoice={makeInvoice()}
+        canEdit
+        isSaving={false}
+        onSave={async () => undefined}
+      />,
+      ["description_pl"],
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: /download csv/i }))
+
+    expect(downloadBlob).toHaveBeenCalledTimes(1)
+    const [blob] = vi.mocked(downloadBlob).mock.calls[0] ?? []
+    const csv = await readBlobText(blob as Blob)
+    expect(csv).not.toContain("Polish Name")
+    expect(csv).not.toContain("Produkt testowy")
+    expect(csv).toContain("Sample product")
   })
 })

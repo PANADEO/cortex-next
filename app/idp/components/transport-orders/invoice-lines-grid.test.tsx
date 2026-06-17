@@ -178,6 +178,23 @@ describe("InvoiceLinesGrid", () => {
     expect(screen.getByRole("button", { name: "Edit line" })).not.toBeNull()
   })
 
+  it("hides Polish name without hiding the edit action", () => {
+    renderWithPreferences(
+      <InvoiceLinesGrid
+        invoice={makeInvoice()}
+        canEdit
+        isSaving={false}
+        onSaveLines={async () => undefined}
+      />,
+      ["description_pl"],
+    )
+
+    expect(screen.queryByRole("columnheader", { name: "Polish Name" })).toBeNull()
+    expect(screen.queryByText("Produkt testowy")).toBeNull()
+    expect(screen.getByRole("columnheader", { name: "Description" })).not.toBeNull()
+    expect(screen.getByRole("button", { name: "Edit line" })).not.toBeNull()
+  })
+
   it("hides A.TR columns when A.TR processing is disabled", () => {
     renderWithPreferences(
       <InvoiceLinesGrid
@@ -215,5 +232,26 @@ describe("InvoiceLinesGrid", () => {
     expect(csv).toContain("PO Number")
     expect(csv).not.toContain("Description")
     expect(csv).toContain("N018 / ATR-123 / 1144")
+  })
+
+  it("excludes hidden Polish name from the grid CSV", async () => {
+    renderWithPreferences(
+      <InvoiceLinesGrid
+        invoice={makeInvoice()}
+        canEdit={false}
+        isSaving={false}
+        onSaveLines={async () => undefined}
+      />,
+      ["description_pl"],
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: /download csv/i }))
+
+    expect(downloadBlob).toHaveBeenCalledTimes(1)
+    const [blob] = vi.mocked(downloadBlob).mock.calls[0] ?? []
+    const csv = await readBlobText(blob as Blob)
+    expect(csv).not.toContain("Polish Name")
+    expect(csv).not.toContain("Produkt testowy")
+    expect(csv).toContain("Sample product")
   })
 })

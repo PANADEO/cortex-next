@@ -1,6 +1,6 @@
 "use client"
 
-import { useSetUserPreferences, useUserPreferences } from "@cortex/api"
+import { ApiError, useSetUserPreferences, useUserPreferences } from "@cortex/api"
 import {
   INVOICE_LINE_COLUMN_KEYS,
   type InvoiceLineColumnKey,
@@ -171,6 +171,7 @@ export const INVOICE_LINE_COLUMNS: readonly InvoiceLineColumnConfig[] = [
 
 const ALL_COLUMN_KEYS = new Set<InvoiceLineColumnKey>(INVOICE_LINE_COLUMN_KEYS)
 const ATR_COLUMN_KEYS = new Set<InvoiceLineColumnKey>(["preference_code", "atr_documents"])
+const LOCAL_ONLY_COLUMN_KEYS = new Set<InvoiceLineColumnKey>(["description_pl"])
 const STORAGE_KEY = "idp.invoiceLineHiddenColumns"
 const STORAGE_EVENT = "idp:invoice-line-hidden-columns"
 
@@ -206,6 +207,33 @@ function readStoredHiddenColumns(): InvoiceLineColumnKey[] {
   } catch {
     return []
   }
+}
+
+function mergeLocalOnlyHiddenColumns(
+  apiHiddenColumns: InvoiceLineColumnKey[],
+  storedHiddenColumns: InvoiceLineColumnKey[],
+): InvoiceLineColumnKey[] {
+  const next = new Set(apiHiddenColumns)
+  for (const key of storedHiddenColumns) {
+    if (LOCAL_ONLY_COLUMN_KEYS.has(key)) next.add(key)
+  }
+  return Array.from(next)
+}
+
+function getBackendHiddenColumns(hiddenColumns: InvoiceLineColumnKey[] | null) {
+  const supported = (hiddenColumns ?? []).filter((key) => !LOCAL_ONLY_COLUMN_KEYS.has(key))
+  return supported.length > 0 ? supported : null
+}
+
+function canFallbackToLocalHiddenColumns(
+  error: unknown,
+  hiddenColumns: InvoiceLineColumnKey[] | null,
+): boolean {
+  return (
+    error instanceof ApiError &&
+    error.status === 422 &&
+    Boolean(hiddenColumns?.some((key) => LOCAL_ONLY_COLUMN_KEYS.has(key)))
+  )
 }
 
 function writeStoredHiddenColumns(hiddenColumns: InvoiceLineColumnKey[] | null) {
@@ -252,14 +280,21 @@ export function useVisibleInvoiceLineColumns(showAtrColumns = true) {
   useEffect(() => {
     if (!preferencesIncludeInvoiceLineColumns(preferences.data)) return
     const apiHiddenColumns = getInvoiceLineHiddenColumns(preferences.data)
-    writeStoredHiddenColumns(apiHiddenColumns.length > 0 ? apiHiddenColumns : null)
+    const mergedHiddenColumns = mergeLocalOnlyHiddenColumns(
+      apiHiddenColumns,
+      readStoredHiddenColumns(),
+    )
+    writeStoredHiddenColumns(mergedHiddenColumns.length > 0 ? mergedHiddenColumns : null)
   }, [preferences.data])
 
   const hiddenColumnValues = useMemo(
-    () =>
-      preferencesIncludeInvoiceLineColumns(preferences.data)
-        ? getInvoiceLineHiddenColumns(preferences.data)
-        : storedHiddenColumns,
+    () => {
+      if (!preferencesIncludeInvoiceLineColumns(preferences.data)) return storedHiddenColumns
+      return mergeLocalOnlyHiddenColumns(
+        getInvoiceLineHiddenColumns(preferences.data),
+        storedHiddenColumns,
+      )
+    },
     [preferences.data, storedHiddenColumns],
   )
   const hiddenColumns = useMemo(() => new Set(hiddenColumnValues), [hiddenColumnValues])
@@ -317,7 +352,15 @@ export function InvoiceLineColumnsDialog({
   }
 
   const saveHiddenColumns = async (hiddenColumns: InvoiceLineColumnKey[] | null) => {
-    await persist.mutateAsync({ invoice_line_hidden_columns: hiddenColumns })
+    try {
+      await persist.mutateAsync({ invoice_line_hidden_columns: hiddenColumns })
+    } catch (error) {
+      if (!canFallbackToLocalHiddenColumns(error, hiddenColumns)) throw error
+      writeStoredHiddenColumns(hiddenColumns)
+      await persist.mutateAsync({
+        invoice_line_hidden_columns: getBackendHiddenColumns(hiddenColumns),
+      })
+    }
     writeStoredHiddenColumns(hiddenColumns)
     setOpen(false)
   }
