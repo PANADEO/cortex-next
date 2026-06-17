@@ -13,6 +13,7 @@ interface AccessDeniedScreenProps {
 
 export function AccessDeniedScreen({ email, reason }: AccessDeniedScreenProps) {
   const isError = reason === "error"
+  const title = isError ? "Brak uprawnień" : "Brak dostępu"
 
   const handleLogout = () => {
     window.location.assign("/logout")
@@ -40,10 +41,10 @@ export function AccessDeniedScreen({ email, reason }: AccessDeniedScreenProps) {
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
             <ShieldAlert className="h-5 w-5" aria-hidden="true" />
           </span>
-          <h1 className="text-2xl font-semibold tracking-tight">Brak dostępu</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           {isError ? (
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Nie udało się zweryfikować uprawnień. Spróbuj ponownie za chwilę.
+              Nie masz uprawnień do korzystania z tej aplikacji. Skontaktuj się z administratorem.
             </p>
           ) : (
             <p className="text-sm leading-relaxed text-muted-foreground">

@@ -70,7 +70,7 @@ describe("AppGate", () => {
 
     render(createElement(AppGate, null, createElement(Child)))
 
-    expect(screen.getByRole("heading", { name: "Brak dostępu" })).not.toBeNull()
+    expect(screen.getByRole("heading", { name: "Brak uprawnień" })).not.toBeNull()
     expect(screen.getByRole("button", { name: "Spróbuj ponownie" })).not.toBeNull()
   })
 

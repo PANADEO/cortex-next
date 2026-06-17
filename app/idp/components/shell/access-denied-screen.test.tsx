@@ -34,6 +34,8 @@ describe("AccessDeniedScreen", () => {
   it("error variant renders Spróbuj ponownie button (not Wyloguj się)", () => {
     render(createElement(AccessDeniedScreen, { reason: "error" }))
 
+    expect(screen.getByRole("heading", { name: "Brak uprawnień" })).not.toBeNull()
+    expect(screen.getByText(/Nie masz uprawnień do korzystania/)).not.toBeNull()
     expect(screen.getByRole("button", { name: "Spróbuj ponownie" })).not.toBeNull()
     expect(screen.queryByRole("button", { name: "Wyloguj się" })).toBeNull()
   })
