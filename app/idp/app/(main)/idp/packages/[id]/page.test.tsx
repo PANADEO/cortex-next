@@ -12,12 +12,19 @@ import type { ReactNode } from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import PackageDetailPage from "./page"
 
+const { exportMenuMock } = vi.hoisted(() => ({
+  exportMenuMock: vi.fn(),
+}))
+
 vi.mock("next/navigation", () => ({
   useParams: () => ({ id: "pkg-1" }),
 }))
 
 vi.mock("@/components/export-menu", () => ({
-  ExportMenu: () => <button type="button">Export</button>,
+  ExportMenu: (props: { packageId: string; fileName: string }) => {
+    exportMenuMock(props)
+    return <button type="button">Export</button>
+  },
 }))
 
 vi.mock("@/components/ai-notifications-panel", () => ({
@@ -52,6 +59,7 @@ vi.mock("@/components/package-metadata-editors", () => ({
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  exportMenuMock.mockClear()
 })
 
 function freshClient(): QueryClient {
@@ -70,7 +78,7 @@ function jsonResponse(body: unknown): Response {
   })
 }
 
-function makeFetchMock() {
+function makeFetchMock(overrides: Partial<PackageDetailsResponse> = {}) {
   const details: PackageDetailsResponse = {
     id: "pkg-1",
     file_name: "import_20260512_112118.zip",
@@ -89,6 +97,7 @@ function makeFetchMock() {
     verified_result: null,
     total_tokens: 2400,
     total_cost_usd: "0.0942",
+    ...overrides,
   }
   const transitions: PackageTransitionsResponse = {
     transitions: ["start_verification", "reprocess"],
@@ -129,6 +138,23 @@ function makeFetchMock() {
 }
 
 describe("PackageDetailPage summary collapse", () => {
+  it("passes package display name to export menu when present", async () => {
+    vi.stubGlobal("fetch", makeFetchMock({ package_name: "May Customs Batch" }))
+
+    render(
+      <Wrapper>
+        <PackageDetailPage />
+      </Wrapper>,
+    )
+
+    await waitFor(() => {
+      expect(exportMenuMock).toHaveBeenCalledWith({
+        packageId: "pkg-1",
+        fileName: "May Customs Batch",
+      })
+    })
+  })
+
   it("keeps statuses and actions visible while collapsing and expanding summary details", async () => {
     vi.stubGlobal("fetch", makeFetchMock())
 

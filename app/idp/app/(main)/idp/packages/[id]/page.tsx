@@ -255,7 +255,9 @@ export default function PackageDetailPage() {
               }}
               isRefreshing={detail.isFetching || actions.isFetching}
             />
-            {pkg ? <ExportMenu packageId={pkg.id} fileName={pkg.file_name} /> : null}
+            {pkg ? (
+              <ExportMenu packageId={pkg.id} fileName={pkg.package_name ?? pkg.file_name} />
+            ) : null}
             <Button variant="outline" size="sm" asChild>
               <Link href="/idp/packages">
                 <ArrowLeft className="mr-1 h-4 w-4" /> Back
