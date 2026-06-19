@@ -177,6 +177,35 @@ export function useIdpBasicUploadPackage() {
   })
 }
 
+export function useIdpBasicDeletePackage() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (packageId: string) => idpBasicApi.deletePackage(packageId),
+    onSuccess: (_deleted, packageId) => {
+      client.removeQueries({ queryKey: idpBasicQueryKeys.packageDetail(packageId) })
+      client.removeQueries({ queryKey: idpBasicQueryKeys.resultDetail(packageId) })
+      invalidateIdpBasicMetadata(client)
+    },
+  })
+}
+
+export function useIdpBasicDeleteDocument(packageId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (documentId: string) => idpBasicApi.deleteDocument(packageId, documentId),
+    onSuccess: () => {
+      invalidateIdpBasicMetadata(client)
+    },
+  })
+}
+
+function invalidateIdpBasicMetadata(client: ReturnType<typeof useQueryClient>) {
+  client.invalidateQueries({
+    predicate: ({ queryKey }) =>
+      queryKey[0] === idpBasicQueryKeys.all[0] && queryKey[1] !== "documents",
+  })
+}
+
 function hasActivePackages(data: IdpBasicPackageListResponse | undefined): boolean {
   return (
     data?.items.some((item) => item.status === "queued" || item.status === "processing") ?? true

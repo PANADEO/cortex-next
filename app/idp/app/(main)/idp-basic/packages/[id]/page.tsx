@@ -1,5 +1,6 @@
 "use client"
 
+import { IdpBasicDeletePackageButton } from "@/components/idp-basic/delete-actions"
 import { DocumentPreviewPanel } from "@/components/idp-basic/document-preview-panel"
 import { IdpBasicStatusBadge } from "@/components/idp-basic/status"
 import { useIdpBasicPackage } from "@/lib/idp-basic/hooks"
@@ -22,6 +23,7 @@ export default function IdpBasicPackageDetailPage() {
   const id = params?.id ?? ""
   const detail = useIdpBasicPackage(id)
   const pkg = detail.data
+  const deleteDisabled = pkg?.status === "queued" || pkg?.status === "processing"
 
   if (detail.isPending && !pkg) return <LoadingState label="Loading package…" />
   if (detail.error || !pkg) {
@@ -39,12 +41,20 @@ export default function IdpBasicPackageDetailPage() {
         title={pkg.subject}
         description="Extracted reference and classified documents."
         actions={
-          <Button asChild variant="outline" size="sm">
-            <Link href="/idp-basic/packages">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Packages
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <IdpBasicDeletePackageButton
+              packageId={pkg.id}
+              packageName={pkg.subject}
+              redirectTo="/idp-basic/packages"
+              disabled={deleteDisabled}
+            />
+            <Button asChild variant="outline" size="sm">
+              <Link href="/idp-basic/packages">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Packages
+              </Link>
+            </Button>
+          </div>
         }
       />
 
@@ -77,7 +87,11 @@ export default function IdpBasicPackageDetailPage() {
           </div>
         ) : null}
 
-        <DocumentPreviewPanel packageId={pkg.id} documents={pkg.documents} />
+        <DocumentPreviewPanel
+          packageId={pkg.id}
+          documents={pkg.documents}
+          deleteDisabled={deleteDisabled}
+        />
       </div>
     </div>
   )

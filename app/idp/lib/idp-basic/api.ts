@@ -24,6 +24,7 @@ const IDP_BASIC_ERROR_MESSAGES: Record<string, string> = {
   "zip-has-no-supported-documents": "The ZIP does not contain any PDF/JPG/PNG files",
   "package-create-failed": "The package could not be created",
   "package-not-found": "Package not found. Refresh the package list.",
+  "package-is-processing": "Wait until package processing finishes before deleting it.",
   "result-not-found": "Result not found. Refresh the result list.",
   "document-not-found": "Document not found. Reopen the package.",
   "document-content-not-found": "Document file is missing from storage.",
@@ -185,6 +186,17 @@ export const idpBasicApi = {
     ).then(parseJsonResponse<IdpBasicResultListResponse>),
   resultDetail: (id: string) => request<IdpBasicResultDetail>(`/results/${id}`),
   packageDetail: (id: string) => request<IdpBasicPackageDetail>(`/packages/${id}`),
+  deletePackage: (id: string) =>
+    request<{ ok: boolean }>(`/packages/${id}`, {
+      method: "DELETE",
+    }),
+  deleteDocument: (packageId: string, documentId: string) =>
+    request<{ ok: boolean; remaining_documents: number }>(
+      `/packages/${packageId}/documents/${documentId}`,
+      {
+        method: "DELETE",
+      },
+    ),
   documentContent: (packageId: string, documentId: string) =>
     fetch(buildUrl(`/packages/${packageId}/documents/${documentId}/content`), {
       credentials: "include",

@@ -1,6 +1,7 @@
 "use client"
 
 import { DateRangeFilter } from "@/components/date-range-filter"
+import { IdpBasicDeleteDocumentButton } from "@/components/idp-basic/delete-actions"
 import { IdpBasicStatusBadge } from "@/components/idp-basic/status"
 import { useIdpBasicFiles } from "@/lib/idp-basic/hooks"
 import type { IdpBasicFileItem, IdpBasicPackageStatus } from "@/lib/idp-basic/types"
@@ -86,6 +87,23 @@ const columns: ColumnDef<IdpBasicFileItem>[] = [
     accessorKey: "created_at",
     header: "Imported",
     cell: ({ row }) => formatAbsolute(row.original.created_at),
+  },
+  {
+    id: "actions",
+    header: "",
+    cell: ({ row }) => (
+      <div className="flex justify-end">
+        <IdpBasicDeleteDocumentButton
+          packageId={row.original.package_id}
+          documentId={row.original.id}
+          fileName={row.original.file_name}
+          compact
+          disabled={
+            row.original.package_status === "queued" || row.original.package_status === "processing"
+          }
+        />
+      </div>
+    ),
   },
 ]
 

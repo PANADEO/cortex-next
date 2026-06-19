@@ -1,5 +1,6 @@
 "use client"
 
+import { IdpBasicDeleteDocumentButton } from "@/components/idp-basic/delete-actions"
 import { useIdpBasicDocumentContent } from "@/lib/idp-basic/hooks"
 import type { IdpBasicDocument } from "@/lib/idp-basic/types"
 import { Badge, Card, CardContent, LoadingState } from "@cortex/ui"
@@ -24,9 +25,14 @@ const DocumentViewer = dynamic(
 interface DocumentPreviewPanelProps {
   packageId: string
   documents: IdpBasicDocument[]
+  deleteDisabled?: boolean
 }
 
-export function DocumentPreviewPanel({ packageId, documents }: DocumentPreviewPanelProps) {
+export function DocumentPreviewPanel({
+  packageId,
+  documents,
+  deleteDisabled,
+}: DocumentPreviewPanelProps) {
   const [activeId, setActiveId] = useState(documents[0]?.id ?? "")
 
   useEffect(() => {
@@ -66,43 +72,55 @@ export function DocumentPreviewPanel({ packageId, documents }: DocumentPreviewPa
             const { Icon, toneClass } = getFileTypeIcon(document.file_name, document.media_type)
             const isActive = document.id === active?.id
             return (
-              <button
+              <div
                 key={document.id}
-                type="button"
-                onClick={() => setActiveId(document.id)}
                 className={cn(
-                  "rounded-md border p-3 text-left transition-colors",
+                  "relative rounded-md border transition-colors",
                   isActive
                     ? "border-cortex bg-cortex/5"
                     : "border-border hover:border-cortex/60 hover:bg-muted/40",
                 )}
               >
-                <div className="flex min-w-0 items-start gap-2">
-                  <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", toneClass)} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{document.file_name}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {formatFileSizeBytes(document.size_bytes)}
-                    </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveId(document.id)}
+                  className="w-full p-3 pr-11 text-left"
+                >
+                  <div className="flex min-w-0 items-start gap-2">
+                    <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", toneClass)} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{document.file_name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {formatFileSizeBytes(document.size_bytes)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary">
-                    {getIdpBasicDocumentTypeLabel(document.document_type)}
-                  </Badge>
-                  {document.confidence != null ? (
-                    <span className="text-xs text-muted-foreground">
-                      {Math.round(document.confidence * 100)}%
-                    </span>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary">
+                      {getIdpBasicDocumentTypeLabel(document.document_type)}
+                    </Badge>
+                    {document.confidence != null ? (
+                      <span className="text-xs text-muted-foreground">
+                        {Math.round(document.confidence * 100)}%
+                      </span>
+                    ) : null}
+                  </div>
+                  {document.summary ? (
+                    <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                      {document.summary}
+                    </p>
                   ) : null}
-                </div>
-                {document.summary ? (
-                  <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                    {document.summary}
-                  </p>
-                ) : null}
-                <DocumentAiFields document={document} />
-              </button>
+                  <DocumentAiFields document={document} />
+                </button>
+                <IdpBasicDeleteDocumentButton
+                  packageId={packageId}
+                  documentId={document.id}
+                  fileName={document.file_name}
+                  compact
+                  disabled={deleteDisabled}
+                  className="absolute right-2 top-2 h-7 w-7"
+                />
+              </div>
             )
           })}
         </CardContent>

@@ -1,5 +1,6 @@
 "use client"
 
+import { IdpBasicDeletePackageButton } from "@/components/idp-basic/delete-actions"
 import { DocumentPreviewPanel } from "@/components/idp-basic/document-preview-panel"
 import {
   getIdpBasicDocumentTypeLabel,
@@ -27,6 +28,7 @@ export default function IdpBasicResultDetailPage() {
   const id = params?.id ?? ""
   const detail = useIdpBasicResult(id)
   const result = detail.data
+  const deleteDisabled = result?.status === "queued" || result?.status === "processing"
 
   if (detail.isPending && !result) return <LoadingState label="Loading result..." />
   if (detail.error || !result) {
@@ -44,12 +46,20 @@ export default function IdpBasicResultDetailPage() {
         title={result.reference_number ?? "Brak referencji"}
         description={result.subject}
         actions={
-          <Button asChild variant="outline" size="sm">
-            <Link href="/idp-basic/results">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Results
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <IdpBasicDeletePackageButton
+              packageId={result.id}
+              packageName={result.subject}
+              redirectTo="/idp-basic/results"
+              disabled={deleteDisabled}
+            />
+            <Button asChild variant="outline" size="sm">
+              <Link href="/idp-basic/results">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Results
+              </Link>
+            </Button>
+          </div>
         }
       />
 
@@ -137,7 +147,11 @@ export default function IdpBasicResultDetailPage() {
           </Card>
         </section>
 
-        <DocumentPreviewPanel packageId={result.id} documents={result.documents} />
+        <DocumentPreviewPanel
+          packageId={result.id}
+          documents={result.documents}
+          deleteDisabled={deleteDisabled}
+        />
       </div>
     </div>
   )
