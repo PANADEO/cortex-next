@@ -62,6 +62,14 @@ describe("breadcrumbsFromPath", () => {
     ])
   })
 
+  it("maps /idp-basic/results detail to IDP Basic / Results / id", () => {
+    expect(breadcrumbsFromPath("/idp-basic/results/result-1")).toEqual([
+      { label: "IDP Basic", href: "/" },
+      { label: "Results", href: "/idp-basic/results" },
+      { label: "result-1" },
+    ])
+  })
+
   it("tolerates trailing slash on package detail path", () => {
     expect(breadcrumbsFromPath("/idp/packages/abc-123/")).toEqual([
       { label: "IDP", href: "/" },

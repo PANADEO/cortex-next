@@ -7,6 +7,8 @@ import type {
   IdpBasicPackageDetail,
   IdpBasicPackageListResponse,
   IdpBasicPackageStatus,
+  IdpBasicResultDetail,
+  IdpBasicResultListResponse,
 } from "./types"
 
 const ACTIVE_PACKAGE_REFETCH_MS = 2_000
@@ -32,6 +34,15 @@ export const idpBasicQueryKeys = {
     date_from?: string
     date_to?: string
   }) => [...idpBasicQueryKeys.all, "files", query] as const,
+  results: (query: {
+    limit?: number
+    offset?: number
+    status?: IdpBasicPackageStatus | "all"
+    search?: string
+    date_from?: string
+    date_to?: string
+  }) => [...idpBasicQueryKeys.all, "results", query] as const,
+  resultDetail: (id: string) => [...idpBasicQueryKeys.all, "results", id] as const,
   packageDetail: (id: string) => [...idpBasicQueryKeys.all, "packages", id] as const,
   documentContent: (packageId: string, documentId: string) =>
     [...idpBasicQueryKeys.all, "documents", packageId, documentId] as const,
@@ -85,6 +96,36 @@ export function useIdpBasicFiles(query: {
     queryFn: () => idpBasicApi.files(query),
     refetchInterval: (query) =>
       hasActiveFiles(query.state.data) ? ACTIVE_PACKAGE_REFETCH_MS : IDLE_LIST_REFETCH_MS,
+    placeholderData: keepPreviousData,
+    staleTime: 0,
+  })
+}
+
+export function useIdpBasicResults(query: {
+  limit?: number
+  offset?: number
+  status?: IdpBasicPackageStatus | "all"
+  search?: string
+  date_from?: string
+  date_to?: string
+}) {
+  return useQuery({
+    queryKey: idpBasicQueryKeys.results(query),
+    queryFn: () => idpBasicApi.results(query),
+    refetchInterval: (query) =>
+      hasActiveResults(query.state.data) ? ACTIVE_PACKAGE_REFETCH_MS : IDLE_LIST_REFETCH_MS,
+    placeholderData: keepPreviousData,
+    staleTime: 0,
+  })
+}
+
+export function useIdpBasicResult(id: string) {
+  return useQuery({
+    queryKey: idpBasicQueryKeys.resultDetail(id),
+    queryFn: () => idpBasicApi.resultDetail(id),
+    enabled: Boolean(id),
+    refetchInterval: (query) =>
+      isActiveResult(query.state.data) ? ACTIVE_PACKAGE_REFETCH_MS : false,
     placeholderData: keepPreviousData,
     staleTime: 0,
   })
@@ -148,6 +189,16 @@ function hasActiveFiles(data: IdpBasicFileListResponse | undefined): boolean {
       (item) => item.package_status === "queued" || item.package_status === "processing",
     ) ?? true
   )
+}
+
+function hasActiveResults(data: IdpBasicResultListResponse | undefined): boolean {
+  return (
+    data?.items.some((item) => item.status === "queued" || item.status === "processing") ?? true
+  )
+}
+
+function isActiveResult(data: IdpBasicResultDetail | undefined): boolean {
+  return data?.status === "queued" || data?.status === "processing" || data == null
 }
 
 function isActivePackage(data: IdpBasicPackageDetail | undefined): boolean {

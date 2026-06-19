@@ -7,6 +7,7 @@ import { canPreviewInline, cn, formatFileSizeBytes, getFileTypeIcon } from "@cor
 import { Loader2 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { useEffect, useMemo, useState } from "react"
+import { getIdpBasicDocumentTypeLabel } from "./status"
 
 const DocumentViewer = dynamic(
   () => import("@cortex/ui/components/document-viewer").then((m) => m.DocumentViewer),
@@ -86,7 +87,9 @@ export function DocumentPreviewPanel({ packageId, documents }: DocumentPreviewPa
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary">{document.label ?? "Unclassified"}</Badge>
+                  <Badge variant="secondary">
+                    {getIdpBasicDocumentTypeLabel(document.document_type)}
+                  </Badge>
                   {document.confidence != null ? (
                     <span className="text-xs text-muted-foreground">
                       {Math.round(document.confidence * 100)}%
@@ -98,6 +101,7 @@ export function DocumentPreviewPanel({ packageId, documents }: DocumentPreviewPa
                     {document.summary}
                   </p>
                 ) : null}
+                <DocumentAiFields document={document} />
               </button>
             )
           })}
@@ -131,6 +135,43 @@ export function DocumentPreviewPanel({ packageId, documents }: DocumentPreviewPa
           />
         )}
       </div>
+    </div>
+  )
+}
+
+function DocumentAiFields({ document }: { document: IdpBasicDocument }) {
+  const fields = [
+    ["Ref", document.document_reference_number],
+    ["Data", document.document_date],
+    ["Nadawca/przewoźnik", document.issuer_or_carrier],
+    ["Nr faktury", document.invoice_number],
+    ["CMR notes", document.cmr_notes],
+    ...document.extracted_data.map((field) => [field.name, field.value] as const),
+  ].filter(([, value]) => Boolean(value))
+
+  if (fields.length === 0 && document.ai_alerts.length === 0) return null
+
+  return (
+    <div className="mt-3 space-y-2 border-t border-border pt-3">
+      {fields.length > 0 ? (
+        <dl className="space-y-1 text-xs">
+          {fields.slice(0, 5).map(([label, value]) => (
+            <div key={`${label}-${value}`} className="grid grid-cols-[92px_minmax(0,1fr)] gap-2">
+              <dt className="text-muted-foreground">{label}</dt>
+              <dd className="truncate">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {document.ai_alerts.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {document.ai_alerts.map((alert) => (
+            <Badge key={alert} variant="outline" className="border-warning/40 text-warning">
+              {alert}
+            </Badge>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

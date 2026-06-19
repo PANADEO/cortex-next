@@ -99,6 +99,7 @@ export default function IdpBasicPackagesPage() {
               <SelectItem value="queued">Queued</SelectItem>
               <SelectItem value="processing">Processing</SelectItem>
               <SelectItem value="ready">Ready</SelectItem>
+              <SelectItem value="needs_review">Needs review</SelectItem>
               <SelectItem value="failed">Failed</SelectItem>
             </SelectContent>
           </Select>

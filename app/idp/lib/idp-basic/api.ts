@@ -4,6 +4,8 @@ import type {
   IdpBasicPackageListResponse,
   IdpBasicPackageStatus,
   IdpBasicPollResponse,
+  IdpBasicResultDetail,
+  IdpBasicResultListResponse,
   IdpBasicSettings,
   IdpBasicStats,
 } from "./types"
@@ -19,8 +21,10 @@ const IDP_BASIC_ERROR_MESSAGES: Record<string, string> = {
   "empty-upload": "The uploaded ZIP is empty",
   "invalid-zip-file": "The uploaded file is not a valid ZIP",
   "zip-has-no-documents": "The ZIP does not contain any importable files",
+  "zip-has-no-supported-documents": "The ZIP does not contain any PDF/JPG/PNG files",
   "package-create-failed": "The package could not be created",
   "package-not-found": "Package not found. Refresh the package list.",
+  "result-not-found": "Result not found. Refresh the result list.",
   "document-not-found": "Document not found. Reopen the package.",
   "document-content-not-found": "Document file is missing from storage.",
 }
@@ -164,6 +168,22 @@ export const idpBasicApi = {
       }),
       { credentials: "include", cache: "no-store", headers: { Accept: "application/json" } },
     ).then(parseJsonResponse<IdpBasicFileListResponse>),
+  results: (query: {
+    limit?: number
+    offset?: number
+    status?: IdpBasicPackageStatus | "all"
+    search?: string
+    date_from?: string
+    date_to?: string
+  }) =>
+    fetch(
+      buildUrl("/results", {
+        ...query,
+        status: query.status === "all" ? null : query.status,
+      }),
+      { credentials: "include", cache: "no-store", headers: { Accept: "application/json" } },
+    ).then(parseJsonResponse<IdpBasicResultListResponse>),
+  resultDetail: (id: string) => request<IdpBasicResultDetail>(`/results/${id}`),
   packageDetail: (id: string) => request<IdpBasicPackageDetail>(`/packages/${id}`),
   documentContent: (packageId: string, documentId: string) =>
     fetch(buildUrl(`/packages/${packageId}/documents/${documentId}/content`), {

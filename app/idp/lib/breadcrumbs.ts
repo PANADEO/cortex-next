@@ -13,6 +13,11 @@ const NAV_LABELS: Record<string, string> = Object.fromEntries(
 const IDP_BASIC_NAV_LABELS: Record<string, string> = Object.fromEntries(
   IDP_BASIC_NAV.flatMap((s) => s.items).map((i) => [i.id, i.label]),
 )
+const IDP_BASIC_ROUTE_LABELS: Record<string, string> = {
+  dashboard: "Inbox",
+  packages: "Packages",
+  results: "Results",
+}
 
 const PACKAGE_DETAIL_PATTERN = /^\/idp\/packages\/([^/]+)\/?$/
 
@@ -22,7 +27,11 @@ function tileConfig(tileId: string | undefined): {
   navLabels: Record<string, string>
 } {
   if (tileId === "idp-basic") {
-    return { label: "IDP Basic", hrefPrefix: "/idp-basic", navLabels: IDP_BASIC_NAV_LABELS }
+    return {
+      label: "IDP Basic",
+      hrefPrefix: "/idp-basic",
+      navLabels: { ...IDP_BASIC_ROUTE_LABELS, ...IDP_BASIC_NAV_LABELS },
+    }
   }
   return { label: "IDP", hrefPrefix: "/idp", navLabels: NAV_LABELS }
 }

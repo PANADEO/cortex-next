@@ -90,7 +90,7 @@ export default function IdpBasicDashboardPage() {
       />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
-        <section className="grid gap-4 md:grid-cols-4">
+        <section className="grid gap-4 md:grid-cols-5">
           <DataCard
             label="Packages"
             value={stats.data?.packages_total ?? 0}
@@ -113,6 +113,12 @@ export default function IdpBasicDashboardPage() {
             value={stats.data?.ready ?? 0}
             isLoading={stats.isLoading}
             tone="success"
+          />
+          <DataCard
+            label="Do weryfikacji"
+            value={stats.data?.needs_review ?? 0}
+            isLoading={stats.isLoading}
+            tone="warning"
           />
         </section>
 

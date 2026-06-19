@@ -6,7 +6,6 @@ import {
   FileDown,
   FileText,
   History,
-  Inbox,
   Package,
   ScrollText,
   Settings,
@@ -60,13 +59,7 @@ export const IDP_BASIC_NAV: TileMenuSection[] = [
     id: "pipeline",
     label: "Pipeline",
     items: [
-      { id: "dashboard", label: "Inbox", icon: Inbox, href: "/idp-basic/dashboard" },
-      {
-        id: "packages",
-        label: "Packages",
-        icon: Package,
-        href: "/idp-basic/packages",
-      },
+      { id: "results", label: "Results", icon: Package, href: "/idp-basic/results" },
       {
         id: "files",
         label: "Files",
