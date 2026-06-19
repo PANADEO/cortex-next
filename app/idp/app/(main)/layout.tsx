@@ -4,8 +4,9 @@ import { FeatureErrorBoundary } from "@/components/error-boundaries"
 import { AppGate } from "@/components/shell/app-gate"
 import { VersionLabel } from "@/components/shell/version-label"
 import { Topbar } from "@/components/topbar"
-import { useIdpNavSections } from "@/lib/nav"
+import { useIdpBasicNavSections, useIdpNavSections } from "@/lib/nav"
 import { useSidebarStore } from "@/lib/stores/sidebar-store"
+import { TILES } from "@/lib/tiles"
 import { AppShell, TileMenu } from "@cortex/ui"
 import Image from "next/image"
 import Link from "next/link"
@@ -15,16 +16,25 @@ import type { ReactNode } from "react"
 function pathToItemId(pathname: string): string {
   const segments = pathname.split("/").filter(Boolean)
   const first = segments[0]
-  if (first === "idp") return segments[1] ?? "dashboard"
+  if (first === "idp" || first === "idp-basic") return segments[1] ?? "dashboard"
   return first ?? "dashboard"
+}
+
+function pathToTileId(pathname: string): string {
+  const first = pathname.split("/").filter(Boolean)[0]
+  return first === "idp-basic" ? "idp-basic" : "idp"
 }
 
 export default function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const tileId = pathToTileId(pathname)
+  const tile = TILES.find((t) => t.id === tileId)
   const activeItemId = pathToItemId(pathname)
   const collapsed = useSidebarStore((s) => s.collapsed)
   const isBoardRoute = pathname === "/idp/dashboard" || pathname === "/idp/board"
-  const navSections = useIdpNavSections()
+  const idpNavSections = useIdpNavSections()
+  const idpBasicNavSections = useIdpBasicNavSections()
+  const navSections = tileId === "idp-basic" ? idpBasicNavSections : idpNavSections
 
   const brandIcon = (
     <Link
@@ -56,7 +66,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         height={28}
         className="dark:hue-rotate-180 dark:invert"
       />
-      <span className="text-sm">Cortex360 IDP</span>
+      <span className="text-sm">Cortex360 {tile?.label ?? "IDP"}</span>
     </Link>
   )
 
@@ -72,7 +82,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
             collapsed={collapsed}
             brand={brand}
             brandIcon={brandIcon}
-            footerSlot={<VersionLabel tileId="idp" />}
+            footerSlot={<VersionLabel tileId={tileId} />}
           />
         }
         topbar={<Topbar />}

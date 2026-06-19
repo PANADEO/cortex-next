@@ -4,7 +4,9 @@ import type { TileMenuItem, TileMenuSection } from "@cortex/ui"
 import {
   BarChart3,
   FileDown,
+  FileText,
   History,
+  Inbox,
   Package,
   ScrollText,
   Settings,
@@ -50,6 +52,40 @@ export const IDP_NAV: TileMenuSection[] = [
     id: "reports",
     label: "Reports",
     items: [{ id: "audit-log", label: "Audit log", icon: History, href: "/idp/audit-log" }],
+  },
+]
+
+export const IDP_BASIC_NAV: TileMenuSection[] = [
+  {
+    id: "pipeline",
+    label: "Pipeline",
+    items: [
+      { id: "dashboard", label: "Inbox", icon: Inbox, href: "/idp-basic/dashboard" },
+      {
+        id: "packages",
+        label: "Packages",
+        icon: Package,
+        href: "/idp-basic/packages",
+      },
+      {
+        id: "files",
+        label: "Files",
+        icon: FileText,
+        href: "/idp-basic/files",
+      },
+    ],
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    items: [
+      {
+        id: "settings",
+        label: "Settings",
+        icon: Settings,
+        href: "/idp-basic/settings",
+      },
+    ],
   },
 ]
 
@@ -103,4 +139,8 @@ export function useIdpNavSections(): TileMenuSection[] {
       }),
     [hiddenMenuItems, settings.isSuccess],
   )
+}
+
+export function useIdpBasicNavSections(): TileMenuSection[] {
+  return IDP_BASIC_NAV
 }

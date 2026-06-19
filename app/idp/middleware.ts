@@ -66,6 +66,12 @@ const LEGACY_REDIRECTS: ReadonlyArray<{ from: RegExp; to: string }> = [
   { from: /^\/classification(\/.*)?$/, to: "/idp/classification" },
 ]
 
+const IDP_BASIC_API_PATTERNS: RegExp[] = [
+  /^\/idp-basic\/api(\/.*)?$/,
+  /^\/idp-basic\/health$/,
+  /^\/idp-basic\/version$/,
+]
+
 const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH)
 
 function normalizeBasePath(value: string | undefined): string {
@@ -137,7 +143,28 @@ function tryIdpRewrite(req: NextRequest) {
   return null
 }
 
+function tryIdpBasicRewrite(req: NextRequest) {
+  const idpBasicBackend =
+    process.env.IDP_BASIC_BACKEND_URL ??
+    (process.env.NODE_ENV === "development" ? "http://localhost:8010" : undefined)
+  if (!idpBasicBackend) return null
+
+  const pathname = stripBasePath(req.nextUrl.pathname)
+  const { search } = req.nextUrl
+  if (!IDP_BASIC_API_PATTERNS.some((pattern) => pattern.test(pathname))) return null
+
+  const upstreamPath =
+    pathname === "/idp-basic/health" || pathname === "/idp-basic/version"
+      ? pathname.replace("/idp-basic", "")
+      : pathname.replace("/idp-basic/api", "/api")
+
+  return NextResponse.rewrite(new URL(upstreamPath + search, idpBasicBackend))
+}
+
 export default function middleware(req: NextRequest) {
+  const idpBasicRewrite = tryIdpBasicRewrite(req)
+  if (idpBasicRewrite) return idpBasicRewrite
+
   const rewrite = tryIdpRewrite(req)
   if (rewrite) return rewrite
 

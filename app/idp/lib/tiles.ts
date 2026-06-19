@@ -1,5 +1,5 @@
-import { ScanText } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { FileText, ScanText } from "lucide-react"
 
 export type TileCategoryFunctional =
   | "content-generation"
@@ -8,12 +8,7 @@ export type TileCategoryFunctional =
   | "misc"
   | "admin-system"
 
-export type TileCategoryDepartment =
-  | "operations"
-  | "marketing"
-  | "finance"
-  | "it"
-  | "hr"
+export type TileCategoryDepartment = "operations" | "marketing" | "finance" | "it" | "hr"
 
 export interface Tile {
   id: string
@@ -63,5 +58,17 @@ export const TILES: ReadonlyArray<Tile> = [
     categoryFunctional: "misc",
     categoryDepartment: ["operations"],
     versionEndpoint: "/idp/version",
+  },
+  {
+    id: "idp-basic",
+    label: "IDP Basic",
+    description: "Uproszczone procesowanie dokumentów w osobnym pipeline",
+    href: "/idp-basic/dashboard",
+    icon: FileText,
+    iconBg: "bg-sky-200 dark:bg-sky-900/40",
+    iconFg: "text-sky-700 dark:text-sky-300",
+    categoryFunctional: "misc",
+    categoryDepartment: ["operations"],
+    versionEndpoint: "/idp-basic/version",
   },
 ]
