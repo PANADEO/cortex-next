@@ -1,4 +1,7 @@
 import type {
+  IdpBasicCsvColumnsResponse,
+  IdpBasicCsvDownload,
+  IdpBasicCsvExportRequest,
   IdpBasicFileListResponse,
   IdpBasicPackageDetail,
   IdpBasicPackageListResponse,
@@ -28,6 +31,7 @@ const IDP_BASIC_ERROR_MESSAGES: Record<string, string> = {
   "result-not-found": "Result not found. Refresh the result list.",
   "document-not-found": "Document not found. Reopen the package.",
   "document-content-not-found": "Document file is missing from storage.",
+  "csv-columns-required": "Choose at least one column for CSV download.",
 }
 
 class IdpBasicApiError extends Error {
@@ -130,6 +134,27 @@ export function formatIdpBasicError(error: unknown, fallback: string): string {
 export const idpBasicApi = {
   stats: () => request<IdpBasicStats>("/stats"),
   settings: () => request<IdpBasicSettings>("/settings"),
+  csvColumns: () => request<IdpBasicCsvColumnsResponse>("/export/files/columns"),
+  exportFilesCsv: async (payload: IdpBasicCsvExportRequest): Promise<IdpBasicCsvDownload> => {
+    const response = await fetch(buildUrl("/export/files"), {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: {
+        Accept: "text/csv",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...payload,
+        status: payload.status === "all" ? null : payload.status,
+      }),
+    })
+    if (!response.ok) throw await idpBasicErrorFromResponse(response)
+    return {
+      blob: await response.blob(),
+      filename: filenameFromContentDisposition(response.headers.get("Content-Disposition")),
+    }
+  },
   pollMail: () => request<IdpBasicPollResponse>("/mail/poll", { method: "POST" }),
   uploadPackage: (file: File) => {
     const formData = new FormData()
@@ -205,4 +230,14 @@ export const idpBasicApi = {
       if (!response.ok) throw await idpBasicErrorFromResponse(response)
       return response.blob()
     }),
+}
+
+function filenameFromContentDisposition(value: string | null): string {
+  if (!value) return "idp-basic-files.csv"
+  const utfMatch = value.match(/filename\*=UTF-8''([^;]+)/i)
+  if (utfMatch?.[1]) return decodeURIComponent(utfMatch[1])
+  const quotedMatch = value.match(/filename="([^"]+)"/i)
+  if (quotedMatch?.[1]) return quotedMatch[1]
+  const plainMatch = value.match(/filename=([^;]+)/i)
+  return plainMatch?.[1]?.trim() || "idp-basic-files.csv"
 }

@@ -3,6 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { idpBasicApi } from "./api"
 import type {
+  IdpBasicCsvExportRequest,
   IdpBasicFileListResponse,
   IdpBasicPackageDetail,
   IdpBasicPackageListResponse,
@@ -18,6 +19,7 @@ export const idpBasicQueryKeys = {
   all: ["idp-basic"] as const,
   stats: () => [...idpBasicQueryKeys.all, "stats"] as const,
   settings: () => [...idpBasicQueryKeys.all, "settings"] as const,
+  csvColumns: () => [...idpBasicQueryKeys.all, "csv-columns"] as const,
   packages: (query: {
     limit?: number
     offset?: number
@@ -62,6 +64,13 @@ export function useIdpBasicSettings() {
   return useQuery({
     queryKey: idpBasicQueryKeys.settings(),
     queryFn: idpBasicApi.settings,
+  })
+}
+
+export function useIdpBasicCsvColumns() {
+  return useQuery({
+    queryKey: idpBasicQueryKeys.csvColumns(),
+    queryFn: idpBasicApi.csvColumns,
   })
 }
 
@@ -195,6 +204,16 @@ export function useIdpBasicDeleteDocument(packageId: string) {
     mutationFn: (documentId: string) => idpBasicApi.deleteDocument(packageId, documentId),
     onSuccess: () => {
       invalidateIdpBasicMetadata(client)
+    },
+  })
+}
+
+export function useIdpBasicExportCsv() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (request: IdpBasicCsvExportRequest) => idpBasicApi.exportFilesCsv(request),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: idpBasicQueryKeys.csvColumns() })
     },
   })
 }

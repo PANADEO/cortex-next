@@ -128,3 +128,35 @@ export interface IdpBasicSettings {
 export interface IdpBasicPollResponse {
   imported: number
 }
+
+export type IdpBasicCsvExportSource = "files" | "packages"
+
+export interface IdpBasicCsvExportColumn {
+  id: string
+  label: string
+}
+
+export interface IdpBasicCsvColumnsResponse {
+  columns: IdpBasicCsvExportColumn[]
+  selected_columns: string[]
+}
+
+export interface IdpBasicCsvExportFilters {
+  status?: IdpBasicPackageStatus | "all" | null
+  search?: string | null
+  reference?: string | null
+  label?: string | null
+  date_from?: string | null
+  date_to?: string | null
+}
+
+export interface IdpBasicCsvExportRequest extends IdpBasicCsvExportFilters {
+  source: IdpBasicCsvExportSource
+  columns: string[]
+  package_ids?: string[]
+}
+
+export interface IdpBasicCsvDownload {
+  blob: Blob
+  filename: string
+}

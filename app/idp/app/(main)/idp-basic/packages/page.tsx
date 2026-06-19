@@ -1,5 +1,6 @@
 "use client"
 
+import { IdpBasicCsvDownloadButton } from "@/components/idp-basic/csv-download-dialog"
 import { IdpBasicStatusBadge } from "@/components/idp-basic/status"
 import { IdpBasicUploadPackageButton } from "@/components/idp-basic/upload-package-button"
 import { useIdpBasicPackages } from "@/lib/idp-basic/hooks"
@@ -67,13 +68,24 @@ export default function IdpBasicPackagesPage() {
     search,
   })
   const items = useMemo(() => packages.data?.items ?? [], [packages.data?.items])
+  const hasFilters = Boolean(search || status !== "all")
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader
         title="Packages"
         description="Mailbox and manually uploaded packages imported for IDP Basic."
-        actions={<IdpBasicUploadPackageButton redirectToPackage />}
+        actions={
+          <div className="flex items-center gap-2">
+            <IdpBasicCsvDownloadButton
+              source="packages"
+              filters={{ status, search }}
+              contextLabel={hasFilters ? "Filtrowane paczki" : "Wszystkie paczki"}
+              disabled={packages.isPending && items.length === 0}
+            />
+            <IdpBasicUploadPackageButton redirectToPackage />
+          </div>
+        }
       />
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">

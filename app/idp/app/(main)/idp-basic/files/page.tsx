@@ -1,6 +1,7 @@
 "use client"
 
 import { DateRangeFilter } from "@/components/date-range-filter"
+import { IdpBasicCsvDownloadButton } from "@/components/idp-basic/csv-download-dialog"
 import { IdpBasicDeleteDocumentButton } from "@/components/idp-basic/delete-actions"
 import { IdpBasicStatusBadge } from "@/components/idp-basic/status"
 import { useIdpBasicFiles } from "@/lib/idp-basic/hooks"
@@ -130,7 +131,25 @@ export default function IdpBasicFilesPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <PageHeader title="Files" description="All files from imported IDP Basic packages." />
+      <PageHeader
+        title="Files"
+        description="All files from imported IDP Basic packages."
+        actions={
+          <IdpBasicCsvDownloadButton
+            source="files"
+            filters={{
+              status,
+              search,
+              reference,
+              label,
+              date_from: dateFrom,
+              date_to: dateTo,
+            }}
+            contextLabel={hasFilters ? "Filtrowane pliki" : "Wszystkie pliki"}
+            disabled={files.isPending && items.length === 0}
+          />
+        }
+      />
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         <div className="flex flex-wrap items-center gap-3">

@@ -1,6 +1,7 @@
 "use client"
 
 import { DateRangeFilter } from "@/components/date-range-filter"
+import { IdpBasicCsvDownloadButton } from "@/components/idp-basic/csv-download-dialog"
 import {
   getIdpBasicDocumentTypeLabel,
   getIdpBasicStatusLabel,
@@ -166,7 +167,22 @@ export default function IdpBasicResultsPage() {
       <PageHeader
         title="Results"
         description="Rozpoznane referencje z maili i paczek ZIP, bez ręcznej edycji danych."
-        actions={<IdpBasicUploadPackageButton redirectToResult />}
+        actions={
+          <div className="flex items-center gap-2">
+            <IdpBasicCsvDownloadButton
+              source="packages"
+              filters={{
+                status,
+                search,
+                date_from: dateFrom,
+                date_to: dateTo,
+              }}
+              contextLabel={hasFilters ? "Filtrowane paczki" : "Wszystkie paczki"}
+              disabled={results.isPending && items.length === 0}
+            />
+            <IdpBasicUploadPackageButton redirectToResult />
+          </div>
+        }
       />
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
