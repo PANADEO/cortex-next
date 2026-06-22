@@ -25,7 +25,7 @@ const IDP_BASIC_ERROR_MESSAGES: Record<string, string> = {
   "empty-upload": "The uploaded ZIP is empty",
   "invalid-zip-file": "The uploaded file is not a valid ZIP",
   "zip-has-no-documents": "The ZIP does not contain any importable files",
-  "zip-has-no-supported-documents": "The ZIP does not contain any PDF/JPG/PNG files",
+  "zip-has-no-supported-documents": "The ZIP does not contain any PDF/JPG/PNG/XLS/XLSX files",
   "package-create-failed": "The package could not be created",
   "package-not-found": "Package not found. Refresh the package list.",
   "package-is-processing": "Wait until package processing finishes before deleting it.",
@@ -37,7 +37,7 @@ const IDP_BASIC_ERROR_MESSAGES: Record<string, string> = {
   "filesystem-watch-dir-not-found": "The watched folder does not exist",
   "filesystem-file-name-required": "Choose a file with a name",
   "filesystem-upload-empty": "The uploaded file is empty",
-  "filesystem-unsupported-file": "Choose a ZIP/PDF/JPG/PNG file",
+  "filesystem-unsupported-file": "Choose a ZIP/PDF/JPG/PNG/XLS/XLSX file",
   "filesystem-upload-failed": "The file could not be saved to the watched folder",
 }
 

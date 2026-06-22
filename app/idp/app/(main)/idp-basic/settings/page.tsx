@@ -57,7 +57,7 @@ export default function IdpBasicSettingsPage() {
             <input
               ref={filesystemInputRef}
               type="file"
-              accept=".zip,.pdf,.jpg,.jpeg,.png"
+              accept=".zip,.pdf,.jpg,.jpeg,.png,.xls,.xlsx"
               className="hidden"
               onChange={handleFilesystemUpload}
             />
