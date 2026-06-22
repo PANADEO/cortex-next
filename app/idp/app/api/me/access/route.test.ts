@@ -68,11 +68,12 @@ describe("/api/me/access route handler", () => {
     const { GET } = await loadHandler()
 
     const response = await GET(makeRequest(null))
-    const body = (await response.json()) as { allowed: boolean; email: string }
+    const body = (await response.json()) as { allowed: boolean; apps: string[]; email: string }
 
     expect(response.status).toBe(200)
     expect(body.email).toBe("dev@cortex.local")
     expect(body.allowed).toBe(true)
+    expect(body.apps).toEqual(["idp"])
   })
 
   it("fails closed (allowed:false) when CORTEX_ADMIN env vars are not configured", async () => {
@@ -82,11 +83,44 @@ describe("/api/me/access route handler", () => {
     const { GET } = await loadHandler()
 
     const response = await GET(makeRequest("u@example.com"))
-    const body = (await response.json()) as { allowed: boolean; email: string }
+    const body = (await response.json()) as { allowed: boolean; apps: string[]; email: string }
 
     expect(response.status).toBe(200)
     expect(body.allowed).toBe(false)
+    expect(body.apps).toEqual([])
     expect(body.email).toBe("u@example.com")
+  })
+
+  it("checks only idp and idp-basic app codes and returns authorized apps", async () => {
+    vi.stubEnv("NODE_ENV", "production")
+    vi.stubEnv("CORTEX_ADMIN_API_BASE_URL", "http://cortex-admin")
+    vi.stubEnv("CORTEX_ADMIN_API_KEY", "test-key")
+    const fetchSpy = vi.fn((input: string | URL | Request) => {
+      void input
+      return Promise.resolve(
+        new Response(JSON.stringify({ apps: ["idp-basic"] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+    })
+    vi.stubGlobal("fetch", fetchSpy)
+    const { GET } = await loadHandler()
+
+    const response = await GET(makeRequest("u@example.com"))
+    const body = (await response.json()) as { allowed: boolean; apps: string[]; email: string }
+    const firstCall = fetchSpy.mock.calls.at(0)
+    expect(firstCall).toBeDefined()
+    const requestedUrl = new URL(String(firstCall?.[0]))
+
+    expect(response.status).toBe(200)
+    expect(body).toEqual({
+      allowed: true,
+      apps: ["idp-basic"],
+      email: "u@example.com",
+    })
+    expect(requestedUrl.searchParams.get("email")).toBe("u@example.com")
+    expect(requestedUrl.searchParams.getAll("apps")).toEqual(["idp", "idp-basic"])
   })
 
   it("prefers x-auth-request-email header over DEV_USER_EMAIL in development", async () => {

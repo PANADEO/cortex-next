@@ -1,5 +1,6 @@
 "use client"
 
+import { useAuthorizedApps } from "@cortex/api"
 import { Button, EmptyState } from "@cortex/ui"
 import { Search } from "lucide-react"
 import { useDeferredValue, useMemo, useState } from "react"
@@ -48,10 +49,16 @@ export function TileGrid() {
   const [activeCategory, setActiveCategory] = useState<ActiveCategory>("all")
   const favorites = useFavoritesStore((s) => s.favorites)
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite)
+  const authorized = useAuthorizedApps()
+
+  const authorizedTiles = useMemo(
+    () => TILES.filter((tile) => authorized.apps.includes(tile.id)),
+    [authorized.apps],
+  )
 
   const searchedTiles = useMemo(
-    () => TILES.filter((t) => matchesSearch(t, deferredQuery)),
-    [deferredQuery],
+    () => authorizedTiles.filter((t) => matchesSearch(t, deferredQuery)),
+    [authorizedTiles, deferredQuery],
   )
 
   const favoritesCount = useMemo(

@@ -2,6 +2,7 @@ import type {
   IdpBasicCsvColumnsResponse,
   IdpBasicCsvDownload,
   IdpBasicCsvExportRequest,
+  IdpBasicFilesystemUploadResponse,
   IdpBasicFileListResponse,
   IdpBasicPackageDetail,
   IdpBasicPackageListResponse,
@@ -32,6 +33,12 @@ const IDP_BASIC_ERROR_MESSAGES: Record<string, string> = {
   "document-not-found": "Document not found. Reopen the package.",
   "document-content-not-found": "Document file is missing from storage.",
   "csv-columns-required": "Choose at least one column for CSV download.",
+  "filesystem-watch-dir-not-configured": "Set FILESYSTEM_WATCH_DIR before uploading",
+  "filesystem-watch-dir-not-found": "The watched folder does not exist",
+  "filesystem-file-name-required": "Choose a file with a name",
+  "filesystem-upload-empty": "The uploaded file is empty",
+  "filesystem-unsupported-file": "Choose a ZIP/PDF/JPG/PNG file",
+  "filesystem-upload-failed": "The file could not be saved to the watched folder",
 }
 
 class IdpBasicApiError extends Error {
@@ -156,6 +163,14 @@ export const idpBasicApi = {
     }
   },
   pollMail: () => request<IdpBasicPollResponse>("/mail/poll", { method: "POST" }),
+  uploadToFilesystem: (file: File) => {
+    const formData = new FormData()
+    formData.set("file", file)
+    return request<IdpBasicFilesystemUploadResponse>("/filesystem/upload", {
+      method: "POST",
+      body: formData,
+    })
+  },
   uploadPackage: (file: File) => {
     const formData = new FormData()
     formData.set("file", file)

@@ -44,7 +44,35 @@ describe("useAuthorizedApps", () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false))
 
     expect(result.current.allowed).toBe(true)
+    expect(result.current.apps).toEqual([])
+    expect(result.current.email).toBe("u@x.com")
     expect(result.current.isError).toBe(false)
+  })
+
+  it("returns authorized app codes from the response", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({ allowed: true, apps: ["idp", "idp-basic"], email: "u@x.com" }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            },
+          ),
+        ),
+      ),
+    )
+    const { useAuthorizedApps } = await import("./access")
+    const { result } = renderHook(() => useAuthorizedApps(), {
+      wrapper: wrapper(freshClient()),
+    })
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    expect(result.current.allowed).toBe(true)
+    expect(result.current.apps).toEqual(["idp", "idp-basic"])
   })
 
   it("returns allowed:false on 200 with allowed:false body", async () => {
@@ -67,6 +95,7 @@ describe("useAuthorizedApps", () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false))
 
     expect(result.current.allowed).toBe(false)
+    expect(result.current.apps).toEqual([])
   })
 
   it("surfaces isError on non-2xx; allowed stays null (fail-closed)", async () => {
@@ -82,6 +111,7 @@ describe("useAuthorizedApps", () => {
     await waitFor(() => expect(result.current.isError).toBe(true))
 
     expect(result.current.allowed).toBeNull()
+    expect(result.current.apps).toEqual([])
   })
 
   it("surfaces isError on network failure", async () => {
@@ -97,6 +127,7 @@ describe("useAuthorizedApps", () => {
     await waitFor(() => expect(result.current.isError).toBe(true))
 
     expect(result.current.allowed).toBeNull()
+    expect(result.current.apps).toEqual([])
   })
 
   it("does not retry on failure", async () => {

@@ -18,6 +18,7 @@ import type {
   IdpBasicPackageListResponse,
   IdpBasicPackageStatus,
   IdpBasicPackageSummary,
+  IdpBasicSettings,
 } from "@/lib/idp-basic/types"
 import {
   Button,
@@ -44,6 +45,7 @@ import {
   Clock3,
   Columns3,
   FileText,
+  FolderInput,
   History,
   Inbox,
   Loader2,
@@ -307,7 +309,7 @@ export default function IdpBasicDashboardPage() {
             <CardHeader className="border-b border-border px-5 py-4">
               <CardTitle className="text-sm">Intake status</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-0 p-0 md:grid-cols-3">
+            <CardContent className="grid gap-0 p-0 md:grid-cols-2 xl:grid-cols-4">
               <SystemStatusItem
                 icon={Inbox}
                 label="Mailbox"
@@ -329,6 +331,13 @@ export default function IdpBasicDashboardPage() {
                     : "Loading settings"
                 }
                 tone={settings.data?.worker_enabled ? "success" : "warning"}
+              />
+              <SystemStatusItem
+                icon={FolderInput}
+                label="Filesystem"
+                value={filesystemStatusValue(settings.data)}
+                description={filesystemStatusDescription(settings.data)}
+                tone={filesystemStatusTone(settings.data)}
               />
               <SystemStatusItem
                 icon={FileText}
@@ -597,7 +606,7 @@ function SystemStatusItem({
   tone: "default" | "success" | "warning"
 }) {
   return (
-    <div className="flex items-start gap-3 border-b border-border px-5 py-4 last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0">
+    <div className="flex items-start gap-3 border-b border-border px-5 py-4 last:border-b-0 md:border-b-0 md:border-r md:[&:nth-child(2n)]:border-r-0 xl:[&:nth-child(2n)]:border-r xl:last:border-r-0">
       <span
         className={cn(
           "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
@@ -735,6 +744,29 @@ function buildBoardState(
 function shortId(id: string): string {
   const cleaned = id.replace(/^pkg-|^dirty-/, "").replace(/^0+/, "")
   return (cleaned || id).slice(0, 10).toUpperCase()
+}
+
+function filesystemStatusValue(settings: IdpBasicSettings | undefined): string {
+  if (!settings) return "Loading"
+  if (!settings.filesystem_enabled) return "Disabled"
+  if (!settings.filesystem_watch_dir) return "Missing env"
+  if (!settings.filesystem_configured) return "Missing folder"
+  return "Watching"
+}
+
+function filesystemStatusDescription(settings: IdpBasicSettings | undefined): string {
+  if (!settings) return "Loading settings"
+  if (settings.filesystem_watch_dir) {
+    return `${settings.filesystem_watch_dir} / ${settings.filesystem_poll_interval_seconds}s`
+  }
+  return "Set FILESYSTEM_WATCH_DIR"
+}
+
+function filesystemStatusTone(
+  settings: IdpBasicSettings | undefined,
+): "default" | "success" | "warning" {
+  if (!settings || !settings.filesystem_enabled) return "default"
+  return settings.filesystem_configured ? "success" : "warning"
 }
 
 function buildAuditEvents(packages: IdpBasicPackageSummary[]): AuditEvent[] {

@@ -175,6 +175,16 @@ export function useIdpBasicPollMail() {
   })
 }
 
+export function useIdpBasicUploadToFilesystem() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: idpBasicApi.uploadToFilesystem,
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: idpBasicQueryKeys.all })
+    },
+  })
+}
+
 export function useIdpBasicUploadPackage() {
   const client = useQueryClient()
   return useMutation({

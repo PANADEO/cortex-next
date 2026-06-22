@@ -120,6 +120,10 @@ export interface IdpBasicSettings {
   imap_host: string | null
   imap_mailbox: string
   poll_interval_seconds: number
+  filesystem_configured: boolean
+  filesystem_enabled: boolean
+  filesystem_watch_dir: string | null
+  filesystem_poll_interval_seconds: number
   worker_enabled: boolean
   gemini_configured: boolean
   gemini_model: string
@@ -127,6 +131,11 @@ export interface IdpBasicSettings {
 
 export interface IdpBasicPollResponse {
   imported: number
+}
+
+export interface IdpBasicFilesystemUploadResponse {
+  file_name: string
+  path: string
 }
 
 export type IdpBasicCsvExportSource = "files" | "packages"
