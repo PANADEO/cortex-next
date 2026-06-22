@@ -63,7 +63,7 @@ export const TILES: ReadonlyArray<Tile> = [
     id: "idp-basic",
     label: "IDP Basic",
     description: "Uproszczone procesowanie dokumentów w osobnym pipeline",
-    href: "/idp-basic/results",
+    href: "/idp-basic/dashboard",
     icon: FileText,
     iconBg: "bg-sky-200 dark:bg-sky-900/40",
     iconFg: "text-sky-700 dark:text-sky-300",

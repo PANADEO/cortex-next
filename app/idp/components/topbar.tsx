@@ -68,7 +68,7 @@ export function Topbar() {
   return (
     <>
       <TooltipProvider delayDuration={300}>
-        <div className="flex flex-1 items-center gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -116,7 +116,7 @@ export function Topbar() {
         <button
           type="button"
           onClick={() => setPaletteOpen(true)}
-          className="flex h-8 w-64 items-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-left text-xs text-muted-foreground transition-colors hover:bg-muted"
+          className="hidden h-8 w-64 items-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-left text-xs text-muted-foreground transition-colors hover:bg-muted lg:flex"
         >
           <Search className="h-3.5 w-3.5" />
           <span className="flex-1">Search packages…</span>
@@ -125,7 +125,7 @@ export function Topbar() {
           </kbd>
         </button>
 
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">

@@ -4,22 +4,12 @@ import { formatIdpBasicError } from "@/lib/idp-basic/api"
 import { useIdpBasicUploadPackage } from "@/lib/idp-basic/hooks"
 import { Button } from "@cortex/ui"
 import { Loader2, Upload } from "lucide-react"
-import { useRouter } from "next/navigation"
 import type { ChangeEvent } from "react"
 import { useRef } from "react"
 import { toast } from "sonner"
 
-interface IdpBasicUploadPackageButtonProps {
-  redirectToPackage?: boolean
-  redirectToResult?: boolean
-}
-
-export function IdpBasicUploadPackageButton({
-  redirectToPackage = false,
-  redirectToResult = false,
-}: IdpBasicUploadPackageButtonProps) {
+export function IdpBasicUploadPackageButton() {
   const inputRef = useRef<HTMLInputElement>(null)
-  const router = useRouter()
   const uploadPackage = useIdpBasicUploadPackage()
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -35,11 +25,6 @@ export function IdpBasicUploadPackageButton({
     try {
       const uploaded = await uploadPackage.mutateAsync(file)
       toast.success(`Uploaded ${uploaded.document_count} document(s)`)
-      if (redirectToResult) {
-        router.push(`/idp-basic/results/${uploaded.id}`)
-      } else if (redirectToPackage) {
-        router.push(`/idp-basic/packages/${uploaded.id}`)
-      }
     } catch (error) {
       toast.error(formatIdpBasicError(error, "ZIP upload failed"))
     }

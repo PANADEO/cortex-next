@@ -48,10 +48,10 @@ describe("breadcrumbsFromPath", () => {
     ])
   })
 
-  it("maps /idp-basic/dashboard to IDP Basic / Inbox", () => {
+  it("maps /idp-basic/dashboard to IDP Basic / Dashboard", () => {
     expect(breadcrumbsFromPath("/idp-basic/dashboard")).toEqual([
       { label: "IDP Basic", href: "/" },
-      { label: "Inbox" },
+      { label: "Dashboard" },
     ])
   })
 

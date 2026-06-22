@@ -59,6 +59,7 @@ export const IDP_BASIC_NAV: TileMenuSection[] = [
     id: "pipeline",
     label: "Pipeline",
     items: [
+      { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/idp-basic/dashboard" },
       { id: "results", label: "Results", icon: Package, href: "/idp-basic/results" },
       {
         id: "files",

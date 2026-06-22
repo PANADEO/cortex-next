@@ -83,7 +83,7 @@ export default function IdpBasicPackagesPage() {
               contextLabel={hasFilters ? "Filtrowane paczki" : "Wszystkie paczki"}
               disabled={packages.isPending && items.length === 0}
             />
-            <IdpBasicUploadPackageButton redirectToPackage />
+            <IdpBasicUploadPackageButton />
           </div>
         }
       />

@@ -14,7 +14,7 @@ const IDP_BASIC_NAV_LABELS: Record<string, string> = Object.fromEntries(
   IDP_BASIC_NAV.flatMap((s) => s.items).map((i) => [i.id, i.label]),
 )
 const IDP_BASIC_ROUTE_LABELS: Record<string, string> = {
-  dashboard: "Inbox",
+  dashboard: "Dashboard",
   packages: "Packages",
   results: "Results",
 }
