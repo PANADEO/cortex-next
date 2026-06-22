@@ -277,7 +277,7 @@ export default function IdpBasicDashboardPage() {
         }
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-6 px-8 py-6">
+      <div className="flex min-h-0 flex-1 flex-col gap-5 px-8 py-5">
         <section className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">
@@ -289,7 +289,7 @@ export default function IdpBasicDashboardPage() {
               <p className="text-xs text-muted-foreground">Refreshing...</p>
             ) : null}
           </div>
-          <div className="-mx-2 flex h-[62vh] min-h-[420px] max-h-[680px] gap-3 overflow-x-auto overflow-y-hidden px-2 pb-4">
+          <div className="-mx-2 flex h-[36vh] min-h-[260px] max-h-[390px] gap-3 overflow-x-auto overflow-y-hidden px-2 pb-4">
             {visibleMetas.map((meta) => (
               <BasicKanbanColumn
                 key={meta.id}
@@ -304,9 +304,9 @@ export default function IdpBasicDashboardPage() {
           </div>
         </section>
 
-        <section className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_25rem]">
+        <section className="grid items-start gap-5 2xl:grid-cols-[minmax(0,1fr)_25rem]">
           <Card>
-            <CardHeader className="border-b border-border px-5 py-4">
+            <CardHeader className="border-b border-border px-4 py-3">
               <CardTitle className="text-sm">Intake status</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-0 p-0 md:grid-cols-2 xl:grid-cols-4">
@@ -349,18 +349,18 @@ export default function IdpBasicDashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="border-b border-border px-5 py-4">
+          <Card className="flex max-h-80 min-h-0 flex-col overflow-hidden">
+            <CardHeader className="shrink-0 border-b border-border px-4 py-3">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <History className="h-4 w-4 text-muted-foreground" />
                 Audit log
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="min-h-0 overflow-y-auto p-0">
               {auditEvents.length > 0 ? (
                 <ol className="divide-y divide-border">
                   {auditEvents.map((event) => (
-                    <li key={event.id} className="flex gap-3 px-5 py-4">
+                    <li key={event.id} className="flex gap-3 px-4 py-3">
                       <span
                         className={cn(
                           "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
@@ -459,14 +459,14 @@ function BasicKanbanColumn({
   return (
     <section
       className={cn(
-        "relative flex h-full min-w-[220px] flex-1 flex-col overflow-hidden rounded-xl border border-border bg-muted/30",
+        "relative flex h-full min-w-64 flex-[1_1_16rem] flex-col overflow-hidden rounded-xl border border-border bg-muted/30 xl:max-w-[22rem]",
         "before:absolute before:inset-x-0 before:top-0 before:z-20 before:h-1 before:rounded-t-xl before:content-['']",
         meta.accent,
       )}
     >
       <header
         className={cn(
-          "sticky top-0 z-10 flex items-center justify-between gap-2 rounded-t-xl px-3 pb-2.5 pt-4",
+          "sticky top-0 z-10 flex items-center justify-between gap-2 rounded-t-xl px-3 pb-2 pt-3.5",
           meta.headerBg,
         )}
       >
@@ -494,12 +494,12 @@ function BasicKanbanColumn({
           <span>Loading packages</span>
         </div>
       ) : cards.length === 0 ? (
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-3 py-10 text-center text-xs text-muted-foreground">
+        <div className="flex min-h-0 flex-1 flex-col items-center gap-1 px-3 py-8 text-center text-xs text-muted-foreground">
           <Inbox className="h-4 w-4 opacity-50" />
           <span>No packages here</span>
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto p-2">
+        <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-contain p-2">
           {cards.map((card) => (
             <BasicKanbanCard key={card.id} card={card} />
           ))}
@@ -526,10 +526,10 @@ function BasicKanbanCard({ card }: { card: IdpBasicPackageSummary }) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   return (
-    <article className="rounded-lg border border-border bg-card text-left shadow-sm transition hover:border-foreground/20 hover:shadow-md">
+    <article className="rounded-md border border-border bg-card text-left shadow-sm transition hover:border-foreground/20 hover:shadow-md">
       <button
         type="button"
-        className="block w-full p-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="block w-full px-2.5 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-expanded={isExpanded}
         onClick={() => setIsExpanded((current) => !current)}
       >
@@ -542,10 +542,10 @@ function BasicKanbanCard({ card }: { card: IdpBasicPackageSummary }) {
             {card.document_count}
           </span>
         </div>
-        <p className="mt-1 line-clamp-1 text-sm font-medium leading-snug text-foreground">
+        <p className="mt-0.5 line-clamp-1 text-xs font-medium leading-snug text-foreground">
           {card.subject}
         </p>
-        <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+        <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
           <time title={formatAbsolute(card.created_at)}>{formatRelative(card.created_at)}</time>
           <span className="flex items-center gap-1.5">
             {card.alerts.length > 0 ? (
@@ -583,7 +583,7 @@ function BasicKanbanCard({ card }: { card: IdpBasicPackageSummary }) {
               {card.error_message}
             </p>
           ) : null}
-          <Button asChild size="sm" variant="outline" className="mt-2 h-8 w-full">
+          <Button asChild size="sm" variant="outline" className="mt-2 h-7 w-full">
             <Link href={`/idp-basic/results/${card.id}`}>Open result</Link>
           </Button>
         </div>
@@ -606,10 +606,10 @@ function SystemStatusItem({
   tone: "default" | "success" | "warning"
 }) {
   return (
-    <div className="flex items-start gap-3 border-b border-border px-5 py-4 last:border-b-0 md:border-b-0 md:border-r md:[&:nth-child(2n)]:border-r-0 xl:[&:nth-child(2n)]:border-r xl:last:border-r-0">
+    <div className="flex items-start gap-3 border-b border-border px-4 py-3 last:border-b-0 md:border-b-0 md:border-r md:[&:nth-child(2n)]:border-r-0 xl:[&:nth-child(2n)]:border-r xl:last:border-r-0">
       <span
         className={cn(
-          "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
           tone === "success" && "bg-success/10 text-success",
           tone === "warning" && "bg-warning/10 text-warning",
           tone === "default" && "bg-muted text-muted-foreground",
@@ -623,7 +623,7 @@ function SystemStatusItem({
         </p>
         <p
           className={cn(
-            "mt-1 text-base font-semibold",
+            "mt-0.5 text-sm font-semibold",
             tone === "success" && "text-success-foreground",
             tone === "warning" && "text-warning-foreground",
           )}

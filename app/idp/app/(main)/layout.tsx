@@ -31,8 +31,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const tile = TILES.find((t) => t.id === tileId)
   const activeItemId = pathToItemId(pathname)
   const collapsed = useSidebarStore((s) => s.collapsed)
-  const isBoardRoute =
-    pathname === "/idp/dashboard" || pathname === "/idp/board" || pathname === "/idp-basic/dashboard"
+  const isBoardRoute = pathname === "/idp/dashboard" || pathname === "/idp/board"
   const idpNavSections = useIdpNavSections()
   const idpBasicNavSections = useIdpBasicNavSections()
   const navSections = tileId === "idp-basic" ? idpBasicNavSections : idpNavSections
