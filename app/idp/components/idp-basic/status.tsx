@@ -45,7 +45,7 @@ const DOCUMENT_TYPE_LABELS: Record<IdpBasicDocumentType, string> = {
 
 export function IdpBasicStatusBadge({ status }: { status: IdpBasicPackageStatus }) {
   return (
-    <Badge variant="outline" className={STATUS_CLASS[status]}>
+    <Badge variant="outline" className={`${STATUS_CLASS[status]} whitespace-nowrap`}>
       {STATUS_LABELS[status]}
     </Badge>
   )
@@ -58,7 +58,7 @@ export function IdpBasicCompletenessBadge({
 }) {
   const resolved = status ?? "unknown"
   return (
-    <Badge variant="outline" className={COMPLETENESS_CLASS[resolved]}>
+    <Badge variant="outline" className={`${COMPLETENESS_CLASS[resolved]} whitespace-nowrap`}>
       {COMPLETENESS_LABELS[resolved]}
     </Badge>
   )

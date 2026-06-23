@@ -52,11 +52,12 @@ const columns: ColumnDef<IdpBasicResultSummary>[] = [
   {
     accessorKey: "reference_number",
     header: "Reference",
+    size: 340,
     cell: ({ row }) => (
       <div className="min-w-0">
         <Link
           href={`/idp-basic/results/${row.original.id}`}
-          className="font-medium hover:underline"
+          className="block truncate font-medium hover:underline"
         >
           {row.original.reference_number ?? "No reference"}
         </Link>
@@ -67,42 +68,65 @@ const columns: ColumnDef<IdpBasicResultSummary>[] = [
   {
     accessorKey: "document_count",
     header: "Documents",
+    size: 100,
+    cell: ({ row }) => <span className="whitespace-nowrap">{row.original.document_count}</span>,
   },
   {
     accessorKey: "document_types",
     header: "Detected types",
-    cell: ({ row }) => (
-      <div className="flex max-w-[280px] flex-wrap gap-1.5">
-        {row.original.document_types.length > 0 ? (
-          row.original.document_types.map((type) => (
-            <Badge key={type} variant="secondary">
-              {getIdpBasicDocumentTypeLabel(type)}
-            </Badge>
-          ))
-        ) : (
-          <span className="text-xs text-muted-foreground">—</span>
-        )}
-      </div>
-    ),
+    size: 230,
+    cell: ({ row }) => {
+      const [primaryType, ...additionalTypes] = row.original.document_types
+      return (
+        <div className="flex max-w-full flex-nowrap gap-1.5 overflow-hidden">
+          {primaryType ? (
+            <>
+              <Badge variant="secondary" className="whitespace-nowrap">
+                {getIdpBasicDocumentTypeLabel(primaryType)}
+              </Badge>
+              {additionalTypes.length > 0 ? (
+                <Badge variant="outline" className="whitespace-nowrap">
+                  +{additionalTypes.length}
+                </Badge>
+              ) : null}
+            </>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          )}
+        </div>
+      )
+    },
   },
   {
     accessorKey: "completeness_status",
     header: "Completeness",
+    size: 150,
     cell: ({ row }) => <IdpBasicCompletenessBadge status={row.original.completeness_status} />,
   },
   {
     accessorKey: "received_at",
     header: "Mail date",
-    cell: ({ row }) => (row.original.received_at ? formatAbsolute(row.original.received_at) : "—"),
+    size: 170,
+    cell: ({ row }) => (
+      <span className="whitespace-nowrap">
+        {row.original.received_at ? formatAbsolute(row.original.received_at) : "—"}
+      </span>
+    ),
   },
   {
     accessorKey: "sender",
     header: "Sender",
-    cell: ({ row }) => <span className="break-all">{row.original.sender || "—"}</span>,
+    size: 170,
+    cell: ({ row }) => (
+      <span className="block max-w-[160px] truncate whitespace-nowrap">
+        {row.original.sender || "—"}
+      </span>
+    ),
   },
   {
     accessorKey: "status",
-    header: "Status przetwarzania",
+    header: "Processing",
+    size: 150,
     cell: ({ row }) => <ResultStatusCell result={row.original} />,
   },
 ]
@@ -164,7 +188,7 @@ export default function IdpBasicResultsPage() {
   const resetPage = () => setPage(0)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <PageHeader
         title="Results"
         description="Detected references from emails and ZIP packages, without manual data edits."
@@ -186,8 +210,8 @@ export default function IdpBasicResultsPage() {
         }
       />
 
-      <div className="flex flex-1 flex-col gap-4 px-8 py-6">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-8 py-6">
+        <div className="flex shrink-0 flex-wrap items-center gap-3">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -223,7 +247,7 @@ export default function IdpBasicResultsPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="flex shrink-0 flex-wrap items-end gap-3">
           <DateRangeFilter
             idPrefix="idp-basic-results-date"
             from={dateFrom}
@@ -257,6 +281,9 @@ export default function IdpBasicResultsPage() {
           data={items}
           isLoading={results.isPending && items.length === 0}
           bordered
+          className="min-h-0 flex-1 overflow-auto"
+          stickyHeader
+          tableClassName="min-w-[1310px] table-fixed"
           getRowId={(row) => row.id}
           onRowClick={(row) => router.push(`/idp-basic/results/${row.id}`)}
           emptyState={
@@ -272,7 +299,12 @@ export default function IdpBasicResultsPage() {
           }
         />
 
-        <Pagination page={page} pageCount={pageCount} onChange={setPage} />
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          onChange={setPage}
+          className="shrink-0"
+        />
       </div>
     </div>
   )

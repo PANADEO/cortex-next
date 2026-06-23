@@ -31,6 +31,7 @@ const columns: ColumnDef<IdpBasicFileItem>[] = [
   {
     accessorKey: "file_name",
     header: "File",
+    size: 340,
     cell: ({ row }) => {
       const { Icon, toneClass } = getFileTypeIcon(row.original.file_name, row.original.media_type)
       return (
@@ -49,11 +50,14 @@ const columns: ColumnDef<IdpBasicFileItem>[] = [
   {
     accessorKey: "label",
     header: "Label",
+    size: 230,
     cell: ({ row }) => (
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="secondary">{row.original.label ?? "Unclassified"}</Badge>
+      <div className="flex flex-nowrap items-center gap-2 overflow-hidden">
+        <Badge variant="secondary" className="whitespace-nowrap">
+          {row.original.label ?? "Unclassified"}
+        </Badge>
         {row.original.confidence != null ? (
-          <span className="text-xs text-muted-foreground">
+          <span className="shrink-0 text-xs text-muted-foreground">
             {Math.round(row.original.confidence * 100)}%
           </span>
         ) : null}
@@ -63,16 +67,22 @@ const columns: ColumnDef<IdpBasicFileItem>[] = [
   {
     accessorKey: "package_reference_number",
     header: "Reference",
-    cell: ({ row }) => row.original.package_reference_number ?? "—",
+    size: 170,
+    cell: ({ row }) => (
+      <span className="block max-w-[150px] truncate whitespace-nowrap">
+        {row.original.package_reference_number ?? "—"}
+      </span>
+    ),
   },
   {
     accessorKey: "package_subject",
     header: "Package",
+    size: 360,
     cell: ({ row }) => (
       <div className="min-w-0">
         <Link
           href={`/idp-basic/packages/${row.original.package_id}`}
-          className="font-medium hover:underline"
+          className="block truncate font-medium hover:underline"
         >
           {row.original.package_subject}
         </Link>
@@ -82,16 +92,21 @@ const columns: ColumnDef<IdpBasicFileItem>[] = [
   {
     accessorKey: "package_status",
     header: "Package status",
+    size: 160,
     cell: ({ row }) => <IdpBasicStatusBadge status={row.original.package_status} />,
   },
   {
     accessorKey: "created_at",
     header: "Imported",
-    cell: ({ row }) => formatAbsolute(row.original.created_at),
+    size: 170,
+    cell: ({ row }) => (
+      <span className="whitespace-nowrap">{formatAbsolute(row.original.created_at)}</span>
+    ),
   },
   {
     id: "actions",
     header: "",
+    size: 80,
     cell: ({ row }) => (
       <div className="flex justify-end">
         <IdpBasicDeleteDocumentButton
@@ -130,7 +145,7 @@ export default function IdpBasicFilesPage() {
   const hasFilters = Boolean(search || reference || label || status !== "all" || dateFrom || dateTo)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <PageHeader
         title="Files"
         description="All files from imported IDP Basic packages."
@@ -151,8 +166,8 @@ export default function IdpBasicFilesPage() {
         }
       />
 
-      <div className="flex flex-1 flex-col gap-4 px-8 py-6">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-8 py-6">
+        <div className="flex shrink-0 flex-wrap items-center gap-3">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -195,7 +210,7 @@ export default function IdpBasicFilesPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="flex shrink-0 flex-wrap items-end gap-3">
           <DateRangeFilter
             idPrefix="idp-basic-files-date"
             from={dateFrom}
@@ -229,6 +244,9 @@ export default function IdpBasicFilesPage() {
           data={items}
           isLoading={files.isPending && items.length === 0}
           bordered
+          className="min-h-0 flex-1 overflow-auto"
+          stickyHeader
+          tableClassName="min-w-[1510px] table-fixed"
           emptyState={
             <EmptyState
               icon={FileText}

@@ -18,8 +18,10 @@ interface DataTableProps<TData> {
   emptyState?: ReactNode
   onRowClick?: (row: TData) => void
   className?: string
+  tableClassName?: string
   getRowId?: (row: TData, index: number) => string
   skeletonRows?: number
+  stickyHeader?: boolean
   /** Wrap the table in a bordered card. Default false — table bleeds into surrounding page. */
   bordered?: boolean
 }
@@ -31,8 +33,10 @@ export function DataTable<TData>({
   emptyState,
   onRowClick,
   className,
+  tableClassName,
   getRowId,
   skeletonRows = 5,
+  stickyHeader = false,
   bordered = false,
 }: DataTableProps<TData>) {
   const table = useReactTable({
@@ -45,19 +49,23 @@ export function DataTable<TData>({
   return (
     <div
       className={cn(
-        "overflow-hidden",
+        "overflow-x-auto [contain:layout_paint]",
         bordered && "rounded-lg border border-border bg-card",
         className,
       )}
     >
-      <table className="w-full text-sm">
-        <thead className="bg-muted/40">
+      <table className={cn("w-full text-sm", tableClassName)}>
+        <thead
+          className={cn(
+            stickyHeader ? "sticky top-0 z-10 bg-muted shadow-sm" : "bg-muted/40",
+          )}
+        >
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id} className="border-b border-border">
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="h-10 px-4 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                  className="h-10 whitespace-nowrap px-4 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
                   style={{ width: header.column.columnDef.size }}
                 >
                   {header.isPlaceholder

@@ -21,7 +21,7 @@ export function AppShell({
   sidebarCollapsed = false,
 }: AppShellProps) {
   return (
-    <div className={cn("flex h-screen bg-background", className)}>
+    <div className={cn("flex h-screen overflow-hidden bg-background", className)}>
       <aside
         className={cn(
           "hidden shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:flex md:flex-col",
