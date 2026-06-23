@@ -7,7 +7,7 @@ import { Badge, Card, CardContent, LoadingState } from "@cortex/ui"
 import { canPreviewInline, cn, formatFileSizeBytes, getFileTypeIcon } from "@cortex/utils"
 import { Loader2 } from "lucide-react"
 import dynamic from "next/dynamic"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { formatIdpBasicDisplayText, getIdpBasicDocumentTypeLabel } from "./status"
 
 const DocumentViewer = dynamic(
@@ -26,12 +26,14 @@ interface DocumentPreviewPanelProps {
   packageId: string
   documents: IdpBasicDocument[]
   deleteDisabled?: boolean
+  sidebarSlot?: ReactNode
 }
 
 export function DocumentPreviewPanel({
   packageId,
   documents,
   deleteDisabled,
+  sidebarSlot,
 }: DocumentPreviewPanelProps) {
   const [activeId, setActiveId] = useState(documents[0]?.id ?? "")
 
@@ -65,71 +67,77 @@ export function DocumentPreviewPanel({
   }
 
   return (
-    <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
-      <Card className="min-h-0">
-        <CardContent className="flex max-h-[calc(100vh-210px)] min-h-0 flex-col gap-3 overflow-y-auto p-3">
-          {documents.map((document) => {
-            const { Icon, toneClass } = getFileTypeIcon(document.file_name, document.media_type)
-            const isActive = document.id === active?.id
-            return (
-              <div
-                key={document.id}
-                className={cn(
-                  "relative rounded-md border transition-colors",
-                  isActive
-                    ? "border-cortex bg-cortex/5"
-                    : "border-border hover:border-cortex/60 hover:bg-muted/40",
-                )}
-              >
-                <button
-                  type="button"
-                  onClick={() => setActiveId(document.id)}
-                  className="w-full p-3 pr-11 text-left"
+    <div
+      data-idp-basic-preview-panel
+      className="grid min-h-0 flex-1 gap-3 overflow-visible lg:grid-cols-[340px_minmax(0,1fr)] lg:overflow-hidden"
+    >
+      <div className="flex min-h-0 flex-col gap-3 overflow-visible lg:overflow-hidden">
+        {sidebarSlot ? <div className="shrink-0">{sidebarSlot}</div> : null}
+        <Card className="min-h-0 lg:flex-1 lg:overflow-hidden">
+          <CardContent className="flex min-h-0 flex-col gap-3 p-3 lg:h-full lg:overflow-y-auto">
+            {documents.map((document) => {
+              const { Icon, toneClass } = getFileTypeIcon(document.file_name, document.media_type)
+              const isActive = document.id === active?.id
+              return (
+                <div
+                  key={document.id}
+                  className={cn(
+                    "relative rounded-md border transition-colors",
+                    isActive
+                      ? "border-cortex bg-cortex/5"
+                      : "border-border hover:border-cortex/60 hover:bg-muted/40",
+                  )}
                 >
-                  <div className="flex min-w-0 items-start gap-2">
-                    <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", toneClass)} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{document.file_name}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {formatFileSizeBytes(document.size_bytes)}
-                      </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveId(document.id)}
+                    className="w-full p-3 pr-11 text-left"
+                  >
+                    <div className="flex min-w-0 items-start gap-2">
+                      <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", toneClass)} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{document.file_name}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {formatFileSizeBytes(document.size_bytes)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary">
-                      {getIdpBasicDocumentTypeLabel(document.document_type)}
-                    </Badge>
-                    {document.confidence != null ? (
-                      <span className="text-xs text-muted-foreground">
-                        {Math.round(document.confidence * 100)}%
-                      </span>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary">
+                        {getIdpBasicDocumentTypeLabel(document.document_type)}
+                      </Badge>
+                      {document.confidence != null ? (
+                        <span className="text-xs text-muted-foreground">
+                          {Math.round(document.confidence * 100)}%
+                        </span>
+                      ) : null}
+                    </div>
+                    {document.summary ? (
+                      <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                        {document.summary}
+                      </p>
                     ) : null}
-                  </div>
-                  {document.summary ? (
-                    <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                      {document.summary}
-                    </p>
-                  ) : null}
-                  <DocumentAiFields document={document} />
-                </button>
-                <IdpBasicDeleteDocumentButton
-                  packageId={packageId}
-                  documentId={document.id}
-                  fileName={document.file_name}
-                  compact
-                  disabled={deleteDisabled}
-                  className="absolute right-2 top-2 h-7 w-7"
-                />
-              </div>
-            )
-          })}
-        </CardContent>
-      </Card>
+                    <DocumentAiFields document={document} />
+                  </button>
+                  <IdpBasicDeleteDocumentButton
+                    packageId={packageId}
+                    documentId={document.id}
+                    fileName={document.file_name}
+                    compact
+                    disabled={deleteDisabled}
+                    className="absolute right-2 top-2 h-7 w-7"
+                  />
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
+      </div>
 
-      <div className="min-h-[520px]">
+      <div className="min-h-[420px] overflow-hidden lg:min-h-0">
         {!active ? null : !previewable ? (
           <Card className="h-full">
-            <CardContent className="flex h-full min-h-[420px] flex-col items-center justify-center gap-3 p-8 text-center">
+            <CardContent className="flex h-full min-h-0 flex-col items-center justify-center gap-3 p-8 text-center">
               <p className="text-sm font-medium">No inline preview for this file.</p>
               <p className="max-w-md text-xs text-muted-foreground">
                 The file is still stored with the package and can be sent to downstream systems
@@ -141,7 +149,7 @@ export function DocumentPreviewPanel({
           <LoadingState label={`Loading ${active.file_name}…`} />
         ) : content.error || !content.data ? (
           <Card className="h-full">
-            <CardContent className="flex h-full min-h-[420px] items-center justify-center p-8 text-sm text-destructive">
+            <CardContent className="flex h-full min-h-0 items-center justify-center p-8 text-sm text-destructive">
               Failed to load document preview.
             </CardContent>
           </Card>
@@ -150,6 +158,7 @@ export function DocumentPreviewPanel({
             source={content.data}
             fileName={active.file_name}
             mediaType={active.media_type}
+            className="min-h-[420px] lg:h-full lg:min-h-0"
           />
         )}
       </div>

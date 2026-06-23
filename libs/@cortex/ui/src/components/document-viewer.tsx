@@ -143,6 +143,7 @@ function PdfViewer({
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const pageRefs = useRef(new Map<number, HTMLDivElement>())
+  const hasAutoFitRef = useRef(false)
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [scale, setScale] = useState(PDF_RENDER_SCALE)
@@ -153,6 +154,7 @@ function PdfViewer({
     let cancelled = false
     let loadingTask: PDFDocumentLoadingTask | null = null
     let loadedDoc: PDFDocumentProxy | null = null
+    hasAutoFitRef.current = false
 
     async function load() {
       try {
@@ -201,6 +203,15 @@ function PdfViewer({
       loadingTask?.destroy()
     }
   }, [source])
+
+  useEffect(() => {
+    if (!doc || !unscaledFirstPageWidth || hasAutoFitRef.current) return
+    const container = containerRef.current
+    if (!container || container.clientWidth <= 0) return
+    const fitScale = (container.clientWidth - PDF_FIT_PADDING_PX) / unscaledFirstPageWidth
+    hasAutoFitRef.current = true
+    setScale(Math.min(PDF_RENDER_SCALE, Math.max(PDF_MIN_SCALE, fitScale)))
+  }, [doc, unscaledFirstPageWidth])
 
   useEffect(() => {
     if (!activePage) return

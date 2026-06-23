@@ -44,7 +44,7 @@ export default function IdpBasicResultDetailPage() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:overflow-hidden">
       <PageHeader
         title={result.reference_number ?? "No reference"}
         description={result.subject}
@@ -74,12 +74,12 @@ export default function IdpBasicResultDetailPage() {
         }
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 px-8 py-6">
-        <section className="grid gap-4 lg:grid-cols-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-visible px-8 py-5 lg:overflow-hidden">
+        <section className="grid shrink-0 gap-3 lg:grid-cols-4">
           <DataCard label="Reference" value={result.reference_number ?? "—"} />
           <DataCard label="Documents" value={result.document_count} icon={FileText} />
           <Card>
-            <CardContent className="space-y-2 p-5">
+            <CardContent className="space-y-1.5 p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Completeness
               </p>
@@ -94,7 +94,7 @@ export default function IdpBasicResultDetailPage() {
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="space-y-2 p-5">
+            <CardContent className="space-y-1.5 p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Processing
               </p>
@@ -107,8 +107,8 @@ export default function IdpBasicResultDetailPage() {
         </section>
 
         {result.alerts.length > 0 ? (
-          <section className="rounded-md border border-warning/40 bg-warning/5 px-4 py-3">
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-warning">
+          <section className="shrink-0 rounded-md border border-warning/40 bg-warning/5 px-4 py-2.5">
+            <div className="mb-1.5 flex items-center gap-2 text-sm font-medium text-warning">
               <AlertTriangle className="h-4 w-4" />
               Alerts
             </div>
@@ -122,48 +122,52 @@ export default function IdpBasicResultDetailPage() {
           </section>
         ) : null}
 
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <Card>
-            <CardContent className="space-y-3 p-5">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                Source email
-              </div>
-              <dl className="grid gap-2 text-sm sm:grid-cols-[140px_minmax(0,1fr)]">
-                <dt className="text-muted-foreground">Sender</dt>
-                <dd className="break-all">{result.sender || "—"}</dd>
-                <dt className="text-muted-foreground">Subject</dt>
-                <dd>{result.subject}</dd>
-                <dt className="text-muted-foreground">Mail date</dt>
-                <dd>{result.received_at ? formatAbsolute(result.received_at) : "—"}</dd>
-                <dt className="text-muted-foreground">Message ID</dt>
-                <dd className="break-all">{result.message_id ?? "—"}</dd>
-              </dl>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="space-y-3 p-5">
-              <p className="text-sm font-medium">Detected types</p>
-              <div className="flex flex-wrap gap-2">
-                {result.document_types.length > 0 ? (
-                  result.document_types.map((type) => (
-                    <Badge key={type} variant="secondary">
-                      {getIdpBasicDocumentTypeLabel(type)}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-sm text-muted-foreground">No detected types</span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
         <DocumentPreviewPanel
           packageId={result.id}
           documents={result.documents}
           deleteDisabled={isActivePackage}
+          sidebarSlot={
+            <Card>
+              <CardContent className="space-y-3 p-4">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  Source email
+                </div>
+                <dl className="grid gap-1.5 text-xs">
+                  <div className="grid gap-x-3 gap-y-0.5 sm:grid-cols-[86px_minmax(0,1fr)]">
+                    <dt className="text-muted-foreground">Sender</dt>
+                    <dd className="break-all">{result.sender || "—"}</dd>
+                  </div>
+                  <div className="grid gap-x-3 gap-y-0.5 sm:grid-cols-[86px_minmax(0,1fr)]">
+                    <dt className="text-muted-foreground">Subject</dt>
+                    <dd className="break-words">{result.subject}</dd>
+                  </div>
+                  <div className="grid gap-x-3 gap-y-0.5 sm:grid-cols-[86px_minmax(0,1fr)]">
+                    <dt className="text-muted-foreground">Mail date</dt>
+                    <dd>{result.received_at ? formatAbsolute(result.received_at) : "—"}</dd>
+                  </div>
+                  <div className="grid gap-x-3 gap-y-0.5 sm:grid-cols-[86px_minmax(0,1fr)]">
+                    <dt className="text-muted-foreground">Message ID</dt>
+                    <dd className="break-all">{result.message_id ?? "—"}</dd>
+                  </div>
+                </dl>
+                <div className="space-y-2 border-t border-border pt-3">
+                  <p className="text-sm font-medium">Detected types</p>
+                  <div className="flex flex-wrap gap-2">
+                    {result.document_types.length > 0 ? (
+                      result.document_types.map((type) => (
+                        <Badge key={type} variant="secondary">
+                          {getIdpBasicDocumentTypeLabel(type)}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-sm text-muted-foreground">No detected types</span>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          }
         />
       </div>
     </div>
