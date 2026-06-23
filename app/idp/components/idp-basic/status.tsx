@@ -8,11 +8,11 @@ import type {
 import { Badge } from "@cortex/ui"
 
 const STATUS_LABELS: Record<IdpBasicPackageStatus, string> = {
-  queued: "Przetwarzanie",
-  processing: "Przetwarzanie",
-  ready: "Przetworzone",
-  needs_review: "Do weryfikacji",
-  failed: "Błąd przetwarzania",
+  queued: "Queued",
+  processing: "Processing",
+  ready: "Ready",
+  needs_review: "Needs review",
+  failed: "Failed",
 }
 
 const STATUS_CLASS: Record<IdpBasicPackageStatus, string> = {
@@ -24,9 +24,9 @@ const STATUS_CLASS: Record<IdpBasicPackageStatus, string> = {
 }
 
 const COMPLETENESS_LABELS: Record<IdpBasicCompletenessStatus, string> = {
-  complete: "Kompletne",
-  incomplete: "Niekompletne",
-  unknown: "Nieznane",
+  complete: "Complete",
+  incomplete: "Incomplete",
+  unknown: "Unknown",
 }
 
 const COMPLETENESS_CLASS: Record<IdpBasicCompletenessStatus, string> = {
@@ -36,11 +36,11 @@ const COMPLETENESS_CLASS: Record<IdpBasicCompletenessStatus, string> = {
 }
 
 const DOCUMENT_TYPE_LABELS: Record<IdpBasicDocumentType, string> = {
-  cost_invoice: "Faktura kosztowa",
+  cost_invoice: "Cost invoice",
   cmr: "CMR",
-  pod: "POD / potwierdzenie dostawy",
-  transport_order: "Zlecenie transportowe",
-  other: "Inny dokument",
+  pod: "POD / proof of delivery",
+  transport_order: "Transport order",
+  other: "Other document",
 }
 
 export function IdpBasicStatusBadge({ status }: { status: IdpBasicPackageStatus }) {
@@ -65,9 +65,32 @@ export function IdpBasicCompletenessBadge({
 }
 
 export function getIdpBasicDocumentTypeLabel(type: IdpBasicDocumentType | null): string {
-  return type ? DOCUMENT_TYPE_LABELS[type] : "Nierozpoznany"
+  return type ? DOCUMENT_TYPE_LABELS[type] : "Unknown"
 }
 
 export function getIdpBasicStatusLabel(status: IdpBasicPackageStatus): string {
   return STATUS_LABELS[status]
+}
+
+export function formatIdpBasicDisplayText(value: string): string {
+  const exactLabels: Record<string, string> = {
+    "Brak CMR": "Missing CMR",
+    "Brak POD": "Missing POD",
+    "Brak faktury kosztowej": "Missing cost invoice",
+    "Brak zlecenia transportowego": "Missing transport order",
+    "Nie znaleziono numeru referencyjnego": "Reference number not found",
+  }
+  if (exactLabels[value]) return exactLabels[value]
+
+  const prefixes: Array<[string, string]> = [
+    ["Dokument nierozpoznany:", "Unrecognized document:"],
+    ["Niska pewność klasyfikacji:", "Low classification confidence:"],
+    ["CMR zawiera uwagę lub zastrzeżenie:", "CMR contains a remark or reservation:"],
+    ["Niepełna analiza po maksymalnym zakresie:", "Incomplete analysis after full coverage:"],
+    ["Pominięto nieobsługiwany plik:", "Skipped unsupported file:"],
+  ]
+  for (const [source, replacement] of prefixes) {
+    if (value.startsWith(source)) return value.replace(source, replacement)
+  }
+  return value
 }

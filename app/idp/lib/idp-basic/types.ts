@@ -94,6 +94,7 @@ export interface IdpBasicResultSummary {
 
 export interface IdpBasicResultDetail extends IdpBasicResultSummary {
   message_id: string | null
+  source_files_available: boolean
   documents: IdpBasicDocument[]
 }
 

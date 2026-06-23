@@ -80,7 +80,7 @@ export default function IdpBasicPackagesPage() {
             <IdpBasicCsvDownloadButton
               source="packages"
               filters={{ status, search }}
-              contextLabel={hasFilters ? "Filtrowane paczki" : "Wszystkie paczki"}
+              contextLabel={hasFilters ? "Filtered packages" : "All packages"}
               disabled={packages.isPending && items.length === 0}
             />
             <IdpBasicUploadPackageButton />

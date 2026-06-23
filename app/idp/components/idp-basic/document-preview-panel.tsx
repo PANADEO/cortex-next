@@ -8,7 +8,7 @@ import { canPreviewInline, cn, formatFileSizeBytes, getFileTypeIcon } from "@cor
 import { Loader2 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { useEffect, useMemo, useState } from "react"
-import { getIdpBasicDocumentTypeLabel } from "./status"
+import { formatIdpBasicDisplayText, getIdpBasicDocumentTypeLabel } from "./status"
 
 const DocumentViewer = dynamic(
   () => import("@cortex/ui/components/document-viewer").then((m) => m.DocumentViewer),
@@ -159,12 +159,12 @@ export function DocumentPreviewPanel({
 
 function DocumentAiFields({ document }: { document: IdpBasicDocument }) {
   const fields = [
-    ["Ref", document.document_reference_number],
-    ["Data", document.document_date],
-    ["Nadawca/przewoźnik", document.issuer_or_carrier],
-    ["Nr faktury", document.invoice_number],
+    ["Reference", document.document_reference_number],
+    ["Date", document.document_date],
+    ["Issuer/carrier", document.issuer_or_carrier],
+    ["Invoice no.", document.invoice_number],
     ["CMR notes", document.cmr_notes],
-    ...document.extracted_data.map((field) => [field.name, field.value] as const),
+    ...document.extracted_data.map((field) => [formatAiFieldLabel(field.name), field.value] as const),
   ].filter(([, value]) => Boolean(value))
 
   if (fields.length === 0 && document.ai_alerts.length === 0) return null
@@ -174,9 +174,12 @@ function DocumentAiFields({ document }: { document: IdpBasicDocument }) {
       {fields.length > 0 ? (
         <dl className="space-y-1 text-xs">
           {fields.slice(0, 5).map(([label, value]) => (
-            <div key={`${label}-${value}`} className="grid grid-cols-[92px_minmax(0,1fr)] gap-2">
-              <dt className="text-muted-foreground">{label}</dt>
-              <dd className="truncate">{value}</dd>
+            <div
+              key={`${label}-${value}`}
+              className="grid gap-x-3 gap-y-0.5 sm:grid-cols-[minmax(108px,40%)_minmax(0,1fr)]"
+            >
+              <dt className="min-w-0 text-muted-foreground">{label}</dt>
+              <dd className="min-w-0 break-words text-foreground">{value}</dd>
             </div>
           ))}
         </dl>
@@ -185,11 +188,26 @@ function DocumentAiFields({ document }: { document: IdpBasicDocument }) {
         <div className="flex flex-wrap gap-1.5">
           {document.ai_alerts.map((alert) => (
             <Badge key={alert} variant="outline" className="border-warning/40 text-warning">
-              {alert}
+              {formatIdpBasicDisplayText(alert)}
             </Badge>
           ))}
         </div>
       ) : null}
     </div>
   )
+}
+
+function formatAiFieldLabel(label: string): string {
+  const normalized = label.trim().toLowerCase()
+  const labels: Record<string, string> = {
+    "beleg-nr.": "Document no.",
+    "beleg-nr": "Document no.",
+    "nr faktury": "Invoice no.",
+    "numer faktury": "Invoice no.",
+    data: "Date",
+    nadawca: "Sender",
+    przewoźnik: "Carrier",
+    przewoznik: "Carrier",
+  }
+  return labels[normalized] ?? label
 }

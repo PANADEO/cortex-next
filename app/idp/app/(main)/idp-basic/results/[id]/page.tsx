@@ -2,7 +2,9 @@
 
 import { IdpBasicDeletePackageButton } from "@/components/idp-basic/delete-actions"
 import { DocumentPreviewPanel } from "@/components/idp-basic/document-preview-panel"
+import { IdpBasicReprocessPackageButton } from "@/components/idp-basic/reprocess-actions"
 import {
+  formatIdpBasicDisplayText,
   getIdpBasicDocumentTypeLabel,
   IdpBasicCompletenessBadge,
   IdpBasicStatusBadge,
@@ -28,7 +30,8 @@ export default function IdpBasicResultDetailPage() {
   const id = params?.id ?? ""
   const detail = useIdpBasicResult(id)
   const result = detail.data
-  const deleteDisabled = result?.status === "queued" || result?.status === "processing"
+  const isActivePackage = result?.status === "queued" || result?.status === "processing"
+  const sourceFilesAvailable = result?.source_files_available === true
 
   if (detail.isPending && !result) return <LoadingState label="Loading result..." />
   if (detail.error || !result) {
@@ -43,15 +46,23 @@ export default function IdpBasicResultDetailPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader
-        title={result.reference_number ?? "Brak referencji"}
+        title={result.reference_number ?? "No reference"}
         description={result.subject}
         actions={
           <div className="flex items-center gap-2">
+            <IdpBasicReprocessPackageButton
+              packageId={result.id}
+              packageName={result.subject}
+              disabled={isActivePackage || !sourceFilesAvailable}
+              disabledReason={
+                sourceFilesAvailable ? undefined : "Source files are missing for this package."
+              }
+            />
             <IdpBasicDeletePackageButton
               packageId={result.id}
               packageName={result.subject}
               redirectTo="/idp-basic/results"
-              disabled={deleteDisabled}
+              disabled={isActivePackage}
             />
             <Button asChild variant="outline" size="sm">
               <Link href="/idp-basic/results">
@@ -75,7 +86,9 @@ export default function IdpBasicResultDetailPage() {
               <IdpBasicCompletenessBadge status={result.completeness_status} />
               {result.missing_required.length > 0 || result.missing_optional.length > 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  {[...result.missing_required, ...result.missing_optional].join(", ")}
+                  {[...result.missing_required, ...result.missing_optional]
+                    .map(formatIdpBasicDisplayText)
+                    .join(", ")}
                 </p>
               ) : null}
             </CardContent>
@@ -97,12 +110,12 @@ export default function IdpBasicResultDetailPage() {
           <section className="rounded-md border border-warning/40 bg-warning/5 px-4 py-3">
             <div className="mb-2 flex items-center gap-2 text-sm font-medium text-warning">
               <AlertTriangle className="h-4 w-4" />
-              Alerty
+              Alerts
             </div>
             <div className="flex flex-wrap gap-2">
               {result.alerts.map((alert) => (
                 <Badge key={alert} variant="outline" className="border-warning/40 text-warning">
-                  {alert}
+                  {formatIdpBasicDisplayText(alert)}
                 </Badge>
               ))}
             </div>
@@ -114,14 +127,14 @@ export default function IdpBasicResultDetailPage() {
             <CardContent className="space-y-3 p-5">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Mail className="h-4 w-4 text-muted-foreground" />
-                Mail źródłowy
+                Source email
               </div>
               <dl className="grid gap-2 text-sm sm:grid-cols-[140px_minmax(0,1fr)]">
-                <dt className="text-muted-foreground">Nadawca</dt>
+                <dt className="text-muted-foreground">Sender</dt>
                 <dd className="break-all">{result.sender || "—"}</dd>
-                <dt className="text-muted-foreground">Temat</dt>
+                <dt className="text-muted-foreground">Subject</dt>
                 <dd>{result.subject}</dd>
-                <dt className="text-muted-foreground">Data maila</dt>
+                <dt className="text-muted-foreground">Mail date</dt>
                 <dd>{result.received_at ? formatAbsolute(result.received_at) : "—"}</dd>
                 <dt className="text-muted-foreground">Message ID</dt>
                 <dd className="break-all">{result.message_id ?? "—"}</dd>
@@ -131,7 +144,7 @@ export default function IdpBasicResultDetailPage() {
 
           <Card>
             <CardContent className="space-y-3 p-5">
-              <p className="text-sm font-medium">Rozpoznane typy</p>
+              <p className="text-sm font-medium">Detected types</p>
               <div className="flex flex-wrap gap-2">
                 {result.document_types.length > 0 ? (
                   result.document_types.map((type) => (
@@ -140,7 +153,7 @@ export default function IdpBasicResultDetailPage() {
                     </Badge>
                   ))
                 ) : (
-                  <span className="text-sm text-muted-foreground">Brak rozpoznanych typów</span>
+                  <span className="text-sm text-muted-foreground">No detected types</span>
                 )}
               </div>
             </CardContent>
@@ -150,7 +163,7 @@ export default function IdpBasicResultDetailPage() {
         <DocumentPreviewPanel
           packageId={result.id}
           documents={result.documents}
-          deleteDisabled={deleteDisabled}
+          deleteDisabled={isActivePackage}
         />
       </div>
     </div>

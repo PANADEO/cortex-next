@@ -208,6 +208,18 @@ export function useIdpBasicDeletePackage() {
   })
 }
 
+export function useIdpBasicReprocessPackage() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (packageId: string) => idpBasicApi.reprocessPackage(packageId),
+    onSuccess: (result) => {
+      client.setQueryData(idpBasicQueryKeys.resultDetail(result.id), result)
+      client.invalidateQueries({ queryKey: idpBasicQueryKeys.packageDetail(result.id) })
+      invalidateIdpBasicMetadata(client)
+    },
+  })
+}
+
 export function useIdpBasicDeleteDocument(packageId: string) {
   const client = useQueryClient()
   return useMutation({

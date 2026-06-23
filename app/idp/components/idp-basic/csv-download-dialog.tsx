@@ -36,12 +36,12 @@ type CsvExportRange = "table" | "custom"
 type CsvCustomStatus = NonNullable<IdpBasicCsvExportFilters["status"]>
 
 const STATUS_OPTIONS: Array<{ value: CsvCustomStatus; label: string }> = [
-  { value: "all", label: "Wszystkie statusy" },
-  { value: "queued", label: "Przetwarzanie" },
-  { value: "processing", label: "W toku" },
-  { value: "ready", label: "Przetworzone" },
-  { value: "needs_review", label: "Do weryfikacji" },
-  { value: "failed", label: "Błąd przetwarzania" },
+  { value: "all", label: "All statuses" },
+  { value: "queued", label: "Queued" },
+  { value: "processing", label: "Processing" },
+  { value: "ready", label: "Ready" },
+  { value: "needs_review", label: "Needs review" },
+  { value: "failed", label: "Failed" },
 ]
 
 export function IdpBasicCsvDownloadButton({
@@ -61,9 +61,9 @@ export function IdpBasicCsvDownloadButton({
   const exportCsv = useIdpBasicExportCsv()
   const availableColumns = columns.data?.columns ?? []
   const selectedIds = useMemo(() => [...selected], [selected])
-  const customScopeLabel = source === "files" ? "Własny zakres plików" : "Własny zakres paczek"
+  const customScopeLabel = source === "files" ? "Custom file range" : "Custom package range"
   const tableScopeLabel =
-    contextLabel ?? (source === "files" ? "Pliki jak nad tabelą" : "Paczki jak nad tabelą")
+    contextLabel ?? (source === "files" ? "Files matching the table" : "Packages matching the table")
 
   useEffect(() => {
     if (!open || !columns.data) return
@@ -126,7 +126,7 @@ export function IdpBasicCsvDownloadButton({
         <div className="space-y-3">
           <div className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Zakres pobierania CSV
+              CSV download scope
             </p>
             <div className="grid grid-cols-2 gap-2">
               <Button
@@ -136,7 +136,7 @@ export function IdpBasicCsvDownloadButton({
                 onClick={() => setRange("table")}
                 aria-pressed={range === "table"}
               >
-                Jak nad tabelą
+                Table scope
               </Button>
               <Button
                 type="button"
@@ -145,7 +145,7 @@ export function IdpBasicCsvDownloadButton({
                 onClick={() => setRange("custom")}
                 aria-pressed={range === "custom"}
               >
-                Własny zakres
+                Custom range
               </Button>
             </div>
           </div>
@@ -157,7 +157,7 @@ export function IdpBasicCsvDownloadButton({
                   htmlFor="idp-basic-csv-date-from"
                   className="text-[10px] uppercase tracking-wide text-muted-foreground"
                 >
-                  Od
+                  From
                 </Label>
                 <Input
                   id="idp-basic-csv-date-from"
@@ -172,7 +172,7 @@ export function IdpBasicCsvDownloadButton({
                   htmlFor="idp-basic-csv-date-to"
                   className="text-[10px] uppercase tracking-wide text-muted-foreground"
                 >
-                  Do
+                  To
                 </Label>
                 <Input
                   id="idp-basic-csv-date-to"

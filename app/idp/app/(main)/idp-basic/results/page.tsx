@@ -5,6 +5,7 @@ import { IdpBasicCsvDownloadButton } from "@/components/idp-basic/csv-download-d
 import {
   getIdpBasicDocumentTypeLabel,
   getIdpBasicStatusLabel,
+  formatIdpBasicDisplayText,
   IdpBasicCompletenessBadge,
   IdpBasicStatusBadge,
 } from "@/components/idp-basic/status"
@@ -39,25 +40,25 @@ import { useMemo, useState } from "react"
 const PAGE_SIZE = 20
 
 const STATUS_OPTIONS: Array<{ value: IdpBasicPackageStatus | "all"; label: string }> = [
-  { value: "all", label: "Wszystkie statusy" },
-  { value: "queued", label: "Przetwarzanie" },
-  { value: "processing", label: "W toku" },
-  { value: "ready", label: "Przetworzone" },
-  { value: "needs_review", label: "Do weryfikacji" },
-  { value: "failed", label: "Błąd przetwarzania" },
+  { value: "all", label: "All statuses" },
+  { value: "queued", label: "Queued" },
+  { value: "processing", label: "Processing" },
+  { value: "ready", label: "Ready" },
+  { value: "needs_review", label: "Needs review" },
+  { value: "failed", label: "Failed" },
 ]
 
 const columns: ColumnDef<IdpBasicResultSummary>[] = [
   {
     accessorKey: "reference_number",
-    header: "Referencja",
+    header: "Reference",
     cell: ({ row }) => (
       <div className="min-w-0">
         <Link
           href={`/idp-basic/results/${row.original.id}`}
           className="font-medium hover:underline"
         >
-          {row.original.reference_number ?? "Brak referencji"}
+          {row.original.reference_number ?? "No reference"}
         </Link>
         <p className="truncate text-xs text-muted-foreground">{row.original.subject}</p>
       </div>
@@ -65,11 +66,11 @@ const columns: ColumnDef<IdpBasicResultSummary>[] = [
   },
   {
     accessorKey: "document_count",
-    header: "Liczba dokumentów",
+    header: "Documents",
   },
   {
     accessorKey: "document_types",
-    header: "Rozpoznane typy",
+    header: "Detected types",
     cell: ({ row }) => (
       <div className="flex max-w-[280px] flex-wrap gap-1.5">
         {row.original.document_types.length > 0 ? (
@@ -86,17 +87,17 @@ const columns: ColumnDef<IdpBasicResultSummary>[] = [
   },
   {
     accessorKey: "completeness_status",
-    header: "Kompletność",
+    header: "Completeness",
     cell: ({ row }) => <IdpBasicCompletenessBadge status={row.original.completeness_status} />,
   },
   {
     accessorKey: "received_at",
-    header: "Data maila",
+    header: "Mail date",
     cell: ({ row }) => (row.original.received_at ? formatAbsolute(row.original.received_at) : "—"),
   },
   {
     accessorKey: "sender",
-    header: "Nadawca",
+    header: "Sender",
     cell: ({ row }) => <span className="break-all">{row.original.sender || "—"}</span>,
   },
   {
@@ -125,11 +126,11 @@ function ResultStatusCell({ result }: { result: IdpBasicResultSummary }) {
           className="max-w-80 border bg-popover p-3 text-popover-foreground shadow-lg"
         >
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase text-muted-foreground">Alerty</p>
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Alerts</p>
             <ul className="space-y-1.5">
               {result.alerts.map((alert) => (
                 <li key={alert} className="text-sm leading-snug">
-                  {alert}
+                  {formatIdpBasicDisplayText(alert)}
                 </li>
               ))}
             </ul>
@@ -166,7 +167,7 @@ export default function IdpBasicResultsPage() {
     <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader
         title="Results"
-        description="Rozpoznane referencje z maili i paczek ZIP, bez ręcznej edycji danych."
+        description="Detected references from emails and ZIP packages, without manual data edits."
         actions={
           <div className="flex items-center gap-2">
             <IdpBasicCsvDownloadButton
@@ -177,7 +178,7 @@ export default function IdpBasicResultsPage() {
                 date_from: dateFrom,
                 date_to: dateTo,
               }}
-              contextLabel={hasFilters ? "Filtrowane paczki" : "Wszystkie paczki"}
+              contextLabel={hasFilters ? "Filtered packages" : "All packages"}
               disabled={results.isPending && items.length === 0}
             />
             <IdpBasicUploadPackageButton />
@@ -190,7 +191,7 @@ export default function IdpBasicResultsPage() {
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Szukaj referencji, maila lub pliku..."
+              placeholder="Search reference, email, or file..."
               value={search}
               onChange={(event) => {
                 resetPage()

@@ -145,7 +145,7 @@ export default function IdpBasicFilesPage() {
               date_from: dateFrom,
               date_to: dateTo,
             }}
-            contextLabel={hasFilters ? "Filtrowane pliki" : "Wszystkie pliki"}
+            contextLabel={hasFilters ? "Filtered files" : "All files"}
             disabled={files.isPending && items.length === 0}
           />
         }
