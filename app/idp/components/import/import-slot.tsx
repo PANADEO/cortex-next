@@ -206,6 +206,26 @@ export function ImportSlot({
         </div>
       </div>
 
+      {slot.status !== "done" ? (
+        <div className="space-y-1.5 px-4 pt-3">
+          <Label
+            htmlFor={`package-name-${slot.id}`}
+            className="text-[10px] uppercase tracking-wide text-muted-foreground"
+          >
+            Package name
+          </Label>
+          <Input
+            id={`package-name-${slot.id}`}
+            value={slot.packageName}
+            onChange={(e) => onPackageNameChange(e.target.value)}
+            maxLength={255}
+            placeholder="Optional display name"
+            className="h-8 text-xs"
+            disabled={isBusy}
+          />
+        </div>
+      ) : null}
+
       {isEmpty ? (
         <div
           onDragOver={(e) => {
@@ -268,26 +288,6 @@ export function ImportSlot({
         </div>
       ) : (
         <div className="space-y-3 px-4 pb-4 pt-3">
-          {slot.status !== "done" ? (
-            <div className="space-y-1.5">
-              <Label
-                htmlFor={`package-name-${slot.id}`}
-                className="text-[10px] uppercase tracking-wide text-muted-foreground"
-              >
-                Package name
-              </Label>
-              <Input
-                id={`package-name-${slot.id}`}
-                value={slot.packageName}
-                onChange={(e) => onPackageNameChange(e.target.value)}
-                maxLength={255}
-                placeholder="Optional display name"
-                className="h-8 text-xs"
-                disabled={isBusy}
-              />
-            </div>
-          ) : null}
-
           <ul className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/30 p-1.5">
             {slot.files.map((file, idx) => (
               <li
