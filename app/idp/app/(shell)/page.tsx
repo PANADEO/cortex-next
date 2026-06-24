@@ -1,40 +1,30 @@
-"use client"
+import { redirect } from "next/navigation"
+import { HomePageClient } from "@/components/shell/home-page-client"
 
-import { AppGate } from "@/components/shell/app-gate"
-import { AuthedHome } from "@/components/shell/authed-home"
-import { LandingHero } from "@/components/shell/landing-hero"
-import { getAuthErrorMessage } from "@/lib/auth-error-message"
-import { useMe } from "@cortex/api"
-import { useSearchParams } from "next/navigation"
-import { Suspense } from "react"
+export const dynamic = "force-dynamic"
 
 export default function HomePage() {
-  return (
-    <Suspense fallback={null}>
-      <HomeShell />
-    </Suspense>
-  )
+  const defaultPath = normalizeDefaultPath(process.env.CORTEX_FRONTEND_DEFAULT_PATH)
+  if (defaultPath) redirect(withBasePath(defaultPath))
+
+  return <HomePageClient />
 }
 
-function HomeShell() {
-  const searchParams = useSearchParams()
-  const authErrorMessage = getAuthErrorMessage(searchParams)
-
-  if (authErrorMessage) return <LandingHero authErrorMessage={authErrorMessage} />
-
-  return <HomeContent />
+function normalizeDefaultPath(value: string | undefined): string | null {
+  if (!value) return null
+  const trimmed = value.trim()
+  if (!trimmed || trimmed === "/") return null
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`
 }
 
-function HomeContent() {
-  const me = useMe()
+function withBasePath(pathname: string): string {
+  const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH)
+  return basePath ? `${basePath}${pathname}` : pathname
+}
 
-  if (me.isPending) return null
-  if (me.data) {
-    return (
-      <AppGate>
-        <AuthedHome />
-      </AppGate>
-    )
-  }
-  return <LandingHero />
+function normalizeBasePath(value: string | undefined): string {
+  if (!value) return ""
+  const trimmed = value.trim()
+  if (!trimmed || trimmed === "/") return ""
+  return trimmed.startsWith("/") ? trimmed.replace(/\/+$/, "") : `/${trimmed.replace(/\/+$/, "")}`
 }
