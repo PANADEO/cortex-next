@@ -9,6 +9,7 @@ import {
   DEPARTMENT_CATEGORIES,
   FUNCTIONAL_CATEGORIES,
   type Tile,
+  type TileHrefOverrides,
   TILES,
 } from "@/lib/tiles"
 import { CategoryTabs, type CategoryTab } from "./category-tabs"
@@ -42,7 +43,11 @@ function tileBelongsTo(view: HeroView, tile: Tile, categoryId: string): boolean 
   return tile.categoryDepartment.includes(categoryId as Tile["categoryDepartment"][number])
 }
 
-export function TileGrid() {
+interface TileGridProps {
+  tileHrefOverrides?: TileHrefOverrides | undefined
+}
+
+export function TileGrid({ tileHrefOverrides }: TileGridProps = {}) {
   const [searchQuery, setSearchQuery] = useState("")
   const deferredQuery = useDeferredValue(searchQuery)
   const [view, setView] = useState<HeroView>("functional")
@@ -51,9 +56,18 @@ export function TileGrid() {
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite)
   const authorized = useAuthorizedApps()
 
+  const tiles = useMemo(
+    () =>
+      TILES.map((tile) => {
+        const href = tileHrefOverrides?.[tile.id]
+        return href ? { ...tile, href } : tile
+      }),
+    [tileHrefOverrides],
+  )
+
   const authorizedTiles = useMemo(
-    () => TILES.filter((tile) => authorized.apps.includes(tile.id)),
-    [authorized.apps],
+    () => tiles.filter((tile) => authorized.apps.includes(tile.id)),
+    [authorized.apps, tiles],
   )
 
   const searchedTiles = useMemo(

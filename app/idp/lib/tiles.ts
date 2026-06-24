@@ -24,6 +24,8 @@ export interface Tile {
   versionEndpoint?: string
 }
 
+export type TileHrefOverrides = Partial<Record<string, string>>
+
 export const FUNCTIONAL_CATEGORIES: ReadonlyArray<{
   id: TileCategoryFunctional
   label: string

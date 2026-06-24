@@ -92,23 +92,6 @@ function withBasePath(pathname: string): string {
   return basePath ? `${basePath}${pathname}` : pathname
 }
 
-function normalizeDefaultPath(value: string | undefined): string | null {
-  if (!value) return null
-  const trimmed = value.trim()
-  if (!trimmed || trimmed === "/") return null
-  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`
-}
-
-function tryDefaultHomeRedirect(req: NextRequest) {
-  const pathname = stripBasePath(req.nextUrl.pathname)
-  if (pathname !== "/") return null
-
-  const defaultPath = normalizeDefaultPath(process.env.CORTEX_FRONTEND_DEFAULT_PATH)
-  if (!defaultPath) return null
-
-  return NextResponse.redirect(new URL(withBasePath(defaultPath) + req.nextUrl.search, req.nextUrl), 308)
-}
-
 function tryLegacyRedirect(req: NextRequest) {
   // XHR/fetch with Accept: application/json is API traffic — let it fall through
   // to tryIdpRewrite or 404. Redirecting JSON XHR breaks apiClient (308 → HTML page → parse error).
@@ -187,9 +170,6 @@ export default function middleware(req: NextRequest) {
 
   const legacyRedirect = tryLegacyRedirect(req)
   if (legacyRedirect) return legacyRedirect
-
-  const defaultHomeRedirect = tryDefaultHomeRedirect(req)
-  if (defaultHomeRedirect) return defaultHomeRedirect
 
   return NextResponse.next()
 }

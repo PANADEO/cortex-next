@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react"
+import "@testing-library/jest-dom/vitest"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 interface AuthorizedMock {
@@ -63,5 +64,14 @@ describe("TileGrid", () => {
     render(<TileGrid />)
 
     expect(screen.getByText("Nie znaleziono aplikacji")).not.toBeNull()
+  })
+
+  it("applies tile href overrides", () => {
+    render(<TileGrid tileHrefOverrides={{ idp: "/idp/packages" }} />)
+
+    expect(screen.getByRole("link", { name: /IDP Procesowanie/i })).toHaveAttribute(
+      "href",
+      "/idp/packages",
+    )
   })
 })
