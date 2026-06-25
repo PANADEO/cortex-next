@@ -61,6 +61,15 @@ function buildSpreadsheetColumns(
 }
 
 const MIN_COLUMN_WIDTH = 48
+const SUMMABLE_COLUMN_KEYS = new Set<keyof InvoiceLineRow>([
+  "quantity",
+  "invoice_value",
+  "net_weight_kg",
+  "gross_weight_kg",
+  "estimated_gross_weight_kg",
+  "packages_quantity",
+])
+const NUMERIC_CELL_RE = /^-?\d+(\.\d+)?$/
 
 type SortDirection = "asc" | "desc"
 
@@ -73,6 +82,20 @@ const SORT_ICONS: Record<SortDirection | "none", LucideIcon> = {
   none: ArrowUpDown,
   asc: ArrowUp,
   desc: ArrowDown,
+}
+
+function parseSummableCell(value: string): { value: number; hasValue: boolean } | null {
+  const trimmed = value.trim()
+  if (!trimmed) return { value: 0, hasValue: false }
+  if (!NUMERIC_CELL_RE.test(trimmed)) return null
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? { value: parsed, hasValue: true } : null
+}
+
+function formatTotal(value: number, hasValue: boolean): string {
+  if (!hasValue) return ""
+  if (value === 0) return "0"
+  return value.toFixed(10).replace(/\.?0+$/, "")
 }
 
 interface Props {
@@ -279,6 +302,30 @@ export function LinesSpreadsheet({
     return copy
   }, [invoice.lines, values, initial, columns, sort])
 
+  const columnTotals = useMemo(() => {
+    const totals: Partial<Record<keyof InvoiceLineRow, string>> = {}
+    for (const column of columns) {
+      if (!SUMMABLE_COLUMN_KEYS.has(column.key)) continue
+      let total = 0
+      let hasValue = false
+      for (const line of invoice.lines) {
+        const row = values[line.id] ?? initial[line.id]
+        const parsed = parseSummableCell(row?.[column.key] ?? "")
+        if (parsed !== null) {
+          total += parsed.value
+          hasValue ||= parsed.hasValue
+        }
+      }
+      totals[column.key] = formatTotal(total, hasValue)
+    }
+    return totals
+  }, [columns, invoice.lines, values, initial])
+
+  const totalLabelColumnKey = useMemo(
+    () => columns.find((column) => !SUMMABLE_COLUMN_KEYS.has(column.key))?.key ?? columns[0]?.key,
+    [columns],
+  )
+
   const handleDownloadCsv = () => {
     const csv = buildInvoiceLinesCsv(sortedLines, {
       columns: visibleLineColumns,
@@ -416,6 +463,28 @@ export function LinesSpreadsheet({
               )
             })}
           </tbody>
+          <tfoot className="sticky bottom-0 z-10 bg-card shadow-[0_-1px_0_hsl(var(--border))]">
+            <tr>
+              {columns.map((c) => {
+                const isTotalColumn = SUMMABLE_COLUMN_KEYS.has(c.key)
+                return (
+                  <td
+                    key={c.key}
+                    className={cn(
+                      "h-7 px-1.5 align-middle font-mono text-sm font-bold text-foreground",
+                      isTotalColumn ? "tabular-nums" : "text-muted-foreground",
+                    )}
+                  >
+                    {isTotalColumn
+                      ? (columnTotals[c.key] ?? "0")
+                      : c.key === totalLabelColumnKey
+                        ? "Total"
+                        : ""}
+                  </td>
+                )
+              })}
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { downloadBlob } from "@/lib/download"
 import { queryKeys } from "@cortex/api"
 import type { Invoice, UpdateInvoiceLinesRequest } from "@cortex/types"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import type { ReactNode } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -55,10 +55,10 @@ function makeInvoice(): Invoice {
         unit_of_measure: "PCS",
         unit_price: null,
         invoice_value: "10",
-        net_weight_kg: null,
-        gross_weight_kg: null,
-        estimated_gross_weight_kg: null,
-        packages_quantity: null,
+        net_weight_kg: "2",
+        gross_weight_kg: "3",
+        estimated_gross_weight_kg: "3.5",
+        packages_quantity: "1",
         packages_type: null,
         packages_marking: null,
         origin_country: "CN",
@@ -76,6 +76,30 @@ function makeInvoice(): Invoice {
           ],
         },
       },
+      {
+        id: "line-2",
+        line_number: "2",
+        po_number: null,
+        product_code: "BX2486029",
+        description: "Second sample product",
+        description_pl: "Drugi produkt testowy",
+        cn_code: "850441",
+        hs: "8504",
+        quantity: "2.5",
+        unit_of_measure: "PCS",
+        unit_price: null,
+        invoice_value: "20.25",
+        net_weight_kg: "4",
+        gross_weight_kg: "5.5",
+        estimated_gross_weight_kg: "6",
+        packages_quantity: "2",
+        packages_type: null,
+        packages_marking: null,
+        origin_country: "CN",
+        source_references: [],
+        notes: [],
+        sad_override: null,
+      },
     ],
   }
 }
@@ -92,6 +116,109 @@ function readBlobText(blob: Blob): Promise<string> {
 describe("LinesSpreadsheet", () => {
   beforeEach(() => {
     vi.mocked(downloadBlob).mockClear()
+  })
+
+  it("shows business column totals without summing line numbers", () => {
+    renderWithPreferences(
+      <LinesSpreadsheet
+        invoice={makeInvoice()}
+        canEdit
+        isSaving={false}
+        onSave={async () => undefined}
+      />,
+    )
+
+    const totalRow = screen.getByText("Total").closest("tr")
+    if (!totalRow) throw new Error("Expected total row")
+    const totalCells = within(totalRow).getAllByRole("cell")
+    expect(totalCells[0]?.textContent).toBe("Total")
+    expect(within(totalRow).getByText("3.5")).not.toBeNull()
+    expect(within(totalRow).getByText("30.25")).not.toBeNull()
+    expect(within(totalRow).getByText("6")).not.toBeNull()
+    expect(within(totalRow).getByText("8.5")).not.toBeNull()
+    expect(within(totalRow).getByText("9.5")).not.toBeNull()
+    expect(within(totalRow).getByText("3")).not.toBeNull()
+  })
+
+  it("hides totals for hidden business columns", () => {
+    renderWithPreferences(
+      <LinesSpreadsheet
+        invoice={makeInvoice()}
+        canEdit
+        isSaving={false}
+        onSave={async () => undefined}
+      />,
+      ["invoice_value"],
+    )
+
+    const totalRow = screen.getByText("Total").closest("tr")
+    if (!totalRow) throw new Error("Expected total row")
+    expect(within(totalRow).queryByText("30.25")).toBeNull()
+    expect(within(totalRow).getByText("3.5")).not.toBeNull()
+  })
+
+  it("hides totals for empty business columns", () => {
+    const invoice = makeInvoice()
+    invoice.lines = invoice.lines.map((line) => ({
+      ...line,
+      estimated_gross_weight_kg: null,
+    }))
+
+    renderWithPreferences(
+      <LinesSpreadsheet
+        invoice={invoice}
+        canEdit
+        isSaving={false}
+        onSave={async () => undefined}
+      />,
+    )
+
+    const totalRow = screen.getByText("Total").closest("tr")
+    if (!totalRow) throw new Error("Expected total row")
+    expect(within(totalRow).queryByText("0")).toBeNull()
+    expect(within(totalRow).getByText("30.25")).not.toBeNull()
+  })
+
+  it("shows zero totals for columns with numeric zero values", () => {
+    const invoice = makeInvoice()
+    invoice.lines = invoice.lines.map((line) => ({
+      ...line,
+      estimated_gross_weight_kg: "0",
+    }))
+
+    renderWithPreferences(
+      <LinesSpreadsheet
+        invoice={invoice}
+        canEdit
+        isSaving={false}
+        onSave={async () => undefined}
+      />,
+      ["quantity", "invoice_value", "net_weight_kg", "gross_weight_kg", "packages_quantity"],
+    )
+
+    const totalRow = screen.getByText("Total").closest("tr")
+    if (!totalRow) throw new Error("Expected total row")
+    expect(within(totalRow).getByText("0")).not.toBeNull()
+  })
+
+  it("updates totals from unsaved spreadsheet edits", async () => {
+    renderWithPreferences(
+      <LinesSpreadsheet
+        invoice={makeInvoice()}
+        canEdit
+        isSaving={false}
+        onSave={async () => undefined}
+      />,
+    )
+
+    const valueInput = screen.getByDisplayValue("10")
+    await userEvent.clear(valueInput)
+    await userEvent.type(valueInput, "40.25")
+
+    const totalRow = screen.getByText("Total").closest("tr")
+    if (!totalRow) throw new Error("Expected total row")
+    expect(within(totalRow).getByText("60.5")).not.toBeNull()
+    expect(within(totalRow).queryByText("30.25")).toBeNull()
   })
 
   it("renders and saves one Customs Code field in customs-code mode", async () => {
