@@ -1,7 +1,19 @@
 "use client"
 
 import { ImportOptionsFields, type ImportOptions } from "@/components/import-options-fields"
-import { Badge, Button, Input, Label } from "@cortex/ui"
+import {
+  Badge,
+  Button,
+  Checkbox,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@cortex/ui"
+import type { ExportTemplateInfo } from "@cortex/types"
 import { cn, formatFileSizeBytes } from "@cortex/utils"
 import {
   AlertCircle,
@@ -34,6 +46,9 @@ export interface ImportSlotValue {
   id: string
   files: File[]
   packageName: string
+  notificationEmailEnabled: boolean
+  notificationEmail: string
+  notificationExportTemplate: string
   options: ImportOptions
   status: ImportSlotStatus
   errorMessage?: string | undefined
@@ -45,9 +60,14 @@ interface ImportSlotProps {
   canRemove: boolean
   onFilesChange: (files: File[]) => void
   onPackageNameChange: (packageName: string) => void
+  onNotificationEmailEnabledChange: (enabled: boolean) => void
+  onNotificationEmailChange: (email: string) => void
+  onNotificationExportTemplateChange: (templateName: string) => void
   onOptionsChange: (patch: Partial<ImportOptions>) => void
   onRemove: () => void
   onSubmit: () => void
+  notificationExportTemplates?: ExportTemplateInfo[]
+  showImportEmailNotifications?: boolean
   showAtrProcessing?: boolean
   showAdditionalAiContext?: boolean
 }
@@ -89,9 +109,14 @@ export function ImportSlot({
   canRemove,
   onFilesChange,
   onPackageNameChange,
+  onNotificationEmailEnabledChange,
+  onNotificationEmailChange,
+  onNotificationExportTemplateChange,
   onOptionsChange,
   onRemove,
   onSubmit,
+  notificationExportTemplates = [],
+  showImportEmailNotifications = true,
   showAtrProcessing = false,
   showAdditionalAiContext = false,
 }: ImportSlotProps) {
@@ -207,22 +232,79 @@ export function ImportSlot({
       </div>
 
       {slot.status !== "done" ? (
-        <div className="space-y-1.5 px-4 pt-3">
-          <Label
-            htmlFor={`package-name-${slot.id}`}
-            className="text-[10px] uppercase tracking-wide text-muted-foreground"
-          >
-            Package name
-          </Label>
-          <Input
-            id={`package-name-${slot.id}`}
-            value={slot.packageName}
-            onChange={(e) => onPackageNameChange(e.target.value)}
-            maxLength={255}
-            placeholder="Optional display name"
-            className="h-8 text-xs"
-            disabled={isBusy}
-          />
+        <div className="space-y-3 px-4 pt-3">
+          <div className="space-y-1.5">
+            <Label
+              htmlFor={`package-name-${slot.id}`}
+              className="text-[10px] uppercase tracking-wide text-muted-foreground"
+            >
+              Package name
+            </Label>
+            <Input
+              id={`package-name-${slot.id}`}
+              value={slot.packageName}
+              onChange={(e) => onPackageNameChange(e.target.value)}
+              maxLength={255}
+              placeholder="Optional display name"
+              className="h-8 text-xs"
+              disabled={isBusy}
+            />
+          </div>
+
+          {showImportEmailNotifications ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id={`notification-email-enabled-${slot.id}`}
+                  checked={slot.notificationEmailEnabled}
+                  onCheckedChange={(checked) =>
+                    onNotificationEmailEnabledChange(checked === true)
+                  }
+                  disabled={isBusy}
+                />
+                <Label
+                  htmlFor={`notification-email-enabled-${slot.id}`}
+                  className="text-xs font-medium"
+                >
+                  Email result after processing
+                </Label>
+              </div>
+              {slot.notificationEmailEnabled ? (
+                <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(180px,220px)]">
+                  <Input
+                    id={`notification-email-${slot.id}`}
+                    type="email"
+                    value={slot.notificationEmail}
+                    onChange={(e) => onNotificationEmailChange(e.target.value)}
+                    maxLength={254}
+                    placeholder="recipient@example.com"
+                    className="h-8 text-xs"
+                    disabled={isBusy}
+                  />
+                  <Select
+                    value={slot.notificationExportTemplate}
+                    onValueChange={onNotificationExportTemplateChange}
+                    disabled={isBusy || notificationExportTemplates.length === 0}
+                  >
+                    <SelectTrigger
+                      id={`notification-export-template-${slot.id}`}
+                      className="h-8 text-xs"
+                      aria-label="Notification export template"
+                    >
+                      <SelectValue placeholder="Export template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {notificationExportTemplates.map((template) => (
+                        <SelectItem key={template.name} value={template.name}>
+                          {template.display_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

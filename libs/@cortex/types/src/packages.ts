@@ -90,6 +90,8 @@ export interface ImportPackageBody {
   atr_processing_enabled?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null
+  notification_email?: string | null
+  notification_export_template?: string | null
 }
 
 export interface ImportEmailPackageBody {
@@ -99,6 +101,8 @@ export interface ImportEmailPackageBody {
   atr_processing_enabled?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null
+  notification_email?: string | null
+  notification_export_template?: string | null
 }
 
 export interface ImportMultiplePackagesBody {
@@ -108,6 +112,8 @@ export interface ImportMultiplePackagesBody {
   atr_processing_enabled?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null
+  notification_email?: string | null
+  notification_export_template?: string | null
 }
 
 export interface ImportPackageResponse {

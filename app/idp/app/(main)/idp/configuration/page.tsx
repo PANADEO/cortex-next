@@ -7,7 +7,7 @@ import {
   useReloadFeatureFlagSettingsFromEnv,
   useUpdateFeatureFlagSettings,
 } from "@cortex/api"
-import type { FeatureFlagSettingsResponse } from "@cortex/types"
+import type { FeatureFlagSettingsResponse, UpdateFeatureFlagSettingsRequest } from "@cortex/types"
 import {
   Button,
   ErrorState,
@@ -32,6 +32,8 @@ type BooleanFlagKey =
   | "enable_atr_processing"
   | "enable_document_preview"
   | "enable_classification"
+  | "enable_imap_import"
+  | "enable_import_email_notifications"
 
 const BOOLEAN_FLAGS: ReadonlyArray<{
   key: BooleanFlagKey
@@ -83,6 +85,16 @@ const BOOLEAN_FLAGS: ReadonlyArray<{
     label: "Classification",
     env: "FEATURE_FLAG_ENABLE_CLASSIFICATION",
   },
+  {
+    key: "enable_imap_import",
+    label: "IMAP import",
+    env: "FEATURE_FLAG_ENABLE_IMAP_IMPORT",
+  },
+  {
+    key: "enable_import_email_notifications",
+    label: "Import email notifications",
+    env: "FEATURE_FLAG_ENABLE_IMPORT_EMAIL_NOTIFICATIONS",
+  },
 ]
 
 function emptySettings(): FeatureFlagSettingsResponse {
@@ -96,6 +108,8 @@ function emptySettings(): FeatureFlagSettingsResponse {
     enable_atr_processing: false,
     enable_document_preview: false,
     enable_classification: false,
+    enable_imap_import: false,
+    enable_import_email_notifications: true,
     hide_menu_items: [],
     custom_statuses: [],
     export_templates: [],
@@ -107,6 +121,15 @@ function emptySettings(): FeatureFlagSettingsResponse {
     smtp_use_tls: true,
     smtp_use_ssl: false,
     smtp_timeout_seconds: 10,
+    imap_host: null,
+    imap_port: 993,
+    imap_secure: true,
+    imap_user: null,
+    imap_mailbox: "INBOX",
+    imap_processed_mailbox: null,
+    imap_drafts_mailbox: null,
+    imap_poll_limit: 25,
+    imap_password_configured: false,
     gemini_model: "gemini-2.5-pro",
     gemini_fast_model: "gemini-3.5-flash",
     gemini_temperature: 0.1,
@@ -152,6 +175,7 @@ export default function ConfigurationPage() {
   const [geminiTemperatureText, setGeminiTemperatureText] = useState("")
   const [geminiFastTemperatureText, setGeminiFastTemperatureText] = useState("")
   const [geminiThinkingBudgetText, setGeminiThinkingBudgetText] = useState("")
+  const [imapPassword, setImapPassword] = useState("")
 
   useEffect(() => {
     if (!query.data) return
@@ -162,11 +186,13 @@ export default function ConfigurationPage() {
     setGeminiTemperatureText(numberText(query.data.gemini_temperature))
     setGeminiFastTemperatureText(numberText(query.data.gemini_fast_temperature))
     setGeminiThinkingBudgetText(numberText(query.data.gemini_thinking_budget))
+    setImapPassword("")
   }, [query.data])
 
-  const payload = useMemo<FeatureFlagSettingsResponse>(
+  const payload = useMemo<UpdateFeatureFlagSettingsRequest>(
     () => ({
       ...form,
+      imap_password: imapPassword || null,
       hide_menu_items: parseCsvList(hiddenMenuItemsText),
       custom_statuses: parseCsvList(customStatusesText),
       export_templates: parseCsvList(exportTemplatesText),
@@ -184,6 +210,7 @@ export default function ConfigurationPage() {
       geminiTemperatureText,
       geminiThinkingBudgetText,
       hiddenMenuItemsText,
+      imapPassword,
     ],
   )
 
@@ -200,6 +227,7 @@ export default function ConfigurationPage() {
         setGeminiTemperatureText(numberText(settings.gemini_temperature))
         setGeminiFastTemperatureText(numberText(settings.gemini_fast_temperature))
         setGeminiThinkingBudgetText(numberText(settings.gemini_thinking_budget))
+        setImapPassword("")
         toast.success("Configuration saved.")
       },
       onError: (err) => toastApiError(err),
@@ -216,6 +244,7 @@ export default function ConfigurationPage() {
         setGeminiTemperatureText(numberText(settings.gemini_temperature))
         setGeminiFastTemperatureText(numberText(settings.gemini_fast_temperature))
         setGeminiThinkingBudgetText(numberText(settings.gemini_thinking_budget))
+        setImapPassword("")
         toast.success("Configuration loaded from env.")
       },
       onError: (err) => toastApiError(err),
@@ -447,6 +476,7 @@ export default function ConfigurationPage() {
           </div>
 
           <div className="space-y-2 rounded-lg border border-border bg-background p-3 lg:col-span-2">
+            <h3 className="text-sm font-semibold">SMTP</h3>
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_110px_120px]">
               <div>
                 <Label htmlFor="smtp-host">SMTP host</Label>
@@ -553,6 +583,157 @@ export default function ConfigurationPage() {
                   }
                 />
               </label>
+            </div>
+          </div>
+
+          <div className="space-y-2 rounded-lg border border-border bg-background p-3 lg:col-span-2">
+            <h3 className="text-sm font-semibold">IMAP</h3>
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_110px_120px]">
+              <div>
+                <Label htmlFor="imap-host">IMAP host</Label>
+                <Input
+                  id="imap-host"
+                  value={form.imap_host ?? ""}
+                  disabled={isBusy}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      imap_host: event.target.value.trim() || null,
+                    }))
+                  }
+                  placeholder="imap.gmail.com"
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="imap-port">IMAP port</Label>
+                <Input
+                  id="imap-port"
+                  type="number"
+                  min={1}
+                  max={65535}
+                  value={form.imap_port}
+                  disabled={isBusy}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      imap_port: Number(event.target.value || 993),
+                    }))
+                  }
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="imap-poll-limit">Poll limit</Label>
+                <Input
+                  id="imap-poll-limit"
+                  type="number"
+                  min={1}
+                  max={500}
+                  value={form.imap_poll_limit}
+                  disabled={isBusy}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      imap_poll_limit: Number(event.target.value || 25),
+                    }))
+                  }
+                  className="mt-1.5"
+                />
+              </div>
+            </div>
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_96px]">
+              <div>
+                <Label htmlFor="imap-user">IMAP user</Label>
+                <Input
+                  id="imap-user"
+                  value={form.imap_user ?? ""}
+                  disabled={isBusy}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      imap_user: event.target.value.trim() || null,
+                    }))
+                  }
+                  placeholder="mailbox@example.com"
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="imap-password">
+                  IMAP password{form.imap_password_configured ? " (configured)" : ""}
+                </Label>
+                <Input
+                  id="imap-password"
+                  type="password"
+                  value={imapPassword}
+                  disabled={isBusy}
+                  onChange={(event) => setImapPassword(event.target.value)}
+                  placeholder={form.imap_password_configured ? "Leave blank to keep" : ""}
+                  className="mt-1.5"
+                  autoComplete="new-password"
+                />
+              </div>
+              <label className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm">
+                Secure
+                <Switch
+                  checked={form.imap_secure}
+                  disabled={isBusy}
+                  onCheckedChange={(checked) =>
+                    setForm((current) => ({ ...current, imap_secure: checked }))
+                  }
+                />
+              </label>
+            </div>
+            <div className="grid gap-3 lg:grid-cols-3">
+              <div>
+                <Label htmlFor="imap-mailbox">Mailbox</Label>
+                <Input
+                  id="imap-mailbox"
+                  value={form.imap_mailbox}
+                  disabled={isBusy}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      imap_mailbox: event.target.value,
+                    }))
+                  }
+                  placeholder="INBOX"
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="imap-processed-mailbox">Processed mailbox</Label>
+                <Input
+                  id="imap-processed-mailbox"
+                  value={form.imap_processed_mailbox ?? ""}
+                  disabled={isBusy}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      imap_processed_mailbox: event.target.value.trim() || null,
+                    }))
+                  }
+                  placeholder="[Gmail]/Processed"
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="imap-drafts-mailbox">Drafts mailbox</Label>
+                <Input
+                  id="imap-drafts-mailbox"
+                  value={form.imap_drafts_mailbox ?? ""}
+                  disabled={isBusy}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      imap_drafts_mailbox: event.target.value.trim() || null,
+                    }))
+                  }
+                  placeholder="[Gmail]/Drafts"
+                  className="mt-1.5"
+                />
+              </div>
             </div>
           </div>
 

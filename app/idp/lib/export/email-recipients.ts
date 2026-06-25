@@ -1,6 +1,7 @@
 const STORAGE_KEY = "cortex.idp.export.emailRecipients"
 const MAX_RECIPIENTS = 10
-const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+const EMAIL_PATTERN =
+  /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$/
 
 function getStorage(): Storage | null {
   if (typeof window === "undefined") return null
@@ -10,6 +11,11 @@ function getStorage(): Storage | null {
 export function normalizeExportEmailRecipient(value: string): string | null {
   const normalized = value.trim().toLowerCase()
   return EMAIL_PATTERN.test(normalized) ? normalized : null
+}
+
+function storageKeyForUser(userEmail?: string | null): string {
+  const normalizedUserEmail = normalizeExportEmailRecipient(userEmail ?? "")
+  return normalizedUserEmail ? `${STORAGE_KEY}:${normalizedUserEmail}` : STORAGE_KEY
 }
 
 export function addExportEmailRecipient(recipients: readonly string[], email: string): string[] {
@@ -22,12 +28,12 @@ export function addExportEmailRecipient(recipients: readonly string[], email: st
   )
 }
 
-export function loadExportEmailRecipients(): string[] {
+export function loadExportEmailRecipients(userEmail?: string | null): string[] {
   const storage = getStorage()
   if (!storage) return []
 
   try {
-    const parsed = JSON.parse(storage.getItem(STORAGE_KEY) ?? "[]") as unknown
+    const parsed = JSON.parse(storage.getItem(storageKeyForUser(userEmail)) ?? "[]") as unknown
     if (!Array.isArray(parsed)) return []
 
     const recipients: string[] = []
@@ -44,15 +50,21 @@ export function loadExportEmailRecipients(): string[] {
   }
 }
 
-export function saveExportEmailRecipients(recipients: readonly string[]): void {
+export function saveExportEmailRecipients(
+  recipients: readonly string[],
+  userEmail?: string | null,
+): void {
   const storage = getStorage()
   if (!storage) return
 
-  storage.setItem(STORAGE_KEY, JSON.stringify(recipients.slice(0, MAX_RECIPIENTS)))
+  storage.setItem(storageKeyForUser(userEmail), JSON.stringify(recipients.slice(0, MAX_RECIPIENTS)))
 }
 
-export function rememberExportEmailRecipient(email: string): string[] {
-  const recipients = addExportEmailRecipient(loadExportEmailRecipients(), email)
-  saveExportEmailRecipients(recipients)
+export function rememberExportEmailRecipient(
+  email: string,
+  userEmail?: string | null,
+): string[] {
+  const recipients = addExportEmailRecipient(loadExportEmailRecipients(userEmail), email)
+  saveExportEmailRecipients(recipients, userEmail)
   return recipients
 }

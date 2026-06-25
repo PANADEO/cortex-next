@@ -26,6 +26,8 @@ function settings(overrides: Record<string, unknown> = {}) {
     enable_atr_processing: false,
     enable_document_preview: true,
     enable_classification: false,
+    enable_imap_import: false,
+    enable_import_email_notifications: true,
     hide_menu_items: ["export"],
     custom_statuses: ["Accounting Department"],
     export_templates: ["csv_new"],
@@ -37,6 +39,15 @@ function settings(overrides: Record<string, unknown> = {}) {
     smtp_use_tls: true,
     smtp_use_ssl: false,
     smtp_timeout_seconds: 10,
+    imap_host: "imap.gmail.com",
+    imap_port: 993,
+    imap_secure: true,
+    imap_user: "idp@example.com",
+    imap_mailbox: "INBOX",
+    imap_processed_mailbox: "Processed",
+    imap_drafts_mailbox: "[Gmail]/Drafts",
+    imap_poll_limit: 25,
+    imap_password_configured: true,
     gemini_model: "gemini-pro",
     gemini_fast_model: "gemini-fast",
     gemini_temperature: 0.2,
@@ -109,6 +120,14 @@ describe("ConfigurationPage", () => {
     fireEvent.change(screen.getByLabelText("Thinking budget"), {
       target: { value: "-1" },
     })
+    fireEvent.click(screen.getByLabelText("IMAP import"))
+    fireEvent.click(screen.getByLabelText("Import email notifications"))
+    fireEvent.change(screen.getByLabelText("IMAP host"), {
+      target: { value: "imap.example.com" },
+    })
+    fireEvent.change(screen.getByLabelText("IMAP password (configured)"), {
+      target: { value: "new-secret" },
+    })
     fireEvent.click(screen.getByRole("button", { name: /^save$/i }))
 
     await waitFor(() => {
@@ -130,6 +149,10 @@ describe("ConfigurationPage", () => {
       gemini_temperature: 0.4,
       gemini_fast_temperature: null,
       gemini_thinking_budget: -1,
+      enable_imap_import: true,
+      enable_import_email_notifications: false,
+      imap_host: "imap.example.com",
+      imap_password: "new-secret",
     })
   })
 

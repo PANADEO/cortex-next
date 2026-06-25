@@ -7,23 +7,33 @@ import {
 } from "@/components/import-options-fields"
 import {
   toastApiError,
+  useExportTemplates,
   useImportEmailPackage,
   useImportMultiplePackages,
   useImportPackage,
+  useMe,
 } from "@cortex/api"
 import { Button } from "@cortex/ui"
 import { useFeatureFlag } from "@cortex/utils"
 import { Loader2, Send } from "lucide-react"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
+import {
+  loadExportEmailRecipients,
+  normalizeExportEmailRecipient,
+  rememberExportEmailRecipient,
+} from "@/lib/export/email-recipients"
 import { detectIntakeKind } from "./file-intake"
 import { ImportSlot, type ImportSlotValue } from "./import-slot"
 
-function makeEmptySlot(): ImportSlotValue {
+function makeEmptySlot(defaultNotificationEmail = "", defaultNotificationExportTemplate = ""): ImportSlotValue {
   return {
     id: `slot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     files: [],
     packageName: "",
+    notificationEmailEnabled: false,
+    notificationEmail: defaultNotificationEmail,
+    notificationExportTemplate: defaultNotificationExportTemplate,
     options: { ...emptyImportOptions },
     status: "pending",
   }
@@ -31,11 +41,43 @@ function makeEmptySlot(): ImportSlotValue {
 
 export function ImportQueue() {
   const [slots, setSlots] = useState<ImportSlotValue[]>(() => [makeEmptySlot()])
+  const [savedDefaultEmail, setSavedDefaultEmail] = useState("")
+  const me = useMe()
   const importOne = useImportPackage()
   const importEmail = useImportEmailPackage()
   const importMany = useImportMultiplePackages()
+  const exportTemplates = useExportTemplates()
   const showAtrProcessing = useFeatureFlag("idp.atr-processing")
   const showAdditionalAiContext = useFeatureFlag("idp.additional-ai-context")
+  const showImportEmailNotifications = useFeatureFlag("idp.import-email-notifications")
+  const userEmail = me.data?.email ?? ""
+  const defaultNotificationEmail =
+    savedDefaultEmail || normalizeExportEmailRecipient(userEmail) || ""
+  const notificationExportTemplates = exportTemplates.data ?? []
+  const defaultNotificationExportTemplate =
+    notificationExportTemplates.find((template) => template.name === "sad_xml")?.name ??
+    notificationExportTemplates[0]?.name ??
+    ""
+
+  useEffect(() => {
+    setSavedDefaultEmail(loadExportEmailRecipients(userEmail)[0] ?? "")
+  }, [userEmail])
+
+  useEffect(() => {
+    if (!defaultNotificationEmail && !defaultNotificationExportTemplate) return
+    setSlots((prev) =>
+      prev.map((slot) =>
+        slot.notificationEmail && slot.notificationExportTemplate
+          ? slot
+          : {
+              ...slot,
+              notificationEmail: slot.notificationEmail || defaultNotificationEmail,
+              notificationExportTemplate:
+                slot.notificationExportTemplate || defaultNotificationExportTemplate,
+            },
+      ),
+    )
+  }, [defaultNotificationEmail, defaultNotificationExportTemplate])
 
   const patchSlot = useCallback((id: string, patch: Partial<ImportSlotValue>) => {
     setSlots((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
@@ -45,11 +87,14 @@ export function ImportQueue() {
     setSlots((prev) => {
       const last = prev[prev.length - 1]
       if (last && (last.files.length > 0 || last.status !== "pending")) {
-        return [...prev, makeEmptySlot()]
+        return [
+          ...prev,
+          makeEmptySlot(defaultNotificationEmail, defaultNotificationExportTemplate),
+        ]
       }
       return prev
     })
-  }, [])
+  }, [defaultNotificationEmail, defaultNotificationExportTemplate])
 
   const setFiles = useCallback(
     (id: string, files: File[]) => {
@@ -84,10 +129,26 @@ export function ImportQueue() {
     setSlots((prev) => {
       const next = prev.filter((s) => s.id !== id)
       if (next.length === 0 || next[next.length - 1]!.files.length > 0) {
-        next.push(makeEmptySlot())
+        next.push(makeEmptySlot(defaultNotificationEmail, defaultNotificationExportTemplate))
       }
       return next
     })
+  }, [defaultNotificationEmail, defaultNotificationExportTemplate])
+
+  const setNotificationEmailEnabled = useCallback((id: string, enabled: boolean) => {
+    setSlots((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, notificationEmailEnabled: enabled } : s)),
+    )
+  }, [])
+
+  const setNotificationEmail = useCallback((id: string, email: string) => {
+    setSlots((prev) => prev.map((s) => (s.id === id ? { ...s, notificationEmail: email } : s)))
+  }, [])
+
+  const setNotificationExportTemplate = useCallback((id: string, templateName: string) => {
+    setSlots((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, notificationExportTemplate: templateName } : s)),
+    )
   }, [])
 
   const submitSlot = useCallback(
@@ -99,6 +160,28 @@ export function ImportQueue() {
         additionalAiContextAvailable: showAdditionalAiContext,
       })
       const packageName = slot.packageName.trim() || null
+      const notificationEmail = showImportEmailNotifications && slot.notificationEmailEnabled
+        ? normalizeExportEmailRecipient(slot.notificationEmail)
+        : null
+      if (showImportEmailNotifications && slot.notificationEmailEnabled && !notificationEmail) {
+        const message = "Enter a valid notification email."
+        toast.error(message)
+        patchSlot(slot.id, { status: "error", errorMessage: message })
+        return
+      }
+      const notificationExportTemplate = showImportEmailNotifications && slot.notificationEmailEnabled
+        ? slot.notificationExportTemplate || defaultNotificationExportTemplate
+        : null
+      if (
+        showImportEmailNotifications &&
+        slot.notificationEmailEnabled &&
+        !notificationExportTemplate
+      ) {
+        const message = "Select an export template."
+        toast.error(message)
+        patchSlot(slot.id, { status: "error", errorMessage: message })
+        return
+      }
       patchSlot(slot.id, { status: "uploading", errorMessage: undefined })
       try {
         let result: { id: string }
@@ -106,6 +189,8 @@ export function ImportQueue() {
           result = await importOne.mutateAsync({
             file: slot.files[0]!,
             package_name: packageName,
+            notification_email: notificationEmail,
+            notification_export_template: notificationExportTemplate,
             ...serialized,
           })
           toast.success(`Imported ${slot.files[0]!.name}`)
@@ -113,6 +198,8 @@ export function ImportQueue() {
           result = await importEmail.mutateAsync({
             file: slot.files[0]!,
             package_name: packageName,
+            notification_email: notificationEmail,
+            notification_export_template: notificationExportTemplate,
             ...serialized,
           })
           toast.success(`Imported email ${slot.files[0]!.name}`)
@@ -120,9 +207,14 @@ export function ImportQueue() {
           result = await importMany.mutateAsync({
             files: slot.files,
             package_name: packageName,
+            notification_email: notificationEmail,
+            notification_export_template: notificationExportTemplate,
             ...serialized,
           })
           toast.success(`Imported ${slot.files.length} file(s)`)
+        }
+        if (notificationEmail) {
+          setSavedDefaultEmail(rememberExportEmailRecipient(notificationEmail, userEmail)[0] ?? "")
         }
         patchSlot(slot.id, { status: "done", packageId: result.id })
       } catch (err) {
@@ -131,7 +223,17 @@ export function ImportQueue() {
         patchSlot(slot.id, { status: "error", errorMessage: message })
       }
     },
-    [importOne, importEmail, importMany, patchSlot, showAtrProcessing, showAdditionalAiContext],
+    [
+      importOne,
+      importEmail,
+      importMany,
+      patchSlot,
+      showAtrProcessing,
+      showAdditionalAiContext,
+      showImportEmailNotifications,
+      defaultNotificationExportTemplate,
+      userEmail,
+    ],
   )
 
   const submitAll = useCallback(async () => {
@@ -159,9 +261,18 @@ export function ImportQueue() {
             canRemove={slots.length > 1 || idx > 0}
             onFilesChange={(files) => setFiles(slot.id, files)}
             onPackageNameChange={(packageName) => setPackageName(slot.id, packageName)}
+            onNotificationEmailEnabledChange={(enabled) =>
+              setNotificationEmailEnabled(slot.id, enabled)
+            }
+            onNotificationEmailChange={(email) => setNotificationEmail(slot.id, email)}
+            onNotificationExportTemplateChange={(templateName) =>
+              setNotificationExportTemplate(slot.id, templateName)
+            }
             onOptionsChange={(patch) => setOptions(slot.id, patch)}
             onRemove={() => removeSlot(slot.id)}
             onSubmit={() => submitSlot(slot)}
+            notificationExportTemplates={notificationExportTemplates}
+            showImportEmailNotifications={showImportEmailNotifications}
             showAtrProcessing={showAtrProcessing}
             showAdditionalAiContext={showAdditionalAiContext}
           />

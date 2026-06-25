@@ -3,6 +3,7 @@
 import { downloadBlob } from "@/lib/download"
 import {
   loadExportEmailRecipients,
+  normalizeExportEmailRecipient,
   rememberExportEmailRecipient,
 } from "@/lib/export/email-recipients"
 import { endpoints, toastApiError, useExportTemplates, useMe } from "@cortex/api"
@@ -66,10 +67,13 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
   const [savedEmailRecipients, setSavedEmailRecipients] = useState<string[]>([])
   const emailRecipientListId = useId()
   const mailModeRef = useRef(mailMode)
+  const userEmail = me.data?.email ?? ""
+  const defaultEmailRecipient =
+    savedEmailRecipients[0] ?? normalizeExportEmailRecipient(userEmail) ?? ""
 
   useEffect(() => {
-    setSavedEmailRecipients(loadExportEmailRecipients())
-  }, [])
+    setSavedEmailRecipients(loadExportEmailRecipients(userEmail))
+  }, [userEmail])
 
   const setMailModeValue = (value: boolean) => {
     mailModeRef.current = value
@@ -82,7 +86,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
         templateName,
         displayName,
         format,
-        toEmail: me.data?.email ?? "",
+        toEmail: defaultEmailRecipient,
         subject: `Export ${displayName}`,
         body: DEFAULT_EMAIL_BODY,
       })
@@ -118,7 +122,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
         subject,
         body: emailDraft.body,
       })
-      setSavedEmailRecipients(rememberExportEmailRecipient(toEmail))
+      setSavedEmailRecipients(rememberExportEmailRecipient(toEmail, userEmail))
       toast.success(`Export emailed to ${result.sent_to}`)
       setEmailDraft(null)
     } catch (err) {

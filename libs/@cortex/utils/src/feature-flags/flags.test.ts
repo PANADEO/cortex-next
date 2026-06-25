@@ -6,13 +6,20 @@ const KNOWN_FLAGS: FeatureFlag[] = [
   "idp.customs-code",
   "idp.atr-processing",
   "idp.additional-ai-context",
+  "idp.import-email-notifications",
 ]
 
 describe("DEFAULTS", () => {
-  it("contains every known flag with a false default (safe-by-default)", () => {
-    for (const flag of KNOWN_FLAGS) {
+  it("contains every opt-in flag with a false default", () => {
+    for (const flag of KNOWN_FLAGS.filter(
+      (value) => value !== "idp.import-email-notifications",
+    )) {
       expect(DEFAULTS[flag]).toBe(false)
     }
+  })
+
+  it("keeps import email notifications enabled for older backend responses", () => {
+    expect(DEFAULTS["idp.import-email-notifications"]).toBe(true)
   })
 
   it("has the same key set as KNOWN_FLAGS", () => {
@@ -43,6 +50,12 @@ describe("BACKEND_FIELD", () => {
   it("maps idp.additional-ai-context to enable_additional_ai_context", () => {
     expect(BACKEND_FIELD["idp.additional-ai-context"]).toBe(
       "enable_additional_ai_context",
+    )
+  })
+
+  it("maps idp.import-email-notifications to enable_import_email_notifications", () => {
+    expect(BACKEND_FIELD["idp.import-email-notifications"]).toBe(
+      "enable_import_email_notifications",
     )
   })
 })

@@ -15,6 +15,8 @@ export interface FeatureFlagsResponse {
   enable_additional_ai_context?: boolean
   enable_atr_processing?: boolean
   enable_document_preview?: boolean
+  enable_imap_import?: boolean
+  enable_import_email_notifications?: boolean
   hide_menu_items?: string | string[] | null
 }
 
@@ -28,6 +30,8 @@ export interface FeatureFlagSettingsResponse {
   enable_atr_processing: boolean
   enable_document_preview: boolean
   enable_classification: boolean
+  enable_imap_import: boolean
+  enable_import_email_notifications: boolean
   hide_menu_items: string[]
   custom_statuses: string[]
   export_templates: string[]
@@ -39,6 +43,15 @@ export interface FeatureFlagSettingsResponse {
   smtp_use_tls: boolean
   smtp_use_ssl: boolean
   smtp_timeout_seconds: number
+  imap_host: string | null
+  imap_port: number
+  imap_secure: boolean
+  imap_user: string | null
+  imap_mailbox: string
+  imap_processed_mailbox: string | null
+  imap_drafts_mailbox: string | null
+  imap_poll_limit: number
+  imap_password_configured: boolean
   gemini_model: string
   gemini_fast_model: string | null
   gemini_temperature: number | null
@@ -46,4 +59,6 @@ export interface FeatureFlagSettingsResponse {
   gemini_thinking_budget: number | null
 }
 
-export type UpdateFeatureFlagSettingsRequest = FeatureFlagSettingsResponse
+export type UpdateFeatureFlagSettingsRequest = FeatureFlagSettingsResponse & {
+  imap_password?: string | null
+}

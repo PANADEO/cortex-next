@@ -75,7 +75,7 @@ const transportOrderSection =
       jsonBody: body,
     })
 
-function buildImportForm(
+export function buildImportForm(
   body: ImportPackageBody | ImportEmailPackageBody | ImportMultiplePackagesBody,
 ): FormData {
   const form = new FormData()
@@ -98,6 +98,12 @@ function buildImportForm(
   }
   if (body.package_name) {
     form.append("package_name", body.package_name)
+  }
+  if (body.notification_email) {
+    form.append("notification_email", body.notification_email)
+  }
+  if (body.notification_export_template) {
+    form.append("notification_export_template", body.notification_export_template)
   }
   return form
 }

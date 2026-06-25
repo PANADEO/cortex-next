@@ -12,13 +12,15 @@ export type FeatureFlag =
   | "idp.customs-code"
   | "idp.atr-processing"
   | "idp.additional-ai-context"
+  | "idp.import-email-notifications"
 
-/** Safe-by-default: every flag is `false` unless backend opts it in. */
+/** Defaults used when a backend does not expose a newer flag yet. */
 export const DEFAULTS: Record<FeatureFlag, boolean> = {
   "idp.classification": false,
   "idp.customs-code": false,
   "idp.atr-processing": false,
   "idp.additional-ai-context": false,
+  "idp.import-email-notifications": true,
 } as const satisfies Record<FeatureFlag, boolean>
 
 /** Maps logical flag → snake_case field on `GET /config` response. */
@@ -27,4 +29,5 @@ export const BACKEND_FIELD: Record<FeatureFlag, keyof FeatureFlagsResponse> = {
   "idp.customs-code": "enable_customs_code",
   "idp.atr-processing": "enable_atr_processing",
   "idp.additional-ai-context": "enable_additional_ai_context",
+  "idp.import-email-notifications": "enable_import_email_notifications",
 } as const
