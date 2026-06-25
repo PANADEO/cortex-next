@@ -1,4 +1,6 @@
 const STORAGE_KEY = "cortex.idp.export.emailRecipients"
+const IMPORT_NOTIFICATION_TEMPLATE_STORAGE_KEY =
+  "cortex.idp.import.notificationExportTemplate"
 const MAX_RECIPIENTS = 10
 const EMAIL_PATTERN =
   /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$/
@@ -16,6 +18,13 @@ export function normalizeExportEmailRecipient(value: string): string | null {
 function storageKeyForUser(userEmail?: string | null): string {
   const normalizedUserEmail = normalizeExportEmailRecipient(userEmail ?? "")
   return normalizedUserEmail ? `${STORAGE_KEY}:${normalizedUserEmail}` : STORAGE_KEY
+}
+
+function notificationTemplateStorageKeyForUser(userEmail?: string | null): string {
+  const normalizedUserEmail = normalizeExportEmailRecipient(userEmail ?? "")
+  return normalizedUserEmail
+    ? `${IMPORT_NOTIFICATION_TEMPLATE_STORAGE_KEY}:${normalizedUserEmail}`
+    : IMPORT_NOTIFICATION_TEMPLATE_STORAGE_KEY
 }
 
 export function addExportEmailRecipient(recipients: readonly string[], email: string): string[] {
@@ -67,4 +76,23 @@ export function rememberExportEmailRecipient(
   const recipients = addExportEmailRecipient(loadExportEmailRecipients(userEmail), email)
   saveExportEmailRecipients(recipients, userEmail)
   return recipients
+}
+
+export function loadImportNotificationExportTemplate(userEmail?: string | null): string {
+  const storage = getStorage()
+  if (!storage) return ""
+
+  return (storage.getItem(notificationTemplateStorageKeyForUser(userEmail)) ?? "").trim()
+}
+
+export function rememberImportNotificationExportTemplate(
+  templateName: string,
+  userEmail?: string | null,
+): string {
+  const normalized = templateName.trim()
+  const storage = getStorage()
+  if (!storage || !normalized) return normalized
+
+  storage.setItem(notificationTemplateStorageKeyForUser(userEmail), normalized)
+  return normalized
 }

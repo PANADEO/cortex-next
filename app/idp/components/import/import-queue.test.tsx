@@ -21,6 +21,12 @@ vi.mock("@cortex/api", () => ({
         format: "xml",
         description: "SAD XML export",
       },
+      {
+        name: "standard_json",
+        display_name: "Standard JSON",
+        format: "json",
+        description: "Standard JSON export",
+      },
     ],
   }),
   useFeatureFlags: () => ({ data: {}, isSuccess: false }),
@@ -90,6 +96,49 @@ describe("ImportQueue", () => {
       window.localStorage.getItem("cortex.idp.export.emailRecipients:user@example.com"),
     ).toContain(
       "user@example.com",
+    )
+    expect(
+      window.localStorage.getItem(
+        "cortex.idp.import.notificationExportTemplate:user@example.com",
+      ),
+    ).toBe("sad_xml")
+  })
+
+  it("defaults notification settings from last recipient and export template", async () => {
+    window.localStorage.setItem(
+      "cortex.idp.export.emailRecipients:user@example.com",
+      JSON.stringify(["last@example.com"]),
+    )
+    window.localStorage.setItem(
+      "cortex.idp.import.notificationExportTemplate:user@example.com",
+      "standard_json",
+    )
+
+    render(<ImportQueue />)
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Email result after processing" }))
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("last@example.com")).not.toBeNull()
+      expect(screen.getByText("Standard JSON")).not.toBeNull()
+    })
+
+    const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]')
+    expect(fileInput).not.toBeNull()
+    fireEvent.change(fileInput!, {
+      target: {
+        files: [new File(["zip"], "package.zip", { type: "application/zip" })],
+      },
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "Import" }))
+
+    await waitFor(() => expect(mocks.importPackage).toHaveBeenCalledTimes(1))
+    expect(mocks.importPackage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        notification_email: "last@example.com",
+        notification_export_template: "standard_json",
+      }),
     )
   })
 })

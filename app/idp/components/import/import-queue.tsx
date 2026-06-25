@@ -16,11 +16,13 @@ import {
 import { Button } from "@cortex/ui"
 import { useFeatureFlag } from "@cortex/utils"
 import { Loader2, Send } from "lucide-react"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import {
+  loadImportNotificationExportTemplate,
   loadExportEmailRecipients,
   normalizeExportEmailRecipient,
+  rememberImportNotificationExportTemplate,
   rememberExportEmailRecipient,
 } from "@/lib/export/email-recipients"
 import { detectIntakeKind } from "./file-intake"
@@ -42,6 +44,8 @@ function makeEmptySlot(defaultNotificationEmail = "", defaultNotificationExportT
 export function ImportQueue() {
   const [slots, setSlots] = useState<ImportSlotValue[]>(() => [makeEmptySlot()])
   const [savedDefaultEmail, setSavedDefaultEmail] = useState("")
+  const [savedDefaultExportTemplate, setSavedDefaultExportTemplate] = useState("")
+  const previousDefaultsRef = useRef({ email: "", exportTemplate: "" })
   const me = useMe()
   const importOne = useImportPackage()
   const importEmail = useImportEmailPackage()
@@ -55,27 +59,43 @@ export function ImportQueue() {
     savedDefaultEmail || normalizeExportEmailRecipient(userEmail) || ""
   const notificationExportTemplates = exportTemplates.data ?? []
   const defaultNotificationExportTemplate =
+    notificationExportTemplates.find(
+      (template) => template.name === savedDefaultExportTemplate,
+    )?.name ??
     notificationExportTemplates.find((template) => template.name === "sad_xml")?.name ??
     notificationExportTemplates[0]?.name ??
     ""
 
   useEffect(() => {
     setSavedDefaultEmail(loadExportEmailRecipients(userEmail)[0] ?? "")
+    setSavedDefaultExportTemplate(loadImportNotificationExportTemplate(userEmail))
   }, [userEmail])
 
   useEffect(() => {
     if (!defaultNotificationEmail && !defaultNotificationExportTemplate) return
+    const previousDefaults = previousDefaultsRef.current
+    previousDefaultsRef.current = {
+      email: defaultNotificationEmail,
+      exportTemplate: defaultNotificationExportTemplate,
+    }
     setSlots((prev) =>
-      prev.map((slot) =>
-        slot.notificationEmail && slot.notificationExportTemplate
-          ? slot
-          : {
-              ...slot,
-              notificationEmail: slot.notificationEmail || defaultNotificationEmail,
-              notificationExportTemplate:
-                slot.notificationExportTemplate || defaultNotificationExportTemplate,
-            },
-      ),
+      prev.map((slot) => {
+        const shouldUseDefaultEmail =
+          !slot.notificationEmail || slot.notificationEmail === previousDefaults.email
+        const shouldUseDefaultExportTemplate =
+          !slot.notificationExportTemplate ||
+          slot.notificationExportTemplate === previousDefaults.exportTemplate
+
+        return {
+          ...slot,
+          notificationEmail: shouldUseDefaultEmail
+            ? defaultNotificationEmail
+            : slot.notificationEmail,
+          notificationExportTemplate: shouldUseDefaultExportTemplate
+            ? defaultNotificationExportTemplate
+            : slot.notificationExportTemplate,
+        }
+      }),
     )
   }, [defaultNotificationEmail, defaultNotificationExportTemplate])
 
@@ -215,6 +235,11 @@ export function ImportQueue() {
         }
         if (notificationEmail) {
           setSavedDefaultEmail(rememberExportEmailRecipient(notificationEmail, userEmail)[0] ?? "")
+        }
+        if (notificationExportTemplate) {
+          setSavedDefaultExportTemplate(
+            rememberImportNotificationExportTemplate(notificationExportTemplate, userEmail),
+          )
         }
         patchSlot(slot.id, { status: "done", packageId: result.id })
       } catch (err) {

@@ -2,8 +2,10 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import {
   addExportEmailRecipient,
+  loadImportNotificationExportTemplate,
   loadExportEmailRecipients,
   normalizeExportEmailRecipient,
+  rememberImportNotificationExportTemplate,
   rememberExportEmailRecipient,
 } from "./email-recipients"
 
@@ -56,5 +58,13 @@ describe("export email recipients", () => {
 
     expect(loadExportEmailRecipients("user@example.com")).toEqual(["ops@example.com"])
     expect(loadExportEmailRecipients("other@example.com")).toEqual(["sales@example.com"])
+  })
+
+  it("stores import notification export template separately per user email", () => {
+    rememberImportNotificationExportTemplate("sad_xml", "user@example.com")
+    rememberImportNotificationExportTemplate("standard_json", "other@example.com")
+
+    expect(loadImportNotificationExportTemplate("user@example.com")).toBe("sad_xml")
+    expect(loadImportNotificationExportTemplate("other@example.com")).toBe("standard_json")
   })
 })
