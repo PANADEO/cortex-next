@@ -9,6 +9,7 @@ import {
   useIdpNavSections,
   useIntrastatNavSections,
   useInvoiceSupervisorNavSections,
+  useStorePitNavSections,
 } from "@/lib/nav"
 import { useSidebarStore } from "@/lib/stores/sidebar-store"
 import { resolveRequiredTileId, TILES } from "@/lib/tiles"
@@ -46,6 +47,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const idpBasicNavSections = useIdpBasicNavSections()
   const intrastatNavSections = useIntrastatNavSections()
   const invoiceSupervisorNavSections = useInvoiceSupervisorNavSections()
+  const storePitNavSections = useStorePitNavSections()
   const isAiToolPage = tile?.href.startsWith("/ai-tools/") ?? false
   const navSections = isAiToolPage
     ? []
@@ -55,7 +57,9 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         ? intrastatNavSections
         : tileId === "invoice-supervisor"
           ? invoiceSupervisorNavSections
-          : idpNavSections
+          : tileId === "store-pit"
+            ? storePitNavSections
+            : idpNavSections
 
   const brandIcon = (
     <Link

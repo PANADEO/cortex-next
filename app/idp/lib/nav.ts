@@ -3,16 +3,23 @@ import type { FeatureFlagsResponse } from "@cortex/types"
 import type { TileMenuItem, TileMenuSection } from "@cortex/ui"
 import {
   BarChart3,
+  Calculator,
   FileDown,
+  Files,
   FileSpreadsheet,
   FileText,
+  GitMerge,
   History,
   Inbox,
+  LayoutDashboard,
+  ListChecks,
   Package,
   Receipt,
   ScrollText,
   Settings,
+  SlidersHorizontal,
   Sparkles,
+  Table2,
   TableProperties,
   Upload,
   Users,
@@ -87,6 +94,48 @@ export const IDP_BASIC_NAV: TileMenuSection[] = [
         href: "/idp-basic/settings",
       },
     ],
+  },
+]
+
+export const STORE_PIT_NAV: TileMenuSection[] = [
+  {
+    id: "pipeline",
+    label: "Pipeline",
+    items: [
+      { id: "dashboard", label: "Overview", icon: LayoutDashboard, href: "/store-pit/dashboard" },
+      { id: "source-files", label: "Source files", icon: Files, href: "/store-pit/source-files" },
+      { id: "extraction", label: "Extraction", icon: Table2, href: "/store-pit/extraction" },
+      {
+        id: "reconciliation",
+        label: "Reconciliation",
+        icon: ListChecks,
+        href: "/store-pit/reconciliation",
+      },
+      { id: "netting", label: "Netting", icon: GitMerge, href: "/store-pit/netting" },
+      { id: "re-rating", label: "Re-rating", icon: Calculator, href: "/store-pit/re-rating" },
+    ],
+  },
+  {
+    id: "deliverables",
+    label: "Deliverables",
+    items: [{ id: "clients", label: "Clients", icon: Users, href: "/store-pit/clients" }],
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    items: [
+      {
+        id: "pricing",
+        label: "Pricing rules",
+        icon: SlidersHorizontal,
+        href: "/store-pit/pricing",
+      },
+    ],
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    items: [{ id: "audit-log", label: "Audit log", icon: History, href: "/store-pit/audit-log" }],
   },
 ]
 
@@ -209,6 +258,10 @@ export function useIdpNavSections(): TileMenuSection[] {
 
 export function useIdpBasicNavSections(): TileMenuSection[] {
   return IDP_BASIC_NAV
+}
+
+export function useStorePitNavSections(): TileMenuSection[] {
+  return STORE_PIT_NAV
 }
 
 export function useIntrastatNavSections(): TileMenuSection[] {

@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react"
-import { FileSpreadsheet, FileText, Receipt, ScanText } from "lucide-react"
+import { FileSpreadsheet, FileText, Receipt, ScanText, Users, Workflow } from "lucide-react"
 import { canAccessAiTool, isAiToolId } from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
@@ -115,6 +115,28 @@ export const TILES: ReadonlyArray<Tile> = [
     categoryFunctional: "misc",
     categoryDepartment: ["operations"],
     versionEndpoint: "/idp-basic/version",
+  },
+  {
+    id: "sp-console",
+    label: "Store-Pit Re-Rating",
+    description: "Carrier invoice re-rating engine - GLS DE line detail to per-client settlement",
+    href: "/store-pit/dashboard",
+    icon: Workflow,
+    iconBg: "bg-cyan-200 dark:bg-cyan-900/40",
+    iconFg: "text-cyan-700 dark:text-cyan-300",
+    categoryFunctional: "agents",
+    categoryDepartment: ["finance", "operations"],
+  },
+  {
+    id: "sp-client",
+    label: "Store-Pit Client Zone",
+    description: "Brand-facing view - each client sees its parcels and the amount to settle",
+    href: "/store-pit/clients",
+    icon: Users,
+    iconBg: "bg-indigo-200 dark:bg-indigo-900/40",
+    iconFg: "text-indigo-700 dark:text-indigo-300",
+    categoryFunctional: "misc",
+    categoryDepartment: ["finance"],
   },
   {
     id: "intrastat",
