@@ -24,6 +24,7 @@ import type {
   ImportMultiplePackagesBody,
   ImportPackageBody,
   ImportPackageResponse,
+  ImapConnectionTestResponse,
   PackageActionsResponse,
   PackageDetailsResponse,
   PackageRuleAttachment,
@@ -124,6 +125,10 @@ export const endpoints = {
       apiClient.put<FeatureFlagSettingsResponse>("/config/feature-flags", { jsonBody: body }),
     reloadFeatureFlagSettingsFromEnv: () =>
       apiClient.post<FeatureFlagSettingsResponse>("/config/feature-flags/reload-from-env"),
+    testImapConnection: (body: UpdateFeatureFlagSettingsRequest) =>
+      apiClient.post<ImapConnectionTestResponse>("/config/feature-flags/test-imap", {
+        jsonBody: body,
+      }),
   },
   packages: {
     list: (query: GetPackagesQuery = {}) =>

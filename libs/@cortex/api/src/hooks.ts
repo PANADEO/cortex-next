@@ -115,6 +115,13 @@ export function useReloadFeatureFlagSettingsFromEnv() {
   })
 }
 
+export function useTestImapConnection() {
+  return useMutation({
+    mutationFn: (body: UpdateFeatureFlagSettingsRequest) =>
+      endpoints.config.testImapConnection(body),
+  })
+}
+
 export function useDashboardStats() {
   return useQuery({
     queryKey: queryKeys.dashboardStats(),

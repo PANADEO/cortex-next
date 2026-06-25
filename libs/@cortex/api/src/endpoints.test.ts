@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
-import { buildImportForm } from "./endpoints"
+import { buildImportForm, endpoints } from "./endpoints"
 
 describe("buildImportForm", () => {
   it("adds notification fields only when provided", () => {
@@ -18,5 +18,67 @@ describe("buildImportForm", () => {
     expect(withEmail.get("notification_export_template")).toBe("sad_xml")
     expect(withoutEmail.has("notification_email")).toBe(false)
     expect(withoutEmail.has("notification_export_template")).toBe(false)
+  })
+})
+
+describe("config endpoints", () => {
+  it("posts IMAP test payload", async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ ok: true, message: "ok" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    )
+    vi.stubGlobal("fetch", fetchMock)
+
+    await endpoints.config.testImapConnection({
+      enable_verification_process: true,
+      package_custom_statuses: false,
+      enable_user_notes: false,
+      enable_po_number: false,
+      enable_customs_code: false,
+      enable_additional_ai_context: false,
+      enable_atr_processing: false,
+      enable_document_preview: true,
+      enable_classification: false,
+      enable_imap_import: true,
+      enable_import_email_notifications: true,
+      hide_menu_items: [],
+      custom_statuses: [],
+      export_templates: [],
+      sad_context_defaults: "",
+      smtp_host: null,
+      smtp_port: 587,
+      smtp_username: null,
+      smtp_from_email: null,
+      smtp_from_name: "Cortex IDP",
+      smtp_use_tls: true,
+      smtp_use_ssl: false,
+      smtp_timeout_seconds: 10,
+      smtp_password_configured: false,
+      smtp_password: null,
+      imap_host: "imap.example.com",
+      imap_port: 993,
+      imap_secure: true,
+      imap_user: "mailbox@example.com",
+      imap_mailbox: "INBOX",
+      imap_processed_mailbox: null,
+      imap_drafts_mailbox: null,
+      imap_poll_limit: 25,
+      imap_password_configured: false,
+      imap_password: "secret",
+      gemini_model: "gemini-pro",
+      gemini_fast_model: null,
+      gemini_temperature: null,
+      gemini_fast_temperature: null,
+      gemini_thinking_budget: null,
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/config/feature-flags/test-imap",
+      expect.objectContaining({ method: "POST" }),
+    )
   })
 })

@@ -38,11 +38,13 @@ export interface FeatureFlagSettingsResponse {
   sad_context_defaults: string
   smtp_host: string | null
   smtp_port: number
+  smtp_username: string | null
   smtp_from_email: string | null
   smtp_from_name: string
   smtp_use_tls: boolean
   smtp_use_ssl: boolean
   smtp_timeout_seconds: number
+  smtp_password_configured: boolean
   imap_host: string | null
   imap_port: number
   imap_secure: boolean
@@ -60,5 +62,11 @@ export interface FeatureFlagSettingsResponse {
 }
 
 export type UpdateFeatureFlagSettingsRequest = FeatureFlagSettingsResponse & {
+  smtp_password?: string | null
   imap_password?: string | null
+}
+
+export interface ImapConnectionTestResponse {
+  ok: boolean
+  message: string
 }

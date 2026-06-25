@@ -5,6 +5,7 @@ import {
   toastApiError,
   useFeatureFlagSettings,
   useReloadFeatureFlagSettingsFromEnv,
+  useTestImapConnection,
   useUpdateFeatureFlagSettings,
 } from "@cortex/api"
 import type { FeatureFlagSettingsResponse, UpdateFeatureFlagSettingsRequest } from "@cortex/types"
@@ -18,7 +19,7 @@ import {
   Switch,
   Textarea,
 } from "@cortex/ui"
-import { Download, Loader2, Save } from "lucide-react"
+import { Download, Loader2, Save, Wifi } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
@@ -116,11 +117,13 @@ function emptySettings(): FeatureFlagSettingsResponse {
     sad_context_defaults: "",
     smtp_host: null,
     smtp_port: 587,
+    smtp_username: null,
     smtp_from_email: null,
     smtp_from_name: "Cortex IDP",
     smtp_use_tls: true,
     smtp_use_ssl: false,
     smtp_timeout_seconds: 10,
+    smtp_password_configured: false,
     imap_host: null,
     imap_port: 993,
     imap_secure: true,
@@ -168,6 +171,7 @@ export default function ConfigurationPage() {
   const query = useFeatureFlagSettings()
   const update = useUpdateFeatureFlagSettings()
   const reload = useReloadFeatureFlagSettingsFromEnv()
+  const testImap = useTestImapConnection()
   const [form, setForm] = useState<FeatureFlagSettingsResponse>(() => emptySettings())
   const [hiddenMenuItemsText, setHiddenMenuItemsText] = useState("")
   const [customStatusesText, setCustomStatusesText] = useState("")
@@ -175,6 +179,7 @@ export default function ConfigurationPage() {
   const [geminiTemperatureText, setGeminiTemperatureText] = useState("")
   const [geminiFastTemperatureText, setGeminiFastTemperatureText] = useState("")
   const [geminiThinkingBudgetText, setGeminiThinkingBudgetText] = useState("")
+  const [smtpPassword, setSmtpPassword] = useState("")
   const [imapPassword, setImapPassword] = useState("")
 
   useEffect(() => {
@@ -186,12 +191,14 @@ export default function ConfigurationPage() {
     setGeminiTemperatureText(numberText(query.data.gemini_temperature))
     setGeminiFastTemperatureText(numberText(query.data.gemini_fast_temperature))
     setGeminiThinkingBudgetText(numberText(query.data.gemini_thinking_budget))
+    setSmtpPassword("")
     setImapPassword("")
   }, [query.data])
 
   const payload = useMemo<UpdateFeatureFlagSettingsRequest>(
     () => ({
       ...form,
+      smtp_password: smtpPassword || null,
       imap_password: imapPassword || null,
       hide_menu_items: parseCsvList(hiddenMenuItemsText),
       custom_statuses: parseCsvList(customStatusesText),
@@ -211,10 +218,11 @@ export default function ConfigurationPage() {
       geminiThinkingBudgetText,
       hiddenMenuItemsText,
       imapPassword,
+      smtpPassword,
     ],
   )
 
-  const isBusy = update.isPending || reload.isPending
+  const isBusy = update.isPending || reload.isPending || testImap.isPending
   const canSave = !isBusy && Boolean(form.gemini_model.trim())
 
   const onSave = () => {
@@ -227,6 +235,7 @@ export default function ConfigurationPage() {
         setGeminiTemperatureText(numberText(settings.gemini_temperature))
         setGeminiFastTemperatureText(numberText(settings.gemini_fast_temperature))
         setGeminiThinkingBudgetText(numberText(settings.gemini_thinking_budget))
+        setSmtpPassword("")
         setImapPassword("")
         toast.success("Configuration saved.")
       },
@@ -244,8 +253,22 @@ export default function ConfigurationPage() {
         setGeminiTemperatureText(numberText(settings.gemini_temperature))
         setGeminiFastTemperatureText(numberText(settings.gemini_fast_temperature))
         setGeminiThinkingBudgetText(numberText(settings.gemini_thinking_budget))
+        setSmtpPassword("")
         setImapPassword("")
         toast.success("Configuration loaded from env.")
+      },
+      onError: (err) => toastApiError(err),
+    })
+  }
+
+  const onTestImapConnection = () => {
+    testImap.mutate(payload, {
+      onSuccess: (result) => {
+        if (result.ok) {
+          toast.success(result.message)
+        } else {
+          toast.error(result.message)
+        }
       },
       onError: (err) => toastApiError(err),
     })
@@ -584,10 +607,60 @@ export default function ConfigurationPage() {
                 />
               </label>
             </div>
+            <div className="grid gap-3 lg:grid-cols-2">
+              <div>
+                <Label htmlFor="smtp-username">SMTP user</Label>
+                <Input
+                  id="smtp-username"
+                  value={form.smtp_username ?? ""}
+                  disabled={isBusy}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      smtp_username: event.target.value.trim() || null,
+                    }))
+                  }
+                  placeholder="mailbox@example.com"
+                  className="mt-1.5"
+                  autoComplete="username"
+                />
+              </div>
+              <div>
+                <Label htmlFor="smtp-password">
+                  SMTP password{form.smtp_password_configured ? " (configured)" : ""}
+                </Label>
+                <Input
+                  id="smtp-password"
+                  type="password"
+                  value={smtpPassword}
+                  disabled={isBusy}
+                  onChange={(event) => setSmtpPassword(event.target.value)}
+                  placeholder={form.smtp_password_configured ? "Leave blank to keep" : ""}
+                  className="mt-1.5"
+                  autoComplete="new-password"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2 rounded-lg border border-border bg-background p-3 lg:col-span-2">
-            <h3 className="text-sm font-semibold">IMAP</h3>
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold">IMAP</h3>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={onTestImapConnection}
+                disabled={isBusy}
+              >
+                {testImap.isPending ? (
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                ) : (
+                  <Wifi className="mr-1.5 h-4 w-4" />
+                )}
+                Test connection
+              </Button>
+            </div>
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_110px_120px]">
               <div>
                 <Label htmlFor="imap-host">IMAP host</Label>

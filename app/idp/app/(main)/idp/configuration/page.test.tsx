@@ -34,11 +34,13 @@ function settings(overrides: Record<string, unknown> = {}) {
     sad_context_defaults: "",
     smtp_host: "smtp.gmail.com",
     smtp_port: 587,
+    smtp_username: "smtp-user@example.com",
     smtp_from_email: "idp@example.com",
     smtp_from_name: "Cortex IDP",
     smtp_use_tls: true,
     smtp_use_ssl: false,
     smtp_timeout_seconds: 10,
+    smtp_password_configured: true,
     imap_host: "imap.gmail.com",
     imap_port: 993,
     imap_secure: true,
@@ -105,6 +107,12 @@ describe("ConfigurationPage", () => {
     fireEvent.change(screen.getByLabelText("SAD context defaults"), {
       target: { value: '{"header":{"decl_customs_off_no":"PL123456"}}' },
     })
+    fireEvent.change(screen.getByLabelText("SMTP user"), {
+      target: { value: "new-smtp-user@example.com" },
+    })
+    fireEvent.change(screen.getByLabelText("SMTP password (configured)"), {
+      target: { value: "new-smtp-secret" },
+    })
     fireEvent.change(screen.getByLabelText("Model"), {
       target: { value: "gemini-custom" },
     })
@@ -149,6 +157,8 @@ describe("ConfigurationPage", () => {
       gemini_temperature: 0.4,
       gemini_fast_temperature: null,
       gemini_thinking_budget: -1,
+      smtp_username: "new-smtp-user@example.com",
+      smtp_password: "new-smtp-secret",
       enable_imap_import: true,
       enable_import_email_notifications: false,
       imap_host: "imap.example.com",
@@ -185,5 +195,49 @@ describe("ConfigurationPage", () => {
       expect(input.value).toBe("rules")
     })
     expect((screen.getByLabelText("Model") as HTMLInputElement).value).toBe("env-model")
+  })
+
+  it("tests IMAP connection with current form values", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input.toString()
+      if (init?.method === "POST" && url.includes("/test-imap")) {
+        return Promise.resolve(jsonResponse({ ok: true, message: "IMAP connection successful." }))
+      }
+      if (url.includes("/config/feature-flags")) {
+        return Promise.resolve(jsonResponse(settings()))
+      }
+      return Promise.resolve(jsonResponse({}))
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    render(
+      <Wrapper>
+        <ConfigurationPage />
+      </Wrapper>,
+    )
+
+    await screen.findByText("Classification")
+    fireEvent.change(screen.getByLabelText("IMAP host"), {
+      target: { value: "imap.changed.example.com" },
+    })
+    fireEvent.change(screen.getByLabelText("IMAP password (configured)"), {
+      target: { value: "typed-secret" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: /test connection/i }))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/config/feature-flags/test-imap",
+        expect.objectContaining({ method: "POST" }),
+      )
+    })
+
+    const postCall = fetchMock.mock.calls.find(
+      ([url, init]) => String(url).includes("/test-imap") && init?.method === "POST",
+    )
+    expect(JSON.parse(String(postCall?.[1]?.body))).toMatchObject({
+      imap_host: "imap.changed.example.com",
+      imap_password: "typed-secret",
+    })
   })
 })
