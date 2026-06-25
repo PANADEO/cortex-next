@@ -15,6 +15,8 @@ const STATIC_IDP_PATHS = new Set([
   "/config",
   "/config/feature-flags",
   "/config/feature-flags/reload-from-env",
+  "/config/feature-flags/test-imap",
+  "/config/feature-flags/test-smtp",
   "/config/custom-statuses",
 ])
 
