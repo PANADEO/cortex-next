@@ -122,6 +122,13 @@ export function useTestImapConnection() {
   })
 }
 
+export function useTestSmtpConnection() {
+  return useMutation({
+    mutationFn: (body: UpdateFeatureFlagSettingsRequest) =>
+      endpoints.config.testSmtpConnection(body),
+  })
+}
+
 export function useDashboardStats() {
   return useQuery({
     queryKey: queryKeys.dashboardStats(),

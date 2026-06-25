@@ -6,6 +6,7 @@ import {
   useFeatureFlagSettings,
   useReloadFeatureFlagSettingsFromEnv,
   useTestImapConnection,
+  useTestSmtpConnection,
   useUpdateFeatureFlagSettings,
 } from "@cortex/api"
 import type { FeatureFlagSettingsResponse, UpdateFeatureFlagSettingsRequest } from "@cortex/types"
@@ -172,6 +173,7 @@ export default function ConfigurationPage() {
   const update = useUpdateFeatureFlagSettings()
   const reload = useReloadFeatureFlagSettingsFromEnv()
   const testImap = useTestImapConnection()
+  const testSmtp = useTestSmtpConnection()
   const [form, setForm] = useState<FeatureFlagSettingsResponse>(() => emptySettings())
   const [hiddenMenuItemsText, setHiddenMenuItemsText] = useState("")
   const [customStatusesText, setCustomStatusesText] = useState("")
@@ -222,7 +224,8 @@ export default function ConfigurationPage() {
     ],
   )
 
-  const isBusy = update.isPending || reload.isPending || testImap.isPending
+  const isBusy =
+    update.isPending || reload.isPending || testImap.isPending || testSmtp.isPending
   const canSave = !isBusy && Boolean(form.gemini_model.trim())
 
   const onSave = () => {
@@ -263,6 +266,19 @@ export default function ConfigurationPage() {
 
   const onTestImapConnection = () => {
     testImap.mutate(payload, {
+      onSuccess: (result) => {
+        if (result.ok) {
+          toast.success(result.message)
+        } else {
+          toast.error(result.message)
+        }
+      },
+      onError: (err) => toastApiError(err),
+    })
+  }
+
+  const onTestSmtpConnection = () => {
+    testSmtp.mutate(payload, {
       onSuccess: (result) => {
         if (result.ok) {
           toast.success(result.message)
@@ -499,7 +515,23 @@ export default function ConfigurationPage() {
           </div>
 
           <div className="space-y-2 rounded-lg border border-border bg-background p-3 lg:col-span-2">
-            <h3 className="text-sm font-semibold">SMTP</h3>
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold">SMTP</h3>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={onTestSmtpConnection}
+                disabled={isBusy}
+              >
+                {testSmtp.isPending ? (
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                ) : (
+                  <Wifi className="mr-1.5 h-4 w-4" />
+                )}
+                Test SMTP
+              </Button>
+            </div>
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_110px_120px]">
               <div>
                 <Label htmlFor="smtp-host">SMTP host</Label>

@@ -240,4 +240,48 @@ describe("ConfigurationPage", () => {
       imap_password: "typed-secret",
     })
   })
+
+  it("tests SMTP connection with current form values", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input.toString()
+      if (init?.method === "POST" && url.includes("/test-smtp")) {
+        return Promise.resolve(jsonResponse({ ok: true, message: "SMTP connection successful." }))
+      }
+      if (url.includes("/config/feature-flags")) {
+        return Promise.resolve(jsonResponse(settings()))
+      }
+      return Promise.resolve(jsonResponse({}))
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    render(
+      <Wrapper>
+        <ConfigurationPage />
+      </Wrapper>,
+    )
+
+    await screen.findByText("Classification")
+    fireEvent.change(screen.getByLabelText("SMTP host"), {
+      target: { value: "smtp.changed.example.com" },
+    })
+    fireEvent.change(screen.getByLabelText("SMTP password (configured)"), {
+      target: { value: "typed-smtp-secret" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: /test smtp/i }))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/config/feature-flags/test-smtp",
+        expect.objectContaining({ method: "POST" }),
+      )
+    })
+
+    const postCall = fetchMock.mock.calls.find(
+      ([url, init]) => String(url).includes("/test-smtp") && init?.method === "POST",
+    )
+    expect(JSON.parse(String(postCall?.[1]?.body))).toMatchObject({
+      smtp_host: "smtp.changed.example.com",
+      smtp_password: "typed-smtp-secret",
+    })
+  })
 })

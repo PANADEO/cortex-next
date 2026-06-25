@@ -24,6 +24,7 @@ const FORBIDDEN_HANDLER_EXEMPT_PATHS: ReadonlySet<string> = new Set([
   "/api/me/access",
   "/config/feature-flags",
   "/config/feature-flags/test-imap",
+  "/config/feature-flags/test-smtp",
 ])
 
 function shouldNotifyForbidden(path: string): boolean {

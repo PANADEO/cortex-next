@@ -70,3 +70,8 @@ export interface ImapConnectionTestResponse {
   ok: boolean
   message: string
 }
+
+export interface SmtpConnectionTestResponse {
+  ok: boolean
+  message: string
+}
