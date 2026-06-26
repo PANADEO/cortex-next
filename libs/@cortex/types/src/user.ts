@@ -7,6 +7,7 @@ export interface User {
 export interface UserInfoResponse {
   email: string
   has_access: boolean
+  scopes?: string[]
 }
 
 export const THEME_MODE = ["system", "light", "dark"] as const

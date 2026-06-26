@@ -23,6 +23,10 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@cortex/ui"
 import { cn, emailsMatch, useFeatureFlag } from "@cortex/utils"
 import {
@@ -50,6 +54,8 @@ interface InvoiceTabItem {
   ordinal: number
 }
 
+const READ_ONLY_ACTION_HELP = "This action is available for the assignee or IDP admin."
+
 export default function VerifyWorkspacePage() {
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ""
@@ -69,6 +75,7 @@ export default function VerifyWorkspacePage() {
   const isActiveVerification = pkg?.verification_state === "in_progress"
   const canEdit = isActiveVerification && emailsMatch(me.data?.email, pkg?.assignee)
   const canUnlock = transitions.data?.transitions.includes("unlock_verification") ?? false
+  const showReadOnlyHelp = Boolean(pkg && isActiveVerification && !canEdit && !canUnlock)
 
   const orders = useMemo(
     () => toQuery.data?.transport_orders ?? toQuery.data?.verified_transport_orders ?? [],
@@ -164,7 +171,24 @@ export default function VerifyWorkspacePage() {
             )}
             {documentPreviewVisible ? "Hide preview" : "Show preview"}
           </Button>
-          {pkg && !canEdit ? (
+          {pkg && !canEdit && showReadOnlyHelp ? (
+            <TooltipProvider delayDuration={250}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    className="flex items-center gap-1 text-xs text-muted-foreground"
+                    title={READ_ONLY_ACTION_HELP}
+                  >
+                    <Lock className="h-3.5 w-3.5" />
+                    {isActiveVerification
+                      ? `Only ${pkg.assignee ?? "assignee"} can edit`
+                      : "Start verification to edit"}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{READ_ONLY_ACTION_HELP}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : pkg && !canEdit ? (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Lock className="h-3.5 w-3.5" />
               {isActiveVerification

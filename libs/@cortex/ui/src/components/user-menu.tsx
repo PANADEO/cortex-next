@@ -2,6 +2,7 @@
 
 import { LogOut, User as UserIcon } from "lucide-react"
 import { Avatar, AvatarFallback } from "./ui/avatar"
+import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ import {
 export interface UserMenuUser {
   email: string
   name?: string | null
+  scopes?: readonly string[] | null
 }
 
 interface UserMenuProps {
@@ -28,6 +30,8 @@ function initials(name: string | null | undefined, email: string | null | undefi
 }
 
 export function UserMenu({ user }: UserMenuProps) {
+  const isIdpAdmin = user?.scopes?.includes("package_unlock") ?? false
+
   const handleLogout = () => {
     window.location.assign("/logout")
   }
@@ -47,7 +51,14 @@ export function UserMenu({ user }: UserMenuProps) {
         <DropdownMenuLabel className="flex items-center gap-2">
           <UserIcon className="h-4 w-4" />
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{user?.name ?? user?.email ?? "—"}</p>
+            <div className="flex min-w-0 items-center gap-2">
+              <p className="truncate text-sm font-medium">{user?.name ?? user?.email ?? "—"}</p>
+              {isIdpAdmin ? (
+                <Badge variant="secondary" className="shrink-0 px-1.5 py-0 text-[10px]">
+                  IDP admin
+                </Badge>
+              ) : null}
+            </div>
             <p className="truncate text-xs text-muted-foreground">{user?.email ?? ""}</p>
           </div>
         </DropdownMenuLabel>

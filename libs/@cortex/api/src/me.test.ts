@@ -44,6 +44,37 @@ describe("useMe", () => {
     expect(result.current.data).toEqual({ email: "u@x.com", has_access: true })
   })
 
+  it("accepts optional user scopes", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              email: "admin@x.com",
+              has_access: true,
+              scopes: ["package_unlock"],
+            }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            },
+          ),
+        ),
+      ),
+    )
+    const { useMe } = await import("./me")
+    const { result } = renderHook(() => useMe(), { wrapper: wrapper(freshClient()) })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+    expect(result.current.data).toEqual({
+      email: "admin@x.com",
+      has_access: true,
+      scopes: ["package_unlock"],
+    })
+  })
+
   it("propagates has_access:false through the response", async () => {
     vi.stubGlobal(
       "fetch",

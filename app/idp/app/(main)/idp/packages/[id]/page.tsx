@@ -48,6 +48,10 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@cortex/ui"
 import { emailsMatch, formatAbsolute, formatFileSizeMb, formatMoney } from "@cortex/utils"
 import {
@@ -69,6 +73,8 @@ const TAB_PANEL_CLASS =
 
 const TAB_PANEL_CLASS_SOURCE =
   "mt-2 data-[state=active]:md:flex md:min-h-0 md:flex-1 md:flex-col md:overflow-hidden"
+
+const READ_ONLY_ACTION_HELP = "This action is available for the assignee or IDP admin."
 
 const TRANSITION_LABELS: Record<PackageTransition, string> = {
   start_verification: "Start verification",
@@ -108,6 +114,9 @@ export default function PackageDetailPage() {
   const pkg = detail.data
   const isActiveVerification = pkg?.verification_state === "in_progress"
   const canEdit = isActiveVerification && emailsMatch(me.data?.email, pkg?.assignee)
+  const showReadOnlyHelp =
+    Boolean(pkg && isActiveVerification && !canEdit) &&
+    (transitions.data?.transitions.length ?? 0) === 0
 
   const aiCounts = useAiNotificationCounts(id)
   const markAiRead = useAiNotificationsReadStore((s) => s.markRead)
@@ -203,15 +212,35 @@ export default function PackageDetailPage() {
         {transitions.isLoading ? (
           <Skeleton className={layout === "row" ? "h-8 w-32" : "h-9 w-full"} />
         ) : transitions.data?.transitions.length === 0 ? (
-          <span
-            className={
-              layout === "row"
-                ? "px-2 text-xs text-muted-foreground"
-                : "text-xs text-muted-foreground"
-            }
-          >
-            No transitions available.
-          </span>
+          showReadOnlyHelp ? (
+            <TooltipProvider delayDuration={250}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    className={
+                      layout === "row"
+                        ? "px-2 text-xs text-muted-foreground"
+                        : "text-xs text-muted-foreground"
+                    }
+                    title={READ_ONLY_ACTION_HELP}
+                  >
+                    Read-only verification.
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{READ_ONLY_ACTION_HELP}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <span
+              className={
+                layout === "row"
+                  ? "px-2 text-xs text-muted-foreground"
+                  : "text-xs text-muted-foreground"
+              }
+            >
+              No transitions available.
+            </span>
+          )
         ) : (
           transitions.data?.transitions.map((t) => {
             const isPrimary = t === "finish_verification" || t === "start_verification"

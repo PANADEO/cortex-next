@@ -175,13 +175,16 @@ function authEmail(request: Request): string | null {
   return request.headers.get("X-Auth-Request-Email")
 }
 
-function hasMockScope(request: Request, scope: string): boolean {
-  const raw =
-    request.headers.get("X-Auth-Request-Scopes") ?? process.env.NEXT_PUBLIC_DEV_USER_SCOPES ?? ""
+export function mockScopesFromEnv(raw = process.env.NEXT_PUBLIC_DEV_USER_SCOPES ?? ""): string[] {
   return raw
     .split(",")
     .map((s) => s.trim())
-    .includes(scope)
+    .filter(Boolean)
+}
+
+function hasMockScope(request: Request, scope: string): boolean {
+  const raw = request.headers.get("X-Auth-Request-Scopes") ?? undefined
+  return mockScopesFromEnv(raw).includes(scope)
 }
 
 function applyTransition(pkg: PackageReadModel, transition: string, request: Request) {
@@ -309,7 +312,7 @@ export const handlers = [
     const url = new URL(request.url)
     const hasAccessFlag = url.searchParams.get("has_access")
     const has_access = hasAccessFlag === "false" ? false : true
-    return HttpResponse.json({ email, has_access })
+    return HttpResponse.json({ email, has_access, scopes: mockScopesFromEnv() })
   }),
 
   http.get("/api/me/access", ({ request }) => {

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import type { Invoice, PackageDetailsResponse, PackageTransportOrdersResponse } from "@cortex/types"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import "@testing-library/jest-dom/vitest"
 import { cleanup, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import type { ReactNode } from "react"
@@ -279,5 +280,34 @@ describe("VerifyWorkspacePage — document preview toggle", () => {
         expect.objectContaining({ method: "POST" }),
       )
     })
+  })
+
+  it("explains read-only verification when user is neither assignee nor IDP admin", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetchMock({
+        "/user/me": { body: { email: "viewer@cortex.local", has_access: true } },
+        "/packages/test-1": {
+          body: { ...makePackage(), assignee: "dev@cortex.local" },
+        },
+        "/packages/test-1/transitions": { body: { transitions: [] } },
+        "/packages/test-1/transport-orders": { body: makeTransportOrders() },
+        "/packages/test-1/source-files": { body: [] },
+      }),
+    )
+
+    render(
+      <Wrapper client={freshClient()}>
+        <VerifyWorkspacePage />
+      </Wrapper>,
+    )
+
+    const readOnly = await screen.findByText(/only dev@cortex\.local can edit/i)
+    expect(screen.queryByRole("button", { name: /unlock package/i })).toBeNull()
+
+    expect(readOnly).toHaveAttribute(
+      "title",
+      "This action is available for the assignee or IDP admin.",
+    )
   })
 })
