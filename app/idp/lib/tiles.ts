@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react"
-import { FileText, ScanText } from "lucide-react"
+import { FileSpreadsheet, FileText, ScanText } from "lucide-react"
 
 export type TileCategoryFunctional =
   | "content-generation"
@@ -72,5 +72,17 @@ export const TILES: ReadonlyArray<Tile> = [
     categoryFunctional: "misc",
     categoryDepartment: ["operations"],
     versionEndpoint: "/idp-basic/version",
+  },
+  {
+    id: "intrastat",
+    label: "Intrastat",
+    description: "Przygotowanie importowych Exceli WNT/WDT z faktur",
+    href: "/intrastat/dashboard",
+    icon: FileSpreadsheet,
+    iconBg: "bg-emerald-200 dark:bg-emerald-900/40",
+    iconFg: "text-emerald-700 dark:text-emerald-300",
+    categoryFunctional: "misc",
+    categoryDepartment: ["operations", "finance"],
+    versionEndpoint: "/intrastat/version",
   },
 ]

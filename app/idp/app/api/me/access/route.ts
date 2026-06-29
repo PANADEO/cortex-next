@@ -19,7 +19,7 @@ interface AccessResult {
 const CACHE_TTL_MS = 30_000
 const CACHE_MAX_ENTRIES = 10_000
 const REQUEST_TIMEOUT_MS = 5_000
-const SHELL_APP_CODES = ["idp", "idp-basic"] as const
+const SHELL_APP_CODES = ["idp", "idp-basic", "intrastat"] as const
 
 const cache = new Map<string, CacheEntry>()
 

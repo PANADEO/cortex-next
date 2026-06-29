@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { filterNavSections, IDP_NAV, parseHiddenMenuItems } from "./nav"
+import { filterNavSections, IDP_NAV, INTRASTAT_NAV, parseHiddenMenuItems } from "./nav"
 
 function itemIds(sections: ReturnType<typeof filterNavSections>): string[] {
   return sections.flatMap((section) => section.items.map((item) => item.id))
@@ -44,5 +44,17 @@ describe("filterNavSections", () => {
     expect(itemIds(sections)).not.toContain("export")
     expect(itemIds(sections)).not.toContain("rules")
     expect(sections.some((section) => section.id === "settings")).toBe(false)
+  })
+})
+
+describe("INTRASTAT_NAV", () => {
+  it("includes the v1 Intrastat pages", () => {
+    expect(itemIds(INTRASTAT_NAV)).toEqual([
+      "dashboard",
+      "batches",
+      "review",
+      "resources",
+      "settings",
+    ])
   })
 })

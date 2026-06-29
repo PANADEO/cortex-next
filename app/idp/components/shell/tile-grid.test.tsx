@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react"
 import "@testing-library/jest-dom/vitest"
+import { cleanup, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 interface AuthorizedMock {
@@ -50,6 +50,21 @@ describe("TileGrid", () => {
 
     expect(screen.getByText("IDP Basic")).not.toBeNull()
     expect(screen.queryByText("IDP")).toBeNull()
+  })
+
+  it("renders the Intrastat tile when authorized", () => {
+    authorizedMock = {
+      allowed: true,
+      apps: ["intrastat"],
+      email: "u@x.com",
+      isLoading: false,
+      isError: false,
+    }
+
+    render(<TileGrid />)
+
+    expect(screen.getByText("Intrastat")).not.toBeNull()
+    expect(screen.queryByText("IDP Basic")).toBeNull()
   })
 
   it("renders the empty state when no authorized app tile is available", () => {

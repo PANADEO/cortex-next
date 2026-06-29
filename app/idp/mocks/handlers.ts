@@ -320,7 +320,11 @@ export const handlers = [
     const url = new URL(request.url)
     const allowedFlag = url.searchParams.get("allowed")
     const allowed = allowedFlag === "false" ? false : true
-    return HttpResponse.json({ allowed, apps: allowed ? ["idp", "idp-basic"] : [], email })
+    return HttpResponse.json({
+      allowed,
+      apps: allowed ? ["idp", "idp-basic", "intrastat"] : [],
+      email,
+    })
   }),
 
   http.get("/idp/version", () => HttpResponse.json({ version: "1.13.0" })),

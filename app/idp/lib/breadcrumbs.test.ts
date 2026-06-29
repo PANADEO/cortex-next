@@ -70,6 +70,13 @@ describe("breadcrumbsFromPath", () => {
     ])
   })
 
+  it("maps /intrastat/review to Intrastat / Review", () => {
+    expect(breadcrumbsFromPath("/intrastat/review")).toEqual([
+      { label: "Intrastat", href: "/" },
+      { label: "Review" },
+    ])
+  })
+
   it("tolerates trailing slash on package detail path", () => {
     expect(breadcrumbsFromPath("/idp/packages/abc-123/")).toEqual([
       { label: "IDP", href: "/" },

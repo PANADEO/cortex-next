@@ -74,6 +74,12 @@ const IDP_BASIC_API_PATTERNS: RegExp[] = [
   /^\/idp-basic\/version$/,
 ]
 
+const INTRASTAT_API_PATTERNS: RegExp[] = [
+  /^\/intrastat\/api(\/.*)?$/,
+  /^\/intrastat\/health$/,
+  /^\/intrastat\/version$/,
+]
+
 const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH)
 
 function normalizeBasePath(value: string | undefined): string {
@@ -163,7 +169,28 @@ function tryIdpBasicRewrite(req: NextRequest) {
   return NextResponse.rewrite(new URL(upstreamPath + search, idpBasicBackend))
 }
 
+function tryIntrastatRewrite(req: NextRequest) {
+  const intrastatBackend =
+    process.env.INTRASTAT_BACKEND_URL ??
+    (process.env.NODE_ENV === "development" ? "http://localhost:8020" : undefined)
+  if (!intrastatBackend) return null
+
+  const pathname = stripBasePath(req.nextUrl.pathname)
+  const { search } = req.nextUrl
+  if (!INTRASTAT_API_PATTERNS.some((pattern) => pattern.test(pathname))) return null
+
+  const upstreamPath =
+    pathname === "/intrastat/health" || pathname === "/intrastat/version"
+      ? pathname.replace("/intrastat", "")
+      : pathname.replace("/intrastat/api", "/api")
+
+  return NextResponse.rewrite(new URL(upstreamPath + search, intrastatBackend))
+}
+
 export default function middleware(req: NextRequest) {
+  const intrastatRewrite = tryIntrastatRewrite(req)
+  if (intrastatRewrite) return intrastatRewrite
+
   const idpBasicRewrite = tryIdpBasicRewrite(req)
   if (idpBasicRewrite) return idpBasicRewrite
 

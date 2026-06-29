@@ -1,5 +1,6 @@
 "use client"
 
+import { useMe, useSetUserPreferences } from "@cortex/api"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,22 +10,21 @@ import {
   BreadcrumbSeparator,
   Button,
   SkinToggle,
-  type SkinOption,
   ThemeToggle,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
   UserMenu,
+  type SkinOption,
 } from "@cortex/ui"
-import { useMe, useSetUserPreferences } from "@cortex/api"
 import { Bell, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Fragment, useEffect, useState } from "react"
 import { useResolvedBreadcrumbs } from "../lib/breadcrumbs"
-import { SKINS, useSkinStore, type SkinId } from "../lib/stores/skin-store"
 import { useSidebarStore } from "../lib/stores/sidebar-store"
+import { SKINS, useSkinStore, type SkinId } from "../lib/stores/skin-store"
 import { useThemeStore } from "../lib/stores/theme-store"
 import { CommandPalette } from "./command-palette"
 
@@ -119,7 +119,7 @@ export function Topbar() {
           className="hidden h-8 w-64 items-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-left text-xs text-muted-foreground transition-colors hover:bg-muted lg:flex"
         >
           <Search className="h-3.5 w-3.5" />
-          <span className="flex-1">Search packages…</span>
+          <span className="flex-1">Search or jump...</span>
           <kbd className="rounded border border-border bg-background px-1 py-0.5 font-mono text-[10px]">
             ⌘K
           </kbd>

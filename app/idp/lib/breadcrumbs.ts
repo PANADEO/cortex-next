@@ -1,6 +1,7 @@
 import { usePackage } from "@cortex/api"
 import { useMemo } from "react"
-import { IDP_BASIC_NAV, IDP_NAV } from "./nav"
+import { IDP_BASIC_NAV, IDP_NAV, INTRASTAT_NAV } from "./nav"
+import { TILES } from "./tiles"
 
 export interface BreadcrumbEntry {
   label: string
@@ -13,10 +14,20 @@ const NAV_LABELS: Record<string, string> = Object.fromEntries(
 const IDP_BASIC_NAV_LABELS: Record<string, string> = Object.fromEntries(
   IDP_BASIC_NAV.flatMap((s) => s.items).map((i) => [i.id, i.label]),
 )
+const INTRASTAT_NAV_LABELS: Record<string, string> = Object.fromEntries(
+  INTRASTAT_NAV.flatMap((s) => s.items).map((i) => [i.id, i.label]),
+)
 const IDP_BASIC_ROUTE_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
   packages: "Packages",
   results: "Results",
+}
+const INTRASTAT_ROUTE_LABELS: Record<string, string> = {
+  dashboard: "Dashboard",
+  batches: "Batches",
+  review: "Review",
+  resources: "Resources",
+  settings: "Settings",
 }
 
 const PACKAGE_DETAIL_PATTERN = /^\/idp\/packages\/([^/]+)\/?$/
@@ -33,6 +44,13 @@ function tileConfig(tileId: string | undefined): {
       navLabels: { ...IDP_BASIC_ROUTE_LABELS, ...IDP_BASIC_NAV_LABELS },
     }
   }
+  if (tileId === "intrastat") {
+    return {
+      label: "Intrastat",
+      hrefPrefix: "/intrastat",
+      navLabels: { ...INTRASTAT_ROUTE_LABELS, ...INTRASTAT_NAV_LABELS },
+    }
+  }
   return { label: "IDP", hrefPrefix: "/idp", navLabels: NAV_LABELS }
 }
 
@@ -42,7 +60,7 @@ export function breadcrumbsFromPath(pathname: string): BreadcrumbEntry[] {
 
   const tileId = segments[0]
   const config = tileConfig(tileId)
-  const isKnownTile = tileId === "idp" || tileId === "idp-basic"
+  const isKnownTile = TILES.some((tile) => tile.id === tileId)
   const root: BreadcrumbEntry = isKnownTile ? { label: config.label, href: "/" } : { label: "IDP" }
   const rest = isKnownTile ? segments.slice(1) : segments
   if (rest.length === 0) return [root]

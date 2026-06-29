@@ -4,7 +4,7 @@ import { FeatureErrorBoundary } from "@/components/error-boundaries"
 import { AppGate } from "@/components/shell/app-gate"
 import { VersionLabel } from "@/components/shell/version-label"
 import { Topbar } from "@/components/topbar"
-import { useIdpBasicNavSections, useIdpNavSections } from "@/lib/nav"
+import { useIdpBasicNavSections, useIdpNavSections, useIntrastatNavSections } from "@/lib/nav"
 import { useSidebarStore } from "@/lib/stores/sidebar-store"
 import { TILES } from "@/lib/tiles"
 import { AppShell, TileMenu } from "@cortex/ui"
@@ -16,13 +16,13 @@ import type { ReactNode } from "react"
 function pathToItemId(pathname: string): string {
   const segments = pathname.split("/").filter(Boolean)
   const first = segments[0]
-  if (first === "idp" || first === "idp-basic") return segments[1] ?? "dashboard"
+  if (TILES.some((tile) => tile.id === first)) return segments[1] ?? "dashboard"
   return first ?? "dashboard"
 }
 
 function pathToTileId(pathname: string): string {
   const first = pathname.split("/").filter(Boolean)[0]
-  return first === "idp-basic" ? "idp-basic" : "idp"
+  return TILES.some((tile) => tile.id === first) ? (first ?? "idp") : "idp"
 }
 
 export default function MainLayout({ children }: { children: ReactNode }) {
@@ -34,7 +34,13 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const isBoardRoute = pathname === "/idp/dashboard" || pathname === "/idp/board"
   const idpNavSections = useIdpNavSections()
   const idpBasicNavSections = useIdpBasicNavSections()
-  const navSections = tileId === "idp-basic" ? idpBasicNavSections : idpNavSections
+  const intrastatNavSections = useIntrastatNavSections()
+  const navSections =
+    tileId === "idp-basic"
+      ? idpBasicNavSections
+      : tileId === "intrastat"
+        ? intrastatNavSections
+        : idpNavSections
 
   const brandIcon = (
     <Link

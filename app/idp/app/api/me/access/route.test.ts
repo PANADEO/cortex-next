@@ -91,14 +91,14 @@ describe("/api/me/access route handler", () => {
     expect(body.email).toBe("u@example.com")
   })
 
-  it("checks only idp and idp-basic app codes and returns authorized apps", async () => {
+  it("checks only shell app codes and returns authorized apps", async () => {
     vi.stubEnv("NODE_ENV", "production")
     vi.stubEnv("CORTEX_ADMIN_API_BASE_URL", "http://cortex-admin")
     vi.stubEnv("CORTEX_ADMIN_API_KEY", "test-key")
     const fetchSpy = vi.fn((input: string | URL | Request) => {
       void input
       return Promise.resolve(
-        new Response(JSON.stringify({ apps: ["idp-basic"] }), {
+        new Response(JSON.stringify({ apps: ["idp-basic", "intrastat"] }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         }),
@@ -116,11 +116,11 @@ describe("/api/me/access route handler", () => {
     expect(response.status).toBe(200)
     expect(body).toEqual({
       allowed: true,
-      apps: ["idp-basic"],
+      apps: ["idp-basic", "intrastat"],
       email: "u@example.com",
     })
     expect(requestedUrl.searchParams.get("email")).toBe("u@example.com")
-    expect(requestedUrl.searchParams.getAll("apps")).toEqual(["idp", "idp-basic"])
+    expect(requestedUrl.searchParams.getAll("apps")).toEqual(["idp", "idp-basic", "intrastat"])
   })
 
   it("prefers x-auth-request-email header over DEV_USER_EMAIL in development", async () => {

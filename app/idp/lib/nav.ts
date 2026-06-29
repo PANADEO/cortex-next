@@ -4,11 +4,13 @@ import type { TileMenuItem, TileMenuSection } from "@cortex/ui"
 import {
   BarChart3,
   FileDown,
+  FileSpreadsheet,
   FileText,
   History,
   Package,
   ScrollText,
   Settings,
+  TableProperties,
   Upload,
 } from "lucide-react"
 import { useMemo } from "react"
@@ -83,6 +85,36 @@ export const IDP_BASIC_NAV: TileMenuSection[] = [
   },
 ]
 
+export const INTRASTAT_NAV: TileMenuSection[] = [
+  {
+    id: "pipeline",
+    label: "Pipeline",
+    items: [
+      { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/intrastat/dashboard" },
+      { id: "batches", label: "Batches", icon: Package, href: "/intrastat/batches" },
+      { id: "review", label: "Review", icon: TableProperties, href: "/intrastat/review" },
+    ],
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    items: [
+      {
+        id: "resources",
+        label: "Resources",
+        icon: FileSpreadsheet,
+        href: "/intrastat/resources",
+      },
+      {
+        id: "settings",
+        label: "Settings",
+        icon: Settings,
+        href: "/intrastat/settings",
+      },
+    ],
+  },
+]
+
 function normalizeMenuKey(value: string): string {
   return value
     .trim()
@@ -137,4 +169,8 @@ export function useIdpNavSections(): TileMenuSection[] {
 
 export function useIdpBasicNavSections(): TileMenuSection[] {
   return IDP_BASIC_NAV
+}
+
+export function useIntrastatNavSections(): TileMenuSection[] {
+  return INTRASTAT_NAV
 }

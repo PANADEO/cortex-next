@@ -1,12 +1,13 @@
 "use client"
 
-import { useIdpNavSections } from "@/lib/nav"
+import { useIdpBasicNavSections, useIdpNavSections, useIntrastatNavSections } from "@/lib/nav"
+import { TILES } from "@/lib/tiles"
 import { usePackages } from "@cortex/api"
 import { Dialog, DialogContent, DialogTitle, Input } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import type { LucideIcon } from "lucide-react"
 import { Package, Search } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
 
 interface CommandPaletteProps {
@@ -25,11 +26,21 @@ interface Entry {
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const [query, setQuery] = useState("")
   const deferredQuery = useDeferredValue(query)
   const [activeIdx, setActiveIdx] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
-  const navSections = useIdpNavSections()
+  const tileId = pathToTileId(pathname)
+  const idpNavSections = useIdpNavSections()
+  const idpBasicNavSections = useIdpBasicNavSections()
+  const intrastatNavSections = useIntrastatNavSections()
+  const navSections =
+    tileId === "idp-basic"
+      ? idpBasicNavSections
+      : tileId === "intrastat"
+        ? intrastatNavSections
+        : idpNavSections
   const navEntries = useMemo<Entry[]>(
     () =>
       navSections.flatMap((section) =>
@@ -44,21 +55,27 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     [navSections],
   )
 
-  const packages = usePackages({ limit: 20, search: deferredQuery || null }, { enabled: open })
+  const packages = usePackages(
+    { limit: 20, search: deferredQuery || null },
+    { enabled: open && tileId === "idp" },
+  )
 
   const entries: Entry[] = useMemo(() => {
     const q = deferredQuery.trim().toLowerCase()
     const nav = q ? navEntries.filter((e) => e.label.toLowerCase().includes(q)) : navEntries
-    const pkgEntries: Entry[] = (packages.data?.items ?? []).map((p) => ({
-      id: `pkg-${p.id}`,
-      group: "Extraction",
-      label: p.package_name ?? p.file_name,
-      ...(p.package_name ? { hint: p.file_name } : {}),
-      icon: Package,
-      href: `/idp/packages/${p.id}`,
-    }))
+    const pkgEntries: Entry[] =
+      tileId === "idp"
+        ? (packages.data?.items ?? []).map((p) => ({
+            id: `pkg-${p.id}`,
+            group: "Extraction",
+            label: p.package_name ?? p.file_name,
+            ...(p.package_name ? { hint: p.file_name } : {}),
+            icon: Package,
+            href: `/idp/packages/${p.id}`,
+          }))
+        : []
     return [...nav, ...pkgEntries]
-  }, [deferredQuery, navEntries, packages.data])
+  }, [deferredQuery, navEntries, packages.data, tileId])
 
   useEffect(() => {
     setActiveIdx(0)
@@ -109,7 +126,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKey}
-            placeholder="Search packages or jump to…"
+            placeholder={tileId === "idp" ? "Search packages or jump to..." : "Jump to..."}
             className="h-12 border-0 bg-transparent text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
           />
           <kbd className="pointer-events-none hidden rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground md:inline-block">
@@ -165,4 +182,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       </DialogContent>
     </Dialog>
   )
+}
+
+function pathToTileId(pathname: string): string {
+  const first = pathname.split("/").filter(Boolean)[0]
+  return TILES.some((tile) => tile.id === first) ? (first ?? "idp") : "idp"
 }
