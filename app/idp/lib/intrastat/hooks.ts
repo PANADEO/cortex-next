@@ -170,6 +170,18 @@ export function useIntrastatReprocessBatch() {
   })
 }
 
+export function useIntrastatDeleteBatch() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: intrastatApi.deleteBatch,
+    onSuccess: (_deleted, batchId) => {
+      client.removeQueries({ queryKey: intrastatQueryKeys.batchDetail(batchId) })
+      client.removeQueries({ queryKey: [...intrastatQueryKeys.all, "batches", batchId, "lines"] })
+      invalidateIntrastatMetadata(client)
+    },
+  })
+}
+
 export function useIntrastatExportIntrastat() {
   return useMutation({
     mutationFn: intrastatApi.exportIntrastat,

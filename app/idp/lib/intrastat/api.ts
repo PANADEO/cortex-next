@@ -30,6 +30,7 @@ const INTRASTAT_ERROR_MESSAGES: Record<string, string> = {
   "zip-has-no-supported-documents": "The ZIP does not contain supported PDF invoices",
   "batch-create-failed": "The batch could not be created",
   "batch-not-found": "Batch not found. Refresh the list.",
+  "batch-processing": "The batch is currently processing. Try again after it finishes.",
   "line-not-found": "Declaration line not found. Refresh the review table.",
   "invalid-cn-resource-xlsx": "Choose a valid XLSX CN resource",
   "cn-resource-required-columns-missing": "The CN workbook is missing required columns",
@@ -152,6 +153,15 @@ export const intrastatApi = {
       { credentials: "include", cache: "no-store", headers: { Accept: "application/json" } },
     ).then(parseJsonResponse<IntrastatBatchListResponse>),
   batchDetail: (id: string) => request<IntrastatBatchDetail>(`/batches/${id}`),
+  deleteBatch: async (id: string) => {
+    const response = await fetch(buildUrl(`/batches/${id}`), {
+      method: "DELETE",
+      credentials: "include",
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    })
+    if (!response.ok) throw await intrastatErrorFromResponse(response)
+  },
   reprocessBatch: (id: string) =>
     request<IntrastatBatchDetail>(`/batches/${id}/reprocess`, {
       method: "POST",

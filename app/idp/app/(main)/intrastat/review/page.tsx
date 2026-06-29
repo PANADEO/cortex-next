@@ -1,5 +1,6 @@
 "use client"
 
+import { IntrastatDeleteBatchButton } from "@/components/intrastat/delete-batch-button"
 import { IntrastatExportButtons } from "@/components/intrastat/export-buttons"
 import { IntrastatLineEditDialog } from "@/components/intrastat/line-edit-dialog"
 import {
@@ -228,6 +229,12 @@ export default function IntrastatReviewPage() {
               Reprocess
             </Button>
             <IntrastatExportButtons batchId={batchId} />
+            <IntrastatDeleteBatchButton
+              batchId={batchId}
+              batchName={selectedBatch.data?.name ?? "this batch"}
+              disabled={!selectedBatch.data || selectedBatch.data.status === "processing"}
+              onDeleted={() => router.push("/intrastat/batches")}
+            />
           </div>
         }
       />

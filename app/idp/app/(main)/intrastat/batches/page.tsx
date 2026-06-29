@@ -1,5 +1,6 @@
 "use client"
 
+import { IntrastatDeleteBatchButton } from "@/components/intrastat/delete-batch-button"
 import { IntrastatExportButtons } from "@/components/intrastat/export-buttons"
 import {
   IntrastatKindBadge,
@@ -101,7 +102,7 @@ const columns: ColumnDef<IntrastatBatchSummary>[] = [
   {
     id: "actions",
     header: "",
-    size: 250,
+    size: 290,
     cell: ({ row }) => (
       <div
         className="flex items-center justify-end gap-2"
@@ -111,6 +112,12 @@ const columns: ColumnDef<IntrastatBatchSummary>[] = [
           <Link href={`/intrastat/review?batch=${row.original.id}`}>Review</Link>
         </Button>
         <IntrastatExportButtons batchId={row.original.id} />
+        <IntrastatDeleteBatchButton
+          batchId={row.original.id}
+          batchName={row.original.name}
+          compact
+          disabled={row.original.status === "processing"}
+        />
       </div>
     ),
   },
