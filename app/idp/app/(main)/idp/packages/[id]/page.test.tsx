@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { queryKeys } from "@cortex/api"
 import type {
   PackageActionsResponse,
   PackageDetailsResponse,
@@ -7,7 +8,7 @@ import type {
 } from "@cortex/types"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import "@testing-library/jest-dom/vitest"
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import type { ReactNode } from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import PackageDetailPage from "./page"
@@ -68,8 +69,8 @@ function freshClient(): QueryClient {
   })
 }
 
-function Wrapper({ children }: { children: ReactNode }) {
-  return <QueryClientProvider client={freshClient()}>{children}</QueryClientProvider>
+function Wrapper({ children, client }: { children: ReactNode; client?: QueryClient }) {
+  return <QueryClientProvider client={client ?? freshClient()}>{children}</QueryClientProvider>
 }
 
 function jsonResponse(body: unknown): Response {
@@ -78,8 +79,10 @@ function jsonResponse(body: unknown): Response {
   })
 }
 
-function makeFetchMock(overrides: Partial<PackageDetailsResponse> = {}) {
-  const details: PackageDetailsResponse = {
+function makePackageDetails(
+  overrides: Partial<PackageDetailsResponse> = {},
+): PackageDetailsResponse {
+  return {
     id: "pkg-1",
     file_name: "import_20260512_112118.zip",
     package_name: null,
@@ -99,6 +102,10 @@ function makeFetchMock(overrides: Partial<PackageDetailsResponse> = {}) {
     total_cost_usd: "0.0942",
     ...overrides,
   }
+}
+
+function makeFetchMock(overrides: Partial<PackageDetailsResponse> = {}) {
+  const details: PackageDetailsResponse = makePackageDetails(overrides)
   const transitions: PackageTransitionsResponse = {
     transitions: ["start_verification", "reprocess"],
   }
@@ -197,5 +204,94 @@ describe("PackageDetailPage summary collapse", () => {
     expect(screen.getByText("Uploaded")).toBeInTheDocument()
     expect(screen.getByText("HASH123")).toBeInTheDocument()
     expect(screen.getByText("Actions")).toBeInTheDocument()
+  })
+
+  it("refreshes available actions when package transitions change", async () => {
+    let transitions: PackageTransitionsResponse = {
+      transitions: ["start_verification", "reprocess"],
+    }
+    const fetchMock = makeFetchMock()
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input.toString()
+        const path = url.startsWith("http") ? new URL(url).pathname : url.split("?")[0]
+        if (path === "/packages/pkg-1/transitions")
+          return Promise.resolve(jsonResponse(transitions))
+        return fetchMock(input)
+      }),
+    )
+
+    render(
+      <Wrapper>
+        <PackageDetailPage />
+      </Wrapper>,
+    )
+
+    expect(await screen.findByRole("button", { name: /start verification/i })).toBeInTheDocument()
+
+    transitions = {
+      transitions: ["reset_verification", "reprocess"],
+    }
+    fireEvent.click(screen.getByRole("button", { name: /refresh now/i }))
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /reset verification/i })).toBeInTheDocument()
+    })
+    expect(screen.queryByRole("button", { name: /start verification/i })).not.toBeInTheDocument()
+  })
+
+  it("refreshes actions when package workflow state changes outside the current user action", async () => {
+    const client = freshClient()
+    let details = makePackageDetails({
+      verification_state: "in_progress",
+      assignee: "dev@example.com",
+    })
+    let transitions: PackageTransitionsResponse = {
+      transitions: ["cancel_verification", "finish_verification"],
+    }
+    const fetchMock = makeFetchMock()
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input.toString()
+        const path = url.startsWith("http") ? new URL(url).pathname : url.split("?")[0]
+        if (path === "/packages/pkg-1") return Promise.resolve(jsonResponse(details))
+        if (path === "/packages/pkg-1/transitions")
+          return Promise.resolve(jsonResponse(transitions))
+        return fetchMock(input)
+      }),
+    )
+
+    render(
+      <Wrapper client={client}>
+        <PackageDetailPage />
+      </Wrapper>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText("In verification")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /cancel verification/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /finish verification/i })).toBeInTheDocument()
+    })
+
+    details = makePackageDetails({
+      verification_state: "not_started",
+      assignee: null,
+    })
+    transitions = {
+      transitions: ["start_verification", "reprocess"],
+    }
+
+    act(() => {
+      client.setQueryData(queryKeys.packages.detail("pkg-1"), details)
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText("Not started")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /start verification/i })).toBeInTheDocument()
+    })
+    expect(screen.queryByRole("button", { name: /cancel verification/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /finish verification/i })).not.toBeInTheDocument()
   })
 })

@@ -44,26 +44,26 @@ export function PackageMetadataEditors({
   )
 }
 
-function CustomStatusField({
-  packageId,
-  initial,
-}: {
-  packageId: string
-  initial: string | null
-}) {
+function CustomStatusField({ packageId, initial }: { packageId: string; initial: string | null }) {
   const [value, setValue] = useState(initial ?? "")
+  const [savedValue, setSavedValue] = useState(initial ?? "")
   const mutate = useSetCustomStatus(packageId)
 
   useEffect(() => {
-    setValue(initial ?? "")
+    const next = initial ?? ""
+    setValue(next)
+    setSavedValue(next)
   }, [initial])
 
-  const dirty = value !== (initial ?? "")
+  const dirty = value !== savedValue
   const normalized = value.trim() === "" ? null : value.trim()
 
   const handleSave = async () => {
     try {
       await mutate.mutateAsync({ custom_status: normalized })
+      const next = normalized ?? ""
+      setValue(next)
+      setSavedValue(next)
       toast.success("Custom status saved")
     } catch (err) {
       toastApiError(err)
@@ -85,6 +85,7 @@ function CustomStatusField({
           className="h-9 flex-1"
         />
         <Button size="sm" onClick={handleSave} disabled={!dirty || mutate.isPending}>
+          <span className="sr-only">Save custom status</span>
           {mutate.isPending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
@@ -104,18 +105,24 @@ function AdditionalAiContextField({
   initial: string | null
 }) {
   const [value, setValue] = useState(initial ?? "")
+  const [savedValue, setSavedValue] = useState(initial ?? "")
   const mutate = useSetAdditionalAiContext(packageId)
 
   useEffect(() => {
-    setValue(initial ?? "")
+    const next = initial ?? ""
+    setValue(next)
+    setSavedValue(next)
   }, [initial])
 
-  const dirty = value !== (initial ?? "")
+  const dirty = value !== savedValue
   const normalized = value.trim() === "" ? null : value
 
   const handleSave = async () => {
     try {
       await mutate.mutateAsync({ additional_ai_context: normalized })
+      const next = normalized ?? ""
+      setValue(next)
+      setSavedValue(next)
       toast.success("AI context saved")
     } catch (err) {
       toastApiError(err)
@@ -164,18 +171,24 @@ function UserNotesField({
   lastUpdated: string | null
 }) {
   const [value, setValue] = useState(initial ?? "")
+  const [savedValue, setSavedValue] = useState(initial ?? "")
   const mutate = useSetUserNotes(packageId)
 
   useEffect(() => {
-    setValue(initial ?? "")
+    const next = initial ?? ""
+    setValue(next)
+    setSavedValue(next)
   }, [initial])
 
-  const dirty = value !== (initial ?? "")
+  const dirty = value !== savedValue
   const normalized = value.trim() === "" ? null : value
 
   const handleSave = async () => {
     try {
       await mutate.mutateAsync({ user_notes: normalized })
+      const next = normalized ?? ""
+      setValue(next)
+      setSavedValue(next)
       toast.success("Notes saved")
     } catch (err) {
       toastApiError(err)

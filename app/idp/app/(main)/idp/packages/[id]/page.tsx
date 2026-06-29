@@ -65,7 +65,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 
 const TAB_PANEL_CLASS =
@@ -103,7 +103,9 @@ export default function PackageDetailPage() {
     pollingEnabled && detail.data?.verification_state !== "in_progress" && !reprocessOpen
 
   const actions = usePackageActions(id, { polling: effectivePolling })
-  const transitions = usePackageTransitions(id)
+  const transitions = usePackageTransitions(id, { polling: effectivePolling })
+  const refetchActions = actions.refetch
+  const refetchTransitions = transitions.refetch
 
   const start = useStartVerification(id)
   const cancel = useCancelVerification(id)
@@ -112,11 +114,27 @@ export default function PackageDetailPage() {
   const reset = useResetVerification(id)
 
   const pkg = detail.data
+  const workflowKey = pkg
+    ? `${pkg.processing_state}:${pkg.verification_state}:${pkg.assignee ?? ""}`
+    : null
+  const previousWorkflowKey = useRef<string | null>(null)
   const isActiveVerification = pkg?.verification_state === "in_progress"
   const canEdit = isActiveVerification && emailsMatch(me.data?.email, pkg?.assignee)
   const showReadOnlyHelp =
     Boolean(pkg && isActiveVerification && !canEdit) &&
     (transitions.data?.transitions.length ?? 0) === 0
+
+  useEffect(() => {
+    if (!workflowKey) return
+    if (previousWorkflowKey.current === null) {
+      previousWorkflowKey.current = workflowKey
+      return
+    }
+    if (previousWorkflowKey.current === workflowKey) return
+    previousWorkflowKey.current = workflowKey
+    refetchActions()
+    refetchTransitions()
+  }, [refetchActions, refetchTransitions, workflowKey])
 
   const aiCounts = useAiNotificationCounts(id)
   const markAiRead = useAiNotificationsReadStore((s) => s.markRead)
@@ -281,8 +299,9 @@ export default function PackageDetailPage() {
               onRefresh={() => {
                 detail.refetch()
                 actions.refetch()
+                transitions.refetch()
               }}
-              isRefreshing={detail.isFetching || actions.isFetching}
+              isRefreshing={detail.isFetching || actions.isFetching || transitions.isFetching}
             />
             {pkg ? (
               <ExportMenu packageId={pkg.id} fileName={pkg.package_name ?? pkg.file_name} />

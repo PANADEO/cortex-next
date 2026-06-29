@@ -185,10 +185,12 @@ export function usePackageTransportOrders(id: string, options: { polling?: boole
   })
 }
 
-export function usePackageTransitions(id: string) {
+export function usePackageTransitions(id: string, options: { polling?: boolean } = {}) {
+  const { polling = true } = options
   return useQuery({
     queryKey: queryKeys.packages.transitions(id),
     queryFn: () => endpoints.packages.transitions(id),
+    refetchInterval: polling ? 5_000 : false,
     enabled: Boolean(id),
   })
 }
@@ -218,12 +220,14 @@ export function useActionLogs(query: GetActionLogsQuery = {}) {
 function useInvalidatePackage(id: string) {
   const client = useQueryClient()
   return () => {
-    client.invalidateQueries({ queryKey: queryKeys.packages.detail(id) })
-    client.invalidateQueries({ queryKey: queryKeys.packages.actions(id) })
-    client.invalidateQueries({ queryKey: queryKeys.packages.transitions(id) })
-    client.invalidateQueries({ queryKey: queryKeys.packages.transportOrders(id) })
-    client.invalidateQueries({ queryKey: queryKeys.packages.all() })
-    client.invalidateQueries({ queryKey: queryKeys.dashboardStats() })
+    return Promise.all([
+      client.invalidateQueries({ queryKey: queryKeys.packages.all(), refetchType: "none" }),
+      client.invalidateQueries({ queryKey: queryKeys.packages.detail(id) }),
+      client.invalidateQueries({ queryKey: queryKeys.packages.actions(id) }),
+      client.invalidateQueries({ queryKey: queryKeys.packages.transitions(id) }),
+      client.invalidateQueries({ queryKey: queryKeys.packages.transportOrders(id) }),
+      client.invalidateQueries({ queryKey: queryKeys.dashboardStats() }),
+    ])
   }
 }
 
