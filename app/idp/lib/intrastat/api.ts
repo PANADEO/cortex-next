@@ -3,6 +3,7 @@ import type {
   IntrastatBatchListResponse,
   IntrastatBatchStatus,
   IntrastatCnMatchStatus,
+  IntrastatCnSuggestionListResponse,
   IntrastatDeclarationLine,
   IntrastatDownload,
   IntrastatLineListResponse,
@@ -189,6 +190,13 @@ export const intrastatApi = {
       body: JSON.stringify(payload),
     }),
   currentCnResource: () => request<IntrastatResourceInfo>("/resources/cn/current"),
+  cnSuggestions: (search: string, limit = 5) =>
+    request<IntrastatCnSuggestionListResponse>(
+      `/resources/cn/suggestions?${new URLSearchParams({
+        search,
+        limit: String(limit),
+      })}`,
+    ),
   uploadCnResource: (file: File) => {
     const formData = new FormData()
     formData.set("file", file)

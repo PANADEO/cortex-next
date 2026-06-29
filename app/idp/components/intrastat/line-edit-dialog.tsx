@@ -1,8 +1,12 @@
 "use client"
 
 import { formatIntrastatError } from "@/lib/intrastat/api"
-import { useIntrastatPatchLine } from "@/lib/intrastat/hooks"
-import type { IntrastatDeclarationLine, IntrastatLinePatchRequest } from "@/lib/intrastat/types"
+import { useIntrastatCnSuggestions, useIntrastatPatchLine } from "@/lib/intrastat/hooks"
+import type {
+  IntrastatCnSuggestion,
+  IntrastatDeclarationLine,
+  IntrastatLinePatchRequest,
+} from "@/lib/intrastat/types"
 import {
   Button,
   Dialog,
@@ -14,7 +18,7 @@ import {
   Label,
 } from "@cortex/ui"
 import { Loader2 } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
 interface Props {
@@ -39,6 +43,14 @@ type FormState = {
 export function IntrastatLineEditDialog({ batchId, line, open, onOpenChange }: Props) {
   const patchLine = useIntrastatPatchLine(batchId)
   const [form, setForm] = useState<FormState>(() => emptyForm())
+  const suggestionSearch = useMemo(
+    () => (form.cn_code.trim() || line?.item_index || form.description).trim(),
+    [form.cn_code, form.description, line?.item_index],
+  )
+  const suggestions = useIntrastatCnSuggestions(
+    suggestionSearch,
+    open && Boolean(line) && suggestionSearch.length >= 2,
+  )
 
   useEffect(() => {
     if (!line) {
@@ -60,6 +72,14 @@ export function IntrastatLineEditDialog({ batchId, line, open, onOpenChange }: P
 
   const update = (key: keyof FormState, value: string) => {
     setForm((current) => ({ ...current, [key]: value }))
+  }
+
+  const applySuggestion = (suggestion: IntrastatCnSuggestion) => {
+    setForm((current) => ({
+      ...current,
+      cn_code: suggestion.cn8 ?? suggestion.cn ?? current.cn_code,
+      description: suggestion.description ?? current.description,
+    }))
   }
 
   const handleSave = async () => {
@@ -92,11 +112,19 @@ export function IntrastatLineEditDialog({ batchId, line, open, onOpenChange }: P
           <DialogTitle>Edit line {line?.invoice_number ?? ""}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field
-            label="CN code"
-            value={form.cn_code}
-            onChange={(value) => update("cn_code", value)}
-          />
+          <div className="space-y-2 sm:col-span-3">
+            <Label htmlFor="intrastat-cn-code">CN code</Label>
+            <Input
+              id="intrastat-cn-code"
+              value={form.cn_code}
+              onChange={(event) => update("cn_code", event.target.value)}
+            />
+            <CnSuggestionList
+              suggestions={suggestions.data?.items ?? []}
+              isLoading={suggestions.isFetching}
+              onSelect={applySuggestion}
+            />
+          </div>
           <Field
             label="Net weight"
             type="number"
@@ -155,6 +183,40 @@ export function IntrastatLineEditDialog({ batchId, line, open, onOpenChange }: P
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function CnSuggestionList({
+  suggestions,
+  isLoading,
+  onSelect,
+}: {
+  suggestions: IntrastatCnSuggestion[]
+  isLoading: boolean
+  onSelect: (suggestion: IntrastatCnSuggestion) => void
+}) {
+  if (suggestions.length === 0 && !isLoading) return null
+
+  return (
+    <div className="overflow-hidden rounded-md border border-border">
+      {suggestions.map((suggestion) => (
+        <button
+          key={suggestion.id}
+          type="button"
+          className="grid w-full grid-cols-[88px_minmax(80px,120px)_minmax(0,1fr)] gap-3 border-b border-border px-3 py-2 text-left text-xs last:border-b-0 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:grid-cols-[110px_160px_minmax(0,1fr)]"
+          onClick={() => onSelect(suggestion)}
+        >
+          <span className="font-mono font-medium">{suggestion.cn8 ?? suggestion.cn ?? "—"}</span>
+          <span className="truncate font-mono text-muted-foreground">
+            {suggestion.index_value}
+          </span>
+          <span className="truncate text-muted-foreground">{suggestion.description ?? "—"}</span>
+        </button>
+      ))}
+      {isLoading && suggestions.length === 0 ? (
+        <div className="px-3 py-2 text-xs text-muted-foreground">Loading suggestions...</div>
+      ) : null}
+    </div>
   )
 }
 

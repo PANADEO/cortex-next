@@ -136,6 +136,18 @@ export interface IntrastatResourceUploadResponse {
   embedding_model: string | null
 }
 
+export interface IntrastatCnSuggestion {
+  id: string
+  index_value: string
+  cn8: string | null
+  cn: string | null
+  description: string | null
+}
+
+export interface IntrastatCnSuggestionListResponse {
+  items: IntrastatCnSuggestion[]
+}
+
 export interface IntrastatUploadResponse {
   id: string
   transaction_kind: IntrastatTransactionKind

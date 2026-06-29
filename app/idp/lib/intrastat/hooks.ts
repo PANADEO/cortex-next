@@ -19,6 +19,8 @@ export const intrastatQueryKeys = {
   stats: () => [...intrastatQueryKeys.all, "stats"] as const,
   settings: () => [...intrastatQueryKeys.all, "settings"] as const,
   cnResource: () => [...intrastatQueryKeys.all, "cn-resource"] as const,
+  cnSuggestions: (search: string) =>
+    [...intrastatQueryKeys.all, "cn-resource", "suggestions", search] as const,
   batches: (query: {
     limit?: number
     offset?: number
@@ -59,6 +61,16 @@ export function useIntrastatCnResource() {
   return useQuery({
     queryKey: intrastatQueryKeys.cnResource(),
     queryFn: intrastatApi.currentCnResource,
+  })
+}
+
+export function useIntrastatCnSuggestions(search: string, enabled: boolean) {
+  return useQuery({
+    queryKey: intrastatQueryKeys.cnSuggestions(search),
+    queryFn: () => intrastatApi.cnSuggestions(search),
+    enabled,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
   })
 }
 
