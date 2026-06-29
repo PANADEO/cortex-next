@@ -7,15 +7,33 @@ import { Button } from "@cortex/ui"
 import { FileSpreadsheet, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
-export function IntrastatExportButtons({ batchId }: { batchId?: string | null }) {
+interface Props {
+  batchId?: string | null
+  batchIds?: string[]
+  disabled?: boolean | undefined
+  exportLabel?: string | undefined
+  auditLabel?: string | undefined
+}
+
+export function IntrastatExportButtons({
+  batchId,
+  batchIds,
+  disabled: disabledProp,
+  exportLabel = "Export XLSX",
+  auditLabel = "Audit XLSX",
+}: Props) {
   const intrastatExport = useIntrastatExportIntrastat()
   const auditExport = useIntrastatExportAudit()
-  const batchIds = batchId ? [batchId] : []
-  const disabled = !batchId || intrastatExport.isPending || auditExport.isPending
+  const resolvedBatchIds = batchIds ?? (batchId ? [batchId] : [])
+  const disabled =
+    disabledProp ||
+    resolvedBatchIds.length === 0 ||
+    intrastatExport.isPending ||
+    auditExport.isPending
 
   const handleIntrastatExport = async () => {
     try {
-      const result = await intrastatExport.mutateAsync(batchIds)
+      const result = await intrastatExport.mutateAsync(resolvedBatchIds)
       downloadBlob(result.blob, result.filename)
     } catch (error) {
       toast.error(formatIntrastatError(error, "Intrastat export failed"))
@@ -24,7 +42,7 @@ export function IntrastatExportButtons({ batchId }: { batchId?: string | null })
 
   const handleAuditExport = async () => {
     try {
-      const result = await auditExport.mutateAsync(batchIds)
+      const result = await auditExport.mutateAsync(resolvedBatchIds)
       downloadBlob(result.blob, result.filename)
     } catch (error) {
       toast.error(formatIntrastatError(error, "Audit export failed"))
@@ -39,7 +57,7 @@ export function IntrastatExportButtons({ batchId }: { batchId?: string | null })
         ) : (
           <FileSpreadsheet className="mr-2 h-4 w-4" />
         )}
-        Export XLSX
+        {exportLabel}
       </Button>
       <Button size="sm" variant="outline" onClick={handleAuditExport} disabled={disabled}>
         {auditExport.isPending ? (
@@ -47,7 +65,7 @@ export function IntrastatExportButtons({ batchId }: { batchId?: string | null })
         ) : (
           <FileSpreadsheet className="mr-2 h-4 w-4" />
         )}
-        Audit XLSX
+        {auditLabel}
       </Button>
     </div>
   )
