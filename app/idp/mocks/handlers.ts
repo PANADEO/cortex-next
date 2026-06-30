@@ -322,7 +322,23 @@ export const handlers = [
     const allowed = allowedFlag === "false" ? false : true
     return HttpResponse.json({
       allowed,
-      apps: allowed ? ["idp", "idp-basic", "intrastat"] : [],
+      apps: allowed
+        ? [
+            "idp",
+            "idp-basic",
+            "intrastat",
+            "ai-tools",
+            "text-highlighter",
+            "text-transformer",
+            "text-analyzer",
+            "ai-summarizer",
+            "content-guru",
+            "linkedin-generator",
+            "visual-guru",
+            "fakturomat",
+            "ai-daily-assistant",
+          ]
+        : [],
       email,
     })
   }),

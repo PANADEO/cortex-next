@@ -21,6 +21,7 @@ export function setForbiddenHandler(handler: ForbiddenHandler | null): void {
 
 const FORBIDDEN_HANDLER_EXEMPT_PATHS: ReadonlySet<string> = new Set([
   "/user/me",
+  "/api/ai-tools/history",
   "/api/me/access",
   "/config/feature-flags",
   "/config/feature-flags/test-imap",

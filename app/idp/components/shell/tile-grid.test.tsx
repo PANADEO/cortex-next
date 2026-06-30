@@ -67,6 +67,39 @@ describe("TileGrid", () => {
     expect(screen.queryByText("IDP Basic")).toBeNull()
   })
 
+  it("renders an individual AI app tile when only that app is authorized", () => {
+    authorizedMock = {
+      allowed: true,
+      apps: ["text-highlighter"],
+      email: "u@x.com",
+      isLoading: false,
+      isError: false,
+    }
+
+    render(<TileGrid />)
+
+    expect(screen.getByText("Podświetlacz tekstu")).not.toBeNull()
+    expect(screen.queryByText("Transformator tekstu")).toBeNull()
+    expect(screen.queryByText("AI Tools")).toBeNull()
+  })
+
+  it("renders all AI app tiles when the parent AI Tools app is authorized", () => {
+    authorizedMock = {
+      allowed: true,
+      apps: ["ai-tools"],
+      email: "u@x.com",
+      isLoading: false,
+      isError: false,
+    }
+
+    render(<TileGrid />)
+
+    expect(screen.getByText("Podświetlacz tekstu")).not.toBeNull()
+    expect(screen.getByText("Transformator tekstu")).not.toBeNull()
+    expect(screen.getByText("Analizator faktur")).not.toBeNull()
+    expect(screen.queryByText("AI Tools")).toBeNull()
+  })
+
   it("renders the empty state when no authorized app tile is available", () => {
     authorizedMock = {
       allowed: false,

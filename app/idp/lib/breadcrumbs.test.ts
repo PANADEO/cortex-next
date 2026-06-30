@@ -77,6 +77,17 @@ describe("breadcrumbsFromPath", () => {
     ])
   })
 
+  it("maps /ai-tools to the app hub root", () => {
+    expect(breadcrumbsFromPath("/ai-tools")).toEqual([{ label: "Aplikacje", href: "/" }])
+  })
+
+  it("maps /ai-tools/text-highlighter to Aplikacje / Podświetlacz", () => {
+    expect(breadcrumbsFromPath("/ai-tools/text-highlighter")).toEqual([
+      { label: "Aplikacje", href: "/" },
+      { label: "Podświetlacz" },
+    ])
+  })
+
   it("tolerates trailing slash on package detail path", () => {
     expect(breadcrumbsFromPath("/idp/packages/abc-123/")).toEqual([
       { label: "IDP", href: "/" },

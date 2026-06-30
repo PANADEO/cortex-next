@@ -1,17 +1,18 @@
 "use client"
 
-import { useAuthorizedApps } from "@cortex/api"
-import { Button, EmptyState } from "@cortex/ui"
-import { Search } from "lucide-react"
-import { useDeferredValue, useMemo, useState } from "react"
+import { canAccessAiTool, isAiToolId } from "@/lib/ai-tools/app-codes"
 import { useFavoritesStore } from "@/lib/stores/favorites-store"
 import {
   DEPARTMENT_CATEGORIES,
   FUNCTIONAL_CATEGORIES,
+  TILES,
   type Tile,
   type TileHrefOverrides,
-  TILES,
 } from "@/lib/tiles"
+import { useAuthorizedApps } from "@cortex/api"
+import { Button, EmptyState } from "@cortex/ui"
+import { Search } from "lucide-react"
+import { useDeferredValue, useMemo, useState } from "react"
 import { CategoryTabs, type CategoryTab } from "./category-tabs"
 import { HeroSearch, type HeroView } from "./hero-search"
 import { TileCard } from "./tile-card"
@@ -21,10 +22,7 @@ type ActiveCategory = "all" | "favorites" | string
 function matchesSearch(tile: Tile, query: string): boolean {
   if (!query) return true
   const q = query.toLowerCase()
-  return (
-    tile.label.toLowerCase().includes(q) ||
-    tile.description.toLowerCase().includes(q)
-  )
+  return tile.label.toLowerCase().includes(q) || tile.description.toLowerCase().includes(q)
 }
 
 function categoryIdsForView(view: HeroView): readonly string[] {
@@ -66,7 +64,12 @@ export function TileGrid({ tileHrefOverrides }: TileGridProps = {}) {
   )
 
   const authorizedTiles = useMemo(
-    () => tiles.filter((tile) => authorized.apps.includes(tile.id)),
+    () =>
+      tiles.filter((tile) =>
+        isAiToolId(tile.id)
+          ? canAccessAiTool(authorized.apps, tile.id)
+          : authorized.apps.includes(tile.id),
+      ),
     [authorized.apps, tiles],
   )
 

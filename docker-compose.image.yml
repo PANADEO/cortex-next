@@ -23,6 +23,8 @@ services:
         max-file: "3"
     security_opt:
       - no-new-privileges:true
+    volumes:
+      - cortex_frontend_ai_tools_history:/data/ai-tools-history
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
 
@@ -30,3 +32,6 @@ networks:
   default:
     name: ${DOCKER_NETWORK_NAME:-run_default}
     external: true
+
+volumes:
+  cortex_frontend_ai_tools_history:

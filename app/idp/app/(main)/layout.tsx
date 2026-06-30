@@ -16,12 +16,16 @@ import type { ReactNode } from "react"
 function pathToItemId(pathname: string): string {
   const segments = pathname.split("/").filter(Boolean)
   const first = segments[0]
+  if (first === "ai-tools") return segments[1] ?? "app"
   if (TILES.some((tile) => tile.id === first)) return segments[1] ?? "dashboard"
   return first ?? "dashboard"
 }
 
 function pathToTileId(pathname: string): string {
-  const first = pathname.split("/").filter(Boolean)[0]
+  const segments = pathname.split("/").filter(Boolean)
+  const first = segments[0]
+  const second = segments[1]
+  if (first === "ai-tools" && second && TILES.some((tile) => tile.id === second)) return second
   return TILES.some((tile) => tile.id === first) ? (first ?? "idp") : "idp"
 }
 
@@ -35,8 +39,10 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const idpNavSections = useIdpNavSections()
   const idpBasicNavSections = useIdpBasicNavSections()
   const intrastatNavSections = useIntrastatNavSections()
-  const navSections =
-    tileId === "idp-basic"
+  const isAiToolPage = tile?.href.startsWith("/ai-tools/") ?? false
+  const navSections = isAiToolPage
+    ? []
+    : tileId === "idp-basic"
       ? idpBasicNavSections
       : tileId === "intrastat"
         ? intrastatNavSections
@@ -82,16 +88,18 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         sidebarCollapsed={collapsed}
         {...(isBoardRoute ? { mainClassName: "overflow-hidden" } : {})}
         sidebar={
-          <TileMenu
-            sections={navSections}
-            activeItemId={activeItemId}
-            collapsed={collapsed}
-            brand={brand}
-            brandIcon={brandIcon}
-            footerSlot={<VersionLabel tileId={tileId} />}
-          />
+          isAiToolPage ? null : (
+            <TileMenu
+              sections={navSections}
+              activeItemId={activeItemId}
+              collapsed={collapsed}
+              brand={brand}
+              brandIcon={brandIcon}
+              footerSlot={<VersionLabel tileId={tileId} />}
+            />
+          )
         }
-        topbar={<Topbar />}
+        topbar={<Topbar showSidebarToggle={!isAiToolPage} />}
       >
         <FeatureErrorBoundary>{children}</FeatureErrorBoundary>
       </AppShell>

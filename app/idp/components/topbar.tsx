@@ -40,7 +40,11 @@ const SKIN_OPTIONS: readonly SkinOption<SkinId>[] = SKINS.map((s) => ({
   swatch: SKIN_SWATCHES[s.id],
 }))
 
-export function Topbar() {
+interface TopbarProps {
+  showSidebarToggle?: boolean
+}
+
+export function Topbar({ showSidebarToggle = true }: TopbarProps) {
   const pathname = usePathname()
   const collapsed = useSidebarStore((s) => s.collapsed)
   const toggle = useSidebarStore((s) => s.toggle)
@@ -69,26 +73,28 @@ export function Topbar() {
     <>
       <TooltipProvider delayDuration={300}>
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={toggle}
-                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              >
-                {collapsed ? (
-                  <PanelLeftOpen className="h-4 w-4" />
-                ) : (
-                  <PanelLeftClose className="h-4 w-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              {collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            </TooltipContent>
-          </Tooltip>
+          {showSidebarToggle ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={toggle}
+                  aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                >
+                  {collapsed ? (
+                    <PanelLeftOpen className="h-4 w-4" />
+                  ) : (
+                    <PanelLeftClose className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
 
           <Breadcrumb>
             <BreadcrumbList>

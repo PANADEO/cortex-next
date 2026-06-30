@@ -1,4 +1,4 @@
-import { useFeatureFlags, useFeatureFlagSettings } from "@cortex/api"
+import { useAuthorizedApps, useFeatureFlags, useFeatureFlagSettings } from "@cortex/api"
 import type { FeatureFlagsResponse } from "@cortex/types"
 import type { TileMenuItem, TileMenuSection } from "@cortex/ui"
 import {
@@ -10,10 +10,12 @@ import {
   Package,
   ScrollText,
   Settings,
+  Sparkles,
   TableProperties,
   Upload,
 } from "lucide-react"
 import { useMemo } from "react"
+import { getVisibleAiTools } from "./ai-tools/registry"
 
 export const IDP_NAV: TileMenuSection[] = [
   {
@@ -115,6 +117,13 @@ export const INTRASTAT_NAV: TileMenuSection[] = [
   },
 ]
 
+export const AI_TOOLS_DASHBOARD_ITEM: TileMenuItem = {
+  id: "dashboard",
+  label: "Dashboard",
+  icon: Sparkles,
+  href: "/ai-tools",
+}
+
 function normalizeMenuKey(value: string): string {
   return value
     .trim()
@@ -173,4 +182,36 @@ export function useIdpBasicNavSections(): TileMenuSection[] {
 
 export function useIntrastatNavSections(): TileMenuSection[] {
   return INTRASTAT_NAV
+}
+
+export function useAiToolsNavSections(): TileMenuSection[] {
+  const authorized = useAuthorizedApps()
+
+  return useMemo(() => {
+    const tools = getVisibleAiTools(authorized.apps)
+    const grouped = tools.reduce<Record<string, TileMenuItem[]>>((acc, tool) => {
+      const items = acc[tool.category] ?? []
+      items.push({
+        id: tool.id,
+        label: tool.shortLabel,
+        icon: tool.icon,
+        href: `/ai-tools/${tool.id}`,
+      })
+      acc[tool.category] = items
+      return acc
+    }, {})
+
+    return [
+      {
+        id: "home",
+        label: "Start",
+        items: [AI_TOOLS_DASHBOARD_ITEM],
+      },
+      ...Object.entries(grouped).map(([label, items]) => ({
+        id: label.toLowerCase(),
+        label,
+        items,
+      })),
+    ]
+  }, [authorized.apps])
 }

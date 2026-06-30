@@ -1,5 +1,6 @@
 import { usePackage } from "@cortex/api"
 import { useMemo } from "react"
+import { getAiToolDefinition } from "./ai-tools/registry"
 import { IDP_BASIC_NAV, IDP_NAV, INTRASTAT_NAV } from "./nav"
 import { TILES } from "./tiles"
 
@@ -29,7 +30,6 @@ const INTRASTAT_ROUTE_LABELS: Record<string, string> = {
   resources: "Resources",
   settings: "Settings",
 }
-
 const PACKAGE_DETAIL_PATTERN = /^\/idp\/packages\/([^/]+)\/?$/
 
 function tileConfig(tileId: string | undefined): {
@@ -57,6 +57,12 @@ function tileConfig(tileId: string | undefined): {
 export function breadcrumbsFromPath(pathname: string): BreadcrumbEntry[] {
   const segments = pathname.split("/").filter(Boolean)
   if (segments.length === 0) return [{ label: "IDP" }]
+
+  if (segments[0] === "ai-tools") {
+    const tool = getAiToolDefinition(segments[1] ?? "")
+    if (tool) return [{ label: "Aplikacje", href: "/" }, { label: tool.shortLabel }]
+    return [{ label: "Aplikacje", href: "/" }]
+  }
 
   const tileId = segments[0]
   const config = tileConfig(tileId)

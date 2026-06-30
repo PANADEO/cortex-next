@@ -91,7 +91,7 @@ describe("/api/me/access route handler", () => {
     expect(body.email).toBe("u@example.com")
   })
 
-  it("checks only shell app codes and returns authorized apps", async () => {
+  it("checks shell and AI mini-app codes and returns authorized apps", async () => {
     vi.stubEnv("NODE_ENV", "production")
     vi.stubEnv("CORTEX_ADMIN_API_BASE_URL", "http://cortex-admin")
     vi.stubEnv("CORTEX_ADMIN_API_KEY", "test-key")
@@ -120,7 +120,21 @@ describe("/api/me/access route handler", () => {
       email: "u@example.com",
     })
     expect(requestedUrl.searchParams.get("email")).toBe("u@example.com")
-    expect(requestedUrl.searchParams.getAll("apps")).toEqual(["idp", "idp-basic", "intrastat"])
+    expect(requestedUrl.searchParams.getAll("apps")).toEqual([
+      "idp",
+      "idp-basic",
+      "intrastat",
+      "ai-tools",
+      "text-highlighter",
+      "text-transformer",
+      "text-analyzer",
+      "ai-summarizer",
+      "content-guru",
+      "linkedin-generator",
+      "visual-guru",
+      "fakturomat",
+      "ai-daily-assistant",
+    ])
   })
 
   it("prefers x-auth-request-email header over DEV_USER_EMAIL in development", async () => {

@@ -23,6 +23,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
+RUN mkdir -p /data/ai-tools-history && chown -R nextjs:nodejs /data
 
 # Next 15 standalone output, monorepo layout (outputFileTracingRoot=repoRoot).
 # Entry point is app/idp/server.js; static + public scoped under app/idp/.
@@ -34,5 +35,6 @@ USER nextjs
 EXPOSE 80
 ENV PORT=80
 ENV HOSTNAME=0.0.0.0
+ENV AI_TOOLS_HISTORY_DIR=/data/ai-tools-history
 
 CMD ["node", "app/idp/server.js"]

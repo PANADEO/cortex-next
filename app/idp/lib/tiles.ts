@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react"
 import { FileSpreadsheet, FileText, ScanText } from "lucide-react"
+import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
 export type TileCategoryFunctional =
   | "content-generation"
@@ -25,6 +26,47 @@ export interface Tile {
 }
 
 export type TileHrefOverrides = Partial<Record<string, string>>
+
+const AI_TOOL_TILE_STYLE: Record<
+  AiToolDefinition["category"],
+  Pick<Tile, "categoryDepartment" | "categoryFunctional" | "iconBg" | "iconFg">
+> = {
+  Asystenci: {
+    categoryFunctional: "agents",
+    categoryDepartment: ["operations", "it"],
+    iconBg: "bg-indigo-200 dark:bg-indigo-900/40",
+    iconFg: "text-indigo-700 dark:text-indigo-300",
+  },
+  Dokumenty: {
+    categoryFunctional: "misc",
+    categoryDepartment: ["finance", "operations"],
+    iconBg: "bg-amber-200 dark:bg-amber-900/40",
+    iconFg: "text-amber-700 dark:text-amber-300",
+  },
+  Tekst: {
+    categoryFunctional: "content-generation",
+    categoryDepartment: ["marketing", "operations", "it"],
+    iconBg: "bg-blue-200 dark:bg-blue-900/40",
+    iconFg: "text-blue-700 dark:text-blue-300",
+  },
+  Treści: {
+    categoryFunctional: "content-generation",
+    categoryDepartment: ["marketing", "hr", "operations"],
+    iconBg: "bg-violet-200 dark:bg-violet-900/40",
+    iconFg: "text-violet-700 dark:text-violet-300",
+  },
+}
+
+function aiToolTile(tool: AiToolDefinition): Tile {
+  return {
+    id: tool.id,
+    label: tool.label,
+    description: tool.description,
+    href: `/ai-tools/${tool.id}`,
+    icon: tool.icon,
+    ...AI_TOOL_TILE_STYLE[tool.category],
+  }
+}
 
 export const FUNCTIONAL_CATEGORIES: ReadonlyArray<{
   id: TileCategoryFunctional
@@ -85,4 +127,5 @@ export const TILES: ReadonlyArray<Tile> = [
     categoryDepartment: ["operations", "finance"],
     versionEndpoint: "/intrastat/version",
   },
+  ...AI_TOOL_DEFINITIONS.map(aiToolTile),
 ]
