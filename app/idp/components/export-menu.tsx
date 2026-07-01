@@ -3,10 +3,13 @@
 import { downloadBlob } from "@/lib/download"
 import {
   loadExportEmailRecipients,
+  loadImportNotificationExportTemplate,
   normalizeExportEmailRecipient,
   rememberExportEmailRecipient,
+  rememberImportNotificationExportTemplate,
 } from "@/lib/export/email-recipients"
 import { endpoints, toastApiError, useExportTemplates, useMe } from "@cortex/api"
+import type { ExportTemplateInfo } from "@cortex/types"
 import {
   Button,
   Dialog,
@@ -16,17 +19,21 @@ import {
   DialogHeader,
   DialogTitle,
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   Input,
   Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Textarea,
 } from "@cortex/ui"
-import { Download, FileDown, Loader2, Paperclip, Send } from "lucide-react"
-import { type FormEvent, useEffect, useId, useRef, useState } from "react"
+import { Download, FileDown, Loader2, Send } from "lucide-react"
+import { type FormEvent, useEffect, useId, useState } from "react"
 import { toast } from "sonner"
 
 interface ExportMenuProps {
@@ -58,15 +65,28 @@ function deriveFileName(baseName: string, templateName: string, format: string):
   return `${stripped}_${templateName}.${ext}`
 }
 
+function getEmailTemplate(
+  templates: readonly ExportTemplateInfo[],
+  templateName: string,
+): ExportTemplateInfo | null {
+  return templates.find((template) => template.name === templateName) ?? null
+}
+
+function getDefaultEmailTemplate(
+  templates: readonly ExportTemplateInfo[],
+  userEmail: string,
+): ExportTemplateInfo | null {
+  const savedTemplateName = loadImportNotificationExportTemplate(userEmail)
+  return getEmailTemplate(templates, savedTemplateName) ?? templates[0] ?? null
+}
+
 export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
   const templates = useExportTemplates()
   const me = useMe()
   const [downloading, setDownloading] = useState<string | null>(null)
-  const [mailMode, setMailMode] = useState(false)
   const [emailDraft, setEmailDraft] = useState<EmailDraft | null>(null)
   const [savedEmailRecipients, setSavedEmailRecipients] = useState<string[]>([])
   const emailRecipientListId = useId()
-  const mailModeRef = useRef(mailMode)
   const userEmail = me.data?.email ?? ""
   const defaultEmailRecipient =
     savedEmailRecipients[0] ?? normalizeExportEmailRecipient(userEmail) ?? ""
@@ -75,24 +95,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
     setSavedEmailRecipients(loadExportEmailRecipients(userEmail))
   }, [userEmail])
 
-  const setMailModeValue = (value: boolean) => {
-    mailModeRef.current = value
-    setMailMode(value)
-  }
-
   const handleExport = async (templateName: string, displayName: string, format: string) => {
-    if (mailModeRef.current) {
-      setEmailDraft({
-        templateName,
-        displayName,
-        format,
-        toEmail: defaultEmailRecipient,
-        subject: `Export ${displayName}`,
-        body: DEFAULT_EMAIL_BODY,
-      })
-      return
-    }
-
     setDownloading(templateName)
     try {
       const blob = await endpoints.packages.exportResult(packageId, templateName)
@@ -105,6 +108,34 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
     } finally {
       setDownloading(null)
     }
+  }
+
+  const handleOpenEmailDialog = (items: readonly ExportTemplateInfo[]) => {
+    const template = getDefaultEmailTemplate(items, userEmail)
+    if (!template) return
+    setEmailDraft({
+      templateName: template.name,
+      displayName: template.display_name,
+      format: template.format,
+      toEmail: defaultEmailRecipient,
+      subject: `Export ${template.display_name}`,
+      body: DEFAULT_EMAIL_BODY,
+    })
+  }
+
+  const handleEmailTemplateChange = (
+    templateName: string,
+    items: readonly ExportTemplateInfo[],
+  ) => {
+    const template = getEmailTemplate(items, templateName)
+    if (!template || !emailDraft) return
+    setEmailDraft({
+      ...emailDraft,
+      templateName: template.name,
+      displayName: template.display_name,
+      format: template.format,
+      subject: `Export ${template.display_name}`,
+    })
   }
 
   const handleSendEmail = async (event: FormEvent<HTMLFormElement>) => {
@@ -123,6 +154,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
         body: emailDraft.body,
       })
       setSavedEmailRecipients(rememberExportEmailRecipient(toEmail, userEmail))
+      rememberImportNotificationExportTemplate(emailDraft.templateName, userEmail)
       toast.success(`Export emailed to ${result.sent_to}`)
       setEmailDraft(null)
     } catch (err) {
@@ -172,15 +204,13 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuCheckboxItem
-            checked={mailMode}
-            onSelect={(event) => {
-              event.preventDefault()
-              setMailModeValue(!mailModeRef.current)
-            }}
+          <DropdownMenuItem
+            onClick={() => handleOpenEmailDialog(items)}
+            disabled={downloading !== null}
           >
-            Email
-          </DropdownMenuCheckboxItem>
+            <Send className="mr-2 h-4 w-4 text-muted-foreground" />
+            Send by email
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           {items.map((t) => (
             <DropdownMenuItem
@@ -213,6 +243,28 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
 
             {emailDraft ? (
               <>
+                <div className="space-y-2">
+                  <Label htmlFor={`export-email-template-${packageId}`} className="text-xs">
+                    Export template
+                  </Label>
+                  <Select
+                    value={emailDraft.templateName}
+                    onValueChange={(templateName) => handleEmailTemplateChange(templateName, items)}
+                    disabled={isSendingEmail}
+                  >
+                    <SelectTrigger id={`export-email-template-${packageId}`} className="h-9">
+                      <SelectValue placeholder="Export template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {items.map((template) => (
+                        <SelectItem key={template.name} value={template.name}>
+                          {template.display_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor={`export-email-to-${packageId}`} className="text-xs">
                     To
@@ -283,16 +335,6 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
                     className="resize-none"
                     disabled={isSendingEmail}
                   />
-                </div>
-
-                <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
-                  <Paperclip className="h-4 w-4 text-muted-foreground" />
-                  <div className="min-w-0">
-                    <p className="truncate">{emailDraft.displayName}</p>
-                    <p className="text-[10px] uppercase text-muted-foreground">
-                      {emailDraft.format}
-                    </p>
-                  </div>
                 </div>
               </>
             ) : null}
