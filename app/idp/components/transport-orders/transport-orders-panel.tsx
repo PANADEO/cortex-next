@@ -155,7 +155,7 @@ function TransportOrderSection({
   const deliveryTerms = useUpdateDeliveryTerms()
   const invoiceTotals = useUpdateInvoiceTotals()
   const invoiceLines = useUpdateInvoiceLines()
-  const selectLineRefs = useSourceMaterialSelectionStore((s) => s.selectLineRefs)
+  const selectLine = useSourceMaterialSelectionStore((s) => s.selectLine)
 
   const partyMutations = { seller, buyer, consignor, consignee }
   const saveTransportInfo = wrapMutation(transportInfo, "Transport info updated")
@@ -240,7 +240,7 @@ function TransportOrderSection({
           onSaveLines={(body) =>
             saveInvoiceLines({ packageId, orderId: order.id, invoiceId: invoice.id, body })
           }
-          onSelectLine={(line) => selectLineRefs(line.source_references)}
+          onSelectLine={selectLine}
           useCustomsCode={useCustomsCode}
           showAtrProcessing={showAtrProcessing}
         />

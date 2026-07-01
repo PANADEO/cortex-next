@@ -1,5 +1,12 @@
 // @vitest-environment jsdom
-import type { Invoice, PackageDetailsResponse, PackageTransportOrdersResponse } from "@cortex/types"
+import { useSourceMaterialSelectionStore } from "@/lib/stores/source-material-selection"
+import type {
+  Invoice,
+  InvoiceLineSourceReference,
+  PackageDetailsResponse,
+  PackageTransportOrdersResponse,
+  SourceFileReadModel,
+} from "@cortex/types"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import "@testing-library/jest-dom/vitest"
 import { cleanup, render, screen, waitFor } from "@testing-library/react"
@@ -15,9 +22,29 @@ vi.mock("next/navigation", () => ({
   useParams,
 }))
 
+vi.mock("@cortex/ui/components/document-viewer", () => ({
+  DocumentViewer: ({
+    fileName,
+    activePage,
+    highlightBoxes,
+    spreadsheetSearchTerms,
+  }: {
+    fileName: string
+    activePage?: number | null
+    highlightBoxes?: unknown[]
+    spreadsheetSearchTerms?: unknown[]
+  }) => (
+    <div data-testid="mock-document-viewer">
+      {fileName} page {activePage ?? "none"} highlights {highlightBoxes?.length ?? 0} terms{" "}
+      {spreadsheetSearchTerms?.length ?? 0}
+    </div>
+  ),
+}))
+
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  useSourceMaterialSelectionStore.getState().clear()
 })
 
 function freshClient(): QueryClient {
@@ -75,6 +102,14 @@ function makePackage(): PackageDetailsResponse {
 }
 
 function makeInvoice(overrides: Partial<Invoice> & Pick<Invoice, "id">): Invoice {
+  const invoicePdfRef: InvoiceLineSourceReference = {
+    path: "invoice.pdf",
+    relation_type: "invoice",
+    page_number: 2,
+    highlight_boxes: [{ x: 0.1, y: 0.2, width: 0.3, height: 0.04 }],
+    label: "Invoice PDF",
+  }
+
   return {
     invoice_number: "FV-1",
     invoice_date: "2026-05-18",
@@ -106,12 +141,31 @@ function makeInvoice(overrides: Partial<Invoice> & Pick<Invoice, "id">): Invoice
         packages_type: null,
         packages_marking: null,
         origin_country: "DE",
-        source_references: [],
+        source_references: [invoicePdfRef],
         notes: [],
       },
     ],
     ...overrides,
   }
+}
+
+function makeSourceFiles(): SourceFileReadModel[] {
+  return [
+    {
+      path: "packing-list.xlsx",
+      file_name: "packing-list.xlsx",
+      media_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      preview_kind: "download_only",
+      size_bytes: 1024,
+    },
+    {
+      path: "invoice.pdf",
+      file_name: "invoice.pdf",
+      media_type: "application/pdf",
+      preview_kind: "pdf",
+      size_bytes: 2048,
+    },
+  ]
 }
 
 function makeTransportOrders(): PackageTransportOrdersResponse {
@@ -251,6 +305,84 @@ describe("VerifyWorkspacePage — document preview toggle", () => {
     await userEvent.click(screen.getByRole("tab", { name: /invoice fv-2/i }))
 
     expect(screen.getByRole("heading", { name: /invoice fv-2.*2 lines/i })).not.toBeNull()
+  })
+
+  it("opens the referenced PDF source when an invoice line is clicked", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetchMock({
+        "/user/me": { body: { email: "dev@cortex.local", has_access: true } },
+        "/packages/test-1": { body: makePackage() },
+        "/packages/test-1/transitions": { body: { transitions: [] } },
+        "/packages/test-1/transport-orders": { body: makeTransportOrders() },
+        "/packages/test-1/source-files": { body: makeSourceFiles() },
+        "/packages/test-1/source-files/content": { body: "pdf-bytes" },
+      }),
+    )
+
+    render(
+      <Wrapper client={freshClient()}>
+        <VerifyWorkspacePage />
+      </Wrapper>,
+    )
+
+    await userEvent.click(await screen.findByDisplayValue("SKU-1"))
+
+    expect(await screen.findByRole("tab", { name: /invoice\.pdf/i })).toHaveAttribute(
+      "data-state",
+      "active",
+    )
+    expect(screen.getByText(/source selected — invoice pdf · page 2 · 1 highlight/i)).not.toBeNull()
+    expect(await screen.findByTestId("mock-document-viewer")).toHaveTextContent(
+      "invoice.pdf page 2 highlights 1",
+    )
+  })
+
+  it("opens the referenced spreadsheet source with search terms when an invoice line is clicked", async () => {
+    const transportOrders = makeTransportOrders()
+    const spreadsheetLine = (transportOrders.transport_orders ?? [])[0]?.invoices[1]?.lines[0]
+    if (!spreadsheetLine) throw new Error("Expected spreadsheet line fixture")
+    spreadsheetLine.source_references = [
+      {
+        path: "packing-list.xlsx",
+        relation_type: "packing_list",
+        page_number: null,
+        highlight_boxes: [],
+        label: "Packing list",
+      },
+    ]
+
+    vi.stubGlobal(
+      "fetch",
+      makeFetchMock({
+        "/user/me": { body: { email: "dev@cortex.local", has_access: true } },
+        "/packages/test-1": { body: makePackage() },
+        "/packages/test-1/transitions": { body: { transitions: [] } },
+        "/packages/test-1/transport-orders": { body: transportOrders },
+        "/packages/test-1/source-files": { body: makeSourceFiles() },
+        "/packages/test-1/source-files/content": { body: "xlsx-bytes" },
+      }),
+    )
+
+    render(
+      <Wrapper client={freshClient()}>
+        <VerifyWorkspacePage />
+      </Wrapper>,
+    )
+
+    await userEvent.click(await screen.findByRole("tab", { name: /invoice fv-2/i }))
+    await userEvent.click(screen.getByDisplayValue("SKU-2"))
+
+    expect(await screen.findByRole("tab", { name: /packing-list\.xlsx/i })).toHaveAttribute(
+      "data-state",
+      "active",
+    )
+
+    const status = screen.getByText(/source selected — packing list/i)
+    expect(status).not.toHaveTextContent(/page|row|highlight/i)
+    expect(await screen.findByTestId("mock-document-viewer")).toHaveTextContent(
+      /packing-list\.xlsx page none highlights 0 terms [1-9]/,
+    )
   })
 
   it("shows and calls admin unlock when backend returns unlock transition", async () => {

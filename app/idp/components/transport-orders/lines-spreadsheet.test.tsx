@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { downloadBlob } from "@/lib/download"
+import { useSourceMaterialSelectionStore } from "@/lib/stores/source-material-selection"
 import { queryKeys } from "@cortex/api"
-import type { Invoice, UpdateInvoiceLinesRequest } from "@cortex/types"
+import type { Invoice, InvoiceLineSourceReference, UpdateInvoiceLinesRequest } from "@cortex/types"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -30,6 +31,21 @@ function renderWithPreferences(ui: ReactNode, hiddenColumns: string[] | null = n
 }
 
 function makeInvoice(): Invoice {
+  const invoicePdfRef: InvoiceLineSourceReference = {
+    path: "invoice.pdf",
+    relation_type: "invoice",
+    page_number: 2,
+    highlight_boxes: [{ x: 0.1, y: 0.2, width: 0.3, height: 0.04 }],
+    label: "Invoice PDF",
+  }
+  const packingListRef: InvoiceLineSourceReference = {
+    path: "packing-list.xlsx",
+    relation_type: "packing_list",
+    page_number: null,
+    highlight_boxes: [],
+    label: "Packing list",
+  }
+
   return {
     id: "invoice-1",
     invoice_number: "FV-1",
@@ -62,7 +78,7 @@ function makeInvoice(): Invoice {
         packages_type: null,
         packages_marking: null,
         origin_country: "CN",
-        source_references: [],
+        source_references: [invoicePdfRef],
         notes: [],
         sad_override: {
           preference_code: "400",
@@ -96,7 +112,7 @@ function makeInvoice(): Invoice {
         packages_type: null,
         packages_marking: null,
         origin_country: "CN",
-        source_references: [],
+        source_references: [packingListRef],
         notes: [],
         sad_override: null,
       },
@@ -116,6 +132,7 @@ function readBlobText(blob: Blob): Promise<string> {
 describe("LinesSpreadsheet", () => {
   beforeEach(() => {
     vi.mocked(downloadBlob).mockClear()
+    useSourceMaterialSelectionStore.getState().clear()
   })
 
   it("shows business column totals without summing line numbers", () => {
@@ -219,6 +236,43 @@ describe("LinesSpreadsheet", () => {
     if (!totalRow) throw new Error("Expected total row")
     expect(within(totalRow).getByText("60.5")).not.toBeNull()
     expect(within(totalRow).queryByText("30.25")).toBeNull()
+  })
+
+  it("selects source references when a row is clicked or focused", async () => {
+    renderWithPreferences(
+      <LinesSpreadsheet
+        invoice={makeInvoice()}
+        canEdit={false}
+        isSaving={false}
+        onSave={async () => undefined}
+      />,
+    )
+
+    await userEvent.click(screen.getByDisplayValue("Second sample product"))
+
+    expect(useSourceMaterialSelectionStore.getState()).toMatchObject({
+      activePath: "packing-list.xlsx",
+      activePage: null,
+      highlightBoxes: [],
+      selectionLabel: "Packing list",
+    })
+    expect(useSourceMaterialSelectionStore.getState().spreadsheetSearchTerms).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "product_code",
+          value: "bx2486029",
+        }),
+      ]),
+    )
+
+    await userEvent.click(screen.getByDisplayValue("AX2486029"))
+
+    expect(useSourceMaterialSelectionStore.getState()).toMatchObject({
+      activePath: "invoice.pdf",
+      activePage: 2,
+      highlightBoxes: [{ x: 0.1, y: 0.2, width: 0.3, height: 0.04 }],
+      selectionLabel: "Invoice PDF",
+    })
   })
 
   it("renders and saves one Customs Code field in customs-code mode", async () => {

@@ -174,7 +174,7 @@ export function LinesSpreadsheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoice.id, lineIdsKey, useCustomsCode, showAtrProcessing])
 
-  const selectLineRefs = useSourceMaterialSelectionStore((s) => s.selectLineRefs)
+  const selectLine = useSourceMaterialSelectionStore((s) => s.selectLine)
 
   const dirty = dirtyIds.size > 0
 
@@ -440,7 +440,11 @@ export function LinesSpreadsheet({
             {sortedLines.map((line) => {
               const row = values[line.id] ?? invoiceLineToRow(line, { useCustomsCode })
               return (
-                <tr key={line.id} className="border-b border-border/50 hover:bg-muted/30">
+                <tr
+                  key={line.id}
+                  onClick={() => selectLine(line)}
+                  className="cursor-pointer border-b border-border/50 hover:bg-muted/30"
+                >
                   {columns.map((c) => (
                     <td key={c.key} className="align-top">
                       <Input
@@ -452,9 +456,8 @@ export function LinesSpreadsheet({
                             c.uppercase ? e.target.value.toUpperCase() : e.target.value,
                           )
                         }
-                        onFocus={() => selectLineRefs(line.source_references)}
+                        onFocus={() => selectLine(line)}
                         readOnly={!canEdit}
-                        disabled={!canEdit}
                         className="h-6 rounded-none border-0 bg-transparent px-1.5 font-mono text-[9px] shadow-none focus-visible:ring-1"
                       />
                     </td>

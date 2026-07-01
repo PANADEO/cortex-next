@@ -1,5 +1,6 @@
 "use client"
 
+import { useSourceMaterialSelectionStore } from "@/lib/stores/source-material-selection"
 import { endpoints, usePackageSourceFiles } from "@cortex/api"
 import type { NormalizedHighlightBox, SourceFileReadModel } from "@cortex/types"
 import {
@@ -13,12 +14,12 @@ import {
   TabsList,
   TabsTrigger,
 } from "@cortex/ui"
-import { canPreviewInline, cn, getFileTypeIcon } from "@cortex/utils"
+import type { SpreadsheetSearchTerm } from "@cortex/ui/components/spreadsheet-search"
+import { canPreviewInline, cn, detectPreviewableKind, getFileTypeIcon } from "@cortex/utils"
 import { useQuery } from "@tanstack/react-query"
 import { ChevronDown, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { useSourceMaterialSelectionStore } from "@/lib/stores/source-material-selection"
 
 const DocumentViewer = dynamic(
   () => import("@cortex/ui/components/document-viewer").then((m) => m.DocumentViewer),
@@ -41,6 +42,8 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
   const activePath = useSourceMaterialSelectionStore((s) => s.activePath)
   const activePage = useSourceMaterialSelectionStore((s) => s.activePage)
   const highlightBoxes = useSourceMaterialSelectionStore((s) => s.highlightBoxes)
+  const selectionLabel = useSourceMaterialSelectionStore((s) => s.selectionLabel)
+  const spreadsheetSearchTerms = useSourceMaterialSelectionStore((s) => s.spreadsheetSearchTerms)
   const setActivePath = useSourceMaterialSelectionStore((s) => s.setActivePath)
 
   const scrollerRef = useRef<HTMLDivElement | null>(null)
@@ -67,11 +70,12 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
     if (!el) return
     updateScrollState()
     el.addEventListener("scroll", updateScrollState, { passive: true })
-    const observer = new ResizeObserver(() => updateScrollState())
-    observer.observe(el)
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => updateScrollState())
+    observer?.observe(el)
     return () => {
       el.removeEventListener("scroll", updateScrollState)
-      observer.disconnect()
+      observer?.disconnect()
     }
   }, [updateScrollState, items.length])
 
@@ -80,7 +84,7 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
     const el = scrollerRef.current
     if (!el) return
     const trigger = el.querySelector<HTMLElement>(`[data-tab-path="${CSS.escape(activePath)}"]`)
-    trigger?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" })
+    trigger?.scrollIntoView?.({ behavior: "smooth", block: "nearest", inline: "nearest" })
   }, [activePath])
 
   if (files.isLoading) return <LoadingState label="Loading source files…" />
@@ -89,7 +93,16 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
   }
 
   const active = items.find((f) => f.path === activePath) ?? items[0]!
+  const activeKind = detectPreviewableKind(active.file_name, active.media_type)
   const showDropdown = items.length > 1
+  const isSelectedSource = active.path === activePath
+  const isPdfSelection = isSelectedSource && activeKind === "pdf"
+  const hasSourceSelection =
+    isSelectedSource &&
+    (selectionLabel !== null ||
+      (isPdfSelection && activePage !== null) ||
+      (isPdfSelection && highlightBoxes.length > 0) ||
+      spreadsheetSearchTerms.length > 0)
 
   const handleScrollBy = (delta: number) => {
     scrollerRef.current?.scrollBy({ left: delta, behavior: "smooth" })
@@ -100,7 +113,7 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
     requestAnimationFrame(() => {
       const el = scrollerRef.current
       if (!el) return
-      el.querySelector<HTMLElement>(`[data-tab-path="${CSS.escape(path)}"]`)?.scrollIntoView({
+      el.querySelector<HTMLElement>(`[data-tab-path="${CSS.escape(path)}"]`)?.scrollIntoView?.({
         behavior: "smooth",
         block: "nearest",
         inline: "nearest",
@@ -191,10 +204,14 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
         </div>
       </Tabs>
 
-      {highlightBoxes.length > 0 && active.path === activePath ? (
+      {hasSourceSelection ? (
         <div className="shrink-0 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-          Invoice line selected — page {activePage ?? "—"} · {highlightBoxes.length} highlight
-          {highlightBoxes.length > 1 ? "s" : ""}.
+          Source selected
+          {selectionLabel ? ` — ${selectionLabel}` : ""}
+          {isPdfSelection && activePage ? ` · page ${activePage}` : ""}
+          {isPdfSelection && highlightBoxes.length > 0
+            ? ` · ${highlightBoxes.length} highlight${highlightBoxes.length > 1 ? "s" : ""}`
+            : ""}
         </div>
       ) : null}
 
@@ -202,8 +219,9 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
         <SourceFileBody
           packageId={packageId}
           file={active}
-          activePage={active.path === activePath ? activePage : null}
-          highlightBoxes={active.path === activePath ? highlightBoxes : []}
+          activePage={isPdfSelection ? activePage : null}
+          highlightBoxes={isPdfSelection ? highlightBoxes : []}
+          spreadsheetSearchTerms={isSelectedSource ? spreadsheetSearchTerms : []}
         />
       </div>
     </div>
@@ -215,11 +233,13 @@ function SourceFileBody({
   file,
   activePage,
   highlightBoxes,
+  spreadsheetSearchTerms,
 }: {
   packageId: string
   file: SourceFileReadModel
   activePage: number | null
   highlightBoxes: NormalizedHighlightBox[]
+  spreadsheetSearchTerms: SpreadsheetSearchTerm[]
 }) {
   const previewable = canPreviewInline(file.file_name, file.media_type, file.preview_kind)
   const content = useQuery({
@@ -253,6 +273,7 @@ function SourceFileBody({
       mediaType={file.media_type}
       activePage={activePage}
       highlightBoxes={highlightBoxes}
+      spreadsheetSearchTerms={spreadsheetSearchTerms}
     />
   )
 }

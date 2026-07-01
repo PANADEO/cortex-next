@@ -15,6 +15,12 @@ import {
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, RenderTask } from "pdfjs-dist"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import * as XLSX from "xlsx"
+import type { SpreadsheetSearchTerm } from "./spreadsheet-search"
+import {
+  findBestSpreadsheetRowMatch,
+  findBestSpreadsheetSheetMatch,
+  type SpreadsheetSheetData,
+} from "./spreadsheet-search"
 import { Button } from "./ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
 
@@ -40,6 +46,7 @@ interface DocumentViewerProps {
   className?: string | undefined
   activePage?: number | null | undefined
   highlightBoxes?: NormalizedHighlightBox[] | undefined
+  spreadsheetSearchTerms?: SpreadsheetSearchTerm[] | undefined
 }
 
 export function DocumentViewer({
@@ -49,6 +56,7 @@ export function DocumentViewer({
   className,
   activePage,
   highlightBoxes,
+  spreadsheetSearchTerms,
 }: DocumentViewerProps) {
   const kind = useMemo(() => detectDocumentKind(fileName, mediaType), [fileName, mediaType])
 
@@ -70,12 +78,23 @@ export function DocumentViewer({
       />
     )
   if (kind === "docx") return <DocxViewer source={source} className={className} />
-  if (kind === "xlsx") return <XlsxViewer source={source} className={className} />
-  if (kind === "image") return <ImageViewer source={source} fileName={fileName} className={className} />
+  if (kind === "xlsx")
+    return (
+      <XlsxViewer
+        source={source}
+        className={className}
+        spreadsheetSearchTerms={spreadsheetSearchTerms ?? []}
+      />
+    )
+  if (kind === "image")
+    return <ImageViewer source={source} fileName={fileName} className={className} />
 
   return (
     <ViewerFrame className={className}>
-      <ViewerMessage icon={<FileWarning className="h-5 w-5" />} label={`No inline preview for ${fileName}.`} />
+      <ViewerMessage
+        icon={<FileWarning className="h-5 w-5" />}
+        label={`No inline preview for ${fileName}.`}
+      />
     </ViewerFrame>
   )
 }
@@ -215,9 +234,18 @@ function PdfViewer({
 
   useEffect(() => {
     if (!activePage) return
-    const target = pageRefs.current.get(activePage)
-    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" })
-  }, [activePage, doc])
+    const frame = requestAnimationFrame(() => {
+      const container = containerRef.current
+      const target = pageRefs.current.get(activePage)
+      if (!container || !target) return
+      container.scrollTo({
+        top: Math.max(0, target.offsetTop - container.offsetTop),
+        behavior: "auto",
+      })
+      setCurrentPage(activePage)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [activePage, doc, scale])
 
   useEffect(() => {
     if (!doc) return
@@ -280,10 +308,7 @@ function PdfViewer({
   if (!doc) {
     return (
       <ViewerFrame className={className}>
-        <ViewerMessage
-          icon={<Loader2 className="h-4 w-4 animate-spin" />}
-          label="Loading PDF…"
-        />
+        <ViewerMessage icon={<Loader2 className="h-4 w-4 animate-spin" />} label="Loading PDF…" />
       </ViewerFrame>
     )
   }
@@ -518,7 +543,13 @@ function PdfPage({
   )
 }
 
-function DocxViewer({ source, className }: { source: Blob | ArrayBuffer | string; className?: string | undefined }) {
+function DocxViewer({
+  source,
+  className,
+}: {
+  source: Blob | ArrayBuffer | string
+  className?: string | undefined
+}) {
   const ref = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -548,13 +579,17 @@ function DocxViewer({ source, className }: { source: Blob | ArrayBuffer | string
   )
 }
 
-interface SheetTable {
-  name: string
-  html: string
-}
-
-function XlsxViewer({ source, className }: { source: Blob | ArrayBuffer | string; className?: string | undefined }) {
-  const [sheets, setSheets] = useState<SheetTable[]>([])
+function XlsxViewer({
+  source,
+  className,
+  spreadsheetSearchTerms,
+}: {
+  source: Blob | ArrayBuffer | string
+  className?: string | undefined
+  spreadsheetSearchTerms: SpreadsheetSearchTerm[]
+}) {
+  const tableRef = useRef<HTMLDivElement>(null)
+  const [sheets, setSheets] = useState<SpreadsheetSheetData[]>([])
   const [active, setActive] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
@@ -570,10 +605,17 @@ function XlsxViewer({ source, className }: { source: Blob | ArrayBuffer | string
           return
         }
         const wb = XLSX.read(buffer, { type: "array" })
-        const parsed: SheetTable[] = wb.SheetNames.map((name) => {
+        const parsed: SpreadsheetSheetData[] = wb.SheetNames.map((name) => {
           const ws = wb.Sheets[name]
-          const html = ws ? XLSX.utils.sheet_to_html(ws) : ""
-          return { name, html }
+          const rawRows = ws
+            ? (XLSX.utils.sheet_to_json(ws, {
+                header: 1,
+                blankrows: true,
+                defval: "",
+                raw: false,
+              }) as unknown[][])
+            : []
+          return { name, rows: normalizeSpreadsheetRows(rawRows) }
         })
         if (!cancelled) {
           setSheets(parsed)
@@ -589,6 +631,38 @@ function XlsxViewer({ source, className }: { source: Blob | ArrayBuffer | string
     }
   }, [source])
 
+  useEffect(() => {
+    if (spreadsheetSearchTerms.length === 0 || sheets.length === 0) return
+
+    const sheetMatch = findBestSpreadsheetSheetMatch(sheets, spreadsheetSearchTerms)
+    if (!sheetMatch) return
+
+    const sheetIndex = sheets.findIndex((sheet) => sheet.name === sheetMatch.sheetName)
+    if (sheetIndex >= 0 && sheetIndex !== active) setActive(sheetIndex)
+  }, [active, sheets, spreadsheetSearchTerms])
+
+  const activeSheet = sheets[active]
+  const spreadsheetMatch = useMemo(
+    () =>
+      activeSheet ? findBestSpreadsheetRowMatch(activeSheet.rows, spreadsheetSearchTerms) : null,
+    [activeSheet, spreadsheetSearchTerms],
+  )
+  const matchedCellIndexes = useMemo(
+    () => new Set(spreadsheetMatch?.matchedCellIndexes ?? []),
+    [spreadsheetMatch],
+  )
+
+  useEffect(() => {
+    if (!spreadsheetMatch) return
+    const container = tableRef.current
+    if (!container) return
+
+    const target = container.querySelector<HTMLElement>(
+      `[data-spreadsheet-row="${spreadsheetMatch.rowIndex}"]`,
+    )
+    target?.scrollIntoView?.({ block: "center", inline: "nearest", behavior: "auto" })
+  }, [active, spreadsheetMatch])
+
   if (error) {
     return (
       <ViewerFrame className={className}>
@@ -599,12 +673,13 @@ function XlsxViewer({ source, className }: { source: Blob | ArrayBuffer | string
   if (sheets.length === 0) {
     return (
       <ViewerFrame className={className}>
-        <ViewerMessage icon={<Loader2 className="h-4 w-4 animate-spin" />} label="Loading spreadsheet…" />
+        <ViewerMessage
+          icon={<Loader2 className="h-4 w-4 animate-spin" />}
+          label="Loading spreadsheet…"
+        />
       </ViewerFrame>
     )
   }
-
-  const activeSheet = sheets[active]
 
   return (
     <ViewerFrame className={className}>
@@ -625,12 +700,60 @@ function XlsxViewer({ source, className }: { source: Blob | ArrayBuffer | string
           </button>
         ))}
       </div>
-      <div
-        className="flex-1 overflow-auto bg-background p-3 text-xs [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-border [&_th]:bg-muted [&_th]:px-2 [&_th]:py-1"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: activeSheet?.html ?? "" }}
-      />
+      {spreadsheetMatch ? (
+        <div className="shrink-0 border-b border-border bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+          Matched {spreadsheetMatch.matchedTermCount} field
+          {spreadsheetMatch.matchedTermCount === 1 ? "" : "s"} in row{" "}
+          {spreadsheetMatch.rowIndex + 1}.
+        </div>
+      ) : null}
+      <div ref={tableRef} className="flex-1 overflow-auto bg-background p-3 text-xs">
+        <table className="w-full border-collapse">
+          <tbody>
+            {(activeSheet?.rows ?? []).map((row, rowIndex) => {
+              const isMatchedRow = spreadsheetMatch?.rowIndex === rowIndex
+              return (
+                <tr
+                  key={rowIndex}
+                  data-spreadsheet-row={rowIndex}
+                  data-source-active-row={isMatchedRow ? "true" : undefined}
+                  className={cn(
+                    isMatchedRow &&
+                      "bg-primary/10 outline outline-2 outline-offset-[-2px] outline-primary/50",
+                  )}
+                >
+                  {row.map((cell, cellIndex) => {
+                    const isMatchedCell = isMatchedRow && matchedCellIndexes.has(cellIndex)
+                    return (
+                      <td
+                        key={cellIndex}
+                        data-source-active-cell={isMatchedCell ? "true" : undefined}
+                        className={cn(
+                          "border border-border px-2 py-1 align-top",
+                          isMatchedCell &&
+                            "bg-primary/20 font-semibold ring-1 ring-inset ring-primary/40",
+                        )}
+                      >
+                        {cell}
+                      </td>
+                    )
+                  })}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </ViewerFrame>
+  )
+}
+
+function normalizeSpreadsheetRows(rows: unknown[][]): string[][] {
+  return rows.map((row) =>
+    row.map((cell) => {
+      if (cell === null || cell === undefined) return ""
+      return String(cell)
+    }),
   )
 }
 

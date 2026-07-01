@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { downloadBlob } from "@/lib/download"
 import { queryKeys } from "@cortex/api"
-import type { Invoice } from "@cortex/types"
+import type { Invoice, InvoiceLineSourceReference } from "@cortex/types"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -30,6 +30,14 @@ function renderWithPreferences(ui: ReactNode, hiddenColumns: string[] | null = n
 }
 
 function makeInvoice(): Invoice {
+  const invoicePdfRef: InvoiceLineSourceReference = {
+    path: "invoice.pdf",
+    relation_type: "invoice",
+    page_number: 1,
+    highlight_boxes: [{ x: 0.1, y: 0.2, width: 0.3, height: 0.04 }],
+    label: "Invoice PDF",
+  }
+
   return {
     id: "invoice-1",
     invoice_number: "FV-1",
@@ -62,7 +70,7 @@ function makeInvoice(): Invoice {
         packages_type: null,
         packages_marking: null,
         origin_country: "CN",
-        source_references: [],
+        source_references: [invoicePdfRef],
         notes: [],
         sad_override: {
           preference_code: "400",
@@ -143,6 +151,49 @@ describe("InvoiceLinesGrid", () => {
     expect(screen.getByText("Produkt testowy")).not.toBeNull()
     expect(screen.getByText("115.25")).not.toBeNull()
     expect(screen.getByText("N018 / ATR-123 / 1144")).not.toBeNull()
+  })
+
+  it("calls row selection when an invoice line row is clicked", async () => {
+    const onSelectLine = vi.fn()
+
+    renderWithPreferences(
+      <InvoiceLinesGrid
+        invoice={makeInvoice()}
+        canEdit={false}
+        isSaving={false}
+        onSaveLines={async () => undefined}
+        onSelectLine={onSelectLine}
+      />,
+    )
+
+    await userEvent.click(screen.getByText("Sample product"))
+
+    expect(onSelectLine).toHaveBeenCalledTimes(1)
+    expect(onSelectLine).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "line-1",
+        source_references: [expect.objectContaining({ path: "invoice.pdf" })],
+      }),
+    )
+  })
+
+  it("opens line editing without triggering row selection", async () => {
+    const onSelectLine = vi.fn()
+
+    renderWithPreferences(
+      <InvoiceLinesGrid
+        invoice={makeInvoice()}
+        canEdit
+        isSaving={false}
+        onSaveLines={async () => undefined}
+        onSelectLine={onSelectLine}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: /edit line/i }))
+
+    expect(onSelectLine).not.toHaveBeenCalled()
+    expect(screen.getByRole("heading", { name: /edit line 1/i })).not.toBeNull()
   })
 
   it("renders one Customs Code column when customs-code mode is enabled", () => {
