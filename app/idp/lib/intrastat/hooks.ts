@@ -29,6 +29,8 @@ export const intrastatQueryKeys = {
     search?: string
   }) => [...intrastatQueryKeys.all, "batches", query] as const,
   batchDetail: (id: string) => [...intrastatQueryKeys.all, "batches", id] as const,
+  documentContent: (batchId: string, documentId: string) =>
+    [...intrastatQueryKeys.all, "documents", batchId, documentId] as const,
   lines: (
     batchId: string,
     query: {
@@ -100,6 +102,15 @@ export function useIntrastatBatch(id: string) {
       isActiveBatch(query.state.data?.status) ? ACTIVE_BATCH_REFETCH_MS : false,
     placeholderData: keepPreviousData,
     staleTime: 0,
+  })
+}
+
+export function useIntrastatDocumentContent(batchId: string, documentId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: intrastatQueryKeys.documentContent(batchId, documentId),
+    queryFn: () => intrastatApi.documentContent(batchId, documentId),
+    enabled,
+    staleTime: Infinity,
   })
 }
 

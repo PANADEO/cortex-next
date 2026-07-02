@@ -1,6 +1,7 @@
 "use client"
 
 import { IntrastatDeleteBatchButton } from "@/components/intrastat/delete-batch-button"
+import { IntrastatDocumentPreviewPanel } from "@/components/intrastat/document-preview-panel"
 import { IntrastatExportButtons } from "@/components/intrastat/export-buttons"
 import { IntrastatLineEditDialog } from "@/components/intrastat/line-edit-dialog"
 import {
@@ -34,12 +35,24 @@ import {
   TooltipTrigger,
 } from "@cortex/ui"
 import type { ColumnDef } from "@tanstack/react-table"
-import { AlertTriangle, Edit3, Loader2, PlayCircle, Search, TableProperties } from "lucide-react"
+import {
+  AlertTriangle,
+  Edit3,
+  Eye,
+  EyeOff,
+  Loader2,
+  PlayCircle,
+  Search,
+  TableProperties,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { toast } from "sonner"
 
 const PAGE_SIZE = 100
+const PREVIEW_VISIBLE_STORAGE_KEY = "intrastat.review.documentPreviewVisible"
+const PREVIEW_SPLIT_STORAGE_KEY = "intrastat-review-document-preview-split"
 const MATCH_OPTIONS: Array<{ value: IntrastatCnMatchStatus | "all"; label: string }> = [
   { value: "all", label: "All match statuses" },
   { value: "exact", label: "Exact" },
@@ -59,6 +72,8 @@ export default function IntrastatReviewPage() {
   const [search, setSearch] = useState("")
   const [matchStatus, setMatchStatus] = useState<IntrastatCnMatchStatus | "all">("all")
   const [editing, setEditing] = useState<IntrastatDeclarationLine | null>(null)
+  const [selectedSourceFile, setSelectedSourceFile] = useState<string | null>(null)
+  const [documentPreviewVisible, setDocumentPreviewVisible] = useState(true)
   const batches = useIntrastatBatches({ limit: 100, offset: 0 })
   const selectedBatch = useIntrastatBatch(batchId)
   const lines = useIntrastatLines(batchId, {
@@ -73,6 +88,14 @@ export default function IntrastatReviewPage() {
     const params = new URLSearchParams(window.location.search)
     const initialBatch = params.get("batch")
     if (initialBatch) setBatchId(initialBatch)
+  }, [])
+
+  useEffect(() => {
+    try {
+      setDocumentPreviewVisible(localStorage.getItem(PREVIEW_VISIBLE_STORAGE_KEY) !== "false")
+    } catch {
+      setDocumentPreviewVisible(true)
+    }
   }, [])
 
   useEffect(() => {
@@ -183,7 +206,14 @@ export default function IntrastatReviewPage() {
         header: "",
         size: 80,
         cell: ({ row }) => (
-          <Button size="sm" variant="ghost" onClick={() => setEditing(row.original)}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setSelectedSourceFile(row.original.source_file)
+              setEditing(row.original)
+            }}
+          >
             <Edit3 className="h-4 w-4" />
           </Button>
         ),
@@ -195,7 +225,24 @@ export default function IntrastatReviewPage() {
   const handleBatchChange = (nextBatchId: string) => {
     setBatchId(nextBatchId)
     setPage(0)
+    setSelectedSourceFile(null)
     router.replace(`/intrastat/review?batch=${nextBatchId}`)
+  }
+
+  const handleLineSelect = (line: IntrastatDeclarationLine) => {
+    setSelectedSourceFile(line.source_file)
+  }
+
+  const handleDocumentPreviewToggle = () => {
+    setDocumentPreviewVisible((current) => {
+      const next = !current
+      try {
+        localStorage.setItem(PREVIEW_VISIBLE_STORAGE_KEY, String(next))
+      } catch {
+        // localStorage can be unavailable in restricted browser contexts.
+      }
+      return next
+    })
   }
 
   const handleReprocess = async () => {
@@ -215,6 +262,14 @@ export default function IntrastatReviewPage() {
         description="Correct CN, weight, VAT, and delivery fields before exporting the importer workbook."
         actions={
           <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={handleDocumentPreviewToggle}>
+              {documentPreviewVisible ? (
+                <EyeOff className="mr-2 h-4 w-4" />
+              ) : (
+                <Eye className="mr-2 h-4 w-4" />
+              )}
+              {documentPreviewVisible ? "Hide preview" : "Show preview"}
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -239,82 +294,117 @@ export default function IntrastatReviewPage() {
         }
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-8 py-6">
-        <div className="flex shrink-0 flex-wrap items-center gap-3">
-          <Select value={batchId} onValueChange={handleBatchChange}>
-            <SelectTrigger className="h-9 w-[340px]">
-              <SelectValue placeholder="Choose a batch" />
-            </SelectTrigger>
-            <SelectContent>
-              {(batches.data?.items ?? []).map((batch) => (
-                <SelectItem key={batch.id} value={batch.id}>
-                  {batch.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {selectedBatch.data ? (
+      <div className="min-h-0 flex-1 overflow-hidden px-8 py-6">
+        <PanelGroup
+          key={documentPreviewVisible ? "with-document-preview" : "without-document-preview"}
+          autoSaveId={documentPreviewVisible ? PREVIEW_SPLIT_STORAGE_KEY : undefined}
+          direction="horizontal"
+          className="h-full"
+        >
+          <Panel
+            defaultSize={documentPreviewVisible ? 68 : 100}
+            minSize={45}
+            className="flex min-h-0 flex-col gap-4 overflow-hidden pr-4"
+          >
+            <div className="flex shrink-0 flex-wrap items-center gap-3">
+              <Select value={batchId} onValueChange={handleBatchChange}>
+                <SelectTrigger className="h-9 w-[340px]">
+                  <SelectValue placeholder="Choose a batch" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(batches.data?.items ?? []).map((batch) => (
+                    <SelectItem key={batch.id} value={batch.id}>
+                      {batch.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedBatch.data ? (
+                <>
+                  <IntrastatKindBadge kind={selectedBatch.data.transaction_kind} />
+                  <IntrastatStatusBadge status={selectedBatch.data.status} />
+                </>
+              ) : null}
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search invoice, index, CN..."
+                  value={search}
+                  onChange={(event) => {
+                    setPage(0)
+                    setSearch(event.target.value)
+                  }}
+                  className="h-9 w-72 pl-9"
+                />
+              </div>
+              <Select
+                value={matchStatus}
+                onValueChange={(value) => {
+                  setPage(0)
+                  setMatchStatus(value as IntrastatCnMatchStatus | "all")
+                }}
+              >
+                <SelectTrigger className="h-9 w-[210px]">
+                  <SelectValue placeholder="Match status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MATCH_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value === "all" ? option.label : getIntrastatMatchLabel(option.value)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="ml-auto text-xs text-muted-foreground">
+                {lines.isFetching ? "Refreshing..." : `${total} total`}
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-auto">
+              <DataTable
+                columns={columns}
+                data={items}
+                isLoading={lines.isPending && items.length === 0}
+                getRowId={(row) => row.id}
+                onRowClick={handleLineSelect}
+                stickyHeader
+                bordered
+                emptyState={
+                  <EmptyState
+                    icon={TableProperties}
+                    title={batchId ? "No lines in this batch" : "Choose a batch"}
+                    description={
+                      batchId
+                        ? "Lines appear after worker processing finishes."
+                        : "Select an Intrastat batch to review declaration lines."
+                    }
+                  />
+                }
+              />
+            </div>
+
+            <Pagination page={page} pageCount={pageCount} onChange={setPage} />
+          </Panel>
+
+          {documentPreviewVisible ? (
             <>
-              <IntrastatKindBadge kind={selectedBatch.data.transaction_kind} />
-              <IntrastatStatusBadge status={selectedBatch.data.status} />
+              <PanelResizeHandle className="w-1 shrink-0 bg-border transition-colors hover:bg-primary/40 data-[resize-handle-active]:bg-primary/50" />
+              <Panel
+                defaultSize={32}
+                minSize={22}
+                maxSize={55}
+                className="min-h-0 overflow-hidden pl-4"
+              >
+                <IntrastatDocumentPreviewPanel
+                  batchId={batchId}
+                  documents={selectedBatch.data?.documents ?? []}
+                  selectedSourceFile={selectedSourceFile}
+                  className="h-full"
+                />
+              </Panel>
             </>
           ) : null}
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search invoice, index, CN..."
-              value={search}
-              onChange={(event) => {
-                setPage(0)
-                setSearch(event.target.value)
-              }}
-              className="h-9 w-72 pl-9"
-            />
-          </div>
-          <Select
-            value={matchStatus}
-            onValueChange={(value) => {
-              setPage(0)
-              setMatchStatus(value as IntrastatCnMatchStatus | "all")
-            }}
-          >
-            <SelectTrigger className="h-9 w-[210px]">
-              <SelectValue placeholder="Match status" />
-            </SelectTrigger>
-            <SelectContent>
-              {MATCH_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.value === "all" ? option.label : getIntrastatMatchLabel(option.value)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="ml-auto text-xs text-muted-foreground">
-            {lines.isFetching ? "Refreshing..." : `${total} total`}
-          </div>
-        </div>
-
-        <DataTable
-          columns={columns}
-          data={items}
-          isLoading={lines.isPending && items.length === 0}
-          getRowId={(row) => row.id}
-          stickyHeader
-          bordered
-          emptyState={
-            <EmptyState
-              icon={TableProperties}
-              title={batchId ? "No lines in this batch" : "Choose a batch"}
-              description={
-                batchId
-                  ? "Lines appear after worker processing finishes."
-                  : "Select an Intrastat batch to review declaration lines."
-              }
-            />
-          }
-        />
-
-        <Pagination page={page} pageCount={pageCount} onChange={setPage} />
+        </PanelGroup>
       </div>
 
       <IntrastatLineEditDialog
