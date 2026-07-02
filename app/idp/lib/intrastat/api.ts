@@ -1,5 +1,6 @@
 import type {
   IntrastatBatchDetail,
+  IntrastatBatchFilterOptionsResponse,
   IntrastatBatchListResponse,
   IntrastatBatchStatus,
   IntrastatCnMatchStatus,
@@ -145,6 +146,8 @@ export const intrastatApi = {
     offset?: number
     status?: IntrastatBatchStatus | "all"
     transaction_kind?: IntrastatTransactionKind | "all"
+    client_name?: string | "all"
+    period_month?: string | "all"
     search?: string
   }) =>
     fetch(
@@ -152,9 +155,12 @@ export const intrastatApi = {
         ...query,
         status: query.status === "all" ? null : query.status,
         transaction_kind: query.transaction_kind === "all" ? null : query.transaction_kind,
+        client_name: query.client_name === "all" ? null : query.client_name,
+        period_month: query.period_month === "all" ? null : query.period_month,
       }),
       { credentials: "include", cache: "no-store", headers: { Accept: "application/json" } },
     ).then(parseJsonResponse<IntrastatBatchListResponse>),
+  batchFilterOptions: () => request<IntrastatBatchFilterOptionsResponse>("/batches/filter-options"),
   batchDetail: (id: string) => request<IntrastatBatchDetail>(`/batches/${id}`),
   documentContent: (batchId: string, documentId: string) =>
     fetch(buildUrl(`/batches/${batchId}/documents/${documentId}/content`), {

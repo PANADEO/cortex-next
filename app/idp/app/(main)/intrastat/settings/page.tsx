@@ -53,7 +53,7 @@ export default function IntrastatSettingsPage() {
         <DataCard
           label="Poll interval"
           value={`${settings.data?.filesystem_poll_interval_seconds ?? 10}s`}
-          description="WNT/<batch> and WDT/<batch> folders"
+          description="[Client]/[Month]/[WNT|WDT] folders"
         />
         <DataCard
           label="Gemini"
@@ -86,9 +86,9 @@ export default function IntrastatSettingsPage() {
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Filesystem intake expects `INTRASTAT_WATCH_DIR/WNT/&lt;batch&gt;` and
-              `INTRASTAT_WATCH_DIR/WDT/&lt;batch&gt;` folders or ZIP files. XML intake is
-              intentionally outside v1.
+              Filesystem intake expects `INTRASTAT_WATCH_DIR/[Client]/[Month]/[WNT|WDT]`
+              folders. The legacy `WNT/&lt;batch&gt;` and `WDT/&lt;batch&gt;` layout is still
+              accepted for compatibility. XML intake is intentionally outside v1.
             </p>
           </CardContent>
         </Card>

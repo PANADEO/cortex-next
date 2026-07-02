@@ -8,7 +8,7 @@ import {
   getIntrastatStatusLabel,
 } from "@/components/intrastat/status"
 import { IntrastatUploadBatchButton } from "@/components/intrastat/upload-batch-button"
-import { useIntrastatBatches } from "@/lib/intrastat/hooks"
+import { useIntrastatBatchFilterOptions, useIntrastatBatches } from "@/lib/intrastat/hooks"
 import type {
   IntrastatBatchStatus,
   IntrastatBatchSummary,
@@ -105,6 +105,16 @@ function batchColumns(options: BatchColumnsOptions): ColumnDef<IntrastatBatchSum
       ),
     },
     {
+      accessorKey: "client_name",
+      header: "Client",
+      size: 180,
+      cell: ({ row }) => (
+        <span className="block max-w-[180px] truncate text-muted-foreground">
+          {row.original.client_name ?? "No client"}
+        </span>
+      ),
+    },
+    {
       accessorKey: "transaction_kind",
       header: "Type",
       size: 90,
@@ -168,12 +178,17 @@ export default function IntrastatBatchesPage() {
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState<IntrastatBatchStatus | "all">("all")
   const [kind, setKind] = useState<IntrastatTransactionKind | "all">("all")
+  const [clientName, setClientName] = useState<string | "all">("all")
+  const [periodMonth, setPeriodMonth] = useState<string | "all">("all")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const filterOptions = useIntrastatBatchFilterOptions()
   const batches = useIntrastatBatches({
     limit: PAGE_SIZE,
     offset: page * PAGE_SIZE,
     status,
     transaction_kind: kind,
+    client_name: clientName,
+    period_month: periodMonth,
     search,
   })
   const items = useMemo(() => batches.data?.items ?? [], [batches.data?.items])
@@ -278,6 +293,44 @@ export default function IntrastatBatchesPage() {
               {KIND_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={clientName}
+            onValueChange={(value) => {
+              resetPage()
+              setClientName(value)
+            }}
+          >
+            <SelectTrigger className="h-9 w-[190px]">
+              <SelectValue placeholder="Client" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All clients</SelectItem>
+              {(filterOptions.data?.clients ?? []).map((client) => (
+                <SelectItem key={client} value={client}>
+                  {client}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={periodMonth}
+            onValueChange={(value) => {
+              resetPage()
+              setPeriodMonth(value)
+            }}
+          >
+            <SelectTrigger className="h-9 w-[190px]">
+              <SelectValue placeholder="Month" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All months</SelectItem>
+              {(filterOptions.data?.months ?? []).map((month) => (
+                <SelectItem key={month} value={month}>
+                  {month}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -39,6 +39,8 @@ export interface IntrastatBatchSummary {
   transaction_kind: IntrastatTransactionKind
   source_type: string
   name: string
+  client_name: string | null
+  period_month: string | null
   status: IntrastatBatchStatus
   invoice_count: number
   line_count: number
@@ -67,6 +69,11 @@ export interface IntrastatBatchListResponse {
   total: number
   limit: number
   offset: number
+}
+
+export interface IntrastatBatchFilterOptionsResponse {
+  clients: string[]
+  months: string[]
 }
 
 export interface IntrastatDeclarationLine {

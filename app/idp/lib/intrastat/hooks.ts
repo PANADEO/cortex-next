@@ -18,6 +18,7 @@ export const intrastatQueryKeys = {
   all: ["intrastat"] as const,
   stats: () => [...intrastatQueryKeys.all, "stats"] as const,
   settings: () => [...intrastatQueryKeys.all, "settings"] as const,
+  batchFilterOptions: () => [...intrastatQueryKeys.all, "batch-filter-options"] as const,
   cnResource: () => [...intrastatQueryKeys.all, "cn-resource"] as const,
   cnSuggestions: (search: string) =>
     [...intrastatQueryKeys.all, "cn-resource", "suggestions", search] as const,
@@ -26,6 +27,8 @@ export const intrastatQueryKeys = {
     offset?: number
     status?: IntrastatBatchStatus | "all"
     transaction_kind?: IntrastatTransactionKind | "all"
+    client_name?: string | "all"
+    period_month?: string | "all"
     search?: string
   }) => [...intrastatQueryKeys.all, "batches", query] as const,
   batchDetail: (id: string) => [...intrastatQueryKeys.all, "batches", id] as const,
@@ -59,6 +62,15 @@ export function useIntrastatSettings() {
   })
 }
 
+export function useIntrastatBatchFilterOptions() {
+  return useQuery({
+    queryKey: intrastatQueryKeys.batchFilterOptions(),
+    queryFn: intrastatApi.batchFilterOptions,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  })
+}
+
 export function useIntrastatCnResource() {
   return useQuery({
     queryKey: intrastatQueryKeys.cnResource(),
@@ -81,6 +93,8 @@ export function useIntrastatBatches(query: {
   offset?: number
   status?: IntrastatBatchStatus | "all"
   transaction_kind?: IntrastatTransactionKind | "all"
+  client_name?: string | "all"
+  period_month?: string | "all"
   search?: string
 }) {
   return useQuery({
