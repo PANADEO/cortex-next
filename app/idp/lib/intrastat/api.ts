@@ -36,6 +36,7 @@ const INTRASTAT_ERROR_MESSAGES: Record<string, string> = {
   "line-not-found": "Declaration line not found. Refresh the review table.",
   "document-not-found": "Document not found. Refresh the batch.",
   "document-content-not-found": "Document file is missing from storage.",
+  "filesystem-upload-metadata-required": "Enter client and month",
   "invalid-cn-resource-xlsx": "Choose a valid XLSX CN resource",
   "cn-resource-required-columns-missing": "The CN workbook is missing required columns",
   "cn-resource-empty": "The CN workbook contains no usable resource rows",
@@ -132,9 +133,22 @@ export const intrastatApi = {
     request<IntrastatPollResponse>("/filesystem/poll", {
       method: "POST",
     }),
-  uploadBatch: (file: File, transactionKind: IntrastatTransactionKind) => {
+  uploadBatch: (
+    file: File,
+    transactionKind: IntrastatTransactionKind,
+    options?: {
+      uploadToFilesystem?: boolean
+      clientName?: string
+      periodMonth?: string
+    },
+  ) => {
     const formData = new FormData()
     formData.set("transaction_kind", transactionKind)
+    if (options?.uploadToFilesystem) {
+      formData.set("upload_to_filesystem", "true")
+      formData.set("client_name", options.clientName ?? "")
+      formData.set("period_month", options.periodMonth ?? "")
+    }
     formData.set("file", file)
     return request<IntrastatUploadResponse>("/batches/upload", {
       method: "POST",

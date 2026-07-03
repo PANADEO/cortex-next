@@ -58,4 +58,27 @@ describe("intrastatApi", () => {
     expect(String(fetchMock.mock.calls[0]?.[0])).toBe("/intrastat/api/batches/filter-options")
     expect(options).toEqual({ clients: ["Jabil"], months: ["Czerwiec 2026"] })
   })
+
+  it("sends filesystem metadata for filesystem ZIP uploads", async () => {
+    const fetchMock = mockJsonFetch({
+      id: "batch-1",
+      transaction_kind: "WDT",
+      status: "queued",
+      document_count: 1,
+    })
+
+    await intrastatApi.uploadBatch(new File(["zip"], "batch.zip"), "WDT", {
+      uploadToFilesystem: true,
+      clientName: "Jabil",
+      periodMonth: "Lipiec 2026",
+    })
+
+    const body = fetchMock.mock.calls[0]?.[1]?.body
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("/intrastat/api/batches/upload")
+    expect(body).toBeInstanceOf(FormData)
+    expect((body as FormData).get("transaction_kind")).toBe("WDT")
+    expect((body as FormData).get("upload_to_filesystem")).toBe("true")
+    expect((body as FormData).get("client_name")).toBe("Jabil")
+    expect((body as FormData).get("period_month")).toBe("Lipiec 2026")
+  })
 })

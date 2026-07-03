@@ -154,10 +154,26 @@ export function useIntrastatUploadBatch() {
     mutationFn: ({
       file,
       transactionKind,
+      uploadToFilesystem,
+      clientName,
+      periodMonth,
     }: {
       file: File
       transactionKind: IntrastatTransactionKind
-    }) => intrastatApi.uploadBatch(file, transactionKind),
+      uploadToFilesystem?: boolean
+      clientName?: string
+      periodMonth?: string
+    }) => {
+      const options: {
+        uploadToFilesystem?: boolean
+        clientName?: string
+        periodMonth?: string
+      } = {}
+      if (uploadToFilesystem !== undefined) options.uploadToFilesystem = uploadToFilesystem
+      if (clientName !== undefined) options.clientName = clientName
+      if (periodMonth !== undefined) options.periodMonth = periodMonth
+      return intrastatApi.uploadBatch(file, transactionKind, options)
+    },
     onSuccess: (uploaded) => {
       invalidateIntrastatMetadata(client)
       client.invalidateQueries({ queryKey: intrastatQueryKeys.batchDetail(uploaded.id) })

@@ -17,7 +17,7 @@ const STATUS_LABELS: Record<IntrastatBatchStatus, string> = {
 
 const MATCH_LABELS: Record<IntrastatCnMatchStatus, string> = {
   exact: "Exact",
-  prefix_unique: "Prefix",
+  prefix_unique: "Closest index",
   description_match: "Description",
   semantic_match: "Semantic",
   invoice_cn: "Invoice CN",

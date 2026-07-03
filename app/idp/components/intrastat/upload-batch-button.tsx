@@ -5,6 +5,7 @@ import { useIntrastatUploadBatch } from "@/lib/intrastat/hooks"
 import type { IntrastatTransactionKind } from "@/lib/intrastat/types"
 import {
   Button,
+  Checkbox,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -12,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  Input,
   Label,
   Select,
   SelectContent,
@@ -28,6 +30,11 @@ export function IntrastatUploadBatchButton() {
   const upload = useIntrastatUploadBatch()
   const [open, setOpen] = useState(false)
   const [transactionKind, setTransactionKind] = useState<IntrastatTransactionKind | "">("")
+  const [uploadToFilesystem, setUploadToFilesystem] = useState(false)
+  const [clientName, setClientName] = useState("")
+  const [periodMonth, setPeriodMonth] = useState("")
+  const filesystemMetadataMissing =
+    uploadToFilesystem && (!clientName.trim() || !periodMonth.trim())
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -42,9 +49,19 @@ export function IntrastatUploadBatchButton() {
       toast.error("Choose a ZIP file")
       return
     }
+    if (filesystemMetadataMissing) {
+      toast.error("Enter client and month")
+      return
+    }
 
     try {
-      const result = await upload.mutateAsync({ file, transactionKind })
+      const result = await upload.mutateAsync({
+        file,
+        transactionKind,
+        uploadToFilesystem,
+        clientName: clientName.trim(),
+        periodMonth: periodMonth.trim(),
+      })
       toast.success(`Uploaded ${result.document_count} PDF invoice(s)`)
       setOpen(false)
     } catch (error) {
@@ -82,6 +99,36 @@ export function IntrastatUploadBatchButton() {
             </SelectContent>
           </Select>
         </div>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="intrastat-upload-to-filesystem"
+            checked={uploadToFilesystem}
+            onCheckedChange={(checked) => setUploadToFilesystem(checked === true)}
+          />
+          <Label htmlFor="intrastat-upload-to-filesystem">Upload to filesystem</Label>
+        </div>
+        {uploadToFilesystem ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="intrastat-client-name">Client</Label>
+              <Input
+                id="intrastat-client-name"
+                value={clientName}
+                onChange={(event) => setClientName(event.target.value)}
+                placeholder="Jabil"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="intrastat-period-month">Month</Label>
+              <Input
+                id="intrastat-period-month"
+                value={periodMonth}
+                onChange={(event) => setPeriodMonth(event.target.value)}
+                placeholder="Lipiec 2026"
+              />
+            </div>
+          </div>
+        ) : null}
         <input
           ref={inputRef}
           type="file"
@@ -93,7 +140,7 @@ export function IntrastatUploadBatchButton() {
           <Button
             type="button"
             onClick={() => inputRef.current?.click()}
-            disabled={!transactionKind || upload.isPending}
+            disabled={!transactionKind || filesystemMetadataMissing || upload.isPending}
           >
             {upload.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

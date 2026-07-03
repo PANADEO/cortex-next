@@ -4,9 +4,9 @@ import { IntrastatDeleteBatchButton } from "@/components/intrastat/delete-batch-
 import { IntrastatDocumentPreviewPanel } from "@/components/intrastat/document-preview-panel"
 import { IntrastatExportButtons } from "@/components/intrastat/export-buttons"
 import { IntrastatLineEditDialog } from "@/components/intrastat/line-edit-dialog"
+import { IntrastatMatchDetailsPopover } from "@/components/intrastat/match-details-popover"
 import {
   IntrastatKindBadge,
-  IntrastatMatchBadge,
   IntrastatStatusBadge,
   getIntrastatMatchLabel,
 } from "@/components/intrastat/status"
@@ -173,7 +173,7 @@ export default function IntrastatReviewPage() {
         accessorKey: "cn_match_status",
         header: "Match",
         size: 140,
-        cell: ({ row }) => <IntrastatMatchBadge status={row.original.cn_match_status} />,
+        cell: ({ row }) => <IntrastatMatchDetailsPopover line={row.original} />,
       },
       {
         accessorKey: "alerts",
