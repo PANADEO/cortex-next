@@ -3,6 +3,7 @@ import type { FeatureFlagsResponse } from "@cortex/types"
 import type { TileMenuItem, TileMenuSection } from "@cortex/ui"
 import {
   BarChart3,
+  BookOpen,
   Calculator,
   Database,
   FileDown,
@@ -15,6 +16,7 @@ import {
   Inbox,
   LayoutDashboard,
   ListChecks,
+  MessagesSquare,
   Package,
   Receipt,
   ScrollText,
@@ -193,6 +195,17 @@ export const INTRASTAT_NAV: TileMenuSection[] = [
   },
 ]
 
+export const CORTEX_COWORK_NAV: TileMenuSection[] = [
+  {
+    id: "workspace",
+    label: "Workspace",
+    items: [
+      { id: "chat", label: "Chat", icon: MessagesSquare, href: "/cortex-cowork/chat" },
+      { id: "skills", label: "Skills library", icon: BookOpen, href: "/cortex-cowork/skills" },
+    ],
+  },
+]
+
 export const INVOICE_SUPERVISOR_NAV: TileMenuSection[] = [
   {
     id: "praca",
@@ -330,4 +343,8 @@ export function useAiToolsNavSections(): TileMenuSection[] {
       })),
     ]
   }, [authorized.apps])
+}
+
+export function useCortexCoworkNavSections(): TileMenuSection[] {
+  return CORTEX_COWORK_NAV
 }

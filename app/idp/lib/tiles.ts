@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react"
-import { CalendarClock, FileSpreadsheet, FileText, Receipt, ScanText, Users, Workflow } from "lucide-react"
+import { CalendarClock, FileSpreadsheet, FileText, MessagesSquare, Receipt, ScanText, Users, Workflow } from "lucide-react"
 import { canAccessAiTool, isAiToolId } from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
@@ -137,6 +137,18 @@ export const TILES: ReadonlyArray<Tile> = [
     iconFg: "text-indigo-700 dark:text-indigo-300",
     categoryFunctional: "misc",
     categoryDepartment: ["finance"],
+  },
+  {
+    id: "cortex-cowork",
+    label: "Cortex Cowork",
+    description:
+      "Chat that runs a skills-powered agent in a sandbox and returns downloadable files",
+    href: "/cortex-cowork",
+    icon: MessagesSquare,
+    iconBg: "bg-violet-200 dark:bg-violet-900/40",
+    iconFg: "text-violet-700 dark:text-violet-300",
+    categoryFunctional: "agents",
+    categoryDepartment: ["it"],
   },
   {
     id: "okna-czasowe",

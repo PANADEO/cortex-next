@@ -383,6 +383,7 @@ export const handlers = [
             "fakturomat",
             "ai-daily-assistant",
             "invoice-supervisor",
+            "cortex-cowork",
           ]
         : [],
       email,
