@@ -76,6 +76,28 @@ export interface IntrastatBatchFilterOptionsResponse {
   months: string[]
 }
 
+export interface IntrastatFilesystemPreviewEntry {
+  name: string
+  relative_path: string
+  kind: "directory" | "file"
+  depth: number
+  size_bytes: number | null
+  modified_at: string
+  stable: boolean
+}
+
+export interface IntrastatFilesystemPreviewResponse {
+  configured: boolean
+  root: string | null
+  current_path: string
+  parent_path: string | null
+  entries: IntrastatFilesystemPreviewEntry[]
+  total: number
+  limit: number
+  offset: number
+  truncated: boolean
+}
+
 export interface IntrastatDeclarationLine {
   id: string
   batch_id: string

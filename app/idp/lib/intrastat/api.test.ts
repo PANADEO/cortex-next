@@ -59,6 +59,63 @@ describe("intrastatApi", () => {
     expect(options).toEqual({ clients: ["Jabil"], months: ["Czerwiec 2026"] })
   })
 
+  it("loads filesystem preview", async () => {
+    const fetchMock = mockJsonFetch({
+      configured: true,
+      root: "/app/incoming",
+      current_path: "Jabil",
+      parent_path: "",
+      entries: [],
+      total: 0,
+      limit: 10,
+      offset: 20,
+      truncated: false,
+    })
+
+    const preview = await intrastatApi.filesystemPreview({
+      path: "Jabil",
+      limit: 10,
+      offset: 20,
+    })
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+      "/intrastat/api/filesystem/preview?path=Jabil&limit=10&offset=20",
+    )
+    expect(preview.configured).toBe(true)
+    expect(preview.current_path).toBe("Jabil")
+  })
+
+  it("downloads filesystem files", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => {
+      return new Response(new Blob(["pdf"]), {
+        status: 200,
+        headers: { "Content-Disposition": 'attachment; filename="invoice.pdf"' },
+      })
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const download = await intrastatApi.downloadFilesystemFile("Jabil/Lipiec 2026/WDT/invoice.pdf")
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+      "/intrastat/api/filesystem/download?path=Jabil%2FLipiec+2026%2FWDT%2Finvoice.pdf",
+    )
+    expect(download.filename).toBe("invoice.pdf")
+  })
+
+  it("deletes filesystem files", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => {
+      return new Response(null, { status: 204 })
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    await intrastatApi.deleteFilesystemFile("Jabil/Lipiec 2026/WDT/invoice.pdf")
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+      "/intrastat/api/filesystem/file?path=Jabil%2FLipiec+2026%2FWDT%2Finvoice.pdf",
+    )
+    expect(fetchMock.mock.calls[0]?.[1]?.method).toBe("DELETE")
+  })
+
   it("sends filesystem metadata for filesystem ZIP uploads", async () => {
     const fetchMock = mockJsonFetch({
       id: "batch-1",

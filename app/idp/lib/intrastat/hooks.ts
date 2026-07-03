@@ -18,6 +18,8 @@ export const intrastatQueryKeys = {
   all: ["intrastat"] as const,
   stats: () => [...intrastatQueryKeys.all, "stats"] as const,
   settings: () => [...intrastatQueryKeys.all, "settings"] as const,
+  filesystemPreview: (query: { path?: string; limit?: number; offset?: number }) =>
+    [...intrastatQueryKeys.all, "filesystem-preview", query] as const,
   batchFilterOptions: () => [...intrastatQueryKeys.all, "batch-filter-options"] as const,
   cnResource: () => [...intrastatQueryKeys.all, "cn-resource"] as const,
   cnSuggestions: (search: string) =>
@@ -59,6 +61,25 @@ export function useIntrastatSettings() {
   return useQuery({
     queryKey: intrastatQueryKeys.settings(),
     queryFn: intrastatApi.settings,
+  })
+}
+
+export function useIntrastatFilesystemPreview(
+  query: { path?: string; limit?: number; offset?: number },
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: intrastatQueryKeys.filesystemPreview(query),
+    queryFn: () => intrastatApi.filesystemPreview(query),
+    enabled,
+    placeholderData: keepPreviousData,
+    staleTime: 5_000,
+  })
+}
+
+export function useIntrastatDownloadFilesystemFile() {
+  return useMutation({
+    mutationFn: intrastatApi.downloadFilesystemFile,
   })
 }
 
@@ -197,6 +218,16 @@ export function useIntrastatPollFilesystem() {
   return useMutation({
     mutationFn: intrastatApi.pollFilesystem,
     onSuccess: () => invalidateIntrastatMetadata(client),
+  })
+}
+
+export function useIntrastatDeleteFilesystemFile() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: intrastatApi.deleteFilesystemFile,
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: [...intrastatQueryKeys.all, "filesystem-preview"] })
+    },
   })
 }
 

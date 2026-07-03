@@ -7,6 +7,7 @@ import type {
   IntrastatCnSuggestionListResponse,
   IntrastatDeclarationLine,
   IntrastatDownload,
+  IntrastatFilesystemPreviewResponse,
   IntrastatLineListResponse,
   IntrastatLinePatchRequest,
   IntrastatPollResponse,
@@ -40,6 +41,10 @@ const INTRASTAT_ERROR_MESSAGES: Record<string, string> = {
   "invalid-cn-resource-xlsx": "Choose a valid XLSX CN resource",
   "cn-resource-required-columns-missing": "The CN workbook is missing required columns",
   "cn-resource-empty": "The CN workbook contains no usable resource rows",
+  "filesystem-browser-not-directory": "This path is not a folder",
+  "filesystem-delete-directory-not-supported": "Folder delete is not supported",
+  "filesystem-file-not-found": "File not found. Refresh the folder.",
+  "filesystem-path-outside-root": "Path is outside the watch folder",
 }
 
 class IntrastatApiError extends Error {
@@ -133,6 +138,32 @@ export const intrastatApi = {
     request<IntrastatPollResponse>("/filesystem/poll", {
       method: "POST",
     }),
+  filesystemPreview: (query?: { path?: string; limit?: number; offset?: number }) =>
+    fetch(buildUrl("/filesystem/preview", query), {
+      credentials: "include",
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    }).then(parseJsonResponse<IntrastatFilesystemPreviewResponse>),
+  downloadFilesystemFile: async (path: string): Promise<IntrastatDownload> => {
+    const response = await fetch(buildUrl("/filesystem/download", { path }), {
+      credentials: "include",
+      cache: "no-store",
+    })
+    if (!response.ok) throw await intrastatErrorFromResponse(response)
+    return {
+      blob: await response.blob(),
+      filename: filenameFromContentDisposition(response.headers.get("Content-Disposition"), path),
+    }
+  },
+  deleteFilesystemFile: async (path: string) => {
+    const response = await fetch(buildUrl("/filesystem/file", { path }), {
+      method: "DELETE",
+      credentials: "include",
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    })
+    if (!response.ok) throw await intrastatErrorFromResponse(response)
+  },
   uploadBatch: (
     file: File,
     transactionKind: IntrastatTransactionKind,
@@ -253,16 +284,20 @@ async function exportWorkbook(path: string, batchIds: string[]): Promise<Intrast
   if (!response.ok) throw await intrastatErrorFromResponse(response)
   return {
     blob: await response.blob(),
-    filename: filenameFromContentDisposition(response.headers.get("Content-Disposition")),
+    filename: filenameFromContentDisposition(response.headers.get("Content-Disposition"), "intrastat.xlsx"),
   }
 }
 
-function filenameFromContentDisposition(value: string | null): string {
-  if (!value) return "intrastat.xlsx"
+function filenameFromContentDisposition(value: string | null, fallback: string): string {
+  if (!value) return fallbackFilename(fallback)
   const utfMatch = value.match(/filename\*=UTF-8''([^;]+)/i)
   if (utfMatch?.[1]) return decodeURIComponent(utfMatch[1])
   const quotedMatch = value.match(/filename="([^"]+)"/i)
   if (quotedMatch?.[1]) return quotedMatch[1].trim()
   const plainMatch = value.match(/filename=([^;]+)/i)
-  return plainMatch?.[1]?.trim() || "intrastat.xlsx"
+  return plainMatch?.[1]?.trim() || fallbackFilename(fallback)
+}
+
+function fallbackFilename(value: string): string {
+  return value.split("/").filter(Boolean).at(-1) || "download"
 }
