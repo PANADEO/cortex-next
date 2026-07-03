@@ -9,6 +9,7 @@ import {
   useIdpNavSections,
   useIntrastatNavSections,
   useInvoiceSupervisorNavSections,
+  useOknaCzasoweNavSections,
   useStorePitNavSections,
 } from "@/lib/nav"
 import { useSidebarStore } from "@/lib/stores/sidebar-store"
@@ -48,6 +49,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const intrastatNavSections = useIntrastatNavSections()
   const invoiceSupervisorNavSections = useInvoiceSupervisorNavSections()
   const storePitNavSections = useStorePitNavSections()
+  const oknaCzasoweNavSections = useOknaCzasoweNavSections()
   const isAiToolPage = tile?.href.startsWith("/ai-tools/") ?? false
   const navSections = isAiToolPage
     ? []
@@ -59,7 +61,9 @@ export default function MainLayout({ children }: { children: ReactNode }) {
           ? invoiceSupervisorNavSections
           : tileId === "store-pit"
             ? storePitNavSections
-            : idpNavSections
+            : tileId === "okna-czasowe"
+              ? oknaCzasoweNavSections
+              : idpNavSections
 
   const brandIcon = (
     <Link

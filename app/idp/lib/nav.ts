@@ -4,10 +4,12 @@ import type { TileMenuItem, TileMenuSection } from "@cortex/ui"
 import {
   BarChart3,
   Calculator,
+  Database,
   FileDown,
   Files,
   FileSpreadsheet,
   FileText,
+  Film,
   GitMerge,
   History,
   Inbox,
@@ -139,6 +141,28 @@ export const STORE_PIT_NAV: TileMenuSection[] = [
   },
 ]
 
+export const OKNA_CZASOWE_NAV: TileMenuSection[] = [
+  {
+    id: "pipeline",
+    label: "Pipeline",
+    items: [
+      {
+        id: "dashboard",
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        href: "/okna-czasowe/dashboard",
+      },
+      { id: "films", label: "Filmy", icon: Film, href: "/okna-czasowe/films" },
+      { id: "data", label: "Dane", icon: Database, href: "/okna-czasowe/data" },
+    ],
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    items: [{ id: "log", label: "Log", icon: History, href: "/okna-czasowe/log" }],
+  },
+]
+
 export const INTRASTAT_NAV: TileMenuSection[] = [
   {
     id: "pipeline",
@@ -262,6 +286,10 @@ export function useIdpBasicNavSections(): TileMenuSection[] {
 
 export function useStorePitNavSections(): TileMenuSection[] {
   return STORE_PIT_NAV
+}
+
+export function useOknaCzasoweNavSections(): TileMenuSection[] {
+  return OKNA_CZASOWE_NAV
 }
 
 export function useIntrastatNavSections(): TileMenuSection[] {

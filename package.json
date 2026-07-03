@@ -17,6 +17,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install chromium",
     "lint": "eslint \"{app,libs}/**/*.{ts,tsx}\"",
+    "okna-czasowe:scan": "node scripts/okna-czasowe-scan.mjs",
     "format": "prettier --write \"{app,libs,docs,scripts}/**/*.{ts,tsx,md,json,css}\"",
     "ladle": "ladle serve",
     "ladle:build": "ladle build"

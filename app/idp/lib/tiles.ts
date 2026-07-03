@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react"
-import { FileSpreadsheet, FileText, Receipt, ScanText, Users, Workflow } from "lucide-react"
+import { CalendarClock, FileSpreadsheet, FileText, Receipt, ScanText, Users, Workflow } from "lucide-react"
 import { canAccessAiTool, isAiToolId } from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
@@ -137,6 +137,17 @@ export const TILES: ReadonlyArray<Tile> = [
     iconFg: "text-indigo-700 dark:text-indigo-300",
     categoryFunctional: "misc",
     categoryDepartment: ["finance"],
+  },
+  {
+    id: "okna-czasowe",
+    label: "Okna czasowe",
+    description: "Śledzenie od kiedy filmy trafiają na Rakuten TV PL - codzienne skany JustWatch",
+    href: "/okna-czasowe/dashboard",
+    icon: CalendarClock,
+    iconBg: "bg-amber-200 dark:bg-amber-900/40",
+    iconFg: "text-amber-700 dark:text-amber-300",
+    categoryFunctional: "research",
+    categoryDepartment: ["marketing"],
   },
   {
     id: "intrastat",
