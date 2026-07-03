@@ -3,6 +3,7 @@
 import { cn } from "@cortex/utils"
 import { Bot, User } from "lucide-react"
 import type { ChatMessage } from "../types"
+import { AgentActivityTrail } from "./agent-activity"
 
 interface MessageBubbleProps {
   message: ChatMessage
@@ -22,11 +23,14 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       </div>
       <div
         className={cn(
-          "max-w-[75%] whitespace-pre-wrap rounded-lg px-3.5 py-2.5 text-sm leading-relaxed",
+          "max-w-[75%] rounded-lg px-3.5 py-2.5 text-sm leading-relaxed",
           isUser ? "bg-primary text-primary-foreground" : "bg-muted",
         )}
       >
-        {message.content}
+        <div className="whitespace-pre-wrap">{message.content}</div>
+        {!isUser && message.activity && message.activity.length > 0 ? (
+          <AgentActivityTrail steps={message.activity} />
+        ) : null}
       </div>
     </div>
   )

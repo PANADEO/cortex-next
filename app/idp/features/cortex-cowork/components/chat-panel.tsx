@@ -1,8 +1,10 @@
 "use client"
 
+import { useCoworkStreamStore } from "@/lib/stores/cortex-cowork-stream-store"
 import { LoadingState } from "@cortex/ui"
 import { useEffect, useRef } from "react"
 import type { ChatMessage } from "../types"
+import { LiveAgentActivity } from "./agent-activity"
 import { MessageBubble } from "./message-bubble"
 import { MessageComposer } from "./message-composer"
 
@@ -15,10 +17,12 @@ interface ChatPanelProps {
 
 export function ChatPanel({ messages, isSending, isLoadingSession, onSend }: ChatPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
+  const liveSteps = useCoworkStreamStore((state) => state.steps)
+  const liveText = useCoworkStreamStore((state) => state.liveText)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages.length])
+  }, [messages.length, liveSteps.length, liveText])
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
@@ -30,7 +34,7 @@ export function ChatPanel({ messages, isSending, isLoadingSession, onSend }: Cha
             {messages.map((message) => (
               <MessageBubble key={message.id} message={message} />
             ))}
-            {isSending ? <LoadingState label="Working in the sandbox..." /> : null}
+            {isSending ? <LiveAgentActivity steps={liveSteps} liveText={liveText} /> : null}
             <div ref={bottomRef} />
           </div>
         )}

@@ -5,12 +5,36 @@ export type ChatRole = "user" | "assistant"
 // from disk content - the id is cast at the parse boundary.
 export type CoworkSkillId = "excel-report" | "csv-export"
 
+// One observed step of the agent's work during a turn (thinking, tool call,
+// lifecycle marker), as emitted live by the Flue runner's observe() bridge.
+// `detail` carries the drilldown payload: tool arguments for tool_start,
+// a result excerpt for tool_end, the full thinking text for thinking.
+export type AgentActivityKind =
+  | "thinking"
+  | "thinking_start"
+  | "tool_start"
+  | "tool_end"
+  | "assistant"
+  | "lifecycle"
+
+export interface AgentActivityStep {
+  id: string
+  ts: string
+  kind: AgentActivityKind
+  tool?: string
+  detail?: string
+  text?: string
+  isError?: boolean
+}
+
 export interface ChatMessage {
   id: string
   role: ChatRole
   content: string
   createdAt: string
   skillInvoked?: CoworkSkillId
+  /** Persisted work trail from the live activity stream (drilldown panel). */
+  activity?: AgentActivityStep[]
 }
 
 export interface CoworkSkillSummary {

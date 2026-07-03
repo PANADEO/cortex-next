@@ -4,6 +4,9 @@ import { fileURLToPath } from "node:url"
 import { defineAgent, defineSkill, defineWorkflow, type SkillReference } from "@flue/runtime"
 import { local } from "@flue/runtime/node"
 import * as v from "valibot"
+// Side-effect import: registers the observe() subscriber that streams live
+// agent activity (thinking / tool calls / text progress) to stderr as NDJSON.
+import "../observe-events.ts"
 
 // One chat turn of the Cortex Cowork agent, run through the real Flue harness:
 // the model works in a local() sandbox with the tile's skills registered, and

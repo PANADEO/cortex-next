@@ -34,6 +34,9 @@ export const coworkApi = {
     apiClient.post<SendMessageResponse>(`/api/cortex-cowork/sessions/${sessionId}/messages`, {
       jsonBody: { content },
     }),
+  // SSE endpoint consumed with a raw fetch (EventSource cannot POST).
+  streamMessagePath: (sessionId: string) =>
+    `${basePath}/api/cortex-cowork/sessions/${sessionId}/messages/stream`,
   listArtifacts: (sessionId: string) =>
     apiClient.get<CoworkArtifact[]>(`/api/cortex-cowork/sessions/${sessionId}/artifacts`),
   artifactDownloadHref: (sessionId: string, artifactId: string) =>
