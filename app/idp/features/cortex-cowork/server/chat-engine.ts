@@ -1,286 +1,182 @@
+import { execFile } from "node:child_process"
 import { randomUUID } from "node:crypto"
+import { readdir, stat } from "node:fs/promises"
+import path from "node:path"
+import { promisify } from "node:util"
 import type { ChatMessage, CoworkArtifact, CoworkSkillId } from "../types"
 import { appendMessage, registerArtifact, type SandboxSession } from "./sandbox-store"
 import { generateCsvExport } from "./skills/csv-export"
 import { generateExcelReport } from "./skills/excel-report"
 
 /**
- * LIVE agent turn.
+ * LIVE agent turn, executed through the real Flue harness.
  *
- * The chat is driven by a real LLM (Anthropic Messages API with tool use):
- * the model reads the conversation plus the catalog of skills copied into this
- * session's sandbox, and decides on its own whether to answer directly or call
- * a skill tool to produce a downloadable file. Each tool maps to a real
- * file-writing skill under ./skills/*, so the artifacts are genuine.
+ * Each turn spawns `flue run cowork-turn` in ../../../../../cowork-runner - a
+ * standalone Flue (@flue/runtime 1.0.0-beta.9) project whose workflow drives
+ * `harness.session().prompt()` against an agent with the tile's SKILL.md
+ * packages registered and a `local()` sandbox. The agent works autonomously
+ * (it can read/write files and run commands in its sandbox) and is instructed
+ * to write deliverables under this session's artifacts/ directory; after the
+ * run we diff that directory and register whatever files the model produced.
  *
- * Why not the literal `@flue/runtime` harness (see ../agent/*): Flue loads
- * skills via a `import ... with { type: "skill" }` module attribute and runs
- * the agent in a spawned sandbox subprocess. Neither drops into a Next.js
- * Turbopack API route without a custom loader + out-of-process runner, and the
- * installed @flue/runtime@0.11 API (`createAgent`) differs from the code in
- * ../agent/. Running the model directly here keeps the same agent shape
- * (instructions + skills-as-tools + real files) while staying robust inside
- * the app. The ../agent/ files remain as the documented standalone-Flue target.
+ * Requirements (dev): `npm install --ignore-scripts` inside cowork-runner,
+ * ANTHROPIC_API_KEY in the app env, and COWORK_NODE_BIN pointing at a
+ * node >= 22.19 binary when the app itself runs on an older node (Flue's
+ * pi-ai dependency needs 22.19+). Both env vars live in .env.local.
  *
- * If ANTHROPIC_API_KEY is unset or the API call fails, we degrade to a
- * deterministic keyword router so the end-to-end chat -> file flow still works.
+ * If the runner is missing or the run fails, we degrade to a deterministic
+ * keyword router over the same skill implementations so the chat never
+ * hard-fails.
  */
 
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
-const MODEL = "claude-sonnet-5"
-const MAX_TOKENS = 1024
-const MAX_TOOL_STEPS = 4
+const execFileAsync = promisify(execFile)
 
-type SkillRunner = (session: SandboxSession, prompt: string) => Promise<CoworkArtifact>
+const RUNNER_TIMEOUT_MS = 240_000
+const HISTORY_TURNS = 12
 
-interface SkillTool {
-  skill: CoworkSkillId
-  tool: string
-  run: SkillRunner
-  blurb: string
-}
-
-// Every shipped skill, exposed to the model as one callable tool. `run` is the
-// real implementation under ./skills/*; adding a skill here + a SKILL.md makes
-// it selectable by the agent.
-const SKILL_TOOLS: SkillTool[] = [
-  {
-    skill: "excel-report",
-    tool: "generate_excel_report",
-    run: generateExcelReport,
-    blurb: "Write a downloadable .xlsx workbook into the session sandbox.",
-  },
-  {
-    skill: "csv-export",
-    tool: "generate_csv_export",
-    run: generateCsvExport,
-    blurb: "Write a downloadable .csv file into the session sandbox.",
-  },
-]
-
-interface AnthropicTextBlock {
-  type: "text"
-  text: string
-}
-interface AnthropicToolUseBlock {
-  type: "tool_use"
-  id: string
-  name: string
-  input: Record<string, unknown>
-}
-type AnthropicContentBlock =
-  | AnthropicTextBlock
-  | AnthropicToolUseBlock
-  | { type: string; [key: string]: unknown }
-
-interface AnthropicResponse {
-  content?: AnthropicContentBlock[]
-}
-
-type ToolResultBlock = {
-  type: "tool_result"
-  tool_use_id: string
-  content: string
-  is_error?: boolean
-}
-
-interface OutboundMessage {
-  role: "user" | "assistant"
-  content: string | AnthropicContentBlock[] | ToolResultBlock[]
-}
-
-function isText(block: AnthropicContentBlock): block is AnthropicTextBlock {
-  return block.type === "text"
-}
-function isToolUse(block: AnthropicContentBlock): block is AnthropicToolUseBlock {
-  return block.type === "tool_use"
+function runnerDir(): string {
+  return process.env.COWORK_RUNNER_DIR ?? path.join(process.cwd(), "cowork-runner")
 }
 
 export async function runChatTurn(
   session: SandboxSession,
   userContent: string,
 ): Promise<{ message: ChatMessage; artifacts: CoworkArtifact[] }> {
-  const apiKey = process.env.ANTHROPIC_API_KEY?.trim()
-  const available = SKILL_TOOLS.filter((tool) =>
-    session.skills.some((skill) => skill.id === tool.skill),
-  )
-
-  if (!apiKey) {
-    console.warn("[cortex-cowork] ANTHROPIC_API_KEY not set - using keyword fallback")
-    return runKeywordFallback(session, userContent, available)
-  }
-
   try {
-    return await runLiveAgentTurn(session, userContent, apiKey, available)
+    return await runFlueTurn(session, userContent)
   } catch (error) {
     console.warn(
-      "[cortex-cowork] live agent turn failed, falling back:",
+      "[cortex-cowork] Flue runner turn failed, falling back to keyword routing:",
       error instanceof Error ? error.message : error,
     )
-    return runKeywordFallback(session, userContent, available)
+    return runKeywordFallback(session, userContent)
   }
 }
 
-async function callAnthropic(body: {
-  apiKey: string
-  system: string
-  messages: OutboundMessage[]
-  tools: unknown[]
-}): Promise<AnthropicResponse> {
-  const response = await fetch(ANTHROPIC_URL, {
-    method: "POST",
-    headers: {
-      "x-api-key": body.apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: body.system,
-      tools: body.tools,
-      messages: body.messages,
-    }),
-  })
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    throw new Error(`Anthropic ${response.status}: ${detail.slice(0, 300)}`)
-  }
-  return (await response.json()) as AnthropicResponse
-}
-
-async function runLiveAgentTurn(
+async function runFlueTurn(
   session: SandboxSession,
   userContent: string,
-  apiKey: string,
-  available: SkillTool[],
 ): Promise<{ message: ChatMessage; artifacts: CoworkArtifact[] }> {
-  const system = buildSystemPrompt(session)
-  const tools = available.map((tool) => ({
-    name: tool.tool,
-    description: `${tool.blurb} ${skillDescription(session, tool.skill)}`.trim(),
-    input_schema: {
-      type: "object",
-      properties: {
-        focus: {
-          type: "string",
-          description:
-            "Short description of what the generated file should contain or its title.",
-        },
-      },
-      required: [],
-    },
-  }))
+  const dir = runnerDir()
+  const flueCli = path.join(dir, "node_modules", "@flue", "cli", "bin", "flue.mjs")
+  const nodeBin = process.env.COWORK_NODE_BIN ?? "node"
 
-  const messages = toAnthropicMessages(session.messages)
-  const newArtifacts: CoworkArtifact[] = []
-  let usedSkill: CoworkSkillId | undefined
-  let finalText = ""
+  const before = await listArtifactFiles(session.artifactsDir)
+  const input = JSON.stringify({
+    message: userContent,
+    sandboxDir: session.sandboxDir,
+    history: buildHistory(session.messages),
+  })
 
-  for (let step = 0; step < MAX_TOOL_STEPS; step++) {
-    const data = await callAnthropic({ apiKey, system, messages, tools })
-    const content = data.content ?? []
-    const text = content
-      .filter(isText)
-      .map((block) => block.text)
-      .join("\n")
-      .trim()
-    const toolUses = content.filter(isToolUse)
-
-    if (text) finalText = text
-    if (toolUses.length === 0) break
-
-    messages.push({ role: "assistant", content })
-    const results: ToolResultBlock[] = []
-    for (const call of toolUses) {
-      const spec = available.find((tool) => tool.tool === call.name)
-      if (!spec) {
-        results.push({
-          type: "tool_result",
-          tool_use_id: call.id,
-          content: `Unknown tool: ${call.name}`,
-          is_error: true,
-        })
-        continue
-      }
-      const focusInput = call.input?.focus
-      const focus =
-        typeof focusInput === "string" && focusInput.trim() ? focusInput : userContent
-      const artifact = await spec.run(session, focus)
-      await registerArtifact(session, artifact)
-      newArtifacts.push(artifact)
-      usedSkill = spec.skill
-      results.push({
-        type: "tool_result",
-        tool_use_id: call.id,
-        content: `Wrote ${artifact.filename} (${artifact.sizeBytes} bytes) to the Artifacts panel.`,
-      })
-    }
-    messages.push({ role: "user", content: results })
+  // Prepend the runner node's bin dir so `node`/`npm` inside the agent's
+  // local() sandbox resolve to the same (new enough) runtime.
+  const env: NodeJS.ProcessEnv = { ...process.env }
+  if (process.env.COWORK_NODE_BIN) {
+    env.PATH = `${path.dirname(process.env.COWORK_NODE_BIN)}:${env.PATH ?? ""}`
   }
 
-  if (!finalText) {
-    finalText = newArtifacts.length
-      ? `Done - ${newArtifacts.map((artifact) => artifact.filename).join(", ")} is ready in the Artifacts panel.`
-      : "I work inside this session's sandbox and hand back real files. Ask for an Excel report or a CSV export and I'll generate one you can download."
-  }
+  const { stdout } = await execFileAsync(
+    nodeBin,
+    [flueCli, "run", "cowork-turn", "--target", "node", "--input", input],
+    { cwd: dir, env, timeout: RUNNER_TIMEOUT_MS, maxBuffer: 16 * 1024 * 1024 },
+  )
+
+  const reply = extractReply(stdout)
+  const newArtifacts = await registerNewArtifacts(session, before)
 
   const message: ChatMessage = {
     id: randomUUID(),
     role: "assistant",
-    content: finalText,
+    content: reply,
     createdAt: new Date().toISOString(),
-    ...(usedSkill ? { skillInvoked: usedSkill } : {}),
+    ...(newArtifacts[0] ? { skillInvoked: newArtifacts[0].skill } : {}),
   }
   await appendMessage(session, message)
   return { message, artifacts: newArtifacts }
 }
 
-function buildSystemPrompt(session: SandboxSession): string {
-  const skillLines = session.skills
-    .map((skill) => `- ${skill.name}: ${skill.description}`)
-    .join("\n")
-  return [
-    "You are Cortex Cowork, an assistant working inside a sandboxed workspace on behalf of a Cortex360 user.",
-    "You have skills available as tools. When the user wants a file, call the matching tool to actually produce it in the sandbox rather than only describing what you would do.",
-    "When you just need to answer a question, reply directly and concisely. Keep replies short.",
-    "Skills copied into this session:",
-    skillLines || "- (none)",
-  ].join("\n")
-}
-
-function skillDescription(session: SandboxSession, skillId: CoworkSkillId): string {
-  return session.skills.find((skill) => skill.id === skillId)?.description ?? ""
-}
-
-// Maps stored chat history to Anthropic message turns. Drops the leading
-// assistant welcome (the API requires the first message to be from the user);
-// every subsequent turn is a user->assistant pair, so alternation holds.
-function toAnthropicMessages(messages: ChatMessage[]): OutboundMessage[] {
-  const out: OutboundMessage[] = []
-  for (const message of messages) {
-    if (out.length === 0 && message.role === "assistant") continue
-    out.push({ role: message.role, content: message.content })
+/** Finds the workflow's terminal `{"reply": "..."}` line in `flue run` output. */
+function extractReply(stdout: string): string {
+  const lines = stdout.split("\n")
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i]?.trim()
+    if (!line?.startsWith("{")) continue
+    try {
+      const parsed = JSON.parse(line) as { reply?: unknown }
+      if (typeof parsed.reply === "string") return parsed.reply
+    } catch {
+      // not the result line - keep scanning
+    }
   }
-  return out
+  throw new Error("no workflow result found in flue run output")
+}
+
+function buildHistory(messages: ChatMessage[]): string | undefined {
+  // Skip the canned assistant welcome; keep the last few real turns.
+  const turns = messages
+    .filter((message, index) => !(index === 0 && message.role === "assistant"))
+    .slice(-HISTORY_TURNS)
+    .slice(0, -1) // the current user message is passed separately
+  if (turns.length === 0) return undefined
+  return turns
+    .map((message) => `${message.role === "user" ? "User" : "Assistant"}: ${message.content}`)
+    .join("\n")
+}
+
+async function listArtifactFiles(artifactsDir: string): Promise<Set<string>> {
+  const entries = await readdir(artifactsDir).catch(() => [] as string[])
+  return new Set(entries)
+}
+
+const MIME_BY_EXT: Record<string, string> = {
+  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ".csv": "text/csv",
+  ".json": "application/json",
+  ".txt": "text/plain",
+  ".md": "text/markdown",
+  ".pdf": "application/pdf",
+  ".html": "text/html",
+}
+
+function skillForFile(filename: string): CoworkSkillId {
+  return path.extname(filename).toLowerCase() === ".csv" ? "csv-export" : "excel-report"
+}
+
+/** Registers files the agent wrote to artifacts/ during this turn. */
+async function registerNewArtifacts(
+  session: SandboxSession,
+  before: Set<string>,
+): Promise<CoworkArtifact[]> {
+  const after = await listArtifactFiles(session.artifactsDir)
+  const newArtifacts: CoworkArtifact[] = []
+  for (const filename of after) {
+    if (before.has(filename)) continue
+    const info = await stat(path.join(session.artifactsDir, filename)).catch(() => null)
+    if (!info?.isFile()) continue
+    const artifact: CoworkArtifact = {
+      id: randomUUID(),
+      filename,
+      mimeType: MIME_BY_EXT[path.extname(filename).toLowerCase()] ?? "application/octet-stream",
+      sizeBytes: info.size,
+      createdAt: new Date().toISOString(),
+      skill: skillForFile(filename),
+    }
+    await registerArtifact(session, artifact)
+    newArtifacts.push(artifact)
+  }
+  return newArtifacts
 }
 
 /**
- * Deterministic degrade path: keyword routing over the real skills, used when
- * no API key is configured or the live model call fails. The file-writing
- * skills it calls are the same real implementations under ./skills/*.
+ * Deterministic degrade path: keyword routing over the same skill recipes,
+ * used only when the Flue runner is unavailable or its run fails.
  */
 async function runKeywordFallback(
   session: SandboxSession,
   userContent: string,
-  available: SkillTool[],
 ): Promise<{ message: ChatMessage; artifacts: CoworkArtifact[] }> {
-  const has = (skill: CoworkSkillId) => available.some((tool) => tool.skill === skill)
-  const wantsCsv = /\bcsv\b/i.test(userContent) && has("csv-export")
-  const wantsExcel =
-    !wantsCsv &&
-    /excel|xlsx|arkusz|spreadsheet|raport|report/i.test(userContent) &&
-    has("excel-report")
+  const wantsCsv = /\bcsv\b/i.test(userContent)
+  const wantsExcel = !wantsCsv && /excel|xlsx|arkusz|spreadsheet|raport|report/i.test(userContent)
 
   const newArtifacts: CoworkArtifact[] = []
   let replyLines: string[]
@@ -289,14 +185,14 @@ async function runKeywordFallback(
     const artifact = await generateExcelReport(session, userContent)
     newArtifacts.push(artifact)
     replyLines = [
-      "Loaded the excel-report skill and generated a workbook in the sandbox.",
+      "(Fallback mode - Flue runner unavailable.) Generated a workbook in the sandbox.",
       `Ready: ${artifact.filename} - grab it from the Artifacts panel.`,
     ]
   } else if (wantsCsv) {
     const artifact = await generateCsvExport(session, userContent)
     newArtifacts.push(artifact)
     replyLines = [
-      "Loaded the csv-export skill and wrote a CSV in the sandbox.",
+      "(Fallback mode - Flue runner unavailable.) Wrote a CSV in the sandbox.",
       `Ready: ${artifact.filename} - grab it from the Artifacts panel.`,
     ]
   } else {
