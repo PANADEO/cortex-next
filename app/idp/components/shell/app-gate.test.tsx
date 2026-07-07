@@ -11,12 +11,13 @@ interface MeMock {
 
 interface AuthorizedMock {
   allowed: boolean | null
+  apps: string[]
   isLoading: boolean
   isError: boolean
 }
 
 let meMock: MeMock = { isPending: true, isError: false }
-let authorizedMock: AuthorizedMock = { allowed: null, isLoading: true, isError: false }
+let authorizedMock: AuthorizedMock = { allowed: null, apps: [], isLoading: true, isError: false }
 
 vi.mock("next/image", () => ({
   default: (props: Record<string, unknown>) => createElement("img", props),
@@ -31,7 +32,7 @@ import { AppGate } from "./app-gate"
 
 beforeEach(() => {
   meMock = { isPending: true, isError: false }
-  authorizedMock = { allowed: null, isLoading: true, isError: false }
+  authorizedMock = { allowed: null, apps: [], isLoading: true, isError: false }
 })
 
 afterEach(() => {
@@ -44,7 +45,7 @@ const Child = () => createElement("div", { "data-testid": "child" }, "child-cont
 describe("AppGate", () => {
   it("renders nothing while either signal is loading", () => {
     meMock = { isPending: true, isError: false }
-    authorizedMock = { allowed: null, isLoading: true, isError: false }
+    authorizedMock = { allowed: null, apps: [], isLoading: true, isError: false }
 
     const { container } = render(createElement(AppGate, null, createElement(Child)))
 
@@ -57,7 +58,7 @@ describe("AppGate", () => {
       isError: false,
       data: { email: "u@x.com", has_access: true },
     }
-    authorizedMock = { allowed: null, isLoading: true, isError: false }
+    authorizedMock = { allowed: null, apps: [], isLoading: true, isError: false }
 
     const { container } = render(createElement(AppGate, null, createElement(Child)))
 
@@ -66,7 +67,7 @@ describe("AppGate", () => {
 
   it("renders error variant when useMe errors out", () => {
     meMock = { isPending: false, isError: true }
-    authorizedMock = { allowed: true, isLoading: false, isError: false }
+    authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
 
     render(createElement(AppGate, null, createElement(Child)))
 
@@ -80,7 +81,7 @@ describe("AppGate", () => {
       isError: false,
       data: { email: "no@x.com", has_access: false },
     }
-    authorizedMock = { allowed: true, isLoading: false, isError: false }
+    authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
 
     render(createElement(AppGate, null, createElement(Child)))
 
@@ -95,7 +96,7 @@ describe("AppGate", () => {
       isError: false,
       data: { email: "u@x.com", has_access: true },
     }
-    authorizedMock = { allowed: false, isLoading: false, isError: false }
+    authorizedMock = { allowed: false, apps: [], isLoading: false, isError: false }
 
     render(createElement(AppGate, null, createElement(Child)))
 
@@ -109,7 +110,7 @@ describe("AppGate", () => {
       isError: false,
       data: { email: "u@x.com", has_access: true },
     }
-    authorizedMock = { allowed: null, isLoading: false, isError: true }
+    authorizedMock = { allowed: null, apps: [], isLoading: false, isError: true }
 
     render(createElement(AppGate, null, createElement(Child)))
 
@@ -122,7 +123,7 @@ describe("AppGate", () => {
       isError: false,
       data: { email: "u@x.com", has_access: true },
     }
-    authorizedMock = { allowed: true, isLoading: false, isError: false }
+    authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
 
     render(createElement(AppGate, null, createElement(Child)))
 
@@ -135,7 +136,7 @@ describe("AppGate", () => {
       isError: false,
       data: { email: "u@x.com", has_access: true },
     }
-    authorizedMock = { allowed: false, isLoading: false, isError: false }
+    authorizedMock = { allowed: false, apps: [], isLoading: false, isError: false }
 
     render(createElement(AppGate, null, createElement(Child)))
 
@@ -149,11 +150,149 @@ describe("AppGate", () => {
       isError: false,
       data: { email: "u@x.com", has_access: false },
     }
-    authorizedMock = { allowed: true, isLoading: false, isError: false }
+    authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
 
     render(createElement(AppGate, null, createElement(Child)))
 
     expect(screen.queryByTestId("child")).toBeNull()
     expect(screen.getByRole("heading", { name: "Brak dostępu" })).not.toBeNull()
+  })
+
+  describe("tileId (CTX-568 — tile-scoped access)", () => {
+    it("skips the tile check when tileId is omitted (backward-compat)", () => {
+      meMock = {
+        isPending: false,
+        isError: false,
+        data: { email: "u@x.com", has_access: true },
+      }
+      authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
+
+      render(createElement(AppGate, null, createElement(Child)))
+
+      expect(screen.getByTestId("child").textContent).toBe("child-content")
+    })
+
+    it("denies when tileId is null — unresolved path, fail-closed", () => {
+      meMock = {
+        isPending: false,
+        isError: false,
+        data: { email: "u@x.com", has_access: true },
+      }
+      authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
+
+      render(
+        <AppGate tileId={null}>
+          <Child />
+        </AppGate>,
+      )
+
+      expect(screen.queryByTestId("child")).toBeNull()
+      expect(screen.getByRole("heading", { name: "Brak dostępu" })).not.toBeNull()
+    })
+
+    it("denies access to a tile the user is not assigned to — the idp-basic/intrastat regression", () => {
+      meMock = {
+        isPending: false,
+        isError: false,
+        data: { email: "u@x.com", has_access: true },
+      }
+      authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
+
+      render(
+        <AppGate tileId="intrastat">
+          <Child />
+        </AppGate>,
+      )
+
+      expect(screen.queryByTestId("child")).toBeNull()
+      expect(screen.getByRole("heading", { name: "Brak dostępu" })).not.toBeNull()
+    })
+
+    it("allows a matching tile", () => {
+      meMock = {
+        isPending: false,
+        isError: false,
+        data: { email: "u@x.com", has_access: true },
+      }
+      authorizedMock = { allowed: true, apps: ["intrastat"], isLoading: false, isError: false }
+
+      render(
+        <AppGate tileId="intrastat">
+          <Child />
+        </AppGate>,
+      )
+
+      expect(screen.getByTestId("child").textContent).toBe("child-content")
+    })
+
+    it("allows an ai-tool via the blanket 'ai-tools' grant", () => {
+      meMock = {
+        isPending: false,
+        isError: false,
+        data: { email: "u@x.com", has_access: true },
+      }
+      authorizedMock = { allowed: true, apps: ["ai-tools"], isLoading: false, isError: false }
+
+      render(
+        <AppGate tileId="linkedin-generator">
+          <Child />
+        </AppGate>,
+      )
+
+      expect(screen.getByTestId("child").textContent).toBe("child-content")
+    })
+
+    it("denies an ai-tool when apps only grant a different tool", () => {
+      meMock = {
+        isPending: false,
+        isError: false,
+        data: { email: "u@x.com", has_access: true },
+      }
+      authorizedMock = { allowed: true, apps: ["text-analyzer"], isLoading: false, isError: false }
+
+      render(
+        <AppGate tileId="linkedin-generator">
+          <Child />
+        </AppGate>,
+      )
+
+      expect(screen.queryByTestId("child")).toBeNull()
+      expect(screen.getByRole("heading", { name: "Brak dostępu" })).not.toBeNull()
+    })
+
+    it("still denies tileId='idp' on has_access:false (has_access is idp-specific, checked first)", () => {
+      meMock = {
+        isPending: false,
+        isError: false,
+        data: { email: "u@x.com", has_access: false },
+      }
+      authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
+
+      render(
+        <AppGate tileId="idp">
+          <Child />
+        </AppGate>,
+      )
+
+      expect(screen.queryByTestId("child")).toBeNull()
+      expect(screen.getByRole("heading", { name: "Brak dostępu" })).not.toBeNull()
+    })
+
+    it("does NOT deny idp-basic/intrastat access on has_access:false — has_access is idp-specific, irrelevant to other tiles", () => {
+      meMock = {
+        isPending: false,
+        isError: false,
+        data: { email: "u@x.com", has_access: false },
+      }
+      authorizedMock = { allowed: true, apps: ["intrastat"], isLoading: false, isError: false }
+
+      render(
+        <AppGate tileId="intrastat">
+          <Child />
+        </AppGate>,
+      )
+
+      expect(screen.getByTestId("child").textContent).toBe("child-content")
+    })
   })
 })
