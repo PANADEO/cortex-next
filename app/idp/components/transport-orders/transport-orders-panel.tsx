@@ -31,6 +31,17 @@ interface Props {
   canEdit: boolean
 }
 
+const SAD_CONTEXT_EXPORT_TEMPLATES = new Set([
+  "sad_xml",
+  "huzar_connector_xml",
+  "rusałka_connector_xml",
+  "zc415_xml",
+])
+
+function usesSadContextExportTemplate(templateName: string): boolean {
+  return SAD_CONTEXT_EXPORT_TEMPLATES.has(templateName) || templateName.startsWith("huzar_xml")
+}
+
 export function TransportOrdersPanel({ packageId, canEdit }: Props) {
   const { data, isLoading } = usePackageTransportOrders(packageId, { polling: false })
   const exportTemplates = useExportTemplates()
@@ -51,10 +62,8 @@ export function TransportOrdersPanel({ packageId, canEdit }: Props) {
     })
   }, [orders])
 
-  const hasHuzarExport =
-    exportTemplates.data?.some(
-      (template) => template.name === "sad_xml" || template.name.startsWith("huzar_xml"),
-    ) ?? false
+  const hasSadContextExport =
+    exportTemplates.data?.some((template) => usesSadContextExportTemplate(template.name)) ?? false
 
   if (isLoading) return <LoadingState variant="skeleton" rows={6} />
 
@@ -100,7 +109,7 @@ export function TransportOrdersPanel({ packageId, canEdit }: Props) {
             order={order}
             packageId={packageId}
             canEdit={canEdit}
-            hasHuzarExport={hasHuzarExport}
+            showSadContext={hasSadContextExport}
             useCustomsCode={useCustomsCode}
             showAtrProcessing={showAtrProcessing}
             showHeader={!hasOrderTabs}
@@ -124,7 +133,7 @@ interface SectionProps {
   order: TransportOrder
   packageId: string
   canEdit: boolean
-  hasHuzarExport: boolean
+  showSadContext: boolean
   useCustomsCode: boolean
   showAtrProcessing: boolean
   showHeader: boolean
@@ -140,7 +149,7 @@ function TransportOrderSection({
   order,
   packageId,
   canEdit,
-  hasHuzarExport,
+  showSadContext,
   useCustomsCode,
   showAtrProcessing,
   showHeader,
@@ -193,7 +202,7 @@ function TransportOrderSection({
         onSave={(body) => saveTransportInfo({ packageId, orderId: order.id, body })}
       />
 
-      {hasHuzarExport ? (
+      {showSadContext ? (
         <SadContextEditor
           order={order}
           canEdit={canEdit}
