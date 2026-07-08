@@ -65,6 +65,11 @@ const MATCH_OPTIONS: Array<{ value: IntrastatCnMatchStatus | "all"; label: strin
   { value: "unmatched", label: "Unmatched" },
 ]
 
+function getBatchParam(): string | null {
+  if (typeof window === "undefined") return null
+  return new URLSearchParams(window.location.search).get("batch")
+}
+
 export default function IntrastatReviewPage() {
   const router = useRouter()
   const [batchId, setBatchId] = useState("")
@@ -85,8 +90,7 @@ export default function IntrastatReviewPage() {
   const reprocess = useIntrastatReprocessBatch()
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const initialBatch = params.get("batch")
+    const initialBatch = getBatchParam()
     if (initialBatch) setBatchId(initialBatch)
   }, [])
 
@@ -99,6 +103,7 @@ export default function IntrastatReviewPage() {
   }, [])
 
   useEffect(() => {
+    if (getBatchParam()) return
     if (!batchId && batches.data?.items[0]) {
       setBatchId(batches.data.items[0].id)
     }
