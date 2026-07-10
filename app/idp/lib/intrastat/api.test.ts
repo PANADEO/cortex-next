@@ -45,9 +45,7 @@ describe("intrastatApi", () => {
       period_month: "all",
     })
 
-    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
-      "/intrastat/api/batches?limit=20&offset=0",
-    )
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("/intrastat/api/batches?limit=20&offset=0")
   })
 
   it("loads batch filter options", async () => {
@@ -137,5 +135,30 @@ describe("intrastatApi", () => {
     expect((body as FormData).get("upload_to_filesystem")).toBe("true")
     expect((body as FormData).get("client_name")).toBe("Jabil")
     expect((body as FormData).get("period_month")).toBe("Lipiec 2026")
+  })
+
+  it("translates persisted Polish alerts when loading declaration lines", async () => {
+    mockJsonFetch({
+      items: [
+        {
+          alerts: [
+            "Brak kodu CN do eksportu Intrastat.",
+            "Niejednoznaczne dopasowanie CN: 85322400, 85423269.",
+            "Suma wartości pozycji (2000.00 EUR) nie zgadza się z kwotą netto faktury (2300.00 EUR).",
+          ],
+        },
+      ],
+      total: 1,
+      limit: 20,
+      offset: 0,
+    })
+
+    const response = await intrastatApi.lines("batch-1", { limit: 20, offset: 0 })
+
+    expect(response.items[0]?.alerts).toEqual([
+      "Missing CN code for Intrastat export.",
+      "Ambiguous CN match: 85322400, 85423269.",
+      "Sum of line values (2000.00 EUR) does not match the invoice net total (2300.00 EUR).",
+    ])
   })
 })

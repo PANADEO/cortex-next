@@ -47,6 +47,19 @@ const INTRASTAT_ERROR_MESSAGES: Record<string, string> = {
   "filesystem-path-outside-root": "Path is outside the watch folder",
 }
 
+const LEGACY_ALERT_MESSAGES: Record<string, string> = {
+  "Brak dopasowania CN w bazie i na fakturze.": "No CN match found in the resource or invoice.",
+  "Brak indeksu towaru z faktury.": "Missing item index from the invoice.",
+  "Brak kodu CN do eksportu Intrastat.": "Missing CN code for Intrastat export.",
+  "Brak numeru VAT/NIP dla reguły WNT/WDT.": "Missing VAT number for WNT/WDT rules.",
+  "Brak numeru faktury korygowanej; korekta pominięta w podsumowaniu.":
+    "Missing corrected invoice number; correction excluded from the summary.",
+  "Brak sekcji przed korektą; korekta pominięta w podsumowaniu.":
+    "Missing before-correction section; correction excluded from the summary.",
+  "Stan przed korektą nie zgadza się z aktualnym stanem faktury; korekta wymaga weryfikacji.":
+    "Before-correction state does not match the current invoice state; correction requires review.",
+}
+
 class IntrastatApiError extends Error {
   readonly status: number
   readonly detail: string | null
@@ -123,6 +136,41 @@ function detailToString(detail: unknown): string | null {
     if (typeof first === "object" && first !== null && "msg" in first) return String(first.msg)
   }
   return null
+}
+
+function translateLegacyAlert(alert: string): string {
+  const translated = LEGACY_ALERT_MESSAGES[alert]
+  if (translated) return translated
+
+  const ambiguousMatch = alert.match(/^Niejednoznaczne dopasowanie CN: (.+)\.$/)
+  if (ambiguousMatch?.[1]) return `Ambiguous CN match: ${ambiguousMatch[1]}.`
+
+  const invoiceTotalMatch = alert.match(
+    /^Suma wartości pozycji \((.+)\) nie zgadza się z kwotą netto faktury \((.+)\)\.$/,
+  )
+  if (invoiceTotalMatch?.[1] && invoiceTotalMatch[2]) {
+    return `Sum of line values (${invoiceTotalMatch[1]}) does not match the invoice net total (${invoiceTotalMatch[2]}).`
+  }
+
+  const correctionTotalMatch = alert.match(
+    /^Różnica wartości pozycji korekty \((.+)\) nie zgadza się z kwotą netto faktury \((.+)\)\.$/,
+  )
+  if (correctionTotalMatch?.[1] && correctionTotalMatch[2]) {
+    return `Difference in correction line values (${correctionTotalMatch[1]}) does not match the invoice net total (${correctionTotalMatch[2]}).`
+  }
+
+  const correctedInvoiceMatch = alert.match(
+    /^Brak faktury korygowanej (.+); korekta pominięta w bieżącym podsumowaniu\.$/,
+  )
+  if (correctedInvoiceMatch?.[1]) {
+    return `Corrected invoice ${correctedInvoiceMatch[1]} not found; correction excluded from the current summary.`
+  }
+
+  return alert
+}
+
+function translateLegacyLineAlerts(line: IntrastatDeclarationLine): IntrastatDeclarationLine {
+  return { ...line, alerts: line.alerts.map(translateLegacyAlert) }
 }
 
 export function formatIntrastatError(error: unknown, fallback: string): string {
@@ -243,13 +291,18 @@ export const intrastatApi = {
         match_status: query.match_status === "all" ? null : query.match_status,
       }),
       { credentials: "include", cache: "no-store", headers: { Accept: "application/json" } },
-    ).then(parseJsonResponse<IntrastatLineListResponse>),
+    )
+      .then(parseJsonResponse<IntrastatLineListResponse>)
+      .then((response) => ({
+        ...response,
+        items: response.items.map(translateLegacyLineAlerts),
+      })),
   patchLine: (lineId: string, payload: IntrastatLinePatchRequest) =>
     request<IntrastatDeclarationLine>(`/lines/${lineId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-    }),
+    }).then(translateLegacyLineAlerts),
   currentCnResource: () => request<IntrastatResourceInfo>("/resources/cn/current"),
   cnSuggestions: (search: string, limit = 5) =>
     request<IntrastatCnSuggestionListResponse>(
@@ -284,7 +337,10 @@ async function exportWorkbook(path: string, batchIds: string[]): Promise<Intrast
   if (!response.ok) throw await intrastatErrorFromResponse(response)
   return {
     blob: await response.blob(),
-    filename: filenameFromContentDisposition(response.headers.get("Content-Disposition"), "intrastat.xlsx"),
+    filename: filenameFromContentDisposition(
+      response.headers.get("Content-Disposition"),
+      "intrastat.xlsx",
+    ),
   }
 }
 

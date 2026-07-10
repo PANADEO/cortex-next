@@ -48,11 +48,11 @@ describe("IntrastatCorrectionInfo", () => {
   it("shows the correction relationship and historical state", () => {
     render(<IntrastatCorrectionInfo line={correctionLine} />)
 
-    expect(screen.getByText("Korekta")).toBeInTheDocument()
-    expect(screen.getByText("Przed korektą")).toBeInTheDocument()
-    expect(screen.getByText("Historyczna / wyłączona")).toBeInTheDocument()
+    expect(screen.getByText("Correction")).toBeInTheDocument()
+    expect(screen.getByText("Before correction")).toBeInTheDocument()
+    expect(screen.getByText("Historical / excluded")).toBeInTheDocument()
     expect(screen.getByText("FV-ORIG")).toBeInTheDocument()
-    expect(screen.getByText("Powód: Quality claim")).toBeInTheDocument()
+    expect(screen.getByText("Reason: Quality claim")).toBeInTheDocument()
     expect(screen.getByText(/2025-12-03/)).toBeInTheDocument()
   })
 

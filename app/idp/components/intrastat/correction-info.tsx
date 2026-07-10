@@ -6,12 +6,12 @@ import { Badge } from "@cortex/ui"
 export function IntrastatCorrectionInfo({ line }: { line: IntrastatDeclarationLine }) {
   if (line.document_type === "invoice") return null
 
-  const documentLabel = line.document_type === "physical_return" ? "Zwrot fizyczny" : "Korekta"
+  const documentLabel = line.document_type === "physical_return" ? "Physical return" : "Correction"
   const sideLabel =
     line.correction_side === "before"
-      ? "Przed korektą"
+      ? "Before correction"
       : line.correction_side === "after"
-        ? "Po korekcie"
+        ? "After correction"
         : null
 
   return (
@@ -30,19 +30,19 @@ export function IntrastatCorrectionInfo({ line }: { line: IntrastatDeclarationLi
         ) : null}
         {line.is_excluded ? (
           <Badge variant="outline" className="px-1.5 py-0 text-[10px] text-muted-foreground">
-            Historyczna / wyłączona
+            Historical / excluded
           </Badge>
         ) : null}
       </div>
       {line.corrected_invoice_number ? (
         <p className="truncate text-[11px] text-muted-foreground">
-          Koryguje: <span className="font-mono">{line.corrected_invoice_number}</span>
+          Corrects: <span className="font-mono">{line.corrected_invoice_number}</span>
           {line.corrected_invoice_date ? ` · ${line.corrected_invoice_date}` : ""}
         </p>
       ) : null}
       {line.correction_reason ? (
         <p className="truncate text-[11px] text-muted-foreground" title={line.correction_reason}>
-          Powód: {line.correction_reason}
+          Reason: {line.correction_reason}
         </p>
       ) : null}
     </div>
