@@ -6,6 +6,7 @@ import { IntrastatDocumentPreviewPanel } from "@/components/intrastat/document-p
 import { IntrastatExportButtons } from "@/components/intrastat/export-buttons"
 import { IntrastatLineEditDialog } from "@/components/intrastat/line-edit-dialog"
 import { IntrastatMatchDetailsPopover } from "@/components/intrastat/match-details-popover"
+import { IntrastatPeriodInvoicesDialog } from "@/components/intrastat/period-invoices-dialog"
 import {
   IntrastatKindBadge,
   IntrastatStatusBadge,
@@ -248,6 +249,16 @@ export default function IntrastatReviewPage() {
     setSelectedSourceFile(line.source_file)
   }
 
+  const handleInvoiceSelect = (fileName: string) => {
+    setSelectedSourceFile(fileName)
+    setDocumentPreviewVisible(true)
+    try {
+      localStorage.setItem(PREVIEW_VISIBLE_STORAGE_KEY, "true")
+    } catch {
+      // localStorage can be unavailable in restricted browser contexts.
+    }
+  }
+
   const handleDocumentPreviewToggle = () => {
     setDocumentPreviewVisible((current) => {
       const next = !current
@@ -336,6 +347,16 @@ export default function IntrastatReviewPage() {
               </Select>
               {selectedBatch.data ? (
                 <>
+                  <IntrastatPeriodInvoicesDialog
+                    periodLabel={
+                      selectedBatch.data.client_name && selectedBatch.data.period_month
+                        ? `${selectedBatch.data.client_name} / ${selectedBatch.data.period_month}`
+                        : selectedBatch.data.name
+                    }
+                    invoiceCount={selectedBatch.data.invoice_count}
+                    documents={selectedBatch.data.documents}
+                    onInvoiceSelect={handleInvoiceSelect}
+                  />
                   <IntrastatKindBadge kind={selectedBatch.data.transaction_kind} />
                   <IntrastatStatusBadge status={selectedBatch.data.status} />
                 </>

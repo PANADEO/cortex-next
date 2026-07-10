@@ -1,12 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest"
 import { cleanup, render, screen, waitFor } from "@testing-library/react"
-import type {
-  ButtonHTMLAttributes,
-  HTMLAttributes,
-  InputHTMLAttributes,
-  ReactNode,
-} from "react"
+import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, ReactNode } from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import IntrastatReviewPage from "./page"
 
@@ -100,6 +95,10 @@ vi.mock("@/components/intrastat/match-details-popover", () => ({
   IntrastatMatchDetailsPopover: () => <span>Match</span>,
 }))
 
+vi.mock("@/components/intrastat/period-invoices-dialog", () => ({
+  IntrastatPeriodInvoicesDialog: () => <button type="button">Invoices</button>,
+}))
+
 vi.mock("@/components/intrastat/status", () => ({
   IntrastatKindBadge: ({ kind }: { kind: string }) => <span>{kind}</span>,
   IntrastatStatusBadge: ({ status }: { status: string }) => <span>{status}</span>,
@@ -140,7 +139,9 @@ vi.mock("@cortex/ui", () => ({
   SelectItem: ({ children, value }: { children?: ReactNode; value: string }) => (
     <div data-value={value}>{children}</div>
   ),
-  SelectTrigger: ({ children }: { children?: ReactNode }) => <button type="button">{children}</button>,
+  SelectTrigger: ({ children }: { children?: ReactNode }) => (
+    <button type="button">{children}</button>
+  ),
   SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
   Tooltip: ({ children }: { children?: ReactNode }) => <>{children}</>,
   TooltipContent: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
