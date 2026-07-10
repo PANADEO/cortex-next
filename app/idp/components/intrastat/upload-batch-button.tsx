@@ -1,7 +1,7 @@
 "use client"
 
 import { formatIntrastatError } from "@/lib/intrastat/api"
-import { useIntrastatUploadBatch } from "@/lib/intrastat/hooks"
+import { useIntrastatBatchFilterOptions, useIntrastatUploadBatch } from "@/lib/intrastat/hooks"
 import type { IntrastatTransactionKind } from "@/lib/intrastat/types"
 import {
   Button,
@@ -25,16 +25,33 @@ import { Loader2, Upload } from "lucide-react"
 import { useRef, useState, type ChangeEvent } from "react"
 import { toast } from "sonner"
 
+const NEW_OPTION_VALUE = "__intrastat_new_option__"
+
 export function IntrastatUploadBatchButton() {
   const inputRef = useRef<HTMLInputElement>(null)
   const upload = useIntrastatUploadBatch()
+  const filterOptions = useIntrastatBatchFilterOptions()
   const [open, setOpen] = useState(false)
   const [transactionKind, setTransactionKind] = useState<IntrastatTransactionKind | "">("")
   const [uploadToFilesystem, setUploadToFilesystem] = useState(false)
+  const [clientSelection, setClientSelection] = useState("")
+  const [monthSelection, setMonthSelection] = useState("")
   const [clientName, setClientName] = useState("")
   const [periodMonth, setPeriodMonth] = useState("")
+  const isNewClient = filterOptions.isError || clientSelection === NEW_OPTION_VALUE
+  const isNewMonth = filterOptions.isError || monthSelection === NEW_OPTION_VALUE
   const filesystemMetadataMissing =
     uploadToFilesystem && (!clientName.trim() || !periodMonth.trim())
+
+  const handleClientChange = (value: string) => {
+    setClientSelection(value)
+    setClientName(value === NEW_OPTION_VALUE ? "" : value)
+  }
+
+  const handleMonthChange = (value: string) => {
+    setMonthSelection(value)
+    setPeriodMonth(value === NEW_OPTION_VALUE ? "" : value)
+  }
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -109,23 +126,88 @@ export function IntrastatUploadBatchButton() {
         </div>
         {uploadToFilesystem ? (
           <div className="grid gap-3 sm:grid-cols-2">
+            {filterOptions.isError ? (
+              <p className="text-sm text-destructive sm:col-span-2">
+                Could not load existing clients and months. Enter new values manually.
+              </p>
+            ) : null}
             <div className="space-y-2">
-              <Label htmlFor="intrastat-client-name">Client</Label>
-              <Input
-                id="intrastat-client-name"
-                value={clientName}
-                onChange={(event) => setClientName(event.target.value)}
-                placeholder="Jabil"
-              />
+              <Label
+                htmlFor={
+                  filterOptions.isError ? "intrastat-new-client-name" : "intrastat-client-name"
+                }
+              >
+                Client
+              </Label>
+              {!filterOptions.isError ? (
+                <Select value={clientSelection} onValueChange={handleClientChange}>
+                  <SelectTrigger id="intrastat-client-name" disabled={filterOptions.isLoading}>
+                    <SelectValue
+                      placeholder={filterOptions.isLoading ? "Loading clients..." : "Choose client"}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filterOptions.data?.clients.map((client) => (
+                      <SelectItem key={client} value={client}>
+                        {client}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value={NEW_OPTION_VALUE}>Add new client...</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : null}
+              {isNewClient ? (
+                <div className="space-y-2">
+                  {!filterOptions.isError ? (
+                    <Label htmlFor="intrastat-new-client-name">New client name</Label>
+                  ) : null}
+                  <Input
+                    id="intrastat-new-client-name"
+                    value={clientName}
+                    onChange={(event) => setClientName(event.target.value)}
+                    placeholder="Jabil"
+                  />
+                </div>
+              ) : null}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="intrastat-period-month">Month</Label>
-              <Input
-                id="intrastat-period-month"
-                value={periodMonth}
-                onChange={(event) => setPeriodMonth(event.target.value)}
-                placeholder="Lipiec 2026"
-              />
+              <Label
+                htmlFor={
+                  filterOptions.isError ? "intrastat-new-period-month" : "intrastat-period-month"
+                }
+              >
+                Month
+              </Label>
+              {!filterOptions.isError ? (
+                <Select value={monthSelection} onValueChange={handleMonthChange}>
+                  <SelectTrigger id="intrastat-period-month" disabled={filterOptions.isLoading}>
+                    <SelectValue
+                      placeholder={filterOptions.isLoading ? "Loading months..." : "Choose month"}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filterOptions.data?.months.map((month) => (
+                      <SelectItem key={month} value={month}>
+                        {month}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value={NEW_OPTION_VALUE}>Add new month...</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : null}
+              {isNewMonth ? (
+                <div className="space-y-2">
+                  {!filterOptions.isError ? (
+                    <Label htmlFor="intrastat-new-period-month">New month</Label>
+                  ) : null}
+                  <Input
+                    id="intrastat-new-period-month"
+                    value={periodMonth}
+                    onChange={(event) => setPeriodMonth(event.target.value)}
+                    placeholder="Lipiec 2026"
+                  />
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}
