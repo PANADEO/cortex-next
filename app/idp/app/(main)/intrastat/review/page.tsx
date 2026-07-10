@@ -1,5 +1,6 @@
 "use client"
 
+import { IntrastatCorrectionInfo } from "@/components/intrastat/correction-info"
 import { IntrastatDeleteBatchButton } from "@/components/intrastat/delete-batch-button"
 import { IntrastatDocumentPreviewPanel } from "@/components/intrastat/document-preview-panel"
 import { IntrastatExportButtons } from "@/components/intrastat/export-buttons"
@@ -124,13 +125,22 @@ export default function IntrastatReviewPage() {
       {
         accessorKey: "invoice_number",
         header: "Invoice",
-        size: 160,
+        size: 260,
         cell: ({ row }) => (
           <div className="min-w-0">
-            <p className="truncate font-medium">{row.original.invoice_number}</p>
+            <p
+              className={
+                row.original.is_excluded
+                  ? "truncate font-medium line-through"
+                  : "truncate font-medium"
+              }
+            >
+              {row.original.invoice_number}
+            </p>
             <p className="truncate text-xs text-muted-foreground">
               {row.original.invoice_date ?? "No date"}
             </p>
+            <IntrastatCorrectionInfo line={row.original} />
           </div>
         ),
       },
@@ -371,6 +381,9 @@ export default function IntrastatReviewPage() {
                 data={items}
                 isLoading={lines.isPending && items.length === 0}
                 getRowId={(row) => row.id}
+                getRowClassName={(row) =>
+                  row.is_excluded ? "bg-muted/30 text-muted-foreground" : undefined
+                }
                 onRowClick={handleLineSelect}
                 stickyHeader
                 bordered
