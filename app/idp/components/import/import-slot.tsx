@@ -1,6 +1,7 @@
 "use client"
 
 import { ImportOptionsFields, type ImportOptions } from "@/components/import-options-fields"
+import type { ExportTemplateInfo } from "@cortex/types"
 import {
   Badge,
   Button,
@@ -13,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@cortex/ui"
-import type { ExportTemplateInfo } from "@cortex/types"
 import { cn, formatFileSizeBytes } from "@cortex/utils"
 import {
   AlertCircle,
@@ -70,6 +70,7 @@ interface ImportSlotProps {
   showImportEmailNotifications?: boolean
   showAtrProcessing?: boolean
   showAdditionalAiContext?: boolean
+  showPackagingSelectionMode?: boolean
 }
 
 const STATUS_META: Record<
@@ -119,6 +120,7 @@ export function ImportSlot({
   showImportEmailNotifications = true,
   showAtrProcessing = false,
   showAdditionalAiContext = false,
+  showPackagingSelectionMode = false,
 }: ImportSlotProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
@@ -257,9 +259,7 @@ export function ImportSlot({
                 <Checkbox
                   id={`notification-email-enabled-${slot.id}`}
                   checked={slot.notificationEmailEnabled}
-                  onCheckedChange={(checked) =>
-                    onNotificationEmailEnabledChange(checked === true)
-                  }
+                  onCheckedChange={(checked) => onNotificationEmailEnabledChange(checked === true)}
                   disabled={isBusy}
                 />
                 <Label
@@ -467,6 +467,7 @@ export function ImportSlot({
               onChange={onOptionsChange}
               showAtrProcessing={showAtrProcessing}
               showAdditionalAiContext={showAdditionalAiContext}
+              showPackagingSelectionMode={showPackagingSelectionMode}
             />
           ) : null}
 

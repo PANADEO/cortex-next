@@ -90,6 +90,7 @@ export interface ImportPackageBody {
   atr_processing_enabled?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null
+  packaging_selection_mode?: PackagingSelectionMode | null
   notification_email?: string | null
   notification_export_template?: string | null
 }
@@ -101,6 +102,7 @@ export interface ImportEmailPackageBody {
   atr_processing_enabled?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null
+  packaging_selection_mode?: PackagingSelectionMode | null
   notification_email?: string | null
   notification_export_template?: string | null
 }
@@ -112,6 +114,7 @@ export interface ImportMultiplePackagesBody {
   atr_processing_enabled?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null
+  packaging_selection_mode?: PackagingSelectionMode | null
   notification_email?: string | null
   notification_export_template?: string | null
 }
@@ -125,7 +128,10 @@ export interface ReprocessRequest {
   atr_processing_enabled?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null
+  packaging_selection_mode?: PackagingSelectionMode | null
 }
+
+export type PackagingSelectionMode = "auto_by_bill_of_lading" | "force_packages" | "force_pallets"
 
 export interface SetCustomStatusRequest {
   custom_status: string | null

@@ -32,6 +32,7 @@ type BooleanFlagKey =
   | "enable_customs_code"
   | "enable_additional_ai_context"
   | "enable_atr_processing"
+  | "enable_packaging_selection_mode"
   | "enable_document_preview"
   | "enable_classification"
   | "enable_imap_import"
@@ -78,6 +79,11 @@ const BOOLEAN_FLAGS: ReadonlyArray<{
     env: "FEATURE_FLAG_ENABLE_ATR_PROCESSING",
   },
   {
+    key: "enable_packaging_selection_mode",
+    label: "Packaging selection mode",
+    env: "FEATURE_FLAG_ENABLE_PACKAGING_SELECTION_MODE",
+  },
+  {
     key: "enable_document_preview",
     label: "Document preview",
     env: "FEATURE_FLAG_ENABLE_DOCUMENT_PREVIEW",
@@ -108,6 +114,7 @@ function emptySettings(): FeatureFlagSettingsResponse {
     enable_customs_code: false,
     enable_additional_ai_context: false,
     enable_atr_processing: false,
+    enable_packaging_selection_mode: false,
     enable_document_preview: false,
     enable_classification: false,
     enable_imap_import: false,
@@ -224,8 +231,7 @@ export default function ConfigurationPage() {
     ],
   )
 
-  const isBusy =
-    update.isPending || reload.isPending || testImap.isPending || testSmtp.isPending
+  const isBusy = update.isPending || reload.isPending || testImap.isPending || testSmtp.isPending
   const canSave = !isBusy && Boolean(form.gemini_model.trim())
 
   const onSave = () => {
@@ -359,9 +365,7 @@ export default function ConfigurationPage() {
                   <Label htmlFor={flag.key} className="text-sm font-medium">
                     {flag.label}
                   </Label>
-                  <p className="truncate font-mono text-[11px] text-muted-foreground">
-                    {flag.env}
-                  </p>
+                  <p className="truncate font-mono text-[11px] text-muted-foreground">{flag.env}</p>
                 </div>
                 <div className="flex justify-end">
                   <Switch
@@ -492,9 +496,7 @@ export default function ConfigurationPage() {
                   step={0.01}
                   value={geminiFastTemperatureText}
                   disabled={isBusy}
-                  onChange={(event) =>
-                    setGeminiFastTemperatureText(event.target.value)
-                  }
+                  onChange={(event) => setGeminiFastTemperatureText(event.target.value)}
                   className="mt-1.5"
                 />
               </div>
@@ -841,7 +843,6 @@ export default function ConfigurationPage() {
               </div>
             </div>
           </div>
-
         </aside>
       </div>
     )

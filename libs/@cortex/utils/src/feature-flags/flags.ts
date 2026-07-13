@@ -12,6 +12,7 @@ export type FeatureFlag =
   | "idp.customs-code"
   | "idp.atr-processing"
   | "idp.additional-ai-context"
+  | "idp.packaging-selection-mode"
   | "idp.import-email-notifications"
 
 /** Defaults used when a backend does not expose a newer flag yet. */
@@ -20,6 +21,7 @@ export const DEFAULTS: Record<FeatureFlag, boolean> = {
   "idp.customs-code": false,
   "idp.atr-processing": false,
   "idp.additional-ai-context": false,
+  "idp.packaging-selection-mode": false,
   "idp.import-email-notifications": true,
 } as const satisfies Record<FeatureFlag, boolean>
 
@@ -29,5 +31,6 @@ export const BACKEND_FIELD: Record<FeatureFlag, keyof FeatureFlagsResponse> = {
   "idp.customs-code": "enable_customs_code",
   "idp.atr-processing": "enable_atr_processing",
   "idp.additional-ai-context": "enable_additional_ai_context",
+  "idp.packaging-selection-mode": "enable_packaging_selection_mode",
   "idp.import-email-notifications": "enable_import_email_notifications",
 } as const

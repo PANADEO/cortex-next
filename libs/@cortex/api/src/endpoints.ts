@@ -20,12 +20,11 @@ import type {
   GetDirtyPackagesQuery,
   GetPackagesQuery,
   GetRulesQuery,
+  ImapConnectionTestResponse,
   ImportEmailPackageBody,
   ImportMultiplePackagesBody,
   ImportPackageBody,
   ImportPackageResponse,
-  ImapConnectionTestResponse,
-  SmtpConnectionTestResponse,
   PackageActionsResponse,
   PackageDetailsResponse,
   PackageRuleAttachment,
@@ -50,6 +49,7 @@ import type {
   SetCustomStatusRequest,
   SetUserNotesRequest,
   SetUserPreferencesRequest,
+  SmtpConnectionTestResponse,
   SourceFileReadModel,
   UpdateDeliveryTermsRequest,
   UpdateDocumentClassificationRequest,
@@ -98,6 +98,9 @@ export function buildImportForm(
   if (body.additional_ai_context) {
     form.append("additional_ai_context", body.additional_ai_context)
   }
+  if (body.packaging_selection_mode) {
+    form.append("packaging_selection_mode", body.packaging_selection_mode)
+  }
   if (body.package_name) {
     form.append("package_name", body.package_name)
   }
@@ -120,8 +123,7 @@ export const endpoints = {
   },
   config: {
     featureFlags: () => apiClient.get<FeatureFlagsResponse>("/config"),
-    featureFlagSettings: () =>
-      apiClient.get<FeatureFlagSettingsResponse>("/config/feature-flags"),
+    featureFlagSettings: () => apiClient.get<FeatureFlagSettingsResponse>("/config/feature-flags"),
     updateFeatureFlagSettings: (body: UpdateFeatureFlagSettingsRequest) =>
       apiClient.put<FeatureFlagSettingsResponse>("/config/feature-flags", { jsonBody: body }),
     reloadFeatureFlagSettingsFromEnv: () =>

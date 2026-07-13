@@ -21,19 +21,19 @@ interface ReprocessDialogProps {
   packageId: string
 }
 
-export function ReprocessDialog({
-  open,
-  onOpenChange,
-  packageId,
-}: ReprocessDialogProps) {
+export function ReprocessDialog({ open, onOpenChange, packageId }: ReprocessDialogProps) {
   const options = useImportOptions()
   const mutate = useReprocessPackage(packageId)
   const showAdditionalAiContext = useFeatureFlag("idp.additional-ai-context")
+  const showPackagingSelectionMode = useFeatureFlag("idp.packaging-selection-mode")
 
   const handleSubmit = async () => {
     try {
       await mutate.mutateAsync(
-        options.serialize({ additionalAiContextAvailable: showAdditionalAiContext }),
+        options.serialize({
+          additionalAiContextAvailable: showAdditionalAiContext,
+          packagingSelectionModeAvailable: showPackagingSelectionMode,
+        }),
       )
       toast.success("Reprocess started")
       options.reset()
@@ -62,19 +62,14 @@ export function ReprocessDialog({
           state={options.state}
           onChange={options.update}
           showAdditionalAiContext={showAdditionalAiContext}
+          showPackagingSelectionMode={showPackagingSelectionMode}
         />
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={mutate.isPending}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={mutate.isPending}>
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={mutate.isPending}>
-            {mutate.isPending ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : null}
+            {mutate.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
             Reprocess
           </Button>
         </DialogFooter>

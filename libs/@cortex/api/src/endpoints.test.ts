@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest"
 
-import { buildImportForm, endpoints } from "./endpoints"
 import type { UpdateFeatureFlagSettingsRequest } from "@cortex/types"
+import { buildImportForm, endpoints } from "./endpoints"
 
 function settingsPayload(
   overrides: Partial<UpdateFeatureFlagSettingsRequest> = {},
@@ -15,6 +15,7 @@ function settingsPayload(
     enable_customs_code: false,
     enable_additional_ai_context: false,
     enable_atr_processing: false,
+    enable_packaging_selection_mode: false,
     enable_document_preview: true,
     enable_classification: false,
     enable_imap_import: true,
@@ -67,6 +68,15 @@ describe("buildImportForm", () => {
     expect(withEmail.get("notification_export_template")).toBe("sad_xml")
     expect(withoutEmail.has("notification_email")).toBe(false)
     expect(withoutEmail.has("notification_export_template")).toBe(false)
+  })
+
+  it("adds packaging selection mode when provided", () => {
+    const form = buildImportForm({
+      file: new File(["zip"], "package.zip", { type: "application/zip" }),
+      packaging_selection_mode: "force_pallets",
+    })
+
+    expect(form.get("packaging_selection_mode")).toBe("force_pallets")
   })
 })
 
