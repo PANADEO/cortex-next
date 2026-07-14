@@ -9,9 +9,16 @@ interface ArtifactsPanelProps {
   sessionId: string | null
   artifacts: CoworkArtifact[]
   downloadHref: (artifactId: string) => string
+  /** Present when the project has an export share; drives the export button. */
+  onExport?: (artifactId: string) => Promise<{ displayPath: string }>
 }
 
-export function ArtifactsPanel({ sessionId, artifacts, downloadHref }: ArtifactsPanelProps) {
+export function ArtifactsPanel({
+  sessionId,
+  artifacts,
+  downloadHref,
+  onExport,
+}: ArtifactsPanelProps) {
   return (
     <aside className="flex w-80 shrink-0 flex-col border-l border-border">
       <div className="border-b border-border px-4 py-3">
@@ -36,6 +43,7 @@ export function ArtifactsPanel({ sessionId, artifacts, downloadHref }: Artifacts
                 key={artifact.id}
                 artifact={artifact}
                 downloadHref={downloadHref(artifact.id)}
+                {...(onExport ? { onExport: () => onExport(artifact.id) } : {})}
               />
             ))
           )}

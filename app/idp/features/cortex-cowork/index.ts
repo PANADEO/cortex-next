@@ -1,6 +1,7 @@
 export { ArtifactsPanel } from "./components/artifacts-panel"
 export { ChatPanel } from "./components/chat-panel"
 export { useCoworkArtifacts } from "./hooks/use-artifacts"
+export { useExportArtifact } from "./hooks/use-export-artifact"
 export {
   DEFAULT_COWORK_PROJECT_ID,
   useCoworkSession,

@@ -23,6 +23,13 @@ export interface CoworkProjectTile {
   name: string
   description: string
   icon?: string
+  /** True when the project has an export share configured (drives export UI). */
+  exportEnabled: boolean
+}
+
+export interface ArtifactExportResult {
+  exportedPath: string
+  displayPath: string
 }
 
 const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH)
@@ -54,4 +61,8 @@ export const coworkApi = {
     apiClient.get<CoworkArtifact[]>(`/api/cortex-cowork/sessions/${sessionId}/artifacts`),
   artifactDownloadHref: (sessionId: string, artifactId: string) =>
     `${basePath}/api/cortex-cowork/sessions/${sessionId}/artifacts/${artifactId}`,
+  exportArtifact: (sessionId: string, artifactId: string) =>
+    apiClient.post<ArtifactExportResult>(
+      `/api/cortex-cowork/sessions/${sessionId}/artifacts/${artifactId}/export`,
+    ),
 }

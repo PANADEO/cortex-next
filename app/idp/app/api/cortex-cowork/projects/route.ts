@@ -8,6 +8,7 @@ export interface CoworkProjectTile {
   name: string
   description: string
   icon?: string
+  exportEnabled: boolean
 }
 
 /**
@@ -23,6 +24,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     name: project.name,
     description: project.description,
     ...(project.icon ? { icon: project.icon } : {}),
+    exportEnabled: Boolean(project.artifactExport?.exportDir),
   }))
   return NextResponse.json(tiles)
 }

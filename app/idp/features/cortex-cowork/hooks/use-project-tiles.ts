@@ -47,13 +47,18 @@ function projectToTile(project: CoworkProjectTile): Tile {
  * Task-chat project tiles for the hub grid, resolved from the governance
  * store per user. Server-side visibility (role membership) already applied.
  */
-export function useCoworkProjectTiles(): { tiles: Tile[]; isLoading: boolean } {
+export function useCoworkProjectTiles(): {
+  tiles: Tile[]
+  projects: CoworkProjectTile[]
+  isLoading: boolean
+} {
   const query = useQuery({
     queryKey: coworkQueryKeys.projects(),
     queryFn: coworkApi.listProjectTiles,
     staleTime: 30_000,
     retry: false,
   })
-  const tiles = useMemo(() => (query.data ?? []).map(projectToTile), [query.data])
-  return { tiles, isLoading: query.isPending }
+  const projects = query.data ?? []
+  const tiles = useMemo(() => projects.map(projectToTile), [projects])
+  return { tiles, projects, isLoading: query.isPending }
 }
