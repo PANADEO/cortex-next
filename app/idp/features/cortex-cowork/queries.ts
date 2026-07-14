@@ -5,6 +5,7 @@ import type { CoworkArtifactExportResult, CoworkProjectTileInfo } from "@cortex/
 import type {
   CoworkArtifact,
   CoworkSession,
+  CoworkSessionSummary,
   CoworkSkillSummary,
   SendMessageResponse,
 } from "./types"
@@ -13,6 +14,7 @@ export const coworkQueryKeys = {
   all: ["cortex-cowork"] as const,
   catalog: () => [...coworkQueryKeys.all, "catalog"] as const,
   projects: () => [...coworkQueryKeys.all, "projects"] as const,
+  sessions: (projectId: string) => [...coworkQueryKeys.all, "sessions", projectId] as const,
   session: (sessionId: string) => [...coworkQueryKeys.all, "session", sessionId] as const,
   artifacts: (sessionId: string) =>
     [...coworkQueryKeys.all, "session", sessionId, "artifacts"] as const,
@@ -35,12 +37,18 @@ function normalizeBasePath(value: string | undefined): string {
 export const coworkApi = {
   listSkillCatalog: () => apiClient.get<CoworkSkillSummary[]>("/api/cortex-cowork/skills"),
   listProjectTiles: () => apiClient.get<CoworkProjectTile[]>("/api/cortex-cowork/projects"),
+  listSessions: (projectId: string) =>
+    apiClient.get<CoworkSessionSummary[]>(
+      `/api/cortex-cowork/sessions?projectId=${encodeURIComponent(projectId)}`,
+    ),
   createSession: (projectId?: string) =>
     apiClient.post<CoworkSession>("/api/cortex-cowork/sessions", {
       jsonBody: projectId ? { projectId } : {},
     }),
   getSession: (sessionId: string) =>
     apiClient.get<CoworkSession>(`/api/cortex-cowork/sessions/${sessionId}`),
+  deleteSession: (sessionId: string) =>
+    apiClient.delete<{ ok: boolean }>(`/api/cortex-cowork/sessions/${sessionId}`),
   sendMessage: (sessionId: string, content: string) =>
     apiClient.post<SendMessageResponse>(`/api/cortex-cowork/sessions/${sessionId}/messages`, {
       jsonBody: { content },

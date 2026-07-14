@@ -3,7 +3,13 @@ import { randomUUID } from "node:crypto"
 import { readdir, stat } from "node:fs/promises"
 import path from "node:path"
 import type { CoworkConnectorConfig, CoworkModelConfig, CoworkProjectConfig } from "@cortex/types"
-import type { AgentActivityStep, ChatMessage, CoworkArtifact, CoworkSkillId } from "../types"
+import type {
+  AgentActivityStep,
+  ChatMessage,
+  CoworkArtifact,
+  CoworkSessionUsage,
+  CoworkSkillId,
+} from "../types"
 import {
   readCredentialsDocument,
   resolveCredential,
@@ -11,9 +17,21 @@ import {
   type CredentialsDocument,
 } from "@/lib/cortex-governance/credentials"
 import { getProject } from "@/lib/cortex-governance/store"
-import { appendMessage, registerArtifact, type SandboxSession } from "./sandbox-store"
+import { appendMessage, recordUsage, registerArtifact, type SandboxSession } from "./sandbox-store"
 import { generateCsvExport } from "./skills/csv-export"
 import { generateExcelReport } from "./skills/excel-report"
+
+/** What one chat turn resolves to: the assistant message, new files, updated meter. */
+export interface TurnResult {
+  message: ChatMessage
+  artifacts: CoworkArtifact[]
+  usage: CoworkSessionUsage
+}
+
+interface RunnerResult {
+  reply: string
+  usage?: { input: number; output: number; totalTokens: number }
+}
 
 /**
  * LIVE agent turn, executed through the real Flue harness.
@@ -57,7 +75,7 @@ function runnerDir(): string {
 export async function runChatTurn(
   session: SandboxSession,
   userContent: string,
-): Promise<{ message: ChatMessage; artifacts: CoworkArtifact[] }> {
+): Promise<TurnResult> {
   return streamChatTurn(session, userContent, () => {})
 }
 
@@ -89,7 +107,7 @@ export async function streamChatTurn(
   session: SandboxSession,
   userContent: string,
   onEvent: (step: AgentActivityStep) => void,
-): Promise<{ message: ChatMessage; artifacts: CoworkArtifact[] }> {
+): Promise<TurnResult> {
   for (const attempt of [1, 2]) {
     try {
       return await runFlueTurn(session, userContent, onEvent)
@@ -195,7 +213,7 @@ async function runFlueTurn(
   session: SandboxSession,
   userContent: string,
   onEvent: (step: AgentActivityStep) => void,
-): Promise<{ message: ChatMessage; artifacts: CoworkArtifact[] }> {
+): Promise<TurnResult> {
   const dir = runnerDir()
   const flueCli = path.join(dir, "node_modules", "@flue", "cli", "bin", "flue.mjs")
   const nodeBin = process.env.COWORK_NODE_BIN ?? "node"
@@ -297,30 +315,31 @@ async function runFlueTurn(
     })
   })
 
-  const reply = extractReply(stdout)
+  const result = extractResult(stdout)
   const newArtifacts = await registerNewArtifacts(session, before)
 
   const message: ChatMessage = {
     id: randomUUID(),
     role: "assistant",
-    content: reply,
+    content: result.reply,
     createdAt: new Date().toISOString(),
     ...(newArtifacts[0] ? { skillInvoked: newArtifacts[0].skill } : {}),
     ...(activity.length > 0 ? { activity } : {}),
   }
   await appendMessage(session, message)
-  return { message, artifacts: newArtifacts }
+  if (result.usage) await recordUsage(session, result.usage)
+  return { message, artifacts: newArtifacts, usage: session.usage }
 }
 
-/** Finds the workflow's terminal `{"reply": "..."}` line in `flue run` output. */
-function extractReply(stdout: string): string {
+/** Finds the workflow's terminal `{"reply": ..., "usage"?: ...}` line in output. */
+function extractResult(stdout: string): RunnerResult {
   const lines = stdout.split("\n")
   for (let i = lines.length - 1; i >= 0; i--) {
     const line = lines[i]?.trim()
     if (!line?.startsWith("{")) continue
     try {
-      const parsed = JSON.parse(line) as { reply?: unknown }
-      if (typeof parsed.reply === "string") return parsed.reply
+      const parsed = JSON.parse(line) as RunnerResult
+      if (typeof parsed.reply === "string") return parsed
     } catch {
       // not the result line - keep scanning
     }
@@ -391,7 +410,7 @@ async function registerNewArtifacts(
 async function runKeywordFallback(
   session: SandboxSession,
   userContent: string,
-): Promise<{ message: ChatMessage; artifacts: CoworkArtifact[] }> {
+): Promise<TurnResult> {
   // The fallback honors the same governance boundary as the runner: a skill
   // that was not copied into this session's sandbox does not exist here.
   const sessionSkillIds = new Set(session.skills.map((skill) => skill.id))
@@ -440,5 +459,6 @@ async function runKeywordFallback(
   }
   await appendMessage(session, message)
 
-  return { message, artifacts: newArtifacts }
+  // No model call in the fallback path - the context meter is unchanged.
+  return { message, artifacts: newArtifacts, usage: session.usage }
 }

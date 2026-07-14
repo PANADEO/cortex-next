@@ -54,6 +54,16 @@ export interface CoworkArtifact {
   skill: CoworkSkillId
 }
 
+/** Token accounting for a session's context-window meter and cumulative spend. */
+export interface CoworkSessionUsage {
+  /** Input tokens sent on the most recent turn = current context occupancy. */
+  lastContextTokens: number
+  /** Model context window (tokens) the occupancy is measured against. */
+  contextWindow: number
+  /** Cumulative tokens across all turns (running total). */
+  totalTokens: number
+}
+
 export interface CoworkSession {
   id: string
   projectId: string
@@ -61,6 +71,18 @@ export interface CoworkSession {
   skills: CoworkSkillSummary[]
   messages: ChatMessage[]
   artifacts: CoworkArtifact[]
+  usage: CoworkSessionUsage
+}
+
+/** Lightweight session descriptor for the session list (no messages/artifacts). */
+export interface CoworkSessionSummary {
+  id: string
+  projectId: string
+  createdAt: string
+  updatedAt: string
+  messageCount: number
+  artifactCount: number
+  usage: CoworkSessionUsage
 }
 
 export interface SendMessageRequest {
@@ -70,4 +92,5 @@ export interface SendMessageRequest {
 export interface SendMessageResponse {
   message: ChatMessage
   artifacts: CoworkArtifact[]
+  usage: CoworkSessionUsage
 }

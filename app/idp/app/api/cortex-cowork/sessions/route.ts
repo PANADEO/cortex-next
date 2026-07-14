@@ -1,18 +1,23 @@
-import {
-  readGovernanceConfig,
-  sessionSkillIds,
-} from "@/lib/cortex-governance/store"
-import { requestEmail } from "@/lib/cortex-governance/request-identity"
+import { contextWindowFor } from "@/features/cortex-cowork/server/model-context"
 import {
   createSandboxSession,
+  listSessionSummaries,
   toCoworkSession,
 } from "@/features/cortex-cowork/server/sandbox-store"
+import { requestEmail } from "@/lib/cortex-governance/request-identity"
+import { readGovernanceConfig, sessionSkillIds } from "@/lib/cortex-governance/store"
 import { DEFAULT_COWORK_PROJECT_ID } from "@cortex/types"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
 interface CreateSessionBody {
   projectId?: string
+}
+
+/** Session summaries for a project (session switcher). */
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  const projectId = request.nextUrl.searchParams.get("projectId") ?? DEFAULT_COWORK_PROJECT_ID
+  return NextResponse.json(await listSessionSummaries(projectId))
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -27,7 +32,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const skillIds = sessionSkillIds(config, project, requestEmail(request))
-    const session = await createSandboxSession(project, skillIds)
+    const session = await createSandboxSession(project, skillIds, contextWindowFor(project.model))
     return NextResponse.json(toCoworkSession(session), { status: 201 })
   } catch (error) {
     return NextResponse.json(

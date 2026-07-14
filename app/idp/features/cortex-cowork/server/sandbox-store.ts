@@ -1,9 +1,17 @@
 import { randomUUID } from "node:crypto"
-import { cp, mkdir, readFile, writeFile } from "node:fs/promises"
+import type { Dirent } from "node:fs"
+import { cp, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
 import type { CoworkProjectConfig } from "@cortex/types"
 import { DEFAULT_COWORK_PROJECT_ID } from "@cortex/types"
-import type { ChatMessage, CoworkArtifact, CoworkSession, CoworkSkillSummary } from "../types"
+import type {
+  ChatMessage,
+  CoworkArtifact,
+  CoworkSession,
+  CoworkSessionSummary,
+  CoworkSessionUsage,
+  CoworkSkillSummary,
+} from "../types"
 import { COWORK_DATA_DIR } from "@/lib/cortex-governance/store"
 import { SKILLS_SOURCE_DIR, listSkillCatalog } from "./skills-catalog"
 
@@ -17,6 +25,7 @@ export interface SandboxSession {
   skills: CoworkSkillSummary[]
   messages: ChatMessage[]
   artifacts: CoworkArtifact[]
+  usage: CoworkSessionUsage
 }
 
 // What's actually persisted to disk - the *Dir paths are re-derived from the
@@ -29,6 +38,13 @@ interface SessionMeta {
   skills: CoworkSkillSummary[]
   messages: ChatMessage[]
   artifacts: CoworkArtifact[]
+  usage?: CoworkSessionUsage
+}
+
+const SESSIONS_DIR = path.join(COWORK_DATA_DIR, "sessions")
+
+function emptyUsage(contextWindow: number): CoworkSessionUsage {
+  return { lastContextTokens: 0, contextWindow, totalTokens: 0 }
 }
 
 // Sessions are persisted as a JSON file inside the session's own sandbox
@@ -43,7 +59,7 @@ interface SessionMeta {
 // Known gap: no file locking, so two concurrent writes to the same session
 // can race (last write wins) - fine for a single-user demo, not for prod.
 function sandboxPaths(sessionId: string) {
-  const sandboxDir = path.join(COWORK_DATA_DIR, "sessions", sessionId)
+  const sandboxDir = path.join(SESSIONS_DIR, sessionId)
   return {
     sandboxDir,
     skillsDir: path.join(sandboxDir, "skills"),
@@ -54,13 +70,15 @@ function sandboxPaths(sessionId: string) {
 
 /**
  * Creates a sandboxed session for a project, copying only the skills the
- * requesting user is entitled to (`skillIds`) into the sandbox. The runner
+ * project's composition grants (`skillIds`) into the sandbox. The runner
  * later loads skills from the sandbox copy, so this filter IS the governance
  * boundary - a skill that is not copied does not exist for the agent.
+ * `contextWindow` seeds the session's context meter from the project's model.
  */
 export async function createSandboxSession(
   project: CoworkProjectConfig,
   skillIds: string[],
+  contextWindow: number,
 ): Promise<SandboxSession> {
   const id = randomUUID()
   const { sandboxDir, skillsDir, artifactsDir, metaPath } = sandboxPaths(id)
@@ -97,6 +115,7 @@ export async function createSandboxSession(
     skills,
     messages: [welcome],
     artifacts: [],
+    usage: emptyUsage(contextWindow),
   }
   await writeMeta(metaPath, session)
   return session
@@ -111,10 +130,69 @@ export async function getSandboxSession(sessionId: string): Promise<SandboxSessi
     ...meta,
     // Sessions written before governance landed have no projectId on disk.
     projectId: meta.projectId ?? DEFAULT_COWORK_PROJECT_ID,
+    // Sessions written before the context meter existed have no usage.
+    usage: meta.usage ?? emptyUsage(0),
     sandboxDir,
     skillsDir,
     artifactsDir,
   }
+}
+
+/** Session summaries for a project's session list, newest first. */
+export async function listSessionSummaries(projectId: string): Promise<CoworkSessionSummary[]> {
+  const entries = await readdir(SESSIONS_DIR, { withFileTypes: true }).catch(
+    () => [] as Dirent[],
+  )
+  const summaries: CoworkSessionSummary[] = []
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue
+    const metaPath = path.join(SESSIONS_DIR, entry.name, "session.json")
+    const raw = await readFile(metaPath, "utf8").catch(() => null)
+    if (!raw) continue
+    const meta = JSON.parse(raw) as SessionMeta
+    if ((meta.projectId ?? DEFAULT_COWORK_PROJECT_ID) !== projectId) continue
+    const lastMessage = meta.messages.at(-1)
+    summaries.push({
+      id: meta.id,
+      projectId: meta.projectId ?? DEFAULT_COWORK_PROJECT_ID,
+      createdAt: meta.createdAt,
+      updatedAt: lastMessage?.createdAt ?? meta.createdAt,
+      messageCount: meta.messages.filter((message) => message.role === "user").length,
+      artifactCount: meta.artifacts.length,
+      usage: meta.usage ?? emptyUsage(0),
+    })
+  }
+  return summaries.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+}
+
+/** Deletes a session and its whole sandbox directory (skills, artifacts, meta). */
+export async function deleteSandboxSession(sessionId: string): Promise<boolean> {
+  const { sandboxDir, metaPath } = sandboxPaths(sessionId)
+  const exists = await stat(metaPath).then(
+    () => true,
+    () => false,
+  )
+  if (!exists) return false
+  await rm(sandboxDir, { recursive: true, force: true })
+  return true
+}
+
+/**
+ * Records a turn's token usage onto the session (context meter + running
+ * total). Context occupancy = everything sent to the model this turn
+ * (prompt + cached), i.e. total minus the generated output - this is robust
+ * to how the provider splits fresh vs cached input tokens.
+ */
+export async function recordUsage(
+  session: SandboxSession,
+  usage: { input: number; output: number; totalTokens: number },
+): Promise<void> {
+  session.usage = {
+    lastContextTokens: Math.max(0, usage.totalTokens - usage.output),
+    contextWindow: session.usage.contextWindow,
+    totalTokens: session.usage.totalTokens + usage.totalTokens,
+  }
+  await saveSandboxSession(session)
 }
 
 export async function saveSandboxSession(session: SandboxSession): Promise<void> {
@@ -129,6 +207,7 @@ function writeMeta(metaPath: string, session: SandboxSession): Promise<void> {
     skills: session.skills,
     messages: session.messages,
     artifacts: session.artifacts,
+    usage: session.usage,
   }
   return writeFile(metaPath, JSON.stringify(meta), "utf8")
 }
@@ -141,6 +220,7 @@ export function toCoworkSession(session: SandboxSession): CoworkSession {
     skills: session.skills,
     messages: session.messages,
     artifacts: session.artifacts,
+    usage: session.usage,
   }
 }
 

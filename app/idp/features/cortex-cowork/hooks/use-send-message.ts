@@ -117,6 +117,7 @@ export function useSendCoworkMessage(sessionId: string) {
                 ...session,
                 messages: [...session.messages, result.message],
                 artifacts: [...session.artifacts, ...result.artifacts],
+                usage: result.usage,
               }
             : session,
         )

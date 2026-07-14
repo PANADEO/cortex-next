@@ -148,7 +148,19 @@ export default defineWorkflow({
     sandboxDir: v.string(),
     history: v.optional(v.string()),
   }),
-  output: v.object({ reply: v.string() }),
+  // `usage` lets the app track context-window occupancy (input tokens = what
+  // was sent this turn) and cumulative spend. Optional so a string response
+  // (older Flue / degraded) still validates.
+  output: v.object({
+    reply: v.string(),
+    usage: v.optional(
+      v.object({
+        input: v.number(),
+        output: v.number(),
+        totalTokens: v.number(),
+      }),
+    ),
+  }),
   async run({ harness, input }) {
     const session = await harness.session()
     const workspace = workspacePath(input.sandboxDir)
@@ -166,10 +178,22 @@ export default defineWorkflow({
       .join("\n\n")
     const response = await session.prompt(prompt)
     // session.prompt resolves to a PromptResponse ({ text, usage, model }).
-    const reply =
-      typeof response === "string"
-        ? response
-        : ((response as { text?: string }).text ?? JSON.stringify(response))
-    return { reply }
+    if (typeof response === "string") return { reply: response }
+    const typed = response as {
+      text?: string
+      usage?: { input: number; output: number; totalTokens: number }
+    }
+    return {
+      reply: typed.text ?? JSON.stringify(response),
+      ...(typed.usage
+        ? {
+            usage: {
+              input: typed.usage.input,
+              output: typed.usage.output,
+              totalTokens: typed.usage.totalTokens,
+            },
+          }
+        : {}),
+    }
   },
 })
