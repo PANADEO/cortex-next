@@ -187,6 +187,28 @@ export interface IntrastatCnSuggestionListResponse {
   items: IntrastatCnSuggestion[]
 }
 
+export interface IntrastatCnResourceRow {
+  id: string
+  index_value: string
+  cn8: string | null
+  cn: string | null
+  description: string | null
+}
+
+export interface IntrastatCnResourceRowListResponse {
+  items: IntrastatCnResourceRow[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface IntrastatCnResourceRowRequest {
+  index_value: string
+  cn8: string
+  cn: string | null
+  description: string
+}
+
 export interface IntrastatUploadResponse {
   id: string
   transaction_kind: IntrastatTransactionKind

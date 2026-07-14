@@ -115,6 +115,38 @@ describe("intrastatApi", () => {
     expect(download.filename).toBe("cn-resource-20260714.xlsx")
   })
 
+  it("loads paginated CN resource rows", async () => {
+    const fetchMock = mockJsonFetch({ items: [], total: 0, limit: 50, offset: 50 })
+
+    await intrastatApi.cnResourceRows({ search: "cable", limit: 50, offset: 50 })
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+      "/intrastat/api/resources/cn/rows?search=cable&limit=50&offset=50",
+    )
+  })
+
+  it("creates CN resource rows through the editor endpoint", async () => {
+    const fetchMock = mockJsonFetch({
+      id: "row-1",
+      index_value: "NEW-100",
+      cn8: "85044095",
+      cn: "85044095",
+      description: "Power supplies",
+    })
+    const payload = {
+      index_value: "NEW-100",
+      cn8: "85044095",
+      cn: "85044095",
+      description: "Power supplies",
+    }
+
+    await intrastatApi.createCnResourceRow(payload)
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("/intrastat/api/resources/cn/rows")
+    expect(fetchMock.mock.calls[0]?.[1]?.method).toBe("POST")
+    expect(fetchMock.mock.calls[0]?.[1]?.body).toBe(JSON.stringify(payload))
+  })
+
   it("deletes filesystem files", async () => {
     const fetchMock = vi.fn<typeof fetch>(async () => {
       return new Response(null, { status: 204 })

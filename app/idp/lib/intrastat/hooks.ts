@@ -6,6 +6,7 @@ import type {
   IntrastatBatchListResponse,
   IntrastatBatchStatus,
   IntrastatCnMatchStatus,
+  IntrastatCnResourceRowRequest,
   IntrastatLineListResponse,
   IntrastatLinePatchRequest,
   IntrastatTransactionKind,
@@ -22,6 +23,8 @@ export const intrastatQueryKeys = {
     [...intrastatQueryKeys.all, "filesystem-preview", query] as const,
   batchFilterOptions: () => [...intrastatQueryKeys.all, "batch-filter-options"] as const,
   cnResource: () => [...intrastatQueryKeys.all, "cn-resource"] as const,
+  cnResourceRows: (query: { search?: string; limit?: number; offset?: number }) =>
+    [...intrastatQueryKeys.all, "cn-resource", "rows", query] as const,
   cnSuggestions: (search: string) =>
     [...intrastatQueryKeys.all, "cn-resource", "suggestions", search] as const,
   batches: (query: {
@@ -96,6 +99,18 @@ export function useIntrastatCnResource() {
   return useQuery({
     queryKey: intrastatQueryKeys.cnResource(),
     queryFn: intrastatApi.currentCnResource,
+  })
+}
+
+export function useIntrastatCnResourceRows(query: {
+  search?: string
+  limit?: number
+  offset?: number
+}) {
+  return useQuery({
+    queryKey: intrastatQueryKeys.cnResourceRows(query),
+    queryFn: () => intrastatApi.cnResourceRows(query),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -209,6 +224,28 @@ export function useIntrastatUploadCnResource() {
     onSuccess: () => {
       client.invalidateQueries({ queryKey: intrastatQueryKeys.cnResource() })
       invalidateIntrastatMetadata(client)
+    },
+  })
+}
+
+export function useIntrastatCreateCnResourceRow() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: IntrastatCnResourceRowRequest) =>
+      intrastatApi.createCnResourceRow(payload),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: intrastatQueryKeys.cnResource() })
+    },
+  })
+}
+
+export function useIntrastatUpdateCnResourceRow() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ rowId, payload }: { rowId: string; payload: IntrastatCnResourceRowRequest }) =>
+      intrastatApi.updateCnResourceRow(rowId, payload),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: intrastatQueryKeys.cnResource() })
     },
   })
 }

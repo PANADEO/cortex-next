@@ -30,7 +30,7 @@ import {
 } from "@cortex/ui"
 import { formatAbsolute } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
-import { FileSpreadsheet, Search } from "lucide-react"
+import { Database, FileSpreadsheet, Search } from "lucide-react"
 import Link from "next/link"
 import { useCallback, useMemo, useState } from "react"
 
@@ -244,7 +244,17 @@ export default function IntrastatBatchesPage() {
       <PageHeader
         title="Intrastat Batches"
         description="WNT/WDT imports from manual ZIP upload and watched folders."
-        actions={<IntrastatUploadBatchButton />}
+        actions={
+          <>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/intrastat/resources">
+                <Database className="mr-2 h-4 w-4" />
+                CN Code Database
+              </Link>
+            </Button>
+            <IntrastatUploadBatchButton />
+          </>
+        }
       />
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-8 py-6">

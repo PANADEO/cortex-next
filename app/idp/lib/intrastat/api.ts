@@ -4,6 +4,9 @@ import type {
   IntrastatBatchListResponse,
   IntrastatBatchStatus,
   IntrastatCnMatchStatus,
+  IntrastatCnResourceRow,
+  IntrastatCnResourceRowListResponse,
+  IntrastatCnResourceRowRequest,
   IntrastatCnSuggestionListResponse,
   IntrastatDeclarationLine,
   IntrastatDownload,
@@ -42,6 +45,11 @@ const INTRASTAT_ERROR_MESSAGES: Record<string, string> = {
   "cn-resource-required-columns-missing": "The CN workbook is missing required columns",
   "cn-resource-empty": "The CN workbook contains no usable resource rows",
   "cn-resource-not-found": "No active CN resource is available",
+  "cn-resource-editor-required": "CN database editor permission is required",
+  "cn-resource-row-not-found": "CN database row not found. Refresh the list.",
+  "cn-resource-index-required": "Enter an item index",
+  "cn-resource-cn8-invalid": "Enter a valid 8-digit CN code",
+  "cn-resource-description-required": "Enter a description",
   "filesystem-browser-not-directory": "This path is not a folder",
   "filesystem-delete-directory-not-supported": "Folder delete is not supported",
   "filesystem-file-not-found": "File not found. Refresh the folder.",
@@ -350,6 +358,26 @@ export const intrastatApi = {
         limit: String(limit),
       })}`,
     ),
+  cnResourceRows: (query: { search?: string; limit?: number; offset?: number }) =>
+    request<IntrastatCnResourceRowListResponse>(
+      `/resources/cn/rows?${new URLSearchParams(
+        Object.entries(query)
+          .filter((entry): entry is [string, string | number] => entry[1] !== undefined)
+          .map(([key, value]) => [key, String(value)]),
+      )}`,
+    ),
+  createCnResourceRow: (payload: IntrastatCnResourceRowRequest) =>
+    request<IntrastatCnResourceRow>("/resources/cn/rows", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  updateCnResourceRow: (rowId: string, payload: IntrastatCnResourceRowRequest) =>
+    request<IntrastatCnResourceRow>(`/resources/cn/rows/${rowId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
   uploadCnResource: (file: File) => {
     const formData = new FormData()
     formData.set("file", file)

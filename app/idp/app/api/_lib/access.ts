@@ -16,7 +16,11 @@ const CACHE_MAX_ENTRIES = 10_000
 const REQUEST_TIMEOUT_MS = 5_000
 
 const SHELL_APP_CODES = ["idp", "idp-basic", "intrastat", AI_TOOLS_TILE_ID] as const
-const AUTHORIZED_APP_CODES = [...SHELL_APP_CODES, ...AI_TOOL_APP_CODES] as const
+const AUTHORIZED_APP_CODES = [
+  ...SHELL_APP_CODES,
+  "intrastat-cn-editor",
+  ...AI_TOOL_APP_CODES,
+] as const
 
 const cache = new Map<string, CacheEntry>()
 

@@ -103,7 +103,7 @@ export const INTRASTAT_NAV: TileMenuSection[] = [
     items: [
       {
         id: "resources",
-        label: "Resources",
+        label: "CN Code Database",
         icon: FileSpreadsheet,
         href: "/intrastat/resources",
       },
