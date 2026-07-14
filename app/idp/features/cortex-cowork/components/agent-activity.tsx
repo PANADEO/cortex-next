@@ -1,23 +1,22 @@
 "use client"
 
 import { cn } from "@cortex/utils"
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
-import {
-  AlertTriangle,
-  Brain,
-  CheckCircle2,
-  ChevronRight,
-  Sparkles,
-  Wrench,
-} from "lucide-react"
+import { motion, useReducedMotion } from "framer-motion"
+import { AlertTriangle, Brain, CheckCircle2, Sparkles, Wrench } from "lucide-react"
 import { useState } from "react"
 import type { AgentActivityStep } from "../types"
+import { CollapseRegion, DisclosureChevron } from "./disclosure"
 
 // Motion language for the activity surfaces: calm, geometric, no bounce -
 // short ease-out fades with a small vertical drift (The Witness, not a
 // notification center). All keyframe animations live in tailwind.config.ts.
 
 const EASE_OUT: [number, number, number, number] = [0.25, 0.1, 0.25, 1]
+
+// Gradient-sweep "working" text (paired with animate-shimmer). Shared by the
+// active step row and the live block so the class list can't silently diverge.
+const SHIMMER_TEXT =
+  "animate-shimmer bg-gradient-to-r from-muted-foreground via-foreground to-muted-foreground bg-[length:200%_100%] bg-clip-text text-transparent motion-reduce:animate-none"
 
 /**
  * The "working" glyph: a circle drawing and undrawing its own stroke in a
@@ -138,37 +137,20 @@ function ActivityStepRow({ step, active }: { step: AgentActivityStep; active: bo
           className={cn(
             "truncate",
             active
-              ? "animate-shimmer bg-gradient-to-r from-muted-foreground via-foreground to-muted-foreground bg-[length:200%_100%] bg-clip-text font-medium text-transparent motion-reduce:animate-none motion-reduce:text-foreground"
+              ? cn(SHIMMER_TEXT, "font-medium motion-reduce:text-foreground")
               : "text-muted-foreground",
           )}
         >
           {stepLabel(step)}
           {active ? "…" : ""}
         </span>
-        {drilldown ? (
-          <ChevronRight
-            className={cn(
-              "ml-auto h-3 w-3 shrink-0 text-muted-foreground transition-transform duration-150 ease-out",
-              open && "rotate-90",
-            )}
-          />
-        ) : null}
+        {drilldown ? <DisclosureChevron open={open} className="ml-auto text-muted-foreground" /> : null}
       </button>
-      <AnimatePresence initial={false}>
-        {open && drilldown ? (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: EASE_OUT }}
-            className="overflow-hidden"
-          >
-            <pre className="ml-6 mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded border bg-muted/40 p-2 font-mono text-[11px] leading-snug text-muted-foreground">
-              {drilldown}
-            </pre>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      <CollapseRegion open={open && Boolean(drilldown)}>
+        <pre className="ml-6 mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded border bg-muted/40 p-2 font-mono text-[11px] leading-snug text-muted-foreground">
+          {drilldown}
+        </pre>
+      </CollapseRegion>
     </motion.div>
   )
 }
@@ -212,7 +194,7 @@ export function LiveAgentActivity({ steps, liveText }: LiveActivityProps) {
         <WorkingGlyph />
         <span
           key={workingLabel(steps)}
-          className="animate-shimmer bg-gradient-to-r from-muted-foreground via-foreground to-muted-foreground bg-[length:200%_100%] bg-clip-text text-transparent motion-reduce:animate-none motion-reduce:text-muted-foreground"
+          className={cn(SHIMMER_TEXT, "motion-reduce:text-muted-foreground")}
         >
           {workingLabel(steps)}
         </span>
@@ -247,29 +229,14 @@ export function AgentActivityTrail({ steps }: ActivityTrailProps) {
         onClick={() => setOpen((value) => !value)}
         className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
-        <ChevronRight
-          className={cn(
-            "h-3 w-3 transition-transform duration-150 ease-out",
-            open && "rotate-90",
-          )}
-        />
+        <DisclosureChevron open={open} />
         Przebieg pracy agenta ({stepCount} kroków)
       </button>
-      <AnimatePresence initial={false}>
-        {open ? (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: EASE_OUT }}
-            className="overflow-hidden"
-          >
-            <div className="mt-1.5">
-              <AgentActivityList steps={steps} />
-            </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      <CollapseRegion open={open}>
+        <div className="mt-1.5">
+          <AgentActivityList steps={steps} />
+        </div>
+      </CollapseRegion>
     </div>
   )
 }

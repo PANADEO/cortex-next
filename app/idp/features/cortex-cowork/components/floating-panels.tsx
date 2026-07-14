@@ -1,10 +1,10 @@
 "use client"
 
-import { cn } from "@cortex/utils"
-import { ChevronRight, FileText, FolderOpen } from "lucide-react"
+import { FileText, FolderOpen } from "lucide-react"
 import { useState, type ReactNode } from "react"
 import type { CoworkArtifact, CoworkInputFile, CoworkSkillSummary } from "../types"
 import { ArtifactRow } from "./artifact-row"
+import { DisclosureChevron } from "./disclosure"
 
 // Codex-style floating cards pinned to the top-right of the chat surface
 // (like Codex's Environment/Sources): collapsed headers that expand in place
@@ -33,7 +33,7 @@ function FloatingPanel({
         <span className="font-medium">{title}</span>
         <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
           {meta}
-          <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-90")} />
+          <DisclosureChevron open={open} className="h-3.5 w-3.5" />
         </span>
       </button>
       {open ? <div className="max-h-[45vh] overflow-y-auto border-t border-border/60">{children}</div> : null}

@@ -228,18 +228,19 @@ export async function listInputFiles(session: SandboxSession): Promise<CoworkInp
   const entries = await readdir(session.inputDir, { withFileTypes: true }).catch(
     () => [] as Dirent[],
   )
-  const files: CoworkInputFile[] = []
-  for (const entry of entries) {
-    if (!entry.isFile()) continue
-    const info = await stat(path.join(session.inputDir, entry.name)).catch(() => null)
-    if (!info) continue
-    files.push({
-      filename: entry.name,
-      sizeBytes: info.size,
-      uploadedAt: info.mtime.toISOString(),
-    })
-  }
-  return files.sort((a, b) => a.uploadedAt.localeCompare(b.uploadedAt))
+  const stats = await Promise.all(
+    entries
+      .filter((entry) => entry.isFile())
+      .map(async (entry): Promise<CoworkInputFile | null> => {
+        const info = await stat(path.join(session.inputDir, entry.name)).catch(() => null)
+        return info
+          ? { filename: entry.name, sizeBytes: info.size, uploadedAt: info.mtime.toISOString() }
+          : null
+      }),
+  )
+  return stats
+    .filter((file): file is CoworkInputFile => file !== null)
+    .sort((a, b) => a.uploadedAt.localeCompare(b.uploadedAt))
 }
 
 export function toCoworkSession(

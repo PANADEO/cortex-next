@@ -8,7 +8,6 @@ import { cn } from "@cortex/utils"
 import {
   BookOpen,
   Check,
-  ChevronRight,
   FolderClosed,
   Loader2,
   NotebookPen,
@@ -23,6 +22,7 @@ import type { CoworkProjectTile } from "../queries"
 import { useCoworkSessionActions, useCoworkSessions } from "../hooks/use-cowork-sessions"
 import { useMyInstructions, useSaveMyInstructions } from "../hooks/use-my-instructions"
 import { useCoworkProjectTiles } from "../hooks/use-project-tiles"
+import { DisclosureChevron } from "./disclosure"
 
 // Codex-style workspace shell for the cowork tile: a dark, session-centric
 // sidebar (projects with their sessions nested under the active one) and a
@@ -158,12 +158,7 @@ function MyInstructions() {
       >
         <NotebookPen className="h-3.5 w-3.5 shrink-0" />
         Moje instrukcje
-        <ChevronRight
-          className={cn(
-            "ml-auto h-3 w-3 transition-transform duration-150 ease-out",
-            open && "rotate-90",
-          )}
-        />
+        <DisclosureChevron open={open} className="ml-auto" />
       </button>
       {open ? (
         <div className="space-y-2 px-1 pt-2">

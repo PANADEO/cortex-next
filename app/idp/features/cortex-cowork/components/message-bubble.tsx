@@ -2,6 +2,7 @@
 
 import { Badge } from "@cortex/ui"
 import { TriangleAlert } from "lucide-react"
+import { memo } from "react"
 import type { ChatMessage } from "../types"
 import { AgentActivityTrail } from "./agent-activity"
 import { Markdown } from "./markdown"
@@ -12,7 +13,10 @@ interface MessageBubbleProps {
 
 // Codex-style transcript: user prompts are compact right-aligned bubbles,
 // assistant replies render as plain document text across the column.
-export function MessageBubble({ message }: MessageBubbleProps) {
+// Memoized: during a streaming turn the transcript re-renders on every delta,
+// and message objects are reference-stable, so this skips re-parsing every
+// prior assistant message's Markdown on each tick.
+export const MessageBubble = memo(function MessageBubble({ message }: MessageBubbleProps) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
@@ -40,4 +44,4 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       ) : null}
     </div>
   )
-}
+})
