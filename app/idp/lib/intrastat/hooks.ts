@@ -213,6 +213,12 @@ export function useIntrastatUploadCnResource() {
   })
 }
 
+export function useIntrastatDownloadCnResource() {
+  return useMutation({
+    mutationFn: intrastatApi.downloadCnResource,
+  })
+}
+
 export function useIntrastatPollFilesystem() {
   const client = useQueryClient()
   return useMutation({

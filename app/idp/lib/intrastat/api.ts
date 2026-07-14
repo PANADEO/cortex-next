@@ -41,6 +41,7 @@ const INTRASTAT_ERROR_MESSAGES: Record<string, string> = {
   "invalid-cn-resource-xlsx": "Choose a valid XLSX CN resource",
   "cn-resource-required-columns-missing": "The CN workbook is missing required columns",
   "cn-resource-empty": "The CN workbook contains no usable resource rows",
+  "cn-resource-not-found": "No active CN resource is available",
   "filesystem-browser-not-directory": "This path is not a folder",
   "filesystem-delete-directory-not-supported": "Folder delete is not supported",
   "filesystem-file-not-found": "File not found. Refresh the folder.",
@@ -328,6 +329,20 @@ export const intrastatApi = {
       body: JSON.stringify(payload),
     }).then(translateLegacyLineAlerts),
   currentCnResource: () => request<IntrastatResourceInfo>("/resources/cn/current"),
+  downloadCnResource: async (): Promise<IntrastatDownload> => {
+    const response = await fetch(buildUrl("/resources/cn/download"), {
+      credentials: "include",
+      cache: "no-store",
+    })
+    if (!response.ok) throw await intrastatErrorFromResponse(response)
+    return {
+      blob: await response.blob(),
+      filename: filenameFromContentDisposition(
+        response.headers.get("Content-Disposition"),
+        "cn-resource.xlsx",
+      ),
+    }
+  },
   cnSuggestions: (search: string, limit = 5) =>
     request<IntrastatCnSuggestionListResponse>(
       `/resources/cn/suggestions?${new URLSearchParams({

@@ -100,6 +100,21 @@ describe("intrastatApi", () => {
     expect(download.filename).toBe("invoice.pdf")
   })
 
+  it("downloads the active CN resource", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => {
+      return new Response(new Blob(["xlsx"]), {
+        status: 200,
+        headers: { "Content-Disposition": 'attachment; filename="cn-resource-20260714.xlsx"' },
+      })
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const download = await intrastatApi.downloadCnResource()
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("/intrastat/api/resources/cn/download")
+    expect(download.filename).toBe("cn-resource-20260714.xlsx")
+  })
+
   it("deletes filesystem files", async () => {
     const fetchMock = vi.fn<typeof fetch>(async () => {
       return new Response(null, { status: 204 })
