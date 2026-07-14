@@ -194,17 +194,28 @@ export default function IntrastatReviewPage() {
       {
         accessorKey: "alerts",
         header: "Alerts",
-        size: 80,
+        size: 110,
         cell: ({ row }) =>
           row.original.alerts.length > 0 ? (
             <TooltipProvider delayDuration={150}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="inline-flex cursor-help" tabIndex={0}>
-                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  <span
+                    className="inline-flex cursor-help items-center gap-1.5 whitespace-nowrap"
+                    tabIndex={0}
+                    aria-label={formatReviewCount(row.original.alerts.length)}
+                  >
+                    <AlertTriangle className="h-4 w-4 text-amber-500" aria-hidden="true" />
+                    <span className="text-xs text-muted-foreground">
+                      {row.original.alerts.length} field
+                      {row.original.alerts.length === 1 ? "" : "s"}
+                    </span>
                   </span>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-80 border bg-popover p-3 text-popover-foreground shadow-lg">
+                  <p className="mb-2 text-sm font-medium">
+                    {formatReviewCount(row.original.alerts.length)}
+                  </p>
                   <ul className="space-y-1 text-sm">
                     {row.original.alerts.map((alert) => (
                       <li key={alert}>{alert}</li>
@@ -457,4 +468,8 @@ export default function IntrastatReviewPage() {
       />
     </div>
   )
+}
+
+function formatReviewCount(count: number): string {
+  return count === 1 ? "1 field requires review" : `${count} fields require review`
 }

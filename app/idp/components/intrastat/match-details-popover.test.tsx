@@ -30,7 +30,7 @@ const baseLine: IntrastatDeclarationLine = {
   transaction_code: "11",
   transport_type: "3",
   cn_match_status: "exact",
-  confidence: 0.92,
+  confidence: 0.9,
   match_confidence: 1,
   alerts: [],
   document_type: "invoice",
@@ -56,8 +56,11 @@ describe("IntrastatMatchDetailsPopover", () => {
     expect(screen.getByText(/CN is tied to the product index/i)).not.toBeNull()
     expect(screen.getByText("Invoice index")).not.toBeNull()
     expect(screen.getByText("Resource index")).not.toBeNull()
-    expect(screen.getByText("Line confidence")).not.toBeNull()
-    expect(screen.getByText("92%")).not.toBeNull()
+    expect(screen.getByText("CN match confidence")).not.toBeNull()
+    expect(screen.getByText("Overall line confidence")).not.toBeNull()
+    expect(screen.getByText("100%")).not.toBeNull()
+    expect(screen.getByText("90%")).not.toBeNull()
+    expect(screen.getByText(/uses the lower of document extraction confidence/i)).not.toBeNull()
   })
 
   it("explains semantic matches and their score fragment", async () => {
@@ -81,17 +84,43 @@ describe("IntrastatMatchDetailsPopover", () => {
     expect(screen.getByText("semantic:0.87")).not.toBeNull()
   })
 
-  it("shows closest-index confidence directly in the Match badge", () => {
+  it("shows the same limiting confidence for the match and overall line", async () => {
     render(
       <IntrastatMatchDetailsPopover
         line={{
           ...baseLine,
           cn_match_status: "prefix_unique",
+          confidence: 0.7,
           match_confidence: 0.7,
         }}
       />,
     )
 
     expect(screen.getByText("Closest index 70%")).not.toBeNull()
+    await userEvent.click(screen.getByRole("button", { name: /show closest index match details/i }))
+
+    expect(screen.getAllByText("70%")).toHaveLength(2)
+  })
+
+  it("keeps missing fields separate from exact CN match confidence", async () => {
+    render(
+      <IntrastatMatchDetailsPopover
+        line={{
+          ...baseLine,
+          alerts: [
+            "delivery_terms not found.",
+            "net_weight not found.",
+            "origin_country not found.",
+            "cn_code not found.",
+          ],
+        }}
+      />,
+    )
+
+    expect(screen.getByText("Exact 100%")).not.toBeNull()
+    await userEvent.click(screen.getByRole("button", { name: /show exact match details/i }))
+
+    expect(screen.getByText("4 fields require review")).not.toBeNull()
+    expect(screen.getByText("delivery_terms not found.")).not.toBeNull()
   })
 })

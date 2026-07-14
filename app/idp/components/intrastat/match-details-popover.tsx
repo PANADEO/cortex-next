@@ -81,7 +81,10 @@ export function IntrastatMatchDetailsPopover({ line }: { line: IntrastatDeclarat
           <IntrastatMatchBadge status={line.cn_match_status} confidence={line.match_confidence} />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[380px] p-0">
+      <PopoverContent
+        align="start"
+        className="max-h-[var(--radix-popover-content-available-height)] w-[380px] overflow-y-auto p-0"
+      >
         <div className="space-y-3 p-4">
           <div className="space-y-1">
             <p className="text-sm font-semibold">
@@ -128,11 +131,27 @@ export function IntrastatMatchDetailsPopover({ line }: { line: IntrastatDeclarat
             </p>
             <p className="text-xs leading-5 text-muted-foreground">{details.technicalMethod}</p>
             <div className="grid grid-cols-[112px_minmax(0,1fr)] gap-2 text-xs">
-              <span className="text-muted-foreground">Line confidence</span>
-              <span>{formatConfidence(line.confidence)}</span>
               <span className="text-muted-foreground">Match fragment</span>
               <span className="min-w-0 truncate font-mono">{line.matched_fragment || "—"}</span>
             </div>
+          </section>
+
+          <Separator />
+
+          <section className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Confidence
+            </p>
+            <div className="grid grid-cols-[148px_minmax(0,1fr)] gap-2 text-xs">
+              <span className="text-muted-foreground">CN match confidence</span>
+              <span>{formatConfidence(line.match_confidence)}</span>
+              <span className="text-muted-foreground">Overall line confidence</span>
+              <span>{formatConfidence(line.confidence)}</span>
+            </div>
+            <p className="text-[11px] leading-4 text-muted-foreground">
+              Overall line confidence uses the lower of document extraction confidence and CN
+              match confidence.
+            </p>
           </section>
 
           {line.alerts.length > 0 ? (
@@ -142,6 +161,7 @@ export function IntrastatMatchDetailsPopover({ line }: { line: IntrastatDeclarat
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Review alerts
                 </p>
+                <p className="text-xs font-medium">{formatReviewCount(line.alerts.length)}</p>
                 <ul className="space-y-1 text-xs leading-5 text-muted-foreground">
                   {line.alerts.map((alert) => (
                     <li key={alert}>{alert}</li>
@@ -227,4 +247,8 @@ function getMatchedFields(line: IntrastatDeclarationLine): MatchField[] {
 function formatConfidence(value: number | null): string {
   if (value === null) return "—"
   return `${Math.round(value * 100)}%`
+}
+
+function formatReviewCount(count: number): string {
+  return count === 1 ? "1 field requires review" : `${count} fields require review`
 }
