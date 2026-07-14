@@ -14,6 +14,18 @@ Prototyp funkcjonalny. Aplikacja działa end-to-end na mockowanym backendzie (MS
 
 Integracja z realnym backendem, pełne coverage testów, accessibility audit — poza scope'em prototypu.
 
+## Cortex 2.0 — po demie (hardening)
+
+Warstwa platformowa Cortex 2.0 (moduły `cortex-cowork` + `cortex-config`, governance core, runner na Flue w `cowork-runner/`) jest **demem G1** i prototypem — nie jest jeszcze production-safe. Audyt architektury (Codex `gpt-5.6-sol`, read-only) wykazał 1 Critical + 8 High; pełna lista z `file:line`: [docs/architecture-audit.md](docs/architecture-audit.md).
+
+**Do zrobienia po demie (blokery przed użyciem klienckim/produkcyjnym):**
+
+- **Autoryzacja end-to-end** — API coworka nie egzekwują dostępu do projektu ani ownershipu sesji (rola filtruje tylko widoczność kafelków). Dodać `requireProjectAccess` / `requireSessionAccess` na każdym endpoincie, `ownerEmail` na sesji, fail-closed bootstrap zamiast pustej `adminEmails` = każdy.
+- **Realna izolacja wykonania i sekretów** — produkcja Docker-only (odrzucać `local` mode), minimalny allowlisted env dla runnera i CLI-konektorów (dziś dziedziczą cały `process.env`), fail-closed przy nierozwiązanym credential-refie.
+- **Transakcyjny, idempotentny store tur/sesji** — JSON-file nie jest concurrency-safe; retry + SSE-fallback mogą dublować side-effecty. Idempotency-key na turę + rewizja governance sprawdzana co turę (rewokacja grantu nie unieważnia dziś istniejących sesji).
+
+Nie ruszać (audyt potwierdził jako słuszne): rozdziału rola-bramka / projekt-toolkit, granicy kopiowanych skilli (dodać tylko wersjonowanie + rewokację), seamu model-provider + standalone runner.
+
 ## Stack
 
 - **Framework:** Next.js 15 + React 18 + TypeScript 5.8 (wszystko `"use client"`, bez RSC)
