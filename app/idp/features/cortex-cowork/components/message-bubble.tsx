@@ -4,6 +4,7 @@ import { Badge } from "@cortex/ui"
 import { TriangleAlert } from "lucide-react"
 import type { ChatMessage } from "../types"
 import { AgentActivityTrail } from "./agent-activity"
+import { Markdown } from "./markdown"
 
 interface MessageBubbleProps {
   message: ChatMessage
@@ -33,7 +34,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           Tryb awaryjny - agent niedostępny
         </Badge>
       ) : null}
-      <div className="whitespace-pre-wrap">{message.content}</div>
+      <Markdown content={message.content} />
       {message.activity && message.activity.length > 0 ? (
         <AgentActivityTrail steps={message.activity} />
       ) : null}

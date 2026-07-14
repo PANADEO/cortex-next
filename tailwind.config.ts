@@ -112,6 +112,28 @@ const config: Config = {
         "in-out": "cubic-bezier(0.4, 0, 0.2, 1)",
         out: "cubic-bezier(0, 0, 0.2, 1)",
       },
+      keyframes: {
+        // Gradient sweep for "working" status text (agent activity).
+        shimmer: {
+          "0%": { backgroundPosition: "150% 0" },
+          "100%": { backgroundPosition: "-150% 0" },
+        },
+        // Stroke draw/undraw loop for the geometric working glyph.
+        "glyph-draw": {
+          "0%": { strokeDashoffset: "34.6" },
+          "55%": { strokeDashoffset: "0" },
+          "100%": { strokeDashoffset: "-34.6" },
+        },
+        "soft-pulse": {
+          "0%, 100%": { opacity: "0.35" },
+          "50%": { opacity: "1" },
+        },
+      },
+      animation: {
+        shimmer: "shimmer 2.4s linear infinite",
+        "glyph-draw": "glyph-draw 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite",
+        "soft-pulse": "soft-pulse 1.6s ease-in-out infinite",
+      },
       transitionDuration: {
         DEFAULT: "150ms",
       },
