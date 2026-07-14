@@ -1,5 +1,6 @@
+import type { CoworkTileArchetype } from "@cortex/types"
 import type { LucideIcon } from "lucide-react"
-import { CalendarClock, FileSpreadsheet, FileText, MessagesSquare, Receipt, ScanText, Users, Workflow } from "lucide-react"
+import { CalendarClock, FileSpreadsheet, FileText, Receipt, ScanText, ShieldCheck, Users, Workflow } from "lucide-react"
 import { canAccessAiTool, isAiToolId } from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
@@ -23,6 +24,8 @@ export interface Tile {
   iconFg: string
   categoryFunctional: TileCategoryFunctional
   categoryDepartment: TileCategoryDepartment[]
+  /** Platform taxonomy (see docs/ROADMAP.md): what kind of thing this tile depicts. */
+  archetype: CoworkTileArchetype
   versionEndpoint?: string
 }
 
@@ -65,6 +68,7 @@ function aiToolTile(tool: AiToolDefinition): Tile {
     description: tool.description,
     href: `/ai-tools/${tool.id}`,
     icon: tool.icon,
+    archetype: "dashboard",
     ...AI_TOOL_TILE_STYLE[tool.category],
   }
 }
@@ -91,6 +95,9 @@ export const DEPARTMENT_CATEGORIES: ReadonlyArray<{
   { id: "hr", label: "HR" },
 ]
 
+// Task-chat tiles are NOT listed here: they come from the cortex-config
+// governance store and are merged into the hub grid at render time (see
+// useCoworkProjectTiles). This array holds only code-backed tiles.
 export const TILES: ReadonlyArray<Tile> = [
   {
     id: "idp",
@@ -102,6 +109,7 @@ export const TILES: ReadonlyArray<Tile> = [
     iconFg: "text-rose-700 dark:text-rose-300",
     categoryFunctional: "misc",
     categoryDepartment: ["operations"],
+    archetype: "dashboard",
     versionEndpoint: "/idp/version",
   },
   {
@@ -114,6 +122,7 @@ export const TILES: ReadonlyArray<Tile> = [
     iconFg: "text-sky-700 dark:text-sky-300",
     categoryFunctional: "misc",
     categoryDepartment: ["operations"],
+    archetype: "dashboard",
     versionEndpoint: "/idp-basic/version",
   },
   {
@@ -126,6 +135,7 @@ export const TILES: ReadonlyArray<Tile> = [
     iconFg: "text-cyan-700 dark:text-cyan-300",
     categoryFunctional: "agents",
     categoryDepartment: ["finance", "operations"],
+    archetype: "dashboard",
   },
   {
     id: "sp-client",
@@ -137,18 +147,7 @@ export const TILES: ReadonlyArray<Tile> = [
     iconFg: "text-indigo-700 dark:text-indigo-300",
     categoryFunctional: "misc",
     categoryDepartment: ["finance"],
-  },
-  {
-    id: "cortex-cowork",
-    label: "Cortex Cowork",
-    description:
-      "Chat that runs a skills-powered agent in a sandbox and returns downloadable files",
-    href: "/cortex-cowork",
-    icon: MessagesSquare,
-    iconBg: "bg-violet-200 dark:bg-violet-900/40",
-    iconFg: "text-violet-700 dark:text-violet-300",
-    categoryFunctional: "agents",
-    categoryDepartment: ["it"],
+    archetype: "dashboard",
   },
   {
     id: "okna-czasowe",
@@ -160,6 +159,20 @@ export const TILES: ReadonlyArray<Tile> = [
     iconFg: "text-amber-700 dark:text-amber-300",
     categoryFunctional: "research",
     categoryDepartment: ["marketing"],
+    archetype: "dashboard",
+  },
+  {
+    id: "cortex-config",
+    label: "Cortex Config",
+    description:
+      "Centralne governance platformy - projekty agentowe, role, grupy skilli i uprawnienia",
+    href: "/cortex-config/projects",
+    icon: ShieldCheck,
+    iconBg: "bg-emerald-200 dark:bg-emerald-900/40",
+    iconFg: "text-emerald-700 dark:text-emerald-300",
+    categoryFunctional: "admin-system",
+    categoryDepartment: ["it"],
+    archetype: "agent-config",
   },
   {
     id: "intrastat",
@@ -172,6 +185,7 @@ export const TILES: ReadonlyArray<Tile> = [
     categoryFunctional: "misc",
     categoryDepartment: ["operations", "finance"],
     versionEndpoint: "/intrastat/version",
+    archetype: "dashboard",
   },
   {
     // id must equal backend-next's settings.application_name ("invoice-supervisor")
@@ -186,6 +200,7 @@ export const TILES: ReadonlyArray<Tile> = [
     categoryFunctional: "misc",
     categoryDepartment: ["finance", "operations"],
     versionEndpoint: "/invoice-supervisor/version",
+    archetype: "dashboard",
   },
   ...AI_TOOL_DEFINITIONS.map(aiToolTile),
 ]

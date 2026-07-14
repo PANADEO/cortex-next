@@ -3,7 +3,7 @@ import { cp, mkdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import type { CoworkProjectConfig } from "@cortex/types"
 import type { ChatMessage, CoworkArtifact, CoworkSession, CoworkSkillSummary } from "../types"
-import { COWORK_DATA_DIR } from "./config-store"
+import { COWORK_DATA_DIR } from "@/lib/cortex-governance/store"
 import { SKILLS_SOURCE_DIR, listSkillCatalog } from "./skills-catalog"
 
 export interface SandboxSession {

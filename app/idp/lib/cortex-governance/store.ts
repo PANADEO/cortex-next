@@ -110,7 +110,7 @@ export async function listProjects(): Promise<CoworkProjectConfig[]> {
   return config.projects
 }
 
-export interface UpsertProjectInput extends Omit<CoworkProjectConfig, "createdAt" | "updatedAt"> {}
+export type UpsertProjectInput = Omit<CoworkProjectConfig, "createdAt" | "updatedAt">
 
 export async function upsertProject(input: UpsertProjectInput): Promise<CoworkProjectConfig> {
   const config = await readGovernanceConfig()
@@ -191,8 +191,36 @@ export function sessionSkillIds(
   return effectiveSkillIds(config, project, email)
 }
 
-export function isAdmin(config: CoworkGovernanceConfig, email: string): boolean {
+/**
+ * Admin check with the same "activates on first entry" semantics as role
+ * assignments: while adminEmails is empty (fresh install) every authenticated
+ * user may administer, so the first admin can bootstrap themselves from the
+ * UI. Adding the first email locks the panel down.
+ */
+export function isAdmin(config: CoworkGovernanceConfig, email: string | undefined): boolean {
+  if (config.adminEmails.length === 0) return true
+  if (!email) return false
   return config.adminEmails.some((admin) => admin.toLowerCase() === email.toLowerCase())
+}
+
+/**
+ * Projects a user should see as tiles: enabled, and either governance is in
+ * open mode (no assignments yet), or the user holds one of the project's
+ * allowed roles. Admins see everything (they need to reach misconfigured
+ * tiles to fix them).
+ */
+export function visibleProjectsFor(
+  config: CoworkGovernanceConfig,
+  email: string | undefined,
+): CoworkProjectConfig[] {
+  const openMode = Object.keys(config.userAssignments).length === 0
+  const admin = isAdmin(config, email)
+  return config.projects.filter((project) => {
+    if (!project.enabled) return false
+    if (openMode || admin || !email) return true
+    const userRoleIds = new Set(config.userAssignments[email.toLowerCase()] ?? [])
+    return project.allowedRoleIds.some((roleId) => userRoleIds.has(roleId))
+  })
 }
 
 /** Skill groups referenced by at least one of the given roles. */

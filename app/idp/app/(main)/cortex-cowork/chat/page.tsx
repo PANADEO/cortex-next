@@ -4,15 +4,24 @@ import {
   ArtifactsPanel,
   ChatPanel,
   coworkApi,
+  DEFAULT_COWORK_PROJECT_ID,
   useCoworkArtifacts,
+  useCoworkProjectTiles,
   useCoworkSession,
   useEnsureCoworkSession,
   useSendCoworkMessage,
 } from "@/features/cortex-cowork"
 import { ErrorState, PageHeader } from "@cortex/ui"
+import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 
-export default function CortexCoworkChatPage() {
-  const { sessionId, error, retry } = useEnsureCoworkSession()
+function CortexCoworkChat() {
+  const searchParams = useSearchParams()
+  const projectId = searchParams.get("project") ?? DEFAULT_COWORK_PROJECT_ID
+  const { tiles } = useCoworkProjectTiles()
+  const project = tiles.find((tile) => tile.id === projectId)
+
+  const { sessionId, error, retry } = useEnsureCoworkSession(projectId)
   const sessionQuery = useCoworkSession(sessionId)
   const artifactsQuery = useCoworkArtifacts(sessionId)
   const sendMessage = useSendCoworkMessage(sessionId ?? "")
@@ -35,8 +44,11 @@ export default function CortexCoworkChatPage() {
   return (
     <>
       <PageHeader
-        title="Cortex Cowork"
-        description="Chat with a skills-powered agent that works inside a sandbox and hands you back files."
+        title={project?.label ?? "Cortex Cowork"}
+        description={
+          project?.description ??
+          "Chat with a skills-powered agent that works inside a sandbox and hands you back files."
+        }
       />
       <div className="flex min-h-0 flex-1">
         <ChatPanel
@@ -54,5 +66,14 @@ export default function CortexCoworkChatPage() {
         />
       </div>
     </>
+  )
+}
+
+export default function CortexCoworkChatPage() {
+  // useSearchParams requires a Suspense boundary in the App Router.
+  return (
+    <Suspense fallback={null}>
+      <CortexCoworkChat />
+    </Suspense>
   )
 }

@@ -1,8 +1,8 @@
 import {
   readGovernanceConfig,
   sessionSkillIds,
-} from "@/features/cortex-cowork/server/config-store"
-import { requestEmail } from "@/features/cortex-cowork/server/request-identity"
+} from "@/lib/cortex-governance/store"
+import { requestEmail } from "@/lib/cortex-governance/request-identity"
 import {
   createSandboxSession,
   toCoworkSession,

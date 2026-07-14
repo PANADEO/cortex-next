@@ -5,6 +5,7 @@ import { AppGate } from "@/components/shell/app-gate"
 import { VersionLabel } from "@/components/shell/version-label"
 import { Topbar } from "@/components/topbar"
 import {
+  useCortexConfigNavSections,
   useCortexCoworkNavSections,
   useIdpBasicNavSections,
   useIdpNavSections,
@@ -52,6 +53,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const storePitNavSections = useStorePitNavSections()
   const oknaCzasoweNavSections = useOknaCzasoweNavSections()
   const cortexCoworkNavSections = useCortexCoworkNavSections()
+  const cortexConfigNavSections = useCortexConfigNavSections()
   const isAiToolPage = tile?.href.startsWith("/ai-tools/") ?? false
   const navSections = isAiToolPage
     ? []
@@ -67,7 +69,9 @@ export default function MainLayout({ children }: { children: ReactNode }) {
               ? oknaCzasoweNavSections
               : tileId === "cortex-cowork"
                 ? cortexCoworkNavSections
-                : idpNavSections
+                : tileId === "cortex-config"
+                  ? cortexConfigNavSections
+                  : idpNavSections
 
   const brandIcon = (
     <Link

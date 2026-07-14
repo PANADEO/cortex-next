@@ -11,9 +11,18 @@ import type {
 export const coworkQueryKeys = {
   all: ["cortex-cowork"] as const,
   catalog: () => [...coworkQueryKeys.all, "catalog"] as const,
+  projects: () => [...coworkQueryKeys.all, "projects"] as const,
   session: (sessionId: string) => [...coworkQueryKeys.all, "session", sessionId] as const,
   artifacts: (sessionId: string) =>
     [...coworkQueryKeys.all, "session", sessionId, "artifacts"] as const,
+}
+
+/** Presentation-only project meta served to every authenticated user. */
+export interface CoworkProjectTile {
+  id: string
+  name: string
+  description: string
+  icon?: string
 }
 
 const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH)
@@ -27,7 +36,11 @@ function normalizeBasePath(value: string | undefined): string {
 
 export const coworkApi = {
   listSkillCatalog: () => apiClient.get<CoworkSkillSummary[]>("/api/cortex-cowork/skills"),
-  createSession: () => apiClient.post<CoworkSession>("/api/cortex-cowork/sessions"),
+  listProjectTiles: () => apiClient.get<CoworkProjectTile[]>("/api/cortex-cowork/projects"),
+  createSession: (projectId?: string) =>
+    apiClient.post<CoworkSession>("/api/cortex-cowork/sessions", {
+      jsonBody: projectId ? { projectId } : {},
+    }),
   getSession: (sessionId: string) =>
     apiClient.get<CoworkSession>(`/api/cortex-cowork/sessions/${sessionId}`),
   sendMessage: (sessionId: string, content: string) =>

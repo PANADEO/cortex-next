@@ -1,6 +1,11 @@
 "use client"
 
+import { useAuthorizedApps } from "@cortex/api"
+import { Button, EmptyState } from "@cortex/ui"
+import { Search } from "lucide-react"
+import { useDeferredValue, useMemo, useState } from "react"
 import { canAccessAiTool, isAiToolId } from "@/lib/ai-tools/app-codes"
+import { useCoworkProjectTiles } from "@/features/cortex-cowork"
 import { useFavoritesStore } from "@/lib/stores/favorites-store"
 import {
   DEPARTMENT_CATEGORIES,
@@ -53,6 +58,7 @@ export function TileGrid({ tileHrefOverrides }: TileGridProps = {}) {
   const favorites = useFavoritesStore((s) => s.favorites)
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite)
   const authorized = useAuthorizedApps()
+  const coworkProjects = useCoworkProjectTiles()
 
   const tiles = useMemo(
     () =>
@@ -63,14 +69,19 @@ export function TileGrid({ tileHrefOverrides }: TileGridProps = {}) {
     [tileHrefOverrides],
   )
 
+  // Code-backed tiles pass through the Cortex Admin per-app whitelist;
+  // task-chat project tiles are governed by cortex-config roles instead
+  // (the projects endpoint already filtered them for this user).
   const authorizedTiles = useMemo(
-    () =>
-      tiles.filter((tile) =>
+    () => [
+      ...tiles.filter((tile) =>
         isAiToolId(tile.id)
           ? canAccessAiTool(authorized.apps, tile.id)
           : authorized.apps.includes(tile.id),
       ),
-    [authorized.apps, tiles],
+      ...coworkProjects.tiles,
+    ],
+    [authorized.apps, tiles, coworkProjects.tiles],
   )
 
   const searchedTiles = useMemo(

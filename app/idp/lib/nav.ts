@@ -206,6 +206,27 @@ export const CORTEX_COWORK_NAV: TileMenuSection[] = [
   },
 ]
 
+export const CORTEX_CONFIG_NAV: TileMenuSection[] = [
+  {
+    id: "governance",
+    label: "Governance",
+    items: [
+      {
+        id: "projects",
+        label: "Projekty",
+        icon: LayoutDashboard,
+        href: "/cortex-config/projects",
+      },
+      {
+        id: "roles",
+        label: "Role i uprawnienia",
+        icon: Users,
+        href: "/cortex-config/governance",
+      },
+    ],
+  },
+]
+
 export const INVOICE_SUPERVISOR_NAV: TileMenuSection[] = [
   {
     id: "praca",
@@ -347,4 +368,8 @@ export function useAiToolsNavSections(): TileMenuSection[] {
 
 export function useCortexCoworkNavSections(): TileMenuSection[] {
   return CORTEX_COWORK_NAV
+}
+
+export function useCortexConfigNavSections(): TileMenuSection[] {
+  return CORTEX_CONFIG_NAV
 }

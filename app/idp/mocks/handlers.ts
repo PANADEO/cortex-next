@@ -384,6 +384,8 @@ export const handlers = [
             "ai-daily-assistant",
             "invoice-supervisor",
             "cortex-cowork",
+            "okna-czasowe",
+            "cortex-config",
           ]
         : [],
       email,
