@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto"
 import { cp, mkdir, readFile, writeFile } from "node:fs/promises"
-import os from "node:os"
 import path from "node:path"
+import type { CoworkProjectConfig } from "@cortex/types"
 import type { ChatMessage, CoworkArtifact, CoworkSession, CoworkSkillSummary } from "../types"
+import { COWORK_DATA_DIR } from "./config-store"
 import { SKILLS_SOURCE_DIR, listSkillCatalog } from "./skills-catalog"
 
 export interface SandboxSession {
   id: string
+  projectId: string
   createdAt: string
   sandboxDir: string
   skillsDir: string
@@ -18,9 +20,10 @@ export interface SandboxSession {
 
 // What's actually persisted to disk - the *Dir paths are re-derived from the
 // session id on every read instead (see sandboxPaths), so a stale absolute
-// path never leaks in if os.tmpdir() ever changes between processes.
+// path never leaks in if the data dir moves between processes.
 interface SessionMeta {
   id: string
+  projectId: string
   createdAt: string
   skills: CoworkSkillSummary[]
   messages: ChatMessage[]
@@ -33,13 +36,13 @@ interface SessionMeta {
 // compilation units - a plain in-memory singleton here intermittently
 // produced "session not found" from a sibling route. The sandbox directory
 // is real disk, addressable purely from `sessionId`, so it doubles as the
-// session store. This also matches Flue's remote-sandbox guidance closer:
-// "your application is responsible for deciding when it is deleted or
-// expired" implies sandbox state that outlives any single process anyway.
+// session store. Sessions live flat under <dataDir>/sessions/ (projectId is
+// session metadata, not a path segment) so every `[sessionId]` route keeps
+// resolving without knowing the project.
 // Known gap: no file locking, so two concurrent writes to the same session
 // can race (last write wins) - fine for a single-user demo, not for prod.
 function sandboxPaths(sessionId: string) {
-  const sandboxDir = path.join(os.tmpdir(), "cortex-cowork", sessionId)
+  const sandboxDir = path.join(COWORK_DATA_DIR, "sessions", sessionId)
   return {
     sandboxDir,
     skillsDir: path.join(sandboxDir, "skills"),
@@ -48,13 +51,30 @@ function sandboxPaths(sessionId: string) {
   }
 }
 
-export async function createSandboxSession(): Promise<SandboxSession> {
+/**
+ * Creates a sandboxed session for a project, copying only the skills the
+ * requesting user is entitled to (`skillIds`) into the sandbox. The runner
+ * later loads skills from the sandbox copy, so this filter IS the governance
+ * boundary - a skill that is not copied does not exist for the agent.
+ */
+export async function createSandboxSession(
+  project: CoworkProjectConfig,
+  skillIds: string[],
+): Promise<SandboxSession> {
   const id = randomUUID()
   const { sandboxDir, skillsDir, artifactsDir, metaPath } = sandboxPaths(id)
 
-  await mkdir(sandboxDir, { recursive: true })
-  await cp(SKILLS_SOURCE_DIR, skillsDir, { recursive: true })
+  await mkdir(skillsDir, { recursive: true })
   await mkdir(artifactsDir, { recursive: true })
+
+  const available = await listSkillCatalog(SKILLS_SOURCE_DIR)
+  const wanted = new Set(skillIds)
+  for (const skill of available) {
+    if (!wanted.has(skill.id)) continue
+    await cp(path.join(SKILLS_SOURCE_DIR, skill.id), path.join(skillsDir, skill.id), {
+      recursive: true,
+    })
+  }
 
   // Read the catalog back from the COPY, not the source, so the welcome
   // message reflects what actually landed in this session's sandbox.
@@ -62,12 +82,13 @@ export async function createSandboxSession(): Promise<SandboxSession> {
   const welcome: ChatMessage = {
     id: randomUUID(),
     role: "assistant",
-    content: buildWelcomeMessage(skills),
+    content: buildWelcomeMessage(project, skills),
     createdAt: new Date().toISOString(),
   }
 
   const session: SandboxSession = {
     id,
+    projectId: project.id,
     createdAt: new Date().toISOString(),
     sandboxDir,
     skillsDir,
@@ -85,7 +106,14 @@ export async function getSandboxSession(sessionId: string): Promise<SandboxSessi
   const raw = await readFile(metaPath, "utf8").catch(() => null)
   if (!raw) return undefined
   const meta = JSON.parse(raw) as SessionMeta
-  return { ...meta, sandboxDir, skillsDir, artifactsDir }
+  return {
+    ...meta,
+    // Sessions written before governance landed have no projectId on disk.
+    projectId: meta.projectId ?? "cortex-cowork",
+    sandboxDir,
+    skillsDir,
+    artifactsDir,
+  }
 }
 
 export async function saveSandboxSession(session: SandboxSession): Promise<void> {
@@ -95,6 +123,7 @@ export async function saveSandboxSession(session: SandboxSession): Promise<void>
 function writeMeta(metaPath: string, session: SandboxSession): Promise<void> {
   const meta: SessionMeta = {
     id: session.id,
+    projectId: session.projectId,
     createdAt: session.createdAt,
     skills: session.skills,
     messages: session.messages,
@@ -106,6 +135,7 @@ function writeMeta(metaPath: string, session: SandboxSession): Promise<void> {
 export function toCoworkSession(session: SandboxSession): CoworkSession {
   return {
     id: session.id,
+    projectId: session.projectId,
     createdAt: session.createdAt,
     skills: session.skills,
     messages: session.messages,
@@ -151,11 +181,20 @@ export function artifactFilePath(session: SandboxSession, artifact: CoworkArtifa
   return path.join(session.artifactsDir, artifact.filename)
 }
 
-function buildWelcomeMessage(skills: CoworkSkillSummary[]): string {
+function buildWelcomeMessage(
+  project: CoworkProjectConfig,
+  skills: CoworkSkillSummary[],
+): string {
+  if (skills.length === 0) {
+    return [
+      `${project.name} is ready, but no skills are enabled for your role yet.`,
+      "Ask your administrator to assign you a role with skill groups in Cortex Config.",
+    ].join("\n\n")
+  }
   const list = skills.map((skill) => `- ${skill.name} - ${skill.description}`).join("\n")
   return [
-    `Sandbox ready. I copied ${skills.length} skill${skills.length === 1 ? "" : "s"} into this session's workspace:`,
+    `Sandbox ready. Skills available in this session:`,
     list,
-    "Ask for an excel report or a csv export and I'll generate a downloadable file here.",
+    "Tell me what you need and I'll produce downloadable files in this workspace.",
   ].join("\n\n")
 }

@@ -2,7 +2,9 @@ import { spawn } from "node:child_process"
 import { randomUUID } from "node:crypto"
 import { readdir, stat } from "node:fs/promises"
 import path from "node:path"
+import type { CoworkModelConfig, CoworkProjectConfig } from "@cortex/types"
 import type { AgentActivityStep, ChatMessage, CoworkArtifact, CoworkSkillId } from "../types"
+import { getProject } from "./config-store"
 import { appendMessage, registerArtifact, type SandboxSession } from "./sandbox-store"
 import { generateCsvExport } from "./skills/csv-export"
 import { generateExcelReport } from "./skills/excel-report"
@@ -105,6 +107,20 @@ function toActivityStep(raw: string): AgentActivityStep | null {
   }
 }
 
+/**
+ * Builds the model config slice passed to the runner. Credential refs are
+ * resolved app-side (the runner only ever sees final values); until the
+ * credential store lands, unset refs fall through to the provider's own
+ * env-var lookup (ANTHROPIC_API_KEY et al.) inside the runner process.
+ */
+function modelConfigForRunner(project: CoworkProjectConfig): CoworkModelConfig {
+  return {
+    provider: project.model.provider,
+    modelId: project.model.modelId,
+    ...(project.model.baseUrl ? { baseUrl: project.model.baseUrl } : {}),
+  }
+}
+
 async function runFlueTurn(
   session: SandboxSession,
   userContent: string,
@@ -113,6 +129,7 @@ async function runFlueTurn(
   const dir = runnerDir()
   const flueCli = path.join(dir, "node_modules", "@flue", "cli", "bin", "flue.mjs")
   const nodeBin = process.env.COWORK_NODE_BIN ?? "node"
+  const project = await getProject(session.projectId)
 
   const before = await listArtifactFiles(session.artifactsDir)
   const input = JSON.stringify({
@@ -126,6 +143,13 @@ async function runFlueTurn(
   const env: NodeJS.ProcessEnv = { ...process.env }
   if (process.env.COWORK_NODE_BIN) {
     env.PATH = `${path.dirname(process.env.COWORK_NODE_BIN)}:${env.PATH ?? ""}`
+  }
+  // Per-instance configuration travels via env, not argv: the model config
+  // will carry resolved secrets, and env vars never show up in `ps` output.
+  env.COWORK_SANDBOX_DIR = session.sandboxDir
+  if (project) {
+    env.COWORK_MODEL_CONFIG = JSON.stringify(modelConfigForRunner(project))
+    if (project.systemPrompt) env.COWORK_SYSTEM_PROMPT = project.systemPrompt
   }
 
   const activity: AgentActivityStep[] = []
@@ -271,8 +295,14 @@ async function runKeywordFallback(
   session: SandboxSession,
   userContent: string,
 ): Promise<{ message: ChatMessage; artifacts: CoworkArtifact[] }> {
-  const wantsCsv = /\bcsv\b/i.test(userContent)
-  const wantsExcel = !wantsCsv && /excel|xlsx|arkusz|spreadsheet|raport|report/i.test(userContent)
+  // The fallback honors the same governance boundary as the runner: a skill
+  // that was not copied into this session's sandbox does not exist here.
+  const sessionSkillIds = new Set(session.skills.map((skill) => skill.id))
+  const wantsCsv = sessionSkillIds.has("csv-export") && /\bcsv\b/i.test(userContent)
+  const wantsExcel =
+    !wantsCsv &&
+    sessionSkillIds.has("excel-report") &&
+    /excel|xlsx|arkusz|spreadsheet|raport|report/i.test(userContent)
 
   const newArtifacts: CoworkArtifact[] = []
   let replyLines: string[]

@@ -1,9 +1,9 @@
 export type ChatRole = "user" | "assistant"
 
-// Loaded dynamically from each skill's SKILL.md at runtime (see
-// server/skill-frontmatter.ts), so this union can't be exhaustively narrowed
-// from disk content - the id is cast at the parse boundary.
-export type CoworkSkillId = "excel-report" | "csv-export"
+// Skills are data, not code: the catalog is whatever SKILL.md packages exist
+// in the skills source directory, and customer installs add their own without
+// a deploy - so skill ids are open strings, not a compile-time union.
+export type CoworkSkillId = string
 
 // One observed step of the agent's work during a turn (thinking, tool call,
 // lifecycle marker), as emitted live by the Flue runner's observe() bridge.
@@ -54,6 +54,7 @@ export interface CoworkArtifact {
 
 export interface CoworkSession {
   id: string
+  projectId: string
   createdAt: string
   skills: CoworkSkillSummary[]
   messages: ChatMessage[]
