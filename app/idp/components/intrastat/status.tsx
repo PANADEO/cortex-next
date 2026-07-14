@@ -39,14 +39,27 @@ export function IntrastatStatusBadge({ status }: { status: IntrastatBatchStatus 
   return <Badge variant={variant}>{STATUS_LABELS[status]}</Badge>
 }
 
-export function IntrastatMatchBadge({ status }: { status: IntrastatCnMatchStatus }) {
+export function IntrastatMatchBadge({
+  status,
+  confidence,
+}: {
+  status: IntrastatCnMatchStatus
+  confidence?: number | null
+}) {
   const variant =
     status === "ambiguous" || status === "unmatched"
       ? "destructive"
       : status === "manual" || status === "exact"
         ? "secondary"
         : "outline"
-  return <Badge variant={variant}>{MATCH_LABELS[status]}</Badge>
+  const percentage =
+    confidence === null || confidence === undefined ? null : Math.round(confidence * 100)
+  return (
+    <Badge variant={variant} className="whitespace-nowrap">
+      {MATCH_LABELS[status]}
+      {percentage === null ? null : ` ${percentage}%`}
+    </Badge>
+  )
 }
 
 export function IntrastatKindBadge({ kind }: { kind: IntrastatTransactionKind }) {

@@ -63,7 +63,7 @@ export function IntrastatMatchDetailsPopover({ line }: { line: IntrastatDeclarat
           className="inline-flex rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           aria-label={`Show ${getIntrastatMatchLabel(line.cn_match_status)} match details`}
         >
-          <IntrastatMatchBadge status={line.cn_match_status} />
+          <IntrastatMatchBadge status={line.cn_match_status} confidence={line.match_confidence} />
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[380px] p-0">

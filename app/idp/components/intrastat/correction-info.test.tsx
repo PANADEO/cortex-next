@@ -31,6 +31,7 @@ const correctionLine: IntrastatDeclarationLine = {
   transport_type: "3",
   cn_match_status: "prefix_unique",
   confidence: 0.75,
+  match_confidence: 0.75,
   alerts: [],
   document_type: "correction",
   corrected_invoice_number: "FV-ORIG",

@@ -124,6 +124,7 @@ export interface IntrastatDeclarationLine {
   transport_type: string
   cn_match_status: IntrastatCnMatchStatus
   confidence: number | null
+  match_confidence: number | null
   alerts: string[]
   document_type: IntrastatInvoiceDocumentType
   corrected_invoice_number: string | null

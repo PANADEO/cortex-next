@@ -31,6 +31,7 @@ const baseLine: IntrastatDeclarationLine = {
   transport_type: "3",
   cn_match_status: "exact",
   confidence: 0.92,
+  match_confidence: 1,
   alerts: [],
   document_type: "invoice",
   corrected_invoice_number: null,
@@ -48,6 +49,7 @@ describe("IntrastatMatchDetailsPopover", () => {
   it("explains exact index matches", async () => {
     render(<IntrastatMatchDetailsPopover line={baseLine} />)
 
+    expect(screen.getByText("Exact 100%")).not.toBeNull()
     await userEvent.click(screen.getByRole("button", { name: /show exact match details/i }))
 
     expect(screen.getByText("Exact match")).not.toBeNull()
@@ -66,14 +68,30 @@ describe("IntrastatMatchDetailsPopover", () => {
           cn_match_status: "semantic_match",
           matched_fragment: "semantic:0.87",
           confidence: 0.87,
+          match_confidence: 0.87,
         }}
       />,
     )
 
+    expect(screen.getByText("Semantic 87%")).not.toBeNull()
     await userEvent.click(screen.getByRole("button", { name: /show semantic match details/i }))
 
     expect(screen.getByText("Semantic match")).not.toBeNull()
     expect(screen.getByText(/description embeddings as a technical way/i)).not.toBeNull()
     expect(screen.getByText("semantic:0.87")).not.toBeNull()
+  })
+
+  it("shows closest-index confidence directly in the Match badge", () => {
+    render(
+      <IntrastatMatchDetailsPopover
+        line={{
+          ...baseLine,
+          cn_match_status: "prefix_unique",
+          match_confidence: 0.7,
+        }}
+      />,
+    )
+
+    expect(screen.getByText("Closest index 70%")).not.toBeNull()
   })
 })
