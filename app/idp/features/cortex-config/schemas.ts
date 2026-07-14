@@ -1,7 +1,15 @@
-import type { CoworkConnectorConfig, CoworkProjectConfig } from "@cortex/types"
-import { COWORK_SLUG_PATTERN } from "@cortex/types"
+import type {
+  CoworkConnectorConfig,
+  CoworkProjectComposition,
+  CoworkProjectConfig,
+  CoworkSkillSource,
+} from "@cortex/types"
+import { COWORK_DEPARTMENT_PATTERN, COWORK_SLUG_PATTERN } from "@cortex/types"
 import { z } from "zod"
 import type { ProjectInput } from "./queries"
+
+const SLUG_MESSAGE = "Małe litery, cyfry i myślniki (2-63 znaki)"
+const DEPT_MESSAGE = "Ścieżka departamentu (np. finanse/kontroling)"
 
 function parseKeyValueLines(value: string): Record<string, string> {
   const result: Record<string, string> = {}
@@ -22,42 +30,41 @@ function stringifyKeyValue(refs: Record<string, string> | undefined): string {
     .join("\n")
 }
 
-const SLUG_MESSAGE = "Małe litery, cyfry i myślniki (2-63 znaki)"
+function parsePathLines(value: string): string[] {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
 
-const connectorFormSchema = z.object({
-  id: z.string().min(1),
-  type: z.enum(["mcp", "cli"]),
-  name: z.string().min(1, "Nazwa konektora jest wymagana"),
-  description: z.string().optional(),
-  enabled: z.boolean(),
-  target: z.string().min(1, "Podaj URL (MCP) lub ścieżkę do narzędzia (CLI)"),
-  /** "header-or-env-name=credential/path" per line. */
-  credentialRefs: z.string(),
-  /** Space-separated fixed CLI args. */
-  baseArgs: z.string(),
-})
+// --- Project form -------------------------------------------------------------
 
-export type ConnectorFormValues = z.infer<typeof connectorFormSchema>
-
-export const projectFormSchema = z.object({
-  id: z.string().regex(COWORK_SLUG_PATTERN, SLUG_MESSAGE),
-  name: z.string().min(1, "Nazwa jest wymagana"),
-  description: z.string().min(1, "Opis jest wymagany"),
-  icon: z.string().optional(),
-  enabled: z.boolean(),
-  allowedRoleIds: z.array(z.string()),
-  provider: z.enum(["anthropic", "openai-compatible"]),
-  modelId: z.string().min(1, "Model jest wymagany"),
-  baseUrl: z.string().optional(),
-  apiKeyRef: z.string().optional(),
-  systemPrompt: z.string().optional(),
-  sandboxMode: z.enum(["local", "docker"]),
-  /** One path per line in the textarea. */
-  sandboxPaths: z.string(),
-  connectors: z.array(connectorFormSchema),
-  exportDir: z.string().optional(),
-  exportDisplayPath: z.string().optional(),
-})
+export const projectFormSchema = z
+  .object({
+    id: z.string().regex(COWORK_SLUG_PATTERN, SLUG_MESSAGE),
+    name: z.string().min(1, "Nazwa jest wymagana"),
+    description: z.string().min(1, "Opis jest wymagany"),
+    icon: z.string().optional(),
+    enabled: z.boolean(),
+    allowedRoleIds: z.array(z.string()),
+    provider: z.enum(["anthropic", "openai-compatible"]),
+    modelId: z.string().min(1, "Model jest wymagany"),
+    baseUrl: z.string().optional(),
+    apiKeyRef: z.string().optional(),
+    systemPrompt: z.string().optional(),
+    sandboxMode: z.enum(["local", "docker"]),
+    /** One path per line in the textarea. */
+    sandboxPaths: z.string(),
+    // Composition grants per kind: department branches + specific leaves.
+    skillBranches: z.array(z.string()),
+    skillLeaves: z.array(z.string()),
+    connectorBranches: z.array(z.string()),
+    connectorLeaves: z.array(z.string()),
+    secretBranches: z.array(z.string()),
+    secretLeaves: z.array(z.string()),
+    exportDir: z.string().optional(),
+    exportDisplayPath: z.string().optional(),
+  })
   .refine(
     (values) => values.provider !== "openai-compatible" || Boolean(values.baseUrl?.trim()),
     { path: ["baseUrl"], message: "Base URL jest wymagany dla openai-compatible" },
@@ -79,64 +86,18 @@ export const EMPTY_PROJECT_FORM_VALUES: ProjectFormValues = {
   systemPrompt: "",
   sandboxMode: "local",
   sandboxPaths: "",
-  connectors: [],
+  skillBranches: [],
+  skillLeaves: [],
+  connectorBranches: [],
+  connectorLeaves: [],
+  secretBranches: [],
+  secretLeaves: [],
   exportDir: "",
   exportDisplayPath: "",
 }
 
-export function emptyConnector(): ConnectorFormValues {
-  // Stable-per-render id assigned by the form when a connector is appended.
-  return {
-    id: "",
-    type: "mcp",
-    name: "",
-    description: "",
-    enabled: true,
-    target: "",
-    credentialRefs: "",
-    baseArgs: "",
-  }
-}
-
-function connectorToFormValues(connector: CoworkConnectorConfig): ConnectorFormValues {
-  return {
-    id: connector.id,
-    type: connector.type,
-    name: connector.name,
-    description: connector.description ?? "",
-    enabled: connector.enabled,
-    target: connector.target,
-    credentialRefs: stringifyKeyValue(connector.credentialRefs),
-    baseArgs: (connector.baseArgs ?? []).join(" "),
-  }
-}
-
-function connectorFormValuesToConfig(
-  values: ConnectorFormValues,
-  index: number,
-): CoworkConnectorConfig {
-  const credentialRefs = parseKeyValueLines(values.credentialRefs)
-  const baseArgs = values.baseArgs.trim() ? values.baseArgs.trim().split(/\s+/) : []
-  return {
-    id: values.id || `connector-${index + 1}`,
-    type: values.type,
-    name: values.name,
-    ...(values.description?.trim() ? { description: values.description.trim() } : {}),
-    enabled: values.enabled,
-    target: values.target.trim(),
-    ...(Object.keys(credentialRefs).length > 0 ? { credentialRefs } : {}),
-    ...(values.type === "cli" && baseArgs.length > 0 ? { baseArgs } : {}),
-  }
-}
-
-function parsePathLines(value: string): string[] {
-  return value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-}
-
 export function projectToFormValues(project: CoworkProjectConfig): ProjectFormValues {
+  const { skills, connectors, secrets } = project.composition
   return {
     id: project.id,
     name: project.name,
@@ -151,7 +112,12 @@ export function projectToFormValues(project: CoworkProjectConfig): ProjectFormVa
     systemPrompt: project.systemPrompt ?? "",
     sandboxMode: project.sandbox.mode ?? "local",
     sandboxPaths: project.sandbox.allowedPaths.join("\n"),
-    connectors: project.connectors.map(connectorToFormValues),
+    skillBranches: skills.branches,
+    skillLeaves: skills.leaves,
+    connectorBranches: connectors.branches,
+    connectorLeaves: connectors.leaves,
+    secretBranches: secrets.branches,
+    secretLeaves: secrets.leaves,
     exportDir: project.artifactExport?.exportDir ?? "",
     exportDisplayPath: project.artifactExport?.displayPath ?? "",
   }
@@ -159,6 +125,11 @@ export function projectToFormValues(project: CoworkProjectConfig): ProjectFormVa
 
 export function projectFormValuesToInput(values: ProjectFormValues): ProjectInput {
   const exportDir = values.exportDir?.trim()
+  const composition: CoworkProjectComposition = {
+    skills: { branches: values.skillBranches, leaves: values.skillLeaves },
+    connectors: { branches: values.connectorBranches, leaves: values.connectorLeaves },
+    secrets: { branches: values.secretBranches, leaves: values.secretLeaves },
+  }
   return {
     id: values.id,
     name: values.name,
@@ -174,7 +145,7 @@ export function projectFormValuesToInput(values: ProjectFormValues): ProjectInpu
       ...(values.apiKeyRef?.trim() ? { apiKeyRef: values.apiKeyRef.trim() } : {}),
     },
     ...(values.systemPrompt?.trim() ? { systemPrompt: values.systemPrompt.trim() } : {}),
-    connectors: values.connectors.map(connectorFormValuesToConfig),
+    composition,
     sandbox: { mode: values.sandboxMode, allowedPaths: parsePathLines(values.sandboxPaths) },
     ...(exportDir
       ? {
@@ -189,18 +160,15 @@ export function projectFormValuesToInput(values: ProjectFormValues): ProjectInpu
   }
 }
 
-/**
- * Roles and skill groups share one form shape: a named set of member ids
- * (skill ids for groups, group ids for roles).
- */
-export const namedSetFormSchema = z.object({
+// --- Role / assignment forms --------------------------------------------------
+
+export const roleFormSchema = z.object({
   id: z.string().regex(COWORK_SLUG_PATTERN, SLUG_MESSAGE),
   name: z.string().min(1, "Nazwa jest wymagana"),
   description: z.string().optional(),
-  memberIds: z.array(z.string()),
 })
 
-export type NamedSetFormValues = z.infer<typeof namedSetFormSchema>
+export type RoleFormValues = z.infer<typeof roleFormSchema>
 
 export const assignmentFormSchema = z.object({
   email: z.string().email("Podaj poprawny email"),
@@ -208,3 +176,81 @@ export const assignmentFormSchema = z.object({
 })
 
 export type AssignmentFormValues = z.infer<typeof assignmentFormSchema>
+
+// --- Catalog forms ------------------------------------------------------------
+
+export const skillSourceFormSchema = z.object({
+  id: z.string().regex(COWORK_SLUG_PATTERN, SLUG_MESSAGE),
+  name: z.string().min(1, "Nazwa jest wymagana"),
+  folderPath: z.string().regex(/^\//, "Ścieżka musi być absolutna"),
+  department: z.string().regex(COWORK_DEPARTMENT_PATTERN, DEPT_MESSAGE),
+})
+
+export type SkillSourceFormValues = z.infer<typeof skillSourceFormSchema>
+
+export function skillSourceToConfig(values: SkillSourceFormValues): CoworkSkillSource {
+  return {
+    id: values.id,
+    name: values.name,
+    folderPath: values.folderPath.trim(),
+    department: values.department,
+  }
+}
+
+export const connectorFormSchema = z.object({
+  id: z.string().regex(COWORK_SLUG_PATTERN, SLUG_MESSAGE),
+  department: z.string().regex(COWORK_DEPARTMENT_PATTERN, DEPT_MESSAGE),
+  type: z.enum(["mcp", "cli"]),
+  name: z.string().min(1, "Nazwa konektora jest wymagana"),
+  description: z.string().optional(),
+  enabled: z.boolean(),
+  target: z.string().min(1, "Podaj URL (MCP) lub ścieżkę do narzędzia (CLI)"),
+  /** "header-or-env-name=credential/path" per line. */
+  credentialRefs: z.string(),
+  /** Space-separated fixed CLI args. */
+  baseArgs: z.string(),
+})
+
+export type ConnectorFormValues = z.infer<typeof connectorFormSchema>
+
+export const EMPTY_CONNECTOR_FORM_VALUES: ConnectorFormValues = {
+  id: "",
+  department: "",
+  type: "mcp",
+  name: "",
+  description: "",
+  enabled: true,
+  target: "",
+  credentialRefs: "",
+  baseArgs: "",
+}
+
+export function connectorToFormValues(connector: CoworkConnectorConfig): ConnectorFormValues {
+  return {
+    id: connector.id,
+    department: connector.department,
+    type: connector.type,
+    name: connector.name,
+    description: connector.description ?? "",
+    enabled: connector.enabled,
+    target: connector.target,
+    credentialRefs: stringifyKeyValue(connector.credentialRefs),
+    baseArgs: (connector.baseArgs ?? []).join(" "),
+  }
+}
+
+export function connectorFormValuesToConfig(values: ConnectorFormValues): CoworkConnectorConfig {
+  const credentialRefs = parseKeyValueLines(values.credentialRefs)
+  const baseArgs = values.baseArgs.trim() ? values.baseArgs.trim().split(/\s+/) : []
+  return {
+    id: values.id,
+    department: values.department,
+    type: values.type,
+    name: values.name,
+    ...(values.description?.trim() ? { description: values.description.trim() } : {}),
+    enabled: values.enabled,
+    target: values.target.trim(),
+    ...(Object.keys(credentialRefs).length > 0 ? { credentialRefs } : {}),
+    ...(values.type === "cli" && baseArgs.length > 0 ? { baseArgs } : {}),
+  }
+}

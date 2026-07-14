@@ -19,12 +19,23 @@ import Link from "next/link"
 import { useState } from "react"
 import type { ProjectInput } from "../queries"
 import {
+  useCatalog,
   useCreateProject,
+  useCredentialPaths,
   useDeleteProject,
   useGovernanceConfig,
   useUpdateProject,
 } from "../hooks/use-governance"
 import { ProjectFormDialog } from "./project-form-dialog"
+
+/** Total resources a composition grants (branches + leaves) across kinds. */
+function compositionCount(project: CoworkProjectConfig): number {
+  const { skills, connectors, secrets } = project.composition
+  return [skills, connectors, secrets].reduce(
+    (sum, grant) => sum + grant.branches.length + grant.leaves.length,
+    0,
+  )
+}
 
 function ProjectCard({
   project,
@@ -61,11 +72,11 @@ function ProjectCard({
               {roleId}
             </Badge>
           ))}
-          {project.connectors.length > 0 ? (
-            <Badge variant="outline">konektory: {project.connectors.length}</Badge>
-          ) : null}
-          {project.sandbox.allowedPaths.length > 0 ? (
-            <Badge variant="outline">ścieżki: {project.sandbox.allowedPaths.length}</Badge>
+          <Badge variant="outline">
+            {project.sandbox.mode === "docker" ? "docker" : "local"}
+          </Badge>
+          {compositionCount(project) > 0 ? (
+            <Badge variant="outline">klocki: {compositionCount(project)}</Badge>
           ) : null}
         </div>
         <div className="flex items-center gap-2">
@@ -96,14 +107,18 @@ function ProjectCard({
 
 export function ProjectsPanel() {
   const governance = useGovernanceConfig()
+  const catalog = useCatalog()
+  const credentials = useCredentialPaths()
   const createProject = useCreateProject()
   const updateProject = useUpdateProject()
   const deleteProject = useDeleteProject()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<CoworkProjectConfig | undefined>(undefined)
 
-  if (governance.isPending) return <LoadingState label="Wczytywanie konfiguracji..." />
-  if (governance.isError) {
+  if (governance.isPending || catalog.isPending) {
+    return <LoadingState label="Wczytywanie konfiguracji..." />
+  }
+  if (governance.isError || catalog.isError || !catalog.data) {
     return (
       <ErrorState
         title="Brak dostępu do konfiguracji"
@@ -178,6 +193,8 @@ export function ProjectsPanel() {
         onOpenChange={setDialogOpen}
         project={editing}
         roles={config.roles}
+        catalog={catalog.data}
+        credentialPaths={credentials.data?.paths ?? []}
         isSaving={createProject.isPending || updateProject.isPending}
         onSubmit={handleSubmit}
       />

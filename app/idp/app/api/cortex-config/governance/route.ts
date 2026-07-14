@@ -1,32 +1,21 @@
 import { isDenied, requireAdmin } from "@/lib/cortex-governance/admin-gate"
 import { saveGovernanceConfig } from "@/lib/cortex-governance/store"
-import type { CoworkRole, CoworkSkillGroup } from "@cortex/types"
+import type { CoworkRole } from "@cortex/types"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { isStringArray } from "../projects/validation"
 
 interface GovernanceUpdateBody {
-  skillGroups?: CoworkSkillGroup[]
   roles?: CoworkRole[]
   userAssignments?: Record<string, string[]>
   adminEmails?: string[]
 }
 
 function invalidReason(body: GovernanceUpdateBody): string | undefined {
-  if (body.skillGroups !== undefined) {
-    if (!Array.isArray(body.skillGroups)) return "skillGroups must be an array"
-    for (const group of body.skillGroups) {
-      if (!group.id || !group.name || !isStringArray(group.skillIds)) {
-        return "each skill group needs id, name and skillIds[]"
-      }
-    }
-  }
   if (body.roles !== undefined) {
     if (!Array.isArray(body.roles)) return "roles must be an array"
     for (const role of body.roles) {
-      if (!role.id || !role.name || !isStringArray(role.skillGroupIds)) {
-        return "each role needs id, name and skillGroupIds[]"
-      }
+      if (!role.id || !role.name) return "each role needs id and name"
     }
   }
   if (body.userAssignments !== undefined) {
@@ -54,7 +43,6 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
   const reason = invalidReason(body)
   if (reason) return NextResponse.json({ message: reason }, { status: 400 })
 
-  if (body.skillGroups !== undefined) config.skillGroups = body.skillGroups
   if (body.roles !== undefined) config.roles = body.roles
   // Emails are stored lowercase (assignment keys AND admin list) so store
   // lookups never depend on the caller's casing.

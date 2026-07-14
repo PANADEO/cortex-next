@@ -4,6 +4,61 @@ import { Checkbox } from "@cortex/ui"
 
 // Small form primitives shared by the cortex-config dialogs.
 
+export interface GrantPickerProps {
+  /** Department branch options (checking one pulls everything under it). */
+  departments: string[]
+  /** Individual leaf resources (id + label), optionally shown by department. */
+  leaves: Array<{ id: string; label: string; department?: string }>
+  branchValue: string[]
+  onBranchChange: (next: string[]) => void
+  leafValue: string[]
+  onLeafChange: (next: string[]) => void
+  leafEmptyText: string
+}
+
+/**
+ * Composition picker for one resource kind: pick department branches (pull all
+ * resources under) and/or individual leaves. The two together are the grant.
+ */
+export function GrantPicker({
+  departments,
+  leaves,
+  branchValue,
+  onBranchChange,
+  leafValue,
+  onLeafChange,
+  leafEmptyText,
+}: GrantPickerProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="mb-1.5 text-xs font-medium text-muted-foreground">Departamenty (gałęzie)</p>
+        <CheckboxList
+          options={departments.map((dept) => ({ id: dept, label: dept }))}
+          value={branchValue}
+          onChange={onBranchChange}
+          emptyText="Brak departamentów."
+        />
+      </div>
+      <div>
+        <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+          Pojedyncze zasoby (liście)
+        </p>
+        <CheckboxList
+          options={leaves.map((leaf) => ({
+            id: leaf.id,
+            label: leaf.label,
+            ...(leaf.department ? { hint: leaf.department } : {}),
+          }))}
+          value={leafValue}
+          onChange={onLeafChange}
+          emptyText={leafEmptyText}
+        />
+      </div>
+    </div>
+  )
+}
+
 export function FieldError({ message }: { message?: string | undefined }) {
   if (!message) return null
   return <p className="mt-1 text-xs text-destructive">{message}</p>

@@ -1,5 +1,6 @@
 "use client"
 
+import { PROJECT_ICON_OPTIONS } from "@/features/cortex-cowork"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { CoworkProjectConfig, CoworkRole } from "@cortex/types"
 import {
@@ -20,20 +21,18 @@ import {
   Switch,
   Textarea,
 } from "@cortex/ui"
-import { Loader2, Plus, Trash2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { useEffect } from "react"
-import { Controller, useFieldArray, useForm } from "react-hook-form"
-import type { ProjectInput } from "../queries"
+import { Controller, useForm } from "react-hook-form"
+import type { CatalogSnapshot, ProjectInput } from "../queries"
 import {
-  emptyConnector,
   EMPTY_PROJECT_FORM_VALUES,
   projectFormSchema,
   projectFormValuesToInput,
   projectToFormValues,
   type ProjectFormValues,
 } from "../schemas"
-import { PROJECT_ICON_OPTIONS } from "@/features/cortex-cowork"
-import { CheckboxList, FieldError } from "./form-fields"
+import { CheckboxList, FieldError, GrantPicker } from "./form-fields"
 
 interface ProjectFormDialogProps {
   open: boolean
@@ -41,6 +40,8 @@ interface ProjectFormDialogProps {
   /** Present when editing; absent when creating. */
   project?: CoworkProjectConfig | undefined
   roles: CoworkRole[]
+  catalog: CatalogSnapshot
+  credentialPaths: string[]
   isSaving?: boolean
   onSubmit: (input: ProjectInput) => Promise<void>
 }
@@ -50,6 +51,8 @@ export function ProjectFormDialog({
   onOpenChange,
   project,
   roles,
+  catalog,
+  credentialPaths,
   isSaving = false,
   onSubmit,
 }: ProjectFormDialogProps) {
@@ -61,13 +64,11 @@ export function ProjectFormDialog({
   useEffect(() => {
     if (!open) return
     form.reset(project ? projectToFormValues(project) : EMPTY_PROJECT_FORM_VALUES)
-    // Reset only when the dialog opens or the target project changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, project])
 
   const provider = form.watch("provider")
   const errors = form.formState.errors
-  const connectors = useFieldArray({ control: form.control, name: "connectors" })
 
   const submit = form.handleSubmit(async (values) => {
     await onSubmit(projectFormValuesToInput(values))
@@ -185,7 +186,7 @@ export function ProjectFormDialog({
               ) : null}
               <div className="sm:col-span-2">
                 <Label htmlFor="project-api-key-ref">
-                  Klucz API (referencja credential store, np. llm/cortex-proxy)
+                  Klucz API (referencja credential store, np. wspolne/llm/cortex-proxy)
                 </Label>
                 <Input
                   id="project-api-key-ref"
@@ -210,6 +211,105 @@ export function ProjectFormDialog({
                   value={field.value}
                   onChange={field.onChange}
                   emptyText="Brak zdefiniowanych ról - dodaj je w zakładce Role i uprawnienia."
+                />
+              )}
+            />
+          </section>
+
+          <Separator />
+
+          <section className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium">Kompozycja - skille</h3>
+              <p className="text-xs text-muted-foreground">
+                Zbuduj toolkit projektu z klocków katalogu. Gałąź departamentu ciągnie wszystkie
+                zasoby pod nim.
+              </p>
+            </div>
+            <Controller
+              control={form.control}
+              name="skillBranches"
+              render={({ field: branchField }) => (
+                <Controller
+                  control={form.control}
+                  name="skillLeaves"
+                  render={({ field: leafField }) => (
+                    <GrantPicker
+                      departments={catalog.departments}
+                      leaves={catalog.skills.map((skill) => ({
+                        id: skill.id,
+                        label: skill.name,
+                        department: skill.department,
+                      }))}
+                      branchValue={branchField.value}
+                      onBranchChange={branchField.onChange}
+                      leafValue={leafField.value}
+                      onLeafChange={leafField.onChange}
+                      leafEmptyText="Katalog skilli jest pusty."
+                    />
+                  )}
+                />
+              )}
+            />
+          </section>
+
+          <Separator />
+
+          <section className="space-y-3">
+            <h3 className="text-sm font-medium">Kompozycja - konektory</h3>
+            <Controller
+              control={form.control}
+              name="connectorBranches"
+              render={({ field: branchField }) => (
+                <Controller
+                  control={form.control}
+                  name="connectorLeaves"
+                  render={({ field: leafField }) => (
+                    <GrantPicker
+                      departments={catalog.departments}
+                      leaves={catalog.connectors.map((connector) => ({
+                        id: connector.id,
+                        label: `${connector.name} (${connector.type})`,
+                        department: connector.department,
+                      }))}
+                      branchValue={branchField.value}
+                      onBranchChange={branchField.onChange}
+                      leafValue={leafField.value}
+                      onLeafChange={leafField.onChange}
+                      leafEmptyText="Katalog konektorów jest pusty."
+                    />
+                  )}
+                />
+              )}
+            />
+          </section>
+
+          <Separator />
+
+          <section className="space-y-3">
+            <h3 className="text-sm font-medium">Kompozycja - sekrety (strefy danych)</h3>
+            <p className="text-xs text-muted-foreground">
+              Projekt może użyć tylko sekretów z przyznanych gałęzi/ścieżek. To techniczna granica
+              stref danych.
+            </p>
+            <Controller
+              control={form.control}
+              name="secretBranches"
+              render={({ field: branchField }) => (
+                <Controller
+                  control={form.control}
+                  name="secretLeaves"
+                  render={({ field: leafField }) => (
+                    <GrantPicker
+                      departments={catalog.departments}
+                      leaves={credentialPaths.map((path) => ({ id: path, label: path }))}
+                      branchValue={branchField.value}
+                      onBranchChange={branchField.onChange}
+                      leafValue={leafField.value}
+                      onLeafChange={leafField.onChange}
+                      leafEmptyText="Brak zapisanych sekretów."
+                    />
+                  )}
                 />
               )}
             />
@@ -263,127 +363,6 @@ export function ProjectFormDialog({
                 {...form.register("sandboxPaths")}
               />
             </div>
-          </section>
-
-          <Separator />
-
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium">Konektory</h3>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => connectors.append({ ...emptyConnector(), type: "mcp" })}
-                >
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  MCP
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => connectors.append({ ...emptyConnector(), type: "cli" })}
-                >
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  CLI
-                </Button>
-              </div>
-            </div>
-            {connectors.fields.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Brak konektorów. MCP podłącza serwer narzędzi, CLI udostępnia agentowi jedno
-                polecenie. Sekrety podawaj jako referencje do credential store.
-              </p>
-            ) : (
-              connectors.fields.map((field, index) => {
-                const type = form.watch(`connectors.${index}.type`)
-                return (
-                  <div key={field.id} className="space-y-2 rounded-md border p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium uppercase text-muted-foreground">
-                        {type === "mcp" ? "MCP server" : "CLI tool"}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <Controller
-                          control={form.control}
-                          name={`connectors.${index}.enabled`}
-                          render={({ field: enabledField }) => (
-                            <label className="flex items-center gap-1.5 text-xs">
-                              <Switch
-                                checked={enabledField.value}
-                                onCheckedChange={enabledField.onChange}
-                              />
-                              aktywny
-                            </label>
-                          )}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => connectors.remove(index)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      <div>
-                        <Label className="text-xs">Nazwa</Label>
-                        <Input
-                          className="mt-1"
-                          placeholder="np. Jira"
-                          {...form.register(`connectors.${index}.name`)}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">
-                          {type === "mcp" ? "URL serwera" : "Ścieżka do narzędzia"}
-                        </Label>
-                        <Input
-                          className="mt-1 font-mono text-xs"
-                          placeholder={
-                            type === "mcp"
-                              ? "https://mcp.example.com/sse"
-                              : "/usr/local/bin/narzedzie"
-                          }
-                          {...form.register(`connectors.${index}.target`)}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-xs">
-                        {type === "mcp" ? "Nagłówki" : "Zmienne środowiskowe"} → credential ref
-                        (nazwa=ścieżka, jedna na linię)
-                      </Label>
-                      <Textarea
-                        className="mt-1 font-mono text-xs"
-                        rows={2}
-                        placeholder={
-                          type === "mcp"
-                            ? "Authorization=jira/token"
-                            : "API_TOKEN=narzedzie/token"
-                        }
-                        {...form.register(`connectors.${index}.credentialRefs`)}
-                      />
-                    </div>
-                    {type === "cli" ? (
-                      <div>
-                        <Label className="text-xs">Stałe argumenty (opcjonalne)</Label>
-                        <Input
-                          className="mt-1 font-mono text-xs"
-                          placeholder="--format json"
-                          {...form.register(`connectors.${index}.baseArgs`)}
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                )
-              })
-            )}
           </section>
 
           <Separator />

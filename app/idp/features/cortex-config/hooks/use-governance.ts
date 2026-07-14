@@ -1,6 +1,7 @@
 "use client"
 
 import { coworkQueryKeys } from "@/features/cortex-cowork"
+import type { CoworkConnectorConfig, CoworkSkillSource } from "@cortex/types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { configApi, configQueryKeys, type GovernanceUpdate, type ProjectInput } from "../queries"
 
@@ -78,5 +79,46 @@ export function useDeleteCredential() {
   return useMutation({
     mutationFn: (path: string) => configApi.deleteCredential(path),
     onSettled: () => client.invalidateQueries({ queryKey: configQueryKeys.credentials() }),
+  })
+}
+
+export function useCatalog() {
+  return useQuery({
+    queryKey: configQueryKeys.catalog(),
+    queryFn: configApi.getCatalog,
+    retry: false,
+  })
+}
+
+/** Catalog mutations refresh the catalog, the project list, and the hub tiles. */
+function useInvalidateCatalog() {
+  const client = useQueryClient()
+  return () => {
+    void client.invalidateQueries({ queryKey: configQueryKeys.catalog() })
+    void client.invalidateQueries({ queryKey: coworkQueryKeys.projects() })
+  }
+}
+
+export function useUpdateDepartments() {
+  const invalidate = useInvalidateCatalog()
+  return useMutation({
+    mutationFn: (departments: string[]) => configApi.updateDepartments(departments),
+    onSettled: invalidate,
+  })
+}
+
+export function useUpdateSkillSources() {
+  const invalidate = useInvalidateCatalog()
+  return useMutation({
+    mutationFn: (sources: CoworkSkillSource[]) => configApi.updateSkillSources(sources),
+    onSettled: invalidate,
+  })
+}
+
+export function useUpdateConnectors() {
+  const invalidate = useInvalidateCatalog()
+  return useMutation({
+    mutationFn: (connectors: CoworkConnectorConfig[]) => configApi.updateConnectors(connectors),
+    onSettled: invalidate,
   })
 }

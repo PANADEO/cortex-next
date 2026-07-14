@@ -1,12 +1,11 @@
-import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
+import type {
+  CoworkConnectorConfig,
+  CoworkGovernanceConfig,
+  CoworkProjectConfig,
+} from "@cortex/types"
+import { grantMatches, secretPathGranted } from "@cortex/types"
 import { describe, expect, it } from "vitest"
-import {
-  effectiveSkillIds,
-  isAdmin,
-  rolesForUser,
-  sessionSkillIds,
-  visibleProjectsFor,
-} from "./store"
+import { grantedConnectors, isAdmin, rolesForUser, visibleProjectsFor } from "./store"
 
 function project(overrides: Partial<CoworkProjectConfig> = {}): CoworkProjectConfig {
   return {
@@ -17,7 +16,11 @@ function project(overrides: Partial<CoworkProjectConfig> = {}): CoworkProjectCon
     archetype: "task-chat",
     allowedRoleIds: ["analyst"],
     model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
-    connectors: [],
+    composition: {
+      skills: { branches: ["wspolne"], leaves: [] },
+      connectors: { branches: [], leaves: [] },
+      secrets: { branches: [], leaves: [] },
+    },
     sandbox: { mode: "local", allowedPaths: [] },
     createdAt: "",
     updatedAt: "",
@@ -25,16 +28,27 @@ function project(overrides: Partial<CoworkProjectConfig> = {}): CoworkProjectCon
   }
 }
 
+function connector(overrides: Partial<CoworkConnectorConfig> = {}): CoworkConnectorConfig {
+  return {
+    id: "conn",
+    department: "wspolne",
+    type: "cli",
+    name: "Conn",
+    enabled: true,
+    target: "/bin/x",
+    ...overrides,
+  }
+}
+
 function config(overrides: Partial<CoworkGovernanceConfig> = {}): CoworkGovernanceConfig {
   return {
-    version: 1,
-    skillGroups: [
-      { id: "reporting", name: "Reporting", skillIds: ["excel-report", "csv-export"] },
-      { id: "csv-only", name: "CSV only", skillIds: ["csv-export"] },
-    ],
+    version: 2,
+    departments: ["wspolne", "finanse", "finanse/kontroling"],
+    skillSources: [],
+    connectors: [],
     roles: [
-      { id: "analyst", name: "Analyst", skillGroupIds: ["reporting"] },
-      { id: "csv-user", name: "CSV user", skillGroupIds: ["csv-only"] },
+      { id: "analyst", name: "Analyst" },
+      { id: "csv-user", name: "CSV user" },
     ],
     userAssignments: {},
     adminEmails: [],
@@ -43,41 +57,46 @@ function config(overrides: Partial<CoworkGovernanceConfig> = {}): CoworkGovernan
   }
 }
 
-describe("effectiveSkillIds", () => {
-  it("unions skills across a user's roles, restricted to project-allowed roles", () => {
-    const cfg = config({
-      userAssignments: { "u@x.pl": ["analyst", "csv-user"] },
-    })
-    const proj = project({ allowedRoleIds: ["analyst"] })
-    // analyst allowed -> reporting skills; csv-user not allowed by project -> excluded
-    expect(effectiveSkillIds(cfg, proj, "u@x.pl").sort()).toEqual(["csv-export", "excel-report"])
+describe("grantMatches (department branches + leaves)", () => {
+  it("matches a resource under a granted branch (recursively)", () => {
+    const grant = { branches: ["finanse"], leaves: [] }
+    expect(grantMatches(grant, { id: "a", department: "finanse" })).toBe(true)
+    expect(grantMatches(grant, { id: "b", department: "finanse/kontroling" })).toBe(true)
+    expect(grantMatches(grant, { id: "c", department: "marketing" })).toBe(false)
   })
 
-  it("returns empty when the user holds no role the project allows", () => {
-    const cfg = config({ userAssignments: { "u@x.pl": ["csv-user"] } })
-    const proj = project({ allowedRoleIds: ["analyst"] })
-    expect(effectiveSkillIds(cfg, proj, "u@x.pl")).toEqual([])
-  })
-
-  it("is case-insensitive on email", () => {
-    const cfg = config({ userAssignments: { "u@x.pl": ["analyst"] } })
-    expect(effectiveSkillIds(cfg, project(), "U@X.PL").length).toBeGreaterThan(0)
+  it("matches a resource by leaf id regardless of department", () => {
+    const grant = { branches: [], leaves: ["special"] }
+    expect(grantMatches(grant, { id: "special", department: "marketing" })).toBe(true)
+    expect(grantMatches(grant, { id: "other", department: "marketing" })).toBe(false)
   })
 })
 
-describe("sessionSkillIds open mode", () => {
-  it("grants all allowed-role skills when there are no assignments (fresh install)", () => {
-    const cfg = config({ userAssignments: {} })
-    expect(sessionSkillIds(cfg, project(), "anyone@x.pl").sort()).toEqual([
-      "csv-export",
-      "excel-report",
-    ])
+describe("secretPathGranted", () => {
+  it("grants credential paths under a branch or by exact leaf", () => {
+    expect(secretPathGranted({ branches: ["finanse"], leaves: [] }, "finanse/api/token")).toBe(true)
+    expect(secretPathGranted({ branches: ["finanse"], leaves: [] }, "marketing/token")).toBe(false)
+    expect(secretPathGranted({ branches: [], leaves: ["x/y"] }, "x/y")).toBe(true)
   })
+})
 
-  it("enforces per-user entitlements once any assignment exists", () => {
-    const cfg = config({ userAssignments: { "someone@x.pl": ["analyst"] } })
-    // A different, unassigned user now gets nothing.
-    expect(sessionSkillIds(cfg, project(), "stranger@x.pl")).toEqual([])
+describe("grantedConnectors", () => {
+  it("returns enabled catalog connectors the composition grants", () => {
+    const cfg = config({
+      connectors: [
+        connector({ id: "fin", department: "finanse" }),
+        connector({ id: "mkt", department: "marketing" }),
+        connector({ id: "off", department: "finanse", enabled: false }),
+      ],
+    })
+    const proj = project({
+      composition: {
+        skills: { branches: [], leaves: [] },
+        connectors: { branches: ["finanse"], leaves: [] },
+        secrets: { branches: [], leaves: [] },
+      },
+    })
+    expect(grantedConnectors(cfg, proj).map((c) => c.id)).toEqual(["fin"])
   })
 })
 
@@ -92,7 +111,6 @@ describe("isAdmin bootstrap", () => {
     expect(isAdmin(cfg, "boss@x.pl")).toBe(true)
     expect(isAdmin(cfg, "BOSS@X.PL")).toBe(true)
     expect(isAdmin(cfg, "other@x.pl")).toBe(false)
-    expect(isAdmin(cfg, undefined)).toBe(false)
   })
 })
 
@@ -109,7 +127,11 @@ describe("visibleProjectsFor", () => {
     const cfg = config({
       projects: [project({ id: "a" }), project({ id: "b", allowedRoleIds: ["nobody"] })],
     })
-    expect(visibleProjectsFor(cfg, "u@x.pl").map((p) => p.id).sort()).toEqual(["a", "b"])
+    expect(
+      visibleProjectsFor(cfg, "u@x.pl")
+        .map((p) => p.id)
+        .sort(),
+    ).toEqual(["a", "b"])
   })
 
   it("filters by role once assignments exist", () => {
@@ -123,7 +145,7 @@ describe("visibleProjectsFor", () => {
     expect(visibleProjectsFor(cfg, "u@x.pl").map((p) => p.id)).toEqual(["csv-proj"])
   })
 
-  it("shows everything to an admin even without matching roles", () => {
+  it("shows everything to an explicit admin even without matching roles", () => {
     const cfg = config({
       projects: [project({ id: "restricted", allowedRoleIds: ["nobody"] })],
       userAssignments: { "boss@x.pl": [] },

@@ -11,7 +11,11 @@ function validBody(overrides: Record<string, unknown> = {}): Record<string, unkn
     archetype: "task-chat",
     allowedRoleIds: ["analyst"],
     model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
-    connectors: [],
+    composition: {
+      skills: { branches: ["wspolne"], leaves: [] },
+      connectors: { branches: [], leaves: [] },
+      secrets: { branches: [], leaves: [] },
+    },
     sandbox: { mode: "local", allowedPaths: [] },
     ...overrides,
   }
@@ -59,28 +63,22 @@ describe("parseProjectBody", () => {
     expect("error" in parsed).toBe(true)
   })
 
-  it("validates connector shape", () => {
-    const parsed = parseProjectBody(
-      validBody({ connectors: [{ id: "x", type: "smtp", name: "X", enabled: true, target: "y" }] }),
-    )
+  it("rejects a malformed composition", () => {
+    const parsed = parseProjectBody(validBody({ composition: { skills: { branches: ["x"] } } }))
     expect("error" in parsed).toBe(true)
   })
 
-  it("preserves a well-formed connector", () => {
+  it("preserves composition grants", () => {
     const value = expectValid(
       validBody({
-        connectors: [
-          {
-            id: "jira",
-            type: "mcp",
-            name: "Jira",
-            enabled: true,
-            target: "https://mcp/sse",
-            credentialRefs: { Authorization: "jira/token" },
-          },
-        ],
+        composition: {
+          skills: { branches: ["finanse"], leaves: ["excel-report"] },
+          connectors: { branches: [], leaves: ["jira"] },
+          secrets: { branches: ["finanse"], leaves: [] },
+        },
       }),
     )
-    expect(value.connectors[0]?.type).toBe("mcp")
+    expect(value.composition.skills.leaves).toEqual(["excel-report"])
+    expect(value.composition.connectors.leaves).toEqual(["jira"])
   })
 })

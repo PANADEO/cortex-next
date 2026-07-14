@@ -13,7 +13,7 @@ import type {
   CoworkSkillSummary,
 } from "../types"
 import { COWORK_DATA_DIR } from "@/lib/cortex-governance/store"
-import { SKILLS_SOURCE_DIR, listSkillCatalog } from "./skills-catalog"
+import type { ResolvedSkill } from "./skills-catalog"
 
 export interface SandboxSession {
   id: string
@@ -69,15 +69,15 @@ function sandboxPaths(sessionId: string) {
 }
 
 /**
- * Creates a sandboxed session for a project, copying only the skills the
- * project's composition grants (`skillIds`) into the sandbox. The runner
- * later loads skills from the sandbox copy, so this filter IS the governance
+ * Creates a sandboxed session for a project, copying the skills the project's
+ * composition grants (each from its own source folder) into the sandbox. The
+ * runner loads skills from the sandbox copy, so this copy IS the governance
  * boundary - a skill that is not copied does not exist for the agent.
  * `contextWindow` seeds the session's context meter from the project's model.
  */
 export async function createSandboxSession(
   project: CoworkProjectConfig,
-  skillIds: string[],
+  grantedSkills: ResolvedSkill[],
   contextWindow: number,
 ): Promise<SandboxSession> {
   const id = randomUUID()
@@ -86,18 +86,23 @@ export async function createSandboxSession(
   await mkdir(skillsDir, { recursive: true })
   await mkdir(artifactsDir, { recursive: true })
 
-  const available = await listSkillCatalog(SKILLS_SOURCE_DIR)
-  const wanted = new Set(skillIds)
-  const skills = available.filter((skill) => wanted.has(skill.id))
-  // A failed cp rejects the whole create, so the already-parsed `skills`
-  // list is exactly what landed in the sandbox - no need to re-parse the copy.
+  // A failed cp rejects the whole create, so `grantedSkills` is exactly what
+  // landed in the sandbox. Copy each from its own source folder (skills can
+  // come from different departmental sources).
   await Promise.all(
-    skills.map((skill) =>
-      cp(path.join(SKILLS_SOURCE_DIR, skill.id), path.join(skillsDir, skill.id), {
-        recursive: true,
-      }),
+    grantedSkills.map((skill) =>
+      cp(
+        path.join(skill.sourceFolder, skill.dirName),
+        path.join(skillsDir, skill.dirName),
+        { recursive: true },
+      ),
     ),
   )
+  const skills: CoworkSkillSummary[] = grantedSkills.map((skill) => ({
+    id: skill.id,
+    name: skill.name,
+    description: skill.description,
+  }))
   const welcome: ChatMessage = {
     id: randomUUID(),
     role: "assistant",
@@ -268,8 +273,8 @@ function buildWelcomeMessage(
 ): string {
   if (skills.length === 0) {
     return [
-      `${project.name} is ready, but no skills are enabled for your role yet.`,
-      "Ask your administrator to assign you a role with skill groups in Cortex Config.",
+      `${project.name} is ready, but no skills are composed into it yet.`,
+      "Ask your administrator to grant skill departments to this project in Cortex Config.",
     ].join("\n\n")
   }
   const list = skills.map((skill) => `- ${skill.name} - ${skill.description}`).join("\n")

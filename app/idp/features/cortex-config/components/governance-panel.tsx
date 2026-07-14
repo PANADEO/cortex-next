@@ -1,8 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useCoworkSkillCatalog } from "@/features/cortex-cowork"
-import type { CoworkGovernanceConfig, CoworkRole, CoworkSkillGroup } from "@cortex/types"
+import type { CoworkGovernanceConfig, CoworkRole } from "@cortex/types"
 import {
   Badge,
   Button,
@@ -27,51 +26,39 @@ import { Controller, useForm } from "react-hook-form"
 import { useGovernanceConfig, useUpdateGovernance } from "../hooks/use-governance"
 import {
   assignmentFormSchema,
-  namedSetFormSchema,
+  roleFormSchema,
   type AssignmentFormValues,
-  type NamedSetFormValues,
+  type RoleFormValues,
 } from "../schemas"
 import { CheckboxList, FieldError } from "./form-fields"
 
-// --- Named-set dialog (roles and skill groups share one form shape) ----------
+// --- Role dialog (role = pure access gate: id, name, description) -------------
 
-interface NamedSetDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  title: string
-  membersLabel: string
-  memberOptions: Array<{ id: string; label: string; hint?: string }>
-  emptyText: string
-  /** Present when editing an existing entity. */
-  initial?: NamedSetFormValues | undefined
-  isSaving: boolean
-  onSubmit: (values: NamedSetFormValues) => Promise<void>
-}
+const EMPTY_ROLE: RoleFormValues = { id: "", name: "", description: "" }
 
-const EMPTY_NAMED_SET: NamedSetFormValues = { id: "", name: "", description: "", memberIds: [] }
-
-function NamedSetDialog({
+function RoleDialog({
   open,
   onOpenChange,
-  title,
-  membersLabel,
-  memberOptions,
-  emptyText,
-  initial,
+  role,
   isSaving,
   onSubmit,
-}: NamedSetDialogProps) {
-  const form = useForm<NamedSetFormValues>({
-    resolver: zodResolver(namedSetFormSchema),
-    defaultValues: initial ?? EMPTY_NAMED_SET,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  role?: CoworkRole | undefined
+  isSaving: boolean
+  onSubmit: (values: RoleFormValues) => Promise<void>
+}) {
+  const form = useForm<RoleFormValues>({
+    resolver: zodResolver(roleFormSchema),
+    defaultValues: role ?? EMPTY_ROLE,
   })
 
   useEffect(() => {
     if (!open) return
-    form.reset(initial ?? EMPTY_NAMED_SET)
-    // Reset only when the dialog opens or the edited entity changes.
+    form.reset(role ?? EMPTY_ROLE)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initial])
+  }, [open, role])
 
   const submit = form.handleSubmit(async (values) => {
     await onSubmit(values)
@@ -80,49 +67,31 @@ function NamedSetDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>{role ? `Edytuj rolę: ${role.name}` : "Nowa rola"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="named-set-id">Identyfikator</Label>
-              <Input
-                id="named-set-id"
-                className="mt-1"
-                disabled={Boolean(initial)}
-                {...form.register("id")}
-              />
+              <Label htmlFor="role-id">Identyfikator</Label>
+              <Input id="role-id" className="mt-1" disabled={Boolean(role)} {...form.register("id")} />
               <FieldError message={form.formState.errors.id?.message} />
             </div>
             <div>
-              <Label htmlFor="named-set-name">Nazwa</Label>
-              <Input id="named-set-name" className="mt-1" {...form.register("name")} />
+              <Label htmlFor="role-name">Nazwa</Label>
+              <Input id="role-name" className="mt-1" {...form.register("name")} />
               <FieldError message={form.formState.errors.name?.message} />
             </div>
           </div>
           <div>
-            <Label htmlFor="named-set-description">Opis</Label>
-            <Input id="named-set-description" className="mt-1" {...form.register("description")} />
+            <Label htmlFor="role-description">Opis</Label>
+            <Input id="role-description" className="mt-1" {...form.register("description")} />
           </div>
-          <div>
-            <Label>{membersLabel}</Label>
-            <div className="mt-2">
-              <Controller
-                control={form.control}
-                name="memberIds"
-                render={({ field }) => (
-                  <CheckboxList
-                    options={memberOptions}
-                    value={field.value}
-                    onChange={field.onChange}
-                    emptyText={emptyText}
-                  />
-                )}
-              />
-            </div>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Rola to bramka dostępu - decyduje, kto widzi i otwiera kafelki. Zawartość (skille,
+            konektory) definiuje kompozycja projektu.
+          </p>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Anuluj
@@ -138,7 +107,7 @@ function NamedSetDialog({
   )
 }
 
-// --- Assignment dialog ---------------------------------------------------------
+// --- Assignment dialog --------------------------------------------------------
 
 function AssignmentDialog({
   open,
@@ -151,7 +120,6 @@ function AssignmentDialog({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Present when editing an existing assignment. */
   email?: string | undefined
   currentRoleIds: string[]
   roles: CoworkRole[]
@@ -225,8 +193,6 @@ function AssignmentDialog({
   )
 }
 
-// --- Shared list row -------------------------------------------------------------
-
 function EntityRow({
   name,
   badges,
@@ -265,18 +231,14 @@ function EntityRow({
   )
 }
 
-// --- Panel ----------------------------------------------------------------------
-
 type DialogState =
   | { kind: "none" }
-  | { kind: "group"; group?: CoworkSkillGroup }
   | { kind: "role"; role?: CoworkRole }
   | { kind: "assignment"; email?: string }
 
 export function GovernancePanel() {
   const governance = useGovernanceConfig()
   const updateGovernance = useUpdateGovernance()
-  const skillCatalog = useCoworkSkillCatalog()
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" })
   const [adminInput, setAdminInput] = useState("")
 
@@ -291,19 +253,12 @@ export function GovernancePanel() {
   }
 
   const config: CoworkGovernanceConfig = governance.data
-  const skillOptions = (skillCatalog.data ?? []).map((skill) => ({
-    id: skill.id,
-    label: skill.name,
-  }))
   const openMode = Object.keys(config.userAssignments).length === 0
 
-  const saveGroups = (groups: CoworkSkillGroup[]) =>
-    updateGovernance.mutateAsync({ skillGroups: groups })
   const saveRoles = (roles: CoworkRole[]) => updateGovernance.mutateAsync({ roles })
   const saveAssignments = (assignments: Record<string, string[]>) =>
     updateGovernance.mutateAsync({ userAssignments: assignments })
 
-  const editedGroup = dialog.kind === "group" ? dialog.group : undefined
   const editedRole = dialog.kind === "role" ? dialog.role : undefined
 
   return (
@@ -311,8 +266,7 @@ export function GovernancePanel() {
       {openMode ? (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
           <strong>Tryb otwarty:</strong> nikt nie ma jeszcze przypisanej roli, więc każdy użytkownik
-          widzi wszystkie kafelki i skille projektów. Governance włączy się przy pierwszym
-          przypisaniu roli.
+          widzi wszystkie kafelki. Governance włączy się przy pierwszym przypisaniu roli.
         </div>
       ) : null}
 
@@ -321,40 +275,8 @@ export function GovernancePanel() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">Grupy skilli</CardTitle>
-                <CardDescription>Nazwane zestawy skilli przydzielane rolom</CardDescription>
-              </div>
-              <Button size="sm" onClick={() => setDialog({ kind: "group" })}>
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-                Grupa
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {config.skillGroups.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Brak grup.</p>
-            ) : (
-              config.skillGroups.map((group) => (
-                <EntityRow
-                  key={group.id}
-                  name={group.name}
-                  badges={group.skillIds}
-                  onEdit={() => setDialog({ kind: "group", group })}
-                  onDelete={() =>
-                    void saveGroups(config.skillGroups.filter((g) => g.id !== group.id))
-                  }
-                />
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base">Role</CardTitle>
-                <CardDescription>Role łączą grupy skilli z użytkownikami</CardDescription>
+                <CardTitle className="text-base">Role (bramki dostępu)</CardTitle>
+                <CardDescription>Kto może otwierać kafelki projektów</CardDescription>
               </div>
               <Button size="sm" onClick={() => setDialog({ kind: "role" })}>
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
@@ -370,7 +292,7 @@ export function GovernancePanel() {
                 <EntityRow
                   key={role.id}
                   name={role.name}
-                  badges={role.skillGroupIds}
+                  badges={[role.id]}
                   onEdit={() => setDialog({ kind: "role", role })}
                   onDelete={() => void saveRoles(config.roles.filter((r) => r.id !== role.id))}
                 />
@@ -413,7 +335,7 @@ export function GovernancePanel() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="xl:col-span-2">
           <CardHeader className="pb-3">
             <div>
               <CardTitle className="text-base">Administratorzy</CardTitle>
@@ -474,58 +396,10 @@ export function GovernancePanel() {
         </Card>
       </div>
 
-      <NamedSetDialog
-        open={dialog.kind === "group"}
-        onOpenChange={(open) => setDialog(open ? dialog : { kind: "none" })}
-        title={editedGroup ? `Edytuj grupę: ${editedGroup.name}` : "Nowa grupa skilli"}
-        membersLabel="Skille w grupie"
-        memberOptions={skillOptions}
-        emptyText="Katalog skilli jest pusty."
-        initial={
-          editedGroup
-            ? {
-                id: editedGroup.id,
-                name: editedGroup.name,
-                description: editedGroup.description ?? "",
-                memberIds: editedGroup.skillIds,
-              }
-            : undefined
-        }
-        isSaving={updateGovernance.isPending}
-        onSubmit={async (values) => {
-          const next = config.skillGroups.filter((group) => group.id !== values.id)
-          await saveGroups([
-            ...next,
-            {
-              id: values.id,
-              name: values.name,
-              ...(values.description ? { description: values.description } : {}),
-              skillIds: values.memberIds,
-            },
-          ])
-        }}
-      />
-      <NamedSetDialog
+      <RoleDialog
         open={dialog.kind === "role"}
         onOpenChange={(open) => setDialog(open ? dialog : { kind: "none" })}
-        title={editedRole ? `Edytuj rolę: ${editedRole.name}` : "Nowa rola"}
-        membersLabel="Grupy skilli"
-        memberOptions={config.skillGroups.map((group) => ({
-          id: group.id,
-          label: group.name,
-          hint: `${group.skillIds.length} skilli`,
-        }))}
-        emptyText="Najpierw utwórz grupę skilli."
-        initial={
-          editedRole
-            ? {
-                id: editedRole.id,
-                name: editedRole.name,
-                description: editedRole.description ?? "",
-                memberIds: editedRole.skillGroupIds,
-              }
-            : undefined
-        }
+        role={editedRole}
         isSaving={updateGovernance.isPending}
         onSubmit={async (values) => {
           const next = config.roles.filter((role) => role.id !== values.id)
@@ -535,7 +409,6 @@ export function GovernancePanel() {
               id: values.id,
               name: values.name,
               ...(values.description ? { description: values.description } : {}),
-              skillGroupIds: values.memberIds,
             },
           ])
         }}

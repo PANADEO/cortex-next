@@ -4,8 +4,8 @@ import {
   listSessionSummaries,
   toCoworkSession,
 } from "@/features/cortex-cowork/server/sandbox-store"
-import { requestEmail } from "@/lib/cortex-governance/request-identity"
-import { readGovernanceConfig, sessionSkillIds } from "@/lib/cortex-governance/store"
+import { resolveGrantedSkills } from "@/features/cortex-cowork/server/skills-catalog"
+import { readGovernanceConfig } from "@/lib/cortex-governance/store"
 import { DEFAULT_COWORK_PROJECT_ID } from "@cortex/types"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
@@ -31,8 +31,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ message: `Unknown project: ${projectId}` }, { status: 404 })
     }
 
-    const skillIds = sessionSkillIds(config, project, requestEmail(request))
-    const session = await createSandboxSession(project, skillIds, contextWindowFor(project.model))
+    // Access to the tile is gated by roles (visibleProjectsFor); the toolkit
+    // inside is the project's composition, same for every user who can open it.
+    const grantedSkills = await resolveGrantedSkills(config, project)
+    const session = await createSandboxSession(
+      project,
+      grantedSkills,
+      contextWindowFor(project.model),
+    )
     return NextResponse.json(toCoworkSession(session), { status: 201 })
   } catch (error) {
     return NextResponse.json(

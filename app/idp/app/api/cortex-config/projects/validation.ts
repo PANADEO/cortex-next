@@ -1,8 +1,9 @@
 import type { UpsertProjectInput } from "@/lib/cortex-governance/store"
 import type {
-  CoworkConnectorConfig,
   CoworkModelConfig,
+  CoworkProjectComposition,
   CoworkProjectConfig,
+  CoworkResourceGrant,
 } from "@cortex/types"
 import { COWORK_SLUG_PATTERN } from "@cortex/types"
 
@@ -24,15 +25,19 @@ function isModelConfig(value: unknown): value is CoworkModelConfig {
   return true
 }
 
-function isConnector(value: unknown): value is CoworkConnectorConfig {
+function isGrant(value: unknown): value is CoworkResourceGrant {
   if (typeof value !== "object" || value === null) return false
-  const connector = value as CoworkConnectorConfig
+  const grant = value as CoworkResourceGrant
+  return isStringArray(grant.branches) && isStringArray(grant.leaves)
+}
+
+function isComposition(value: unknown): value is CoworkProjectComposition {
+  if (typeof value !== "object" || value === null) return false
+  const composition = value as CoworkProjectComposition
   return (
-    typeof connector.id === "string" &&
-    (connector.type === "mcp" || connector.type === "cli") &&
-    typeof connector.name === "string" &&
-    typeof connector.enabled === "boolean" &&
-    typeof connector.target === "string"
+    isGrant(composition.skills) &&
+    isGrant(composition.connectors) &&
+    isGrant(composition.secrets)
   )
 }
 
@@ -53,8 +58,8 @@ export function parseProjectBody(body: unknown): ParsedProject {
   if (!isModelConfig(input.model)) {
     return { error: "model needs provider (anthropic | openai-compatible), modelId, and baseUrl for openai-compatible" }
   }
-  if (!Array.isArray(input.connectors) || !input.connectors.every(isConnector)) {
-    return { error: "connectors must be an array of connector configs" }
+  if (!isComposition(input.composition)) {
+    return { error: "composition needs skills/connectors/secrets grants (branches[] + leaves[])" }
   }
   if (
     typeof input.sandbox !== "object" ||
@@ -85,7 +90,7 @@ export function parseProjectBody(body: unknown): ParsedProject {
       allowedRoleIds: input.allowedRoleIds,
       model: input.model,
       ...(input.systemPrompt ? { systemPrompt: input.systemPrompt } : {}),
-      connectors: input.connectors,
+      composition: input.composition,
       sandbox: { mode: input.sandbox.mode, allowedPaths: input.sandbox.allowedPaths },
       ...(input.artifactExport ? { artifactExport: input.artifactExport } : {}),
     },

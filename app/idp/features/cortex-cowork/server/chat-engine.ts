@@ -11,12 +11,13 @@ import type {
   CoworkSkillId,
 } from "../types"
 import {
+  gateCredentials,
   readCredentialsDocument,
   resolveCredential,
   resolveCredentialRefs,
   type CredentialsDocument,
 } from "@/lib/cortex-governance/credentials"
-import { getProject } from "@/lib/cortex-governance/store"
+import { grantedConnectors, readGovernanceConfig } from "@/lib/cortex-governance/store"
 import { appendMessage, recordUsage, registerArtifact, type SandboxSession } from "./sandbox-store"
 import { generateCsvExport } from "./skills/csv-export"
 import { generateExcelReport } from "./skills/excel-report"
@@ -217,7 +218,8 @@ async function runFlueTurn(
   const dir = runnerDir()
   const flueCli = path.join(dir, "node_modules", "@flue", "cli", "bin", "flue.mjs")
   const nodeBin = process.env.COWORK_NODE_BIN ?? "node"
-  const project = await getProject(session.projectId)
+  const config = await readGovernanceConfig()
+  const project = config.projects.find((candidate) => candidate.id === session.projectId)
 
   const before = await listArtifactFiles(session.artifactsDir)
   const input = JSON.stringify({
@@ -237,8 +239,12 @@ async function runFlueTurn(
   // (Env names are read on the runner side in cowork-runner/src/env.ts.)
   env.COWORK_SANDBOX_DIR = session.sandboxDir
   if (project) {
-    // One credentials read covers the model key and every connector.
-    const credentials = await readCredentialsDocument()
+    // One credentials read covers the model key and every connector, gated to
+    // the department secrets this project was granted.
+    const credentials = gateCredentials(
+      await readCredentialsDocument(),
+      project.composition.secrets,
+    )
     env.COWORK_MODEL_CONFIG = JSON.stringify(modelConfigForRunner(project, credentials))
     if (project.systemPrompt) env.COWORK_SYSTEM_PROMPT = project.systemPrompt
     // Configs written before sandbox modes existed carry no `mode` field.
@@ -246,7 +252,7 @@ async function runFlueTurn(
     if (project.sandbox.allowedPaths.length > 0) {
       env.COWORK_SANDBOX_PATHS = JSON.stringify(project.sandbox.allowedPaths)
     }
-    const connectors = connectorsForRunner(project.connectors, credentials)
+    const connectors = connectorsForRunner(grantedConnectors(config, project), credentials)
     if (connectors.length > 0) {
       env.COWORK_CONNECTORS = JSON.stringify(connectors)
     }

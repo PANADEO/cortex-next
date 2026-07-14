@@ -218,6 +218,12 @@ export const CORTEX_CONFIG_NAV: TileMenuSection[] = [
         href: "/cortex-config/projects",
       },
       {
+        id: "catalog",
+        label: "Katalog zasobów",
+        icon: Database,
+        href: "/cortex-config/catalog",
+      },
+      {
         id: "roles",
         label: "Role i uprawnienia",
         icon: Users,

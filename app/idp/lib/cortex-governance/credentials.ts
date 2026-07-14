@@ -1,4 +1,6 @@
 import path from "node:path"
+import type { CoworkResourceGrant } from "@cortex/types"
+import { secretPathGranted } from "@cortex/types"
 import { readJsonOr, writeJsonAtomic } from "./json-file"
 import { COWORK_DATA_DIR } from "./store"
 
@@ -56,6 +58,23 @@ export async function deleteCredential(credentialPath: string): Promise<boolean>
   delete doc.values[credentialPath]
   await writeDocument(doc)
   return true
+}
+
+/**
+ * Restricts a credentials document to the paths a project's secret grant
+ * allows. Everything a project resolves (model key, connector refs) goes
+ * through the gated document, so a project can never reference secrets from a
+ * department it wasn't granted - the data-zone boundary is technical.
+ */
+export function gateCredentials(
+  doc: CredentialsDocument,
+  grant: CoworkResourceGrant,
+): CredentialsDocument {
+  const values: Record<string, string> = {}
+  for (const [credentialPath, value] of Object.entries(doc.values)) {
+    if (secretPathGranted(grant, credentialPath)) values[credentialPath] = value
+  }
+  return { version: 1, values }
 }
 
 /** Resolves one ref against a preloaded document. Returns undefined when unset. */

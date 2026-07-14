@@ -1,3 +1,4 @@
+export { CatalogPanel } from "./components/catalog-panel"
 export { CredentialsPanel } from "./components/credentials-panel"
 export { GovernancePanel } from "./components/governance-panel"
 export { ProjectsPanel } from "./components/projects-panel"

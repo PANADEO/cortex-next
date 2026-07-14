@@ -1,19 +1,25 @@
 import path from "node:path"
-import { resolveAppDataDir } from "@/lib/data-dir"
+import { builtinSkillsDir, resolveAppDataDir } from "@/lib/data-dir"
 import type {
+  CoworkConnectorConfig,
   CoworkGovernanceConfig,
   CoworkProjectConfig,
   CoworkRole,
 } from "@cortex/types"
-import { DEFAULT_COWORK_PROJECT_ID } from "@cortex/types"
+import {
+  DEFAULT_COWORK_PROJECT_ID,
+  DEFAULT_DEPARTMENT,
+  emptyComposition,
+  grantMatches,
+} from "@cortex/types"
 import { emailsMatch } from "@cortex/utils"
 import { readJsonOr, writeJsonAtomic } from "./json-file"
 
-// Governance config store for the cortex-config tile: skill groups, roles,
-// user assignments and project tiles, persisted as one JSON document on disk.
-// Same trade-off as sandbox-store: real disk instead of module state (Turbopack
-// route isolation), single-writer semantics are fine for an on-prem admin
-// panel.
+// Governance config store for the cortex-config tile: department tree, skill
+// sources, connector catalog, roles (access gates), user assignments and
+// project tiles (with composition grants), persisted as one JSON document.
+// Real disk instead of module state (Turbopack route isolation), single-writer
+// semantics are fine for an on-prem admin panel.
 
 function resolveDataDir(): string {
   return process.env.COWORK_DATA_DIR ?? resolveAppDataDir("cortex-cowork")
@@ -27,29 +33,25 @@ function nowIso(): string {
 }
 
 /**
- * First-run seed: today's hardcoded cortex-cowork tile becomes the first
- * governed project, so existing chat routes keep working with no manual setup.
+ * First-run seed: one department, the built-in skills as a source, and the
+ * legacy cortex-cowork tile composed from that department so existing chat
+ * routes work with no manual setup.
  */
 function seedConfig(): CoworkGovernanceConfig {
   const createdAt = nowIso()
   return {
-    version: 1,
-    skillGroups: [
+    version: 2,
+    departments: [DEFAULT_DEPARTMENT],
+    skillSources: [
       {
-        id: "reporting",
-        name: "Reporting",
-        description: "Spreadsheet and data-export deliverables",
-        skillIds: ["excel-report", "csv-export"],
+        id: "builtin",
+        name: "Wbudowane skille",
+        folderPath: builtinSkillsDir(),
+        department: DEFAULT_DEPARTMENT,
       },
     ],
-    roles: [
-      {
-        id: "analyst",
-        name: "Analyst",
-        description: "Default role: full reporting skill set",
-        skillGroupIds: ["reporting"],
-      },
-    ],
+    connectors: [],
+    roles: [{ id: "analyst", name: "Analyst", description: "Domyślna rola dostępu" }],
     userAssignments: {},
     adminEmails: [],
     projects: [
@@ -62,7 +64,11 @@ function seedConfig(): CoworkGovernanceConfig {
         archetype: "task-chat",
         allowedRoleIds: ["analyst"],
         model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
-        connectors: [],
+        composition: {
+          skills: { branches: [DEFAULT_DEPARTMENT], leaves: [] },
+          connectors: { branches: [], leaves: [] },
+          secrets: { branches: [], leaves: [] },
+        },
         sandbox: { mode: "local", allowedPaths: [] },
         createdAt,
         updatedAt: createdAt,
@@ -71,14 +77,88 @@ function seedConfig(): CoworkGovernanceConfig {
   }
 }
 
+// --- v1 -> v2 migration -------------------------------------------------------
+
+interface LegacyProjectConfig extends Omit<CoworkProjectConfig, "composition"> {
+  connectors?: CoworkConnectorConfig[]
+}
+interface LegacyConfig {
+  version: 1
+  skillGroups?: unknown
+  roles?: Array<{ id: string; name: string; description?: string }>
+  userAssignments?: Record<string, string[]>
+  adminEmails?: string[]
+  projects?: LegacyProjectConfig[]
+}
+
+/**
+ * v1 stored skills as flat groups + role->group entitlement and connectors
+ * inline per project. v2 is a departmental catalog + project composition.
+ * Migration: everything lands in the default department, each project grants
+ * that department's skills and keeps its (now catalog-promoted) connectors.
+ */
+function migrateV1(legacy: LegacyConfig): CoworkGovernanceConfig {
+  const connectors: CoworkConnectorConfig[] = []
+  const projects: CoworkProjectConfig[] = (legacy.projects ?? []).map((project) => {
+    const inline = project.connectors ?? []
+    for (const connector of inline) {
+      if (!connectors.some((existing) => existing.id === connector.id)) {
+        connectors.push({ ...connector, department: DEFAULT_DEPARTMENT })
+      }
+    }
+    const { connectors: _legacyConnectors, ...rest } = project
+    void _legacyConnectors
+    return {
+      ...rest,
+      composition: {
+        skills: { branches: [DEFAULT_DEPARTMENT], leaves: [] },
+        connectors: { branches: [], leaves: inline.map((connector) => connector.id) },
+        secrets: { branches: [], leaves: [] },
+      },
+    }
+  })
+
+  return {
+    version: 2,
+    departments: [DEFAULT_DEPARTMENT],
+    skillSources: [
+      {
+        id: "builtin",
+        name: "Wbudowane skille",
+        folderPath: builtinSkillsDir(),
+        department: DEFAULT_DEPARTMENT,
+      },
+    ],
+    connectors,
+    roles: (legacy.roles ?? []).map((role) => ({
+      id: role.id,
+      name: role.name,
+      ...(role.description ? { description: role.description } : {}),
+    })),
+    userAssignments: legacy.userAssignments ?? {},
+    adminEmails: legacy.adminEmails ?? [],
+    projects,
+  }
+}
+
+// --- persistence --------------------------------------------------------------
+
 export async function readGovernanceConfig(): Promise<CoworkGovernanceConfig> {
   let seeded = false
-  const config = await readJsonOr<CoworkGovernanceConfig>(CONFIG_FILE, () => {
+  const raw = await readJsonOr<CoworkGovernanceConfig | LegacyConfig>(CONFIG_FILE, () => {
     seeded = true
     return seedConfig()
   })
-  if (seeded) await writeJsonAtomic(CONFIG_FILE, config)
-  return config
+  if (seeded) {
+    await writeJsonAtomic(CONFIG_FILE, raw)
+    return raw as CoworkGovernanceConfig
+  }
+  if ((raw as LegacyConfig).version === 1) {
+    const migrated = migrateV1(raw as LegacyConfig)
+    await writeJsonAtomic(CONFIG_FILE, migrated)
+    return migrated
+  }
+  return raw as CoworkGovernanceConfig
 }
 
 export async function saveGovernanceConfig(config: CoworkGovernanceConfig): Promise<void> {
@@ -124,11 +204,12 @@ export async function deleteProject(
   return true
 }
 
+// --- access gates -------------------------------------------------------------
+
 /**
- * The "activates on first entry" backbone of this layer: until the admin
- * creates the first user->role assignment, governance is OPEN - every user
- * sees every enabled tile and gets the tile's full skill set. These two
- * predicates are the only definition of that rule.
+ * The "activates on first entry" backbone: until the admin creates the first
+ * user->role assignment, governance is OPEN - every user sees every enabled
+ * tile. This predicate is the only definition of that rule.
  */
 export function isOpenMode(config: CoworkGovernanceConfig): boolean {
   return Object.keys(config.userAssignments).length === 0
@@ -148,56 +229,11 @@ export function rolesForUser(config: CoworkGovernanceConfig, email: string): Cow
   return config.roles.filter((role) => roleIds.includes(role.id))
 }
 
-/** Union of skill ids granted by a set of roles (via their skill groups). */
-function skillIdsForRoles(config: CoworkGovernanceConfig, roles: CoworkRole[]): string[] {
-  const groupIds = new Set(roles.flatMap((role) => role.skillGroupIds))
-  const skillIds = new Set<string>()
-  for (const group of config.skillGroups) {
-    if (!groupIds.has(group.id)) continue
-    for (const skillId of group.skillIds) skillIds.add(skillId)
-  }
-  return [...skillIds]
-}
-
 /**
- * Effective skill ids for a user inside a project: union of skills from the
- * groups attached to the user's roles, restricted to roles the project allows.
- * Users with no matching role get an empty set - the tile is not for them.
- */
-export function effectiveSkillIds(
-  config: CoworkGovernanceConfig,
-  project: CoworkProjectConfig,
-  email: string,
-): string[] {
-  const userRoles = rolesForUser(config, email).filter((role) =>
-    project.allowedRoleIds.includes(role.id),
-  )
-  return skillIdsForRoles(config, userRoles)
-}
-
-/**
- * Skill ids a new session should be provisioned with. In open mode (and for
- * identity-less dev requests) every user gets the union of skills behind the
- * project's allowed roles, so the tile works out of the box; once the admin
- * assigns the first role, entitlements are enforced per user.
- */
-export function sessionSkillIds(
-  config: CoworkGovernanceConfig,
-  project: CoworkProjectConfig,
-  email: string | undefined,
-): string[] {
-  if (isOpenMode(config) || !email) {
-    const allowedRoles = config.roles.filter((role) => project.allowedRoleIds.includes(role.id))
-    return skillIdsForRoles(config, allowedRoles)
-  }
-  return effectiveSkillIds(config, project, email)
-}
-
-/**
- * Admin check with the same "activates on first entry" semantics as role
- * assignments: while adminEmails is empty (fresh install) every authenticated
- * user may administer, so the first admin can bootstrap themselves from the
- * UI. Adding the first email locks the panel down.
+ * Admin check with the same bootstrap semantics as role assignments: while
+ * adminEmails is empty (fresh install) every authenticated user may
+ * administer, so the first admin can bootstrap from the UI. Adding the first
+ * email locks the panel down.
  */
 export function isAdmin(config: CoworkGovernanceConfig, email: string | undefined): boolean {
   if (isBootstrapAdminMode(config)) return true
@@ -205,13 +241,10 @@ export function isAdmin(config: CoworkGovernanceConfig, email: string | undefine
 }
 
 /**
- * Projects a user should see as tiles: enabled, and either governance is in
- * open mode (no assignments yet), or the user holds one of the project's
- * allowed roles. An EXPLICIT admin (on adminEmails) sees everything so they
- * can reach misconfigured tiles - but bootstrap-admin (empty adminEmails)
- * does NOT bypass the role filter here: once the admin has started assigning
- * roles, a user with a limited role must not still see every tile just
- * because no admin email was set yet.
+ * Projects a user should see as tiles: enabled, and either open mode, or the
+ * user holds one of the project's allowed roles. An EXPLICIT admin sees
+ * everything (to reach misconfigured tiles); bootstrap-admin does NOT bypass
+ * the role filter once assignments exist.
  */
 export function visibleProjectsFor(
   config: CoworkGovernanceConfig,
@@ -226,3 +259,30 @@ export function visibleProjectsFor(
     return project.allowedRoleIds.some((roleId) => userRoleIds.has(roleId))
   })
 }
+
+// --- composition resolution (pure; skill catalog resolves on disk elsewhere) --
+
+/** Enabled catalog connectors a project's composition grants. */
+export function grantedConnectors(
+  config: CoworkGovernanceConfig,
+  project: CoworkProjectConfig,
+): CoworkConnectorConfig[] {
+  return config.connectors.filter(
+    (connector) =>
+      connector.enabled &&
+      grantMatches(project.composition.connectors, {
+        id: connector.id,
+        department: connector.department,
+      }),
+  )
+}
+
+/** Departments referenced anywhere (explicit list + resource assignments), sorted. */
+export function allDepartments(config: CoworkGovernanceConfig): string[] {
+  const set = new Set<string>(config.departments)
+  for (const source of config.skillSources) set.add(source.department)
+  for (const connector of config.connectors) set.add(connector.department)
+  return [...set].sort()
+}
+
+export { emptyComposition }
