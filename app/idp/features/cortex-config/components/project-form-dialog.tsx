@@ -21,11 +21,12 @@ import {
   Switch,
   Textarea,
 } from "@cortex/ui"
-import { Loader2 } from "lucide-react"
+import { Loader2, Plus, Trash2 } from "lucide-react"
 import { useEffect } from "react"
-import { Controller, useForm } from "react-hook-form"
+import { Controller, useFieldArray, useForm } from "react-hook-form"
 import type { ProjectInput } from "../queries"
 import {
+  emptyConnector,
   EMPTY_PROJECT_FORM_VALUES,
   projectFormSchema,
   projectFormValuesToInput,
@@ -80,9 +81,10 @@ export function ProjectFormDialog({
 
   const provider = form.watch("provider")
   const errors = form.formState.errors
+  const connectors = useFieldArray({ control: form.control, name: "connectors" })
 
   const submit = form.handleSubmit(async (values) => {
-    await onSubmit(projectFormValuesToInput(values, project))
+    await onSubmit(projectFormValuesToInput(values))
     onOpenChange(false)
   })
 
@@ -301,6 +303,127 @@ export function ProjectFormDialog({
                 {...form.register("sandboxPaths")}
               />
             </div>
+          </section>
+
+          <Separator />
+
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium">Konektory</h3>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => connectors.append({ ...emptyConnector(), type: "mcp" })}
+                >
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  MCP
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => connectors.append({ ...emptyConnector(), type: "cli" })}
+                >
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  CLI
+                </Button>
+              </div>
+            </div>
+            {connectors.fields.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Brak konektorów. MCP podłącza serwer narzędzi, CLI udostępnia agentowi jedno
+                polecenie. Sekrety podawaj jako referencje do credential store.
+              </p>
+            ) : (
+              connectors.fields.map((field, index) => {
+                const type = form.watch(`connectors.${index}.type`)
+                return (
+                  <div key={field.id} className="space-y-2 rounded-md border p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium uppercase text-muted-foreground">
+                        {type === "mcp" ? "MCP server" : "CLI tool"}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Controller
+                          control={form.control}
+                          name={`connectors.${index}.enabled`}
+                          render={({ field: enabledField }) => (
+                            <label className="flex items-center gap-1.5 text-xs">
+                              <Switch
+                                checked={enabledField.value}
+                                onCheckedChange={enabledField.onChange}
+                              />
+                              aktywny
+                            </label>
+                          )}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => connectors.remove(index)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <div>
+                        <Label className="text-xs">Nazwa</Label>
+                        <Input
+                          className="mt-1"
+                          placeholder="np. Jira"
+                          {...form.register(`connectors.${index}.name`)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">
+                          {type === "mcp" ? "URL serwera" : "Ścieżka do narzędzia"}
+                        </Label>
+                        <Input
+                          className="mt-1 font-mono text-xs"
+                          placeholder={
+                            type === "mcp"
+                              ? "https://mcp.example.com/sse"
+                              : "/usr/local/bin/narzedzie"
+                          }
+                          {...form.register(`connectors.${index}.target`)}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">
+                        {type === "mcp" ? "Nagłówki" : "Zmienne środowiskowe"} → credential ref
+                        (nazwa=ścieżka, jedna na linię)
+                      </Label>
+                      <Textarea
+                        className="mt-1 font-mono text-xs"
+                        rows={2}
+                        placeholder={
+                          type === "mcp"
+                            ? "Authorization=jira/token"
+                            : "API_TOKEN=narzedzie/token"
+                        }
+                        {...form.register(`connectors.${index}.credentialRefs`)}
+                      />
+                    </div>
+                    {type === "cli" ? (
+                      <div>
+                        <Label className="text-xs">Stałe argumenty (opcjonalne)</Label>
+                        <Input
+                          className="mt-1 font-mono text-xs"
+                          placeholder="--format json"
+                          {...form.register(`connectors.${index}.baseArgs`)}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                )
+              })
+            )}
           </section>
 
           <Separator />

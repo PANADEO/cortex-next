@@ -10,6 +10,7 @@ import {
 } from "@flue/runtime"
 import { local } from "@flue/runtime/node"
 import * as v from "valibot"
+import { buildConnectorTools, readConnectorsFromEnv } from "../connectors.ts"
 import { dockerSandbox } from "../docker-sandbox.ts"
 import { configureModel, readModelConfigFromEnv } from "../model-provider.ts"
 // Side-effect import: registers the observe() subscriber that streams live
@@ -134,12 +135,13 @@ function selectSandbox(): SandboxFactory {
   return local()
 }
 
-const agent = defineAgent(() => {
+const agent = defineAgent(async () => {
   const systemPrompt = process.env.COWORK_SYSTEM_PROMPT
   return {
     model: configureModel(readModelConfigFromEnv()),
     instructions: systemPrompt ? `${BASE_INSTRUCTIONS}\n\n${systemPrompt}` : BASE_INSTRUCTIONS,
     skills: loadSessionSkills(),
+    tools: await buildConnectorTools(readConnectorsFromEnv()),
     sandbox: selectSandbox(),
     cwd: workspacePath(),
   }

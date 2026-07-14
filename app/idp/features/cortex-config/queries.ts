@@ -11,6 +11,7 @@ import type {
 export const configQueryKeys = {
   all: ["cortex-config"] as const,
   governance: () => [...configQueryKeys.all, "governance"] as const,
+  credentials: () => [...configQueryKeys.all, "credentials"] as const,
 }
 
 export interface GovernanceUpdate {
@@ -36,4 +37,14 @@ export const configApi = {
     }),
   deleteProject: (projectId: string) =>
     apiClient.delete<{ ok: boolean }>(`/api/cortex-config/projects/${projectId}`),
+  listCredentialPaths: () =>
+    apiClient.get<{ paths: string[] }>("/api/cortex-config/credentials"),
+  setCredential: (path: string, value: string) =>
+    apiClient.put<{ ok: boolean }>("/api/cortex-config/credentials", {
+      jsonBody: { path, value },
+    }),
+  deleteCredential: (path: string) =>
+    apiClient.delete<{ ok: boolean }>("/api/cortex-config/credentials", {
+      jsonBody: { path },
+    }),
 }

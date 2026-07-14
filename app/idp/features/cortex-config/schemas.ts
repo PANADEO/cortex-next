@@ -1,9 +1,43 @@
-import type { CoworkProjectConfig } from "@cortex/types"
+import type { CoworkConnectorConfig, CoworkProjectConfig } from "@cortex/types"
 import { z } from "zod"
 import type { ProjectInput } from "./queries"
 
+function parseKeyValueLines(value: string): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const line of value.split("\n")) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    const eq = trimmed.indexOf("=")
+    if (eq <= 0) continue
+    result[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim()
+  }
+  return result
+}
+
+function stringifyKeyValue(refs: Record<string, string> | undefined): string {
+  if (!refs) return ""
+  return Object.entries(refs)
+    .map(([key, val]) => `${key}=${val}`)
+    .join("\n")
+}
+
 const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{1,62}$/
 const SLUG_MESSAGE = "Małe litery, cyfry i myślniki (2-63 znaki)"
+
+const connectorFormSchema = z.object({
+  id: z.string().min(1),
+  type: z.enum(["mcp", "cli"]),
+  name: z.string().min(1, "Nazwa konektora jest wymagana"),
+  description: z.string().optional(),
+  enabled: z.boolean(),
+  target: z.string().min(1, "Podaj URL (MCP) lub ścieżkę do narzędzia (CLI)"),
+  /** "header-or-env-name=credential/path" per line. */
+  credentialRefs: z.string(),
+  /** Space-separated fixed CLI args. */
+  baseArgs: z.string(),
+})
+
+export type ConnectorFormValues = z.infer<typeof connectorFormSchema>
 
 export const projectFormSchema = z.object({
   id: z.string().regex(SLUG_PATTERN, SLUG_MESSAGE),
@@ -20,6 +54,7 @@ export const projectFormSchema = z.object({
   sandboxMode: z.enum(["local", "docker"]),
   /** One path per line in the textarea. */
   sandboxPaths: z.string(),
+  connectors: z.array(connectorFormSchema),
   exportDir: z.string().optional(),
   exportDisplayPath: z.string().optional(),
 })
@@ -44,8 +79,54 @@ export const EMPTY_PROJECT_FORM_VALUES: ProjectFormValues = {
   systemPrompt: "",
   sandboxMode: "local",
   sandboxPaths: "",
+  connectors: [],
   exportDir: "",
   exportDisplayPath: "",
+}
+
+export function emptyConnector(): ConnectorFormValues {
+  // Stable-per-render id assigned by the form when a connector is appended.
+  return {
+    id: "",
+    type: "mcp",
+    name: "",
+    description: "",
+    enabled: true,
+    target: "",
+    credentialRefs: "",
+    baseArgs: "",
+  }
+}
+
+function connectorToFormValues(connector: CoworkConnectorConfig): ConnectorFormValues {
+  return {
+    id: connector.id,
+    type: connector.type,
+    name: connector.name,
+    description: connector.description ?? "",
+    enabled: connector.enabled,
+    target: connector.target,
+    credentialRefs: stringifyKeyValue(connector.credentialRefs),
+    baseArgs: (connector.baseArgs ?? []).join(" "),
+  }
+}
+
+function connectorFormValuesToConfig(
+  values: ConnectorFormValues,
+  index: number,
+): CoworkConnectorConfig {
+  const credentialRefs = parseKeyValueLines(values.credentialRefs)
+  const baseArgs = values.baseArgs.trim() ? values.baseArgs.trim().split(/\s+/) : []
+  return {
+    id: values.id || `connector-${index + 1}`,
+    type: values.type,
+    name: values.name,
+    ...(values.description?.trim() ? { description: values.description.trim() } : {}),
+    enabled: values.enabled,
+    target: values.target.trim(),
+    ...(Object.keys(credentialRefs).length > 0 ? { credentialRefs } : {}),
+    ...(values.type === "cli" && baseArgs.length > 0 ? { baseArgs } : {}),
+  }
 }
 
 function parsePathLines(value: string): string[] {
@@ -70,15 +151,13 @@ export function projectToFormValues(project: CoworkProjectConfig): ProjectFormVa
     systemPrompt: project.systemPrompt ?? "",
     sandboxMode: project.sandbox.mode ?? "local",
     sandboxPaths: project.sandbox.allowedPaths.join("\n"),
+    connectors: project.connectors.map(connectorToFormValues),
     exportDir: project.artifactExport?.exportDir ?? "",
     exportDisplayPath: project.artifactExport?.displayPath ?? "",
   }
 }
 
-export function projectFormValuesToInput(
-  values: ProjectFormValues,
-  existing?: CoworkProjectConfig,
-): ProjectInput {
+export function projectFormValuesToInput(values: ProjectFormValues): ProjectInput {
   const exportDir = values.exportDir?.trim()
   return {
     id: values.id,
@@ -95,7 +174,7 @@ export function projectFormValuesToInput(
       ...(values.apiKeyRef?.trim() ? { apiKeyRef: values.apiKeyRef.trim() } : {}),
     },
     ...(values.systemPrompt?.trim() ? { systemPrompt: values.systemPrompt.trim() } : {}),
-    connectors: existing?.connectors ?? [],
+    connectors: values.connectors.map(connectorFormValuesToConfig),
     sandbox: { mode: values.sandboxMode, allowedPaths: parsePathLines(values.sandboxPaths) },
     ...(exportDir
       ? {

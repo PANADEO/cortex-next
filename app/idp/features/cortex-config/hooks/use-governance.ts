@@ -55,3 +55,28 @@ export function useDeleteProject() {
     onSettled: invalidate,
   })
 }
+
+export function useCredentialPaths() {
+  return useQuery({
+    queryKey: configQueryKeys.credentials(),
+    queryFn: configApi.listCredentialPaths,
+    retry: false,
+  })
+}
+
+export function useSetCredential() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ path, value }: { path: string; value: string }) =>
+      configApi.setCredential(path, value),
+    onSettled: () => client.invalidateQueries({ queryKey: configQueryKeys.credentials() }),
+  })
+}
+
+export function useDeleteCredential() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (path: string) => configApi.deleteCredential(path),
+    onSettled: () => client.invalidateQueries({ queryKey: configQueryKeys.credentials() }),
+  })
+}

@@ -2,8 +2,12 @@ import { spawn } from "node:child_process"
 import { randomUUID } from "node:crypto"
 import { readdir, stat } from "node:fs/promises"
 import path from "node:path"
-import type { CoworkModelConfig, CoworkProjectConfig } from "@cortex/types"
+import type { CoworkConnectorConfig, CoworkModelConfig, CoworkProjectConfig } from "@cortex/types"
 import type { AgentActivityStep, ChatMessage, CoworkArtifact, CoworkSkillId } from "../types"
+import {
+  resolveCredential,
+  resolveCredentialRefs,
+} from "@/lib/cortex-governance/credentials"
 import { getProject } from "@/lib/cortex-governance/store"
 import { appendMessage, registerArtifact, type SandboxSession } from "./sandbox-store"
 import { generateCsvExport } from "./skills/csv-export"
@@ -109,16 +113,53 @@ function toActivityStep(raw: string): AgentActivityStep | null {
 
 /**
  * Builds the model config slice passed to the runner. Credential refs are
- * resolved app-side (the runner only ever sees final values); until the
- * credential store lands, unset refs fall through to the provider's own
- * env-var lookup (ANTHROPIC_API_KEY et al.) inside the runner process.
+ * resolved app-side (the runner only ever sees final values); an unset or
+ * unresolvable ref falls through to the provider's own env-var lookup
+ * (ANTHROPIC_API_KEY et al.) inside the runner process.
  */
-function modelConfigForRunner(project: CoworkProjectConfig): CoworkModelConfig {
+async function modelConfigForRunner(project: CoworkProjectConfig): Promise<CoworkModelConfig> {
+  const apiKey = await resolveCredential(project.model.apiKeyRef)
   return {
     provider: project.model.provider,
     modelId: project.model.modelId,
     ...(project.model.baseUrl ? { baseUrl: project.model.baseUrl } : {}),
+    ...(apiKey ? { apiKey } : {}),
   }
+}
+
+interface ResolvedConnectorForRunner {
+  id: string
+  type: "mcp" | "cli"
+  name: string
+  description?: string
+  target: string
+  headers?: Record<string, string>
+  env?: Record<string, string>
+  baseArgs?: string[]
+}
+
+/** Enabled connectors with credential refs resolved to header/env values. */
+async function connectorsForRunner(
+  connectors: CoworkConnectorConfig[],
+): Promise<ResolvedConnectorForRunner[]> {
+  const resolved: ResolvedConnectorForRunner[] = []
+  for (const connector of connectors) {
+    if (!connector.enabled) continue
+    const secrets = await resolveCredentialRefs(connector.credentialRefs)
+    resolved.push({
+      id: connector.id,
+      type: connector.type,
+      name: connector.name,
+      ...(connector.description ? { description: connector.description } : {}),
+      target: connector.target,
+      ...(connector.type === "mcp" && Object.keys(secrets).length > 0
+        ? { headers: secrets }
+        : {}),
+      ...(connector.type === "cli" && Object.keys(secrets).length > 0 ? { env: secrets } : {}),
+      ...(connector.baseArgs?.length ? { baseArgs: connector.baseArgs } : {}),
+    })
+  }
+  return resolved
 }
 
 async function runFlueTurn(
@@ -148,12 +189,16 @@ async function runFlueTurn(
   // will carry resolved secrets, and env vars never show up in `ps` output.
   env.COWORK_SANDBOX_DIR = session.sandboxDir
   if (project) {
-    env.COWORK_MODEL_CONFIG = JSON.stringify(modelConfigForRunner(project))
+    env.COWORK_MODEL_CONFIG = JSON.stringify(await modelConfigForRunner(project))
     if (project.systemPrompt) env.COWORK_SYSTEM_PROMPT = project.systemPrompt
     // Configs written before sandbox modes existed carry no `mode` field.
     env.COWORK_SANDBOX_MODE = project.sandbox.mode ?? "local"
     if (project.sandbox.allowedPaths.length > 0) {
       env.COWORK_SANDBOX_PATHS = JSON.stringify(project.sandbox.allowedPaths)
+    }
+    const connectors = await connectorsForRunner(project.connectors)
+    if (connectors.length > 0) {
+      env.COWORK_CONNECTORS = JSON.stringify(connectors)
     }
   }
 
