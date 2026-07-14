@@ -3,14 +3,25 @@
 import { useCoworkSessionStore } from "@/lib/stores/cortex-cowork-session-store"
 import { useMe } from "@cortex/api"
 import { DEFAULT_COWORK_PROJECT_ID } from "@cortex/types"
+import { Button, Textarea } from "@cortex/ui"
 import { cn } from "@cortex/utils"
-import { BookOpen, FolderClosed, Loader2, SquarePen, Trash2 } from "lucide-react"
+import {
+  BookOpen,
+  Check,
+  ChevronRight,
+  FolderClosed,
+  Loader2,
+  NotebookPen,
+  SquarePen,
+  Trash2,
+} from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import type { ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import type { CoworkProjectTile } from "../queries"
 import { useCoworkSessionActions, useCoworkSessions } from "../hooks/use-cowork-sessions"
+import { useMyInstructions, useSaveMyInstructions } from "../hooks/use-my-instructions"
 import { useCoworkProjectTiles } from "../hooks/use-project-tiles"
 
 // Codex-style workspace shell for the cowork tile: a dark, session-centric
@@ -122,6 +133,81 @@ function ProjectRow({
   )
 }
 
+/**
+ * The user layer of AGENTS.md, edited inline in the sidebar (no portaled
+ * Dialog - a portal would escape this shell's scoped `.dark` subtree).
+ */
+function MyInstructions() {
+  const [open, setOpen] = useState(false)
+  const query = useMyInstructions(open)
+  const save = useSaveMyInstructions()
+  const [draft, setDraft] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+
+  // Seed the draft once the note arrives; re-opening keeps unsaved edits.
+  useEffect(() => {
+    if (open && draft === null && query.data) setDraft(query.data.instructions)
+  }, [open, draft, query.data])
+
+  return (
+    <div className="border-t border-border/60 px-2 py-2">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+      >
+        <NotebookPen className="h-3.5 w-3.5 shrink-0" />
+        Moje instrukcje
+        <ChevronRight
+          className={cn(
+            "ml-auto h-3 w-3 transition-transform duration-150 ease-out",
+            open && "rotate-90",
+          )}
+        />
+      </button>
+      {open ? (
+        <div className="space-y-2 px-1 pt-2">
+          <Textarea
+            rows={4}
+            value={draft ?? ""}
+            onChange={(event) => setDraft(event.target.value)}
+            disabled={query.isPending}
+            placeholder={"np. Zwracaj się do mnie po imieniu.\nRaporty zawsze z sekcją TL;DR."}
+            className="text-xs"
+          />
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[10px] leading-tight text-muted-foreground/70">
+              Prywatna warstwa AGENTS.md - doklejana do każdej Twojej sesji.
+            </p>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-7 shrink-0 gap-1 text-xs"
+              disabled={save.isPending || query.isPending || draft === null}
+              onClick={() => {
+                if (draft === null) return
+                save.mutate(draft, {
+                  onSuccess: () => {
+                    setSaved(true)
+                    setTimeout(() => setSaved(false), 1500)
+                  },
+                })
+              }}
+            >
+              {save.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : saved ? (
+                <Check className="h-3 w-3" />
+              ) : null}
+              {saved ? "Zapisano" : "Zapisz"}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export function CoworkShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -206,6 +292,7 @@ export function CoworkShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
+        <MyInstructions />
         {email ? (
           <div className="flex items-center gap-2 border-t border-border/60 px-4 py-3">
             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-[11px] font-medium uppercase">

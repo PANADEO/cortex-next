@@ -39,6 +39,13 @@ function parsePathLines(value: string): string[] {
 
 // --- Project form -------------------------------------------------------------
 
+export const briefFormSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1, "Tytuł karty jest wymagany"),
+  prompt: z.string().min(1, "Prompt jest wymagany"),
+  hint: z.string().optional(),
+})
+
 export const projectFormSchema = z
   .object({
     id: z.string().regex(COWORK_SLUG_PATTERN, SLUG_MESSAGE),
@@ -51,7 +58,13 @@ export const projectFormSchema = z
     modelId: z.string().min(1, "Model jest wymagany"),
     baseUrl: z.string().optional(),
     apiKeyRef: z.string().optional(),
+    department: z
+      .string()
+      .regex(COWORK_DEPARTMENT_PATTERN, DEPT_MESSAGE)
+      .or(z.literal(""))
+      .optional(),
     systemPrompt: z.string().optional(),
+    briefs: z.array(briefFormSchema),
     sandboxMode: z.enum(["local", "docker"]),
     /** One path per line in the textarea. */
     sandboxPaths: z.string(),
@@ -83,7 +96,9 @@ export const EMPTY_PROJECT_FORM_VALUES: ProjectFormValues = {
   modelId: "claude-sonnet-4-5",
   baseUrl: "",
   apiKeyRef: "",
+  department: "",
   systemPrompt: "",
+  briefs: [],
   sandboxMode: "local",
   sandboxPaths: "",
   skillBranches: [],
@@ -109,7 +124,14 @@ export function projectToFormValues(project: CoworkProjectConfig): ProjectFormVa
     modelId: project.model.modelId,
     baseUrl: project.model.baseUrl ?? "",
     apiKeyRef: project.model.apiKeyRef ?? "",
+    department: project.department ?? "",
     systemPrompt: project.systemPrompt ?? "",
+    briefs: (project.briefs ?? []).map((brief) => ({
+      id: brief.id,
+      title: brief.title,
+      prompt: brief.prompt,
+      hint: brief.hint ?? "",
+    })),
     sandboxMode: project.sandbox.mode ?? "local",
     sandboxPaths: project.sandbox.allowedPaths.join("\n"),
     skillBranches: skills.branches,
@@ -144,7 +166,18 @@ export function projectFormValuesToInput(values: ProjectFormValues): ProjectInpu
       ...(values.baseUrl?.trim() ? { baseUrl: values.baseUrl.trim() } : {}),
       ...(values.apiKeyRef?.trim() ? { apiKeyRef: values.apiKeyRef.trim() } : {}),
     },
+    ...(values.department?.trim() ? { department: values.department.trim() } : {}),
     ...(values.systemPrompt?.trim() ? { systemPrompt: values.systemPrompt.trim() } : {}),
+    ...(values.briefs.length > 0
+      ? {
+          briefs: values.briefs.map((brief) => ({
+            id: brief.id,
+            title: brief.title.trim(),
+            prompt: brief.prompt.trim(),
+            ...(brief.hint?.trim() ? { hint: brief.hint.trim() } : {}),
+          })),
+        }
+      : {}),
     composition,
     sandbox: { mode: values.sandboxMode, allowedPaths: parsePathLines(values.sandboxPaths) },
     ...(exportDir

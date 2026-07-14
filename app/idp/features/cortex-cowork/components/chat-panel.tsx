@@ -1,8 +1,9 @@
 "use client"
 
 import { useCoworkStreamStore } from "@/lib/stores/cortex-cowork-stream-store"
+import type { CoworkProjectBrief } from "@cortex/types"
 import { LoadingState } from "@cortex/ui"
-import { FileUp, MessagesSquare } from "lucide-react"
+import { FileUp, MessagesSquare, Sparkles } from "lucide-react"
 import { useEffect, useRef, useState, type DragEvent } from "react"
 import type { ChatMessage, CoworkInputFile, CoworkSessionUsage } from "../types"
 import { LiveAgentActivity } from "./agent-activity"
@@ -17,6 +18,8 @@ interface ChatPanelProps {
   usage?: CoworkSessionUsage | undefined
   /** Shown in the empty-transcript hero. */
   projectName?: string | undefined
+  /** Admin-defined starter briefs, rendered as cards in the empty hero. */
+  briefs?: CoworkProjectBrief[]
   /** Present when the session accepts input-file uploads (drop/paste/attach). */
   onUploadFiles?: ((files: File[]) => void) | undefined
   isUploading?: boolean
@@ -31,11 +34,14 @@ export function ChatPanel({
   onSend,
   usage,
   projectName,
+  briefs = [],
   onUploadFiles,
   isUploading = false,
   inputFiles = [],
 }: ChatPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
+  // Lifted composer draft so brief cards can prefill it (click = insert, not send).
+  const [draft, setDraft] = useState("")
   const liveSteps = useCoworkStreamStore((state) => state.steps)
   const liveText = useCoworkStreamStore((state) => state.liveText)
   // Depth counter instead of a boolean: dragenter/dragleave fire for every
@@ -108,6 +114,28 @@ export function ChatPanel({
               Agent pracuje w sandboxie i oddaje pliki jako artefakty - poproś o raport, eksport
               albo analizę.
             </p>
+            {briefs.length > 0 ? (
+              <div className="mt-4 grid w-full max-w-2xl grid-cols-1 gap-2 text-left sm:grid-cols-2">
+                {briefs.map((brief) => (
+                  <button
+                    key={brief.id}
+                    type="button"
+                    onClick={() => setDraft(brief.prompt)}
+                    className="group rounded-xl border border-border/70 bg-card/60 px-4 py-3 transition-colors hover:border-ring/60 hover:bg-card"
+                  >
+                    <span className="flex items-center gap-1.5 text-sm font-medium">
+                      <Sparkles className="h-3.5 w-3.5 text-cortex opacity-60 transition-opacity group-hover:opacity-100" />
+                      {brief.title}
+                    </span>
+                    {brief.hint ? (
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {brief.hint}
+                      </span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : (
           <div className="mx-auto w-full max-w-3xl space-y-6 px-6 py-8">
@@ -121,6 +149,8 @@ export function ChatPanel({
       </div>
       <div className="mx-auto w-full max-w-3xl px-6 pb-5 pt-2">
         <MessageComposer
+          value={draft}
+          onChange={setDraft}
           onSend={onSend}
           disabled={isLoadingSession || isSending}
           usage={usage}

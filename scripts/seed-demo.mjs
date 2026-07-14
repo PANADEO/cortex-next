@@ -154,6 +154,21 @@ function demoProject(overrides) {
   }
 }
 
+// Hierarchical AGENTS.md layers (organization + departments). Kept only when
+// the admin has not written their own yet.
+if (!config.agentsInstructions) {
+  config.agentsInstructions = {
+    global:
+      "Odpowiadasz po polsku, zwięźle i konkretnie. Każdy wynik pracy zapisujesz jako plik w artifacts/ - nie wklejasz długich treści do czatu. Nie ujawniasz danych z innych działów.",
+    departments: {
+      badania:
+        "Każde twierdzenie z sieci ma numerowany przypis do źródła. Rozróżniaj fakty od opinii; brak danych nazywaj wprost.",
+      marketing:
+        "Trzymaj spójny, profesjonalny brand voice. Prompty obrazów piszesz po angielsku; tekst na grafice max 3-5 słów.",
+    },
+  }
+}
+
 const existingProjects = new Map(config.projects.map((project) => [project.id, project]))
 upsertById(
   config.projects,
@@ -162,8 +177,32 @@ upsertById(
     name: "Research Desk",
     description: "Research z sieci z cytowanymi źródłami i pakiety statusowe ze spotkań.",
     icon: "search",
+    department: "badania",
     systemPrompt:
-      "Jesteś agentem research działu badań. Odpowiadasz po polsku. Fakty z sieci pozyskujesz narzędziem web search i zawsze podajesz numerowane źródła.",
+      "Jesteś agentem research działu badań. Fakty z sieci pozyskujesz narzędziem web search i zawsze podajesz numerowane źródła.",
+    briefs: [
+      {
+        id: "brief-status-pack",
+        title: "Status pack z transkrypcji",
+        hint: "dodaj plik z transkrypcją spotkania (spinacz albo przeciągnij)",
+        prompt:
+          "Zrób status pack z wgranej transkrypcji spotkania: TL;DR, decyzje, action items z ownerami, ryzyka i pytania otwarte.",
+      },
+      {
+        id: "brief-research",
+        title: "Research z cytowanymi źródłami",
+        hint: "wpisz temat lub firmę w miejsce [TEMAT]",
+        prompt:
+          "Zrób research na temat: [TEMAT]. Raport z sekcjami Streszczenie / Ustalenia / Źródła, każde twierdzenie z numerowanym przypisem.",
+      },
+      {
+        id: "brief-xlsx",
+        title: "Raport Excel z danych",
+        hint: "wklej dane albo dodaj plik CSV",
+        prompt:
+          "Zbuduj raport Excel (.xlsx) z danych, które podam: nagłówki, dopasowane szerokości kolumn i wiersz sum dla kolumn liczbowych.",
+      },
+    ],
     composition: {
       skills: { branches: ["badania", "wspolne"], leaves: [] },
       connectors: { branches: [], leaves: ["web-search"] },
@@ -179,8 +218,32 @@ upsertById(
     name: "Marketing Studio",
     description: "Wizuale i karuzele social media w spójnych stylach, generowane w sandboxie.",
     icon: "palette",
+    department: "marketing",
     systemPrompt:
-      "Jesteś agentem kreatywnym działu marketingu. Odpowiadasz po polsku. Wizuale generujesz narzędziem generate image (prompty obrazów po angielsku) i zapisujesz je w artifacts/.",
+      "Jesteś agentem kreatywnym działu marketingu. Wizuale generujesz narzędziem generate image i zapisujesz je w artifacts/.",
+    briefs: [
+      {
+        id: "brief-visual",
+        title: "Wizual do posta",
+        hint: "opisz temat; styl dobiorę albo podaj własny",
+        prompt:
+          "Wygeneruj jeden obraz do posta na LinkedIn na temat: [TEMAT]. Zaproponuj styl z katalogu (mckinsey / tech / minimal) i uzasadnij jednym zdaniem.",
+      },
+      {
+        id: "brief-carousel",
+        title: "Karuzela 5 slajdów",
+        hint: "podaj temat i grupę docelową",
+        prompt:
+          "Zbuduj karuzelę 5 slajdów na LinkedIn na temat: [TEMAT]. Najpierw plan (hook -> treść -> CTA), potem spójna seria obrazów w jednym stylu.",
+      },
+      {
+        id: "brief-okladka",
+        title: "Okładka raportu",
+        hint: "podaj tytuł raportu",
+        prompt:
+          "Wygeneruj okładkę raportu biznesowego w stylu mckinsey. Tytuł raportu: [TYTUŁ]. Bez tekstu na obrazie poza maks. 3 słowami.",
+      },
+    ],
     composition: {
       skills: { branches: ["marketing", "wspolne"], leaves: [] },
       connectors: { branches: [], leaves: ["generate-image"] },

@@ -107,13 +107,9 @@ export async function createSandboxSession(
     name: skill.name,
     description: skill.description,
   }))
-  const welcome: ChatMessage = {
-    id: randomUUID(),
-    role: "assistant",
-    content: buildWelcomeMessage(project, skills),
-    createdAt: new Date().toISOString(),
-  }
 
+  // No canned welcome message: a fresh session starts with an empty
+  // transcript so the chat's hero (project name + brief cards) can render.
   const session: SandboxSession = {
     id,
     projectId: project.id,
@@ -123,7 +119,7 @@ export async function createSandboxSession(
     artifactsDir,
     inputDir,
     skills,
-    messages: [welcome],
+    messages: [],
     artifacts: [],
     usage: emptyUsage(contextWindow),
   }
@@ -300,20 +296,3 @@ export function artifactFilePath(session: SandboxSession, artifact: CoworkArtifa
   return path.join(session.artifactsDir, artifact.filename)
 }
 
-function buildWelcomeMessage(
-  project: CoworkProjectConfig,
-  skills: CoworkSkillSummary[],
-): string {
-  if (skills.length === 0) {
-    return [
-      `${project.name} is ready, but no skills are composed into it yet.`,
-      "Ask your administrator to grant skill departments to this project in Cortex Config.",
-    ].join("\n\n")
-  }
-  const list = skills.map((skill) => `- ${skill.name} - ${skill.description}`).join("\n")
-  return [
-    `Sandbox ready. Skills available in this session:`,
-    list,
-    "Tell me what you need and I'll produce downloadable files in this workspace.",
-  ].join("\n\n")
-}

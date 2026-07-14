@@ -1,11 +1,12 @@
 import type { UpsertProjectInput } from "@/lib/cortex-governance/store"
 import type {
   CoworkModelConfig,
+  CoworkProjectBrief,
   CoworkProjectComposition,
   CoworkProjectConfig,
   CoworkResourceGrant,
 } from "@cortex/types"
-import { COWORK_SLUG_PATTERN } from "@cortex/types"
+import { COWORK_DEPARTMENT_PATTERN, COWORK_SLUG_PATTERN } from "@cortex/types"
 
 // Server-side validation for project create/update bodies. Kept as plain
 // checks (not Zod) to match the other BFF routes in this app - the client
@@ -29,6 +30,23 @@ function isGrant(value: unknown): value is CoworkResourceGrant {
   if (typeof value !== "object" || value === null) return false
   const grant = value as CoworkResourceGrant
   return isStringArray(grant.branches) && isStringArray(grant.leaves)
+}
+
+function isBriefArray(value: unknown): value is CoworkProjectBrief[] {
+  if (!Array.isArray(value)) return false
+  return value.every((item) => {
+    if (typeof item !== "object" || item === null) return false
+    const brief = item as CoworkProjectBrief
+    return (
+      typeof brief.id === "string" &&
+      brief.id.length > 0 &&
+      typeof brief.title === "string" &&
+      brief.title.length > 0 &&
+      typeof brief.prompt === "string" &&
+      brief.prompt.length > 0 &&
+      (brief.hint === undefined || typeof brief.hint === "string")
+    )
+  })
 }
 
 function isComposition(value: unknown): value is CoworkProjectComposition {
@@ -78,6 +96,12 @@ export function parseProjectBody(body: unknown): ParsedProject {
       return { error: "artifactExport.exportDir must be a string" }
     }
   }
+  if (input.department !== undefined && !COWORK_DEPARTMENT_PATTERN.test(input.department)) {
+    return { error: "department must be a department path (e.g. finanse/kontroling)" }
+  }
+  if (input.briefs !== undefined && !isBriefArray(input.briefs)) {
+    return { error: "briefs must be an array of { id, title, prompt, hint? }" }
+  }
 
   return {
     value: {
@@ -89,7 +113,9 @@ export function parseProjectBody(body: unknown): ParsedProject {
       archetype: "task-chat",
       allowedRoleIds: input.allowedRoleIds,
       model: input.model,
+      ...(input.department ? { department: input.department } : {}),
       ...(input.systemPrompt ? { systemPrompt: input.systemPrompt } : {}),
+      ...(input.briefs && input.briefs.length > 0 ? { briefs: input.briefs } : {}),
       composition: input.composition,
       sandbox: { mode: input.sandbox.mode, allowedPaths: input.sandbox.allowedPaths },
       ...(input.artifactExport ? { artifactExport: input.artifactExport } : {}),

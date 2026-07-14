@@ -135,6 +135,21 @@ export interface CoworkArtifactExportConfig {
 
 export type CoworkTileArchetype = "agent-config" | "dashboard" | "task-chat"
 
+/**
+ * One admin-defined starter brief, shown as a clickable card in an empty
+ * chat. Clicking inserts `prompt` into the composer (it does not send), so
+ * the user can attach files or tweak the text first.
+ */
+export interface CoworkProjectBrief {
+  id: string
+  /** Card title, e.g. "Status pack z transkrypcji". */
+  title: string
+  /** Prompt inserted into the composer on click. */
+  prompt: string
+  /** What the user must provide, e.g. "dodaj plik z transkrypcją". */
+  hint?: string
+}
+
 /** One configurable task-chat project tile. */
 export interface CoworkProjectConfig {
   id: string
@@ -147,8 +162,15 @@ export interface CoworkProjectConfig {
   /** Role ids that may see and open this tile. Empty = admins only. */
   allowedRoleIds: string[]
   model: CoworkModelConfig
+  /**
+   * Home department of the tile (a path in the department tree). Drives the
+   * AGENTS.md inheritance chain; independent of composition grants.
+   */
+  department?: string
   /** Extra system prompt appended to the base cowork instructions. */
   systemPrompt?: string
+  /** Starter briefs rendered as cards in an empty chat. */
+  briefs?: CoworkProjectBrief[]
   /** Resources this project is built from (skills/connectors/secrets). */
   composition: CoworkProjectComposition
   sandbox: CoworkSandboxConfig
@@ -172,6 +194,8 @@ export interface CoworkProjectTileInfo {
   icon?: string
   /** True when the project has an export share configured (drives export UI). */
   exportEnabled: boolean
+  /** Starter briefs rendered as cards in an empty chat. */
+  briefs: CoworkProjectBrief[]
 }
 
 /** Response of the artifact export endpoint. */
@@ -182,11 +206,25 @@ export interface CoworkArtifactExportResult {
   displayPath: string
 }
 
+/**
+ * Hierarchical AGENTS.md: admin-managed instruction layers composed into the
+ * system prompt of every turn. `global` applies platform-wide; `departments`
+ * maps a department path to that department's layer. A tile pinned to
+ * department "a/b" inherits global, then "a", then "a/b", then its own
+ * systemPrompt, then the user's personal note.
+ */
+export interface CoworkAgentsInstructions {
+  global?: string
+  departments: Record<string, string>
+}
+
 /** Root document persisted by the cortex-config store. */
 export interface CoworkGovernanceConfig {
   version: 2
   /** Department tree as an explicit path list (resources may add implicit ones). */
   departments: string[]
+  /** Hierarchical AGENTS.md layers (absent on configs written before it existed). */
+  agentsInstructions?: CoworkAgentsInstructions
   /** Skill sources (folder -> department); scanned to build the skill catalog. */
   skillSources: CoworkSkillSource[]
   /** Connector catalog (each attached to a department). */
@@ -229,4 +267,44 @@ export function secretPathGranted(grant: CoworkResourceGrant, credentialPath: st
   return grant.branches.some(
     (branch) => credentialPath === branch || credentialPath.startsWith(`${branch}/`),
   )
+}
+
+/** Ancestor chain of a department path, root first: "a/b/c" -> ["a", "a/b", "a/b/c"]. */
+export function departmentChain(path: string): string[] {
+  const segments = path.split("/").filter(Boolean)
+  return segments.map((_, index) => segments.slice(0, index + 1).join("/"))
+}
+
+export interface AgentsPromptLayers {
+  /** Admin AGENTS.md layers (global + per department). */
+  instructions?: CoworkAgentsInstructions | undefined
+  /** The tile's home department - selects which department layers apply. */
+  projectDepartment?: string | undefined
+  /** The tile's own systemPrompt. */
+  projectPrompt?: string | undefined
+  /** The requesting user's personal note ("Moje instrukcje"). */
+  userPrompt?: string | undefined
+}
+
+/**
+ * Composes the hierarchical AGENTS.md layers into one system prompt, most
+ * general first (organization -> department chain root-to-leaf -> tile ->
+ * user), each under a labeled markdown header so later layers read as
+ * refinements of earlier ones. Returns undefined when every layer is empty.
+ */
+export function composeAgentsPrompt(layers: AgentsPromptLayers): string | undefined {
+  const sections: string[] = []
+  const push = (header: string, body: string | undefined) => {
+    const trimmed = body?.trim()
+    if (trimmed) sections.push(`## ${header}\n\n${trimmed}`)
+  }
+  push("Zasady organizacji (AGENTS.md)", layers.instructions?.global)
+  if (layers.projectDepartment) {
+    for (const department of departmentChain(layers.projectDepartment)) {
+      push(`Zasady działu: ${department}`, layers.instructions?.departments[department])
+    }
+  }
+  push("Instrukcje kafelka", layers.projectPrompt)
+  push("Preferencje użytkownika", layers.userPrompt)
+  return sections.length > 0 ? sections.join("\n\n") : undefined
 }

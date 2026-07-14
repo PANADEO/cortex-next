@@ -2,6 +2,7 @@
 
 import { apiClient } from "@cortex/api"
 import type {
+  CoworkAgentsInstructions,
   CoworkCatalogSkill,
   CoworkConnectorConfig,
   CoworkGovernanceConfig,
@@ -21,6 +22,7 @@ export interface GovernanceUpdate {
   roles?: CoworkRole[]
   userAssignments?: Record<string, string[]>
   adminEmails?: string[]
+  agentsInstructions?: CoworkAgentsInstructions
 }
 
 export type ProjectInput = Omit<CoworkProjectConfig, "createdAt" | "updatedAt">

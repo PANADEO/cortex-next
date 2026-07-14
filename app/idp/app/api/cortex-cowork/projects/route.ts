@@ -18,6 +18,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     description: project.description,
     ...(project.icon ? { icon: project.icon } : {}),
     exportEnabled: Boolean(project.artifactExport?.exportDir),
+    briefs: project.briefs ?? [],
   }))
   return NextResponse.json(tiles)
 }

@@ -74,6 +74,7 @@ function CortexCoworkChat() {
           onSend={(content) => sendMessage.mutate(content)}
           usage={sessionQuery.data?.usage}
           projectName={project?.name}
+          briefs={project?.briefs ?? []}
           onUploadFiles={sessionId ? (files) => uploadFiles.mutate(files) : undefined}
           isUploading={uploadFiles.isPending}
           inputFiles={inputFiles}

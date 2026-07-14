@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto"
 import { readdir, stat } from "node:fs/promises"
 import path from "node:path"
 import type { CoworkConnectorConfig, CoworkModelConfig, CoworkProjectConfig } from "@cortex/types"
+import { composeAgentsPrompt } from "@cortex/types"
 import type {
   AgentActivityStep,
   ChatMessage,
@@ -18,6 +19,7 @@ import {
   type CredentialsDocument,
 } from "@/lib/cortex-governance/credentials"
 import { grantedConnectors, readGovernanceConfig } from "@/lib/cortex-governance/store"
+import { readUserInstructions } from "@/lib/cortex-governance/user-instructions"
 import { appendMessage, recordUsage, registerArtifact, type SandboxSession } from "./sandbox-store"
 import { generateCsvExport } from "./skills/csv-export"
 import { generateExcelReport } from "./skills/excel-report"
@@ -73,11 +75,17 @@ function runnerDir(): string {
   return process.env.COWORK_RUNNER_DIR ?? path.join(process.cwd(), "cowork-runner")
 }
 
+/** Per-turn request context (who is asking - drives the AGENTS.md user layer). */
+export interface ChatTurnOptions {
+  userEmail?: string | undefined
+}
+
 export async function runChatTurn(
   session: SandboxSession,
   userContent: string,
+  options: ChatTurnOptions = {},
 ): Promise<TurnResult> {
-  return streamChatTurn(session, userContent, () => {})
+  return streamChatTurn(session, userContent, () => {}, options)
 }
 
 /**
@@ -108,10 +116,11 @@ export async function streamChatTurn(
   session: SandboxSession,
   userContent: string,
   onEvent: (step: AgentActivityStep) => void,
+  options: ChatTurnOptions = {},
 ): Promise<TurnResult> {
   for (const attempt of [1, 2]) {
     try {
-      return await runFlueTurn(session, userContent, onEvent)
+      return await runFlueTurn(session, userContent, onEvent, options)
     } catch (error) {
       const retryable = error instanceof RunnerError && error.retryable && attempt === 1
       console.warn(
@@ -214,6 +223,7 @@ async function runFlueTurn(
   session: SandboxSession,
   userContent: string,
   onEvent: (step: AgentActivityStep) => void,
+  options: ChatTurnOptions,
 ): Promise<TurnResult> {
   const dir = runnerDir()
   const flueCli = path.join(dir, "node_modules", "@flue", "cli", "bin", "flue.mjs")
@@ -246,7 +256,17 @@ async function runFlueTurn(
       project.composition.secrets,
     )
     env.COWORK_MODEL_CONFIG = JSON.stringify(modelConfigForRunner(project, credentials))
-    if (project.systemPrompt) env.COWORK_SYSTEM_PROMPT = project.systemPrompt
+    // Hierarchical AGENTS.md: organization -> department chain -> tile ->
+    // the requesting user's personal note, composed into one system prompt.
+    const composedPrompt = composeAgentsPrompt({
+      instructions: config.agentsInstructions,
+      projectDepartment: project.department,
+      projectPrompt: project.systemPrompt,
+      userPrompt: options.userEmail
+        ? await readUserInstructions(options.userEmail)
+        : undefined,
+    })
+    if (composedPrompt) env.COWORK_SYSTEM_PROMPT = composedPrompt
     // Configs written before sandbox modes existed carry no `mode` field.
     env.COWORK_SANDBOX_MODE = project.sandbox.mode ?? "local"
     if (project.sandbox.allowedPaths.length > 0) {

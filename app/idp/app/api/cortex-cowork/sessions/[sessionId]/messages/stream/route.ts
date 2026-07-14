@@ -1,5 +1,7 @@
 import { streamChatTurn } from "@/features/cortex-cowork/server/chat-engine"
 import { getSandboxSession, recordUserMessage } from "@/features/cortex-cowork/server/sandbox-store"
+import { requestEmail } from "@/lib/cortex-governance/request-identity"
+import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
 interface SendMessageBody {
@@ -23,7 +25,7 @@ function sseChunk(event: string, data: unknown): Uint8Array {
  * The non-streaming POST /messages route stays available as a fallback.
  */
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> },
 ): Promise<Response> {
   const { sessionId } = await params
@@ -52,7 +54,9 @@ export async function POST(
         }
       }
 
-      streamChatTurn(session, content, (step) => send("activity", step))
+      streamChatTurn(session, content, (step) => send("activity", step), {
+        userEmail: requestEmail(request),
+      })
         .then((result) => {
           send("done", result)
         })

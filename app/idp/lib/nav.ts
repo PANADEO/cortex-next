@@ -214,6 +214,12 @@ export const CORTEX_CONFIG_NAV: TileMenuSection[] = [
         href: "/cortex-config/catalog",
       },
       {
+        id: "agents",
+        label: "AGENTS.md",
+        icon: FileText,
+        href: "/cortex-config/agents",
+      },
+      {
         id: "roles",
         label: "Role i dostęp",
         icon: Users,

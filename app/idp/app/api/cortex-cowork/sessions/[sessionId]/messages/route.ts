@@ -1,5 +1,7 @@
 import { runChatTurn } from "@/features/cortex-cowork/server/chat-engine"
 import { getSandboxSession, recordUserMessage } from "@/features/cortex-cowork/server/sandbox-store"
+import { requestEmail } from "@/lib/cortex-governance/request-identity"
+import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
 interface SendMessageBody {
@@ -7,7 +9,7 @@ interface SendMessageBody {
 }
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> },
 ): Promise<NextResponse> {
   const { sessionId } = await params
@@ -23,6 +25,6 @@ export async function POST(
   }
 
   await recordUserMessage(session, content)
-  const result = await runChatTurn(session, content)
+  const result = await runChatTurn(session, content, { userEmail: requestEmail(request) })
   return NextResponse.json(result)
 }

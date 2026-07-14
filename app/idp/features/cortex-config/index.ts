@@ -1,3 +1,4 @@
+export { AgentsPanel } from "./components/agents-panel"
 export { AssignmentEditorScreen } from "./components/assignment-editor"
 export { CatalogPanel } from "./components/catalog-panel"
 export { ConnectorEditorScreen } from "./components/connector-editor"

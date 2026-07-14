@@ -17,6 +17,7 @@ export const coworkQueryKeys = {
   projects: () => [...coworkQueryKeys.all, "projects"] as const,
   sessions: (projectId: string) => [...coworkQueryKeys.all, "sessions", projectId] as const,
   session: (sessionId: string) => [...coworkQueryKeys.all, "session", sessionId] as const,
+  myInstructions: () => [...coworkQueryKeys.all, "my-instructions"] as const,
   artifacts: (sessionId: string) =>
     [...coworkQueryKeys.all, "session", sessionId, "artifacts"] as const,
 }
@@ -57,6 +58,12 @@ export const coworkApi = {
   // SSE endpoint consumed with a raw fetch (EventSource cannot POST).
   streamMessagePath: (sessionId: string) =>
     `${basePath}/api/cortex-cowork/sessions/${sessionId}/messages/stream`,
+  getMyInstructions: () =>
+    apiClient.get<{ instructions: string }>("/api/cortex-cowork/my-instructions"),
+  setMyInstructions: (instructions: string) =>
+    apiClient.put<{ instructions: string }>("/api/cortex-cowork/my-instructions", {
+      jsonBody: { instructions },
+    }),
   uploadInputFiles: (sessionId: string, files: File[]) => {
     const form = new FormData()
     for (const file of files) form.append("files", file, file.name)

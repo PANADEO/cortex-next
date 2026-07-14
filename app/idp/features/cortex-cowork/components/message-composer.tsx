@@ -2,11 +2,14 @@
 
 import { Button, Textarea } from "@cortex/ui"
 import { ArrowUp, FileText, Loader2, Paperclip } from "lucide-react"
-import { useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react"
+import { useRef, type ClipboardEvent, type KeyboardEvent } from "react"
 import type { CoworkInputFile, CoworkSessionUsage } from "../types"
 import { ContextMeter } from "./context-meter"
 
 interface MessageComposerProps {
+  /** Controlled draft - lifted so brief cards can prefill the composer. */
+  value: string
+  onChange: (value: string) => void
   onSend: (content: string) => void
   disabled?: boolean
   /** Live usage of the active session - rendered as the context chip. */
@@ -31,6 +34,8 @@ function withPasteName(file: File): File {
 
 /** Codex-style prompt box: rounded card with attach, send and context chip inside. */
 export function MessageComposer({
+  value,
+  onChange,
   onSend,
   disabled = false,
   usage,
@@ -38,14 +43,13 @@ export function MessageComposer({
   isUploading = false,
   inputFiles = [],
 }: MessageComposerProps) {
-  const [value, setValue] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   function handleSend() {
     const trimmed = value.trim()
     if (!trimmed || disabled) return
     onSend(trimmed)
-    setValue("")
+    onChange("")
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -81,7 +85,7 @@ export function MessageComposer({
       ) : null}
       <Textarea
         value={value}
-        onChange={(event) => setValue(event.target.value)}
+        onChange={(event) => onChange(event.target.value)}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         placeholder="Poproś o raport, eksport albo kolejny krok..."

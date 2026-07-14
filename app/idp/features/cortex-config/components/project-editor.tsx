@@ -4,6 +4,7 @@ import { PROJECT_ICON_OPTIONS } from "@/features/cortex-cowork"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { CoworkProjectConfig, CoworkRole } from "@cortex/types"
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
@@ -25,8 +26,9 @@ import {
   TabsTrigger,
   Textarea,
 } from "@cortex/ui"
+import { Plus, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { Controller, useForm, type FieldErrors } from "react-hook-form"
+import { Controller, useFieldArray, useForm, type FieldErrors } from "react-hook-form"
 import {
   useCatalog,
   useCreateProject,
@@ -44,6 +46,7 @@ import {
 } from "../schemas"
 import { AccessDeniedState, ConfigScreen } from "./config-screen"
 import { CheckboxList, FieldError, GrantPickerField } from "./form-fields"
+import { DepartmentSelect } from "./pickers"
 
 const BACK_HREF = "/cortex-config/projects"
 
@@ -66,7 +69,12 @@ const TABS = [
       "secretLeaves",
     ],
   },
-  { value: "agent", label: "Agent i sandbox", fields: ["systemPrompt", "sandboxMode", "sandboxPaths"] },
+  { value: "briefy", label: "Briefy", fields: ["briefs"] },
+  {
+    value: "agent",
+    label: "Agent i sandbox",
+    fields: ["department", "systemPrompt", "sandboxMode", "sandboxPaths"],
+  },
   { value: "eksport", label: "Eksport", fields: ["exportDir", "exportDisplayPath"] },
 ] as const satisfies ReadonlyArray<{
   value: string
@@ -143,6 +151,7 @@ export function ProjectEditor({
   })
   const provider = form.watch("provider")
   const errors = form.formState.errors
+  const briefs = useFieldArray({ control: form.control, name: "briefs" })
 
   const submit = form.handleSubmit(async (values) => {
     await onSubmit(projectFormValuesToInput(values))
@@ -404,20 +413,125 @@ export function ProjectEditor({
             </Card>
           </TabsContent>
 
+          <TabsContent value="briefy" className="space-y-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Karty startowe (briefy)</CardTitle>
+                <CardDescription>
+                  Gotowe zlecenia widoczne w pustym czacie - kliknięcie wypełnia pole wiadomości.
+                  Podpowiedź mówi użytkownikowi, co musi dostarczyć (np. plik z transkrypcją).
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {briefs.fields.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Brak briefów - użytkownik zobaczy pusty czat bez podpowiedzi.
+                  </p>
+                ) : null}
+                {briefs.fields.map((field, index) => (
+                  <div key={field.id} className="space-y-3 rounded-lg border border-border p-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <Label htmlFor={`brief-title-${index}`}>Tytuł karty</Label>
+                        <Input
+                          id={`brief-title-${index}`}
+                          className="mt-1"
+                          placeholder="np. Status pack z transkrypcji"
+                          {...form.register(`briefs.${index}.title`)}
+                        />
+                        <FieldError message={errors.briefs?.[index]?.title?.message} />
+                      </div>
+                      <div>
+                        <Label htmlFor={`brief-hint-${index}`}>
+                          Podpowiedź (czego potrzebuje user)
+                        </Label>
+                        <Input
+                          id={`brief-hint-${index}`}
+                          className="mt-1"
+                          placeholder="np. dodaj plik z transkrypcją"
+                          {...form.register(`briefs.${index}.hint`)}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor={`brief-prompt-${index}`}>Prompt (trafia do composera)</Label>
+                      <Textarea
+                        id={`brief-prompt-${index}`}
+                        className="mt-1"
+                        rows={3}
+                        placeholder="np. Zrób status pack z wgranej transkrypcji spotkania."
+                        {...form.register(`briefs.${index}.prompt`)}
+                      />
+                      <FieldError message={errors.briefs?.[index]?.prompt?.message} />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 text-muted-foreground hover:text-destructive"
+                      onClick={() => briefs.remove(index)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Usuń kartę
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() =>
+                    briefs.append({ id: crypto.randomUUID(), title: "", prompt: "", hint: "" })
+                  }
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Dodaj kartę
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="agent" className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Instrukcje agenta</CardTitle>
+                <CardDescription>
+                  Kafelek dziedziczy AGENTS.md: zasady organizacji, potem działów po ścieżce
+                  departamentu, potem poniższe instrukcje, na końcu prywatna notka użytkownika.
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Label htmlFor="project-system-prompt">Dodatkowe instrukcje (system prompt)</Label>
-                <Textarea
-                  id="project-system-prompt"
-                  className="mt-1"
-                  rows={4}
-                  placeholder="np. Odpowiadaj po polsku. Raporty formatuj wg standardu działu."
-                  {...form.register("systemPrompt")}
-                />
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Departament kafelka (dziedziczenie AGENTS.md)</Label>
+                  <div className="mt-1">
+                    <Controller
+                      control={form.control}
+                      name="department"
+                      render={({ field }) => (
+                        <DepartmentSelect
+                          departments={catalog.departments}
+                          value={field.value ?? ""}
+                          onChange={field.onChange}
+                          placeholder="Brak - tylko zasady organizacji"
+                        />
+                      )}
+                    />
+                  </div>
+                  <FieldError message={errors.department?.message} />
+                </div>
+                <div>
+                  <Label htmlFor="project-system-prompt">
+                    Dodatkowe instrukcje (system prompt)
+                  </Label>
+                  <Textarea
+                    id="project-system-prompt"
+                    className="mt-1"
+                    rows={4}
+                    placeholder="np. Odpowiadaj po polsku. Raporty formatuj wg standardu działu."
+                    {...form.register("systemPrompt")}
+                  />
+                </div>
               </CardContent>
             </Card>
 
