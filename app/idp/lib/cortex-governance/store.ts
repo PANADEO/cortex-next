@@ -206,18 +206,23 @@ export function isAdmin(config: CoworkGovernanceConfig, email: string | undefine
 /**
  * Projects a user should see as tiles: enabled, and either governance is in
  * open mode (no assignments yet), or the user holds one of the project's
- * allowed roles. Admins see everything (they need to reach misconfigured
- * tiles to fix them).
+ * allowed roles. An EXPLICIT admin (on adminEmails) sees everything so they
+ * can reach misconfigured tiles - but bootstrap-admin (empty adminEmails)
+ * does NOT bypass the role filter here: once the admin has started assigning
+ * roles, a user with a limited role must not still see every tile just
+ * because no admin email was set yet.
  */
 export function visibleProjectsFor(
   config: CoworkGovernanceConfig,
   email: string | undefined,
 ): CoworkProjectConfig[] {
   const openMode = Object.keys(config.userAssignments).length === 0
-  const admin = isAdmin(config, email)
+  const explicitAdmin = Boolean(
+    email && config.adminEmails.some((admin) => admin.toLowerCase() === email.toLowerCase()),
+  )
   return config.projects.filter((project) => {
     if (!project.enabled) return false
-    if (openMode || admin || !email) return true
+    if (openMode || explicitAdmin || !email) return true
     const userRoleIds = new Set(config.userAssignments[email.toLowerCase()] ?? [])
     return project.allowedRoleIds.some((roleId) => userRoleIds.has(roleId))
   })

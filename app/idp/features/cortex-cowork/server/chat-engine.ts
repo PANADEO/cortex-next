@@ -65,6 +65,17 @@ export async function runChatTurn(
  * Resolves with the persisted assistant message (including its activity
  * trail) and any new artifacts once the run completes.
  */
+/**
+ * A runner failure is retryable if it looks transient (timeout, non-zero
+ * exit from the model call) rather than structural (missing node/flue binary),
+ * where a second attempt would just fail the same way.
+ */
+function isRetryableRunnerError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  if (/ENOENT|not found|no such file|cannot find module/i.test(message)) return false
+  return /timed out|exited with code|stream request failed|ECONNRESET|socket hang up/i.test(message)
+}
+
 export async function streamChatTurn(
   session: SandboxSession,
   userContent: string,
@@ -73,6 +84,21 @@ export async function streamChatTurn(
   try {
     return await runFlueTurn(session, userContent, onEvent)
   } catch (error) {
+    if (isRetryableRunnerError(error)) {
+      console.warn(
+        "[cortex-cowork] Flue runner turn failed (retryable), retrying once:",
+        error instanceof Error ? error.message : error,
+      )
+      try {
+        return await runFlueTurn(session, userContent, onEvent)
+      } catch (retryError) {
+        console.warn(
+          "[cortex-cowork] Flue runner retry failed, falling back to keyword routing:",
+          retryError instanceof Error ? retryError.message : retryError,
+        )
+        return runKeywordFallback(session, userContent)
+      }
+    }
     console.warn(
       "[cortex-cowork] Flue runner turn failed, falling back to keyword routing:",
       error instanceof Error ? error.message : error,
@@ -391,6 +417,7 @@ async function runKeywordFallback(
     role: "assistant",
     content: replyLines.join("\n\n"),
     createdAt: new Date().toISOString(),
+    degraded: true,
     ...(newArtifacts[0] ? { skillInvoked: newArtifacts[0].skill } : {}),
   }
   await appendMessage(session, message)

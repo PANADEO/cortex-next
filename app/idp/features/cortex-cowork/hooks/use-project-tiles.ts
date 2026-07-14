@@ -58,7 +58,7 @@ export function useCoworkProjectTiles(): {
     staleTime: 30_000,
     retry: false,
   })
-  const projects = query.data ?? []
+  const projects = useMemo(() => query.data ?? [], [query.data])
   const tiles = useMemo(() => projects.map(projectToTile), [projects])
   return { tiles, projects, isLoading: query.isPending }
 }

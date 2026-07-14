@@ -1,7 +1,8 @@
 "use client"
 
+import { Badge } from "@cortex/ui"
 import { cn } from "@cortex/utils"
-import { Bot, User } from "lucide-react"
+import { Bot, TriangleAlert, User } from "lucide-react"
 import type { ChatMessage } from "../types"
 import { AgentActivityTrail } from "./agent-activity"
 
@@ -27,6 +28,15 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           isUser ? "bg-primary text-primary-foreground" : "bg-muted",
         )}
       >
+        {!isUser && message.degraded ? (
+          <Badge
+            variant="outline"
+            className="mb-1.5 gap-1 border-amber-400 text-amber-700 dark:text-amber-300"
+          >
+            <TriangleAlert className="h-3 w-3" />
+            Tryb awaryjny - agent niedostępny
+          </Badge>
+        ) : null}
         <div className="whitespace-pre-wrap">{message.content}</div>
         {!isUser && message.activity && message.activity.length > 0 ? (
           <AgentActivityTrail steps={message.activity} />

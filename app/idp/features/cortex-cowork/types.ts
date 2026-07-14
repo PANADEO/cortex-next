@@ -33,6 +33,8 @@ export interface ChatMessage {
   content: string
   createdAt: string
   skillInvoked?: CoworkSkillId
+  /** Set when the Flue runner failed and this reply came from keyword fallback. */
+  degraded?: boolean
   /** Persisted work trail from the live activity stream (drilldown panel). */
   activity?: AgentActivityStep[]
 }
