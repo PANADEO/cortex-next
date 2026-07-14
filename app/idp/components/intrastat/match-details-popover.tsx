@@ -19,35 +19,50 @@ interface MatchField {
 const MATCH_ALGORITHM_DETAILS: Record<IntrastatCnMatchStatus, MatchAlgorithmDetails> = {
   exact: {
     clientRule: "The client instruction says CN is tied to the product index in the database.",
-    technicalMethod: "The system normalized the invoice index and found the same normalized index in the CN database. It accepts the match only when the matched database rows resolve to one CN code.",
+    technicalMethod:
+      "The system normalized the invoice index and found the same normalized index in the CN database. It accepts the match only when the matched database rows resolve to one CN code.",
   },
   prefix_unique: {
-    clientRule: "The client instruction says that if there is no identical index, the closest corresponding database index should be used.",
-    technicalMethod: "The system first checks the strongest shared prefix. If that fails, it checks text similarity between normalized indexes. The closest candidate is accepted only when it resolves to one CN code.",
+    clientRule:
+      "The client instruction says that if there is no identical index, the closest corresponding database index should be used.",
+    technicalMethod:
+      "The system first checks the strongest shared prefix. If that fails, it checks text similarity between normalized indexes. The closest candidate is accepted only when it resolves to one CN code.",
   },
   description_match: {
-    clientRule: "The client instruction says that if no index and no invoice CN can be used, CN should be matched from the invoice description to the closest database description.",
-    technicalMethod: "The system compares the invoice line description with CN database descriptions using text similarity. It accepts the top description group only when it resolves to one CN code.",
+    clientRule:
+      "The client instruction says that if no index and no invoice CN can be used, CN should be matched from the invoice description to the closest database description.",
+    technicalMethod:
+      "The system compares the invoice line description with CN database descriptions using text similarity. It accepts the top description group only when it resolves to one CN code.",
   },
   semantic_match: {
-    clientRule: "The client instruction says that if no index and no invoice CN can be used, CN should be matched from the invoice description to the closest database description.",
-    technicalMethod: "The system uses description embeddings as a technical way to find the closest database description. A candidate is accepted only when it is above the configured threshold and is not too close to a competing CN code.",
+    clientRule:
+      "The client instruction says that if no index and no invoice CN can be used, CN should be matched from the invoice description to the closest database description.",
+    technicalMethod:
+      "The system uses description embeddings as a technical way to find the closest database description. A candidate is accepted only when it is above the configured threshold and is not too close to a competing CN code.",
   },
   invoice_cn: {
-    clientRule: "The client instruction says that if no database index can be matched, the CN code shown on the invoice should be used.",
-    technicalMethod: "The system normalizes the invoice CN and uses the first 8 digits after exact and closest-index database matching did not produce a CN code.",
+    clientRule:
+      "The client instruction says that if no database index can be matched, the CN code shown on the invoice should be used.",
+    technicalMethod:
+      "The system normalizes the invoice CN and uses the first 8 digits after exact and closest-index database matching did not produce a CN code.",
   },
   manual: {
-    clientRule: "The client instruction allows missing or uncertain CN data to be completed in the system and reused later.",
-    technicalMethod: "A reviewer manually changed the CN fields. The automatic match status is replaced by a human-reviewed decision.",
+    clientRule:
+      "The client instruction allows missing or uncertain CN data to be completed in the system and reused later.",
+    technicalMethod:
+      "A reviewer manually changed the CN fields. The automatic match status is replaced by a human-reviewed decision.",
   },
   ambiguous: {
-    clientRule: "The client instruction requires using a closest index or closest description, but only when it can be assigned confidently.",
-    technicalMethod: "Several candidates matched with different CN codes, so the system did not choose one automatically. The line remains for review.",
+    clientRule:
+      "The client instruction requires using a closest index or closest description, but only when it can be assigned confidently.",
+    technicalMethod:
+      "Several candidates matched with different CN codes, so the system did not choose one automatically. The line remains for review.",
   },
   unmatched: {
-    clientRule: "The client instruction says that if no similar index, invoice CN, or similar description is available, the CN field should remain empty.",
-    technicalMethod: "Exact index, closest index, invoice CN, closest description, and semantic description checks did not produce an accepted CN code.",
+    clientRule:
+      "The client instruction says that if no similar index, invoice CN, or similar description is available, the CN field should remain empty.",
+    technicalMethod:
+      "Exact index, closest index, invoice CN, closest description, and semantic description checks did not produce an accepted CN code.",
   },
 }
 
