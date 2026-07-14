@@ -7,6 +7,7 @@ import {
   createSandboxSession,
   toCoworkSession,
 } from "@/features/cortex-cowork/server/sandbox-store"
+import { DEFAULT_COWORK_PROJECT_ID } from "@cortex/types"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
@@ -17,7 +18,7 @@ interface CreateSessionBody {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = (await request.json().catch(() => ({}))) as CreateSessionBody
-    const projectId = body.projectId ?? "cortex-cowork"
+    const projectId = body.projectId ?? DEFAULT_COWORK_PROJECT_ID
 
     const config = await readGovernanceConfig()
     const project = config.projects.find((candidate) => candidate.id === projectId)

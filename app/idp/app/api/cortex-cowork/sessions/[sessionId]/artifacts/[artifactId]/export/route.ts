@@ -1,4 +1,7 @@
-import { exportArtifactToShare } from "@/features/cortex-cowork/server/artifact-export"
+import {
+  ExportNotConfiguredError,
+  exportArtifactToShare,
+} from "@/features/cortex-cowork/server/artifact-export"
 import { findArtifact, getSandboxSession } from "@/features/cortex-cowork/server/sandbox-store"
 import { NextResponse } from "next/server"
 
@@ -21,9 +24,12 @@ export async function POST(
     const result = await exportArtifactToShare(session, artifact)
     return NextResponse.json(result)
   } catch (error) {
-    return NextResponse.json(
-      { message: error instanceof Error ? error.message : "Export failed" },
-      { status: 400 },
-    )
+    // Missing configuration is the caller-fixable case; anything else is an
+    // I/O failure on the share (EACCES, ENOSPC) and must read as a 500.
+    if (error instanceof ExportNotConfiguredError) {
+      return NextResponse.json({ message: error.message }, { status: 400 })
+    }
+    console.error("[cortex-cowork] artifact export failed:", error)
+    return NextResponse.json({ message: "Export failed - check server logs" }, { status: 500 })
   }
 }

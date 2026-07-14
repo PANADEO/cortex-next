@@ -1,6 +1,7 @@
 "use client"
 
 import { apiClient } from "@cortex/api"
+import type { CoworkArtifactExportResult, CoworkProjectTileInfo } from "@cortex/types"
 import type {
   CoworkArtifact,
   CoworkSession,
@@ -17,20 +18,10 @@ export const coworkQueryKeys = {
     [...coworkQueryKeys.all, "session", sessionId, "artifacts"] as const,
 }
 
-/** Presentation-only project meta served to every authenticated user. */
-export interface CoworkProjectTile {
-  id: string
-  name: string
-  description: string
-  icon?: string
-  /** True when the project has an export share configured (drives export UI). */
-  exportEnabled: boolean
-}
-
-export interface ArtifactExportResult {
-  exportedPath: string
-  displayPath: string
-}
+// Wire types shared with the server routes via @cortex/types; re-exported
+// under the feature's historical names for existing consumers.
+export type CoworkProjectTile = CoworkProjectTileInfo
+export type ArtifactExportResult = CoworkArtifactExportResult
 
 const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH)
 

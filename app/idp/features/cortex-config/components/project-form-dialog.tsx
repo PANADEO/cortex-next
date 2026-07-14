@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import type { CoworkProjectConfig, CoworkRole } from "@cortex/types"
 import {
   Button,
-  Checkbox,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -33,16 +32,8 @@ import {
   projectToFormValues,
   type ProjectFormValues,
 } from "../schemas"
-
-const ICON_OPTIONS = [
-  { value: "bot", label: "Bot" },
-  { value: "messages-square", label: "Chat" },
-  { value: "file-text", label: "Dokument" },
-  { value: "file-spreadsheet", label: "Arkusz" },
-  { value: "search", label: "Lupa" },
-  { value: "sparkles", label: "Iskry" },
-  { value: "table", label: "Tabela" },
-]
+import { PROJECT_ICON_OPTIONS } from "@/features/cortex-cowork"
+import { CheckboxList, FieldError } from "./form-fields"
 
 interface ProjectFormDialogProps {
   open: boolean
@@ -52,11 +43,6 @@ interface ProjectFormDialogProps {
   roles: CoworkRole[]
   isSaving?: boolean
   onSubmit: (input: ProjectInput) => Promise<void>
-}
-
-function FieldError({ message }: { message?: string | undefined }) {
-  if (!message) return null
-  return <p className="mt-1 text-xs text-destructive">{message}</p>
 }
 
 export function ProjectFormDialog({
@@ -128,7 +114,7 @@ export function ProjectFormDialog({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {ICON_OPTIONS.map((option) => (
+                      {PROJECT_ICON_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -215,44 +201,18 @@ export function ProjectFormDialog({
 
           <section className="space-y-3">
             <h3 className="text-sm font-medium">Dostęp (role)</h3>
-            {roles.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Brak zdefiniowanych ról - dodaj je w zakładce Role i uprawnienia.
-              </p>
-            ) : (
-              <Controller
-                control={form.control}
-                name="allowedRoleIds"
-                render={({ field }) => (
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {roles.map((role) => {
-                      const checked = field.value.includes(role.id)
-                      return (
-                        <label
-                          key={role.id}
-                          className="flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm"
-                        >
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={(next) =>
-                              field.onChange(
-                                next
-                                  ? [...field.value, role.id]
-                                  : field.value.filter((id) => id !== role.id),
-                              )
-                            }
-                          />
-                          <span>
-                            {role.name}
-                            <span className="ml-1 text-xs text-muted-foreground">({role.id})</span>
-                          </span>
-                        </label>
-                      )
-                    })}
-                  </div>
-                )}
-              />
-            )}
+            <Controller
+              control={form.control}
+              name="allowedRoleIds"
+              render={({ field }) => (
+                <CheckboxList
+                  options={roles.map((role) => ({ id: role.id, label: role.name, hint: role.id }))}
+                  value={field.value}
+                  onChange={field.onChange}
+                  emptyText="Brak zdefiniowanych ról - dodaj je w zakładce Role i uprawnienia."
+                />
+              )}
+            />
           </section>
 
           <Separator />

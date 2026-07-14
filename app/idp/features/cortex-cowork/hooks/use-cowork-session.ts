@@ -1,12 +1,11 @@
 "use client"
 
 import { useCoworkSessionStore } from "@/lib/stores/cortex-cowork-session-store"
+import { DEFAULT_COWORK_PROJECT_ID } from "@cortex/types"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useRef, useState } from "react"
 import { coworkApi, coworkQueryKeys } from "../queries"
 import type { CoworkSession } from "../types"
-
-export const DEFAULT_COWORK_PROJECT_ID = "cortex-cowork"
 
 export function useCoworkSession(sessionId: string | null) {
   return useQuery({

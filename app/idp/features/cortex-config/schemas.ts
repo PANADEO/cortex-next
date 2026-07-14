@@ -1,4 +1,5 @@
 import type { CoworkConnectorConfig, CoworkProjectConfig } from "@cortex/types"
+import { COWORK_SLUG_PATTERN } from "@cortex/types"
 import { z } from "zod"
 import type { ProjectInput } from "./queries"
 
@@ -21,7 +22,6 @@ function stringifyKeyValue(refs: Record<string, string> | undefined): string {
     .join("\n")
 }
 
-const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{1,62}$/
 const SLUG_MESSAGE = "Małe litery, cyfry i myślniki (2-63 znaki)"
 
 const connectorFormSchema = z.object({
@@ -40,7 +40,7 @@ const connectorFormSchema = z.object({
 export type ConnectorFormValues = z.infer<typeof connectorFormSchema>
 
 export const projectFormSchema = z.object({
-  id: z.string().regex(SLUG_PATTERN, SLUG_MESSAGE),
+  id: z.string().regex(COWORK_SLUG_PATTERN, SLUG_MESSAGE),
   name: z.string().min(1, "Nazwa jest wymagana"),
   description: z.string().min(1, "Opis jest wymagany"),
   icon: z.string().optional(),
@@ -189,23 +189,18 @@ export function projectFormValuesToInput(values: ProjectFormValues): ProjectInpu
   }
 }
 
-export const roleFormSchema = z.object({
-  id: z.string().regex(SLUG_PATTERN, SLUG_MESSAGE),
+/**
+ * Roles and skill groups share one form shape: a named set of member ids
+ * (skill ids for groups, group ids for roles).
+ */
+export const namedSetFormSchema = z.object({
+  id: z.string().regex(COWORK_SLUG_PATTERN, SLUG_MESSAGE),
   name: z.string().min(1, "Nazwa jest wymagana"),
   description: z.string().optional(),
-  skillGroupIds: z.array(z.string()),
+  memberIds: z.array(z.string()),
 })
 
-export type RoleFormValues = z.infer<typeof roleFormSchema>
-
-export const skillGroupFormSchema = z.object({
-  id: z.string().regex(SLUG_PATTERN, SLUG_MESSAGE),
-  name: z.string().min(1, "Nazwa jest wymagana"),
-  description: z.string().optional(),
-  skillIds: z.array(z.string()),
-})
-
-export type SkillGroupFormValues = z.infer<typeof skillGroupFormSchema>
+export type NamedSetFormValues = z.infer<typeof namedSetFormSchema>
 
 export const assignmentFormSchema = z.object({
   email: z.string().email("Podaj poprawny email"),

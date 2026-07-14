@@ -9,7 +9,6 @@ import {
   useCoworkProjectTiles,
   useCoworkSession,
   useEnsureCoworkSession,
-  useExportArtifact,
   useSendCoworkMessage,
 } from "@/features/cortex-cowork"
 import { ErrorState, PageHeader } from "@cortex/ui"
@@ -19,15 +18,13 @@ import { Suspense } from "react"
 function CortexCoworkChat() {
   const searchParams = useSearchParams()
   const projectId = searchParams.get("project") ?? DEFAULT_COWORK_PROJECT_ID
-  const { tiles, projects } = useCoworkProjectTiles()
-  const project = tiles.find((tile) => tile.id === projectId)
-  const exportEnabled = projects.find((p) => p.id === projectId)?.exportEnabled ?? false
+  const { projects } = useCoworkProjectTiles()
+  const project = projects.find((p) => p.id === projectId)
 
   const { sessionId, error, retry } = useEnsureCoworkSession(projectId)
   const sessionQuery = useCoworkSession(sessionId)
   const artifactsQuery = useCoworkArtifacts(sessionId)
   const sendMessage = useSendCoworkMessage(sessionId ?? "")
-  const exportArtifact = useExportArtifact(sessionId)
 
   const messages = sessionQuery.data?.messages ?? []
   const artifacts = artifactsQuery.data ?? sessionQuery.data?.artifacts ?? []
@@ -47,7 +44,7 @@ function CortexCoworkChat() {
   return (
     <>
       <PageHeader
-        title={project?.label ?? "Cortex Cowork"}
+        title={project?.name ?? "Cortex Cowork"}
         description={
           project?.description ??
           "Chat with a skills-powered agent that works inside a sandbox and hands you back files."
@@ -66,8 +63,8 @@ function CortexCoworkChat() {
           downloadHref={(artifactId) =>
             sessionId ? coworkApi.artifactDownloadHref(sessionId, artifactId) : "#"
           }
-          {...(exportEnabled
-            ? { onExport: (artifactId: string) => exportArtifact.mutateAsync(artifactId) }
+          {...(project?.exportEnabled && sessionId
+            ? { onExport: (artifactId: string) => coworkApi.exportArtifact(sessionId, artifactId) }
             : {})}
         />
       </div>

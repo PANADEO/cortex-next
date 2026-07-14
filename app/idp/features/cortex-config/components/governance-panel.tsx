@@ -11,7 +11,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Checkbox,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -28,84 +27,51 @@ import { Controller, useForm } from "react-hook-form"
 import { useGovernanceConfig, useUpdateGovernance } from "../hooks/use-governance"
 import {
   assignmentFormSchema,
-  roleFormSchema,
-  skillGroupFormSchema,
+  namedSetFormSchema,
   type AssignmentFormValues,
-  type RoleFormValues,
-  type SkillGroupFormValues,
+  type NamedSetFormValues,
 } from "../schemas"
+import { CheckboxList, FieldError } from "./form-fields"
 
-function FieldError({ message }: { message?: string | undefined }) {
-  if (!message) return null
-  return <p className="mt-1 text-xs text-destructive">{message}</p>
-}
+// --- Named-set dialog (roles and skill groups share one form shape) ----------
 
-interface CheckboxListProps {
-  options: Array<{ id: string; label: string; hint?: string }>
-  value: string[]
-  onChange: (next: string[]) => void
+interface NamedSetDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  membersLabel: string
+  memberOptions: Array<{ id: string; label: string; hint?: string }>
   emptyText: string
+  /** Present when editing an existing entity. */
+  initial?: NamedSetFormValues | undefined
+  isSaving: boolean
+  onSubmit: (values: NamedSetFormValues) => Promise<void>
 }
 
-function CheckboxList({ options, value, onChange, emptyText }: CheckboxListProps) {
-  if (options.length === 0) {
-    return <p className="text-sm text-muted-foreground">{emptyText}</p>
-  }
-  return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-      {options.map((option) => {
-        const checked = value.includes(option.id)
-        return (
-          <label
-            key={option.id}
-            className="flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm"
-          >
-            <Checkbox
-              checked={checked}
-              onCheckedChange={(next) =>
-                onChange(next ? [...value, option.id] : value.filter((id) => id !== option.id))
-              }
-            />
-            <span>
-              {option.label}
-              {option.hint ? (
-                <span className="ml-1 text-xs text-muted-foreground">({option.hint})</span>
-              ) : null}
-            </span>
-          </label>
-        )
-      })}
-    </div>
-  )
-}
+const EMPTY_NAMED_SET: NamedSetFormValues = { id: "", name: "", description: "", memberIds: [] }
 
-// --- Skill group dialog -----------------------------------------------------
-
-function SkillGroupDialog({
+function NamedSetDialog({
   open,
   onOpenChange,
-  group,
-  skillOptions,
+  title,
+  membersLabel,
+  memberOptions,
+  emptyText,
+  initial,
   isSaving,
   onSubmit,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  group?: CoworkSkillGroup | undefined
-  skillOptions: Array<{ id: string; label: string }>
-  isSaving: boolean
-  onSubmit: (values: SkillGroupFormValues) => Promise<void>
-}) {
-  const form = useForm<SkillGroupFormValues>({
-    resolver: zodResolver(skillGroupFormSchema),
-    defaultValues: group ?? { id: "", name: "", description: "", skillIds: [] },
+}: NamedSetDialogProps) {
+  const form = useForm<NamedSetFormValues>({
+    resolver: zodResolver(namedSetFormSchema),
+    defaultValues: initial ?? EMPTY_NAMED_SET,
   })
 
   useEffect(() => {
     if (!open) return
-    form.reset(group ?? { id: "", name: "", description: "", skillIds: [] })
+    form.reset(initial ?? EMPTY_NAMED_SET)
+    // Reset only when the dialog opens or the edited entity changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, group])
+  }, [open, initial])
 
   const submit = form.handleSubmit(async (values) => {
     await onSubmit(values)
@@ -116,129 +82,42 @@ function SkillGroupDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{group ? `Edytuj grupę: ${group.name}` : "Nowa grupa skilli"}</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="group-id">Identyfikator</Label>
-              <Input id="group-id" className="mt-1" disabled={Boolean(group)} {...form.register("id")} />
-              <FieldError message={form.formState.errors.id?.message} />
-            </div>
-            <div>
-              <Label htmlFor="group-name">Nazwa</Label>
-              <Input id="group-name" className="mt-1" {...form.register("name")} />
-              <FieldError message={form.formState.errors.name?.message} />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="group-description">Opis</Label>
-            <Input id="group-description" className="mt-1" {...form.register("description")} />
-          </div>
-          <div>
-            <Label>Skille w grupie</Label>
-            <div className="mt-2">
-              <Controller
-                control={form.control}
-                name="skillIds"
-                render={({ field }) => (
-                  <CheckboxList
-                    options={skillOptions}
-                    value={field.value}
-                    onChange={field.onChange}
-                    emptyText="Katalog skilli jest pusty."
-                  />
-                )}
+              <Label htmlFor="named-set-id">Identyfikator</Label>
+              <Input
+                id="named-set-id"
+                className="mt-1"
+                disabled={Boolean(initial)}
+                {...form.register("id")}
               />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Anuluj
-            </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Zapisz
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// --- Role dialog --------------------------------------------------------------
-
-function RoleDialog({
-  open,
-  onOpenChange,
-  role,
-  groups,
-  isSaving,
-  onSubmit,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  role?: CoworkRole | undefined
-  groups: CoworkSkillGroup[]
-  isSaving: boolean
-  onSubmit: (values: RoleFormValues) => Promise<void>
-}) {
-  const form = useForm<RoleFormValues>({
-    resolver: zodResolver(roleFormSchema),
-    defaultValues: role ?? { id: "", name: "", description: "", skillGroupIds: [] },
-  })
-
-  useEffect(() => {
-    if (!open) return
-    form.reset(role ?? { id: "", name: "", description: "", skillGroupIds: [] })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, role])
-
-  const submit = form.handleSubmit(async (values) => {
-    await onSubmit(values)
-    onOpenChange(false)
-  })
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{role ? `Edytuj rolę: ${role.name}` : "Nowa rola"}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="role-id">Identyfikator</Label>
-              <Input id="role-id" className="mt-1" disabled={Boolean(role)} {...form.register("id")} />
               <FieldError message={form.formState.errors.id?.message} />
             </div>
             <div>
-              <Label htmlFor="role-name">Nazwa</Label>
-              <Input id="role-name" className="mt-1" {...form.register("name")} />
+              <Label htmlFor="named-set-name">Nazwa</Label>
+              <Input id="named-set-name" className="mt-1" {...form.register("name")} />
               <FieldError message={form.formState.errors.name?.message} />
             </div>
           </div>
           <div>
-            <Label htmlFor="role-description">Opis</Label>
-            <Input id="role-description" className="mt-1" {...form.register("description")} />
+            <Label htmlFor="named-set-description">Opis</Label>
+            <Input id="named-set-description" className="mt-1" {...form.register("description")} />
           </div>
           <div>
-            <Label>Grupy skilli</Label>
+            <Label>{membersLabel}</Label>
             <div className="mt-2">
               <Controller
                 control={form.control}
-                name="skillGroupIds"
+                name="memberIds"
                 render={({ field }) => (
                   <CheckboxList
-                    options={groups.map((group) => ({
-                      id: group.id,
-                      label: group.name,
-                      hint: `${group.skillIds.length} skilli`,
-                    }))}
+                    options={memberOptions}
                     value={field.value}
                     onChange={field.onChange}
-                    emptyText="Najpierw utwórz grupę skilli."
+                    emptyText={emptyText}
                   />
                 )}
               />
@@ -346,6 +225,46 @@ function AssignmentDialog({
   )
 }
 
+// --- Shared list row -------------------------------------------------------------
+
+function EntityRow({
+  name,
+  badges,
+  onEdit,
+  onDelete,
+}: {
+  name: string
+  badges: string[]
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-md border p-2 text-sm">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="font-medium">{name}</span>
+        {badges.map((badge) => (
+          <Badge key={badge} variant="secondary">
+            {badge}
+          </Badge>
+        ))}
+      </div>
+      <div className="flex shrink-0 items-center gap-1">
+        <Button variant="ghost" size="sm" onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-destructive hover:text-destructive"
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 // --- Panel ----------------------------------------------------------------------
 
 type DialogState =
@@ -384,6 +303,9 @@ export function GovernancePanel() {
   const saveAssignments = (assignments: Record<string, string[]>) =>
     updateGovernance.mutateAsync({ userAssignments: assignments })
 
+  const editedGroup = dialog.kind === "group" ? dialog.group : undefined
+  const editedRole = dialog.kind === "role" ? dialog.role : undefined
+
   return (
     <div className="space-y-4">
       {openMode ? (
@@ -413,38 +335,15 @@ export function GovernancePanel() {
               <p className="text-sm text-muted-foreground">Brak grup.</p>
             ) : (
               config.skillGroups.map((group) => (
-                <div
+                <EntityRow
                   key={group.id}
-                  className="flex items-center justify-between rounded-md border p-2 text-sm"
-                >
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="font-medium">{group.name}</span>
-                    {group.skillIds.map((skillId) => (
-                      <Badge key={skillId} variant="secondary">
-                        {skillId}
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDialog({ kind: "group", group })}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() =>
-                        void saveGroups(config.skillGroups.filter((g) => g.id !== group.id))
-                      }
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
+                  name={group.name}
+                  badges={group.skillIds}
+                  onEdit={() => setDialog({ kind: "group", group })}
+                  onDelete={() =>
+                    void saveGroups(config.skillGroups.filter((g) => g.id !== group.id))
+                  }
+                />
               ))
             )}
           </CardContent>
@@ -468,36 +367,13 @@ export function GovernancePanel() {
               <p className="text-sm text-muted-foreground">Brak ról.</p>
             ) : (
               config.roles.map((role) => (
-                <div
+                <EntityRow
                   key={role.id}
-                  className="flex items-center justify-between rounded-md border p-2 text-sm"
-                >
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="font-medium">{role.name}</span>
-                    {role.skillGroupIds.map((groupId) => (
-                      <Badge key={groupId} variant="secondary">
-                        {groupId}
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDialog({ kind: "role", role })}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => void saveRoles(config.roles.filter((r) => r.id !== role.id))}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
+                  name={role.name}
+                  badges={role.skillGroupIds}
+                  onEdit={() => setDialog({ kind: "role", role })}
+                  onDelete={() => void saveRoles(config.roles.filter((r) => r.id !== role.id))}
+                />
               ))
             )}
           </CardContent>
@@ -521,40 +397,17 @@ export function GovernancePanel() {
               <p className="text-sm text-muted-foreground">Brak przypisań (tryb otwarty).</p>
             ) : (
               Object.entries(config.userAssignments).map(([email, roleIds]) => (
-                <div
+                <EntityRow
                   key={email}
-                  className="flex items-center justify-between rounded-md border p-2 text-sm"
-                >
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="font-medium">{email}</span>
-                    {roleIds.map((roleId) => (
-                      <Badge key={roleId} variant="secondary">
-                        {roleId}
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDialog({ kind: "assignment", email })}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => {
-                        const next = { ...config.userAssignments }
-                        delete next[email]
-                        void saveAssignments(next)
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
+                  name={email}
+                  badges={roleIds}
+                  onEdit={() => setDialog({ kind: "assignment", email })}
+                  onDelete={() => {
+                    const next = { ...config.userAssignments }
+                    delete next[email]
+                    void saveAssignments(next)
+                  }}
+                />
               ))
             )}
           </CardContent>
@@ -621,11 +474,23 @@ export function GovernancePanel() {
         </Card>
       </div>
 
-      <SkillGroupDialog
+      <NamedSetDialog
         open={dialog.kind === "group"}
         onOpenChange={(open) => setDialog(open ? dialog : { kind: "none" })}
-        group={dialog.kind === "group" ? dialog.group : undefined}
-        skillOptions={skillOptions}
+        title={editedGroup ? `Edytuj grupę: ${editedGroup.name}` : "Nowa grupa skilli"}
+        membersLabel="Skille w grupie"
+        memberOptions={skillOptions}
+        emptyText="Katalog skilli jest pusty."
+        initial={
+          editedGroup
+            ? {
+                id: editedGroup.id,
+                name: editedGroup.name,
+                description: editedGroup.description ?? "",
+                memberIds: editedGroup.skillIds,
+              }
+            : undefined
+        }
         isSaving={updateGovernance.isPending}
         onSubmit={async (values) => {
           const next = config.skillGroups.filter((group) => group.id !== values.id)
@@ -635,16 +500,32 @@ export function GovernancePanel() {
               id: values.id,
               name: values.name,
               ...(values.description ? { description: values.description } : {}),
-              skillIds: values.skillIds,
+              skillIds: values.memberIds,
             },
           ])
         }}
       />
-      <RoleDialog
+      <NamedSetDialog
         open={dialog.kind === "role"}
         onOpenChange={(open) => setDialog(open ? dialog : { kind: "none" })}
-        role={dialog.kind === "role" ? dialog.role : undefined}
-        groups={config.skillGroups}
+        title={editedRole ? `Edytuj rolę: ${editedRole.name}` : "Nowa rola"}
+        membersLabel="Grupy skilli"
+        memberOptions={config.skillGroups.map((group) => ({
+          id: group.id,
+          label: group.name,
+          hint: `${group.skillIds.length} skilli`,
+        }))}
+        emptyText="Najpierw utwórz grupę skilli."
+        initial={
+          editedRole
+            ? {
+                id: editedRole.id,
+                name: editedRole.name,
+                description: editedRole.description ?? "",
+                memberIds: editedRole.skillGroupIds,
+              }
+            : undefined
+        }
         isSaving={updateGovernance.isPending}
         onSubmit={async (values) => {
           const next = config.roles.filter((role) => role.id !== values.id)
@@ -654,7 +535,7 @@ export function GovernancePanel() {
               id: values.id,
               name: values.name,
               ...(values.description ? { description: values.description } : {}),
-              skillGroupIds: values.skillGroupIds,
+              skillGroupIds: values.memberIds,
             },
           ])
         }}

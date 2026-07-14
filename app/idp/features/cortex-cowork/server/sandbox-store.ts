@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto"
 import { cp, mkdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import type { CoworkProjectConfig } from "@cortex/types"
+import { DEFAULT_COWORK_PROJECT_ID } from "@cortex/types"
 import type { ChatMessage, CoworkArtifact, CoworkSession, CoworkSkillSummary } from "../types"
 import { COWORK_DATA_DIR } from "@/lib/cortex-governance/store"
 import { SKILLS_SOURCE_DIR, listSkillCatalog } from "./skills-catalog"
@@ -69,16 +70,16 @@ export async function createSandboxSession(
 
   const available = await listSkillCatalog(SKILLS_SOURCE_DIR)
   const wanted = new Set(skillIds)
-  for (const skill of available) {
-    if (!wanted.has(skill.id)) continue
-    await cp(path.join(SKILLS_SOURCE_DIR, skill.id), path.join(skillsDir, skill.id), {
-      recursive: true,
-    })
-  }
-
-  // Read the catalog back from the COPY, not the source, so the welcome
-  // message reflects what actually landed in this session's sandbox.
-  const skills = await listSkillCatalog(skillsDir)
+  const skills = available.filter((skill) => wanted.has(skill.id))
+  // A failed cp rejects the whole create, so the already-parsed `skills`
+  // list is exactly what landed in the sandbox - no need to re-parse the copy.
+  await Promise.all(
+    skills.map((skill) =>
+      cp(path.join(SKILLS_SOURCE_DIR, skill.id), path.join(skillsDir, skill.id), {
+        recursive: true,
+      }),
+    ),
+  )
   const welcome: ChatMessage = {
     id: randomUUID(),
     role: "assistant",
@@ -109,7 +110,7 @@ export async function getSandboxSession(sessionId: string): Promise<SandboxSessi
   return {
     ...meta,
     // Sessions written before governance landed have no projectId on disk.
-    projectId: meta.projectId ?? "cortex-cowork",
+    projectId: meta.projectId ?? DEFAULT_COWORK_PROJECT_ID,
     sandboxDir,
     skillsDir,
     artifactsDir,

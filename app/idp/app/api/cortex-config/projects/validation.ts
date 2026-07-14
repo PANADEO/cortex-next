@@ -4,14 +4,14 @@ import type {
   CoworkModelConfig,
   CoworkProjectConfig,
 } from "@cortex/types"
+import { COWORK_SLUG_PATTERN } from "@cortex/types"
 
 // Server-side validation for project create/update bodies. Kept as plain
 // checks (not Zod) to match the other BFF routes in this app - the client
-// forms carry the Zod layer.
+// forms carry the Zod layer; substantive rules (slug pattern, provider
+// requirements) live in shared constants so the two dialects can't diverge.
 
-const PROJECT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{1,62}$/
-
-function isStringArray(value: unknown): value is string[] {
+export function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string")
 }
 
@@ -42,7 +42,7 @@ export function parseProjectBody(body: unknown): ParsedProject {
   if (typeof body !== "object" || body === null) return { error: "Invalid JSON body" }
   const input = body as Partial<CoworkProjectConfig>
 
-  if (!input.id || !PROJECT_ID_PATTERN.test(input.id)) {
+  if (!input.id || !COWORK_SLUG_PATTERN.test(input.id)) {
     return { error: "id must be a lowercase slug (a-z, 0-9, hyphens)" }
   }
   if (!input.name || typeof input.name !== "string") return { error: "name is required" }

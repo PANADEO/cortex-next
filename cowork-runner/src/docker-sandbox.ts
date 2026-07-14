@@ -1,6 +1,7 @@
-import { spawn, spawnSync } from "node:child_process"
+import { spawnSync } from "node:child_process"
 import { randomBytes } from "node:crypto"
 import type { SandboxFactory, SessionEnv, ShellResult } from "@flue/runtime"
+import { runProcess } from "./run-process.ts"
 
 // Docker-backed Flue SandboxFactory: the hard enforcement behind a project's
 // "allowed sandbox paths". One container per harness; the session sandbox dir
@@ -28,25 +29,20 @@ export interface DockerSandboxOptions {
 
 class DockerError extends Error {}
 
-function runDocker(args: string[], input?: string): Promise<ShellResult> {
-  return new Promise((resolve, reject) => {
-    const child = spawn("docker", args, { stdio: ["pipe", "pipe", "pipe"] })
-    let stdout = ""
-    let stderr = ""
-    child.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString()
-    })
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString()
-    })
-    child.on("error", (error) => reject(new DockerError(`docker not available: ${error.message}`)))
-    child.on("close", (code) => resolve({ stdout, stderr, exitCode: code ?? 1 }))
-    if (input !== undefined) child.stdin.write(input)
-    child.stdin.end()
-  })
+async function runDocker(args: string[]): Promise<ShellResult> {
+  try {
+    return await runProcess("docker", args)
+  } catch (error) {
+    throw new DockerError(
+      `docker not available: ${error instanceof Error ? error.message : error}`,
+    )
+  }
 }
 
-/** Best-effort reaper for containers a SIGKILLed runner left behind. */
+/**
+ * Best-effort reaper for containers a SIGKILLed runner left behind. Runs off
+ * the turn's critical path (fire-and-forget from createSessionEnv).
+ */
 async function reapOrphans(): Promise<void> {
   const list = await runDocker([
     "ps",
@@ -56,6 +52,7 @@ async function reapOrphans(): Promise<void> {
     "{{.ID}}\t{{.CreatedAt}}",
   ]).catch(() => null)
   if (!list || list.exitCode !== 0) return
+  const removals: Promise<unknown>[] = []
   for (const line of list.stdout.split("\n")) {
     const [id, createdAt] = line.split("\t")
     if (!id || !createdAt) continue
@@ -63,8 +60,9 @@ async function reapOrphans(): Promise<void> {
     // handles the leading date+offset once the trailing zone name drops.
     const created = Date.parse(createdAt.split(" ").slice(0, 3).join(" "))
     if (Number.isNaN(created) || Date.now() - created < ORPHAN_MAX_AGE_MS) continue
-    await runDocker(["rm", "-f", id]).catch(() => undefined)
+    removals.push(runDocker(["rm", "-f", id]).catch(() => undefined))
   }
+  await Promise.all(removals)
 }
 
 function shellQuote(value: string): string {
@@ -119,55 +117,21 @@ function createContainerEnv(container: string): SessionEnv {
   const cwd = "/workspace"
   const resolvePath = (p: string): string => (p.startsWith("/") ? p : `${cwd}/${p}`)
 
-  const exec: SessionEnv["exec"] = (command, opts) => {
-    return new Promise<ShellResult>((resolve, reject) => {
-      const signal = opts?.signal
-      if (signal?.aborted) return reject(new Error("aborted"))
-      const args = ["exec", "--workdir", opts?.cwd ? resolvePath(opts.cwd) : cwd]
-      for (const [key, value] of Object.entries(opts?.env ?? {})) {
-        args.push("--env", `${key}=${value}`)
-      }
-      args.push(container, "sh", "-lc", command)
-
-      const child = spawn("docker", args, { stdio: ["ignore", "pipe", "pipe"] })
-      let stdout = ""
-      let stderr = ""
-      let settled = false
-      const settle = (result: ShellResult) => {
-        if (settled) return
-        settled = true
-        if (timer) clearTimeout(timer)
-        signal?.removeEventListener("abort", onAbort)
-        resolve(result)
-      }
-      const fail = (error: Error) => {
-        if (settled) return
-        settled = true
-        if (timer) clearTimeout(timer)
-        signal?.removeEventListener("abort", onAbort)
-        reject(error)
-      }
-      const onAbort = () => {
-        child.kill("SIGKILL")
-        fail(new Error("aborted"))
-      }
-      signal?.addEventListener("abort", onAbort, { once: true })
-      const timer = opts?.timeoutMs
-        ? setTimeout(() => {
-            child.kill("SIGKILL")
-            settle({ stdout, stderr: `${stderr}\n[timed out after ${opts.timeoutMs}ms]`, exitCode: 124 })
-          }, opts.timeoutMs)
-        : undefined
-
-      child.stdout.on("data", (chunk: Buffer) => {
-        stdout += chunk.toString()
+  const exec: SessionEnv["exec"] = async (command, opts) => {
+    const args = ["exec", "--workdir", opts?.cwd ? resolvePath(opts.cwd) : cwd]
+    for (const [key, value] of Object.entries(opts?.env ?? {})) {
+      args.push("--env", `${key}=${value}`)
+    }
+    args.push(container, "sh", "-lc", command)
+    try {
+      return await runProcess("docker", args, {
+        ...(opts?.timeoutMs ? { timeoutMs: opts.timeoutMs } : {}),
+        ...(opts?.signal ? { signal: opts.signal } : {}),
       })
-      child.stderr.on("data", (chunk: Buffer) => {
-        stderr += chunk.toString()
-      })
-      child.on("error", (error) => fail(new DockerError(error.message)))
-      child.on("close", (code) => settle({ stdout, stderr, exitCode: code ?? 1 }))
-    })
+    } catch (error) {
+      if (error instanceof Error && error.message === "aborted") throw error
+      throw new DockerError(error instanceof Error ? error.message : String(error))
+    }
   }
 
   const execOrThrow = async (command: string): Promise<string> => {
@@ -234,7 +198,9 @@ function createContainerEnv(container: string): SessionEnv {
 export function dockerSandbox(options: DockerSandboxOptions): SandboxFactory {
   return {
     createSessionEnv: async () => {
-      await reapOrphans()
+      // Reaping is independent of this turn's container - don't pay its
+      // latency on the hot path.
+      void reapOrphans().catch(() => undefined)
       const container = await startContainer(options)
       return createContainerEnv(container)
     },

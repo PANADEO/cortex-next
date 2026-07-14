@@ -16,6 +16,12 @@
 /** Wire protocol families the model provider layer supports. */
 export type CoworkModelProvider = "anthropic" | "openai-compatible"
 
+/** Seeded first project; also the fallback for pre-governance session metadata. */
+export const DEFAULT_COWORK_PROJECT_ID = "cortex-cowork"
+
+/** One slug rule for project/role/group/credential-segment ids, client AND server. */
+export const COWORK_SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{1,62}$/
+
 /**
  * Per-project model configuration. `apiKeyRef` is a credential-store path
  * ("key/subkey"); the raw secret never lives in project config nor reaches
@@ -109,6 +115,24 @@ export interface CoworkProjectConfig {
   artifactExport?: CoworkArtifactExportConfig
   createdAt: string
   updatedAt: string
+}
+
+/** Presentation-only project meta served to every authenticated user (hub tiles). */
+export interface CoworkProjectTileInfo {
+  id: string
+  name: string
+  description: string
+  icon?: string
+  /** True when the project has an export share configured (drives export UI). */
+  exportEnabled: boolean
+}
+
+/** Response of the artifact export endpoint. */
+export interface CoworkArtifactExportResult {
+  /** Server-local absolute path the file was copied to. */
+  exportedPath: string
+  /** Path shown to the user for copy-paste (UNC / network path), or the server path. */
+  displayPath: string
 }
 
 /** Root document persisted by the cortex-config store. */

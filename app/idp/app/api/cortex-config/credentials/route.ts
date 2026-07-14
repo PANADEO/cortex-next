@@ -1,32 +1,23 @@
+import { isDenied, requireAdmin } from "@/lib/cortex-governance/admin-gate"
 import {
   deleteCredential,
   isValidCredentialPath,
   listCredentialPaths,
   setCredential,
 } from "@/lib/cortex-governance/credentials"
-import { requestEmail } from "@/lib/cortex-governance/request-identity"
-import { isAdmin, readGovernanceConfig } from "@/lib/cortex-governance/store"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
-async function adminGate(request: NextRequest): Promise<NextResponse | null> {
-  const config = await readGovernanceConfig()
-  if (!isAdmin(config, requestEmail(request))) {
-    return NextResponse.json({ message: "Admin access required" }, { status: 403 })
-  }
-  return null
-}
-
 /** Paths only. Secret values are write-only through this API. */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const denied = await adminGate(request)
-  if (denied) return denied
+  const gate = await requireAdmin(request)
+  if (isDenied(gate)) return gate
   return NextResponse.json({ paths: await listCredentialPaths() })
 }
 
 export async function PUT(request: NextRequest): Promise<NextResponse> {
-  const denied = await adminGate(request)
-  if (denied) return denied
+  const gate = await requireAdmin(request)
+  if (isDenied(gate)) return gate
 
   const body = (await request.json().catch(() => null)) as {
     path?: string
@@ -46,8 +37,8 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
-  const denied = await adminGate(request)
-  if (denied) return denied
+  const gate = await requireAdmin(request)
+  if (isDenied(gate)) return gate
 
   const body = (await request.json().catch(() => null)) as { path?: string } | null
   if (!body?.path) {

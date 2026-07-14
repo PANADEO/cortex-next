@@ -5,8 +5,10 @@ import path from "node:path"
 import type { CoworkConnectorConfig, CoworkModelConfig, CoworkProjectConfig } from "@cortex/types"
 import type { AgentActivityStep, ChatMessage, CoworkArtifact, CoworkSkillId } from "../types"
 import {
+  readCredentialsDocument,
   resolveCredential,
   resolveCredentialRefs,
+  type CredentialsDocument,
 } from "@/lib/cortex-governance/credentials"
 import { getProject } from "@/lib/cortex-governance/store"
 import { appendMessage, registerArtifact, type SandboxSession } from "./sandbox-store"
@@ -60,51 +62,47 @@ export async function runChatTurn(
 }
 
 /**
+ * Typed runner failure, classified AT THE THROW SITE (each site knows what
+ * happened) instead of by regexing message text later. `retryable` marks
+ * fast transients worth one more attempt: a crashed process, a reset socket.
+ * A timeout is deliberately NOT retryable - the first attempt already burned
+ * the full RUNNER_TIMEOUT_MS budget and a retry would double both the
+ * user's wait and the model spend.
+ */
+class RunnerError extends Error {
+  readonly retryable: boolean
+
+  constructor(message: string, options: { retryable: boolean; cause?: unknown }) {
+    super(message, options.cause !== undefined ? { cause: options.cause } : undefined)
+    this.retryable = options.retryable
+  }
+}
+
+/**
  * Runs one agent turn, invoking `onEvent` with each live activity step as the
  * Flue runner reports it (thinking, tool calls, assistant text progress).
  * Resolves with the persisted assistant message (including its activity
- * trail) and any new artifacts once the run completes.
+ * trail) and any new artifacts once the run completes. Transient failures get
+ * one retry; anything else degrades to the keyword fallback.
  */
-/**
- * A runner failure is retryable if it looks transient (timeout, non-zero
- * exit from the model call) rather than structural (missing node/flue binary),
- * where a second attempt would just fail the same way.
- */
-function isRetryableRunnerError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error)
-  if (/ENOENT|not found|no such file|cannot find module/i.test(message)) return false
-  return /timed out|exited with code|stream request failed|ECONNRESET|socket hang up/i.test(message)
-}
-
 export async function streamChatTurn(
   session: SandboxSession,
   userContent: string,
   onEvent: (step: AgentActivityStep) => void,
 ): Promise<{ message: ChatMessage; artifacts: CoworkArtifact[] }> {
-  try {
-    return await runFlueTurn(session, userContent, onEvent)
-  } catch (error) {
-    if (isRetryableRunnerError(error)) {
+  for (const attempt of [1, 2]) {
+    try {
+      return await runFlueTurn(session, userContent, onEvent)
+    } catch (error) {
+      const retryable = error instanceof RunnerError && error.retryable && attempt === 1
       console.warn(
-        "[cortex-cowork] Flue runner turn failed (retryable), retrying once:",
+        `[cortex-cowork] Flue runner turn failed (attempt ${attempt}${retryable ? ", retrying" : ", falling back to keyword routing"}):`,
         error instanceof Error ? error.message : error,
       )
-      try {
-        return await runFlueTurn(session, userContent, onEvent)
-      } catch (retryError) {
-        console.warn(
-          "[cortex-cowork] Flue runner retry failed, falling back to keyword routing:",
-          retryError instanceof Error ? retryError.message : retryError,
-        )
-        return runKeywordFallback(session, userContent)
-      }
+      if (!retryable) break
     }
-    console.warn(
-      "[cortex-cowork] Flue runner turn failed, falling back to keyword routing:",
-      error instanceof Error ? error.message : error,
-    )
-    return runKeywordFallback(session, userContent)
   }
+  return runKeywordFallback(session, userContent)
 }
 
 interface RunnerEvent {
@@ -139,12 +137,16 @@ function toActivityStep(raw: string): AgentActivityStep | null {
 
 /**
  * Builds the model config slice passed to the runner. Credential refs are
- * resolved app-side (the runner only ever sees final values); an unset or
- * unresolvable ref falls through to the provider's own env-var lookup
- * (ANTHROPIC_API_KEY et al.) inside the runner process.
+ * resolved app-side against a preloaded document (one file read covers the
+ * model key and every connector this turn); an unset or unresolvable ref
+ * falls through to the provider's own env-var lookup (ANTHROPIC_API_KEY et
+ * al.) inside the runner process.
  */
-async function modelConfigForRunner(project: CoworkProjectConfig): Promise<CoworkModelConfig> {
-  const apiKey = await resolveCredential(project.model.apiKeyRef)
+function modelConfigForRunner(
+  project: CoworkProjectConfig,
+  credentials: CredentialsDocument,
+): CoworkModelConfig {
+  const apiKey = resolveCredential(credentials, project.model.apiKeyRef)
   return {
     provider: project.model.provider,
     modelId: project.model.modelId,
@@ -153,6 +155,8 @@ async function modelConfigForRunner(project: CoworkProjectConfig): Promise<Cowor
   }
 }
 
+// Mirrors ResolvedConnector in cowork-runner/src/connectors.ts (the runner is
+// standalone, so the wire shape is declared on each side of the env contract).
 interface ResolvedConnectorForRunner {
   id: string
   type: "mcp" | "cli"
@@ -165,27 +169,26 @@ interface ResolvedConnectorForRunner {
 }
 
 /** Enabled connectors with credential refs resolved to header/env values. */
-async function connectorsForRunner(
+function connectorsForRunner(
   connectors: CoworkConnectorConfig[],
-): Promise<ResolvedConnectorForRunner[]> {
-  const resolved: ResolvedConnectorForRunner[] = []
-  for (const connector of connectors) {
-    if (!connector.enabled) continue
-    const secrets = await resolveCredentialRefs(connector.credentialRefs)
-    resolved.push({
-      id: connector.id,
-      type: connector.type,
-      name: connector.name,
-      ...(connector.description ? { description: connector.description } : {}),
-      target: connector.target,
-      ...(connector.type === "mcp" && Object.keys(secrets).length > 0
-        ? { headers: secrets }
-        : {}),
-      ...(connector.type === "cli" && Object.keys(secrets).length > 0 ? { env: secrets } : {}),
-      ...(connector.baseArgs?.length ? { baseArgs: connector.baseArgs } : {}),
+  credentials: CredentialsDocument,
+): ResolvedConnectorForRunner[] {
+  return connectors
+    .filter((connector) => connector.enabled)
+    .map((connector) => {
+      const secrets = resolveCredentialRefs(credentials, connector.credentialRefs)
+      const hasSecrets = Object.keys(secrets).length > 0
+      return {
+        id: connector.id,
+        type: connector.type,
+        name: connector.name,
+        ...(connector.description ? { description: connector.description } : {}),
+        target: connector.target,
+        ...(connector.type === "mcp" && hasSecrets ? { headers: secrets } : {}),
+        ...(connector.type === "cli" && hasSecrets ? { env: secrets } : {}),
+        ...(connector.baseArgs?.length ? { baseArgs: connector.baseArgs } : {}),
+      }
     })
-  }
-  return resolved
 }
 
 async function runFlueTurn(
@@ -213,16 +216,19 @@ async function runFlueTurn(
   }
   // Per-instance configuration travels via env, not argv: the model config
   // will carry resolved secrets, and env vars never show up in `ps` output.
+  // (Env names are read on the runner side in cowork-runner/src/env.ts.)
   env.COWORK_SANDBOX_DIR = session.sandboxDir
   if (project) {
-    env.COWORK_MODEL_CONFIG = JSON.stringify(await modelConfigForRunner(project))
+    // One credentials read covers the model key and every connector.
+    const credentials = await readCredentialsDocument()
+    env.COWORK_MODEL_CONFIG = JSON.stringify(modelConfigForRunner(project, credentials))
     if (project.systemPrompt) env.COWORK_SYSTEM_PROMPT = project.systemPrompt
     // Configs written before sandbox modes existed carry no `mode` field.
     env.COWORK_SANDBOX_MODE = project.sandbox.mode ?? "local"
     if (project.sandbox.allowedPaths.length > 0) {
       env.COWORK_SANDBOX_PATHS = JSON.stringify(project.sandbox.allowedPaths)
     }
-    const connectors = await connectorsForRunner(project.connectors)
+    const connectors = connectorsForRunner(project.connectors, credentials)
     if (connectors.length > 0) {
       env.COWORK_CONNECTORS = JSON.stringify(connectors)
     }
@@ -241,7 +247,10 @@ async function runFlueTurn(
     const timer = setTimeout(() => {
       child.kill("SIGTERM")
       setTimeout(() => child.kill("SIGKILL"), 10_000).unref()
-      reject(new Error(`flue run timed out after ${RUNNER_TIMEOUT_MS}ms`))
+      // Not retryable: the attempt already consumed the full timeout budget.
+      reject(
+        new RunnerError(`flue run timed out after ${RUNNER_TIMEOUT_MS}ms`, { retryable: false }),
+      )
     }, RUNNER_TIMEOUT_MS)
 
     let out = ""
@@ -270,12 +279,21 @@ async function runFlueTurn(
     })
     child.on("error", (error) => {
       clearTimeout(timer)
-      reject(error)
+      // Spawn failure = missing binary / bad COWORK_NODE_BIN - structural,
+      // a retry would fail identically.
+      reject(new RunnerError(`flue spawn failed: ${error.message}`, { retryable: false }))
     })
     child.on("close", (code) => {
       clearTimeout(timer)
       if (code === 0) resolve(out)
-      else reject(new Error(`flue run exited with code ${code}: ${errTail.trim()}`))
+      // A non-zero exit is the transient class (model call crashed, network
+      // reset inside the runner) - worth exactly one more attempt.
+      else
+        reject(
+          new RunnerError(`flue run exited with code ${code}: ${errTail.trim()}`, {
+            retryable: true,
+          }),
+        )
     })
   })
 

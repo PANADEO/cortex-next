@@ -16,17 +16,23 @@ import { useMemo } from "react"
 import { coworkApi, coworkQueryKeys, type CoworkProjectTile } from "../queries"
 
 // Governance config stores icons as names (data, not code); tiles render
-// whatever this map knows, defaulting to the chat icon. Extend deliberately -
-// a giant icon registry would bloat the client bundle for no user value.
-const PROJECT_ICONS: Record<string, LucideIcon> = {
-  bot: Bot,
-  "messages-square": MessagesSquare,
-  "file-text": FileText,
-  "file-spreadsheet": FileSpreadsheet,
-  search: Search,
-  sparkles: Sparkles,
-  table: Table2,
-}
+// whatever this registry knows, defaulting to the chat icon. It is the ONE
+// source for both the hub tiles and the project form's icon picker - add an
+// icon here and it shows up in both. Extend deliberately - a giant registry
+// would bloat the client bundle for no user value.
+export const PROJECT_ICON_OPTIONS: Array<{ value: string; label: string; icon: LucideIcon }> = [
+  { value: "bot", label: "Bot", icon: Bot },
+  { value: "messages-square", label: "Chat", icon: MessagesSquare },
+  { value: "file-text", label: "Dokument", icon: FileText },
+  { value: "file-spreadsheet", label: "Arkusz", icon: FileSpreadsheet },
+  { value: "search", label: "Lupa", icon: Search },
+  { value: "sparkles", label: "Iskry", icon: Sparkles },
+  { value: "table", label: "Tabela", icon: Table2 },
+]
+
+const PROJECT_ICONS: Record<string, LucideIcon> = Object.fromEntries(
+  PROJECT_ICON_OPTIONS.map((option) => [option.value, option.icon]),
+)
 
 function projectToTile(project: CoworkProjectTile): Tile {
   return {

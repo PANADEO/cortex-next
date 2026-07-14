@@ -1,22 +1,15 @@
-import { requestEmail } from "@/lib/cortex-governance/request-identity"
-import {
-  isAdmin,
-  readGovernanceConfig,
-  saveGovernanceConfig,
-} from "@/lib/cortex-governance/store"
+import { isDenied, requireAdmin } from "@/lib/cortex-governance/admin-gate"
+import { saveGovernanceConfig } from "@/lib/cortex-governance/store"
 import type { CoworkRole, CoworkSkillGroup } from "@cortex/types"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
+import { isStringArray } from "../projects/validation"
 
 interface GovernanceUpdateBody {
   skillGroups?: CoworkSkillGroup[]
   roles?: CoworkRole[]
   userAssignments?: Record<string, string[]>
   adminEmails?: string[]
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string")
 }
 
 function invalidReason(body: GovernanceUpdateBody): string | undefined {
@@ -52,11 +45,9 @@ function invalidReason(body: GovernanceUpdateBody): string | undefined {
 
 /** Partial update of the central governance sections (not projects). */
 export async function PUT(request: NextRequest): Promise<NextResponse> {
-  const config = await readGovernanceConfig()
-  const email = requestEmail(request)
-  if (!isAdmin(config, email)) {
-    return NextResponse.json({ message: "Admin access required" }, { status: 403 })
-  }
+  const gate = await requireAdmin(request)
+  if (isDenied(gate)) return gate
+  const { config } = gate
 
   const body = (await request.json().catch(() => null)) as GovernanceUpdateBody | null
   if (!body) return NextResponse.json({ message: "Invalid JSON body" }, { status: 400 })
@@ -65,12 +56,16 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 
   if (body.skillGroups !== undefined) config.skillGroups = body.skillGroups
   if (body.roles !== undefined) config.roles = body.roles
+  // Emails are stored lowercase (assignment keys AND admin list) so store
+  // lookups never depend on the caller's casing.
   if (body.userAssignments !== undefined) {
     config.userAssignments = Object.fromEntries(
       Object.entries(body.userAssignments).map(([key, value]) => [key.toLowerCase(), value]),
     )
   }
-  if (body.adminEmails !== undefined) config.adminEmails = body.adminEmails
+  if (body.adminEmails !== undefined) {
+    config.adminEmails = body.adminEmails.map((email) => email.toLowerCase())
+  }
 
   await saveGovernanceConfig(config)
   return NextResponse.json(config)

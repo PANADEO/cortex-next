@@ -12,27 +12,27 @@ import { local } from "@flue/runtime/node"
 import * as v from "valibot"
 import { buildConnectorTools, readConnectorsFromEnv } from "../connectors.ts"
 import { dockerSandbox } from "../docker-sandbox.ts"
+import { ENV, readJsonEnv } from "../env.ts"
 import { configureModel, readModelConfigFromEnv } from "../model-provider.ts"
 // Side-effect import: registers the observe() subscriber that streams live
 // agent activity (thinking / tool calls / text progress) to stderr as NDJSON.
 import "../observe-events.ts"
 
 // One chat turn of a Cortex Cowork project agent, run through the real Flue
-// harness: the model works in a local() sandbox with the session's skills
-// registered, and writes any files it produces under <sandboxDir>/artifacts/ -
-// the same directory the tile's Artifacts panel serves downloads from.
+// harness: the model works in a sandbox with the session's skills registered,
+// and writes any files it produces under <workspace>/artifacts/ - the same
+// directory the tile's Artifacts panel serves downloads from.
 //
 // Invoked by the Next.js app as `flue run cowork-turn --input '{...}'`
 // (see app/idp/features/cortex-cowork/server/chat-engine.ts). Per-instance
-// configuration arrives via env, not --input: COWORK_SANDBOX_DIR (which
-// session sandbox to load skills from), COWORK_MODEL_CONFIG (provider/model,
-// carries the resolved API key - env so it never shows up in `ps`), and
-// COWORK_SYSTEM_PROMPT (project-specific instructions).
+// configuration arrives via env, not --input (see ../env.ts for the full
+// contract) - notably the model config carries the resolved API key, and env
+// never shows up in `ps`.
 
 // Fallback skills source for standalone runs (`flue run` without the app):
 // the tile's canonical SKILL.md packages inside the repo.
 const FALLBACK_SKILLS_DIR =
-  process.env.COWORK_SKILLS_DIR ??
+  process.env[ENV.skillsDir] ??
   path.join(
     path.dirname(fileURLToPath(import.meta.url)),
     "..",
@@ -64,7 +64,7 @@ function loadSkill(skillsDir: string, dirName: string): SkillReference {
  * never reaches back to the global catalog when a sandbox is specified.
  */
 function loadSessionSkills(): SkillReference[] {
-  const sandboxDir = process.env.COWORK_SANDBOX_DIR
+  const sandboxDir = process.env[ENV.sandboxDir]
   const skillsDir = sandboxDir ? path.join(sandboxDir, "skills") : FALLBACK_SKILLS_DIR
   let entries: string[]
   try {
@@ -96,26 +96,20 @@ const BASE_INSTRUCTIONS =
   "refer to produced files by filename only."
 
 /**
- * The agent's view of the workspace. In docker mode the session sandbox dir
- * mounts at /workspace, so every path the model sees must be the container
- * path; on the host they are the same directory (bind mount), which keeps
- * artifact registration in the app untouched.
+ * The agent's view of the workspace - the ONE place that maps sandbox mode to
+ * the path the model sees. In docker mode the session sandbox dir mounts at
+ * /workspace, so every path in prompts and cwd must be the container path; on
+ * the host they are the same directory (bind mount). `fallbackDir` covers
+ * standalone runs where only --input carries the sandbox dir.
  */
-export function workspacePath(): string {
-  return process.env.COWORK_SANDBOX_MODE === "docker"
-    ? "/workspace"
-    : (process.env.COWORK_SANDBOX_DIR ?? process.cwd())
+function workspacePath(fallbackDir?: string): string {
+  if (process.env[ENV.sandboxMode] === "docker") return "/workspace"
+  return process.env[ENV.sandboxDir] ?? fallbackDir ?? process.cwd()
 }
 
 function readAllowedPaths(): string[] {
-  const raw = process.env.COWORK_SANDBOX_PATHS
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    return Array.isArray(parsed) ? parsed.filter((p): p is string => typeof p === "string") : []
-  } catch {
-    return []
-  }
+  const parsed = readJsonEnv<unknown>(ENV.sandboxPaths, [])
+  return Array.isArray(parsed) ? parsed.filter((p): p is string => typeof p === "string") : []
 }
 
 /**
@@ -124,19 +118,19 @@ function readAllowedPaths(): string[] {
  * loudly and the app surfaces the error.
  */
 function selectSandbox(): SandboxFactory {
-  const sandboxDir = process.env.COWORK_SANDBOX_DIR
-  if (process.env.COWORK_SANDBOX_MODE === "docker" && sandboxDir) {
+  const sandboxDir = process.env[ENV.sandboxDir]
+  if (process.env[ENV.sandboxMode] === "docker" && sandboxDir) {
     return dockerSandbox({
       sandboxDir,
       allowedPaths: readAllowedPaths(),
-      ...(process.env.COWORK_SANDBOX_IMAGE ? { image: process.env.COWORK_SANDBOX_IMAGE } : {}),
+      ...(process.env[ENV.sandboxImage] ? { image: process.env[ENV.sandboxImage] } : {}),
     })
   }
   return local()
 }
 
 const agent = defineAgent(async () => {
-  const systemPrompt = process.env.COWORK_SYSTEM_PROMPT
+  const systemPrompt = process.env[ENV.systemPrompt]
   return {
     model: configureModel(readModelConfigFromEnv()),
     instructions: systemPrompt ? `${BASE_INSTRUCTIONS}\n\n${systemPrompt}` : BASE_INSTRUCTIONS,
@@ -157,9 +151,7 @@ export default defineWorkflow({
   output: v.object({ reply: v.string() }),
   async run({ harness, input }) {
     const session = await harness.session()
-    // In docker mode the model must think in container paths, never host ones.
-    const workspace =
-      process.env.COWORK_SANDBOX_MODE === "docker" ? "/workspace" : input.sandboxDir
+    const workspace = workspacePath(input.sandboxDir)
     const allowedPaths = readAllowedPaths()
     const prompt = [
       `Workspace for this session: ${workspace}`,

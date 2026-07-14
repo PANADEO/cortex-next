@@ -1,14 +1,15 @@
 import { copyFile, mkdir } from "node:fs/promises"
 import path from "node:path"
 import { getProject } from "@/lib/cortex-governance/store"
+import type { CoworkArtifactExportResult } from "@cortex/types"
 import type { CoworkArtifact } from "../types"
 import { artifactFilePath, type SandboxSession } from "./sandbox-store"
 
-export interface ArtifactExportResult {
-  /** Server-local absolute path the file was copied to. */
-  exportedPath: string
-  /** Path shown to the user for copy-paste (UNC / network path), or the server path. */
-  displayPath: string
+/** Expected state (project has no export share), as opposed to an I/O failure. */
+export class ExportNotConfiguredError extends Error {
+  constructor() {
+    super("Export folder is not configured for this project")
+  }
 }
 
 /**
@@ -21,11 +22,11 @@ export interface ArtifactExportResult {
 export async function exportArtifactToShare(
   session: SandboxSession,
   artifact: CoworkArtifact,
-): Promise<ArtifactExportResult> {
+): Promise<CoworkArtifactExportResult> {
   const project = await getProject(session.projectId)
   const exportConfig = project?.artifactExport
   if (!exportConfig?.exportDir) {
-    throw new Error("Export folder is not configured for this project")
+    throw new ExportNotConfiguredError()
   }
 
   const sourcePath = artifactFilePath(session, artifact)

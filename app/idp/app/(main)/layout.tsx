@@ -22,11 +22,24 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
 
+// URL first segments that own an app-shell. store-pit serves two tile ids
+// (sp-console/sp-client) but one nav+label, keyed by its path segment.
+const KNOWN_TILE_SEGMENTS = new Set([
+  "idp",
+  "idp-basic",
+  "store-pit",
+  "okna-czasowe",
+  "cortex-cowork",
+  "cortex-config",
+  "intrastat",
+  "invoice-supervisor",
+])
+
 function pathToItemId(pathname: string): string {
   const segments = pathname.split("/").filter(Boolean)
   const first = segments[0]
   if (first === "ai-tools") return segments[1] ?? "app"
-  if (TILES.some((tile) => tile.id === first)) return segments[1] ?? "dashboard"
+  if (first && KNOWN_TILE_SEGMENTS.has(first)) return segments[1] ?? "dashboard"
   return first ?? "dashboard"
 }
 
@@ -35,7 +48,15 @@ function pathToTileId(pathname: string): string {
   const first = segments[0]
   const second = segments[1]
   if (first === "ai-tools" && second && TILES.some((tile) => tile.id === second)) return second
-  return TILES.some((tile) => tile.id === first) ? (first ?? "idp") : "idp"
+  return first && KNOWN_TILE_SEGMENTS.has(first) ? first : "idp"
+}
+
+const TILE_LABELS: Record<string, string> = {
+  "idp-basic": "IDP Basic",
+  "store-pit": "Store-Pit",
+  "okna-czasowe": "Okna czasowe",
+  "cortex-cowork": "Cortex Cowork",
+  "cortex-config": "Cortex Config",
 }
 
 export default function MainLayout({ children }: { children: ReactNode }) {
@@ -54,24 +75,20 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const oknaCzasoweNavSections = useOknaCzasoweNavSections()
   const cortexCoworkNavSections = useCortexCoworkNavSections()
   const cortexConfigNavSections = useCortexConfigNavSections()
+  // Every nav hook returns a constant, so this map is stable per render; the
+  // hooks stay called unconditionally above (rules of hooks).
+  const navByTile: Record<string, typeof idpNavSections> = {
+    "idp-basic": idpBasicNavSections,
+    "store-pit": storePitNavSections,
+    "okna-czasowe": oknaCzasoweNavSections,
+    "cortex-cowork": cortexCoworkNavSections,
+    "cortex-config": cortexConfigNavSections,
+    intrastat: intrastatNavSections,
+    "invoice-supervisor": invoiceSupervisorNavSections,
+  }
   const isAiToolPage = tile?.href.startsWith("/ai-tools/") ?? false
-  const navSections = isAiToolPage
-    ? []
-    : tileId === "idp-basic"
-      ? idpBasicNavSections
-      : tileId === "intrastat"
-        ? intrastatNavSections
-        : tileId === "invoice-supervisor"
-          ? invoiceSupervisorNavSections
-          : tileId === "store-pit"
-            ? storePitNavSections
-            : tileId === "okna-czasowe"
-              ? oknaCzasoweNavSections
-              : tileId === "cortex-cowork"
-                ? cortexCoworkNavSections
-                : tileId === "cortex-config"
-                  ? cortexConfigNavSections
-                  : idpNavSections
+  const navSections = isAiToolPage ? [] : (navByTile[tileId] ?? idpNavSections)
+  const tileLabel = tile?.label ?? TILE_LABELS[tileId] ?? "IDP"
 
   const brandIcon = (
     <Link
