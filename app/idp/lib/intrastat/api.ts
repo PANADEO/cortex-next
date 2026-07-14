@@ -169,8 +169,32 @@ function translateLegacyAlert(alert: string): string {
   return alert
 }
 
+const LINE_ALERT_FIELDS = ["cn_code", "net_weight", "origin_country", "delivery_terms"] as const
+
+type LineAlertField = (typeof LINE_ALERT_FIELDS)[number]
+
+function isLineAlertField(value: string): value is LineAlertField {
+  return LINE_ALERT_FIELDS.some((field) => field === value)
+}
+
+function hasLineValue(line: IntrastatDeclarationLine, field: LineAlertField): boolean {
+  const value = line[field]
+  return typeof value === "string" ? value.trim().length > 0 : value !== null
+}
+
+function isResolvedMissingFieldAlert(line: IntrastatDeclarationLine, alert: string): boolean {
+  const match = alert.match(/^([a-z_]+) not found for line item \d+\.?$/i)
+  const field = match?.[1]?.toLowerCase()
+  return field !== undefined && isLineAlertField(field) && hasLineValue(line, field)
+}
+
 function translateLegacyLineAlerts(line: IntrastatDeclarationLine): IntrastatDeclarationLine {
-  return { ...line, alerts: line.alerts.map(translateLegacyAlert) }
+  return {
+    ...line,
+    alerts: line.alerts
+      .map(translateLegacyAlert)
+      .filter((alert) => !isResolvedMissingFieldAlert(line, alert)),
+  }
 }
 
 export function formatIntrastatError(error: unknown, fallback: string): string {

@@ -161,4 +161,34 @@ describe("intrastatApi", () => {
       "Sum of line values (2000.00 EUR) does not match the invoice net total (2300.00 EUR).",
     ])
   })
+
+  it("hides missing-field alerts when the declaration line has a final value", async () => {
+    mockJsonFetch({
+      items: [
+        {
+          cn_code: "85322200",
+          net_weight: 2,
+          origin_country: "PL",
+          delivery_terms: null,
+          alerts: [
+            "delivery_terms not found for line item 10.",
+            "net_weight not found for line item 10.",
+            "origin_country not found for line item 10.",
+            "cn_code not found for line item 10.",
+            "Low extraction confidence.",
+          ],
+        },
+      ],
+      total: 1,
+      limit: 20,
+      offset: 0,
+    })
+
+    const response = await intrastatApi.lines("batch-1", { limit: 20, offset: 0 })
+
+    expect(response.items[0]?.alerts).toEqual([
+      "delivery_terms not found for line item 10.",
+      "Low extraction confidence.",
+    ])
+  })
 })
