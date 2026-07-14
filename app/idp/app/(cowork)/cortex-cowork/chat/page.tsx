@@ -10,6 +10,7 @@ import {
   useCoworkSession,
   useEnsureCoworkSession,
   useSendCoworkMessage,
+  useUploadInputFiles,
 } from "@/features/cortex-cowork"
 import { ErrorState } from "@cortex/ui"
 import { useSearchParams } from "next/navigation"
@@ -25,9 +26,11 @@ function CortexCoworkChat() {
   const sessionQuery = useCoworkSession(sessionId)
   const artifactsQuery = useCoworkArtifacts(sessionId)
   const sendMessage = useSendCoworkMessage(sessionId ?? "")
+  const uploadFiles = useUploadInputFiles(sessionId)
 
   const messages = sessionQuery.data?.messages ?? []
   const artifacts = artifactsQuery.data ?? sessionQuery.data?.artifacts ?? []
+  const inputFiles = sessionQuery.data?.inputFiles ?? []
 
   if (error) {
     return (
@@ -54,6 +57,7 @@ function CortexCoworkChat() {
           sessionId={sessionId}
           skills={sessionQuery.data?.skills ?? []}
           artifacts={artifacts}
+          inputFiles={inputFiles}
           downloadHref={(artifactId) =>
             sessionId ? coworkApi.artifactDownloadHref(sessionId, artifactId) : "#"
           }
@@ -70,6 +74,9 @@ function CortexCoworkChat() {
           onSend={(content) => sendMessage.mutate(content)}
           usage={sessionQuery.data?.usage}
           projectName={project?.name}
+          onUploadFiles={sessionId ? (files) => uploadFiles.mutate(files) : undefined}
+          isUploading={uploadFiles.isPending}
+          inputFiles={inputFiles}
         />
       </div>
     </div>

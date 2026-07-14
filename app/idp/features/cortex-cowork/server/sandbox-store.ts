@@ -7,6 +7,7 @@ import { DEFAULT_COWORK_PROJECT_ID } from "@cortex/types"
 import type {
   ChatMessage,
   CoworkArtifact,
+  CoworkInputFile,
   CoworkSession,
   CoworkSessionSummary,
   CoworkSessionUsage,
@@ -22,6 +23,7 @@ export interface SandboxSession {
   sandboxDir: string
   skillsDir: string
   artifactsDir: string
+  inputDir: string
   skills: CoworkSkillSummary[]
   messages: ChatMessage[]
   artifacts: CoworkArtifact[]
@@ -64,6 +66,7 @@ function sandboxPaths(sessionId: string) {
     sandboxDir,
     skillsDir: path.join(sandboxDir, "skills"),
     artifactsDir: path.join(sandboxDir, "artifacts"),
+    inputDir: path.join(sandboxDir, "input"),
     metaPath: path.join(sandboxDir, "session.json"),
   }
 }
@@ -81,10 +84,11 @@ export async function createSandboxSession(
   contextWindow: number,
 ): Promise<SandboxSession> {
   const id = randomUUID()
-  const { sandboxDir, skillsDir, artifactsDir, metaPath } = sandboxPaths(id)
+  const { sandboxDir, skillsDir, artifactsDir, inputDir, metaPath } = sandboxPaths(id)
 
   await mkdir(skillsDir, { recursive: true })
   await mkdir(artifactsDir, { recursive: true })
+  await mkdir(inputDir, { recursive: true })
 
   // A failed cp rejects the whole create, so `grantedSkills` is exactly what
   // landed in the sandbox. Copy each from its own source folder (skills can
@@ -117,6 +121,7 @@ export async function createSandboxSession(
     sandboxDir,
     skillsDir,
     artifactsDir,
+    inputDir,
     skills,
     messages: [welcome],
     artifacts: [],
@@ -127,7 +132,7 @@ export async function createSandboxSession(
 }
 
 export async function getSandboxSession(sessionId: string): Promise<SandboxSession | undefined> {
-  const { sandboxDir, skillsDir, artifactsDir, metaPath } = sandboxPaths(sessionId)
+  const { sandboxDir, skillsDir, artifactsDir, inputDir, metaPath } = sandboxPaths(sessionId)
   const raw = await readFile(metaPath, "utf8").catch(() => null)
   if (!raw) return undefined
   const meta = JSON.parse(raw) as SessionMeta
@@ -140,6 +145,7 @@ export async function getSandboxSession(sessionId: string): Promise<SandboxSessi
     sandboxDir,
     skillsDir,
     artifactsDir,
+    inputDir,
   }
 }
 
@@ -217,7 +223,33 @@ function writeMeta(metaPath: string, session: SandboxSession): Promise<void> {
   return writeFile(metaPath, JSON.stringify(meta), "utf8")
 }
 
-export function toCoworkSession(session: SandboxSession): CoworkSession {
+/**
+ * User-provided files staged in the session's input/ directory, oldest first.
+ * Derived from disk on demand (the directory is the source of truth), so
+ * uploads need no session-meta migration.
+ */
+export async function listInputFiles(session: SandboxSession): Promise<CoworkInputFile[]> {
+  const entries = await readdir(session.inputDir, { withFileTypes: true }).catch(
+    () => [] as Dirent[],
+  )
+  const files: CoworkInputFile[] = []
+  for (const entry of entries) {
+    if (!entry.isFile()) continue
+    const info = await stat(path.join(session.inputDir, entry.name)).catch(() => null)
+    if (!info) continue
+    files.push({
+      filename: entry.name,
+      sizeBytes: info.size,
+      uploadedAt: info.mtime.toISOString(),
+    })
+  }
+  return files.sort((a, b) => a.uploadedAt.localeCompare(b.uploadedAt))
+}
+
+export function toCoworkSession(
+  session: SandboxSession,
+  inputFiles: CoworkInputFile[] = [],
+): CoworkSession {
   return {
     id: session.id,
     projectId: session.projectId,
@@ -226,6 +258,7 @@ export function toCoworkSession(session: SandboxSession): CoworkSession {
     messages: session.messages,
     artifacts: session.artifacts,
     usage: session.usage,
+    inputFiles,
   }
 }
 

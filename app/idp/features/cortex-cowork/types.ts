@@ -54,6 +54,13 @@ export interface CoworkArtifact {
   skill: CoworkSkillId
 }
 
+/** A user-provided file staged in the session sandbox's input/ directory. */
+export interface CoworkInputFile {
+  filename: string
+  sizeBytes: number
+  uploadedAt: string
+}
+
 /** Token accounting for a session's context-window meter and cumulative spend. */
 export interface CoworkSessionUsage {
   /** Input tokens sent on the most recent turn = current context occupancy. */
@@ -72,6 +79,8 @@ export interface CoworkSession {
   messages: ChatMessage[]
   artifacts: CoworkArtifact[]
   usage: CoworkSessionUsage
+  /** User-provided files staged in the sandbox's input/ directory. */
+  inputFiles: CoworkInputFile[]
 }
 
 /** Lightweight session descriptor for the session list (no messages/artifacts). */

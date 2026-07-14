@@ -1,9 +1,9 @@
 "use client"
 
 import { Button, Textarea } from "@cortex/ui"
-import { ArrowUp, Loader2 } from "lucide-react"
-import { useState, type KeyboardEvent } from "react"
-import type { CoworkSessionUsage } from "../types"
+import { ArrowUp, FileText, Loader2, Paperclip } from "lucide-react"
+import { useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react"
+import type { CoworkInputFile, CoworkSessionUsage } from "../types"
 import { ContextMeter } from "./context-meter"
 
 interface MessageComposerProps {
@@ -11,11 +11,35 @@ interface MessageComposerProps {
   disabled?: boolean
   /** Live usage of the active session - rendered as the context chip. */
   usage?: CoworkSessionUsage | undefined
+  /** Present when the session accepts input-file uploads (attach + paste). */
+  onUploadFiles?: ((files: File[]) => void) | undefined
+  isUploading?: boolean
+  /** Files already staged in the session's input/ directory (chips row). */
+  inputFiles?: CoworkInputFile[]
 }
 
-/** Codex-style prompt box: rounded card with the send button and context chip inside. */
-export function MessageComposer({ onSend, disabled = false, usage }: MessageComposerProps) {
+/**
+ * Clipboard pastes of screenshots arrive as a generic "image.png" - stamp a
+ * time suffix so consecutive pastes stay distinguishable in the sandbox.
+ */
+function withPasteName(file: File): File {
+  if (file.name && file.name !== "image.png") return file
+  const stamp = new Date().toISOString().slice(11, 19).replaceAll(":", "")
+  const ext = file.type.split("/")[1] ?? "png"
+  return new File([file], `wklejka-${stamp}.${ext}`, { type: file.type })
+}
+
+/** Codex-style prompt box: rounded card with attach, send and context chip inside. */
+export function MessageComposer({
+  onSend,
+  disabled = false,
+  usage,
+  onUploadFiles,
+  isUploading = false,
+  inputFiles = [],
+}: MessageComposerProps) {
   const [value, setValue] = useState("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   function handleSend() {
     const trimmed = value.trim()
@@ -31,21 +55,76 @@ export function MessageComposer({ onSend, disabled = false, usage }: MessageComp
     }
   }
 
+  function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    if (!onUploadFiles) return
+    const files = Array.from(event.clipboardData.files)
+    if (files.length === 0) return
+    event.preventDefault()
+    onUploadFiles(files.map(withPasteName))
+  }
+
   return (
     <div className="rounded-2xl border border-border bg-card p-2 shadow-sm focus-within:border-ring/60">
+      {inputFiles.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5 px-1.5 pb-1 pt-0.5">
+          {inputFiles.map((file) => (
+            <span
+              key={file.filename}
+              className="inline-flex max-w-56 items-center gap-1 rounded-md border border-border/70 bg-muted/60 px-1.5 py-0.5 text-[11px] text-muted-foreground"
+              title={file.filename}
+            >
+              <FileText className="h-3 w-3 shrink-0" />
+              <span className="truncate">{file.filename}</span>
+            </span>
+          ))}
+        </div>
+      ) : null}
       <Textarea
         value={value}
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
         placeholder="Poproś o raport, eksport albo kolejny krok..."
         disabled={disabled}
         rows={2}
         className="min-h-[44px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
       />
       <div className="flex items-center justify-between gap-3 px-1.5 pb-0.5 pt-1">
-        <span className="text-[11px] text-muted-foreground">
-          Enter wysyła · Shift+Enter nowa linia
-        </span>
+        <div className="flex items-center gap-1">
+          {onUploadFiles ? (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(event) => {
+                  const files = Array.from(event.target.files ?? [])
+                  if (files.length > 0) onUploadFiles(files)
+                  event.target.value = ""
+                }}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full text-muted-foreground"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                aria-label="Dodaj pliki do sesji"
+                title="Dodaj pliki (albo wklej / upuść je tutaj)"
+              >
+                {isUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Paperclip className="h-4 w-4" />
+                )}
+              </Button>
+            </>
+          ) : null}
+          <span className="text-[11px] text-muted-foreground">
+            Enter wysyła · Shift+Enter nowa linia
+          </span>
+        </div>
         <div className="flex items-center gap-3">
           {usage ? <ContextMeter usage={usage} /> : null}
           <Button

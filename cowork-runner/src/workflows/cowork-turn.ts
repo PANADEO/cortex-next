@@ -165,9 +165,25 @@ export default defineWorkflow({
     const session = await harness.session()
     const workspace = workspacePath(input.sandboxDir)
     const allowedPaths = readAllowedPaths()
+    // input/ holds files the user uploaded/pasted for this task. Listed via
+    // the HOST path (the runner process runs on the host either way); the
+    // prompt cites the workspace path the agent's sandbox actually sees.
+    const hostSandboxDir = process.env[ENV.sandboxDir] ?? input.sandboxDir
+    let inputFiles: string[] = []
+    try {
+      inputFiles = readdirSync(path.join(hostSandboxDir, "input"), { withFileTypes: true })
+        .filter((entry) => entry.isFile())
+        .map((entry) => entry.name)
+        .sort()
+    } catch {
+      // no input directory - nothing staged for this session
+    }
     const prompt = [
       `Workspace for this session: ${workspace}`,
       `Write any files you produce under: ${workspace}/artifacts/`,
+      inputFiles.length > 0
+        ? `Files the user provided for this task (read them from ${workspace}/input/): ${inputFiles.join(", ")}`
+        : "",
       allowedPaths.length > 0
         ? `Additional data paths available to you: ${allowedPaths.join(", ")}`
         : "",

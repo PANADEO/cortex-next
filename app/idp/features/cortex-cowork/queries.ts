@@ -4,6 +4,7 @@ import { apiClient } from "@cortex/api"
 import type { CoworkArtifactExportResult, CoworkProjectTileInfo } from "@cortex/types"
 import type {
   CoworkArtifact,
+  CoworkInputFile,
   CoworkSession,
   CoworkSessionSummary,
   CoworkSkillSummary,
@@ -56,6 +57,14 @@ export const coworkApi = {
   // SSE endpoint consumed with a raw fetch (EventSource cannot POST).
   streamMessagePath: (sessionId: string) =>
     `${basePath}/api/cortex-cowork/sessions/${sessionId}/messages/stream`,
+  uploadInputFiles: (sessionId: string, files: File[]) => {
+    const form = new FormData()
+    for (const file of files) form.append("files", file, file.name)
+    return apiClient.post<{ files: CoworkInputFile[] }>(
+      `/api/cortex-cowork/sessions/${sessionId}/files`,
+      { body: form },
+    )
+  },
   listArtifacts: (sessionId: string) =>
     apiClient.get<CoworkArtifact[]>(`/api/cortex-cowork/sessions/${sessionId}/artifacts`),
   artifactDownloadHref: (sessionId: string, artifactId: string) =>

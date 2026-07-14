@@ -378,10 +378,25 @@ const MIME_BY_EXT: Record<string, string> = {
   ".md": "text/markdown",
   ".pdf": "application/pdf",
   ".html": "text/html",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+}
+
+// Best-effort attribution of an artifact to the skill that plausibly produced
+// it (drives the badge in the Artifacts panel) - cosmetic, not governance.
+const SKILL_BY_EXT: Record<string, CoworkSkillId> = {
+  ".csv": "csv-export",
+  ".xlsx": "excel-report",
+  ".png": "visual-generate",
+  ".jpg": "visual-generate",
+  ".jpeg": "visual-generate",
+  ".webp": "visual-generate",
 }
 
 function skillForFile(filename: string): CoworkSkillId {
-  return path.extname(filename).toLowerCase() === ".csv" ? "csv-export" : "excel-report"
+  return SKILL_BY_EXT[path.extname(filename).toLowerCase()] ?? "sandbox"
 }
 
 /** Registers files the agent wrote to artifacts/ during this turn. */

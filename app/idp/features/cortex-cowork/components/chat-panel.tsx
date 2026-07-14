@@ -2,9 +2,9 @@
 
 import { useCoworkStreamStore } from "@/lib/stores/cortex-cowork-stream-store"
 import { LoadingState } from "@cortex/ui"
-import { MessagesSquare } from "lucide-react"
-import { useEffect, useRef } from "react"
-import type { ChatMessage, CoworkSessionUsage } from "../types"
+import { FileUp, MessagesSquare } from "lucide-react"
+import { useEffect, useRef, useState, type DragEvent } from "react"
+import type { ChatMessage, CoworkInputFile, CoworkSessionUsage } from "../types"
 import { LiveAgentActivity } from "./agent-activity"
 import { MessageBubble } from "./message-bubble"
 import { MessageComposer } from "./message-composer"
@@ -17,6 +17,10 @@ interface ChatPanelProps {
   usage?: CoworkSessionUsage | undefined
   /** Shown in the empty-transcript hero. */
   projectName?: string | undefined
+  /** Present when the session accepts input-file uploads (drop/paste/attach). */
+  onUploadFiles?: ((files: File[]) => void) | undefined
+  isUploading?: boolean
+  inputFiles?: CoworkInputFile[]
 }
 
 /** Centered Codex-style transcript column with the prompt box at the bottom. */
@@ -27,10 +31,17 @@ export function ChatPanel({
   onSend,
   usage,
   projectName,
+  onUploadFiles,
+  isUploading = false,
+  inputFiles = [],
 }: ChatPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const liveSteps = useCoworkStreamStore((state) => state.steps)
   const liveText = useCoworkStreamStore((state) => state.liveText)
+  // Depth counter instead of a boolean: dragenter/dragleave fire for every
+  // child element crossed, so a plain flag flickers while dragging.
+  const dragDepth = useRef(0)
+  const [dragActive, setDragActive] = useState(false)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -38,8 +49,50 @@ export function ChatPanel({
 
   const empty = !isLoadingSession && messages.length === 0 && !isSending
 
+  function hasFiles(event: DragEvent) {
+    return Array.from(event.dataTransfer.types).includes("Files")
+  }
+
+  function handleDragEnter(event: DragEvent<HTMLDivElement>) {
+    if (!onUploadFiles || !hasFiles(event)) return
+    event.preventDefault()
+    dragDepth.current += 1
+    setDragActive(true)
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLDivElement>) {
+    if (!onUploadFiles || !hasFiles(event)) return
+    dragDepth.current = Math.max(0, dragDepth.current - 1)
+    if (dragDepth.current === 0) setDragActive(false)
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    if (!onUploadFiles || !hasFiles(event)) return
+    event.preventDefault()
+    dragDepth.current = 0
+    setDragActive(false)
+    const files = Array.from(event.dataTransfer.files)
+    if (files.length > 0) onUploadFiles(files)
+  }
+
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+    <div
+      className="relative flex min-h-0 min-w-0 flex-1 flex-col"
+      onDragEnter={handleDragEnter}
+      onDragOver={(event) => {
+        if (onUploadFiles && hasFiles(event)) event.preventDefault()
+      }}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {dragActive ? (
+        <div className="pointer-events-none absolute inset-2 z-30 flex items-center justify-center rounded-2xl border-2 border-dashed border-ring/70 bg-background/80 backdrop-blur-sm">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <FileUp className="h-5 w-5" />
+            Upuść pliki - trafią do sandboxa tej sesji
+          </div>
+        </div>
+      ) : null}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {isLoadingSession ? (
           <LoadingState label="Startuję sesję sandboxa..." />
@@ -67,7 +120,14 @@ export function ChatPanel({
         )}
       </div>
       <div className="mx-auto w-full max-w-3xl px-6 pb-5 pt-2">
-        <MessageComposer onSend={onSend} disabled={isLoadingSession || isSending} usage={usage} />
+        <MessageComposer
+          onSend={onSend}
+          disabled={isLoadingSession || isSending}
+          usage={usage}
+          onUploadFiles={onUploadFiles}
+          isUploading={isUploading}
+          inputFiles={inputFiles}
+        />
       </div>
     </div>
   )

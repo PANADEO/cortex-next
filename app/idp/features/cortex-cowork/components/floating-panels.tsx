@@ -1,9 +1,9 @@
 "use client"
 
 import { cn } from "@cortex/utils"
-import { ChevronRight, FolderOpen } from "lucide-react"
+import { ChevronRight, FileText, FolderOpen } from "lucide-react"
 import { useState, type ReactNode } from "react"
-import type { CoworkArtifact, CoworkSkillSummary } from "../types"
+import type { CoworkArtifact, CoworkInputFile, CoworkSkillSummary } from "../types"
 import { ArtifactRow } from "./artifact-row"
 
 // Codex-style floating cards pinned to the top-right of the chat surface
@@ -45,6 +45,7 @@ interface SessionPanelsProps {
   sessionId: string | null
   skills: CoworkSkillSummary[]
   artifacts: CoworkArtifact[]
+  inputFiles?: CoworkInputFile[]
   downloadHref: (artifactId: string) => string
   onExport?: ((artifactId: string) => Promise<{ displayPath: string }>) | undefined
 }
@@ -54,6 +55,7 @@ export function SessionPanels({
   sessionId,
   skills,
   artifacts,
+  inputFiles = [],
   downloadHref,
   onExport,
 }: SessionPanelsProps) {
@@ -83,7 +85,10 @@ export function SessionPanels({
         )}
       </FloatingPanel>
 
-      <FloatingPanel title="Zasoby sesji" meta={<span className="tabular-nums">{skills.length}</span>}>
+      <FloatingPanel
+        title="Zasoby sesji"
+        meta={<span className="tabular-nums">{skills.length + inputFiles.length}</span>}
+      >
         {skills.length === 0 ? (
           <p className="px-3 py-3 text-xs text-muted-foreground">Brak skilli w tej sesji.</p>
         ) : (
@@ -96,6 +101,26 @@ export function SessionPanels({
             ))}
           </ul>
         )}
+        {inputFiles.length > 0 ? (
+          <div className="border-t border-border/60 p-3">
+            <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Pliki wejściowe
+            </p>
+            <ul className="space-y-1">
+              {inputFiles.map((file) => (
+                <li
+                  key={file.filename}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                >
+                  <FileText className="h-3 w-3 shrink-0" />
+                  <span className="truncate" title={file.filename}>
+                    {file.filename}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </FloatingPanel>
     </div>
   )
