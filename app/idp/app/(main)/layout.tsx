@@ -6,7 +6,6 @@ import { VersionLabel } from "@/components/shell/version-label"
 import { Topbar } from "@/components/topbar"
 import {
   useCortexConfigNavSections,
-  useCortexCoworkNavSections,
   useIdpBasicNavSections,
   useIdpNavSections,
   useIntrastatNavSections,
@@ -24,12 +23,12 @@ import type { ReactNode } from "react"
 
 // URL first segments that own an app-shell. store-pit serves two tile ids
 // (sp-console/sp-client) but one nav+label, keyed by its path segment.
+// cortex-cowork lives in its own route group with a Codex-style shell.
 const KNOWN_TILE_SEGMENTS = new Set([
   "idp",
   "idp-basic",
   "store-pit",
   "okna-czasowe",
-  "cortex-cowork",
   "cortex-config",
   "intrastat",
   "invoice-supervisor",
@@ -55,7 +54,6 @@ const TILE_LABELS: Record<string, string> = {
   "idp-basic": "IDP Basic",
   "store-pit": "Store-Pit",
   "okna-czasowe": "Okna czasowe",
-  "cortex-cowork": "Cortex Cowork",
   "cortex-config": "Cortex Config",
 }
 
@@ -73,7 +71,6 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const invoiceSupervisorNavSections = useInvoiceSupervisorNavSections()
   const storePitNavSections = useStorePitNavSections()
   const oknaCzasoweNavSections = useOknaCzasoweNavSections()
-  const cortexCoworkNavSections = useCortexCoworkNavSections()
   const cortexConfigNavSections = useCortexConfigNavSections()
   // Every nav hook returns a constant, so this map is stable per render; the
   // hooks stay called unconditionally above (rules of hooks).
@@ -81,7 +78,6 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     "idp-basic": idpBasicNavSections,
     "store-pit": storePitNavSections,
     "okna-czasowe": oknaCzasoweNavSections,
-    "cortex-cowork": cortexCoworkNavSections,
     "cortex-config": cortexConfigNavSections,
     intrastat: intrastatNavSections,
     "invoice-supervisor": invoiceSupervisorNavSections,

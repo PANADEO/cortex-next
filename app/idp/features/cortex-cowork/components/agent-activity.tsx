@@ -122,10 +122,10 @@ interface LiveActivityProps {
 /** Live block rendered under the chat while a turn is running. */
 export function LiveAgentActivity({ steps, liveText }: LiveActivityProps) {
   return (
-    <div className="ml-10 max-w-[75%] rounded-lg border border-dashed bg-muted/30 px-3 py-2.5">
+    <div className="rounded-xl border border-dashed bg-muted/30 px-3 py-2.5">
       <div className="mb-1.5 flex items-center gap-2 text-xs font-medium text-muted-foreground">
         <Loader2 className="h-3.5 w-3.5 animate-spin text-cortex" />
-        Working in the sandbox…
+        Pracuję w sandboxie…
       </div>
       {steps.length > 0 ? <AgentActivityList steps={steps} live /> : null}
       {liveText ? (
@@ -155,7 +155,7 @@ export function AgentActivityTrail({ steps }: ActivityTrailProps) {
         className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
       >
         {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-        Agent work trail ({stepCount} steps)
+        Przebieg pracy agenta ({stepCount} kroków)
       </button>
       {open ? (
         <div className="mt-1.5">

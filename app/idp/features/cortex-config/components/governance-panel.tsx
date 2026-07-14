@@ -1,6 +1,5 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
 import type { CoworkGovernanceConfig, CoworkRole } from "@cortex/types"
 import {
   Badge,
@@ -10,198 +9,27 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   ErrorState,
   Input,
-  Label,
   LoadingState,
 } from "@cortex/ui"
-import { Loader2, Pencil, Plus, ShieldCheck, Trash2, UserPlus } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Controller, useForm } from "react-hook-form"
+import { Pencil, Plus, ShieldCheck, Trash2, UserPlus } from "lucide-react"
+import Link from "next/link"
+import { useState } from "react"
 import { useGovernanceConfig, useUpdateGovernance } from "../hooks/use-governance"
-import {
-  assignmentFormSchema,
-  roleFormSchema,
-  type AssignmentFormValues,
-  type RoleFormValues,
-} from "../schemas"
-import { CheckboxList, FieldError } from "./form-fields"
 
-// --- Role dialog (role = pure access gate: id, name, description) -------------
-
-const EMPTY_ROLE: RoleFormValues = { id: "", name: "", description: "" }
-
-function RoleDialog({
-  open,
-  onOpenChange,
-  role,
-  isSaving,
-  onSubmit,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  role?: CoworkRole | undefined
-  isSaving: boolean
-  onSubmit: (values: RoleFormValues) => Promise<void>
-}) {
-  const form = useForm<RoleFormValues>({
-    resolver: zodResolver(roleFormSchema),
-    defaultValues: role ?? EMPTY_ROLE,
-  })
-
-  useEffect(() => {
-    if (!open) return
-    form.reset(role ?? EMPTY_ROLE)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, role])
-
-  const submit = form.handleSubmit(async (values) => {
-    await onSubmit(values)
-    onOpenChange(false)
-  })
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{role ? `Edytuj rolę: ${role.name}` : "Nowa rola"}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="role-id">Identyfikator</Label>
-              <Input id="role-id" className="mt-1" disabled={Boolean(role)} {...form.register("id")} />
-              <FieldError message={form.formState.errors.id?.message} />
-            </div>
-            <div>
-              <Label htmlFor="role-name">Nazwa</Label>
-              <Input id="role-name" className="mt-1" {...form.register("name")} />
-              <FieldError message={form.formState.errors.name?.message} />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="role-description">Opis</Label>
-            <Input id="role-description" className="mt-1" {...form.register("description")} />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Rola to bramka dostępu - decyduje, kto widzi i otwiera kafelki. Zawartość (skille,
-            konektory) definiuje kompozycja projektu.
-          </p>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Anuluj
-            </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Zapisz
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// --- Assignment dialog --------------------------------------------------------
-
-function AssignmentDialog({
-  open,
-  onOpenChange,
-  email,
-  currentRoleIds,
-  roles,
-  isSaving,
-  onSubmit,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  email?: string | undefined
-  currentRoleIds: string[]
-  roles: CoworkRole[]
-  isSaving: boolean
-  onSubmit: (values: AssignmentFormValues) => Promise<void>
-}) {
-  const form = useForm<AssignmentFormValues>({
-    resolver: zodResolver(assignmentFormSchema),
-    defaultValues: { email: email ?? "", roleIds: currentRoleIds },
-  })
-
-  useEffect(() => {
-    if (!open) return
-    form.reset({ email: email ?? "", roleIds: currentRoleIds })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, email])
-
-  const submit = form.handleSubmit(async (values) => {
-    await onSubmit(values)
-    onOpenChange(false)
-  })
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{email ? `Role użytkownika: ${email}` : "Przypisz role"}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
-          <div>
-            <Label htmlFor="assignment-email">Email użytkownika</Label>
-            <Input
-              id="assignment-email"
-              className="mt-1"
-              disabled={Boolean(email)}
-              placeholder="user@firma.pl"
-              {...form.register("email")}
-            />
-            <FieldError message={form.formState.errors.email?.message} />
-          </div>
-          <div>
-            <Label>Role</Label>
-            <div className="mt-2">
-              <Controller
-                control={form.control}
-                name="roleIds"
-                render={({ field }) => (
-                  <CheckboxList
-                    options={roles.map((role) => ({ id: role.id, label: role.name, hint: role.id }))}
-                    value={field.value}
-                    onChange={field.onChange}
-                    emptyText="Najpierw utwórz rolę."
-                  />
-                )}
-              />
-              <FieldError message={form.formState.errors.roleIds?.message} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Anuluj
-            </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Zapisz
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
-}
+// Governance overview: roles and user assignments are edited on dedicated
+// screens under /cortex-config/governance/*; admins inline (a plain email list).
 
 function EntityRow({
   name,
   badges,
-  onEdit,
+  editHref,
   onDelete,
 }: {
   name: string
   badges: string[]
-  onEdit: () => void
+  editHref: string
   onDelete: () => void
 }) {
   return (
@@ -215,8 +43,10 @@ function EntityRow({
         ))}
       </div>
       <div className="flex shrink-0 items-center gap-1">
-        <Button variant="ghost" size="sm" onClick={onEdit}>
-          <Pencil className="h-3.5 w-3.5" />
+        <Button asChild variant="ghost" size="sm">
+          <Link href={editHref}>
+            <Pencil className="h-3.5 w-3.5" />
+          </Link>
         </Button>
         <Button
           variant="ghost"
@@ -231,15 +61,9 @@ function EntityRow({
   )
 }
 
-type DialogState =
-  | { kind: "none" }
-  | { kind: "role"; role?: CoworkRole }
-  | { kind: "assignment"; email?: string }
-
 export function GovernancePanel() {
   const governance = useGovernanceConfig()
   const updateGovernance = useUpdateGovernance()
-  const [dialog, setDialog] = useState<DialogState>({ kind: "none" })
   const [adminInput, setAdminInput] = useState("")
 
   if (governance.isPending) return <LoadingState label="Wczytywanie konfiguracji..." />
@@ -259,8 +83,6 @@ export function GovernancePanel() {
   const saveAssignments = (assignments: Record<string, string[]>) =>
     updateGovernance.mutateAsync({ userAssignments: assignments })
 
-  const editedRole = dialog.kind === "role" ? dialog.role : undefined
-
   return (
     <div className="space-y-4">
       {openMode ? (
@@ -278,9 +100,11 @@ export function GovernancePanel() {
                 <CardTitle className="text-base">Role (bramki dostępu)</CardTitle>
                 <CardDescription>Kto może otwierać kafelki projektów</CardDescription>
               </div>
-              <Button size="sm" onClick={() => setDialog({ kind: "role" })}>
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-                Rola
+              <Button asChild size="sm">
+                <Link href="/cortex-config/governance/roles/new">
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  Rola
+                </Link>
               </Button>
             </div>
           </CardHeader>
@@ -293,7 +117,7 @@ export function GovernancePanel() {
                   key={role.id}
                   name={role.name}
                   badges={[role.id]}
-                  onEdit={() => setDialog({ kind: "role", role })}
+                  editHref={`/cortex-config/governance/roles/${encodeURIComponent(role.id)}`}
                   onDelete={() => void saveRoles(config.roles.filter((r) => r.id !== role.id))}
                 />
               ))
@@ -308,9 +132,11 @@ export function GovernancePanel() {
                 <CardTitle className="text-base">Użytkownicy</CardTitle>
                 <CardDescription>Przypisania email → role (centralne)</CardDescription>
               </div>
-              <Button size="sm" onClick={() => setDialog({ kind: "assignment" })}>
-                <UserPlus className="mr-1.5 h-3.5 w-3.5" />
-                Przypisz
+              <Button asChild size="sm">
+                <Link href="/cortex-config/governance/users/new">
+                  <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+                  Przypisz
+                </Link>
               </Button>
             </div>
           </CardHeader>
@@ -323,7 +149,7 @@ export function GovernancePanel() {
                   key={email}
                   name={email}
                   badges={roleIds}
-                  onEdit={() => setDialog({ kind: "assignment", email })}
+                  editHref={`/cortex-config/governance/users/${encodeURIComponent(email)}`}
                   onDelete={() => {
                     const next = { ...config.userAssignments }
                     delete next[email]
@@ -395,42 +221,6 @@ export function GovernancePanel() {
           </CardContent>
         </Card>
       </div>
-
-      <RoleDialog
-        open={dialog.kind === "role"}
-        onOpenChange={(open) => setDialog(open ? dialog : { kind: "none" })}
-        role={editedRole}
-        isSaving={updateGovernance.isPending}
-        onSubmit={async (values) => {
-          const next = config.roles.filter((role) => role.id !== values.id)
-          await saveRoles([
-            ...next,
-            {
-              id: values.id,
-              name: values.name,
-              ...(values.description ? { description: values.description } : {}),
-            },
-          ])
-        }}
-      />
-      <AssignmentDialog
-        open={dialog.kind === "assignment"}
-        onOpenChange={(open) => setDialog(open ? dialog : { kind: "none" })}
-        email={dialog.kind === "assignment" ? dialog.email : undefined}
-        currentRoleIds={
-          dialog.kind === "assignment" && dialog.email
-            ? (config.userAssignments[dialog.email] ?? [])
-            : []
-        }
-        roles={config.roles}
-        isSaving={updateGovernance.isPending}
-        onSubmit={async (values) => {
-          await saveAssignments({
-            ...config.userAssignments,
-            [values.email.toLowerCase()]: values.roleIds,
-          })
-        }}
-      />
     </div>
   )
 }

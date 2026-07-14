@@ -1,7 +1,14 @@
+export { AssignmentEditorScreen } from "./components/assignment-editor"
 export { CatalogPanel } from "./components/catalog-panel"
+export { ConfigScreen } from "./components/config-screen"
+export { ConnectorEditorScreen } from "./components/connector-editor"
 export { CredentialsPanel } from "./components/credentials-panel"
 export { GovernancePanel } from "./components/governance-panel"
+export { DepartmentSelect, DepartmentTreeCheckList } from "./components/pickers"
+export { ProjectEditorScreen } from "./components/project-editor"
 export { ProjectsPanel } from "./components/projects-panel"
+export { RoleEditorScreen } from "./components/role-editor"
+export { SourceEditorScreen } from "./components/source-editor"
 export {
   useCreateProject,
   useCredentialPaths,

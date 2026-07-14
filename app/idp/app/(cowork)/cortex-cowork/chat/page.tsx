@@ -1,18 +1,17 @@
 "use client"
 
 import {
-  ArtifactsPanel,
   ChatPanel,
   coworkApi,
   DEFAULT_COWORK_PROJECT_ID,
-  SessionBar,
+  SessionPanels,
   useCoworkArtifacts,
   useCoworkProjectTiles,
   useCoworkSession,
   useEnsureCoworkSession,
   useSendCoworkMessage,
 } from "@/features/cortex-cowork"
-import { ErrorState, PageHeader } from "@cortex/ui"
+import { ErrorState } from "@cortex/ui"
 import { useSearchParams } from "next/navigation"
 import { Suspense } from "react"
 
@@ -34,7 +33,7 @@ function CortexCoworkChat() {
     return (
       <div className="p-8">
         <ErrorState
-          title="Could not start a sandbox session"
+          title="Nie udało się wystartować sesji sandboxa"
           message={error.message}
           onRetry={retry}
         />
@@ -43,40 +42,37 @@ function CortexCoworkChat() {
   }
 
   return (
-    <>
-      <PageHeader
-        title={project?.name ?? "Cortex Cowork"}
-        description={
-          project?.description ??
-          "Chat with a skills-powered agent that works inside a sandbox and hands you back files."
-        }
-      />
-      <div className="flex min-h-0 flex-1 flex-col">
-        <SessionBar
-          projectId={projectId}
-          activeSessionId={sessionId}
-          usage={sessionQuery.data?.usage}
+    <div className="flex min-h-0 flex-1 flex-col">
+      <header className="flex h-11 shrink-0 items-center gap-3 border-b border-border/60 px-4">
+        <span className="text-sm font-medium">{project?.name ?? "Cortex Cowork"}</span>
+        {project?.description ? (
+          <span className="truncate text-xs text-muted-foreground">{project.description}</span>
+        ) : null}
+      </header>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <SessionPanels
+          sessionId={sessionId}
+          skills={sessionQuery.data?.skills ?? []}
+          artifacts={artifacts}
+          downloadHref={(artifactId) =>
+            sessionId ? coworkApi.artifactDownloadHref(sessionId, artifactId) : "#"
+          }
+          onExport={
+            project?.exportEnabled && sessionId
+              ? (artifactId: string) => coworkApi.exportArtifact(sessionId, artifactId)
+              : undefined
+          }
         />
-        <div className="flex min-h-0 flex-1">
-          <ChatPanel
-            messages={messages}
-            isSending={sendMessage.isPending}
-            isLoadingSession={!sessionId || sessionQuery.isLoading}
-            onSend={(content) => sendMessage.mutate(content)}
-          />
-          <ArtifactsPanel
-            sessionId={sessionId}
-            artifacts={artifacts}
-            downloadHref={(artifactId) =>
-              sessionId ? coworkApi.artifactDownloadHref(sessionId, artifactId) : "#"
-            }
-            {...(project?.exportEnabled && sessionId
-              ? { onExport: (artifactId: string) => coworkApi.exportArtifact(sessionId, artifactId) }
-              : {})}
-          />
-        </div>
+        <ChatPanel
+          messages={messages}
+          isSending={sendMessage.isPending}
+          isLoadingSession={!sessionId || sessionQuery.isLoading}
+          onSend={(content) => sendMessage.mutate(content)}
+          usage={sessionQuery.data?.usage}
+          projectName={project?.name}
+        />
       </div>
-    </>
+    </div>
   )
 }
 

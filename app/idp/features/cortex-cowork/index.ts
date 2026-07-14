@@ -1,6 +1,6 @@
-export { ArtifactsPanel } from "./components/artifacts-panel"
 export { ChatPanel } from "./components/chat-panel"
-export { SessionBar } from "./components/session-bar"
+export { CoworkShell } from "./components/cowork-shell"
+export { SessionPanels } from "./components/floating-panels"
 export { useCoworkArtifacts } from "./hooks/use-artifacts"
 export { DEFAULT_COWORK_PROJECT_ID } from "@cortex/types"
 export { useCoworkSession, useEnsureCoworkSession } from "./hooks/use-cowork-session"

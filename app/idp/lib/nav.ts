@@ -3,7 +3,6 @@ import type { FeatureFlagsResponse } from "@cortex/types"
 import type { TileMenuItem, TileMenuSection } from "@cortex/ui"
 import {
   BarChart3,
-  BookOpen,
   Calculator,
   Database,
   FileDown,
@@ -14,9 +13,9 @@ import {
   GitMerge,
   History,
   Inbox,
+  KeyRound,
   LayoutDashboard,
   ListChecks,
-  MessagesSquare,
   Package,
   Receipt,
   ScrollText,
@@ -195,16 +194,7 @@ export const INTRASTAT_NAV: TileMenuSection[] = [
   },
 ]
 
-export const CORTEX_COWORK_NAV: TileMenuSection[] = [
-  {
-    id: "workspace",
-    label: "Workspace",
-    items: [
-      { id: "chat", label: "Chat", icon: MessagesSquare, href: "/cortex-cowork/chat" },
-      { id: "skills", label: "Skills library", icon: BookOpen, href: "/cortex-cowork/skills" },
-    ],
-  },
-]
+// cortex-cowork renders its own Codex-style shell (no TileMenu nav).
 
 export const CORTEX_CONFIG_NAV: TileMenuSection[] = [
   {
@@ -225,9 +215,15 @@ export const CORTEX_CONFIG_NAV: TileMenuSection[] = [
       },
       {
         id: "roles",
-        label: "Role i uprawnienia",
+        label: "Role i dostęp",
         icon: Users,
         href: "/cortex-config/governance",
+      },
+      {
+        id: "credentials",
+        label: "Sekrety",
+        icon: KeyRound,
+        href: "/cortex-config/credentials",
       },
     ],
   },
@@ -372,9 +368,6 @@ export function useAiToolsNavSections(): TileMenuSection[] {
   }, [authorized.apps])
 }
 
-export function useCortexCoworkNavSections(): TileMenuSection[] {
-  return CORTEX_COWORK_NAV
-}
 
 export function useCortexConfigNavSections(): TileMenuSection[] {
   return CORTEX_CONFIG_NAV

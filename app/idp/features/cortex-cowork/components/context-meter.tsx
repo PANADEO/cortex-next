@@ -9,25 +9,22 @@ function formatTokens(n: number): string {
 }
 
 /**
- * Context-window occupancy for the current session: the last turn's input
+ * Context-window occupancy chip for the composer: the last turn's input
  * tokens against the model's window. Turns amber past 75%, red past 90% - a
  * cue to start a fresh session before the model starts dropping history.
  */
 export function ContextMeter({ usage }: { usage: CoworkSessionUsage }) {
   if (!usage.contextWindow) return null
   const pct = Math.min(100, Math.round((usage.lastContextTokens / usage.contextWindow) * 100))
-  const tone =
-    pct >= 90 ? "bg-destructive" : pct >= 75 ? "bg-amber-500" : "bg-cortex"
+  const tone = pct >= 90 ? "bg-destructive" : pct >= 75 ? "bg-amber-500" : "bg-emerald-500"
 
   return (
-    <div className="flex items-center gap-2" title="Zajętość okna kontekstu (ostatnia tura)">
-      <span className="text-xs text-muted-foreground">Kontekst</span>
-      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
-        <div className={cn("h-full rounded-full transition-all", tone)} style={{ width: `${pct}%` }} />
-      </div>
-      <span className="text-xs tabular-nums text-muted-foreground">
-        {formatTokens(usage.lastContextTokens)} / {formatTokens(usage.contextWindow)} ({pct}%)
-      </span>
-    </div>
+    <span
+      className="flex items-center gap-1.5 text-[11px] tabular-nums text-muted-foreground"
+      title="Zajętość okna kontekstu (ostatnia tura)"
+    >
+      <span className={cn("h-1.5 w-1.5 rounded-full", tone)} />
+      {formatTokens(usage.lastContextTokens)} / {formatTokens(usage.contextWindow)} ({pct}%)
+    </span>
   )
 }

@@ -16,17 +16,7 @@ import {
 } from "@cortex/ui"
 import { MessagesSquare, Pencil, Plus, Trash2 } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
-import type { ProjectInput } from "../queries"
-import {
-  useCatalog,
-  useCreateProject,
-  useCredentialPaths,
-  useDeleteProject,
-  useGovernanceConfig,
-  useUpdateProject,
-} from "../hooks/use-governance"
-import { ProjectFormDialog } from "./project-form-dialog"
+import { useDeleteProject, useGovernanceConfig, useUpdateProject } from "../hooks/use-governance"
 
 /** Total resources a composition grants (branches + leaves) across kinds. */
 function compositionCount(project: CoworkProjectConfig): number {
@@ -39,12 +29,10 @@ function compositionCount(project: CoworkProjectConfig): number {
 
 function ProjectCard({
   project,
-  onEdit,
   onDelete,
   onToggle,
 }: {
   project: CoworkProjectConfig
-  onEdit: () => void
   onDelete: () => void
   onToggle: (enabled: boolean) => void
 }) {
@@ -72,9 +60,7 @@ function ProjectCard({
               {roleId}
             </Badge>
           ))}
-          <Badge variant="outline">
-            {project.sandbox.mode === "docker" ? "docker" : "local"}
-          </Badge>
+          <Badge variant="outline">{project.sandbox.mode === "docker" ? "docker" : "local"}</Badge>
           {compositionCount(project) > 0 ? (
             <Badge variant="outline">klocki: {compositionCount(project)}</Badge>
           ) : null}
@@ -86,9 +72,11 @@ function ProjectCard({
               Otwórz chat
             </Link>
           </Button>
-          <Button variant="outline" size="sm" onClick={onEdit}>
-            <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            Edytuj
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/cortex-config/projects/${encodeURIComponent(project.id)}`}>
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+              Edytuj
+            </Link>
           </Button>
           <Button
             variant="ghost"
@@ -107,18 +95,13 @@ function ProjectCard({
 
 export function ProjectsPanel() {
   const governance = useGovernanceConfig()
-  const catalog = useCatalog()
-  const credentials = useCredentialPaths()
-  const createProject = useCreateProject()
   const updateProject = useUpdateProject()
   const deleteProject = useDeleteProject()
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editing, setEditing] = useState<CoworkProjectConfig | undefined>(undefined)
 
-  if (governance.isPending || catalog.isPending) {
+  if (governance.isPending) {
     return <LoadingState label="Wczytywanie konfiguracji..." />
   }
-  if (governance.isError || catalog.isError || !catalog.data) {
+  if (governance.isError) {
     return (
       <ErrorState
         title="Brak dostępu do konfiguracji"
@@ -129,11 +112,6 @@ export function ProjectsPanel() {
 
   const config = governance.data
   const projects = [...config.projects].sort((a, b) => a.name.localeCompare(b.name))
-
-  const handleSubmit = async (input: ProjectInput) => {
-    if (editing) await updateProject.mutateAsync(input)
-    else await createProject.mutateAsync(input)
-  }
 
   const handleDelete = (project: CoworkProjectConfig) => {
     if (!window.confirm(`Usunąć projekt "${project.name}"? Sesje i artefakty pozostaną na dysku.`)) {
@@ -147,16 +125,13 @@ export function ProjectsPanel() {
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           Kafelki agentowe (task-chat) konfigurowane centralnie - każdy projekt to osobny kafelek
-          na hubie z własnym modelem, skillami per rola i sandboxem.
+          na hubie z własnym modelem, klockami i sandboxem.
         </p>
-        <Button
-          onClick={() => {
-            setEditing(undefined)
-            setDialogOpen(true)
-          }}
-        >
-          <Plus className="mr-1.5 h-4 w-4" />
-          Nowy projekt
+        <Button asChild>
+          <Link href="/cortex-config/projects/new">
+            <Plus className="mr-1.5 h-4 w-4" />
+            Nowy projekt
+          </Link>
         </Button>
       </div>
 
@@ -172,10 +147,6 @@ export function ProjectsPanel() {
             <ProjectCard
               key={project.id}
               project={project}
-              onEdit={() => {
-                setEditing(project)
-                setDialogOpen(true)
-              }}
               onDelete={() => handleDelete(project)}
               onToggle={(enabled) =>
                 updateProject.mutate({
@@ -187,17 +158,6 @@ export function ProjectsPanel() {
           ))}
         </div>
       )}
-
-      <ProjectFormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        project={editing}
-        roles={config.roles}
-        catalog={catalog.data}
-        credentialPaths={credentials.data?.paths ?? []}
-        isSaving={createProject.isPending || updateProject.isPending}
-        onSubmit={handleSubmit}
-      />
     </div>
   )
 }

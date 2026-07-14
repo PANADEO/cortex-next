@@ -1,14 +1,23 @@
 "use client"
 
+import { departmentUnder } from "@cortex/types"
 import { Checkbox } from "@cortex/ui"
+import { cn } from "@cortex/utils"
+import { DepartmentTreeCheckList } from "./pickers"
 
-// Small form primitives shared by the cortex-config dialogs.
+// Small form primitives shared by the cortex-config editor screens.
+
+export interface GrantLeaf {
+  id: string
+  label: string
+  /** Department the leaf belongs to; for secrets the id itself is the path. */
+  department?: string
+}
 
 export interface GrantPickerProps {
   /** Department branch options (checking one pulls everything under it). */
   departments: string[]
-  /** Individual leaf resources (id + label), optionally shown by department. */
-  leaves: Array<{ id: string; label: string; department?: string }>
+  leaves: GrantLeaf[]
   branchValue: string[]
   onBranchChange: (next: string[]) => void
   leafValue: string[]
@@ -16,9 +25,20 @@ export interface GrantPickerProps {
   leafEmptyText: string
 }
 
+/** True when a checked branch already covers the leaf (its own grant is moot). */
+function coveredByBranch(leaf: GrantLeaf, branches: string[]): boolean {
+  return branches.some((branch) =>
+    leaf.department
+      ? departmentUnder(branch, leaf.department)
+      : leaf.id === branch || leaf.id.startsWith(`${branch}/`),
+  )
+}
+
 /**
  * Composition picker for one resource kind: pick department branches (pull all
  * resources under) and/or individual leaves. The two together are the grant.
+ * Leaves are grouped by department; ones already covered by a checked branch
+ * are marked so the grant reads unambiguously.
  */
 export function GrantPicker({
   departments,
@@ -29,31 +49,75 @@ export function GrantPicker({
   onLeafChange,
   leafEmptyText,
 }: GrantPickerProps) {
+  const groups = new Map<string, GrantLeaf[]>()
+  for (const leaf of leaves) {
+    const key = leaf.department ?? ""
+    const group = groups.get(key) ?? []
+    group.push(leaf)
+    groups.set(key, group)
+  }
+  const groupKeys = [...groups.keys()].sort()
+
   return (
-    <div className="space-y-3">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <div>
-        <p className="mb-1.5 text-xs font-medium text-muted-foreground">Departamenty (gałęzie)</p>
-        <CheckboxList
-          options={departments.map((dept) => ({ id: dept, label: dept }))}
+        <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+          Gałęzie (cały departament)
+        </p>
+        <DepartmentTreeCheckList
+          departments={departments}
           value={branchValue}
           onChange={onBranchChange}
-          emptyText="Brak departamentów."
         />
       </div>
       <div>
-        <p className="mb-1.5 text-xs font-medium text-muted-foreground">
-          Pojedyncze zasoby (liście)
-        </p>
-        <CheckboxList
-          options={leaves.map((leaf) => ({
-            id: leaf.id,
-            label: leaf.label,
-            ...(leaf.department ? { hint: leaf.department } : {}),
-          }))}
-          value={leafValue}
-          onChange={onLeafChange}
-          emptyText={leafEmptyText}
-        />
+        <p className="mb-1.5 text-xs font-medium text-muted-foreground">Pojedyncze zasoby</p>
+        {leaves.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{leafEmptyText}</p>
+        ) : (
+          <div className="space-y-2">
+            {groupKeys.map((key) => (
+              <div key={key || "(bez departamentu)"}>
+                {key ? (
+                  <p className="mb-1 font-mono text-[11px] text-muted-foreground">{key}</p>
+                ) : null}
+                <div className="space-y-1">
+                  {(groups.get(key) ?? []).map((leaf) => {
+                    const covered = coveredByBranch(leaf, branchValue)
+                    const checked = leafValue.includes(leaf.id)
+                    return (
+                      <label
+                        key={leaf.id}
+                        className={cn(
+                          "flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm",
+                          covered && "opacity-60",
+                        )}
+                      >
+                        <Checkbox
+                          checked={checked || covered}
+                          disabled={covered}
+                          onCheckedChange={(next) =>
+                            onLeafChange(
+                              next
+                                ? [...leafValue, leaf.id]
+                                : leafValue.filter((id) => id !== leaf.id),
+                            )
+                          }
+                        />
+                        <span className="min-w-0 truncate">{leaf.label}</span>
+                        {covered ? (
+                          <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
+                            objęty gałęzią
+                          </span>
+                        ) : null}
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
