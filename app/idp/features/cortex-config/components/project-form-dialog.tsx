@@ -268,14 +268,36 @@ export function ProjectFormDialog({
               />
             </div>
             <div>
+              <Label>Sandbox</Label>
+              <Controller
+                control={form.control}
+                name="sandboxMode"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="local">
+                        Lokalny (izolacja katalogowa, wykonanie na hoście)
+                      </SelectItem>
+                      <SelectItem value="docker">
+                        Docker (twarda izolacja, ścieżki jako bind-mounty)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div>
               <Label htmlFor="project-sandbox-paths">
-                Ścieżki dostępne w sandboxie (jedna na linię)
+                Ścieżki dostępne w sandboxie (jedna na linię, sufiks :ro = tylko odczyt)
               </Label>
               <Textarea
                 id="project-sandbox-paths"
                 className="mt-1 font-mono text-xs"
                 rows={3}
-                placeholder={"/mnt/dzial-finanse/dane\n/mnt/wspolne/szablony"}
+                placeholder={"/mnt/dzial-finanse/dane:ro\n/mnt/wspolne/szablony"}
                 {...form.register("sandboxPaths")}
               />
             </div>

@@ -44,9 +44,18 @@ export interface CoworkRole {
   skillGroupIds: string[]
 }
 
-/** Sandbox filesystem exposure for a project (bind-mounts once dockerized). */
+export type CoworkSandboxMode = "local" | "docker"
+
+/**
+ * Sandbox execution and filesystem exposure for a project. "docker" runs each
+ * harness in a container where `allowedPaths` become bind-mounts (":ro"
+ * suffix = read-only) - hard deny-by-default isolation. "local" executes on
+ * the host with directory-level separation only; allowedPaths are then just
+ * prompt-level hints. A docker project never silently degrades to local.
+ */
 export interface CoworkSandboxConfig {
-  /** Host paths the agent may read/write, mounted into the sandbox. */
+  mode: CoworkSandboxMode
+  /** Host paths the agent may access; mounted into the container in docker mode. */
   allowedPaths: string[]
 }
 

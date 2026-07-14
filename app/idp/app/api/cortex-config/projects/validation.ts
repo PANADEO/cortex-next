@@ -59,9 +59,10 @@ export function parseProjectBody(body: unknown): ParsedProject {
   if (
     typeof input.sandbox !== "object" ||
     input.sandbox === null ||
-    !isStringArray(input.sandbox.allowedPaths)
+    !isStringArray(input.sandbox.allowedPaths) ||
+    (input.sandbox.mode !== "local" && input.sandbox.mode !== "docker")
   ) {
-    return { error: "sandbox.allowedPaths must be a string array" }
+    return { error: "sandbox needs mode (local | docker) and allowedPaths[]" }
   }
   if (input.artifactExport !== undefined) {
     if (
@@ -85,7 +86,7 @@ export function parseProjectBody(body: unknown): ParsedProject {
       model: input.model,
       ...(input.systemPrompt ? { systemPrompt: input.systemPrompt } : {}),
       connectors: input.connectors,
-      sandbox: { allowedPaths: input.sandbox.allowedPaths },
+      sandbox: { mode: input.sandbox.mode, allowedPaths: input.sandbox.allowedPaths },
       ...(input.artifactExport ? { artifactExport: input.artifactExport } : {}),
     },
   }

@@ -17,6 +17,7 @@ export const projectFormSchema = z.object({
   baseUrl: z.string().optional(),
   apiKeyRef: z.string().optional(),
   systemPrompt: z.string().optional(),
+  sandboxMode: z.enum(["local", "docker"]),
   /** One path per line in the textarea. */
   sandboxPaths: z.string(),
   exportDir: z.string().optional(),
@@ -41,6 +42,7 @@ export const EMPTY_PROJECT_FORM_VALUES: ProjectFormValues = {
   baseUrl: "",
   apiKeyRef: "",
   systemPrompt: "",
+  sandboxMode: "local",
   sandboxPaths: "",
   exportDir: "",
   exportDisplayPath: "",
@@ -66,6 +68,7 @@ export function projectToFormValues(project: CoworkProjectConfig): ProjectFormVa
     baseUrl: project.model.baseUrl ?? "",
     apiKeyRef: project.model.apiKeyRef ?? "",
     systemPrompt: project.systemPrompt ?? "",
+    sandboxMode: project.sandbox.mode ?? "local",
     sandboxPaths: project.sandbox.allowedPaths.join("\n"),
     exportDir: project.artifactExport?.exportDir ?? "",
     exportDisplayPath: project.artifactExport?.displayPath ?? "",
@@ -93,7 +96,7 @@ export function projectFormValuesToInput(
     },
     ...(values.systemPrompt?.trim() ? { systemPrompt: values.systemPrompt.trim() } : {}),
     connectors: existing?.connectors ?? [],
-    sandbox: { allowedPaths: parsePathLines(values.sandboxPaths) },
+    sandbox: { mode: values.sandboxMode, allowedPaths: parsePathLines(values.sandboxPaths) },
     ...(exportDir
       ? {
           artifactExport: {

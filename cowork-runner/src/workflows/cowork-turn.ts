@@ -1,9 +1,16 @@
 import { readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { defineAgent, defineSkill, defineWorkflow, type SkillReference } from "@flue/runtime"
+import {
+  defineAgent,
+  defineSkill,
+  defineWorkflow,
+  type SandboxFactory,
+  type SkillReference,
+} from "@flue/runtime"
 import { local } from "@flue/runtime/node"
 import * as v from "valibot"
+import { dockerSandbox } from "../docker-sandbox.ts"
 import { configureModel, readModelConfigFromEnv } from "../model-provider.ts"
 // Side-effect import: registers the observe() subscriber that streams live
 // agent activity (thinking / tool calls / text progress) to stderr as NDJSON.
@@ -87,15 +94,54 @@ const BASE_INSTRUCTIONS =
   "you would do. Keep replies short and never include absolute host paths in them - " +
   "refer to produced files by filename only."
 
+/**
+ * The agent's view of the workspace. In docker mode the session sandbox dir
+ * mounts at /workspace, so every path the model sees must be the container
+ * path; on the host they are the same directory (bind mount), which keeps
+ * artifact registration in the app untouched.
+ */
+export function workspacePath(): string {
+  return process.env.COWORK_SANDBOX_MODE === "docker"
+    ? "/workspace"
+    : (process.env.COWORK_SANDBOX_DIR ?? process.cwd())
+}
+
+function readAllowedPaths(): string[] {
+  const raw = process.env.COWORK_SANDBOX_PATHS
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    return Array.isArray(parsed) ? parsed.filter((p): p is string => typeof p === "string") : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Sandbox selection is part of governance: a project configured for docker
+ * MUST NOT fall back to host execution - if Docker is missing the turn fails
+ * loudly and the app surfaces the error.
+ */
+function selectSandbox(): SandboxFactory {
+  const sandboxDir = process.env.COWORK_SANDBOX_DIR
+  if (process.env.COWORK_SANDBOX_MODE === "docker" && sandboxDir) {
+    return dockerSandbox({
+      sandboxDir,
+      allowedPaths: readAllowedPaths(),
+      ...(process.env.COWORK_SANDBOX_IMAGE ? { image: process.env.COWORK_SANDBOX_IMAGE } : {}),
+    })
+  }
+  return local()
+}
+
 const agent = defineAgent(() => {
   const systemPrompt = process.env.COWORK_SYSTEM_PROMPT
-  const sandboxDir = process.env.COWORK_SANDBOX_DIR
   return {
     model: configureModel(readModelConfigFromEnv()),
     instructions: systemPrompt ? `${BASE_INSTRUCTIONS}\n\n${systemPrompt}` : BASE_INSTRUCTIONS,
     skills: loadSessionSkills(),
-    sandbox: local(),
-    ...(sandboxDir ? { cwd: sandboxDir } : {}),
+    sandbox: selectSandbox(),
+    cwd: workspacePath(),
   }
 })
 
@@ -109,9 +155,16 @@ export default defineWorkflow({
   output: v.object({ reply: v.string() }),
   async run({ harness, input }) {
     const session = await harness.session()
+    // In docker mode the model must think in container paths, never host ones.
+    const workspace =
+      process.env.COWORK_SANDBOX_MODE === "docker" ? "/workspace" : input.sandboxDir
+    const allowedPaths = readAllowedPaths()
     const prompt = [
-      `Workspace for this session: ${input.sandboxDir}`,
-      `Write any files you produce under: ${input.sandboxDir}/artifacts/`,
+      `Workspace for this session: ${workspace}`,
+      `Write any files you produce under: ${workspace}/artifacts/`,
+      allowedPaths.length > 0
+        ? `Additional data paths available to you: ${allowedPaths.join(", ")}`
+        : "",
       input.history ? `Conversation so far:\n${input.history}` : "",
       `User message: ${input.message}`,
     ]

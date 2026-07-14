@@ -68,7 +68,7 @@ function seedConfig(): CoworkGovernanceConfig {
         allowedRoleIds: ["analyst"],
         model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
         connectors: [],
-        sandbox: { allowedPaths: [] },
+        sandbox: { mode: "local", allowedPaths: [] },
         createdAt,
         updatedAt: createdAt,
       },

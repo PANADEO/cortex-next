@@ -150,6 +150,11 @@ async function runFlueTurn(
   if (project) {
     env.COWORK_MODEL_CONFIG = JSON.stringify(modelConfigForRunner(project))
     if (project.systemPrompt) env.COWORK_SYSTEM_PROMPT = project.systemPrompt
+    // Configs written before sandbox modes existed carry no `mode` field.
+    env.COWORK_SANDBOX_MODE = project.sandbox.mode ?? "local"
+    if (project.sandbox.allowedPaths.length > 0) {
+      env.COWORK_SANDBOX_PATHS = JSON.stringify(project.sandbox.allowedPaths)
+    }
   }
 
   const activity: AgentActivityStep[] = []
@@ -160,8 +165,11 @@ async function runFlueTurn(
       [flueCli, "run", "cowork-turn", "--target", "node", "--input", input],
       { cwd: dir, env },
     )
+    // SIGTERM first so the runner's exit handlers can tear down docker
+    // sandbox containers; escalate to SIGKILL only if it hangs.
     const timer = setTimeout(() => {
-      child.kill("SIGKILL")
+      child.kill("SIGTERM")
+      setTimeout(() => child.kill("SIGKILL"), 10_000).unref()
       reject(new Error(`flue run timed out after ${RUNNER_TIMEOUT_MS}ms`))
     }, RUNNER_TIMEOUT_MS)
 
