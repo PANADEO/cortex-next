@@ -1,15 +1,35 @@
 "use client"
 
-import { ArrowLeft } from "lucide-react"
+import { Button, ErrorState } from "@cortex/ui"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import type { ReactNode } from "react"
+
+/** The one access-denied state for every cortex-config admin surface. */
+export function AccessDeniedState({
+  title = "Brak dostępu do konfiguracji",
+}: {
+  title?: string
+}) {
+  return (
+    <ErrorState
+      title={title}
+      message="Panel Cortex Config wymaga uprawnień administratora."
+    />
+  )
+}
 
 interface ConfigScreenProps {
   backHref: string
   backLabel: string
   title: string
   description?: string | undefined
-  /** Header-right slot - typically Anuluj/Zapisz for editor screens. */
+  /**
+   * Standard editor footer: renders Anuluj (-> backHref) + a submit button.
+   * The submit relies on an enclosing <form>, which every editor screen has.
+   */
+  save?: { isSaving: boolean; label: string }
+  /** Extra header-right actions, rendered before the standard save footer. */
   actions?: ReactNode
   children: ReactNode
 }
@@ -20,6 +40,7 @@ export function ConfigScreen({
   backLabel,
   title,
   description,
+  save,
   actions,
   children,
 }: ConfigScreenProps) {
@@ -40,7 +61,22 @@ export function ConfigScreen({
               <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
             ) : null}
           </div>
-          {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+          {actions || save ? (
+            <div className="flex items-center gap-2">
+              {actions}
+              {save ? (
+                <>
+                  <Button asChild type="button" variant="outline">
+                    <Link href={backHref}>Anuluj</Link>
+                  </Button>
+                  <Button type="submit" disabled={save.isSaving}>
+                    {save.isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {save.label}
+                  </Button>
+                </>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-6">

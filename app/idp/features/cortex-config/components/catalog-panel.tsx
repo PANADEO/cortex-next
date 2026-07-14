@@ -8,7 +8,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  ErrorState,
   Input,
   LoadingState,
 } from "@cortex/ui"
@@ -21,6 +20,7 @@ import {
   useUpdateDepartments,
   useUpdateSkillSources,
 } from "../hooks/use-governance"
+import { AccessDeniedState } from "./config-screen"
 
 // Catalog overview: departments edited inline (tiny entities), skill sources
 // and connectors edited on dedicated screens under /cortex-config/catalog/*.
@@ -34,12 +34,7 @@ export function CatalogPanel() {
 
   if (catalog.isPending) return <LoadingState label="Wczytywanie katalogu..." />
   if (catalog.isError || !catalog.data) {
-    return (
-      <ErrorState
-        title="Brak dostępu do katalogu"
-        message="Panel Cortex Config wymaga uprawnień administratora."
-      />
-    )
+    return <AccessDeniedState title="Brak dostępu do katalogu" />
   }
 
   const { departments, skills, skillSources, connectors } = catalog.data

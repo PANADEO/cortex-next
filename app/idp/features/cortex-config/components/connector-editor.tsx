@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
-  Button,
   Card,
   CardContent,
   CardDescription,
@@ -20,8 +19,6 @@ import {
   Switch,
   Textarea,
 } from "@cortex/ui"
-import { Loader2 } from "lucide-react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Controller, useForm } from "react-hook-form"
 import { useCatalog, useUpdateConnectors } from "../hooks/use-governance"
@@ -32,7 +29,7 @@ import {
   EMPTY_CONNECTOR_FORM_VALUES,
   type ConnectorFormValues,
 } from "../schemas"
-import { ConfigScreen } from "./config-screen"
+import { AccessDeniedState, ConfigScreen } from "./config-screen"
 import { FieldError } from "./form-fields"
 import { DepartmentSelect } from "./pickers"
 
@@ -45,14 +42,7 @@ export function ConnectorEditorScreen({ connectorId }: { connectorId?: string | 
   const router = useRouter()
 
   if (catalog.isPending) return <LoadingState label="Wczytywanie katalogu..." />
-  if (catalog.isError || !catalog.data) {
-    return (
-      <ErrorState
-        title="Brak dostępu do katalogu"
-        message="Panel Cortex Config wymaga uprawnień administratora."
-      />
-    )
-  }
+  if (catalog.isError || !catalog.data) return <AccessDeniedState title="Brak dostępu do katalogu" />
 
   const { connectors, departments } = catalog.data
   const connector = connectorId ? connectors.find((c) => c.id === connectorId) : undefined
@@ -105,17 +95,7 @@ function ConnectorForm({
         backLabel="Katalog zasobów"
         title={editing ? `Edytuj konektor: ${defaultValues.name}` : "Nowy konektor"}
         description="Narzędzie agenta: serwer MCP albo CLI, z sekretami przez referencje."
-        actions={
-          <>
-            <Button asChild type="button" variant="outline">
-              <Link href={BACK_HREF}>Anuluj</Link>
-            </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Zapisz
-            </Button>
-          </>
-        }
+        save={{ isSaving, label: "Zapisz" }}
       >
         <div className="space-y-4">
           <Card>

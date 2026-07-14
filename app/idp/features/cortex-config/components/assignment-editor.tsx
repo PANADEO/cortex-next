@@ -2,14 +2,12 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { CoworkRole } from "@cortex/types"
-import { Button, Card, CardContent, ErrorState, Input, Label, LoadingState } from "@cortex/ui"
-import { Loader2 } from "lucide-react"
-import Link from "next/link"
+import { Card, CardContent, Input, Label, LoadingState } from "@cortex/ui"
 import { useRouter } from "next/navigation"
 import { Controller, useForm } from "react-hook-form"
 import { useGovernanceConfig, useUpdateGovernance } from "../hooks/use-governance"
 import { assignmentFormSchema, type AssignmentFormValues } from "../schemas"
-import { ConfigScreen } from "./config-screen"
+import { AccessDeniedState, ConfigScreen } from "./config-screen"
 import { CheckboxList, FieldError } from "./form-fields"
 
 const BACK_HREF = "/cortex-config/governance"
@@ -21,14 +19,7 @@ export function AssignmentEditorScreen({ email }: { email?: string | undefined }
   const router = useRouter()
 
   if (governance.isPending) return <LoadingState label="Wczytywanie konfiguracji..." />
-  if (governance.isError) {
-    return (
-      <ErrorState
-        title="Brak dostępu do konfiguracji"
-        message="Panel Cortex Config wymaga uprawnień administratora."
-      />
-    )
-  }
+  if (governance.isError) return <AccessDeniedState />
 
   const config = governance.data
   const currentRoleIds = email ? (config.userAssignments[email] ?? []) : []
@@ -79,17 +70,7 @@ function AssignmentForm({
         backLabel="Role i dostęp"
         title={editing ? `Role użytkownika: ${defaultValues.email}` : "Przypisz role"}
         description="Centralne przypisanie email → role; pierwsze przypisanie wyłącza tryb otwarty."
-        actions={
-          <>
-            <Button asChild type="button" variant="outline">
-              <Link href={BACK_HREF}>Anuluj</Link>
-            </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Zapisz
-            </Button>
-          </>
-        }
+        save={{ isSaving, label: "Zapisz" }}
       >
         <Card>
           <CardContent className="space-y-4 pt-6">

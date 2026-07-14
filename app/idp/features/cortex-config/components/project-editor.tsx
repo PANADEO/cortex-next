@@ -4,14 +4,15 @@ import { PROJECT_ICON_OPTIONS } from "@/features/cortex-cowork"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { CoworkProjectConfig, CoworkRole } from "@cortex/types"
 import {
-  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  ErrorState,
   Input,
   Label,
+  LoadingState,
   Select,
   SelectContent,
   SelectItem,
@@ -24,9 +25,6 @@ import {
   TabsTrigger,
   Textarea,
 } from "@cortex/ui"
-import { ErrorState, LoadingState } from "@cortex/ui"
-import { Loader2 } from "lucide-react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Controller, useForm, type FieldErrors } from "react-hook-form"
 import {
@@ -44,31 +42,43 @@ import {
   projectToFormValues,
   type ProjectFormValues,
 } from "../schemas"
-import { ConfigScreen } from "./config-screen"
-import { CheckboxList, FieldError, GrantPicker } from "./form-fields"
+import { AccessDeniedState, ConfigScreen } from "./config-screen"
+import { CheckboxList, FieldError, GrantPickerField } from "./form-fields"
 
 const BACK_HREF = "/cortex-config/projects"
 
-// Which form fields live on which tab - drives the error dot on tab triggers
-// so a failed submit points at the tab that needs attention.
-const TAB_FIELDS: Record<string, Array<keyof ProjectFormValues>> = {
-  podstawy: ["id", "name", "description", "icon", "enabled"],
-  dostep: ["allowedRoleIds"],
-  model: ["provider", "modelId", "baseUrl", "apiKeyRef"],
-  klocki: [
-    "skillBranches",
-    "skillLeaves",
-    "connectorBranches",
-    "connectorLeaves",
-    "secretBranches",
-    "secretLeaves",
-  ],
-  agent: ["systemPrompt", "sandboxMode", "sandboxPaths"],
-  eksport: ["exportDir", "exportDisplayPath"],
-}
+// Tab definitions in one place: label for the trigger + the fields that live on
+// the tab, so a failed submit can dot the tab that needs attention (fields hide
+// behind inactive tabs, so the dot is the only cue).
+const TABS = [
+  { value: "podstawy", label: "Podstawy", fields: ["id", "name", "description", "icon", "enabled"] },
+  { value: "dostep", label: "Dostęp", fields: ["allowedRoleIds"] },
+  { value: "model", label: "Model", fields: ["provider", "modelId", "baseUrl", "apiKeyRef"] },
+  {
+    value: "klocki",
+    label: "Klocki",
+    fields: [
+      "skillBranches",
+      "skillLeaves",
+      "connectorBranches",
+      "connectorLeaves",
+      "secretBranches",
+      "secretLeaves",
+    ],
+  },
+  { value: "agent", label: "Agent i sandbox", fields: ["systemPrompt", "sandboxMode", "sandboxPaths"] },
+  { value: "eksport", label: "Eksport", fields: ["exportDir", "exportDisplayPath"] },
+] as const satisfies ReadonlyArray<{
+  value: string
+  label: string
+  fields: ReadonlyArray<keyof ProjectFormValues>
+}>
 
-function tabHasErrors(tab: string, errors: FieldErrors<ProjectFormValues>): boolean {
-  return (TAB_FIELDS[tab] ?? []).some((field) => Boolean(errors[field]))
+function tabHasErrors(
+  fields: ReadonlyArray<keyof ProjectFormValues>,
+  errors: FieldErrors<ProjectFormValues>,
+): boolean {
+  return fields.some((field) => Boolean(errors[field]))
 }
 
 /** Data-loading host: resolves governance + catalog and wires the mutations. */
@@ -82,14 +92,7 @@ export function ProjectEditorScreen({ projectId }: { projectId?: string | undefi
   if (governance.isPending || catalog.isPending) {
     return <LoadingState label="Wczytywanie konfiguracji..." />
   }
-  if (governance.isError || catalog.isError || !catalog.data) {
-    return (
-      <ErrorState
-        title="Brak dostępu do konfiguracji"
-        message="Panel Cortex Config wymaga uprawnień administratora."
-      />
-    )
-  }
+  if (governance.isError || catalog.isError || !catalog.data) return <AccessDeniedState />
 
   const project = projectId
     ? governance.data.projects.find((candidate) => candidate.id === projectId)
@@ -153,31 +156,14 @@ export function ProjectEditor({
         backLabel="Projekty"
         title={project ? `Edytuj projekt: ${project.name}` : "Nowy projekt"}
         description="Kafelek task-chat: model, dostęp, klocki z katalogu i sandbox."
-        actions={
-          <>
-            <Button asChild type="button" variant="outline">
-              <Link href={BACK_HREF}>Anuluj</Link>
-            </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {project ? "Zapisz zmiany" : "Utwórz projekt"}
-            </Button>
-          </>
-        }
+        save={{ isSaving, label: project ? "Zapisz zmiany" : "Utwórz projekt" }}
       >
         <Tabs defaultValue="podstawy">
           <TabsList className="mb-4 flex-wrap">
-            {[
-              ["podstawy", "Podstawy"],
-              ["dostep", "Dostęp"],
-              ["model", "Model"],
-              ["klocki", "Klocki"],
-              ["agent", "Agent i sandbox"],
-              ["eksport", "Eksport"],
-            ].map(([value, label]) => (
-              <TabsTrigger key={value} value={value as string} className="gap-1.5">
-                {label}
-                {tabHasErrors(value as string, errors) ? (
+            {TABS.map((tab) => (
+              <TabsTrigger key={tab.value} value={tab.value} className="gap-1.5">
+                {tab.label}
+                {tabHasErrors(tab.fields, errors) ? (
                   <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
                 ) : null}
               </TabsTrigger>
@@ -361,30 +347,17 @@ export function ProjectEditor({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Controller
+                <GrantPickerField
                   control={form.control}
-                  name="skillBranches"
-                  render={({ field: branchField }) => (
-                    <Controller
-                      control={form.control}
-                      name="skillLeaves"
-                      render={({ field: leafField }) => (
-                        <GrantPicker
-                          departments={catalog.departments}
-                          leaves={catalog.skills.map((skill) => ({
-                            id: skill.id,
-                            label: skill.name,
-                            department: skill.department,
-                          }))}
-                          branchValue={branchField.value}
-                          onBranchChange={branchField.onChange}
-                          leafValue={leafField.value}
-                          onLeafChange={leafField.onChange}
-                          leafEmptyText="Katalog skilli jest pusty."
-                        />
-                      )}
-                    />
-                  )}
+                  branchName="skillBranches"
+                  leafName="skillLeaves"
+                  departments={catalog.departments}
+                  leaves={catalog.skills.map((skill) => ({
+                    id: skill.id,
+                    label: skill.name,
+                    department: skill.department,
+                  }))}
+                  leafEmptyText="Katalog skilli jest pusty."
                 />
               </CardContent>
             </Card>
@@ -395,30 +368,17 @@ export function ProjectEditor({
                 <CardDescription>MCP i CLI, które agent dostaje jako narzędzia.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Controller
+                <GrantPickerField
                   control={form.control}
-                  name="connectorBranches"
-                  render={({ field: branchField }) => (
-                    <Controller
-                      control={form.control}
-                      name="connectorLeaves"
-                      render={({ field: leafField }) => (
-                        <GrantPicker
-                          departments={catalog.departments}
-                          leaves={catalog.connectors.map((connector) => ({
-                            id: connector.id,
-                            label: `${connector.name} (${connector.type})`,
-                            department: connector.department,
-                          }))}
-                          branchValue={branchField.value}
-                          onBranchChange={branchField.onChange}
-                          leafValue={leafField.value}
-                          onLeafChange={leafField.onChange}
-                          leafEmptyText="Katalog konektorów jest pusty."
-                        />
-                      )}
-                    />
-                  )}
+                  branchName="connectorBranches"
+                  leafName="connectorLeaves"
+                  departments={catalog.departments}
+                  leaves={catalog.connectors.map((connector) => ({
+                    id: connector.id,
+                    label: `${connector.name} (${connector.type})`,
+                    department: connector.department,
+                  }))}
+                  leafEmptyText="Katalog konektorów jest pusty."
                 />
               </CardContent>
             </Card>
@@ -432,26 +392,13 @@ export function ProjectEditor({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Controller
+                <GrantPickerField
                   control={form.control}
-                  name="secretBranches"
-                  render={({ field: branchField }) => (
-                    <Controller
-                      control={form.control}
-                      name="secretLeaves"
-                      render={({ field: leafField }) => (
-                        <GrantPicker
-                          departments={catalog.departments}
-                          leaves={credentialPaths.map((path) => ({ id: path, label: path }))}
-                          branchValue={branchField.value}
-                          onBranchChange={branchField.onChange}
-                          leafValue={leafField.value}
-                          onLeafChange={leafField.onChange}
-                          leafEmptyText="Brak zapisanych sekretów."
-                        />
-                      )}
-                    />
-                  )}
+                  branchName="secretBranches"
+                  leafName="secretLeaves"
+                  departments={catalog.departments}
+                  leaves={credentialPaths.map((path) => ({ id: path, label: path }))}
+                  leafEmptyText="Brak zapisanych sekretów."
                 />
               </CardContent>
             </Card>

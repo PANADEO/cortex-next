@@ -10,13 +10,13 @@ import {
   CardHeader,
   CardTitle,
   EmptyState,
-  ErrorState,
   LoadingState,
   Switch,
 } from "@cortex/ui"
 import { MessagesSquare, Pencil, Plus, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useDeleteProject, useGovernanceConfig, useUpdateProject } from "../hooks/use-governance"
+import { AccessDeniedState } from "./config-screen"
 
 /** Total resources a composition grants (branches + leaves) across kinds. */
 function compositionCount(project: CoworkProjectConfig): number {
@@ -101,14 +101,7 @@ export function ProjectsPanel() {
   if (governance.isPending) {
     return <LoadingState label="Wczytywanie konfiguracji..." />
   }
-  if (governance.isError) {
-    return (
-      <ErrorState
-        title="Brak dostępu do konfiguracji"
-        message="Panel Cortex Config wymaga uprawnień administratora."
-      />
-    )
-  }
+  if (governance.isError) return <AccessDeniedState />
 
   const config = governance.data
   const projects = [...config.projects].sort((a, b) => a.name.localeCompare(b.name))

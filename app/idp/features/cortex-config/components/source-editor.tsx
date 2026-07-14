@@ -1,9 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Button, Card, CardContent, ErrorState, Input, Label, LoadingState } from "@cortex/ui"
-import { Loader2 } from "lucide-react"
-import Link from "next/link"
+import { Card, CardContent, ErrorState, Input, Label, LoadingState } from "@cortex/ui"
 import { useRouter } from "next/navigation"
 import { Controller, useForm } from "react-hook-form"
 import { useCatalog, useUpdateSkillSources } from "../hooks/use-governance"
@@ -12,7 +10,7 @@ import {
   skillSourceToConfig,
   type SkillSourceFormValues,
 } from "../schemas"
-import { ConfigScreen } from "./config-screen"
+import { AccessDeniedState, ConfigScreen } from "./config-screen"
 import { FieldError } from "./form-fields"
 import { DepartmentSelect } from "./pickers"
 
@@ -25,14 +23,7 @@ export function SourceEditorScreen({ sourceId }: { sourceId?: string | undefined
   const router = useRouter()
 
   if (catalog.isPending) return <LoadingState label="Wczytywanie katalogu..." />
-  if (catalog.isError || !catalog.data) {
-    return (
-      <ErrorState
-        title="Brak dostępu do katalogu"
-        message="Panel Cortex Config wymaga uprawnień administratora."
-      />
-    )
-  }
+  if (catalog.isError || !catalog.data) return <AccessDeniedState title="Brak dostępu do katalogu" />
 
   const { skillSources, departments } = catalog.data
   const source = sourceId ? skillSources.find((s) => s.id === sourceId) : undefined
@@ -82,17 +73,7 @@ function SourceForm({
         backLabel="Katalog zasobów"
         title={editing ? `Edytuj źródło: ${defaultValues.name}` : "Nowe źródło skilli"}
         description="Folder na dysku skanowany do katalogu; skille lądują pod wskazanym departamentem."
-        actions={
-          <>
-            <Button asChild type="button" variant="outline">
-              <Link href={BACK_HREF}>Anuluj</Link>
-            </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Zapisz
-            </Button>
-          </>
-        }
+        save={{ isSaving, label: "Zapisz" }}
       >
         <Card>
           <CardContent className="grid grid-cols-1 gap-4 pt-6 sm:grid-cols-2">

@@ -9,7 +9,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  ErrorState,
   Input,
   LoadingState,
 } from "@cortex/ui"
@@ -17,6 +16,7 @@ import { Pencil, Plus, ShieldCheck, Trash2, UserPlus } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { useGovernanceConfig, useUpdateGovernance } from "../hooks/use-governance"
+import { AccessDeniedState } from "./config-screen"
 
 // Governance overview: roles and user assignments are edited on dedicated
 // screens under /cortex-config/governance/*; admins inline (a plain email list).
@@ -67,14 +67,7 @@ export function GovernancePanel() {
   const [adminInput, setAdminInput] = useState("")
 
   if (governance.isPending) return <LoadingState label="Wczytywanie konfiguracji..." />
-  if (governance.isError) {
-    return (
-      <ErrorState
-        title="Brak dostępu do konfiguracji"
-        message="Panel Cortex Config wymaga uprawnień administratora."
-      />
-    )
-  }
+  if (governance.isError) return <AccessDeniedState />
 
   const config: CoworkGovernanceConfig = governance.data
   const openMode = Object.keys(config.userAssignments).length === 0

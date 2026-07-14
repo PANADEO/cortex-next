@@ -1,14 +1,12 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Button, Card, CardContent, ErrorState, Input, Label, LoadingState } from "@cortex/ui"
-import { Loader2 } from "lucide-react"
-import Link from "next/link"
+import { Card, CardContent, ErrorState, Input, Label, LoadingState } from "@cortex/ui"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { useGovernanceConfig, useUpdateGovernance } from "../hooks/use-governance"
 import { roleFormSchema, type RoleFormValues } from "../schemas"
-import { ConfigScreen } from "./config-screen"
+import { AccessDeniedState, ConfigScreen } from "./config-screen"
 import { FieldError } from "./form-fields"
 
 const BACK_HREF = "/cortex-config/governance"
@@ -20,14 +18,7 @@ export function RoleEditorScreen({ roleId }: { roleId?: string | undefined }) {
   const router = useRouter()
 
   if (governance.isPending) return <LoadingState label="Wczytywanie konfiguracji..." />
-  if (governance.isError) {
-    return (
-      <ErrorState
-        title="Brak dostępu do konfiguracji"
-        message="Panel Cortex Config wymaga uprawnień administratora."
-      />
-    )
-  }
+  if (governance.isError) return <AccessDeniedState />
 
   const roles = governance.data.roles
   const role = roleId ? roles.find((r) => r.id === roleId) : undefined
@@ -83,17 +74,7 @@ function RoleForm({
         backLabel="Role i dostęp"
         title={editing ? `Edytuj rolę: ${defaultValues.name}` : "Nowa rola"}
         description="Rola to bramka dostępu - decyduje, kto widzi i otwiera kafelki. Zawartość definiują klocki projektu."
-        actions={
-          <>
-            <Button asChild type="button" variant="outline">
-              <Link href={BACK_HREF}>Anuluj</Link>
-            </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Zapisz
-            </Button>
-          </>
-        }
+        save={{ isSaving, label: "Zapisz" }}
       >
         <Card>
           <CardContent className="grid grid-cols-1 gap-4 pt-6 sm:grid-cols-2">

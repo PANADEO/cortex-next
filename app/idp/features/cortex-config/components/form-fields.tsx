@@ -1,8 +1,9 @@
 "use client"
 
-import { departmentUnder } from "@cortex/types"
+import { grantMatches, secretPathGranted } from "@cortex/types"
 import { Checkbox } from "@cortex/ui"
 import { cn } from "@cortex/utils"
+import { useController, type Control, type FieldValues, type Path } from "react-hook-form"
 import { DepartmentTreeCheckList } from "./pickers"
 
 // Small form primitives shared by the cortex-config editor screens.
@@ -25,13 +26,17 @@ export interface GrantPickerProps {
   leafEmptyText: string
 }
 
-/** True when a checked branch already covers the leaf (its own grant is moot). */
+/**
+ * True when a checked branch already covers the leaf (its own grant is moot).
+ * Reuses the canonical grant math so the "covered" marking can't drift from the
+ * server-side resolution: department leaves via grantMatches, secret paths (no
+ * department) via secretPathGranted.
+ */
 function coveredByBranch(leaf: GrantLeaf, branches: string[]): boolean {
-  return branches.some((branch) =>
-    leaf.department
-      ? departmentUnder(branch, leaf.department)
-      : leaf.id === branch || leaf.id.startsWith(`${branch}/`),
-  )
+  const grant = { branches, leaves: [] as string[] }
+  return leaf.department
+    ? grantMatches(grant, { id: leaf.id, department: leaf.department })
+    : secretPathGranted(grant, leaf.id)
 }
 
 /**
@@ -120,6 +125,41 @@ export function GrantPicker({
         )}
       </div>
     </div>
+  )
+}
+
+interface GrantPickerFieldProps<T extends FieldValues> {
+  control: Control<T>
+  /** RHF field holding the branch-grant string[] (department paths). */
+  branchName: Path<T>
+  /** RHF field holding the leaf-grant string[] (resource ids). */
+  leafName: Path<T>
+  departments: string[]
+  leaves: GrantLeaf[]
+  leafEmptyText: string
+}
+
+/** GrantPicker wired to two RHF fields (branches + leaves) as one grant. */
+export function GrantPickerField<T extends FieldValues>({
+  control,
+  branchName,
+  leafName,
+  departments,
+  leaves,
+  leafEmptyText,
+}: GrantPickerFieldProps<T>) {
+  const branch = useController({ control, name: branchName })
+  const leaf = useController({ control, name: leafName })
+  return (
+    <GrantPicker
+      departments={departments}
+      leaves={leaves}
+      branchValue={branch.field.value as string[]}
+      onBranchChange={branch.field.onChange}
+      leafValue={leaf.field.value as string[]}
+      onLeafChange={leaf.field.onChange}
+      leafEmptyText={leafEmptyText}
+    />
   )
 }
 
