@@ -1,16 +1,23 @@
 "use client"
 
-import { formatIntrastatError } from "@/lib/intrastat/api"
-import { useIntrastatCnSuggestions, useIntrastatPatchLine } from "@/lib/intrastat/hooks"
+import { formatIntrastatError, isIntrastatErrorDetail } from "@/lib/intrastat/api"
+import {
+  useIntrastatCnSuggestions,
+  useIntrastatPatchLine,
+  useIntrastatUpsertCnResourceRow,
+} from "@/lib/intrastat/hooks"
 import type {
   IntrastatCnSuggestion,
   IntrastatDeclarationLine,
   IntrastatLinePatchRequest,
 } from "@/lib/intrastat/types"
+import { useAuthorizedApps } from "@cortex/api"
 import {
   Button,
+  Checkbox,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -28,6 +35,8 @@ interface Props {
   onOpenChange: (open: boolean) => void
 }
 
+const CN_EDITOR_APP_CODE = "intrastat-cn-editor"
+
 type FormState = {
   cn_code: string
   description: string
@@ -41,8 +50,15 @@ type FormState = {
 }
 
 export function IntrastatLineEditDialog({ batchId, line, open, onOpenChange }: Props) {
+  const access = useAuthorizedApps()
   const patchLine = useIntrastatPatchLine(batchId)
+  const upsertCnResourceRow = useIntrastatUpsertCnResourceRow()
   const [form, setForm] = useState<FormState>(() => emptyForm())
+  const [saveToCnResource, setSaveToCnResource] = useState(false)
+  const canEditCnResource = access.apps.includes(CN_EDITOR_APP_CODE)
+  const cn8 = normalizedCn8(form.cn_code)
+  const canSaveToCnResource = Boolean(line?.item_index.trim() && cn8 && form.description.trim())
+  const isSaving = patchLine.isPending || upsertCnResourceRow.isPending
   const suggestionSearch = useMemo(
     () => (form.cn_code.trim() || line?.item_index || form.description).trim(),
     [form.cn_code, form.description, line?.item_index],
@@ -53,6 +69,7 @@ export function IntrastatLineEditDialog({ batchId, line, open, onOpenChange }: P
   )
 
   useEffect(() => {
+    setSaveToCnResource(false)
     if (!line) {
       setForm(emptyForm())
       return
@@ -98,7 +115,46 @@ export function IntrastatLineEditDialog({ batchId, line, open, onOpenChange }: P
 
     try {
       await patchLine.mutateAsync({ lineId: line.id, payload })
-      toast.success("Intrastat line updated")
+
+      if (saveToCnResource && canEditCnResource && canSaveToCnResource && cn8) {
+        const resourcePayload = {
+          index_value: line.item_index,
+          cn8,
+          cn: cn8,
+          description: form.description.trim(),
+        }
+        try {
+          await upsertCnResourceRow.mutateAsync({ payload: resourcePayload })
+        } catch (error) {
+          if (!isIntrastatErrorDetail(error, "cn-resource-index-conflict")) {
+            toast.error(formatIntrastatError(error, "Line updated, but CN database update failed"))
+            return
+          }
+
+          const shouldReplace = window.confirm(
+            `Index ${line.item_index} already has a different CN code. Replace it with ${cn8}?`,
+          )
+          if (!shouldReplace) {
+            toast.success("Intrastat line updated; CN database unchanged")
+            onOpenChange(false)
+            return
+          }
+          try {
+            await upsertCnResourceRow.mutateAsync({
+              payload: resourcePayload,
+              replaceConflict: true,
+            })
+          } catch (replaceError) {
+            toast.error(
+              formatIntrastatError(replaceError, "Line updated, but CN database update failed"),
+            )
+            return
+          }
+        }
+        toast.success("Intrastat line and CN database updated")
+      } else {
+        toast.success("Intrastat line updated")
+      }
       onOpenChange(false)
     } catch (error) {
       toast.error(formatIntrastatError(error, "Line update failed"))
@@ -110,6 +166,10 @@ export function IntrastatLineEditDialog({ batchId, line, open, onOpenChange }: P
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Edit line {line?.invoice_number ?? ""}</DialogTitle>
+          <DialogDescription>
+            Correct the declaration line and optionally reuse the index-to-CN mapping in future
+            invoices.
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-2 sm:col-span-3">
@@ -171,13 +231,31 @@ export function IntrastatLineEditDialog({ batchId, line, open, onOpenChange }: P
               onChange={(event) => update("description", event.target.value)}
             />
           </div>
+          {canEditCnResource ? (
+            <div className="flex items-start gap-3 rounded-md border border-border p-3 sm:col-span-3">
+              <Checkbox
+                id="intrastat-save-to-cn-resource"
+                checked={saveToCnResource}
+                disabled={!canSaveToCnResource}
+                onCheckedChange={(checked) => setSaveToCnResource(checked === true)}
+              />
+              <div className="space-y-1">
+                <Label htmlFor="intrastat-save-to-cn-resource">
+                  Save item index and CN code to the CN database
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Future invoices can use this correction as an exact index match.
+                </p>
+              </div>
+            </div>
+          ) : null}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={patchLine.isPending}>
-            {patchLine.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Save
           </Button>
         </DialogFooter>
@@ -207,9 +285,7 @@ function CnSuggestionList({
           onClick={() => onSelect(suggestion)}
         >
           <span className="font-mono font-medium">{suggestion.cn8 ?? suggestion.cn ?? "—"}</span>
-          <span className="truncate font-mono text-muted-foreground">
-            {suggestion.index_value}
-          </span>
+          <span className="truncate font-mono text-muted-foreground">{suggestion.index_value}</span>
           <span className="truncate text-muted-foreground">{suggestion.description ?? "—"}</span>
         </button>
       ))}
@@ -252,6 +328,11 @@ function emptyForm(): FormState {
     value: "",
     currency: "",
   }
+}
+
+function normalizedCn8(value: string): string | null {
+  const digits = value.replace(/\D/g, "")
+  return digits.length >= 8 ? digits.slice(0, 8) : null
 }
 
 function valueToString(value: number | null): string {

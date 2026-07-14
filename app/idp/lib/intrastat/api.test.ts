@@ -147,6 +147,30 @@ describe("intrastatApi", () => {
     expect(fetchMock.mock.calls[0]?.[1]?.body).toBe(JSON.stringify(payload))
   })
 
+  it("upserts CN resource rows and can confirm a conflicting replacement", async () => {
+    const fetchMock = mockJsonFetch({
+      id: "row-1",
+      index_value: "NEW-100",
+      cn8: "85044095",
+      cn: "85044095",
+      description: "Power supplies",
+    })
+    const payload = {
+      index_value: "NEW-100",
+      cn8: "85044095",
+      cn: "85044095",
+      description: "Power supplies",
+    }
+
+    await intrastatApi.upsertCnResourceRow(payload, true)
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+      "/intrastat/api/resources/cn/rows/upsert?replace_conflict=true",
+    )
+    expect(fetchMock.mock.calls[0]?.[1]?.method).toBe("POST")
+    expect(fetchMock.mock.calls[0]?.[1]?.body).toBe(JSON.stringify(payload))
+  })
+
   it("deletes filesystem files", async () => {
     const fetchMock = vi.fn<typeof fetch>(async () => {
       return new Response(null, { status: 204 })

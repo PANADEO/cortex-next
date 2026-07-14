@@ -47,6 +47,7 @@ const INTRASTAT_ERROR_MESSAGES: Record<string, string> = {
   "cn-resource-not-found": "No active CN resource is available",
   "cn-resource-editor-required": "CN database editor permission is required",
   "cn-resource-row-not-found": "CN database row not found. Refresh the list.",
+  "cn-resource-index-conflict": "This item index already has a different CN code",
   "cn-resource-index-required": "Enter an item index",
   "cn-resource-cn8-invalid": "Enter a valid 8-digit CN code",
   "cn-resource-description-required": "Enter a description",
@@ -79,6 +80,15 @@ class IntrastatApiError extends Error {
     this.status = status
     this.detail = detail
   }
+}
+
+export function isIntrastatErrorDetail(error: unknown, detail: string): boolean {
+  return (
+    error instanceof Error &&
+    "detail" in error &&
+    typeof error.detail === "string" &&
+    error.detail === detail
+  )
 }
 
 const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH)
@@ -372,6 +382,15 @@ export const intrastatApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     }),
+  upsertCnResourceRow: (payload: IntrastatCnResourceRowRequest, replaceConflict = false) =>
+    request<IntrastatCnResourceRow>(
+      `/resources/cn/rows/upsert${replaceConflict ? "?replace_conflict=true" : ""}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    ),
   updateCnResourceRow: (rowId: string, payload: IntrastatCnResourceRowRequest) =>
     request<IntrastatCnResourceRow>(`/resources/cn/rows/${rowId}`, {
       method: "PUT",

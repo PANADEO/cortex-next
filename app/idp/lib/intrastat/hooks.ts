@@ -239,6 +239,22 @@ export function useIntrastatCreateCnResourceRow() {
   })
 }
 
+export function useIntrastatUpsertCnResourceRow() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      payload,
+      replaceConflict,
+    }: {
+      payload: IntrastatCnResourceRowRequest
+      replaceConflict?: boolean
+    }) => intrastatApi.upsertCnResourceRow(payload, replaceConflict),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: intrastatQueryKeys.cnResource() })
+    },
+  })
+}
+
 export function useIntrastatUpdateCnResourceRow() {
   const client = useQueryClient()
   return useMutation({
