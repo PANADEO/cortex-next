@@ -124,6 +124,7 @@ describe("/api/me/access route handler", () => {
       "idp",
       "idp-basic",
       "intrastat",
+      "invoice-supervisor",
       "ai-tools",
       "intrastat-cn-editor",
       "text-highlighter",

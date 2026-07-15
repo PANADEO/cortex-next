@@ -12,6 +12,14 @@ import type {
   InvoiceSupervisorSchedulerConfig,
 } from "./types"
 
+// Periodic refetch cadence for operational lists/summaries the user actively monitors
+// on-screen (inbox, invoices, clients, notifications) — matches the flat "stats" polling
+// interval used by other tiles, see lib/idp-basic/hooks.ts and lib/intrastat/hooks.ts.
+// Deliberately NOT applied to single-record detail queries (invoice/client/payments/
+// exposure) since those back pages where the user is actively reviewing or editing one
+// specific record — see per-hook comments below.
+const OPERATIONAL_REFETCH_MS = 10_000
+
 export const invoiceSupervisorQueryKeys = {
   all: ["invoice-supervisor"] as const,
 
@@ -57,9 +65,12 @@ export function useInvoiceSupervisorInvoices(params: { status?: string; client_i
     queryKey: invoiceSupervisorQueryKeys.invoiceSearch(params),
     queryFn: () => invoiceSupervisorApi.searchInvoices(params),
     placeholderData: keepPreviousData,
+    refetchInterval: OPERATIONAL_REFETCH_MS,
   })
 }
 
+// No refetchInterval: backs the invoice detail/edit page (payment registration, dispute
+// actions) — polling would refetch out from under an in-progress edit.
 export function useInvoiceSupervisorInvoice(id: number) {
   return useQuery({
     queryKey: invoiceSupervisorQueryKeys.invoiceDetail(id),
@@ -68,6 +79,7 @@ export function useInvoiceSupervisorInvoice(id: number) {
   })
 }
 
+// No refetchInterval: same invoice detail/edit page as above.
 export function useInvoiceSupervisorPayments(id: number) {
   return useQuery({
     queryKey: invoiceSupervisorQueryKeys.invoicePayments(id),
@@ -194,9 +206,12 @@ export function useInvoiceSupervisorClientsWithExposure() {
   return useQuery({
     queryKey: invoiceSupervisorQueryKeys.clientsWithExposure(),
     queryFn: invoiceSupervisorApi.listClientsWithExposure,
+    refetchInterval: OPERATIONAL_REFETCH_MS,
   })
 }
 
+// No refetchInterval: backs the client detail page, which hosts an edit dialog for this
+// same client record — polling would refetch out from under an in-progress edit.
 export function useInvoiceSupervisorClient(id: number) {
   return useQuery({
     queryKey: invoiceSupervisorQueryKeys.clientDetail(id),
@@ -205,6 +220,7 @@ export function useInvoiceSupervisorClient(id: number) {
   })
 }
 
+// No refetchInterval: same client detail page as above.
 export function useInvoiceSupervisorClientExposure(id: number) {
   return useQuery({
     queryKey: invoiceSupervisorQueryKeys.clientExposure(id),
@@ -365,11 +381,16 @@ export function useInvoiceSupervisorNotificationLog() {
   return useQuery({
     queryKey: invoiceSupervisorQueryKeys.notificationLog(),
     queryFn: invoiceSupervisorApi.notificationLog,
+    refetchInterval: OPERATIONAL_REFETCH_MS,
   })
 }
 
 export function useInvoiceSupervisorFailedTasks() {
-  return useQuery({ queryKey: invoiceSupervisorQueryKeys.failedTasks(), queryFn: invoiceSupervisorApi.failedTasks })
+  return useQuery({
+    queryKey: invoiceSupervisorQueryKeys.failedTasks(),
+    queryFn: invoiceSupervisorApi.failedTasks,
+    refetchInterval: OPERATIONAL_REFETCH_MS,
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -417,9 +438,12 @@ export function useInvoiceSupervisorPendingProposals() {
   return useQuery({
     queryKey: invoiceSupervisorQueryKeys.inboxPending(),
     queryFn: invoiceSupervisorApi.listPendingProposals,
+    refetchInterval: OPERATIONAL_REFETCH_MS,
   })
 }
 
+// No refetchInterval: not currently rendered by any page (no "all proposals" view exists
+// yet) — add the same OPERATIONAL_REFETCH_MS once a consuming page shows up.
 export function useInvoiceSupervisorAllProposals() {
   return useQuery({ queryKey: invoiceSupervisorQueryKeys.inboxAll(), queryFn: invoiceSupervisorApi.listAllProposals })
 }
@@ -514,6 +538,6 @@ export function useInvoiceSupervisorDashboardSummary() {
   return useQuery({
     queryKey: invoiceSupervisorQueryKeys.dashboardSummary(),
     queryFn: invoiceSupervisorApi.dashboardSummary,
-    refetchInterval: 60_000,
+    refetchInterval: OPERATIONAL_REFETCH_MS,
   })
 }
