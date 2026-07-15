@@ -1,0 +1,249 @@
+"use client"
+
+import {
+  useInvoiceSupervisorDeleteTemplate,
+  useInvoiceSupervisorGenerateDraft,
+  useInvoiceSupervisorSaveTemplate,
+} from "@/lib/invoice-supervisor/hooks"
+import type {
+  InvoiceSupervisorChannel,
+  InvoiceSupervisorEscalationStage,
+  InvoiceSupervisorMessageTemplate,
+} from "@/lib/invoice-supervisor/types"
+import {
+  INVOICE_SUPERVISOR_CHANNEL_LABELS,
+  INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS,
+  INVOICE_SUPERVISOR_TEMPLATE_VARIABLES,
+} from "@/lib/invoice-supervisor/types"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+  Button,
+  Checkbox,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Label,
+  Textarea,
+} from "@cortex/ui"
+import { Sparkles, Trash2 } from "lucide-react"
+import { useState } from "react"
+
+interface Props {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  toneId: number
+  toneName: string
+  toneDescription: string
+  channel: InvoiceSupervisorChannel
+  stage: InvoiceSupervisorEscalationStage
+  existingTemplate: InvoiceSupervisorMessageTemplate | null
+}
+
+// Preselected variables for a fresh draft — the most commonly referenced
+// ones across escalation stages. User can still toggle any of them off/on.
+const DEFAULT_VARIABLES = [
+  "numer_faktury",
+  "kwota_pozostala",
+  "waluta",
+  "termin_platnosci",
+  "dni_po_terminie",
+  "numer_konta",
+]
+
+export function InvoiceSupervisorTemplateEditorDialog({
+  open,
+  onOpenChange,
+  toneId,
+  toneName,
+  toneDescription,
+  channel,
+  stage,
+  existingTemplate,
+}: Props) {
+  const [selectedVars, setSelectedVars] = useState<string[]>(DEFAULT_VARIABLES)
+  const [extraHint, setExtraHint] = useState("")
+  const [subject, setSubject] = useState(existingTemplate?.subject ?? "")
+  const [body, setBody] = useState(existingTemplate?.body ?? "")
+  const [showGenerator, setShowGenerator] = useState(!existingTemplate)
+
+  const generateDraft = useInvoiceSupervisorGenerateDraft()
+  const saveTemplate = useInvoiceSupervisorSaveTemplate()
+  const deleteTemplate = useInvoiceSupervisorDeleteTemplate()
+
+  function toggleVar(key: string, checked: boolean) {
+    setSelectedVars((prev) => (checked ? [...prev, key] : prev.filter((v) => v !== key)))
+  }
+
+  function handleGenerate() {
+    generateDraft.mutate(
+      {
+        tone_name: toneName,
+        tone_description: toneDescription,
+        channel,
+        escalation_stage: stage,
+        selected_variable_keys: selectedVars,
+        ...(extraHint ? { extra_hint: extraHint } : {}),
+      },
+      {
+        onSuccess: (draft) => {
+          setSubject(draft.subject ?? "")
+          setBody(draft.body)
+        },
+      },
+    )
+  }
+
+  function handleSave() {
+    saveTemplate.mutate(
+      {
+        tone_id: toneId,
+        channel,
+        escalation_stage: stage,
+        body,
+        subject: channel === "email" ? subject : null,
+      },
+      { onSuccess: () => onOpenChange(false) },
+    )
+  }
+
+  function handleDelete() {
+    if (!existingTemplate) return
+    deleteTemplate.mutate(existingTemplate.id, { onSuccess: () => onOpenChange(false) })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {toneName} · {INVOICE_SUPERVISOR_CHANNEL_LABELS[channel]} ·{" "}
+            {INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS[stage]}
+          </DialogTitle>
+          <DialogDescription>
+            {existingTemplate
+              ? "Edytuj zapisaną treść bezpośrednio albo wygeneruj ją ponownie z AI. Przy wysyłce system wyłącznie podstawia wartości zmiennych — bez kolejnych wywołań AI."
+              : "Brak zapisanego szablonu dla tej kombinacji. Wygeneruj treść z AI (tylko raz, teraz), a następnie zapisz."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {existingTemplate && !showGenerator && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowGenerator(true)}
+            >
+              <Sparkles className="size-4" />
+              Wygeneruj ponownie z AI
+            </Button>
+          )}
+
+          {showGenerator && (
+            <div className="space-y-4 rounded-lg border p-4">
+              <div>
+                <Label className="mb-2 block">Zmienne do uwzględnienia</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(INVOICE_SUPERVISOR_TEMPLATE_VARIABLES).map(([key, label]) => (
+                    <label key={key} className="flex min-w-0 items-start gap-2 text-sm">
+                      <Checkbox
+                        checked={selectedVars.includes(key)}
+                        onCheckedChange={(c) => toggleVar(key, c === true)}
+                        className="mt-0.5 shrink-0"
+                      />
+                      <span className="min-w-0 break-words leading-snug">
+                        <span>@{key}</span> <span className="text-muted-foreground">({label})</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label>Dodatkowe wskazówki (opcjonalnie)</Label>
+                <Textarea
+                  value={extraHint}
+                  onChange={(e) => setExtraHint(e.target.value)}
+                  rows={2}
+                />
+              </div>
+
+              <Button
+                onClick={handleGenerate}
+                disabled={generateDraft.isPending}
+                variant="outline"
+                className="w-full"
+              >
+                <Sparkles className="size-4" />
+                {generateDraft.isPending ? "Generowanie…" : "Generuj treść"}
+              </Button>
+            </div>
+          )}
+
+          {(body || subject) && (
+            <div className="space-y-3 rounded-lg border p-4">
+              {channel === "email" && (
+                <div className="space-y-1">
+                  <Label>Temat</Label>
+                  <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
+                </div>
+              )}
+              <div className="space-y-1">
+                <Label>Treść (edytowalna)</Label>
+                <Textarea
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  rows={10}
+                  className="font-mono text-sm"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="sm:justify-between">
+          {existingTemplate ? (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button type="button" variant="destructive" disabled={deleteTemplate.isPending}>
+                  <Trash2 className="size-4" />
+                  Usuń szablon
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Usunąć ten szablon?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Ta kombinacja tonu, kanału i etapu ponownie zablokuje generowanie propozycji,
+                    dopóki nie zapiszesz nowego szablonu.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Anuluj</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>Usuń</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          ) : (
+            <span />
+          )}
+          <Button onClick={handleSave} disabled={!body || saveTemplate.isPending}>
+            {existingTemplate ? "Zapisz zmiany" : "Zapisz jako szablon"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
