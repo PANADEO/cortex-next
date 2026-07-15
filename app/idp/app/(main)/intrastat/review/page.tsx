@@ -1,10 +1,12 @@
 "use client"
 
+import { IntrastatCorrectionInfo } from "@/components/intrastat/correction-info"
 import { IntrastatDeleteBatchButton } from "@/components/intrastat/delete-batch-button"
 import { IntrastatDocumentPreviewPanel } from "@/components/intrastat/document-preview-panel"
 import { IntrastatExportButtons } from "@/components/intrastat/export-buttons"
 import { IntrastatLineEditDialog } from "@/components/intrastat/line-edit-dialog"
 import { IntrastatMatchDetailsPopover } from "@/components/intrastat/match-details-popover"
+import { IntrastatPeriodInvoicesDialog } from "@/components/intrastat/period-invoices-dialog"
 import {
   IntrastatKindBadge,
   IntrastatStatusBadge,
@@ -65,6 +67,11 @@ const MATCH_OPTIONS: Array<{ value: IntrastatCnMatchStatus | "all"; label: strin
   { value: "unmatched", label: "Unmatched" },
 ]
 
+function getBatchParam(): string | null {
+  if (typeof window === "undefined") return null
+  return new URLSearchParams(window.location.search).get("batch")
+}
+
 export default function IntrastatReviewPage() {
   const router = useRouter()
   const [batchId, setBatchId] = useState("")
@@ -85,8 +92,7 @@ export default function IntrastatReviewPage() {
   const reprocess = useIntrastatReprocessBatch()
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const initialBatch = params.get("batch")
+    const initialBatch = getBatchParam()
     if (initialBatch) setBatchId(initialBatch)
   }, [])
 
@@ -99,6 +105,7 @@ export default function IntrastatReviewPage() {
   }, [])
 
   useEffect(() => {
+    if (getBatchParam()) return
     if (!batchId && batches.data?.items[0]) {
       setBatchId(batches.data.items[0].id)
     }
@@ -119,13 +126,22 @@ export default function IntrastatReviewPage() {
       {
         accessorKey: "invoice_number",
         header: "Invoice",
-        size: 160,
+        size: 260,
         cell: ({ row }) => (
           <div className="min-w-0">
-            <p className="truncate font-medium">{row.original.invoice_number}</p>
+            <p
+              className={
+                row.original.is_excluded
+                  ? "truncate font-medium line-through"
+                  : "truncate font-medium"
+              }
+            >
+              {row.original.invoice_number}
+            </p>
             <p className="truncate text-xs text-muted-foreground">
               {row.original.invoice_date ?? "No date"}
             </p>
+            <IntrastatCorrectionInfo line={row.original} />
           </div>
         ),
       },
@@ -233,6 +249,16 @@ export default function IntrastatReviewPage() {
     setSelectedSourceFile(line.source_file)
   }
 
+  const handleInvoiceSelect = (fileName: string) => {
+    setSelectedSourceFile(fileName)
+    setDocumentPreviewVisible(true)
+    try {
+      localStorage.setItem(PREVIEW_VISIBLE_STORAGE_KEY, "true")
+    } catch {
+      // localStorage can be unavailable in restricted browser contexts.
+    }
+  }
+
   const handleDocumentPreviewToggle = () => {
     setDocumentPreviewVisible((current) => {
       const next = !current
@@ -321,6 +347,16 @@ export default function IntrastatReviewPage() {
               </Select>
               {selectedBatch.data ? (
                 <>
+                  <IntrastatPeriodInvoicesDialog
+                    periodLabel={
+                      selectedBatch.data.client_name && selectedBatch.data.period_month
+                        ? `${selectedBatch.data.client_name} / ${selectedBatch.data.period_month}`
+                        : selectedBatch.data.name
+                    }
+                    invoiceCount={selectedBatch.data.invoice_count}
+                    documents={selectedBatch.data.documents}
+                    onInvoiceSelect={handleInvoiceSelect}
+                  />
                   <IntrastatKindBadge kind={selectedBatch.data.transaction_kind} />
                   <IntrastatStatusBadge status={selectedBatch.data.status} />
                 </>
@@ -364,8 +400,12 @@ export default function IntrastatReviewPage() {
               <DataTable
                 columns={columns}
                 data={items}
+                className="overflow-visible [contain:none]"
                 isLoading={lines.isPending && items.length === 0}
                 getRowId={(row) => row.id}
+                getRowClassName={(row) =>
+                  row.is_excluded ? "bg-muted/30 text-muted-foreground" : undefined
+                }
                 onRowClick={handleLineSelect}
                 stickyHeader
                 bordered

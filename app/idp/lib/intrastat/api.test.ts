@@ -45,9 +45,7 @@ describe("intrastatApi", () => {
       period_month: "all",
     })
 
-    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
-      "/intrastat/api/batches?limit=20&offset=0",
-    )
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("/intrastat/api/batches?limit=20&offset=0")
   })
 
   it("loads batch filter options", async () => {
@@ -102,6 +100,21 @@ describe("intrastatApi", () => {
     expect(download.filename).toBe("invoice.pdf")
   })
 
+  it("downloads the active CN resource", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => {
+      return new Response(new Blob(["xlsx"]), {
+        status: 200,
+        headers: { "Content-Disposition": 'attachment; filename="cn-resource-20260714.xlsx"' },
+      })
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const download = await intrastatApi.downloadCnResource()
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("/intrastat/api/resources/cn/download")
+    expect(download.filename).toBe("cn-resource-20260714.xlsx")
+  })
+
   it("deletes filesystem files", async () => {
     const fetchMock = vi.fn<typeof fetch>(async () => {
       return new Response(null, { status: 204 })
@@ -137,5 +150,60 @@ describe("intrastatApi", () => {
     expect((body as FormData).get("upload_to_filesystem")).toBe("true")
     expect((body as FormData).get("client_name")).toBe("Jabil")
     expect((body as FormData).get("period_month")).toBe("Lipiec 2026")
+  })
+
+  it("translates persisted Polish alerts when loading declaration lines", async () => {
+    mockJsonFetch({
+      items: [
+        {
+          alerts: [
+            "Brak kodu CN do eksportu Intrastat.",
+            "Niejednoznaczne dopasowanie CN: 85322400, 85423269.",
+            "Suma wartości pozycji (2000.00 EUR) nie zgadza się z kwotą netto faktury (2300.00 EUR).",
+          ],
+        },
+      ],
+      total: 1,
+      limit: 20,
+      offset: 0,
+    })
+
+    const response = await intrastatApi.lines("batch-1", { limit: 20, offset: 0 })
+
+    expect(response.items[0]?.alerts).toEqual([
+      "Missing CN code for Intrastat export.",
+      "Ambiguous CN match: 85322400, 85423269.",
+      "Sum of line values (2000.00 EUR) does not match the invoice net total (2300.00 EUR).",
+    ])
+  })
+
+  it("hides missing-field alerts when the declaration line has a final value", async () => {
+    mockJsonFetch({
+      items: [
+        {
+          cn_code: "85322200",
+          net_weight: 2,
+          origin_country: "PL",
+          delivery_terms: null,
+          alerts: [
+            "delivery_terms not found for line item 10.",
+            "net_weight not found for line item 10.",
+            "origin_country not found for line item 10.",
+            "cn_code not found for line item 10.",
+            "Low extraction confidence.",
+          ],
+        },
+      ],
+      total: 1,
+      limit: 20,
+      offset: 0,
+    })
+
+    const response = await intrastatApi.lines("batch-1", { limit: 20, offset: 0 })
+
+    expect(response.items[0]?.alerts).toEqual([
+      "delivery_terms not found for line item 10.",
+      "Low extraction confidence.",
+    ])
   })
 })

@@ -2,19 +2,13 @@
 
 import type { PackageActionReadModel, PackageActionType } from "@cortex/types"
 import { cn, formatAbsolute, formatRelative, humanizeEnum } from "@cortex/utils"
-import { Cpu, Sparkles, Zap } from "lucide-react"
-import { useMemo, useRef, useState } from "react"
-import type { SyntheticEvent } from "react"
 import { formatDistanceToNowStrict, parseISO } from "date-fns"
+import { Cpu, Sparkles, Zap } from "lucide-react"
+import type { SyntheticEvent } from "react"
+import { useMemo, useRef, useState } from "react"
 import { JsonViewer } from "./json-viewer"
 import { Badge } from "./ui/badge"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 
 type EventCategory = "edit" | "system" | "verification"
 type SortOrder = "desc" | "asc"
@@ -111,11 +105,7 @@ export function normaliseEditPayload(payload: unknown): EditSummary[] {
   if (!isPlainObject(payload)) return []
 
   // Shape (a): flat — { field: string; previous: unknown; next: unknown }
-  if (
-    typeof payload.field === "string" &&
-    "previous" in payload &&
-    "next" in payload
-  ) {
+  if (typeof payload.field === "string" && "previous" in payload && "next" in payload) {
     return [{ field: payload.field, from: payload.previous, to: payload.next }]
   }
 
@@ -156,6 +146,7 @@ interface ReprocessPayloadShape {
   use_fast_model?: boolean
   additional_ai_context_enabled?: boolean
   additional_ai_context?: string | null
+  packaging_selection_mode?: string | null
 }
 
 interface ActionLogTimelineProps {
@@ -189,8 +180,7 @@ function buildRowMeta(event: PackageActionReadModel, showPayloads: boolean): Row
     isPlainObject(parsedPayload) &&
     parsedPayload.reprocess === true
   const category = categorise(event.action_type)
-  const editSummary =
-    category === "edit" && hasPayload ? normaliseEditPayload(parsedPayload) : []
+  const editSummary = category === "edit" && hasPayload ? normaliseEditPayload(parsedPayload) : []
   return { category, isReprocess, editSummary, parsedPayload, hasPayload }
 }
 
@@ -239,9 +229,7 @@ export function ActionLogTimeline({
   }, [events])
 
   if (events.length === 0) {
-    return (
-      <p className={cn("text-sm text-muted-foreground", className)}>No actions yet.</p>
-    )
+    return <p className={cn("text-sm text-muted-foreground", className)}>No actions yet.</p>
   }
 
   const handleToggle = (eventId: string) => (e: SyntheticEvent<HTMLDetailsElement>) => {
@@ -291,21 +279,13 @@ export function ActionLogTimeline({
             </span>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <button
-              type="button"
-              onClick={handleCollapseAll}
-              className="hover:text-foreground"
-            >
+            <button type="button" onClick={handleCollapseAll} className="hover:text-foreground">
               Collapse all
             </button>
             <span aria-hidden className="text-muted-foreground/50">
               |
             </span>
-            <button
-              type="button"
-              onClick={handleExpandAll}
-              className="hover:text-foreground"
-            >
+            <button type="button" onClick={handleExpandAll} className="hover:text-foreground">
               Expand all
             </button>
           </div>
@@ -432,7 +412,7 @@ function ConversationRow({ event, meta, open, onToggle }: ConversationRowProps) 
     <details
       className={cn(
         "group block border-b border-border/60 bg-card transition-colors last:border-b-0",
-        "hover:bg-muted/20 open:bg-muted/30",
+        "open:bg-muted/30 hover:bg-muted/20",
         RAIL_BY_CATEGORY[category],
       )}
       open={open}
@@ -532,9 +512,7 @@ function PreviewLine({
         {formatDiffValue(first.from)}
       </span>
       <span className="mx-1.5 text-muted-foreground/70">→</span>
-      <span className="font-medium text-success">
-        {formatDiffValue(first.to)}
-      </span>
+      <span className="font-medium text-success">{formatDiffValue(first.to)}</span>
       {extraCount > 0 ? (
         <span className="ml-2 font-sans text-[0.7rem] text-muted-foreground/70">
           +{extraCount} more {category === "edit" ? "field" : "change"}
@@ -630,9 +608,7 @@ function DiffTable({ rows }: { rows: EditSummary[] }) {
               </span>
             </td>
             <td className="px-2.5 py-2 align-top font-mono text-[0.76rem]">
-              <span className="font-medium text-success">
-                {formatDiffValue(row.to)}
-              </span>
+              <span className="font-medium text-success">{formatDiffValue(row.to)}</span>
             </td>
           </tr>
         ))}
@@ -643,9 +619,7 @@ function DiffTable({ rows }: { rows: EditSummary[] }) {
 
 function ReprocessPayload({ payload }: { payload: unknown }) {
   if (!isPlainObject(payload)) {
-    return (
-      <p className="text-xs italic text-muted-foreground">Reprocess details unavailable</p>
-    )
+    return <p className="text-xs italic text-muted-foreground">Reprocess details unavailable</p>
   }
   const shape = payload as ReprocessPayloadShape
   const aiEnabled = shape.additional_ai_context_enabled === true
@@ -653,6 +627,7 @@ function ReprocessPayload({ payload }: { payload: unknown }) {
   const aiContext =
     typeof shape.additional_ai_context === "string" ? shape.additional_ai_context.trim() : ""
   const hasAiContext = aiEnabled && aiContext.length > 0
+  const packagingMode = formatPackagingSelectionMode(shape.packaging_selection_mode)
 
   return (
     <div className="space-y-2">
@@ -667,6 +642,11 @@ function ReprocessPayload({ payload }: { payload: unknown }) {
             Fast processing
           </Badge>
         ) : null}
+        {packagingMode ? (
+          <Badge variant="outline" className="text-[10px]">
+            {packagingMode}
+          </Badge>
+        ) : null}
       </div>
       {hasAiContext ? (
         <div className="rounded-md border border-border bg-muted/40 p-2 text-xs">
@@ -677,6 +657,14 @@ function ReprocessPayload({ payload }: { payload: unknown }) {
       ) : null}
     </div>
   )
+}
+
+function formatPackagingSelectionMode(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  if (value === "auto_by_bill_of_lading") return "Packaging: auto by B/L"
+  if (value === "force_packages") return "Packaging: packages"
+  if (value === "force_pallets") return "Packaging: pallets"
+  return null
 }
 
 function formatDiffValue(value: unknown): string {

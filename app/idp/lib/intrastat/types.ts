@@ -1,5 +1,7 @@
 export type IntrastatTransactionKind = "WNT" | "WDT"
 export type IntrastatBatchStatus = "queued" | "processing" | "ready" | "needs_review" | "failed"
+export type IntrastatInvoiceDocumentType = "invoice" | "correction" | "physical_return"
+export type IntrastatCorrectionSide = "before" | "after"
 export type IntrastatCnMatchStatus =
   | "exact"
   | "prefix_unique"
@@ -122,7 +124,15 @@ export interface IntrastatDeclarationLine {
   transport_type: string
   cn_match_status: IntrastatCnMatchStatus
   confidence: number | null
+  match_confidence: number | null
   alerts: string[]
+  document_type: IntrastatInvoiceDocumentType
+  corrected_invoice_number: string | null
+  corrected_invoice_date: string | null
+  correction_reason: string | null
+  correction_side: IntrastatCorrectionSide | null
+  is_excluded: boolean
+  exclusion_reason: string | null
   source_file: string | null
   created_at: string
   updated_at: string

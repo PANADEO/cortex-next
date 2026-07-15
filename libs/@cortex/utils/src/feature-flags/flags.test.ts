@@ -6,14 +6,13 @@ const KNOWN_FLAGS: FeatureFlag[] = [
   "idp.customs-code",
   "idp.atr-processing",
   "idp.additional-ai-context",
+  "idp.packaging-selection-mode",
   "idp.import-email-notifications",
 ]
 
 describe("DEFAULTS", () => {
   it("contains every opt-in flag with a false default", () => {
-    for (const flag of KNOWN_FLAGS.filter(
-      (value) => value !== "idp.import-email-notifications",
-    )) {
+    for (const flag of KNOWN_FLAGS.filter((value) => value !== "idp.import-email-notifications")) {
       expect(DEFAULTS[flag]).toBe(false)
     }
   })
@@ -48,9 +47,11 @@ describe("BACKEND_FIELD", () => {
   })
 
   it("maps idp.additional-ai-context to enable_additional_ai_context", () => {
-    expect(BACKEND_FIELD["idp.additional-ai-context"]).toBe(
-      "enable_additional_ai_context",
-    )
+    expect(BACKEND_FIELD["idp.additional-ai-context"]).toBe("enable_additional_ai_context")
+  })
+
+  it("maps idp.packaging-selection-mode to enable_packaging_selection_mode", () => {
+    expect(BACKEND_FIELD["idp.packaging-selection-mode"]).toBe("enable_packaging_selection_mode")
   })
 
   it("maps idp.import-email-notifications to enable_import_email_notifications", () => {

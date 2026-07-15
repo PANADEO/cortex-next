@@ -17,6 +17,7 @@ interface DataTableProps<TData> {
   isLoading?: boolean
   emptyState?: ReactNode
   onRowClick?: (row: TData) => void
+  getRowClassName?: (row: TData) => string | undefined
   className?: string
   tableClassName?: string
   getRowId?: (row: TData, index: number) => string
@@ -32,6 +33,7 @@ export function DataTable<TData>({
   isLoading,
   emptyState,
   onRowClick,
+  getRowClassName,
   className,
   tableClassName,
   getRowId,
@@ -56,9 +58,7 @@ export function DataTable<TData>({
     >
       <table className={cn("w-full text-sm", tableClassName)}>
         <thead
-          className={cn(
-            stickyHeader ? "sticky top-0 z-10 bg-muted shadow-sm" : "bg-muted/40",
-          )}
+          className={cn(stickyHeader ? "sticky top-0 z-10 bg-muted shadow-sm" : "bg-muted/40")}
         >
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id} className="border-b border-border">
@@ -94,6 +94,7 @@ export function DataTable<TData>({
                 className={cn(
                   "border-b border-border transition-colors last:border-b-0",
                   onRowClick && "cursor-pointer hover:bg-muted/50",
+                  getRowClassName?.(row.original),
                 )}
                 onClick={onRowClick ? () => onRowClick(row.original) : undefined}
               >

@@ -1,5 +1,6 @@
 "use client"
 
+import { IntrastatResourceDownloadButton } from "@/components/intrastat/resource-download-button"
 import { IntrastatResourceUploadButton } from "@/components/intrastat/resource-upload-button"
 import { useIntrastatCnResource } from "@/lib/intrastat/hooks"
 import { Card, CardContent, DataCard, PageHeader } from "@cortex/ui"
@@ -15,7 +16,12 @@ export default function IntrastatResourcesPage() {
       <PageHeader
         title="Intrastat Resources"
         description="Client-maintained CN reference workbook used for exact and nearest-index matching."
-        actions={<IntrastatResourceUploadButton />}
+        actions={
+          <div className="flex items-center gap-2">
+            <IntrastatResourceDownloadButton disabled={!data?.id} />
+            <IntrastatResourceUploadButton />
+          </div>
+        }
       />
 
       <div className="grid gap-4 px-8 py-6 lg:grid-cols-4">

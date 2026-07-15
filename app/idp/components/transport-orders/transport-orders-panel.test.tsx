@@ -73,6 +73,14 @@ function makeTransportOrders(
 }
 
 describe("TransportOrdersPanel", () => {
+  const sadContextTemplateNames = [
+    "sad_xml",
+    "huzar_connector_xml",
+    "rusałka_connector_xml",
+    "zc415_xml",
+    "huzar_xml_legacy",
+  ]
+
   it("hides SAD context editor when Huzar export is disabled", async () => {
     vi.stubGlobal(
       "fetch",
@@ -137,13 +145,51 @@ describe("TransportOrdersPanel", () => {
     expect(screen.queryByRole("heading", { name: /transport order to-2/i })).toBeNull()
   })
 
-  it("shows SAD context editor when SAD XML export is enabled", async () => {
+  it.each(sadContextTemplateNames)(
+    "shows SAD context editor when %s export is enabled",
+    async (templateName) => {
+      vi.stubGlobal(
+        "fetch",
+        makeFetchMock({
+          "/packages/pkg-1/transport-orders": { body: makeTransportOrders() },
+          "/packages/export-templates": {
+            body: [
+              {
+                name: templateName,
+                display_name: "SAD XML",
+                format: "xml",
+                description: "",
+              },
+            ],
+          },
+        }),
+      )
+
+      render(
+        <Wrapper client={freshClient()}>
+          <TransportOrdersPanel packageId="pkg-1" canEdit={false} />
+        </Wrapper>,
+      )
+
+      expect(await screen.findByRole("heading", { name: /sad \/ huzar/i })).not.toBeNull()
+    },
+  )
+
+  it("shows SAD context editor when a SAD context export is enabled next to CSV", async () => {
     vi.stubGlobal(
       "fetch",
       makeFetchMock({
         "/packages/pkg-1/transport-orders": { body: makeTransportOrders() },
         "/packages/export-templates": {
-          body: [{ name: "sad_xml", display_name: "SAD XML", format: "xml", description: "" }],
+          body: [
+            { name: "csv", display_name: "CSV", format: "csv", description: "" },
+            {
+              name: "huzar_connector_xml",
+              display_name: "Huzar Connector XML",
+              format: "xml",
+              description: "",
+            },
+          ],
         },
       }),
     )

@@ -41,10 +41,24 @@ const INTRASTAT_ERROR_MESSAGES: Record<string, string> = {
   "invalid-cn-resource-xlsx": "Choose a valid XLSX CN resource",
   "cn-resource-required-columns-missing": "The CN workbook is missing required columns",
   "cn-resource-empty": "The CN workbook contains no usable resource rows",
+  "cn-resource-not-found": "No active CN resource is available",
   "filesystem-browser-not-directory": "This path is not a folder",
   "filesystem-delete-directory-not-supported": "Folder delete is not supported",
   "filesystem-file-not-found": "File not found. Refresh the folder.",
   "filesystem-path-outside-root": "Path is outside the watch folder",
+}
+
+const LEGACY_ALERT_MESSAGES: Record<string, string> = {
+  "Brak dopasowania CN w bazie i na fakturze.": "No CN match found in the resource or invoice.",
+  "Brak indeksu towaru z faktury.": "Missing item index from the invoice.",
+  "Brak kodu CN do eksportu Intrastat.": "Missing CN code for Intrastat export.",
+  "Brak numeru VAT/NIP dla reguły WNT/WDT.": "Missing VAT number for WNT/WDT rules.",
+  "Brak numeru faktury korygowanej; korekta pominięta w podsumowaniu.":
+    "Missing corrected invoice number; correction excluded from the summary.",
+  "Brak sekcji przed korektą; korekta pominięta w podsumowaniu.":
+    "Missing before-correction section; correction excluded from the summary.",
+  "Stan przed korektą nie zgadza się z aktualnym stanem faktury; korekta wymaga weryfikacji.":
+    "Before-correction state does not match the current invoice state; correction requires review.",
 }
 
 class IntrastatApiError extends Error {
@@ -123,6 +137,65 @@ function detailToString(detail: unknown): string | null {
     if (typeof first === "object" && first !== null && "msg" in first) return String(first.msg)
   }
   return null
+}
+
+function translateLegacyAlert(alert: string): string {
+  const translated = LEGACY_ALERT_MESSAGES[alert]
+  if (translated) return translated
+
+  const ambiguousMatch = alert.match(/^Niejednoznaczne dopasowanie CN: (.+)\.$/)
+  if (ambiguousMatch?.[1]) return `Ambiguous CN match: ${ambiguousMatch[1]}.`
+
+  const invoiceTotalMatch = alert.match(
+    /^Suma wartości pozycji \((.+)\) nie zgadza się z kwotą netto faktury \((.+)\)\.$/,
+  )
+  if (invoiceTotalMatch?.[1] && invoiceTotalMatch[2]) {
+    return `Sum of line values (${invoiceTotalMatch[1]}) does not match the invoice net total (${invoiceTotalMatch[2]}).`
+  }
+
+  const correctionTotalMatch = alert.match(
+    /^Różnica wartości pozycji korekty \((.+)\) nie zgadza się z kwotą netto faktury \((.+)\)\.$/,
+  )
+  if (correctionTotalMatch?.[1] && correctionTotalMatch[2]) {
+    return `Difference in correction line values (${correctionTotalMatch[1]}) does not match the invoice net total (${correctionTotalMatch[2]}).`
+  }
+
+  const correctedInvoiceMatch = alert.match(
+    /^Brak faktury korygowanej (.+); korekta pominięta w bieżącym podsumowaniu\.$/,
+  )
+  if (correctedInvoiceMatch?.[1]) {
+    return `Corrected invoice ${correctedInvoiceMatch[1]} not found; correction excluded from the current summary.`
+  }
+
+  return alert
+}
+
+const LINE_ALERT_FIELDS = ["cn_code", "net_weight", "origin_country", "delivery_terms"] as const
+
+type LineAlertField = (typeof LINE_ALERT_FIELDS)[number]
+
+function isLineAlertField(value: string): value is LineAlertField {
+  return LINE_ALERT_FIELDS.some((field) => field === value)
+}
+
+function hasLineValue(line: IntrastatDeclarationLine, field: LineAlertField): boolean {
+  const value = line[field]
+  return typeof value === "string" ? value.trim().length > 0 : value !== null
+}
+
+function isResolvedMissingFieldAlert(line: IntrastatDeclarationLine, alert: string): boolean {
+  const match = alert.match(/^([a-z_]+) not found for line item \d+\.?$/i)
+  const field = match?.[1]?.toLowerCase()
+  return field !== undefined && isLineAlertField(field) && hasLineValue(line, field)
+}
+
+function translateLegacyLineAlerts(line: IntrastatDeclarationLine): IntrastatDeclarationLine {
+  return {
+    ...line,
+    alerts: line.alerts
+      .map(translateLegacyAlert)
+      .filter((alert) => !isResolvedMissingFieldAlert(line, alert)),
+  }
 }
 
 export function formatIntrastatError(error: unknown, fallback: string): string {
@@ -243,14 +316,33 @@ export const intrastatApi = {
         match_status: query.match_status === "all" ? null : query.match_status,
       }),
       { credentials: "include", cache: "no-store", headers: { Accept: "application/json" } },
-    ).then(parseJsonResponse<IntrastatLineListResponse>),
+    )
+      .then(parseJsonResponse<IntrastatLineListResponse>)
+      .then((response) => ({
+        ...response,
+        items: response.items.map(translateLegacyLineAlerts),
+      })),
   patchLine: (lineId: string, payload: IntrastatLinePatchRequest) =>
     request<IntrastatDeclarationLine>(`/lines/${lineId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-    }),
+    }).then(translateLegacyLineAlerts),
   currentCnResource: () => request<IntrastatResourceInfo>("/resources/cn/current"),
+  downloadCnResource: async (): Promise<IntrastatDownload> => {
+    const response = await fetch(buildUrl("/resources/cn/download"), {
+      credentials: "include",
+      cache: "no-store",
+    })
+    if (!response.ok) throw await intrastatErrorFromResponse(response)
+    return {
+      blob: await response.blob(),
+      filename: filenameFromContentDisposition(
+        response.headers.get("Content-Disposition"),
+        "cn-resource.xlsx",
+      ),
+    }
+  },
   cnSuggestions: (search: string, limit = 5) =>
     request<IntrastatCnSuggestionListResponse>(
       `/resources/cn/suggestions?${new URLSearchParams({
@@ -284,7 +376,10 @@ async function exportWorkbook(path: string, batchIds: string[]): Promise<Intrast
   if (!response.ok) throw await intrastatErrorFromResponse(response)
   return {
     blob: await response.blob(),
-    filename: filenameFromContentDisposition(response.headers.get("Content-Disposition"), "intrastat.xlsx"),
+    filename: filenameFromContentDisposition(
+      response.headers.get("Content-Disposition"),
+      "intrastat.xlsx",
+    ),
   }
 }
 

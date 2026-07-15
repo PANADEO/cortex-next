@@ -33,6 +33,7 @@ describe("serializeImportOptions", () => {
       atr_processing_enabled: false,
       additional_ai_context_enabled: false,
       additional_ai_context: null,
+      packaging_selection_mode: null,
     })
   })
 
@@ -49,6 +50,7 @@ describe("serializeImportOptions", () => {
       atr_processing_enabled: false,
       additional_ai_context_enabled: false,
       additional_ai_context: null,
+      packaging_selection_mode: null,
     })
   })
 
@@ -66,6 +68,7 @@ describe("serializeImportOptions", () => {
       atr_processing_enabled: false,
       additional_ai_context_enabled: true,
       additional_ai_context: "Batch is from DHL — invoice totals in EUR.",
+      packaging_selection_mode: null,
     })
   })
 
@@ -83,6 +86,7 @@ describe("serializeImportOptions", () => {
       atr_processing_enabled: false,
       additional_ai_context_enabled: false,
       additional_ai_context: null,
+      packaging_selection_mode: null,
     })
   })
 
@@ -100,6 +104,7 @@ describe("serializeImportOptions", () => {
       atr_processing_enabled: false,
       additional_ai_context_enabled: false,
       additional_ai_context: null,
+      packaging_selection_mode: null,
     })
   })
 
@@ -117,6 +122,7 @@ describe("serializeImportOptions", () => {
       atr_processing_enabled: false,
       additional_ai_context_enabled: true,
       additional_ai_context: "real content here",
+      packaging_selection_mode: null,
     })
   })
 
@@ -155,6 +161,22 @@ describe("serializeImportOptions", () => {
       atr_processing_enabled: true,
     })
   })
+
+  it("sends packaging mode only when the control is available", () => {
+    const state = options({ packaging_selection_mode: "force_pallets" })
+
+    expect(serializeImportOptions(state)).toMatchObject({
+      packaging_selection_mode: null,
+    })
+    expect(serializeImportOptions(state, { packagingSelectionModeAvailable: true })).toMatchObject({
+      packaging_selection_mode: "force_pallets",
+    })
+    expect(
+      serializeImportOptions(options(), { packagingSelectionModeAvailable: true }),
+    ).toMatchObject({
+      packaging_selection_mode: "auto_by_bill_of_lading",
+    })
+  })
 })
 
 describe("ImportOptionsFields", () => {
@@ -181,5 +203,19 @@ describe("ImportOptionsFields", () => {
     )
 
     expect(screen.getByText("Additional AI context")).not.toBeNull()
+  })
+
+  it("renders Packaging mode when the feature flag exposes it", () => {
+    render(
+      createElement(ImportOptionsFields, {
+        idPrefix: "test",
+        state: options(),
+        onChange: () => undefined,
+        showPackagingSelectionMode: true,
+      }),
+    )
+
+    expect(screen.getByText("Packaging mode")).not.toBeNull()
+    expect(screen.getByText("Auto by B/L")).not.toBeNull()
   })
 })

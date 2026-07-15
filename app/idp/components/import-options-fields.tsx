@@ -1,15 +1,27 @@
 "use client"
 
-import { Label, Switch, Textarea } from "@cortex/ui"
+import type { PackagingSelectionMode } from "@cortex/types"
+import {
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Switch,
+  Textarea,
+} from "@cortex/ui"
 import { useState } from "react"
 
 export const MAX_AI_CONTEXT = 4000
+export const DEFAULT_PACKAGING_SELECTION_MODE: PackagingSelectionMode = "auto_by_bill_of_lading"
 
 export interface ImportOptions {
   fast_processing: boolean
   atr_processing_enabled: boolean
   additional_ai_context_enabled: boolean
   additional_ai_context: string
+  packaging_selection_mode: PackagingSelectionMode
 }
 
 export const emptyImportOptions: ImportOptions = {
@@ -17,6 +29,7 @@ export const emptyImportOptions: ImportOptions = {
   atr_processing_enabled: true,
   additional_ai_context_enabled: false,
   additional_ai_context: "",
+  packaging_selection_mode: DEFAULT_PACKAGING_SELECTION_MODE,
 }
 
 export interface SerializedImportOptions {
@@ -24,11 +37,13 @@ export interface SerializedImportOptions {
   atr_processing_enabled: boolean
   additional_ai_context_enabled: boolean
   additional_ai_context: string | null
+  packaging_selection_mode: PackagingSelectionMode | null
 }
 
 export interface SerializeImportOptionsConfig {
   atrProcessingAvailable?: boolean
   additionalAiContextAvailable?: boolean
+  packagingSelectionModeAvailable?: boolean
 }
 
 export function serializeImportOptions(
@@ -38,6 +53,7 @@ export function serializeImportOptions(
   const trimmed = state.additional_ai_context.trim()
   const atrProcessingAvailable = config.atrProcessingAvailable ?? false
   const additionalAiContextAvailable = config.additionalAiContextAvailable ?? false
+  const packagingSelectionModeAvailable = config.packagingSelectionModeAvailable ?? false
   const hasContext =
     additionalAiContextAvailable && state.additional_ai_context_enabled && trimmed !== ""
   return {
@@ -45,6 +61,9 @@ export function serializeImportOptions(
     atr_processing_enabled: atrProcessingAvailable && state.atr_processing_enabled,
     additional_ai_context_enabled: hasContext,
     additional_ai_context: hasContext ? trimmed : null,
+    packaging_selection_mode: packagingSelectionModeAvailable
+      ? state.packaging_selection_mode
+      : null,
   }
 }
 
@@ -62,6 +81,7 @@ interface ImportOptionsFieldsProps {
   onChange: (patch: Partial<ImportOptions>) => void
   showAtrProcessing?: boolean
   showAdditionalAiContext?: boolean
+  showPackagingSelectionMode?: boolean
 }
 
 export function ImportOptionsFields({
@@ -70,6 +90,7 @@ export function ImportOptionsFields({
   onChange,
   showAtrProcessing = false,
   showAdditionalAiContext = false,
+  showPackagingSelectionMode = false,
 }: ImportOptionsFieldsProps) {
   return (
     <div className="space-y-3">
@@ -96,6 +117,32 @@ export function ImportOptionsFields({
             checked={state.atr_processing_enabled}
             onCheckedChange={(v) => onChange({ atr_processing_enabled: v })}
           />
+        </div>
+      ) : null}
+
+      {showPackagingSelectionMode ? (
+        <div className="space-y-2 rounded-md border border-border px-3 py-2">
+          <div>
+            <p className="text-xs font-medium">Packaging mode</p>
+            <p className="text-[10px] text-muted-foreground">
+              Select package or pallet counts for SAD/Huzar extraction.
+            </p>
+          </div>
+          <Select
+            value={state.packaging_selection_mode}
+            onValueChange={(value) =>
+              onChange({ packaging_selection_mode: value as PackagingSelectionMode })
+            }
+          >
+            <SelectTrigger id={`${idPrefix}-packaging-mode`} className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="auto_by_bill_of_lading">Auto by B/L</SelectItem>
+              <SelectItem value="force_packages">Packages</SelectItem>
+              <SelectItem value="force_pallets">Pallets</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       ) : null}
 

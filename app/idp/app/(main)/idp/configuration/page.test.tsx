@@ -24,6 +24,7 @@ function settings(overrides: Record<string, unknown> = {}) {
     enable_customs_code: false,
     enable_additional_ai_context: false,
     enable_atr_processing: false,
+    enable_packaging_selection_mode: false,
     enable_document_preview: true,
     enable_classification: false,
     enable_imap_import: false,
@@ -95,6 +96,7 @@ describe("ConfigurationPage", () => {
 
     await screen.findByText("Classification")
     fireEvent.click(screen.getByLabelText("Classification"))
+    fireEvent.click(screen.getByLabelText("Packaging selection mode"))
     fireEvent.change(screen.getByLabelText("Hidden menu items"), {
       target: { value: "rules" },
     })
@@ -148,6 +150,7 @@ describe("ConfigurationPage", () => {
     const putCall = fetchMock.mock.calls.find(([, init]) => init?.method === "PUT")
     expect(JSON.parse(String(putCall?.[1]?.body))).toMatchObject({
       enable_classification: true,
+      enable_packaging_selection_mode: true,
       hide_menu_items: ["rules"],
       custom_statuses: ["Accepted", "Controling Department"],
       export_templates: ["standard_xml", "sad_xml"],

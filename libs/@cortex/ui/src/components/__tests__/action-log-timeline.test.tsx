@@ -4,11 +4,7 @@ import { PACKAGE_ACTION_TYPE } from "@cortex/types"
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
-import {
-  ActionLogTimeline,
-  categorise,
-  normaliseEditPayload,
-} from "../action-log-timeline"
+import { ActionLogTimeline, categorise, normaliseEditPayload } from "../action-log-timeline"
 
 const T0 = Date.parse("2026-04-20T10:30:00Z")
 const mins = (n: number) => new Date(T0 - n * 60_000).toISOString()
@@ -105,17 +101,13 @@ describe("normaliseEditPayload", () => {
   })
 
   it("returns [] for unknown shape", () => {
-    expect(
-      normaliseEditPayload({ random: { stuff: "nope" }, another: 42 }),
-    ).toEqual([])
+    expect(normaliseEditPayload({ random: { stuff: "nope" }, another: 42 })).toEqual([])
   })
 })
 
 describe("categorise", () => {
   it("categorises every *_updated action as edit", () => {
-    const updated: PackageActionType[] = PACKAGE_ACTION_TYPE.filter((t) =>
-      t.endsWith("_updated"),
-    )
+    const updated: PackageActionType[] = PACKAGE_ACTION_TYPE.filter((t) => t.endsWith("_updated"))
     for (const t of updated) {
       expect(categorise(t)).toBe("edit")
     }
@@ -255,6 +247,7 @@ describe("<ActionLogTimeline>", () => {
               reprocess: true,
               use_fast_model: true,
               additional_ai_context_enabled: false,
+              packaging_selection_mode: "force_pallets",
             }),
           }),
         ]}
@@ -262,6 +255,7 @@ describe("<ActionLogTimeline>", () => {
     )
     expect(screen.getByText("No additional context")).toBeTruthy()
     expect(screen.getByText("Fast processing")).toBeTruthy()
+    expect(screen.getByText("Packaging: pallets")).toBeTruthy()
     expect(screen.queryByText("Field")).toBeNull()
   })
 
