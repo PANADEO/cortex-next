@@ -6,7 +6,7 @@ import { VersionLabel } from "@/components/shell/version-label"
 import { Topbar } from "@/components/topbar"
 import { useIdpBasicNavSections, useIdpNavSections, useIntrastatNavSections } from "@/lib/nav"
 import { useSidebarStore } from "@/lib/stores/sidebar-store"
-import { TILES } from "@/lib/tiles"
+import { resolveRequiredTileId, TILES } from "@/lib/tiles"
 import { AppShell, TileMenu } from "@cortex/ui"
 import Image from "next/image"
 import Link from "next/link"
@@ -32,6 +32,7 @@ function pathToTileId(pathname: string): string {
 export default function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const tileId = pathToTileId(pathname)
+  const requiredTileId = resolveRequiredTileId(pathname)
   const tile = TILES.find((t) => t.id === tileId)
   const activeItemId = pathToItemId(pathname)
   const collapsed = useSidebarStore((s) => s.collapsed)
@@ -83,7 +84,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   )
 
   return (
-    <AppGate>
+    <AppGate tileId={requiredTileId}>
       <AppShell
         sidebarCollapsed={collapsed}
         {...(isBoardRoute ? { mainClassName: "overflow-hidden" } : {})}

@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react"
 import { FileSpreadsheet, FileText, ScanText } from "lucide-react"
+import { canAccessAiTool, isAiToolId } from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
 export type TileCategoryFunctional =
@@ -129,3 +130,20 @@ export const TILES: ReadonlyArray<Tile> = [
   },
   ...AI_TOOL_DEFINITIONS.map(aiToolTile),
 ]
+
+/**
+ * Resolves which tile a pathname belongs to, for authorization purposes.
+ * Returns `null` when unresolvable — callers must treat that as deny, never
+ * as "no requirement" (there is no tile-agnostic page under `(main)`).
+ */
+export function resolveRequiredTileId(pathname: string): string | null {
+  const rootSegments = pathname.split("/").filter(Boolean).slice(0, 2)
+  return TILES.find((tile) => rootSegments.includes(tile.id))?.id ?? null
+}
+
+export function canAccessTile(apps: readonly string[], tileId: string): boolean {
+  if (isAiToolId(tileId)) {
+    return canAccessAiTool(apps, tileId)
+  }
+  return apps.includes(tileId)
+}
