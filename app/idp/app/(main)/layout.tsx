@@ -4,12 +4,7 @@ import { FeatureErrorBoundary } from "@/components/error-boundaries"
 import { AppGate } from "@/components/shell/app-gate"
 import { VersionLabel } from "@/components/shell/version-label"
 import { Topbar } from "@/components/topbar"
-import {
-  useIdpBasicNavSections,
-  useIdpNavSections,
-  useIntrastatNavSections,
-  useInvoiceSupervisorNavSections,
-} from "@/lib/nav"
+import { useIdpBasicNavSections, useIdpNavSections, useIntrastatNavSections } from "@/lib/nav"
 import { useSidebarStore } from "@/lib/stores/sidebar-store"
 import { resolveRequiredTileId, TILES } from "@/lib/tiles"
 import { AppShell, TileMenu } from "@cortex/ui"
@@ -45,7 +40,6 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const idpNavSections = useIdpNavSections()
   const idpBasicNavSections = useIdpBasicNavSections()
   const intrastatNavSections = useIntrastatNavSections()
-  const invoiceSupervisorNavSections = useInvoiceSupervisorNavSections()
   const isAiToolPage = tile?.href.startsWith("/ai-tools/") ?? false
   const navSections = isAiToolPage
     ? []
@@ -53,9 +47,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
       ? idpBasicNavSections
       : tileId === "intrastat"
         ? intrastatNavSections
-        : tileId === "invoice-supervisor"
-          ? invoiceSupervisorNavSections
-          : idpNavSections
+        : idpNavSections
 
   const brandIcon = (
     <Link

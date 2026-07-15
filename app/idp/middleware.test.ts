@@ -34,27 +34,3 @@ describe("middleware Intrastat rewrite", () => {
     expect(response.headers.get("x-middleware-rewrite")).toBe("http://intrastat-app/version")
   })
 })
-
-describe("middleware Invoice Supervisor rewrite", () => {
-  it("rewrites /invoice-supervisor/api/* to INVOICE_SUPERVISOR_BACKEND_URL /* (no /api prefix on the backend)", async () => {
-    vi.stubEnv("INVOICE_SUPERVISOR_BACKEND_URL", "http://invoice-supervisor-app")
-    const middleware = await loadMiddleware()
-    const request = new NextRequest("http://frontend.local/invoice-supervisor/api/invoices", {
-      headers: { accept: "application/json" },
-    })
-
-    const response = middleware(request)
-
-    expect(response.headers.get("x-middleware-rewrite")).toBe("http://invoice-supervisor-app/invoices")
-  })
-
-  it("rewrites /invoice-supervisor/version to backend /version", async () => {
-    vi.stubEnv("INVOICE_SUPERVISOR_BACKEND_URL", "http://invoice-supervisor-app")
-    const middleware = await loadMiddleware()
-    const request = new NextRequest("http://frontend.local/invoice-supervisor/version")
-
-    const response = middleware(request)
-
-    expect(response.headers.get("x-middleware-rewrite")).toBe("http://invoice-supervisor-app/version")
-  })
-})

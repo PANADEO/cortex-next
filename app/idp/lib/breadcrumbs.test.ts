@@ -77,13 +77,6 @@ describe("breadcrumbsFromPath", () => {
     ])
   })
 
-  it("maps /invoice-supervisor/inbox to Nadzorca Faktur / Skrzynka", () => {
-    expect(breadcrumbsFromPath("/invoice-supervisor/inbox")).toEqual([
-      { label: "Nadzorca Faktur", href: "/" },
-      { label: "Skrzynka" },
-    ])
-  })
-
   it("maps /ai-tools to the app hub root", () => {
     expect(breadcrumbsFromPath("/ai-tools")).toEqual([{ label: "Aplikacje", href: "/" }])
   })

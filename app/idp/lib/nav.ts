@@ -7,15 +7,12 @@ import {
   FileSpreadsheet,
   FileText,
   History,
-  Inbox,
   Package,
-  Receipt,
   ScrollText,
   Settings,
   Sparkles,
   TableProperties,
   Upload,
-  Users,
 } from "lucide-react"
 import { useMemo } from "react"
 import { getVisibleAiTools } from "./ai-tools/registry"
@@ -120,34 +117,6 @@ export const INTRASTAT_NAV: TileMenuSection[] = [
   },
 ]
 
-export const INVOICE_SUPERVISOR_NAV: TileMenuSection[] = [
-  {
-    id: "praca",
-    label: "Praca",
-    items: [
-      { id: "inbox", label: "Skrzynka", icon: Inbox, href: "/invoice-supervisor/inbox" },
-      { id: "invoices", label: "Faktury", icon: Receipt, href: "/invoice-supervisor/invoices" },
-      { id: "clients", label: "Klienci", icon: Users, href: "/invoice-supervisor/clients" },
-    ],
-  },
-  {
-    id: "konfiguracja",
-    label: "Konfiguracja",
-    items: [
-      { id: "policies", label: "Polityki", icon: ScrollText, href: "/invoice-supervisor/policies" },
-      { id: "templates", label: "Szablony", icon: FileText, href: "/invoice-supervisor/templates" },
-      { id: "settings", label: "Ustawienia", icon: Settings, href: "/invoice-supervisor/settings" },
-    ],
-  },
-  {
-    id: "audyt",
-    label: "Audyt",
-    items: [
-      { id: "notifications", label: "Historia wysyłek", icon: History, href: "/invoice-supervisor/notifications" },
-    ],
-  },
-]
-
 export const AI_TOOLS_DASHBOARD_ITEM: TileMenuItem = {
   id: "dashboard",
   label: "Dashboard",
@@ -213,10 +182,6 @@ export function useIdpBasicNavSections(): TileMenuSection[] {
 
 export function useIntrastatNavSections(): TileMenuSection[] {
   return INTRASTAT_NAV
-}
-
-export function useInvoiceSupervisorNavSections(): TileMenuSection[] {
-  return INVOICE_SUPERVISOR_NAV
 }
 
 export function useAiToolsNavSections(): TileMenuSection[] {
