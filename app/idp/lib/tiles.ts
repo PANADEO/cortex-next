@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react"
-import { FileSpreadsheet, FileText, ScanText } from "lucide-react"
+import { FileSpreadsheet, FileText, Receipt, ScanText } from "lucide-react"
 import { canAccessAiTool, isAiToolId } from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
@@ -127,6 +127,20 @@ export const TILES: ReadonlyArray<Tile> = [
     categoryFunctional: "misc",
     categoryDepartment: ["operations", "finance"],
     versionEndpoint: "/intrastat/version",
+  },
+  {
+    // id must equal backend-next's settings.application_name ("invoice-supervisor")
+    // — cortex-admin's authorized-apps check keys off this exact string.
+    id: "invoice-supervisor",
+    label: "Nadzorca Faktur",
+    description: "Nadzoruje terminy faktur i generuje AI przypomnienia płatnicze",
+    href: "/invoice-supervisor/inbox",
+    icon: Receipt,
+    iconBg: "bg-orange-200 dark:bg-orange-900/40",
+    iconFg: "text-orange-700 dark:text-orange-300",
+    categoryFunctional: "misc",
+    categoryDepartment: ["finance", "operations"],
+    versionEndpoint: "/invoice-supervisor/version",
   },
   ...AI_TOOL_DEFINITIONS.map(aiToolTile),
 ]

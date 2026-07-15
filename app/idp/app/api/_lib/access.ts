@@ -15,7 +15,7 @@ const CACHE_TTL_MS = 30_000
 const CACHE_MAX_ENTRIES = 10_000
 const REQUEST_TIMEOUT_MS = 5_000
 
-const SHELL_APP_CODES = ["idp", "idp-basic", "intrastat", AI_TOOLS_TILE_ID] as const
+const SHELL_APP_CODES = ["idp", "idp-basic", "intrastat", "invoice-supervisor", AI_TOOLS_TILE_ID] as const
 const AUTHORIZED_APP_CODES = [
   ...SHELL_APP_CODES,
   "intrastat-cn-editor",

@@ -1,7 +1,7 @@
 import { usePackage } from "@cortex/api"
 import { useMemo } from "react"
 import { getAiToolDefinition } from "./ai-tools/registry"
-import { IDP_BASIC_NAV, IDP_NAV, INTRASTAT_NAV } from "./nav"
+import { IDP_BASIC_NAV, IDP_NAV, INTRASTAT_NAV, INVOICE_SUPERVISOR_NAV } from "./nav"
 import { TILES } from "./tiles"
 
 export interface BreadcrumbEntry {
@@ -17,6 +17,9 @@ const IDP_BASIC_NAV_LABELS: Record<string, string> = Object.fromEntries(
 )
 const INTRASTAT_NAV_LABELS: Record<string, string> = Object.fromEntries(
   INTRASTAT_NAV.flatMap((s) => s.items).map((i) => [i.id, i.label]),
+)
+const INVOICE_SUPERVISOR_NAV_LABELS: Record<string, string> = Object.fromEntries(
+  INVOICE_SUPERVISOR_NAV.flatMap((s) => s.items).map((i) => [i.id, i.label]),
 )
 const IDP_BASIC_ROUTE_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
@@ -49,6 +52,13 @@ function tileConfig(tileId: string | undefined): {
       label: "Intrastat",
       hrefPrefix: "/intrastat",
       navLabels: { ...INTRASTAT_ROUTE_LABELS, ...INTRASTAT_NAV_LABELS },
+    }
+  }
+  if (tileId === "invoice-supervisor") {
+    return {
+      label: "Nadzorca Faktur",
+      hrefPrefix: "/invoice-supervisor",
+      navLabels: INVOICE_SUPERVISOR_NAV_LABELS,
     }
   }
   return { label: "IDP", hrefPrefix: "/idp", navLabels: NAV_LABELS }

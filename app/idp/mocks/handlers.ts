@@ -232,73 +232,79 @@ function syntheticXlsxResponse(rows: (string | number)[][]) {
 
 export const handlers = [
   // ── Real IDP passthrough (38 endpointów) ───────────────────────
+  // Aktywny TYLKO gdy podpięty realny backend IDP: NEXT_PUBLIC_USE_REAL_IDP=true
+  // + IDP_BACKEND_URL w .env.local. Bez flagi → pełen mock (frontend standalone),
+  // tak jak opisuje docs/backend-integration.md (tryb "Pełny mock" = default dev).
   // Muszą być PRZED dynamicznymi handlerami typu /packages/:id,
   // inaczej mock by je łapał w dev mode z włączonym NEXT_PUBLIC_API_MOCKING.
+  ...(process.env.NEXT_PUBLIC_USE_REAL_IDP === "true"
+    ? [
+        // User
+        http.get("/user/me", () => passthrough()),
+        http.get("/user/preferences", () => passthrough()),
+        http.post("/user/preferences", () => passthrough()),
 
-  // User
-  http.get("/user/me", () => passthrough()),
-  http.get("/user/preferences", () => passthrough()),
-  http.post("/user/preferences", () => passthrough()),
+        // Config
+        http.get("/config", () => passthrough()),
+        http.get("/config/feature-flags", () => passthrough()),
+        http.put("/config/feature-flags", () => passthrough()),
+        http.post("/config/feature-flags/reload-from-env", () => passthrough()),
+        http.get("/config/custom-statuses", () => passthrough()),
 
-  // Config
-  http.get("/config", () => passthrough()),
-  http.get("/config/feature-flags", () => passthrough()),
-  http.put("/config/feature-flags", () => passthrough()),
-  http.post("/config/feature-flags/reload-from-env", () => passthrough()),
-  http.get("/config/custom-statuses", () => passthrough()),
+        // Module version (proxied to backend /version)
+        http.get("/idp/version", () => passthrough()),
 
-  // Module version (proxied to backend /version)
-  http.get("/idp/version", () => passthrough()),
+        // Packages — static paths
+        http.get("/packages/dashboard-stats", () => passthrough()),
+        http.get("/packages/get_all", () => passthrough()),
+        http.get("/packages/action_logs", () => passthrough()),
+        http.get("/packages/export-templates", () => passthrough()),
+        http.post("/packages/import", () => passthrough()),
+        http.post("/packages/import-email", () => passthrough()),
+        http.post("/packages/import-multiple", () => passthrough()),
+        http.post("/packages/delete", () => passthrough()),
 
-  // Packages — static paths
-  http.get("/packages/dashboard-stats", () => passthrough()),
-  http.get("/packages/get_all", () => passthrough()),
-  http.get("/packages/action_logs", () => passthrough()),
-  http.get("/packages/export-templates", () => passthrough()),
-  http.post("/packages/import", () => passthrough()),
-  http.post("/packages/import-email", () => passthrough()),
-  http.post("/packages/import-multiple", () => passthrough()),
-  http.post("/packages/delete", () => passthrough()),
+        // Packages — dynamic GETs
+        http.get("/packages/:id/actions", () => passthrough()),
+        http.get("/packages/:id/transitions", () => passthrough()),
+        http.get("/packages/:id/transport-orders", () => passthrough()),
+        http.get("/packages/:id/source-files", () => passthrough()),
+        http.get("/packages/:id/source-files/content", () => passthrough()),
+        http.get("/packages/:id/download", () => passthrough()),
+        http.get("/packages/:id/download-result", () => passthrough()),
+        http.get("/packages/:id/export", () => passthrough()),
+        http.get("/packages/:id/export/validate", () => passthrough()),
+        http.get("/packages/:id", () => passthrough()),
 
-  // Packages — dynamic GETs
-  http.get("/packages/:id/actions", () => passthrough()),
-  http.get("/packages/:id/transitions", () => passthrough()),
-  http.get("/packages/:id/transport-orders", () => passthrough()),
-  http.get("/packages/:id/source-files", () => passthrough()),
-  http.get("/packages/:id/source-files/content", () => passthrough()),
-  http.get("/packages/:id/download", () => passthrough()),
-  http.get("/packages/:id/download-result", () => passthrough()),
-  http.get("/packages/:id/export", () => passthrough()),
-  http.get("/packages/:id/export/validate", () => passthrough()),
-  http.get("/packages/:id", () => passthrough()),
+        // Packages — verification workflow
+        http.post("/packages/:id/start-verification", () => passthrough()),
+        http.post("/packages/:id/cancel-verification", () => passthrough()),
+        http.post("/packages/:id/unlock-verification", () => passthrough()),
+        http.post("/packages/:id/finish-verification", () => passthrough()),
+        http.post("/packages/:id/reset-verification", () => passthrough()),
+        http.post("/packages/:id/reprocess", () => passthrough()),
+        http.post("/packages/:id/export/email", () => passthrough()),
 
-  // Packages — verification workflow
-  http.post("/packages/:id/start-verification", () => passthrough()),
-  http.post("/packages/:id/cancel-verification", () => passthrough()),
-  http.post("/packages/:id/unlock-verification", () => passthrough()),
-  http.post("/packages/:id/finish-verification", () => passthrough()),
-  http.post("/packages/:id/reset-verification", () => passthrough()),
-  http.post("/packages/:id/reprocess", () => passthrough()),
-  http.post("/packages/:id/export/email", () => passthrough()),
+        // Packages — ops (custom status / notes / restore)
+        http.post("/packages/:id/custom-status", () => passthrough()),
+        http.post("/packages/:id/user-notes", () => passthrough()),
+        http.post("/packages/:id/restore", () => passthrough()),
 
-  // Packages — ops (custom status / notes / restore)
-  http.post("/packages/:id/custom-status", () => passthrough()),
-  http.post("/packages/:id/user-notes", () => passthrough()),
-  http.post("/packages/:id/restore", () => passthrough()),
-
-  // Transport order edits
-  http.post("/packages/:pid/transport-orders/:oid/seller", () => passthrough()),
-  http.post("/packages/:pid/transport-orders/:oid/buyer", () => passthrough()),
-  http.post("/packages/:pid/transport-orders/:oid/consignor", () => passthrough()),
-  http.post("/packages/:pid/transport-orders/:oid/consignee", () => passthrough()),
-  http.post("/packages/:pid/transport-orders/:oid/transport-info", () => passthrough()),
-  http.post("/packages/:pid/transport-orders/:oid/sad-context", () => passthrough()),
-  http.post("/packages/:pid/transport-orders/:oid/invoices/:iid", () => passthrough()),
-  http.post("/packages/:pid/transport-orders/:oid/invoices/:iid/totals", () => passthrough()),
-  http.post("/packages/:pid/transport-orders/:oid/invoices/:iid/delivery-terms", () =>
-    passthrough(),
-  ),
-  http.post("/packages/:pid/transport-orders/:oid/invoices/:iid/lines", () => passthrough()),
+        // Transport order edits
+        http.post("/packages/:pid/transport-orders/:oid/seller", () => passthrough()),
+        http.post("/packages/:pid/transport-orders/:oid/buyer", () => passthrough()),
+        http.post("/packages/:pid/transport-orders/:oid/consignor", () => passthrough()),
+        http.post("/packages/:pid/transport-orders/:oid/consignee", () => passthrough()),
+        http.post("/packages/:pid/transport-orders/:oid/transport-info", () => passthrough()),
+        http.post("/packages/:pid/transport-orders/:oid/sad-context", () => passthrough()),
+        http.post("/packages/:pid/transport-orders/:oid/invoices/:iid", () => passthrough()),
+        http.post("/packages/:pid/transport-orders/:oid/invoices/:iid/totals", () => passthrough()),
+        http.post("/packages/:pid/transport-orders/:oid/invoices/:iid/delivery-terms", () =>
+          passthrough(),
+        ),
+        http.post("/packages/:pid/transport-orders/:oid/invoices/:iid/lines", () => passthrough()),
+      ]
+    : []),
 
   // ── Dev-only helpers ───────────────────────────────────────────
   http.get("/health", () => HttpResponse.json({ status: "ok" })),
@@ -337,6 +343,7 @@ export const handlers = [
             "visual-guru",
             "fakturomat",
             "ai-daily-assistant",
+            "invoice-supervisor",
           ]
         : [],
       email,
