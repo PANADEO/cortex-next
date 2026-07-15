@@ -411,7 +411,7 @@ export default function IntrastatReviewPage() {
               <DataTable
                 columns={columns}
                 data={items}
-                className="overflow-visible [contain:none]"
+                className="w-max min-w-full overflow-visible [contain:none]"
                 isLoading={lines.isPending && items.length === 0}
                 getRowId={(row) => row.id}
                 getRowClassName={(row) =>
