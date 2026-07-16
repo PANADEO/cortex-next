@@ -12,6 +12,20 @@ export function formatInvoiceSupervisorCurrency(amount: number, currency = "PLN"
   return formatMoney(String(amount), { currency, locale: "pl-PL" })
 }
 
+export function formatInvoiceSupervisorMultiCurrency(
+  total: number,
+  breakdown: Record<string, number> | undefined,
+): string {
+  if (!breakdown) return formatInvoiceSupervisorCurrency(total)
+  const entries = Object.entries(breakdown)
+  if (entries.length === 0) return formatInvoiceSupervisorCurrency(total)
+  if (entries.length === 1) {
+    const [currency, amount] = entries[0]!
+    return formatInvoiceSupervisorCurrency(amount, currency)
+  }
+  return entries.map(([currency, amount]) => formatInvoiceSupervisorCurrency(amount, currency)).join(" · ")
+}
+
 export function formatInvoiceSupervisorDate(value: string): string {
   return formatAbsolute(value, "dd.MM.yyyy")
 }
@@ -164,6 +178,7 @@ export interface InvoiceSupervisorClientWithExposure {
   phone: string | null
   total_outstanding: number
   invoice_count: number
+  currency_breakdown?: Record<string, number>
 }
 
 export interface InvoiceSupervisorClientExposure {
@@ -361,6 +376,7 @@ export interface InvoiceSupervisorBulkApproveResult {
 export interface InvoiceSupervisorDashboardSummary {
   status_counts: Record<string, number>
   total_overdue: number
+  overdue_currency_breakdown?: Record<string, number>
   due_today: Array<{
     id: number
     invoice_number: string

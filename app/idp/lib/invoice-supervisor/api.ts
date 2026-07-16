@@ -167,7 +167,7 @@ export const invoiceSupervisorApi = {
       { method: "POST", body: formData },
     )
   },
-  forceInvoiceEscalation: (id: number, stage: string, user: string = "ui-user") =>
+  forceInvoiceEscalation: (id: number, stage: string, user: string) =>
     post<{ success: boolean }>(`/invoices/${id}/escalation/force`, { stage, user }),
 
   // Clients — CLI-*
@@ -178,7 +178,7 @@ export const invoiceSupervisorApi = {
   createClient: (data: Partial<InvoiceSupervisorClient>) => post<{ id: number }>("/clients", data),
   updateClient: (id: number, data: Partial<InvoiceSupervisorClient>) =>
     put<{ success: boolean }>(`/clients/${id}`, data),
-  forceClientEscalation: (clientId: number, stage: string, user: string = "ui-user") =>
+  forceClientEscalation: (clientId: number, stage: string, user: string) =>
     post<InvoiceSupervisorForceClientEscalationResult>(`/clients/${clientId}/escalation/force`, { stage, user }),
 
   // Policies — POL-*

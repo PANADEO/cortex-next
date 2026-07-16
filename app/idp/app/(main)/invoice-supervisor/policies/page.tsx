@@ -2,11 +2,11 @@
 
 import { InvoiceSupervisorPolicyFormDialog } from "@/components/invoice-supervisor/policy-form-dialog"
 import { useInvoiceSupervisorPolicies, useInvoiceSupervisorSetDefaultPolicy } from "@/lib/invoice-supervisor/hooks"
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, LoadingState, PageHeader } from "@cortex/ui"
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, ErrorState, LoadingState, PageHeader } from "@cortex/ui"
 import { Mail, MessageSquare, ScrollText, Star } from "lucide-react"
 
 export default function InvoiceSupervisorPoliciesPage() {
-  const { data: policies, isLoading } = useInvoiceSupervisorPolicies()
+  const { data: policies, isLoading, isError, refetch } = useInvoiceSupervisorPolicies()
   const setDefault = useInvoiceSupervisorSetDefaultPolicy()
 
   return (
@@ -20,6 +20,12 @@ export default function InvoiceSupervisorPoliciesPage() {
       <div className="px-8 py-6">
         {isLoading ? (
           <LoadingState label="Ładowanie polityk..." />
+        ) : isError ? (
+          <ErrorState
+            title="Nie udało się wczytać polityk"
+            message="Sprawdź połączenie z backendem i spróbuj ponownie."
+            onRetry={() => refetch()}
+          />
         ) : !policies || policies.length === 0 ? (
           <EmptyState
             icon={ScrollText}

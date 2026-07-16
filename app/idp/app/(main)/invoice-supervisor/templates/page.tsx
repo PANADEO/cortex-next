@@ -1,13 +1,17 @@
 "use client"
 
 import { InvoiceSupervisorTemplateEditorDialog } from "@/components/invoice-supervisor/template-editor-dialog"
-import { useInvoiceSupervisorTemplateCoverage, useInvoiceSupervisorTemplates } from "@/lib/invoice-supervisor/hooks"
+import {
+  useInvoiceSupervisorTemplateCoverage,
+  useInvoiceSupervisorTemplates,
+  useInvoiceSupervisorTones,
+} from "@/lib/invoice-supervisor/hooks"
 import {
   INVOICE_SUPERVISOR_CHANNEL_LABELS,
   INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS,
 } from "@/lib/invoice-supervisor/types"
 import type { InvoiceSupervisorChannel, InvoiceSupervisorEscalationStage } from "@/lib/invoice-supervisor/types"
-import { Card, CardContent, CardHeader, CardTitle, EmptyState, LoadingState, PageHeader } from "@cortex/ui"
+import { Card, CardContent, CardHeader, CardTitle, EmptyState, ErrorState, LoadingState, PageHeader } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { Check, FileText, Pencil, Plus } from "lucide-react"
 import { useState } from "react"
@@ -29,8 +33,17 @@ interface DialogTarget {
 }
 
 export default function InvoiceSupervisorTemplatesPage() {
-  const { data: coverage, isLoading } = useInvoiceSupervisorTemplateCoverage()
-  const { data: templates } = useInvoiceSupervisorTemplates()
+  const coverageQuery = useInvoiceSupervisorTemplateCoverage()
+  const templatesQuery = useInvoiceSupervisorTemplates()
+  const { data: tones } = useInvoiceSupervisorTones()
+  const { data: coverage } = coverageQuery
+  const { data: templates } = templatesQuery
+  const isLoading = coverageQuery.isLoading || templatesQuery.isLoading
+  const isError = coverageQuery.isError || templatesQuery.isError
+  const refetch = () => {
+    coverageQuery.refetch()
+    templatesQuery.refetch()
+  }
   const [dialogTarget, setDialogTarget] = useState<DialogTarget | null>(null)
 
   const existingTemplate =
@@ -55,6 +68,12 @@ export default function InvoiceSupervisorTemplatesPage() {
       <div className="px-8 py-6">
         {isLoading ? (
           <LoadingState label="Ładowanie macierzy pokrycia..." />
+        ) : isError ? (
+          <ErrorState
+            title="Nie udało się wczytać szablonów"
+            message="Sprawdź połączenie z backendem i spróbuj ponownie."
+            onRetry={() => refetch()}
+          />
         ) : toneEntries.length === 0 ? (
           <EmptyState
             icon={FileText}
@@ -103,7 +122,7 @@ export default function InvoiceSupervisorTemplatesPage() {
                                       setDialogTarget({
                                         toneId: Number(toneId),
                                         toneName: tone.tone_name,
-                                        toneDescription: "",
+                                        toneDescription: tones?.find((t) => t.id === Number(toneId))?.description ?? "",
                                         channel,
                                         stage,
                                       })

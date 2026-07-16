@@ -1,6 +1,7 @@
 "use client"
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMe } from "@cortex/api"
 import { toast } from "sonner"
 import { formatInvoiceSupervisorError, invoiceSupervisorApi } from "./api"
 import type {
@@ -181,8 +182,10 @@ export function useInvoiceSupervisorImportInvoices() {
 
 export function useInvoiceSupervisorForceInvoiceEscalation(invoiceId: number) {
   const client = useQueryClient()
+  const me = useMe()
   return useMutation({
-    mutationFn: (stage: string) => invoiceSupervisorApi.forceInvoiceEscalation(invoiceId, stage),
+    mutationFn: (stage: string) =>
+      invoiceSupervisorApi.forceInvoiceEscalation(invoiceId, stage, me.data?.email ?? "unknown"),
     onSuccess: () => {
       toast.success("Etap eskalacji wymuszony")
       invalidateInvoiceSupervisor(client)
@@ -255,8 +258,10 @@ export function useInvoiceSupervisorUpdateClient(id: number) {
 
 export function useInvoiceSupervisorForceClientEscalation(clientId: number) {
   const client = useQueryClient()
+  const me = useMe()
   return useMutation({
-    mutationFn: (stage: string) => invoiceSupervisorApi.forceClientEscalation(clientId, stage),
+    mutationFn: (stage: string) =>
+      invoiceSupervisorApi.forceClientEscalation(clientId, stage, me.data?.email ?? "unknown"),
     onSuccess: (result) => {
       toast.success(`Eskalowano ${result.escalated_invoice_count} faktur do etapu: ${result.stage}`)
       invalidateInvoiceSupervisor(client)

@@ -30,6 +30,7 @@ import {
 } from "@/lib/invoice-supervisor/hooks"
 import {
   formatInvoiceSupervisorCurrency,
+  formatInvoiceSupervisorMultiCurrency,
   formatInvoiceSupervisorDate,
   INVOICE_SUPERVISOR_INVOICE_STATUS_COLORS,
   INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS,
@@ -157,7 +158,10 @@ export default function InvoiceSupervisorClientDetailPage() {
         <section className="grid gap-4 sm:grid-cols-3">
           <DataCard
             label="Należność łączna"
-            value={formatInvoiceSupervisorCurrency(exposure.data?.total_outstanding ?? 0)}
+            value={formatInvoiceSupervisorMultiCurrency(
+              exposure.data?.total_outstanding ?? 0,
+              exposure.data?.currency_breakdown,
+            )}
             icon={Wallet}
             tone={exposure.data && exposure.data.total_outstanding > 0 ? "destructive" : "default"}
             isLoading={exposure.isLoading}

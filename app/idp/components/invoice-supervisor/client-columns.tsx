@@ -1,7 +1,7 @@
 "use client"
 
 import {
-  formatInvoiceSupervisorCurrency,
+  formatInvoiceSupervisorMultiCurrency,
   INVOICE_SUPERVISOR_CLIENT_TYPE_LABELS,
   type InvoiceSupervisorClientType,
   type InvoiceSupervisorClientWithExposure,
@@ -53,7 +53,7 @@ export function invoiceSupervisorClientColumns(): ColumnDef<
       size: 140,
       cell: ({ row }) => (
         <span className={row.original.total_outstanding > 0 ? "font-medium text-destructive" : undefined}>
-          {formatInvoiceSupervisorCurrency(row.original.total_outstanding)}
+          {formatInvoiceSupervisorMultiCurrency(row.original.total_outstanding, row.original.currency_breakdown)}
         </span>
       ),
     },

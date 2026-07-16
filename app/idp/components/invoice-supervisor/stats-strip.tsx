@@ -1,7 +1,7 @@
 "use client"
 
 import { useInvoiceSupervisorDashboardSummary } from "@/lib/invoice-supervisor/hooks"
-import { formatInvoiceSupervisorCurrency } from "@/lib/invoice-supervisor/types"
+import { formatInvoiceSupervisorMultiCurrency } from "@/lib/invoice-supervisor/types"
 import { Skeleton } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { AlertCircle, CalendarClock, Receipt, TrendingDown } from "lucide-react"
@@ -24,7 +24,11 @@ export function InvoiceSupervisorStatsStrip() {
       <StatItem
         icon={TrendingDown}
         label="Łączna kwota po terminie"
-        value={data ? formatInvoiceSupervisorCurrency(data.total_overdue) : undefined}
+        value={
+          data
+            ? formatInvoiceSupervisorMultiCurrency(data.total_overdue, data.overdue_currency_breakdown)
+            : undefined
+        }
         isLoading={isLoading}
         tone="destructive"
       />

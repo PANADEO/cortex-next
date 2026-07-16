@@ -13,6 +13,7 @@ import {
   AlertDialogTrigger,
   Button,
   Checkbox,
+  ErrorState,
   Skeleton,
 } from "@cortex/ui"
 import { CheckCircle2, Inbox as InboxIcon, RefreshCw, XCircle } from "lucide-react"
@@ -27,7 +28,7 @@ import {
 } from "@/lib/invoice-supervisor/hooks"
 
 export default function InvoiceSupervisorInboxPage() {
-  const { data: proposals, isLoading } = useInvoiceSupervisorPendingProposals()
+  const { data: proposals, isLoading, isError, refetch } = useInvoiceSupervisorPendingProposals()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [activeId, setActiveId] = useState<string | null>(null)
 
@@ -160,6 +161,14 @@ export default function InvoiceSupervisorInboxPage() {
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Skeleton key={i} className="h-20 w-full" />
                 ))}
+              </div>
+            ) : isError ? (
+              <div className="p-4">
+                <ErrorState
+                  title="Nie udało się wczytać propozycji"
+                  message="Sprawdź połączenie z backendem i spróbuj ponownie."
+                  onRetry={() => refetch()}
+                />
               </div>
             ) : proposals && proposals.length > 0 ? (
               proposals.map((proposal) => (

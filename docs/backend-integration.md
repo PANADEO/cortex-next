@@ -160,6 +160,29 @@ Gdy backend ma wszystkie endpointy, których oczekuje frontend (zobacz `document
 
 MSW zostaje dostępne dla testów unit/integration (Vitest + MSW w Node) — nie usuwamy zależności.
 
+## `NEXT_PUBLIC_USE_REAL_IDP` — partial carve-out dla IDP (client-side)
+
+Oprócz opisanego wyżej server-side `rewrites()` carve-out, istnieje **drugi mechanizm** sterujący MSW handlers po stronie klienta. Flaga `NEXT_PUBLIC_USE_REAL_IDP=true` sprawia, że MSW dodaje `passthrough()` dla wybranych endpointów IDP (zob. `handlers.ts` ~linia 240). Bez tej flagi wszystkie endpointy IDP są mockowane.
+
+**Kluczowa różnica vs `rewrites()`:** `NEXT_PUBLIC_USE_REAL_IDP` steruje **MSW service workerem** (czy fetch z browsera jest interceptowany przez mock czy przepuszczany), a `rewrites()` steruje **Next dev serverem** (czy request jest proxowany do backendu). Dla endpointów które NIE mają MSW mocków (np. całe invoice-supervisor) middleware proxy działa niezależnie od tej flagi.
+
+| Scenariusz | `NEXT_PUBLIC_API_MOCKING` | `NEXT_PUBLIC_USE_REAL_IDP` | Efekt |
+|---|---|---|---|
+| Pełny mock | `enabled` | — | MSW mockuje endpointy IDP które mają handlery; reszta leci do backendu |
+| Hybrid IDP | `enabled` | `true` | MSW dodaje passthrough dla ~38 endpointów IDP; reszta mockowana |
+| Pełny prod | `disabled` | — | MSW wyłączone całkowicie |
+
+**Endpointy objęte passthrough** (lista w `handlers.ts`, sekcja `NEXT_PUBLIC_USE_REAL_IDP === "true"`):
+- `/user/me`, `/user/preferences`
+- `/config`, `/config/feature-flags`, `/config/custom-statuses`
+- `/idp/version`
+- `/packages/*` (dashboard-stats, get_all, action_logs, import, export-templates, etc.)
+- `/classification/*`, `/rules/*`
+
+**Kiedy ustawić:**
+- `NEXT_PUBLIC_USE_REAL_IDP=true` — gdy chcesz testować IDP endpointy (packages, config, rules) z realnym backendem, ale trzymać resztę na mockach.
+- Brak flagi — gdy backend IDP nie jest dostępny lokalnie lub chcesz pełną izolację mocków.
+
 ## Powiązane dokumenty
 
 - **`docs/frontend-architecture.md`** — decyzja stackowa (sekcja "Mocking API: MSW")

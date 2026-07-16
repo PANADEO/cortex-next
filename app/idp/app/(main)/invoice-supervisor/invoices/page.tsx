@@ -8,6 +8,7 @@ import { INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS } from "@/lib/invoice-supervis
 import {
   DataTable,
   EmptyState,
+  ErrorState,
   Input,
   PageHeader,
   Select,
@@ -71,21 +72,29 @@ export default function InvoiceSupervisorInvoicesPage() {
           </div>
         </div>
 
-        <DataTable
-          columns={columns}
-          data={invoices.data ?? []}
-          isLoading={invoices.isPending}
-          getRowId={(row) => String(row.id)}
-          stickyHeader
-          bordered
-          emptyState={
-            <EmptyState
-              icon={Receipt}
-              title="Brak faktur"
-              description="Brak faktur spełniających kryteria wyszukiwania."
-            />
-          }
-        />
+        {invoices.isError ? (
+          <ErrorState
+            title="Nie udało się wczytać faktur"
+            message="Sprawdź połączenie z backendem i spróbuj ponownie."
+            onRetry={() => invoices.refetch()}
+          />
+        ) : (
+          <DataTable
+            columns={columns}
+            data={invoices.data ?? []}
+            isLoading={invoices.isPending}
+            getRowId={(row) => String(row.id)}
+            stickyHeader
+            bordered
+            emptyState={
+              <EmptyState
+                icon={Receipt}
+                title="Brak faktur"
+                description="Brak faktur spełniających kryteria wyszukiwania."
+              />
+            }
+          />
+        )}
       </div>
     </div>
   )

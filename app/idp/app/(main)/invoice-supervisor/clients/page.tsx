@@ -1,6 +1,6 @@
 "use client"
 
-import { DataTable, EmptyState, PageHeader } from "@cortex/ui"
+import { DataTable, EmptyState, ErrorState, PageHeader } from "@cortex/ui"
 import { Users } from "lucide-react"
 import { useMemo } from "react"
 import { invoiceSupervisorClientColumns } from "@/components/invoice-supervisor/client-columns"
@@ -8,7 +8,7 @@ import { InvoiceSupervisorClientFormDialog } from "@/components/invoice-supervis
 import { useInvoiceSupervisorClientsWithExposure } from "@/lib/invoice-supervisor/hooks"
 
 export default function InvoiceSupervisorClientsPage() {
-  const { data: clients, isLoading } = useInvoiceSupervisorClientsWithExposure()
+  const { data: clients, isLoading, isError, refetch } = useInvoiceSupervisorClientsWithExposure()
   const columns = useMemo(() => invoiceSupervisorClientColumns(), [])
 
   return (
@@ -24,21 +24,29 @@ export default function InvoiceSupervisorClientsPage() {
           {isLoading ? "Ładowanie…" : `${clients?.length ?? 0} klientów`}
         </p>
 
-        <DataTable
-          columns={columns}
-          data={clients ?? []}
-          isLoading={isLoading}
-          getRowId={(row) => String(row.id)}
-          stickyHeader
-          bordered
-          emptyState={
-            <EmptyState
-              icon={Users}
-              title="Brak klientów"
-              description="Dodaj pierwszego klienta, aby zacząć śledzić jego faktury."
-            />
-          }
-        />
+        {isError ? (
+          <ErrorState
+            title="Nie udało się wczytać klientów"
+            message="Sprawdź połączenie z backendem i spróbuj ponownie."
+            onRetry={() => refetch()}
+          />
+        ) : (
+          <DataTable
+            columns={columns}
+            data={clients ?? []}
+            isLoading={isLoading}
+            getRowId={(row) => String(row.id)}
+            stickyHeader
+            bordered
+            emptyState={
+              <EmptyState
+                icon={Users}
+                title="Brak klientów"
+                description="Dodaj pierwszego klienta, aby zacząć śledzić jego faktury."
+              />
+            }
+          />
+        )}
       </div>
     </div>
   )

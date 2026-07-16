@@ -1,6 +1,6 @@
 "use client"
 
-import { Badge, Card, CardContent, CardHeader, CardTitle, EmptyState, LoadingState, PageHeader } from "@cortex/ui"
+import { Badge, Card, CardContent, CardHeader, CardTitle, EmptyState, ErrorState, LoadingState, PageHeader } from "@cortex/ui"
 import { useInvoiceSupervisorFailedTasks, useInvoiceSupervisorNotificationLog } from "@/lib/invoice-supervisor/hooks"
 import { formatInvoiceSupervisorDateTime, INVOICE_SUPERVISOR_CHANNEL_LABELS } from "@/lib/invoice-supervisor/types"
 import type { InvoiceSupervisorFailedTask, InvoiceSupervisorNotificationLogEntry } from "@/lib/invoice-supervisor/types"
@@ -38,7 +38,7 @@ function NotificationStatusBadge({ status }: { status: string }) {
 }
 
 export default function InvoiceSupervisorNotificationsPage() {
-  const { data: log, isLoading } = useInvoiceSupervisorNotificationLog()
+  const { data: log, isLoading, isError, refetch } = useInvoiceSupervisorNotificationLog()
   const { data: failed } = useInvoiceSupervisorFailedTasks()
 
   return (
@@ -53,6 +53,12 @@ export default function InvoiceSupervisorNotificationsPage() {
           <CardContent>
             {isLoading ? (
               <LoadingState variant="skeleton" rows={5} />
+            ) : isError ? (
+              <ErrorState
+                title="Nie udało się wczytać historii wysyłek"
+                message="Sprawdź połączenie z backendem i spróbuj ponownie."
+                onRetry={() => refetch()}
+              />
             ) : log && log.length > 0 ? (
               <NotificationLogTable entries={log} />
             ) : (
