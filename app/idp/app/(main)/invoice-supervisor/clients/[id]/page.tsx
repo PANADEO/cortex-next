@@ -155,26 +155,38 @@ export default function InvoiceSupervisorClientDetailPage() {
           </span>
         </div>
 
+        {exposure.isError ? (
+          <ErrorState
+            title="Nie udało się wczytać ekspozycji klienta"
+            message="Sprawdź połączenie z backendem i spróbuj ponownie."
+            onRetry={() => exposure.refetch()}
+          />
+        ) : null}
+
         <section className="grid gap-4 sm:grid-cols-3">
           <DataCard
             label="Należność łączna"
-            value={formatInvoiceSupervisorMultiCurrency(
-              exposure.data?.total_outstanding ?? 0,
-              exposure.data?.currency_breakdown,
-            )}
+            value={
+              exposure.isError
+                ? "—"
+                : formatInvoiceSupervisorMultiCurrency(
+                    exposure.data?.total_outstanding ?? 0,
+                    exposure.data?.currency_breakdown,
+                  )
+            }
             icon={Wallet}
             tone={exposure.data && exposure.data.total_outstanding > 0 ? "destructive" : "default"}
             isLoading={exposure.isLoading}
           />
           <DataCard
             label="Niezapłacone faktury"
-            value={exposure.data?.invoice_count ?? 0}
+            value={exposure.isError ? "—" : (exposure.data?.invoice_count ?? 0)}
             icon={Receipt}
             isLoading={exposure.isLoading}
           />
           <DataCard
             label="Po terminie"
-            value={exposure.data?.overdue_count ?? 0}
+            value={exposure.isError ? "—" : (exposure.data?.overdue_count ?? 0)}
             icon={AlertTriangle}
             tone={exposure.data && exposure.data.overdue_count > 0 ? "warning" : "default"}
             isLoading={exposure.isLoading}
@@ -192,19 +204,28 @@ export default function InvoiceSupervisorClientDetailPage() {
             <CardTitle className="text-sm font-medium">Faktury</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <DataTable
-              columns={invoiceColumns}
-              data={invoices.data ?? []}
-              isLoading={invoices.isLoading}
-              getRowId={(row) => String(row.id)}
-              emptyState={
-                <EmptyState
-                  icon={Receipt}
-                  title="Brak faktur"
-                  description="Ten klient nie ma jeszcze żadnych faktur."
-                />
-              }
-            />
+            {invoices.isError ? (
+              <ErrorState
+                title="Nie udało się wczytać faktur"
+                message="Sprawdź połączenie z backendem i spróbuj ponownie."
+                onRetry={() => invoices.refetch()}
+                className="border-none"
+              />
+            ) : (
+              <DataTable
+                columns={invoiceColumns}
+                data={invoices.data ?? []}
+                isLoading={invoices.isLoading}
+                getRowId={(row) => String(row.id)}
+                emptyState={
+                  <EmptyState
+                    icon={Receipt}
+                    title="Brak faktur"
+                    description="Ten klient nie ma jeszcze żadnych faktur."
+                  />
+                }
+              />
+            )}
           </CardContent>
         </Card>
       </div>

@@ -35,14 +35,20 @@ interface DialogTarget {
 export default function InvoiceSupervisorTemplatesPage() {
   const coverageQuery = useInvoiceSupervisorTemplateCoverage()
   const templatesQuery = useInvoiceSupervisorTemplates()
-  const { data: tones } = useInvoiceSupervisorTones()
+  const tonesQuery = useInvoiceSupervisorTones()
   const { data: coverage } = coverageQuery
   const { data: templates } = templatesQuery
-  const isLoading = coverageQuery.isLoading || templatesQuery.isLoading
-  const isError = coverageQuery.isError || templatesQuery.isError
+  const { data: tones } = tonesQuery
+  // tonesQuery must be settled before the matrix (and its click handlers)
+  // render — otherwise a fast click captures `tones` as undefined and opens
+  // the editor with an empty toneDescription, which then gets sent to AI
+  // generation as-is.
+  const isLoading = coverageQuery.isLoading || templatesQuery.isLoading || tonesQuery.isLoading
+  const isError = coverageQuery.isError || templatesQuery.isError || tonesQuery.isError
   const refetch = () => {
     coverageQuery.refetch()
     templatesQuery.refetch()
+    tonesQuery.refetch()
   }
   const [dialogTarget, setDialogTarget] = useState<DialogTarget | null>(null)
 

@@ -291,7 +291,14 @@ export default function InvoiceSupervisorInvoiceDetailPage() {
               <CardTitle className="text-sm font-medium">Historia wpłat</CardTitle>
             </CardHeader>
             <CardContent>
-              {payments.length > 0 ? (
+              {paymentsQuery.isError ? (
+                <ErrorState
+                  title="Nie udało się wczytać historii wpłat"
+                  message="Sprawdź połączenie z backendem i spróbuj ponownie."
+                  onRetry={() => paymentsQuery.refetch()}
+                  className="border-none bg-transparent"
+                />
+              ) : payments.length > 0 ? (
                 <ul className="divide-y divide-border">
                   {payments.map((payment) => (
                     <li key={payment.id} className="flex items-center justify-between py-2 text-sm">

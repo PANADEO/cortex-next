@@ -8,7 +8,7 @@ import { AlertCircle, CalendarClock, Receipt, TrendingDown } from "lucide-react"
 import type { ElementType } from "react"
 
 export function InvoiceSupervisorStatsStrip() {
-  const { data, isLoading } = useInvoiceSupervisorDashboardSummary()
+  const { data, isLoading, isError } = useInvoiceSupervisorDashboardSummary()
   const overdueCount =
     (data?.status_counts?.overdue ?? 0) + (data?.status_counts?.partially_paid ?? 0)
   const paidCount = data?.status_counts?.paid ?? 0
@@ -20,6 +20,7 @@ export function InvoiceSupervisorStatsStrip() {
         label="Faktury niezapłacone"
         value={data ? data.total_invoices - paidCount : undefined}
         isLoading={isLoading}
+        isError={isError}
       />
       <StatItem
         icon={TrendingDown}
@@ -30,6 +31,7 @@ export function InvoiceSupervisorStatsStrip() {
             : undefined
         }
         isLoading={isLoading}
+        isError={isError}
         tone="destructive"
       />
       <StatItem
@@ -37,6 +39,7 @@ export function InvoiceSupervisorStatsStrip() {
         label="Po terminie"
         value={overdueCount}
         isLoading={isLoading}
+        isError={isError}
         tone="destructive"
       />
       <StatItem
@@ -44,6 +47,7 @@ export function InvoiceSupervisorStatsStrip() {
         label="Termin dzisiaj"
         value={data?.due_today.length}
         isLoading={isLoading}
+        isError={isError}
         tone="warning"
       />
     </div>
@@ -55,12 +59,14 @@ function StatItem({
   label,
   value,
   isLoading,
+  isError,
   tone,
 }: {
   icon: ElementType
   label: string
   value: string | number | undefined
   isLoading?: boolean
+  isError?: boolean
   tone?: "destructive" | "warning"
 }) {
   return (
@@ -77,8 +83,12 @@ function StatItem({
       />
       <div className="min-w-0">
         <div className="truncate text-[11px] text-muted-foreground">{label}</div>
-        {isLoading || value === undefined ? (
+        {isLoading ? (
           <Skeleton className="mt-0.5 h-4 w-12" />
+        ) : isError ? (
+          <div className="truncate text-sm font-semibold text-destructive" title="Nie udało się wczytać">
+            —
+          </div>
         ) : (
           <div className="truncate text-sm font-semibold">{value}</div>
         )}
