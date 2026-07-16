@@ -14,7 +14,6 @@ import type {
 import { useAuthorizedApps } from "@cortex/api"
 import {
   Button,
-  Checkbox,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -54,7 +53,6 @@ export function IntrastatLineEditDialog({ batchId, line, open, onOpenChange }: P
   const patchLine = useIntrastatPatchLine(batchId)
   const upsertCnResourceRow = useIntrastatUpsertCnResourceRow()
   const [form, setForm] = useState<FormState>(() => emptyForm())
-  const [saveToCnResource, setSaveToCnResource] = useState(false)
   const canEditCnResource = access.apps.includes(CN_EDITOR_APP_CODE)
   const cn8 = normalizedCn8(form.cn_code)
   const canSaveToCnResource = Boolean(line?.item_index.trim() && cn8 && form.description.trim())
@@ -69,7 +67,6 @@ export function IntrastatLineEditDialog({ batchId, line, open, onOpenChange }: P
   )
 
   useEffect(() => {
-    setSaveToCnResource(false)
     if (!line) {
       setForm(emptyForm())
       return
@@ -99,7 +96,7 @@ export function IntrastatLineEditDialog({ batchId, line, open, onOpenChange }: P
     }))
   }
 
-  const handleSave = async () => {
+  const handleSave = async (saveToCnResource: boolean) => {
     if (!line) return
     const payload: IntrastatLinePatchRequest = {
       cn_code: nullableText(form.cn_code),
@@ -231,33 +228,27 @@ export function IntrastatLineEditDialog({ batchId, line, open, onOpenChange }: P
               onChange={(event) => update("description", event.target.value)}
             />
           </div>
-          {canEditCnResource ? (
-            <div className="flex items-start gap-3 rounded-md border border-border p-3 sm:col-span-3">
-              <Checkbox
-                id="intrastat-save-to-cn-resource"
-                checked={saveToCnResource}
-                disabled={!canSaveToCnResource}
-                onCheckedChange={(checked) => setSaveToCnResource(checked === true)}
-              />
-              <div className="space-y-1">
-                <Label htmlFor="intrastat-save-to-cn-resource">
-                  Save item index and CN code to the CN database
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Future invoices can use this correction as an exact index match.
-                </p>
-              </div>
-            </div>
-          ) : null}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Save
-          </Button>
+          {canEditCnResource ? (
+            <>
+              <Button variant="outline" onClick={() => handleSave(false)} disabled={isSaving}>
+                Save line only
+              </Button>
+              <Button onClick={() => handleSave(true)} disabled={isSaving || !canSaveToCnResource}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Save and add to CN database
+              </Button>
+            </>
+          ) : (
+            <Button onClick={() => handleSave(false)} disabled={isSaving}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Save line
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -85,8 +85,7 @@ describe("IntrastatLineEditDialog", () => {
     render(<IntrastatLineEditDialog batchId="batch-1" line={line} open onOpenChange={vi.fn()} />)
 
     await user.type(screen.getByLabelText("CN code"), "85044095")
-    await user.click(screen.getByLabelText("Save item index and CN code to the CN database"))
-    await user.click(screen.getByRole("button", { name: "Save" }))
+    await user.click(screen.getByRole("button", { name: "Save and add to CN database" }))
 
     await waitFor(() => {
       expect(mocks.upsertCnResourceRow).toHaveBeenCalledWith({
@@ -100,14 +99,25 @@ describe("IntrastatLineEditDialog", () => {
     })
   })
 
-  it("does not expose the CN database option without editor permission", () => {
+  it("lets a CN editor save only the declaration line", async () => {
+    const user = userEvent.setup()
+    render(<IntrastatLineEditDialog batchId="batch-1" line={line} open onOpenChange={vi.fn()} />)
+
+    await user.click(screen.getByRole("button", { name: "Save line only" }))
+
+    await waitFor(() => expect(mocks.patchLine).toHaveBeenCalledTimes(1))
+    expect(mocks.upsertCnResourceRow).not.toHaveBeenCalled()
+  })
+
+  it("does not expose the CN database action without editor permission", () => {
     mocks.apps = ["intrastat"]
 
     render(<IntrastatLineEditDialog batchId="batch-1" line={line} open onOpenChange={vi.fn()} />)
 
     expect(
-      screen.queryByLabelText("Save item index and CN code to the CN database"),
+      screen.queryByRole("button", { name: "Save and add to CN database" }),
     ).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Save line" })).toBeInTheDocument()
   })
 
   it("requires confirmation before replacing a conflicting CN mapping", async () => {
@@ -120,8 +130,7 @@ describe("IntrastatLineEditDialog", () => {
     render(<IntrastatLineEditDialog batchId="batch-1" line={line} open onOpenChange={vi.fn()} />)
 
     await user.type(screen.getByLabelText("CN code"), "85044095")
-    await user.click(screen.getByLabelText("Save item index and CN code to the CN database"))
-    await user.click(screen.getByRole("button", { name: "Save" }))
+    await user.click(screen.getByRole("button", { name: "Save and add to CN database" }))
 
     await waitFor(() => expect(mocks.upsertCnResourceRow).toHaveBeenCalledTimes(2))
     expect(confirm).toHaveBeenCalledWith(
