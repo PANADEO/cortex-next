@@ -19,6 +19,7 @@ const SHELL_APP_CODES = ["idp", "idp-basic", "intrastat", AI_TOOLS_TILE_ID] as c
 const AUTHORIZED_APP_CODES = [
   ...SHELL_APP_CODES,
   "intrastat-cn-editor",
+  "intrastat-config-editor",
   ...AI_TOOL_APP_CODES,
 ] as const
 

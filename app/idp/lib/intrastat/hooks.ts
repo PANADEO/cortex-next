@@ -7,6 +7,7 @@ import type {
   IntrastatBatchStatus,
   IntrastatCnMatchStatus,
   IntrastatCnResourceRowRequest,
+  IntrastatFilesystemClientRequest,
   IntrastatLineListResponse,
   IntrastatLinePatchRequest,
   IntrastatTransactionKind,
@@ -19,8 +20,13 @@ export const intrastatQueryKeys = {
   all: ["intrastat"] as const,
   stats: () => [...intrastatQueryKeys.all, "stats"] as const,
   settings: () => [...intrastatQueryKeys.all, "settings"] as const,
-  filesystemPreview: (query: { path?: string; limit?: number; offset?: number }) =>
-    [...intrastatQueryKeys.all, "filesystem-preview", query] as const,
+  filesystemClients: () => [...intrastatQueryKeys.all, "filesystem-clients"] as const,
+  filesystemPreview: (query: {
+    client_id?: string
+    path?: string
+    limit?: number
+    offset?: number
+  }) => [...intrastatQueryKeys.all, "filesystem-preview", query] as const,
   batchFilterOptions: () => [...intrastatQueryKeys.all, "batch-filter-options"] as const,
   cnResource: () => [...intrastatQueryKeys.all, "cn-resource"] as const,
   cnResourceRows: (query: { search?: string; limit?: number; offset?: number }) =>
@@ -67,8 +73,55 @@ export function useIntrastatSettings() {
   })
 }
 
+export function useIntrastatFilesystemClients() {
+  return useQuery({
+    queryKey: intrastatQueryKeys.filesystemClients(),
+    queryFn: intrastatApi.filesystemClients,
+    staleTime: 5_000,
+  })
+}
+
+export function useIntrastatCreateFilesystemClient() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: intrastatApi.createFilesystemClient,
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: intrastatQueryKeys.filesystemClients() })
+      client.invalidateQueries({ queryKey: [...intrastatQueryKeys.all, "filesystem-preview"] })
+    },
+  })
+}
+
+export function useIntrastatUpdateFilesystemClient() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      clientId,
+      payload,
+    }: {
+      clientId: string
+      payload: IntrastatFilesystemClientRequest
+    }) => intrastatApi.updateFilesystemClient(clientId, payload),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: intrastatQueryKeys.filesystemClients() })
+      client.invalidateQueries({ queryKey: [...intrastatQueryKeys.all, "filesystem-preview"] })
+    },
+  })
+}
+
+export function useIntrastatDeleteFilesystemClient() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: intrastatApi.deleteFilesystemClient,
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: intrastatQueryKeys.filesystemClients() })
+      client.invalidateQueries({ queryKey: [...intrastatQueryKeys.all, "filesystem-preview"] })
+    },
+  })
+}
+
 export function useIntrastatFilesystemPreview(
-  query: { path?: string; limit?: number; offset?: number },
+  query: { client_id?: string; path?: string; limit?: number; offset?: number },
   enabled: boolean,
 ) {
   return useQuery({

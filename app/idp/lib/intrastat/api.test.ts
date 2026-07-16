@@ -71,13 +71,14 @@ describe("intrastatApi", () => {
     })
 
     const preview = await intrastatApi.filesystemPreview({
+      client_id: "client-1",
       path: "Jabil",
       limit: 10,
       offset: 20,
     })
 
     expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
-      "/intrastat/api/filesystem/preview?path=Jabil&limit=10&offset=20",
+      "/intrastat/api/filesystem/preview?client_id=client-1&path=Jabil&limit=10&offset=20",
     )
     expect(preview.configured).toBe(true)
     expect(preview.current_path).toBe("Jabil")
@@ -92,10 +93,13 @@ describe("intrastatApi", () => {
     })
     vi.stubGlobal("fetch", fetchMock)
 
-    const download = await intrastatApi.downloadFilesystemFile("Jabil/Lipiec 2026/WDT/invoice.pdf")
+    const download = await intrastatApi.downloadFilesystemFile({
+      path: "Lipiec 2026/WDT/invoice.pdf",
+      clientId: "client-1",
+    })
 
     expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
-      "/intrastat/api/filesystem/download?path=Jabil%2FLipiec+2026%2FWDT%2Finvoice.pdf",
+      "/intrastat/api/filesystem/download?path=Lipiec+2026%2FWDT%2Finvoice.pdf&client_id=client-1",
     )
     expect(download.filename).toBe("invoice.pdf")
   })
@@ -177,12 +181,37 @@ describe("intrastatApi", () => {
     })
     vi.stubGlobal("fetch", fetchMock)
 
-    await intrastatApi.deleteFilesystemFile("Jabil/Lipiec 2026/WDT/invoice.pdf")
+    await intrastatApi.deleteFilesystemFile({
+      path: "Lipiec 2026/WDT/invoice.pdf",
+      clientId: "client-1",
+    })
 
     expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
-      "/intrastat/api/filesystem/file?path=Jabil%2FLipiec+2026%2FWDT%2Finvoice.pdf",
+      "/intrastat/api/filesystem/file?path=Lipiec+2026%2FWDT%2Finvoice.pdf&client_id=client-1",
     )
     expect(fetchMock.mock.calls[0]?.[1]?.method).toBe("DELETE")
+  })
+
+  it("creates, updates and deletes filesystem client mappings", async () => {
+    const fetchMock = mockJsonFetch({
+      id: "client-1",
+      client_name: "Jabil",
+      folder_name: "jabil-share",
+      available: true,
+    })
+    const payload = { client_name: "Jabil", folder_name: "jabil-share" }
+
+    await intrastatApi.createFilesystemClient(payload)
+    await intrastatApi.updateFilesystemClient("client-1", payload)
+    await intrastatApi.deleteFilesystemClient("client-1")
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("/intrastat/api/filesystem/clients")
+    expect(fetchMock.mock.calls[0]?.[1]?.method).toBe("POST")
+    expect(fetchMock.mock.calls[0]?.[1]?.body).toBe(JSON.stringify(payload))
+    expect(String(fetchMock.mock.calls[1]?.[0])).toBe("/intrastat/api/filesystem/clients/client-1")
+    expect(fetchMock.mock.calls[1]?.[1]?.method).toBe("PUT")
+    expect(String(fetchMock.mock.calls[2]?.[0])).toBe("/intrastat/api/filesystem/clients/client-1")
+    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe("DELETE")
   })
 
   it("sends filesystem metadata for filesystem ZIP uploads", async () => {

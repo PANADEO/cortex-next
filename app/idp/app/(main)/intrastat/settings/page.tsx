@@ -1,17 +1,22 @@
 "use client"
 
+import { FilesystemClientDialog } from "@/components/intrastat/filesystem-client-dialog"
 import { formatIntrastatError } from "@/lib/intrastat/api"
 import {
+  useIntrastatDeleteFilesystemClient,
   useIntrastatDeleteFilesystemFile,
   useIntrastatDownloadFilesystemFile,
+  useIntrastatFilesystemClients,
   useIntrastatFilesystemPreview,
   useIntrastatPollFilesystem,
   useIntrastatSettings,
 } from "@/lib/intrastat/hooks"
 import type {
+  IntrastatFilesystemClient,
   IntrastatFilesystemPreviewEntry,
   IntrastatFilesystemPreviewResponse,
 } from "@/lib/intrastat/types"
+import { useAuthorizedApps } from "@cortex/api"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,11 +39,14 @@ import {
 import {
   ArrowUp,
   Download,
+  Eye,
   FileText,
   Folder,
   FolderInput,
   Loader2,
+  Pencil,
   PlayCircle,
+  Plus,
   RefreshCw,
   Sparkles,
   Trash2,
@@ -47,18 +55,33 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 const FILE_BROWSER_PAGE_SIZE = 10
+const CONFIG_EDITOR_APP_CODE = "intrastat-config-editor"
 
 export default function IntrastatSettingsPage() {
+  const access = useAuthorizedApps()
+  const canEditClients = access.apps.includes(CONFIG_EDITOR_APP_CODE)
   const settings = useIntrastatSettings()
+  const filesystemClients = useIntrastatFilesystemClients()
   const [browserPath, setBrowserPath] = useState("")
   const [browserPage, setBrowserPage] = useState(0)
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
+  const [clientDialogOpen, setClientDialogOpen] = useState(false)
+  const [editingClient, setEditingClient] = useState<IntrastatFilesystemClient | null>(null)
+  const clients = filesystemClients.data?.items ?? []
+  const hasClientMappings = clients.length > 0
+  const availableClientCount = clients.filter((client) => client.available).length
+  const selectedClient =
+    clients.find((client) => client.id === selectedClientId) ?? clients[0] ?? null
+  const canPreview =
+    Boolean(settings.data?.intrastat_watch_dir) && (!hasClientMappings || Boolean(selectedClient))
   const filesystemPreview = useIntrastatFilesystemPreview(
     {
+      ...(selectedClient ? { client_id: selectedClient.id } : {}),
       path: browserPath,
       limit: FILE_BROWSER_PAGE_SIZE,
       offset: browserPage * FILE_BROWSER_PAGE_SIZE,
     },
-    Boolean(settings.data?.intrastat_watch_dir),
+    canPreview,
   )
   const pollFilesystem = useIntrastatPollFilesystem()
 
@@ -71,7 +94,18 @@ export default function IntrastatSettingsPage() {
     }
   }
 
-  if (settings.isLoading) return <LoadingState label="Loading Intrastat settings..." />
+  if (settings.isLoading || filesystemClients.isLoading) {
+    return <LoadingState label="Loading Intrastat settings..." />
+  }
+
+  const filesystemReady = hasClientMappings
+    ? availableClientCount > 0
+    : Boolean(settings.data?.filesystem_configured)
+  const filesystemValue = hasClientMappings
+    ? `${availableClientCount}/${clients.length} ready`
+    : settings.data?.filesystem_configured
+      ? "Legacy mode"
+      : "Missing folder"
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -82,14 +116,18 @@ export default function IntrastatSettingsPage() {
           <Button
             size="sm"
             onClick={handlePoll}
-            disabled={pollFilesystem.isPending || !settings.data?.filesystem_configured}
+            disabled={
+              pollFilesystem.isPending ||
+              !settings.data?.filesystem_configured ||
+              (hasClientMappings && availableClientCount === 0)
+            }
           >
             {pollFilesystem.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <PlayCircle className="mr-2 h-4 w-4" />
             )}
-            Poll folder
+            Poll folders
           </Button>
         }
       />
@@ -97,15 +135,15 @@ export default function IntrastatSettingsPage() {
       <div className="grid gap-4 px-8 py-6 lg:grid-cols-3">
         <DataCard
           label="Filesystem"
-          value={settings.data?.filesystem_configured ? "Ready" : "Missing folder"}
+          value={filesystemValue}
           description={settings.data?.intrastat_watch_dir ?? "Set INTRASTAT_WATCH_DIR"}
           icon={FolderInput}
-          tone={settings.data?.filesystem_configured ? "success" : "warning"}
+          tone={filesystemReady ? "success" : "warning"}
         />
         <DataCard
           label="Poll interval"
           value={`${settings.data?.filesystem_poll_interval_seconds ?? 10}s`}
-          description="[Client]/[Month]/[WNT|WDT] folders"
+          description="[Month]/[WNT|WDT] inside each client folder"
         />
         <DataCard
           label="Gemini"
@@ -123,25 +161,108 @@ export default function IntrastatSettingsPage() {
               </Badge>
               <Badge
                 variant={
-                  settings.data?.filesystem_enabled && settings.data?.filesystem_configured
-                    ? "secondary"
-                    : "outline"
+                  settings.data?.filesystem_enabled && filesystemReady ? "secondary" : "outline"
                 }
               >
                 Filesystem{" "}
-                {settings.data?.filesystem_enabled && settings.data?.filesystem_configured
-                  ? "watching"
-                  : "disabled"}
+                {settings.data?.filesystem_enabled && filesystemReady ? "watching" : "disabled"}
+              </Badge>
+              <Badge variant={hasClientMappings ? "secondary" : "outline"}>
+                {hasClientMappings ? "Mapped clients" : "Legacy layout"}
               </Badge>
               <Badge variant={settings.data?.gemini_configured ? "secondary" : "outline"}>
                 Gemini {settings.data?.gemini_configured ? "live" : "heuristic fallback"}
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Filesystem intake expects `INTRASTAT_WATCH_DIR/[Client]/[Month]/[WNT|WDT]`
-              folders. The legacy `WNT/&lt;batch&gt;` and `WDT/&lt;batch&gt;` layout is still
-              accepted for compatibility. XML intake is intentionally outside v1.
+              Each configured client folder expects `[Month]/[WNT|WDT]`. The previous
+              `[Client]/[Month]/[WNT|WDT]` layout is used only while no client mappings exist.
+              Removing a mapping never removes its folder or files.
             </p>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-3">
+          <CardContent className="space-y-4 p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold">Client folders</h2>
+                <p className="text-xs text-muted-foreground">
+                  Map each Intrastat client to a mounted folder directly below the filesystem root.
+                </p>
+              </div>
+              {canEditClients ? (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setEditingClient(null)
+                    setClientDialogOpen(true)
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add client
+                </Button>
+              ) : null}
+            </div>
+
+            <div className="overflow-hidden rounded-md border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/60 text-xs text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium">Client</th>
+                    <th className="px-3 py-2 text-left font-medium">Mounted folder</th>
+                    <th className="px-3 py-2 text-left font-medium">Status</th>
+                    <th className="px-3 py-2 text-right font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {clients.length === 0 ? (
+                    <tr>
+                      <td
+                        className="px-3 py-8 text-center text-sm text-muted-foreground"
+                        colSpan={4}
+                      >
+                        No client folders configured. The legacy folder layout is active.
+                      </td>
+                    </tr>
+                  ) : (
+                    clients.map((client) => (
+                      <tr key={client.id}>
+                        <td className="px-3 py-2 font-medium">{client.client_name}</td>
+                        <td className="px-3 py-2 font-mono text-xs">{client.folder_name}</td>
+                        <td className="px-3 py-2">
+                          <Badge variant={client.available ? "secondary" : "outline"}>
+                            {client.available ? "Ready" : "Missing"}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2">
+                          <FilesystemClientActions
+                            client={client}
+                            canEdit={canEditClients}
+                            onBrowse={() => {
+                              setSelectedClientId(client.id)
+                              setBrowserPath("")
+                              setBrowserPage(0)
+                            }}
+                            onEdit={() => {
+                              setEditingClient(client)
+                              setClientDialogOpen(true)
+                            }}
+                            onDeleted={() => {
+                              if (selectedClient?.id === client.id) {
+                                setSelectedClientId(null)
+                                setBrowserPath("")
+                                setBrowserPage(0)
+                              }
+                            }}
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
 
@@ -151,16 +272,18 @@ export default function IntrastatSettingsPage() {
               <div>
                 <h2 className="text-sm font-semibold">Watch folder preview</h2>
                 <p className="text-xs text-muted-foreground">
-                  {filesystemPreview.data?.root ??
-                    settings.data?.intrastat_watch_dir ??
-                    "INTRASTAT_WATCH_DIR is not set"}
+                  {selectedClient
+                    ? `${selectedClient.client_name} — ${selectedClient.folder_name}`
+                    : (filesystemPreview.data?.root ??
+                      settings.data?.intrastat_watch_dir ??
+                      "INTRASTAT_WATCH_DIR is not set")}
                 </p>
               </div>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => void filesystemPreview.refetch()}
-                disabled={!settings.data?.intrastat_watch_dir || filesystemPreview.isFetching}
+                disabled={!canPreview || filesystemPreview.isFetching}
               >
                 {filesystemPreview.isFetching ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -175,7 +298,16 @@ export default function IntrastatSettingsPage() {
               preview={filesystemPreview.data}
               page={browserPage}
               isLoading={filesystemPreview.isLoading}
-              isConfigured={filesystemPreview.data?.configured ?? settings.data?.filesystem_configured ?? false}
+              isConfigured={
+                filesystemPreview.data?.configured ??
+                (!hasClientMappings && Boolean(settings.data?.filesystem_configured))
+              }
+              clientId={selectedClient?.id}
+              missingMessage={
+                selectedClient
+                  ? `${selectedClient.client_name}'s mounted folder is not available.`
+                  : undefined
+              }
               onOpenFolder={(path) => {
                 setBrowserPath(path)
                 setBrowserPage(0)
@@ -186,6 +318,100 @@ export default function IntrastatSettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {canEditClients ? (
+        <FilesystemClientDialog
+          client={editingClient}
+          open={clientDialogOpen}
+          onOpenChange={setClientDialogOpen}
+          onSaved={(savedClient) => {
+            setSelectedClientId(savedClient.id)
+            setBrowserPath("")
+            setBrowserPage(0)
+          }}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+function FilesystemClientActions({
+  client,
+  canEdit,
+  onBrowse,
+  onEdit,
+  onDeleted,
+}: {
+  client: IntrastatFilesystemClient
+  canEdit: boolean
+  onBrowse: () => void
+  onEdit: () => void
+  onDeleted: () => void
+}) {
+  const deleteClient = useIntrastatDeleteFilesystemClient()
+  const [confirmOpen, setConfirmOpen] = useState(false)
+
+  const runDelete = async () => {
+    try {
+      await deleteClient.mutateAsync(client.id)
+      toast.success("Client folder mapping deleted")
+      setConfirmOpen(false)
+      onDeleted()
+    } catch (error) {
+      toast.error(formatIntrastatError(error, "Client folder mapping could not be deleted"))
+    }
+  }
+
+  return (
+    <div className="flex justify-end gap-1">
+      <Button size="sm" variant="ghost" onClick={onBrowse}>
+        <Eye className="mr-2 h-4 w-4" />
+        Browse
+      </Button>
+      {canEdit ? (
+        <>
+          <Button size="sm" variant="ghost" onClick={onEdit} disabled={deleteClient.isPending}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+          <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-destructive hover:text-destructive"
+                disabled={deleteClient.isPending}
+              >
+                {deleteClient.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                <span className="sr-only">Delete client folder mapping</span>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete client folder mapping?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This removes only the mapping for {client.client_name}. The mounted folder and all
+                  files inside it remain unchanged.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleteClient.isPending}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={runDelete}
+                  disabled={deleteClient.isPending}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete mapping
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      ) : null}
     </div>
   )
 }
@@ -195,6 +421,8 @@ function FilesystemPreviewContent({
   page,
   isLoading,
   isConfigured,
+  clientId,
+  missingMessage,
   onOpenFolder,
   onPageChange,
   onDeleted,
@@ -203,6 +431,8 @@ function FilesystemPreviewContent({
   page: number
   isLoading: boolean
   isConfigured: boolean
+  clientId: string | undefined
+  missingMessage: string | undefined
   onOpenFolder: (path: string) => void
   onPageChange: (page: number) => void
   onDeleted: () => void
@@ -220,7 +450,8 @@ function FilesystemPreviewContent({
   if (!isConfigured) {
     return (
       <p className="text-sm text-muted-foreground">
-        Configure `INTRASTAT_WATCH_DIR` and make sure the folder exists to preview files.
+        {missingMessage ??
+          "Configure `INTRASTAT_WATCH_DIR` and make sure the folder exists to preview files."}
       </p>
     )
   }
@@ -280,7 +511,7 @@ function FilesystemPreviewContent({
                     </Badge>
                   </td>
                   <td className="px-3 py-2">
-                    <FileBrowserActions entry={entry} onDeleted={onDeleted} />
+                    <FileBrowserActions entry={entry} clientId={clientId} onDeleted={onDeleted} />
                   </td>
                 </tr>
               ))
@@ -323,9 +554,11 @@ function FileBrowserName({
 
 function FileBrowserActions({
   entry,
+  clientId,
   onDeleted,
 }: {
   entry: IntrastatFilesystemPreviewEntry
+  clientId: string | undefined
   onDeleted: () => void
 }) {
   const downloadFile = useIntrastatDownloadFilesystemFile()
@@ -338,7 +571,10 @@ function FileBrowserActions({
 
   const runDownload = async () => {
     try {
-      const download = await downloadFile.mutateAsync(entry.relative_path)
+      const download = await downloadFile.mutateAsync({
+        path: entry.relative_path,
+        ...(clientId ? { clientId } : {}),
+      })
       const url = URL.createObjectURL(download.blob)
       const anchor = document.createElement("a")
       anchor.href = url
@@ -354,7 +590,10 @@ function FileBrowserActions({
 
   const runDelete = async () => {
     try {
-      await deleteFile.mutateAsync(entry.relative_path)
+      await deleteFile.mutateAsync({
+        path: entry.relative_path,
+        ...(clientId ? { clientId } : {}),
+      })
       toast.success("File deleted")
       setConfirmOpen(false)
       onDeleted()

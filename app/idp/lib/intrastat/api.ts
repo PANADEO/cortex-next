@@ -10,6 +10,9 @@ import type {
   IntrastatCnSuggestionListResponse,
   IntrastatDeclarationLine,
   IntrastatDownload,
+  IntrastatFilesystemClient,
+  IntrastatFilesystemClientListResponse,
+  IntrastatFilesystemClientRequest,
   IntrastatFilesystemPreviewResponse,
   IntrastatLineListResponse,
   IntrastatLinePatchRequest,
@@ -55,6 +58,12 @@ const INTRASTAT_ERROR_MESSAGES: Record<string, string> = {
   "filesystem-delete-directory-not-supported": "Folder delete is not supported",
   "filesystem-file-not-found": "File not found. Refresh the folder.",
   "filesystem-path-outside-root": "Path is outside the watch folder",
+  "filesystem-client-required": "Select a client folder",
+  "filesystem-client-not-found": "Client folder configuration not found. Refresh the list.",
+  "filesystem-client-conflict": "This client or mounted folder is already configured",
+  "filesystem-client-path-invalid": "Enter one folder name without slashes or parent paths",
+  "filesystem-client-name-required": "Enter a client name",
+  "intrastat-config-editor-required": "Intrastat configuration editor permission is required",
 }
 
 const LEGACY_ALERT_MESSAGES: Record<string, string> = {
@@ -225,18 +234,51 @@ export function formatIntrastatError(error: unknown, fallback: string): string {
 export const intrastatApi = {
   stats: () => request<IntrastatStats>("/stats"),
   settings: () => request<IntrastatSettings>("/settings"),
+  filesystemClients: () => request<IntrastatFilesystemClientListResponse>("/filesystem/clients"),
+  createFilesystemClient: (payload: IntrastatFilesystemClientRequest) =>
+    request<IntrastatFilesystemClient>("/filesystem/clients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  updateFilesystemClient: (clientId: string, payload: IntrastatFilesystemClientRequest) =>
+    request<IntrastatFilesystemClient>(`/filesystem/clients/${clientId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  deleteFilesystemClient: async (clientId: string) => {
+    const response = await fetch(buildUrl(`/filesystem/clients/${clientId}`), {
+      method: "DELETE",
+      credentials: "include",
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    })
+    if (!response.ok) throw await intrastatErrorFromResponse(response)
+  },
   pollFilesystem: () =>
     request<IntrastatPollResponse>("/filesystem/poll", {
       method: "POST",
     }),
-  filesystemPreview: (query?: { path?: string; limit?: number; offset?: number }) =>
+  filesystemPreview: (query?: {
+    client_id?: string
+    path?: string
+    limit?: number
+    offset?: number
+  }) =>
     fetch(buildUrl("/filesystem/preview", query), {
       credentials: "include",
       cache: "no-store",
       headers: { Accept: "application/json" },
     }).then(parseJsonResponse<IntrastatFilesystemPreviewResponse>),
-  downloadFilesystemFile: async (path: string): Promise<IntrastatDownload> => {
-    const response = await fetch(buildUrl("/filesystem/download", { path }), {
+  downloadFilesystemFile: async ({
+    path,
+    clientId,
+  }: {
+    path: string
+    clientId?: string
+  }): Promise<IntrastatDownload> => {
+    const response = await fetch(buildUrl("/filesystem/download", { path, client_id: clientId }), {
       credentials: "include",
       cache: "no-store",
     })
@@ -246,8 +288,8 @@ export const intrastatApi = {
       filename: filenameFromContentDisposition(response.headers.get("Content-Disposition"), path),
     }
   },
-  deleteFilesystemFile: async (path: string) => {
-    const response = await fetch(buildUrl("/filesystem/file", { path }), {
+  deleteFilesystemFile: async ({ path, clientId }: { path: string; clientId?: string }) => {
+    const response = await fetch(buildUrl("/filesystem/file", { path, client_id: clientId }), {
       method: "DELETE",
       credentials: "include",
       cache: "no-store",

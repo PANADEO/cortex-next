@@ -78,6 +78,22 @@ export interface IntrastatBatchFilterOptionsResponse {
   months: string[]
 }
 
+export interface IntrastatFilesystemClient {
+  id: string
+  client_name: string
+  folder_name: string
+  available: boolean
+}
+
+export interface IntrastatFilesystemClientListResponse {
+  items: IntrastatFilesystemClient[]
+}
+
+export interface IntrastatFilesystemClientRequest {
+  client_name: string
+  folder_name: string
+}
+
 export interface IntrastatFilesystemPreviewEntry {
   name: string
   relative_path: string

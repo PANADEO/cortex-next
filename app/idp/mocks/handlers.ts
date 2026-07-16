@@ -327,6 +327,7 @@ export const handlers = [
             "idp",
             "idp-basic",
             "intrastat",
+            "intrastat-config-editor",
             "ai-tools",
             "text-highlighter",
             "text-transformer",
