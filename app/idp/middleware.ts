@@ -80,6 +80,12 @@ const INTRASTAT_API_PATTERNS: RegExp[] = [
   /^\/intrastat\/version$/,
 ]
 
+const INVOICE_SUPERVISOR_API_PATTERNS: RegExp[] = [
+  /^\/invoice-supervisor\/api(\/.*)?$/,
+  /^\/invoice-supervisor\/health$/,
+  /^\/invoice-supervisor\/version$/,
+]
+
 const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH)
 
 function normalizeBasePath(value: string | undefined): string {
@@ -187,9 +193,34 @@ function tryIntrastatRewrite(req: NextRequest) {
   return NextResponse.rewrite(new URL(upstreamPath + search, intrastatBackend))
 }
 
+function tryInvoiceSupervisorRewrite(req: NextRequest) {
+  const backend =
+    process.env.INVOICE_SUPERVISOR_BACKEND_URL ??
+    (process.env.NODE_ENV === "development" ? "http://localhost:8504" : undefined)
+  if (!backend) return null
+
+  const pathname = stripBasePath(req.nextUrl.pathname)
+  const { search } = req.nextUrl
+  if (!INVOICE_SUPERVISOR_API_PATTERNS.some((pattern) => pattern.test(pathname))) return null
+
+  // backend-next's FastAPI routes are unprefixed (/invoices, /health, /version —
+  // no /api segment on the backend side), unlike idp-basic/intrastat which keep
+  // /api on their upstream. Strip the whole /invoice-supervisor/api prefix down
+  // to "", not down to "/api".
+  const upstreamPath =
+    pathname === "/invoice-supervisor/health" || pathname === "/invoice-supervisor/version"
+      ? pathname.replace("/invoice-supervisor", "")
+      : pathname.replace("/invoice-supervisor/api", "")
+
+  return NextResponse.rewrite(new URL(upstreamPath + search, backend))
+}
+
 export default function middleware(req: NextRequest) {
   const intrastatRewrite = tryIntrastatRewrite(req)
   if (intrastatRewrite) return intrastatRewrite
+
+  const invoiceSupervisorRewrite = tryInvoiceSupervisorRewrite(req)
+  if (invoiceSupervisorRewrite) return invoiceSupervisorRewrite
 
   const idpBasicRewrite = tryIdpBasicRewrite(req)
   if (idpBasicRewrite) return idpBasicRewrite
