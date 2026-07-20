@@ -116,7 +116,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         height={28}
         className="dark:hue-rotate-180 dark:invert"
       />
-      <span className="text-sm">Cortex360 {tile?.label ?? "IDP"}</span>
+      <span className="text-sm">Cortex360 {tileLabel}</span>
     </Link>
   )
 

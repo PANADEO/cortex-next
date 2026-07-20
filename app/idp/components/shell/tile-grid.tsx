@@ -1,9 +1,5 @@
 "use client"
 
-import { useAuthorizedApps } from "@cortex/api"
-import { Button, EmptyState } from "@cortex/ui"
-import { Search } from "lucide-react"
-import { useDeferredValue, useMemo, useState } from "react"
 import { canAccessAiTool, isAiToolId } from "@/lib/ai-tools/app-codes"
 import { useCoworkProjectTiles } from "@/features/cortex-cowork"
 import { useFavoritesStore } from "@/lib/stores/favorites-store"

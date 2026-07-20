@@ -212,7 +212,21 @@ export const TILES: ReadonlyArray<Tile> = [
  */
 export function resolveRequiredTileId(pathname: string): string | null {
   const rootSegments = pathname.split("/").filter(Boolean).slice(0, 2)
-  return TILES.find((tile) => rootSegments.includes(tile.id))?.id ?? null
+  const byId = TILES.find((tile) => rootSegments.includes(tile.id))
+  if (byId) return byId.id
+  // Some tiles (sp-console/sp-client) share one URL segment instead of putting
+  // their id in the path. Only such tiles participate in the fallback - tiles
+  // that embed their id in the href (ai-tools) must stay id-addressed, so an
+  // unknown tool slug remains a deny. Exact href match wins, then the first
+  // tile living under the segment owns its remaining subpages.
+  const first = rootSegments[0]
+  if (!first) return null
+  const candidates = TILES.filter((tile) => {
+    const segments = tile.href.split("/").filter(Boolean)
+    return segments[0] === first && !segments.includes(tile.id)
+  })
+  const path = `/${rootSegments.join("/")}`
+  return (candidates.find((tile) => tile.href === path) ?? candidates[0])?.id ?? null
 }
 
 export function canAccessTile(apps: readonly string[], tileId: string): boolean {
