@@ -57,7 +57,9 @@ interface RunnerResult {
  * hard-fails.
  */
 
-const RUNNER_TIMEOUT_MS = 240_000
+// Document-heavy tiles (multi-tool turns over big source files) legitimately
+// run past 4 minutes - deployments can raise the budget without a rebuild.
+const RUNNER_TIMEOUT_MS = Number(process.env.COWORK_RUNNER_TIMEOUT_MS) || 240_000
 const HISTORY_TURNS = 12
 // Marker prefix the runner's observe() bridge puts on each stderr NDJSON
 // event line (see cowork-runner/src/observe-events.ts).

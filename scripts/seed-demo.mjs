@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 // Seeds the cortex-config governance store with the G1 demo setup:
 //
-//   departments  badania, marketing (next to the seeded "wspolne")
-//   sources      demo/skills/research -> badania, demo/skills/marketing -> marketing
+//   departments  badania, marketing, dotacje (next to the seeded "wspolne")
+//   sources      demo/skills/research -> badania, demo/skills/marketing -> marketing,
+//                demo/skills/dotacje -> dotacje
 //   connectors   web-search (Perplexity CLI, dept badania)
 //                generate-image (Gemini CLI, dept marketing)
-//   projects     research-desk (Research Desk), marketing-studio (Marketing Studio)
+//                extract-doc + make-docx (document CLI tools, dept dotacje, no creds)
+//   projects     research-desk (Research Desk), marketing-studio (Marketing Studio),
+//                dotacje-desk (Dotacje B+R)
 //   credentials  badania/perplexity-api-key, marketing/gemini-api-key
 //                (values from env or csec; skipped with a warning when absent)
 //
@@ -96,7 +99,7 @@ if (config.version !== 2) {
   process.exit(1)
 }
 
-for (const department of ["badania", "marketing"]) {
+for (const department of ["badania", "marketing", "dotacje"]) {
   if (!config.departments.includes(department)) config.departments.push(department)
 }
 config.departments.sort()
@@ -112,6 +115,12 @@ upsertById(config.skillSources, {
   name: "Demo - Marketing",
   folderPath: path.join(repoRoot, "demo", "skills", "marketing"),
   department: "marketing",
+})
+upsertById(config.skillSources, {
+  id: "demo-dotacje",
+  name: "Demo - Dotacje B+R",
+  folderPath: path.join(repoRoot, "demo", "skills", "dotacje"),
+  department: "dotacje",
 })
 
 upsertById(config.connectors, {
@@ -135,6 +144,26 @@ upsertById(config.connectors, {
   enabled: true,
   target: path.join(repoRoot, "demo", "bin", "generate-image.py"),
   credentialRefs: { GEMINI_API_KEY: "marketing/gemini-api-key" },
+})
+upsertById(config.connectors, {
+  id: "extract-doc",
+  department: "dotacje",
+  type: "cli",
+  name: "extract doc",
+  description:
+    "Tekst z plików PDF/DOCX/TXT w sandboxie sesji. Argumenty: ścieżka pliku oraz opcjonalnie --grep wzorzec (trafienia z kontekstem, ignoruje polskie znaki), --context N, --max-hits N, --pages A-B (PDF), --out ścieżka (pełny tekst do pliku).",
+  enabled: true,
+  target: path.join(repoRoot, "demo", "bin", "extract-doc.py"),
+})
+upsertById(config.connectors, {
+  id: "make-docx",
+  department: "dotacje",
+  type: "cli",
+  name: "make docx",
+  description:
+    "Renderuje dokument Word (.docx) ze spec JSON (bloki: heading/subheading/paragraph/bullets/field/warning/rule). Pola typu field mają limit znaków walidowany przed zapisem. Argumenty: ścieżka spec.json, --out ścieżka-artefaktu.docx.",
+  enabled: true,
+  target: path.join(repoRoot, "demo", "bin", "make-docx.py"),
 })
 
 if (!config.roles.some((role) => role.id === "analyst")) {
@@ -167,6 +196,13 @@ if (!config.agentsInstructions) {
         "Trzymaj spójny, profesjonalny brand voice. Prompty obrazów piszesz po angielsku; tekst na grafice max 3-5 słów.",
     },
   }
+}
+// New department layers are added even when the admin already saved their own
+// AGENTS.md - but an existing entry for the department is never overwritten.
+if (!config.agentsInstructions.departments) config.agentsInstructions.departments = {}
+if (!config.agentsInstructions.departments.dotacje) {
+  config.agentsInstructions.departments.dotacje =
+    "Dokumenty dotacyjne piszesz formalnym językiem wniosków (FENG/SMART/NCBiR). Kwot, stawek i nazw raportów nie wymyślasz - zostawiasz placeholdery [WPISZ ...]. Limity znaków pól traktujesz jako twarde."
 }
 
 const existingProjects = new Map(config.projects.map((project) => [project.id, project]))
@@ -250,6 +286,47 @@ upsertById(
       secrets: { branches: ["marketing"], leaves: [] },
     },
     createdAt: existingProjects.get("marketing-studio")?.createdAt ?? nowIso,
+  }),
+)
+upsertById(
+  config.projects,
+  demoProject({
+    id: "dotacje-desk",
+    name: "Dotacje B+R",
+    description: "Uzasadnienia kosztów personelu i dokumenty do wniosków o dofinansowanie (FENG / Ścieżka SMART / NCBiR).",
+    icon: "file-text",
+    department: "dotacje",
+    systemPrompt:
+      "Jesteś agentem działu dotacji. Pracujesz na dokumentach wgranych do sesji (input/): czytasz je narzędziem extract doc, gotowe dokumenty Word budujesz narzędziem make docx i zapisujesz w artifacts/.",
+    briefs: [
+      {
+        id: "brief-personel",
+        title: "Uzasadnienia kosztów personelu",
+        hint: "dodaj 3 pliki: instrukcję WoD (PDF), opis prac B+R (docx/pdf) i listę stanowisk",
+        prompt:
+          "Wygeneruj uzasadnienia kosztów personelu B+R z wgranych plików: instrukcji WoD, opisu prac i listy stanowisk. Dla każdego stanowiska pola Uzasadnienie kosztu i Metoda szacowania w limicie znaków z instrukcji, wynik jako plik Word.",
+      },
+      {
+        id: "brief-limity",
+        title: "Sprawdź limity znaków",
+        hint: "dodaj instrukcję WoD (PDF)",
+        prompt:
+          "Znajdź w instrukcji WoD wymogi dla pól Uzasadnienie kosztu i Metoda szacowania w kosztach personelu: treść instrukcji obu pól oraz limity znaków.",
+      },
+      {
+        id: "brief-etaty",
+        title: "Audyt etatów na liście stanowisk",
+        hint: "dodaj listę stanowisk albo wklej ją do czatu",
+        prompt:
+          "Sprawdź listę stanowisk: suma etatów per osoba (flaguj > 100%), powtórzone nazwy stanowisk w jednym zadaniu, braki danych. Zwróć tabelę z wnioskami.",
+      },
+    ],
+    composition: {
+      skills: { branches: ["dotacje", "wspolne"], leaves: [] },
+      connectors: { branches: [], leaves: ["extract-doc", "make-docx"] },
+      secrets: { branches: [], leaves: [] },
+    },
+    createdAt: existingProjects.get("dotacje-desk")?.createdAt ?? nowIso,
   }),
 )
 
