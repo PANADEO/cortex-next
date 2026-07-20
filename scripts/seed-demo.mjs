@@ -175,7 +175,7 @@ function demoProject(overrides) {
     enabled: true,
     archetype: "task-chat",
     allowedRoleIds: ["analyst"],
-    model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
+    model: { provider: "anthropic", modelId: "claude-opus-4-8" },
     sandbox: { mode: "local", allowedPaths: [] },
     createdAt: nowIso,
     updatedAt: nowIso,
