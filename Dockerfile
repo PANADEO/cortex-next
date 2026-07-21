@@ -5,6 +5,16 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
+# cowork-runner is a standalone Flue project (spawned as a subprocess per
+# chat turn, not bundled into the Next.js build) with its own lockfile.
+# --ignore-scripts: sharp's postinstall would otherwise attempt a source
+# build; the platform-matched prebuilt binary resolves via its own
+# optionalDependencies regardless.
+FROM base AS cowork-runner-deps
+WORKDIR /app/cowork-runner
+COPY cowork-runner/package.json cowork-runner/package-lock.json ./
+RUN npm ci --ignore-scripts
+
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -23,13 +33,31 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
-RUN mkdir -p /data/ai-tools-history && chown -R nextjs:nodejs /data
+# /app/app/idp/.data/* backs cortex-cowork (governance/sessions/credentials)
+# and okna-czasowe (film-tracking store) - see app/idp/lib/data-dir.ts.
+RUN mkdir -p /data/ai-tools-history \
+      /app/app/idp/.data/cortex-cowork \
+      /app/app/idp/.data/okna-czasowe && \
+    chown -R nextjs:nodejs /data /app/app
 
 # Next 15 standalone output, monorepo layout (outputFileTracingRoot=repoRoot).
 # Entry point is app/idp/server.js; static + public scoped under app/idp/.
 COPY --from=builder --chown=nextjs:nodejs /app/app/idp/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/app/idp/.next/static ./app/idp/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/app/idp/public ./app/idp/public
+
+# cowork-runner: standalone Flue project spawned per chat turn (see
+# app/idp/features/cortex-cowork/server/chat-engine.ts, runnerDir()) - not
+# part of the Next.js build/bundle, so it needs its own explicit copy.
+COPY --from=cowork-runner-deps --chown=nextjs:nodejs /app/cowork-runner/node_modules ./cowork-runner/node_modules
+COPY --chown=nextjs:nodejs cowork-runner/package.json cowork-runner/flue.config.ts ./cowork-runner/
+COPY --chown=nextjs:nodejs cowork-runner/src ./cowork-runner/src
+
+# Skill/connector assets read from disk at runtime (SKILL.md + CLI scripts),
+# not imported by app code, so Next's standalone output tracing misses them.
+COPY --chown=nextjs:nodejs app/idp/features/cortex-cowork/skills ./app/idp/features/cortex-cowork/skills
+COPY --chown=nextjs:nodejs demo ./demo
+COPY --chown=nextjs:nodejs scripts ./scripts
 
 USER nextjs
 EXPOSE 80
