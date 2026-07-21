@@ -52,8 +52,13 @@ Brak workspace managera na tym etapie (pnpm/turbo dorzucamy gdy zacznie boleć).
   - `(shell)` — landing (header + tile-grid + footer, brak sidebara)
   - `(main)` — moduły z app-shell (sidebar `TileMenu` + `Topbar`)
   - `idp/<route>` poza `(main)` — fullscreen workspace pages (np. `verify/[id]`, `classification/[id]`)
-- **Tiles są hardcoded w kodzie**, nie przez API. Rejestr: `app/idp/lib/tiles.ts` (typowany `Tile[]`).
-  Decyzja: tiles zmieniają się rzadko, code-driven jest szybsze niż backend + admin panel.
+- **Code-backed tiles są hardcoded w kodzie**, nie przez API. Rejestr: `app/idp/lib/tiles.ts` (typowany `Tile[]`, pole `archetype: agent-config | dashboard | task-chat`).
+  Decyzja: te tiles zmieniają się rzadko, code-driven jest szybsze niż backend + admin panel.
+- **Wyjątek — kafelki `task-chat` (Cortex Cowork)** NIE są w `tiles.ts`. Konfiguruje je centralnie
+  kafelek **Cortex Config** (`archetype: agent-config`), a hub dociąga je per user z governance store
+  (`GET /api/cortex-cowork/projects`, filtr ról server-side). Governance (role, grupy skilli,
+  przypisania, connectory, credential store, sandbox mode, export) żyje w `app/idp/lib/cortex-governance/`
+  (JSON w `app/idp/.data/cortex-cowork/`). Runtime agentowy: Flue w `cowork-runner/`. Roadmapa: `docs/ROADMAP.md`.
 
 ## Auth
 

@@ -2,12 +2,13 @@
 // behind oauth2-proxy / Caddy `forward_auth`, which strips any client-supplied
 // value and re-injects the authenticated email. Exposing this route directly to
 // the public internet would let anyone forge identity by setting the header.
+import { requestEmail } from "@/lib/cortex-governance/request-identity"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
-import { getAccessResult, getRequestEmail } from "../../_lib/access"
+import { getAccessResult } from "../../_lib/access"
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const email = getRequestEmail(request.headers)
+  const email = requestEmail(request) ?? null
 
   if (!email) {
     return NextResponse.json({ error: "missing-email" }, { status: 401 })

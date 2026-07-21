@@ -5,10 +5,13 @@ import { AppGate } from "@/components/shell/app-gate"
 import { VersionLabel } from "@/components/shell/version-label"
 import { Topbar } from "@/components/topbar"
 import {
+  useCortexConfigNavSections,
   useIdpBasicNavSections,
   useIdpNavSections,
   useIntrastatNavSections,
   useInvoiceSupervisorNavSections,
+  useOknaCzasoweNavSections,
+  useStorePitNavSections,
 } from "@/lib/nav"
 import { useSidebarStore } from "@/lib/stores/sidebar-store"
 import { resolveRequiredTileId, TILES } from "@/lib/tiles"
@@ -18,11 +21,24 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
 
+// URL first segments that own an app-shell. store-pit serves two tile ids
+// (sp-console/sp-client) but one nav+label, keyed by its path segment.
+// cortex-cowork lives in its own route group with a Codex-style shell.
+const KNOWN_TILE_SEGMENTS = new Set([
+  "idp",
+  "idp-basic",
+  "store-pit",
+  "okna-czasowe",
+  "cortex-config",
+  "intrastat",
+  "invoice-supervisor",
+])
+
 function pathToItemId(pathname: string): string {
   const segments = pathname.split("/").filter(Boolean)
   const first = segments[0]
   if (first === "ai-tools") return segments[1] ?? "app"
-  if (TILES.some((tile) => tile.id === first)) return segments[1] ?? "dashboard"
+  if (first && KNOWN_TILE_SEGMENTS.has(first)) return segments[1] ?? "dashboard"
   return first ?? "dashboard"
 }
 
@@ -31,7 +47,14 @@ function pathToTileId(pathname: string): string {
   const first = segments[0]
   const second = segments[1]
   if (first === "ai-tools" && second && TILES.some((tile) => tile.id === second)) return second
-  return TILES.some((tile) => tile.id === first) ? (first ?? "idp") : "idp"
+  return first && KNOWN_TILE_SEGMENTS.has(first) ? first : "idp"
+}
+
+const TILE_LABELS: Record<string, string> = {
+  "idp-basic": "IDP Basic",
+  "store-pit": "Store-Pit",
+  "okna-czasowe": "Okna czasowe",
+  "cortex-config": "Cortex Config",
 }
 
 export default function MainLayout({ children }: { children: ReactNode }) {
@@ -46,16 +69,22 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const idpBasicNavSections = useIdpBasicNavSections()
   const intrastatNavSections = useIntrastatNavSections()
   const invoiceSupervisorNavSections = useInvoiceSupervisorNavSections()
+  const storePitNavSections = useStorePitNavSections()
+  const oknaCzasoweNavSections = useOknaCzasoweNavSections()
+  const cortexConfigNavSections = useCortexConfigNavSections()
+  // Every nav hook returns a constant, so this map is stable per render; the
+  // hooks stay called unconditionally above (rules of hooks).
+  const navByTile: Record<string, typeof idpNavSections> = {
+    "idp-basic": idpBasicNavSections,
+    "store-pit": storePitNavSections,
+    "okna-czasowe": oknaCzasoweNavSections,
+    "cortex-config": cortexConfigNavSections,
+    intrastat: intrastatNavSections,
+    "invoice-supervisor": invoiceSupervisorNavSections,
+  }
   const isAiToolPage = tile?.href.startsWith("/ai-tools/") ?? false
-  const navSections = isAiToolPage
-    ? []
-    : tileId === "idp-basic"
-      ? idpBasicNavSections
-      : tileId === "intrastat"
-        ? intrastatNavSections
-        : tileId === "invoice-supervisor"
-          ? invoiceSupervisorNavSections
-          : idpNavSections
+  const navSections = isAiToolPage ? [] : (navByTile[tileId] ?? idpNavSections)
+  const tileLabel = tile?.label ?? TILE_LABELS[tileId] ?? "IDP"
 
   const brandIcon = (
     <Link
@@ -87,7 +116,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         height={28}
         className="dark:hue-rotate-180 dark:invert"
       />
-      <span className="text-sm">Cortex360 {tile?.label ?? "IDP"}</span>
+      <span className="text-sm">Cortex360 {tileLabel}</span>
     </Link>
   )
 

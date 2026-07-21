@@ -19,6 +19,12 @@ coverage
 tsconfig.tsbuildinfo
 *.tsbuildinfo
 
+# Okna czasowe — local JSON data store (runtime state, not source)
+app/idp/.data/okna-czasowe/*.json
+
+# Cortex Cowork — governance config + session sandboxes (runtime state, not source)
+app/idp/.data/cortex-cowork/
+
 # Playwright
 /e2e/issue-66/screenshots
 /playwright-report

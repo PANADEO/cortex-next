@@ -230,7 +230,43 @@ function syntheticXlsxResponse(rows: (string | number)[][]) {
   })
 }
 
+// Demo standalone (Store-Pit) — brak backendu. Mockuje auth/config tak, żeby
+// frontend działał bez IDP. Off domyślnie; włączane NEXT_PUBLIC_DEMO_STANDALONE
+// w app/idp/.env.local. Nie zmienia zachowania zespołu (carve-out/prod).
+const DEMO_STANDALONE = process.env.NEXT_PUBLIC_DEMO_STANDALONE === "enabled"
+
+const demoStandaloneHandlers = DEMO_STANDALONE
+  ? [
+      http.get("/user/me", () =>
+        HttpResponse.json({
+          email: process.env.NEXT_PUBLIC_DEV_USER_EMAIL ?? "demo@store-pit.com",
+          has_access: true,
+        }),
+      ),
+      http.get("/user/preferences", () =>
+        HttpResponse.json({ document_panel_ratio: null, theme_mode: null }),
+      ),
+      http.get("/config/feature-flags", () =>
+        HttpResponse.json({
+          enable_verification_process: true,
+          package_custom_statuses: true,
+          enable_user_notes: true,
+          enable_po_number: true,
+          enable_customs_code: false,
+          enable_additional_ai_context: false,
+          enable_atr_processing: false,
+          enable_document_preview: true,
+          enable_classification: false,
+          enable_imap_import: false,
+          enable_import_email_notifications: false,
+          hide_menu_items: [],
+        }),
+      ),
+    ]
+  : []
+
 export const handlers = [
+  ...demoStandaloneHandlers,
   // ── Real IDP passthrough (38 endpointów) ───────────────────────
   // Aktywny TYLKO gdy podpięty realny backend IDP: NEXT_PUBLIC_USE_REAL_IDP=true
   // + IDP_BACKEND_URL w .env.local. Bez flagi → pełen mock (frontend standalone),
@@ -332,6 +368,8 @@ export const handlers = [
         ? [
             "idp",
             "idp-basic",
+            "sp-console",
+            "sp-client",
             "intrastat",
             "intrastat-config-editor",
             "ai-tools",
@@ -345,6 +383,9 @@ export const handlers = [
             "fakturomat",
             "ai-daily-assistant",
             "invoice-supervisor",
+            "cortex-cowork",
+            "okna-czasowe",
+            "cortex-config",
           ]
         : [],
       email,

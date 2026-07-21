@@ -17,6 +17,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install chromium",
     "lint": "eslint \"{app,libs}/**/*.{ts,tsx}\"",
+    "okna-czasowe:scan": "node scripts/okna-czasowe-scan.mjs",
     "format": "prettier --write \"{app,libs,docs,scripts}/**/*.{ts,tsx,md,json,css}\"",
     "ladle": "ladle serve",
     "ladle:build": "ladle build"
@@ -55,7 +56,9 @@
     "react-dom": "^18.3.1",
     "react-error-boundary": "^6.1.1",
     "react-hook-form": "^7.53.0",
+    "react-markdown": "10.1.0",
     "react-resizable-panels": "^2.1.7",
+    "remark-gfm": "4.0.1",
     "sonner": "^1.5.0",
     "tailwind-merge": "^3.5.0",
     "xlsx": "^0.18.5",

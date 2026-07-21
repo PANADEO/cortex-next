@@ -1,5 +1,6 @@
+import type { CoworkTileArchetype } from "@cortex/types"
 import type { LucideIcon } from "lucide-react"
-import { FileSpreadsheet, FileText, Receipt, ScanText } from "lucide-react"
+import { CalendarClock, FileSpreadsheet, FileText, Receipt, ScanText, ShieldCheck, Users, Workflow } from "lucide-react"
 import { canAccessAiTool, isAiToolId } from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
@@ -23,6 +24,8 @@ export interface Tile {
   iconFg: string
   categoryFunctional: TileCategoryFunctional
   categoryDepartment: TileCategoryDepartment[]
+  /** Platform taxonomy (see docs/ROADMAP.md): what kind of thing this tile depicts. */
+  archetype: CoworkTileArchetype
   versionEndpoint?: string
 }
 
@@ -65,6 +68,7 @@ function aiToolTile(tool: AiToolDefinition): Tile {
     description: tool.description,
     href: `/ai-tools/${tool.id}`,
     icon: tool.icon,
+    archetype: "dashboard",
     ...AI_TOOL_TILE_STYLE[tool.category],
   }
 }
@@ -91,6 +95,9 @@ export const DEPARTMENT_CATEGORIES: ReadonlyArray<{
   { id: "hr", label: "HR" },
 ]
 
+// Task-chat tiles are NOT listed here: they come from the cortex-config
+// governance store and are merged into the hub grid at render time (see
+// useCoworkProjectTiles). This array holds only code-backed tiles.
 export const TILES: ReadonlyArray<Tile> = [
   {
     id: "idp",
@@ -102,6 +109,7 @@ export const TILES: ReadonlyArray<Tile> = [
     iconFg: "text-rose-700 dark:text-rose-300",
     categoryFunctional: "misc",
     categoryDepartment: ["operations"],
+    archetype: "dashboard",
     versionEndpoint: "/idp/version",
   },
   {
@@ -114,7 +122,57 @@ export const TILES: ReadonlyArray<Tile> = [
     iconFg: "text-sky-700 dark:text-sky-300",
     categoryFunctional: "misc",
     categoryDepartment: ["operations"],
+    archetype: "dashboard",
     versionEndpoint: "/idp-basic/version",
+  },
+  {
+    id: "sp-console",
+    label: "Store-Pit Re-Rating",
+    description: "Carrier invoice re-rating engine - GLS DE line detail to per-client settlement",
+    href: "/store-pit/dashboard",
+    icon: Workflow,
+    iconBg: "bg-cyan-200 dark:bg-cyan-900/40",
+    iconFg: "text-cyan-700 dark:text-cyan-300",
+    categoryFunctional: "agents",
+    categoryDepartment: ["finance", "operations"],
+    archetype: "dashboard",
+  },
+  {
+    id: "sp-client",
+    label: "Store-Pit Client Zone",
+    description: "Brand-facing view - each client sees its parcels and the amount to settle",
+    href: "/store-pit/clients",
+    icon: Users,
+    iconBg: "bg-indigo-200 dark:bg-indigo-900/40",
+    iconFg: "text-indigo-700 dark:text-indigo-300",
+    categoryFunctional: "misc",
+    categoryDepartment: ["finance"],
+    archetype: "dashboard",
+  },
+  {
+    id: "okna-czasowe",
+    label: "Okna czasowe",
+    description: "Śledzenie od kiedy filmy trafiają na Rakuten TV PL - codzienne skany JustWatch",
+    href: "/okna-czasowe/dashboard",
+    icon: CalendarClock,
+    iconBg: "bg-amber-200 dark:bg-amber-900/40",
+    iconFg: "text-amber-700 dark:text-amber-300",
+    categoryFunctional: "research",
+    categoryDepartment: ["marketing"],
+    archetype: "dashboard",
+  },
+  {
+    id: "cortex-config",
+    label: "Cortex Config",
+    description:
+      "Centralne governance platformy - projekty agentowe, role, grupy skilli i uprawnienia",
+    href: "/cortex-config/projects",
+    icon: ShieldCheck,
+    iconBg: "bg-emerald-200 dark:bg-emerald-900/40",
+    iconFg: "text-emerald-700 dark:text-emerald-300",
+    categoryFunctional: "admin-system",
+    categoryDepartment: ["it"],
+    archetype: "agent-config",
   },
   {
     id: "intrastat",
@@ -127,6 +185,7 @@ export const TILES: ReadonlyArray<Tile> = [
     categoryFunctional: "misc",
     categoryDepartment: ["operations", "finance"],
     versionEndpoint: "/intrastat/version",
+    archetype: "dashboard",
   },
   {
     // id must equal backend-next's settings.application_name ("invoice-supervisor")
@@ -141,6 +200,7 @@ export const TILES: ReadonlyArray<Tile> = [
     categoryFunctional: "misc",
     categoryDepartment: ["finance", "operations"],
     versionEndpoint: "/invoice-supervisor/version",
+    archetype: "dashboard",
   },
   ...AI_TOOL_DEFINITIONS.map(aiToolTile),
 ]
@@ -152,7 +212,21 @@ export const TILES: ReadonlyArray<Tile> = [
  */
 export function resolveRequiredTileId(pathname: string): string | null {
   const rootSegments = pathname.split("/").filter(Boolean).slice(0, 2)
-  return TILES.find((tile) => rootSegments.includes(tile.id))?.id ?? null
+  const byId = TILES.find((tile) => rootSegments.includes(tile.id))
+  if (byId) return byId.id
+  // Some tiles (sp-console/sp-client) share one URL segment instead of putting
+  // their id in the path. Only such tiles participate in the fallback - tiles
+  // that embed their id in the href (ai-tools) must stay id-addressed, so an
+  // unknown tool slug remains a deny. Exact href match wins, then the first
+  // tile living under the segment owns its remaining subpages.
+  const first = rootSegments[0]
+  if (!first) return null
+  const candidates = TILES.filter((tile) => {
+    const segments = tile.href.split("/").filter(Boolean)
+    return segments[0] === first && !segments.includes(tile.id)
+  })
+  const path = `/${rootSegments.join("/")}`
+  return (candidates.find((tile) => tile.href === path) ?? candidates[0])?.id ?? null
 }
 
 export function canAccessTile(apps: readonly string[], tileId: string): boolean {

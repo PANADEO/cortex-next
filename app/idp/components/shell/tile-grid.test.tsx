@@ -23,6 +23,18 @@ vi.mock("@cortex/api", () => ({
   useAuthorizedApps: () => authorizedMock,
 }))
 
+// TileGrid merges in governed task-chat project tiles from a query hook; the
+// grid's own authorization logic is what these tests cover, so stub the hook.
+let coworkTilesMock: { tiles: unknown[]; projects: unknown[]; isLoading: boolean } = {
+  tiles: [],
+  projects: [],
+  isLoading: false,
+}
+
+vi.mock("@/features/cortex-cowork", () => ({
+  useCoworkProjectTiles: () => coworkTilesMock,
+}))
+
 import { TileGrid } from "./tile-grid"
 
 afterEach(() => {
@@ -34,6 +46,7 @@ afterEach(() => {
     isLoading: false,
     isError: false,
   }
+  coworkTilesMock = { tiles: [], projects: [], isLoading: false }
 })
 
 describe("TileGrid", () => {

@@ -19,4 +19,8 @@ coverage
 
 *.md
 !README.md
+# Skill instructions are read from disk at runtime (builtinSkillsDir(),
+# demo skill sources in scripts/seed-demo.mjs), not just documentation.
+!app/idp/features/cortex-cowork/skills/**/*.md
+!demo/skills/**/*.md
 docs

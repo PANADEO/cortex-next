@@ -3,16 +3,26 @@ import type { FeatureFlagsResponse } from "@cortex/types"
 import type { TileMenuItem, TileMenuSection } from "@cortex/ui"
 import {
   BarChart3,
+  Calculator,
+  Database,
   FileDown,
+  Files,
   FileSpreadsheet,
   FileText,
+  Film,
+  GitMerge,
   History,
   Inbox,
+  KeyRound,
+  LayoutDashboard,
+  ListChecks,
   Package,
   Receipt,
   ScrollText,
   Settings,
+  SlidersHorizontal,
   Sparkles,
+  Table2,
   TableProperties,
   Upload,
   Users,
@@ -90,6 +100,70 @@ export const IDP_BASIC_NAV: TileMenuSection[] = [
   },
 ]
 
+export const STORE_PIT_NAV: TileMenuSection[] = [
+  {
+    id: "pipeline",
+    label: "Pipeline",
+    items: [
+      { id: "dashboard", label: "Overview", icon: LayoutDashboard, href: "/store-pit/dashboard" },
+      { id: "source-files", label: "Source files", icon: Files, href: "/store-pit/source-files" },
+      { id: "extraction", label: "Extraction", icon: Table2, href: "/store-pit/extraction" },
+      {
+        id: "reconciliation",
+        label: "Reconciliation",
+        icon: ListChecks,
+        href: "/store-pit/reconciliation",
+      },
+      { id: "netting", label: "Netting", icon: GitMerge, href: "/store-pit/netting" },
+      { id: "re-rating", label: "Re-rating", icon: Calculator, href: "/store-pit/re-rating" },
+    ],
+  },
+  {
+    id: "deliverables",
+    label: "Deliverables",
+    items: [{ id: "clients", label: "Clients", icon: Users, href: "/store-pit/clients" }],
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    items: [
+      {
+        id: "pricing",
+        label: "Pricing rules",
+        icon: SlidersHorizontal,
+        href: "/store-pit/pricing",
+      },
+    ],
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    items: [{ id: "audit-log", label: "Audit log", icon: History, href: "/store-pit/audit-log" }],
+  },
+]
+
+export const OKNA_CZASOWE_NAV: TileMenuSection[] = [
+  {
+    id: "pipeline",
+    label: "Pipeline",
+    items: [
+      {
+        id: "dashboard",
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        href: "/okna-czasowe/dashboard",
+      },
+      { id: "films", label: "Filmy", icon: Film, href: "/okna-czasowe/films" },
+      { id: "data", label: "Dane", icon: Database, href: "/okna-czasowe/data" },
+    ],
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    items: [{ id: "log", label: "Log", icon: History, href: "/okna-czasowe/log" }],
+  },
+]
+
 export const INTRASTAT_NAV: TileMenuSection[] = [
   {
     id: "pipeline",
@@ -115,6 +189,47 @@ export const INTRASTAT_NAV: TileMenuSection[] = [
         label: "Settings",
         icon: Settings,
         href: "/intrastat/settings",
+      },
+    ],
+  },
+]
+
+// cortex-cowork renders its own Codex-style shell (no TileMenu nav).
+
+export const CORTEX_CONFIG_NAV: TileMenuSection[] = [
+  {
+    id: "governance",
+    label: "Governance",
+    items: [
+      {
+        id: "projects",
+        label: "Projekty",
+        icon: LayoutDashboard,
+        href: "/cortex-config/projects",
+      },
+      {
+        id: "catalog",
+        label: "Katalog zasobów",
+        icon: Database,
+        href: "/cortex-config/catalog",
+      },
+      {
+        id: "agents",
+        label: "AGENTS.md",
+        icon: FileText,
+        href: "/cortex-config/agents",
+      },
+      {
+        id: "roles",
+        label: "Role i dostęp",
+        icon: Users,
+        href: "/cortex-config/governance",
+      },
+      {
+        id: "credentials",
+        label: "Sekrety",
+        icon: KeyRound,
+        href: "/cortex-config/credentials",
       },
     ],
   },
@@ -211,6 +326,14 @@ export function useIdpBasicNavSections(): TileMenuSection[] {
   return IDP_BASIC_NAV
 }
 
+export function useStorePitNavSections(): TileMenuSection[] {
+  return STORE_PIT_NAV
+}
+
+export function useOknaCzasoweNavSections(): TileMenuSection[] {
+  return OKNA_CZASOWE_NAV
+}
+
 export function useIntrastatNavSections(): TileMenuSection[] {
   return INTRASTAT_NAV
 }
@@ -249,4 +372,9 @@ export function useAiToolsNavSections(): TileMenuSection[] {
       })),
     ]
   }, [authorized.apps])
+}
+
+
+export function useCortexConfigNavSections(): TileMenuSection[] {
+  return CORTEX_CONFIG_NAV
 }
