@@ -20,6 +20,8 @@ const AUTHORIZED_APP_CODES = [
   ...SHELL_APP_CODES,
   "intrastat-cn-editor",
   "intrastat-config-editor",
+  "cortex-config",
+  "cortex-cowork",
   ...AI_TOOL_APP_CODES,
 ] as const
 
