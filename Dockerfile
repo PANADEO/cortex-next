@@ -74,5 +74,14 @@ EXPOSE 80
 ENV PORT=80
 ENV HOSTNAME=0.0.0.0
 ENV AI_TOOLS_HISTORY_DIR=/data/ai-tools-history
+# runnerDir() in chat-engine.ts defaults to `${process.cwd()}/cowork-runner`,
+# assuming cwd is the WORKDIR (/app). Verified empirically: Next's generated
+# standalone server.js chdir()s to its own directory at startup, so the
+# running server's actual process.cwd() is /app/app/idp, not /app - the
+# unqualified default would look for a nonexistent /app/app/idp/cowork-runner
+# and fail (spawn ENOENT, misleadingly blamed on the "node" command rather
+# than the missing cwd). Point it at the real copy explicitly instead of
+# relying on a cwd assumption that doesn't hold for this standalone layout.
+ENV COWORK_RUNNER_DIR=/app/cowork-runner
 
 CMD ["node", "app/idp/server.js"]
