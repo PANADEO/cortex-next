@@ -1,23 +1,16 @@
 // Local JSON-file persistence for the "Okna czasowe" tile. There is no backend for this
 // tile yet — every read/write goes through this module so it can be swapped for a real
 // database later without touching the API routes that call it.
-import { existsSync } from "node:fs"
 import { promises as fs } from "node:fs"
 import path from "node:path"
 import type { Film, LogEntry, Snapshot } from "@/features/okna-czasowe/types"
+import { resolveAppDataDir } from "@/lib/data-dir"
 
-// `npm run dev|build|start` and the Docker image all invoke Next.js as `next <cmd> app/idp`
-// from the repo root, so `process.cwd()` is the repo root, not `app/idp` — verified by
-// running the dev server, which otherwise writes to `<repo-root>/.data/` instead of
-// `app/idp/.data/`. Resolve explicitly through `app/idp` so the store dir stays app-scoped
-// regardless of which of those entry points invoked the process.
-function resolveDataDir(): string {
-  const appIdpRelative = path.join(process.cwd(), "app", "idp")
-  const base = existsSync(appIdpRelative) ? appIdpRelative : process.cwd()
-  return path.join(base, ".data", "okna-czasowe")
-}
-
-const DATA_DIR = resolveDataDir()
+// Was a local copy of the same cwd-detection heuristic cortex-governance/store.ts
+// uses - consolidated onto the shared, fixed appIdpDir() (see data-dir.ts for why
+// the naive check broke on this app's own "idp" route segment) plus the same
+// env-override escape hatch, so both stores are unambiguous in deployment.
+const DATA_DIR = process.env.OKNA_CZASOWE_DATA_DIR ?? resolveAppDataDir("okna-czasowe")
 const FILMS_FILE = path.join(DATA_DIR, "films.json")
 const SNAPSHOTS_FILE = path.join(DATA_DIR, "snapshots.json")
 const LOG_FILE = path.join(DATA_DIR, "log.json")

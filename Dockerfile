@@ -83,5 +83,13 @@ ENV AI_TOOLS_HISTORY_DIR=/data/ai-tools-history
 # than the missing cwd). Point it at the real copy explicitly instead of
 # relying on a cwd assumption that doesn't hold for this standalone layout.
 ENV COWORK_RUNNER_DIR=/app/cowork-runner
+# Belt-and-suspenders alongside the app-code fix in lib/data-dir.ts: state
+# explicitly instead of relying on any cwd-detection heuristic at all, since
+# this app's own "idp" route segment can fool existsSync-based checks (see
+# data-dir.ts comment - a live deploy actually hit this and split cowork's
+# governance/sessions/skills-catalog across two different directories).
+ENV COWORK_DATA_DIR=/app/app/idp/.data/cortex-cowork
+ENV COWORK_BUILTIN_SKILLS_DIR=/app/app/idp/features/cortex-cowork/skills
+ENV OKNA_CZASOWE_DATA_DIR=/app/app/idp/.data/okna-czasowe
 
 CMD ["node", "app/idp/server.js"]
