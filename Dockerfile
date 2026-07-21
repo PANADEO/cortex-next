@@ -33,6 +33,16 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
+
+# demo/bin/*.py CLI connectors are `uv run --script` (PEP 723 inline deps).
+# BusyBox's env applet doesn't support `-S` (verified: shebang exec fails
+# with "env: unrecognized option: S"), so their `#!/usr/bin/env -S uv run
+# --script` shebang needs GNU coreutils' env instead. uv itself is a single
+# static binary - the astral-sh image is the documented way to add it to a
+# foreign base image without needing pip/python preinstalled.
+RUN apk add --no-cache coreutils
+COPY --from=ghcr.io/astral-sh/uv:0.11.30 /uv /uvx /usr/local/bin/
+
 # /app/app/idp/.data/* backs cortex-cowork (governance/sessions/credentials)
 # and okna-czasowe (film-tracking store) - see app/idp/lib/data-dir.ts.
 RUN mkdir -p /data/ai-tools-history \
