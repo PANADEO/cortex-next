@@ -64,6 +64,7 @@ const totalsSchema = z.object({
   total_net_weight_kg: numericStringSchema,
   total_gross_weight_kg: numericStringSchema,
   total_packages_quantity: numericStringSchema,
+  total_packages_type: z.string().max(100),
 })
 
 type TotalsValues = z.infer<typeof totalsSchema>
@@ -71,6 +72,7 @@ type TotalsValues = z.infer<typeof totalsSchema>
 const TOTALS_FIELDS: readonly FieldSpec<TotalsValues>[] = [
   { name: "total_invoice_value", label: "Total invoice value", span: 1 },
   { name: "total_packages_quantity", label: "Total packages qty", span: 1 },
+  { name: "total_packages_type", label: "Total packages type", span: 1 },
   { name: "total_net_weight_kg", label: "Total net weight (kg)", span: 1 },
   { name: "total_gross_weight_kg", label: "Total gross weight (kg)", span: 1 },
 ]
@@ -102,6 +104,7 @@ function totalsDefaults(invoice: Invoice): TotalsValues {
     total_net_weight_kg: t?.total_net_weight_kg ?? "",
     total_gross_weight_kg: t?.total_gross_weight_kg ?? "",
     total_packages_quantity: t?.total_packages_quantity ?? "",
+    total_packages_type: t?.total_packages_type ?? "",
   }
 }
 

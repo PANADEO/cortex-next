@@ -172,6 +172,7 @@ export interface InvoiceTotals {
   total_net_weight_kg: string | null
   total_gross_weight_kg: string | null
   total_packages_quantity: string | null
+  total_packages_type: string | null
 }
 
 export interface Invoice {
@@ -248,6 +249,7 @@ export interface UpdateInvoiceTotalsRequest {
   total_net_weight_kg?: string | null
   total_gross_weight_kg?: string | null
   total_packages_quantity?: string | null
+  total_packages_type?: string | null
 }
 
 export interface UpdateDeliveryTermsRequest {

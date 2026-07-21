@@ -15,6 +15,7 @@ export interface FeatureFlagsResponse {
   enable_additional_ai_context?: boolean
   enable_atr_processing?: boolean
   enable_packaging_selection_mode?: boolean
+  enable_cn_ai_enrichment?: boolean
   enable_document_preview?: boolean
   enable_imap_import?: boolean
   enable_import_email_notifications?: boolean
@@ -30,6 +31,7 @@ export interface FeatureFlagSettingsResponse {
   enable_additional_ai_context: boolean
   enable_atr_processing: boolean
   enable_packaging_selection_mode: boolean
+  enable_cn_ai_enrichment: boolean
   enable_document_preview: boolean
   enable_classification: boolean
   enable_imap_import: boolean

@@ -33,6 +33,7 @@ type BooleanFlagKey =
   | "enable_additional_ai_context"
   | "enable_atr_processing"
   | "enable_packaging_selection_mode"
+  | "enable_cn_ai_enrichment"
   | "enable_document_preview"
   | "enable_classification"
   | "enable_imap_import"
@@ -84,6 +85,11 @@ const BOOLEAN_FLAGS: ReadonlyArray<{
     env: "FEATURE_FLAG_ENABLE_PACKAGING_SELECTION_MODE",
   },
   {
+    key: "enable_cn_ai_enrichment",
+    label: "CN AI enrichment",
+    env: "FEATURE_FLAG_ENABLE_CN_AI_ENRICHMENT",
+  },
+  {
     key: "enable_document_preview",
     label: "Document preview",
     env: "FEATURE_FLAG_ENABLE_DOCUMENT_PREVIEW",
@@ -115,6 +121,7 @@ function emptySettings(): FeatureFlagSettingsResponse {
     enable_additional_ai_context: false,
     enable_atr_processing: false,
     enable_packaging_selection_mode: false,
+    enable_cn_ai_enrichment: false,
     enable_document_preview: false,
     enable_classification: false,
     enable_imap_import: false,

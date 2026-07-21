@@ -25,6 +25,7 @@ function settings(overrides: Record<string, unknown> = {}) {
     enable_additional_ai_context: false,
     enable_atr_processing: false,
     enable_packaging_selection_mode: false,
+    enable_cn_ai_enrichment: false,
     enable_document_preview: true,
     enable_classification: false,
     enable_imap_import: false,

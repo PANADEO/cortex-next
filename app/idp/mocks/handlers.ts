@@ -359,6 +359,7 @@ export const handlers = [
       enable_customs_code: false,
       enable_atr_processing: false,
       enable_packaging_selection_mode: false,
+      enable_cn_ai_enrichment: false,
     }),
   ),
 

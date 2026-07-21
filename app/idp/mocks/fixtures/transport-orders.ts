@@ -127,6 +127,7 @@ function totals(id: string): InvoiceTotals {
     total_net_weight_kg: "203.90",
     total_gross_weight_kg: "220.21",
     total_packages_quantity: "36",
+    total_packages_type: "cartons",
   }
 }
 
