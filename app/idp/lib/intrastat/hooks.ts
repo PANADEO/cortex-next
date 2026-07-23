@@ -8,6 +8,7 @@ import type {
   IntrastatCnMatchStatus,
   IntrastatCnResourceRowRequest,
   IntrastatFilesystemClientRequest,
+  IntrastatLineCreateRequest,
   IntrastatLineListResponse,
   IntrastatLinePatchRequest,
   IntrastatTransactionKind,
@@ -348,6 +349,17 @@ export function useIntrastatPatchLine(batchId: string) {
   return useMutation({
     mutationFn: ({ lineId, payload }: { lineId: string; payload: IntrastatLinePatchRequest }) =>
       intrastatApi.patchLine(lineId, payload),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: [...intrastatQueryKeys.all, "batches", batchId] })
+      invalidateIntrastatMetadata(client)
+    },
+  })
+}
+
+export function useIntrastatCreateLine(batchId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: IntrastatLineCreateRequest) => intrastatApi.createLine(batchId, payload),
     onSuccess: () => {
       client.invalidateQueries({ queryKey: [...intrastatQueryKeys.all, "batches", batchId] })
       invalidateIntrastatMetadata(client)

@@ -1,14 +1,21 @@
 // @vitest-environment jsdom
+import type { IntrastatDeclarationLine } from "@/lib/intrastat/types"
 import "@testing-library/jest-dom/vitest"
 import { cleanup, render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, ReactNode } from "react"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import IntrastatReviewPage from "./page"
 
-const { routerPush, routerReplace } = vi.hoisted(() => ({
-  routerPush: vi.fn(),
-  routerReplace: vi.fn(),
-}))
+const { authorizedApps, createLine, patchLine, routerPush, routerReplace, upsertCnResourceRow } =
+  vi.hoisted(() => ({
+    authorizedApps: { value: ["intrastat", "intrastat-cn-editor"] as string[] },
+    createLine: vi.fn(),
+    patchLine: vi.fn(),
+    routerPush: vi.fn(),
+    routerReplace: vi.fn(),
+    upsertCnResourceRow: vi.fn(),
+  }))
 
 const batches = [
   {
@@ -45,10 +52,55 @@ const batches = [
   },
 ]
 
+const line: IntrastatDeclarationLine = {
+  id: "line-1",
+  batch_id: "batch-1",
+  invoice_id: "invoice-1",
+  lp: 1,
+  transaction_kind: "WNT",
+  invoice_number: "FV/1",
+  invoice_date: "2026-07-23",
+  item_index: "ABC",
+  matched_index: "ABC",
+  matched_fragment: "ABC",
+  cn_code: "85444290",
+  description: "Cable",
+  quantity: 1,
+  value: 100,
+  currency: "EUR",
+  net_weight: 1,
+  origin_country: "DE",
+  delivery_terms: "EXW",
+  vat_number: "DE123",
+  transaction_code: "11",
+  transport_type: "3",
+  cn_match_status: "exact",
+  confidence: 1,
+  match_confidence: 1,
+  alerts: [],
+  document_type: "invoice",
+  corrected_invoice_number: null,
+  corrected_invoice_date: null,
+  correction_reason: null,
+  correction_side: null,
+  is_excluded: false,
+  exclusion_reason: null,
+  source_file: "invoice.pdf",
+  created_at: "2026-07-23T10:00:00Z",
+  updated_at: "2026-07-23T10:00:00Z",
+}
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: routerPush,
     replace: routerReplace,
+  }),
+}))
+
+vi.mock("@cortex/api", () => ({
+  useAuthorizedApps: () => ({
+    apps: authorizedApps.value,
+    isLoading: false,
   }),
 }))
 
@@ -61,13 +113,29 @@ vi.mock("@/lib/intrastat/hooks", () => ({
     isFetching: false,
   }),
   useIntrastatLines: () => ({
-    data: { items: [], total: 0, limit: 100, offset: 0 },
+    data: { items: [line], total: 1, limit: 100, offset: 0 },
     isFetching: false,
     isPending: false,
+  }),
+  useIntrastatCnSuggestions: () => ({
+    data: { items: [] },
+    isFetching: false,
+  }),
+  useIntrastatCreateLine: () => ({
+    isPending: false,
+    mutateAsync: createLine,
+  }),
+  useIntrastatPatchLine: () => ({
+    isPending: false,
+    mutateAsync: patchLine,
   }),
   useIntrastatReprocessBatch: () => ({
     isPending: false,
     mutateAsync: vi.fn(),
+  }),
+  useIntrastatUpsertCnResourceRow: () => ({
+    isPending: false,
+    mutateAsync: upsertCnResourceRow,
   }),
 }))
 
@@ -87,8 +155,14 @@ vi.mock("@/components/intrastat/delete-batch-button", () => ({
   IntrastatDeleteBatchButton: () => <button type="button">Delete batch</button>,
 }))
 
-vi.mock("@/components/intrastat/line-edit-dialog", () => ({
-  IntrastatLineEditDialog: () => null,
+vi.mock("@/components/intrastat/line-details-dialog", () => ({
+  IntrastatLineDetailsDialog: ({
+    line: selectedLine,
+    open,
+  }: {
+    line: IntrastatDeclarationLine | null
+    open: boolean
+  }) => (open && selectedLine ? <div>Details for {selectedLine.id}</div> : null),
 }))
 
 vi.mock("@/components/intrastat/match-details-popover", () => ({
@@ -120,7 +194,31 @@ vi.mock("@cortex/ui", () => ({
       {children}
     </button>
   ),
-  DataTable: () => <div data-testid="lines-table" />,
+  DataTable: ({
+    columns,
+    data,
+  }: {
+    columns: Array<{
+      accessorKey?: string
+      id?: string
+      cell?: (context: { row: { original: IntrastatDeclarationLine } }) => ReactNode
+    }>
+    data: IntrastatDeclarationLine[]
+  }) => (
+    <table data-testid="lines-table">
+      <tbody>
+        {data.map((row) => (
+          <tr key={row.id}>
+            {columns.map((column) => (
+              <td key={column.id ?? column.accessorKey}>
+                {column.cell?.({ row: { original: row } })}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  ),
   EmptyState: ({ title }: { title: string }) => <div>{title}</div>,
   Input: (props: InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
   PageHeader: ({ actions, title }: { actions?: ReactNode; title: string }) => (
@@ -155,6 +253,13 @@ afterEach(() => {
   routerReplace.mockClear()
 })
 
+beforeEach(() => {
+  authorizedApps.value = ["intrastat", "intrastat-cn-editor"]
+  patchLine.mockReset().mockResolvedValue(line)
+  createLine.mockReset().mockResolvedValue({ ...line, id: "line-2", item_index: "NEW-100" })
+  upsertCnResourceRow.mockReset().mockResolvedValue({})
+})
+
 describe("IntrastatReviewPage batch selection", () => {
   it("keeps the batch id from the URL when the batch list is already loaded", async () => {
     window.history.pushState({}, "", "/intrastat/review?batch=batch-2")
@@ -174,5 +279,131 @@ describe("IntrastatReviewPage batch selection", () => {
     await waitFor(() => {
       expect(screen.getByTestId("export-batch-id")).toHaveTextContent("batch-1")
     })
+  })
+})
+
+describe("IntrastatReviewPage line actions", () => {
+  it("edits and saves an existing line directly in the table", async () => {
+    const user = userEvent.setup()
+    window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
+    render(<IntrastatReviewPage />)
+
+    await user.click(screen.getByRole("button", { name: "Edit line line-1" }))
+    const description = screen.getByRole("textbox", { name: "Description line-1" })
+    await user.clear(description)
+    await user.type(description, "Updated cable")
+    await user.click(screen.getByRole("button", { name: "Save line line-1" }))
+
+    await waitFor(() =>
+      expect(patchLine).toHaveBeenCalledWith({
+        lineId: "line-1",
+        payload: expect.objectContaining({ description: "Updated cable" }),
+      }),
+    )
+  })
+
+  it("adds a draft line to the reference invoice", async () => {
+    const user = userEvent.setup()
+    window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
+    render(<IntrastatReviewPage />)
+
+    await user.click(screen.getByRole("button", { name: "Add line after line-1" }))
+    await user.type(screen.getByRole("textbox", { name: "Item index draft:line-1" }), "NEW-100")
+    await user.type(screen.getByRole("textbox", { name: "CN code draft:line-1" }), "85044095")
+    await user.click(screen.getByRole("button", { name: "Save line draft:line-1" }))
+
+    await waitFor(() =>
+      expect(createLine).toHaveBeenCalledWith(
+        expect.objectContaining({
+          reference_line_id: "line-1",
+          item_index: "NEW-100",
+          cn_code: "85044095",
+          currency: "EUR",
+          delivery_terms: "EXW",
+          vat_number: "DE123",
+        }),
+      ),
+    )
+  })
+
+  it("opens the read-only line details", async () => {
+    const user = userEvent.setup()
+    window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
+    render(<IntrastatReviewPage />)
+
+    await user.click(screen.getByRole("button", { name: "View line line-1" }))
+
+    expect(screen.getByText("Details for line-1")).toBeInTheDocument()
+  })
+
+  it("saves an edited mapping to the CN database for an authorized user", async () => {
+    const user = userEvent.setup()
+    window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
+    render(<IntrastatReviewPage />)
+
+    await user.click(screen.getByRole("button", { name: "Edit line line-1" }))
+    await user.click(
+      screen.getByRole("button", {
+        name: "Save line line-1 and add to CN database",
+      }),
+    )
+
+    await waitFor(() =>
+      expect(upsertCnResourceRow).toHaveBeenCalledWith({
+        payload: {
+          index_value: "ABC",
+          cn8: "85444290",
+          cn: "85444290",
+          description: "Cable",
+        },
+      }),
+    )
+  })
+
+  it("requires confirmation before replacing a conflicting CN mapping", async () => {
+    const user = userEvent.setup()
+    const conflict = Object.assign(new Error("conflict"), {
+      detail: "cn-resource-index-conflict",
+    })
+    upsertCnResourceRow.mockRejectedValueOnce(conflict).mockResolvedValueOnce({})
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true)
+    window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
+    render(<IntrastatReviewPage />)
+
+    await user.click(screen.getByRole("button", { name: "Edit line line-1" }))
+    await user.click(
+      screen.getByRole("button", {
+        name: "Save line line-1 and add to CN database",
+      }),
+    )
+
+    await waitFor(() => expect(upsertCnResourceRow).toHaveBeenCalledTimes(2))
+    expect(confirm).toHaveBeenCalledWith(
+      "Index ABC already has a different CN code. Replace it with 85444290?",
+    )
+    expect(upsertCnResourceRow).toHaveBeenLastCalledWith({
+      payload: {
+        index_value: "ABC",
+        cn8: "85444290",
+        cn: "85444290",
+        description: "Cable",
+      },
+      replaceConflict: true,
+    })
+  })
+
+  it("hides the CN database action without editor permission", async () => {
+    authorizedApps.value = ["intrastat"]
+    const user = userEvent.setup()
+    window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
+    render(<IntrastatReviewPage />)
+
+    await user.click(screen.getByRole("button", { name: "Edit line line-1" }))
+
+    expect(
+      screen.queryByRole("button", {
+        name: "Save line line-1 and add to CN database",
+      }),
+    ).not.toBeInTheDocument()
   })
 })

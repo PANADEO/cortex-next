@@ -14,6 +14,7 @@ import type {
   IntrastatFilesystemClientListResponse,
   IntrastatFilesystemClientRequest,
   IntrastatFilesystemPreviewResponse,
+  IntrastatLineCreateRequest,
   IntrastatLineListResponse,
   IntrastatLinePatchRequest,
   IntrastatPollResponse,
@@ -385,6 +386,12 @@ export const intrastatApi = {
   patchLine: (lineId: string, payload: IntrastatLinePatchRequest) =>
     request<IntrastatDeclarationLine>(`/lines/${lineId}`, {
       method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).then(translateLegacyLineAlerts),
+  createLine: (batchId: string, payload: IntrastatLineCreateRequest) =>
+    request<IntrastatDeclarationLine>(`/batches/${batchId}/lines`, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     }).then(translateLegacyLineAlerts),

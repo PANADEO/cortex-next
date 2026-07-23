@@ -174,6 +174,11 @@ export interface IntrastatLinePatchRequest {
   currency?: string | null
 }
 
+export interface IntrastatLineCreateRequest extends IntrastatLinePatchRequest {
+  reference_line_id: string
+  item_index: string
+}
+
 export interface IntrastatResourceInfo {
   id: string | null
   file_name: string | null

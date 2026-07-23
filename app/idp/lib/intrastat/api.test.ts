@@ -262,6 +262,28 @@ describe("intrastatApi", () => {
     ])
   })
 
+  it("creates a declaration line in the selected batch", async () => {
+    const fetchMock = mockJsonFetch({ id: "line-2", alerts: [] })
+
+    await intrastatApi.createLine("batch-1", {
+      reference_line_id: "line-1",
+      item_index: "NEW-100",
+      cn_code: "85044095",
+      description: "Power supply",
+    })
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("/intrastat/api/batches/batch-1/lines")
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
+      method: "POST",
+      body: JSON.stringify({
+        reference_line_id: "line-1",
+        item_index: "NEW-100",
+        cn_code: "85044095",
+        description: "Power supply",
+      }),
+    })
+  })
+
   it("hides missing-field alerts when the declaration line has a final value", async () => {
     mockJsonFetch({
       items: [
