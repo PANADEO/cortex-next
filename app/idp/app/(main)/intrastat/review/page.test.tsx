@@ -197,6 +197,7 @@ vi.mock("@cortex/ui", () => ({
   DataTable: ({
     columns,
     data,
+    tableClassName,
   }: {
     columns: Array<{
       accessorKey?: string
@@ -204,8 +205,13 @@ vi.mock("@cortex/ui", () => ({
       cell?: (context: { row: { original: IntrastatDeclarationLine } }) => ReactNode
     }>
     data: IntrastatDeclarationLine[]
+    tableClassName?: string
   }) => (
-    <table data-testid="lines-table">
+    <table
+      data-testid="lines-table"
+      data-columns={columns.map((column) => column.id ?? column.accessorKey).join(",")}
+      data-table-class-name={tableClassName}
+    >
       <tbody>
         {data.map((row) => (
           <tr key={row.id}>
@@ -283,6 +289,17 @@ describe("IntrastatReviewPage batch selection", () => {
 })
 
 describe("IntrastatReviewPage line actions", () => {
+  it("keeps the actions column first and sticky on the left", () => {
+    window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
+    render(<IntrastatReviewPage />)
+
+    const table = screen.getByTestId("lines-table")
+
+    expect(table.getAttribute("data-columns")?.split(",")[0]).toBe("actions")
+    expect(table.getAttribute("data-table-class-name")).toContain("[&_th:first-child]:sticky")
+    expect(table.getAttribute("data-table-class-name")).toContain("[&_td:first-child]:sticky")
+  })
+
   it("edits and saves an existing line directly in the table", async () => {
     const user = userEvent.setup()
     window.history.pushState({}, "", "/intrastat/review?batch=batch-1")

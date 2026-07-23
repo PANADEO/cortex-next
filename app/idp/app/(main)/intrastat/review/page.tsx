@@ -343,6 +343,108 @@ export default function IntrastatReviewPage() {
 
   const columns: ColumnDef<IntrastatDeclarationLine>[] = [
     {
+      id: "actions",
+      header: "",
+      size: 180,
+      cell: ({ row }) => {
+        const isActive = editor?.line.id === row.original.id
+        if (isActive) {
+          return (
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                aria-label={`Cancel line ${row.original.id}`}
+                title="Cancel"
+                disabled={isSaving}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  handleCancelEdit()
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                aria-label={`Save line ${row.original.id}`}
+                title="Save line"
+                disabled={isSaving}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  void handleSaveLine(false)
+                }}
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
+              </Button>
+              {canEditCnResource ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label={`Save line ${row.original.id} and add to CN database`}
+                  title="Save and add to CN database"
+                  disabled={isSaving || !canSaveToCnResource}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    void handleSaveLine(true)
+                  }}
+                >
+                  <Database className="h-4 w-4" />
+                </Button>
+              ) : null}
+            </div>
+          )
+        }
+        return (
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label={`View line ${row.original.id}`}
+              title="View details"
+              disabled={Boolean(editor)}
+              onClick={(event) => {
+                event.stopPropagation()
+                setViewing(row.original)
+              }}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label={`Edit line ${row.original.id}`}
+              title="Edit line"
+              disabled={mutationsDisabled}
+              onClick={(event) => {
+                event.stopPropagation()
+                handleStartEdit(row.original)
+              }}
+            >
+              <Edit3 className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label={`Add line after ${row.original.id}`}
+              title="Add line to this invoice"
+              disabled={mutationsDisabled}
+              onClick={(event) => {
+                event.stopPropagation()
+                handleStartCreate(row.original)
+              }}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        )
+      },
+    },
+    {
       accessorKey: "lp",
       header: "LP",
       size: 60,
@@ -561,108 +663,6 @@ export default function IntrastatReviewPage() {
           <span className="text-xs text-muted-foreground">—</span>
         ),
     },
-    {
-      id: "actions",
-      header: "",
-      size: 180,
-      cell: ({ row }) => {
-        const isActive = editor?.line.id === row.original.id
-        if (isActive) {
-          return (
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                aria-label={`Cancel line ${row.original.id}`}
-                title="Cancel"
-                disabled={isSaving}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  handleCancelEdit()
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                aria-label={`Save line ${row.original.id}`}
-                title="Save line"
-                disabled={isSaving}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  void handleSaveLine(false)
-                }}
-              >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Check className="h-4 w-4" />
-                )}
-              </Button>
-              {canEditCnResource ? (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  aria-label={`Save line ${row.original.id} and add to CN database`}
-                  title="Save and add to CN database"
-                  disabled={isSaving || !canSaveToCnResource}
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    void handleSaveLine(true)
-                  }}
-                >
-                  <Database className="h-4 w-4" />
-                </Button>
-              ) : null}
-            </div>
-          )
-        }
-        return (
-          <div className="flex items-center gap-1">
-            <Button
-              size="sm"
-              variant="ghost"
-              aria-label={`View line ${row.original.id}`}
-              title="View details"
-              disabled={Boolean(editor)}
-              onClick={(event) => {
-                event.stopPropagation()
-                setViewing(row.original)
-              }}
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              aria-label={`Edit line ${row.original.id}`}
-              title="Edit line"
-              disabled={mutationsDisabled}
-              onClick={(event) => {
-                event.stopPropagation()
-                handleStartEdit(row.original)
-              }}
-            >
-              <Edit3 className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              aria-label={`Add line after ${row.original.id}`}
-              title="Add line to this invoice"
-              disabled={mutationsDisabled}
-              onClick={(event) => {
-                event.stopPropagation()
-                handleStartCreate(row.original)
-              }}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        )
-      },
-    },
   ]
 
   const handleBatchChange = (nextBatchId: string) => {
@@ -831,12 +831,13 @@ export default function IntrastatReviewPage() {
                 columns={columns}
                 data={tableItems}
                 className="w-max min-w-full overflow-visible [contain:none]"
+                tableClassName="[&_th:first-child]:sticky [&_th:first-child]:left-0 [&_th:first-child]:z-20 [&_th:first-child]:bg-muted [&_th:first-child]:shadow-[1px_0_0_hsl(var(--border))] [&_td:first-child]:sticky [&_td:first-child]:left-0 [&_td:first-child]:z-10 [&_td:first-child]:bg-inherit [&_td:first-child]:shadow-[1px_0_0_hsl(var(--border))]"
                 isLoading={lines.isPending && items.length === 0}
                 getRowId={(row) => row.id}
                 getRowClassName={(row) => {
                   if (editor?.line.id === row.id)
                     return "bg-primary/5 ring-1 ring-inset ring-primary/20"
-                  return row.is_excluded ? "bg-muted/30 text-muted-foreground" : undefined
+                  return row.is_excluded ? "bg-muted/30 text-muted-foreground" : "bg-card"
                 }}
                 onRowClick={handleLineSelect}
                 stickyHeader
