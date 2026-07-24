@@ -54,7 +54,8 @@ function toastProjectSaveError(error: unknown): void {
     if (isInvalidGrantReferenceList(body?.invalidReferences)) {
       const description = body.invalidReferences
         .map(
-          (ref) => `${GRANT_KIND_LABELS[ref.kind]} - ${GRANT_PART_LABELS[ref.part]}: ${ref.value}`,
+          (ref) =>
+            `${GRANT_KIND_LABELS[ref.kind] ?? ref.kind} - ${GRANT_PART_LABELS[ref.part] ?? ref.part}: ${ref.value}`,
         )
         .join("\n")
       toast.error(error.message, { description })
