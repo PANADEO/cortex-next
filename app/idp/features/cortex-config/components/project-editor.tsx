@@ -154,8 +154,14 @@ export function ProjectEditor({
   const briefs = useFieldArray({ control: form.control, name: "briefs" })
 
   const submit = form.handleSubmit(async (values) => {
-    await onSubmit(projectFormValuesToInput(values))
-    router.push(BACK_HREF)
+    try {
+      await onSubmit(projectFormValuesToInput(values))
+      router.push(BACK_HREF)
+    } catch {
+      // Rejected save (e.g. 400 from invalid grant references): stay on the
+      // page so the admin can fix it. The mutation's onError already
+      // surfaced a toast with the reason - see useCreateProject/useUpdateProject.
+    }
   })
 
   return (
