@@ -1,5 +1,8 @@
-import type { UpsertProjectInput } from "@/lib/cortex-governance/store"
+import { listCredentialPaths } from "@/lib/cortex-governance/credentials"
+import { allDepartments, type UpsertProjectInput } from "@/lib/cortex-governance/store"
+import { resolveSkillCatalog } from "@/features/cortex-cowork/server/skills-catalog"
 import type {
+  CoworkGovernanceConfig,
   CoworkModelConfig,
   CoworkProjectBrief,
   CoworkProjectComposition,
@@ -121,4 +124,61 @@ export function parseProjectBody(body: unknown): ParsedProject {
       ...(input.artifactExport ? { artifactExport: input.artifactExport } : {}),
     },
   }
+}
+
+// --- referential integrity (post-shape-validation, checked against the live catalog) --
+
+export interface InvalidGrantReference {
+  kind: "skills" | "connectors" | "secrets"
+  part: "branches" | "leaves"
+  value: string
+}
+
+/**
+ * Checks that every branch/leaf a project's composition grants actually
+ * exists in the current catalog, so a save can no longer silently point at a
+ * deleted (or never-existing) department/skill/connector/secret. Separate
+ * from `parseProjectBody` (which stays sync, pure shape validation) because
+ * this needs live data: the skill catalog is disk-backed (skill sources are
+ * folders scanned on demand, no in-memory index) and the secret list reads
+ * the credentials store - both async, both freshly loaded per call so the
+ * check reflects the catalog at save time, not whatever the admin's browser
+ * had cached when the form opened.
+ *
+ * `secrets.branches` is checked against departments too, not credential-path
+ * prefixes: `secretPathGranted` matches it as a raw path prefix, but the
+ * admin UI only ever offers department-tree values as secret branch options
+ * (see ProjectEditor's GrantPickerField for secrets), so this matches what a
+ * legitimate client can actually send without requiring any secret to
+ * already exist under the branch (an empty branch is a normal, temporary
+ * state, not an error).
+ */
+export async function findInvalidGrantReferences(
+  composition: CoworkProjectComposition,
+  config: CoworkGovernanceConfig,
+): Promise<InvalidGrantReference[]> {
+  const departments = new Set(allDepartments(config))
+  const skillIds = new Set((await resolveSkillCatalog(config)).map((skill) => skill.id))
+  const connectorIds = new Set(config.connectors.map((connector) => connector.id))
+  const secretPaths = new Set(await listCredentialPaths())
+
+  const invalid: InvalidGrantReference[] = []
+  const checkGrant = (
+    kind: InvalidGrantReference["kind"],
+    grant: CoworkResourceGrant,
+    leafIds: Set<string>,
+  ) => {
+    for (const branch of grant.branches) {
+      if (!departments.has(branch)) invalid.push({ kind, part: "branches", value: branch })
+    }
+    for (const leaf of grant.leaves) {
+      if (!leafIds.has(leaf)) invalid.push({ kind, part: "leaves", value: leaf })
+    }
+  }
+
+  checkGrant("skills", composition.skills, skillIds)
+  checkGrant("connectors", composition.connectors, connectorIds)
+  checkGrant("secrets", composition.secrets, secretPaths)
+
+  return invalid
 }
