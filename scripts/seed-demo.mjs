@@ -175,7 +175,17 @@ function demoProject(overrides) {
     enabled: true,
     archetype: "task-chat",
     allowedRoleIds: ["analyst"],
-    model: { provider: "anthropic", modelId: "claude-opus-4-8" },
+    // Routed through cortex-proxy (OpenRouter) instead of a direct
+    // ANTHROPIC_API_KEY - same model, centralized cost/usage tracking.
+    // baseUrl triggers modelConfigForRunner()'s X-User-ID header injection
+    // (see chat-engine.ts); apiKeyRef stays unset, cortex-proxy doesn't
+    // validate the client's key. modelId uses OpenRouter's dot-notation
+    // slug, not Anthropic's native hyphenated one.
+    model: {
+      provider: "openai-compatible",
+      baseUrl: process.env.CORTEX_PROXY_URL ?? "http://cortex-proxy/v1",
+      modelId: "anthropic/claude-opus-4.8",
+    },
     sandbox: { mode: "local", allowedPaths: [] },
     createdAt: nowIso,
     updatedAt: nowIso,
