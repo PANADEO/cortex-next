@@ -33,7 +33,13 @@ REQUEST_TIMEOUT_S = 50
 
 
 def extract_sources(data: dict, message: dict) -> list[str]:
-    """Collects source URLs, order-preserved and deduplicated.
+    """Collects source URLs, order-preserved, deduplicated, blanks filtered.
+
+    Blank/whitespace-only strings (e.g. "" or "   ") are treated as absent
+    citations and dropped, for both shapes below - otherwise they'd produce
+    a garbled "Sources:" entry and, more importantly, let a response with
+    empty content and only junk citations slip past the empty-response guard
+    in main() (sources would look non-empty while carrying no real URL).
 
     Checks both known citation shapes since the exact one returned through
     cortex-proxy/OpenRouter for Perplexity models is not yet confirmed by a
@@ -47,7 +53,7 @@ def extract_sources(data: dict, message: dict) -> list[str]:
     urls: list[str] = []
 
     for url in data.get("citations") or []:
-        if isinstance(url, str) and url not in urls:
+        if isinstance(url, str) and url.strip() and url not in urls:
             urls.append(url)
 
     for annotation in message.get("annotations") or []:
@@ -57,7 +63,7 @@ def extract_sources(data: dict, message: dict) -> list[str]:
         if not isinstance(url_citation, dict):
             continue
         url = url_citation.get("url")
-        if isinstance(url, str) and url not in urls:
+        if isinstance(url, str) and url.strip() and url not in urls:
             urls.append(url)
 
     return urls
