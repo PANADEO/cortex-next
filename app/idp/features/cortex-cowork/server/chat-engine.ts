@@ -171,10 +171,20 @@ function toActivityStep(raw: string): AgentActivityStep | null {
  * model key and every connector this turn); an unset or unresolvable ref
  * falls through to the provider's own env-var lookup (ANTHROPIC_API_KEY et
  * al.) inside the runner process.
+ *
+ * When the project routes through a gateway (`baseUrl` set - cortex-proxy or
+ * any other OpenAI-compatible endpoint), we also inject `X-User-ID`: cortex-
+ * proxy hard-requires this header (400 without it) and uses its value as the
+ * per-user cost/token attribution key for its `/usage` analytics - the same
+ * identifier every other cortex-proxy client in the org sends (see
+ * `buildCortexHeaders` in app/api/ai-tools/generate/route.ts). Native
+ * Anthropic (no baseUrl) gets no extra header - zero behavior change there.
+ * Exported for direct unit testing.
  */
-function modelConfigForRunner(
+export function modelConfigForRunner(
   project: CoworkProjectConfig,
   credentials: CredentialsDocument,
+  userEmail?: string,
 ): CoworkModelConfig {
   const apiKey = resolveCredential(credentials, project.model.apiKeyRef)
   return {
@@ -182,6 +192,9 @@ function modelConfigForRunner(
     modelId: project.model.modelId,
     ...(project.model.baseUrl ? { baseUrl: project.model.baseUrl } : {}),
     ...(apiKey ? { apiKey } : {}),
+    ...(project.model.baseUrl
+      ? { headers: { "X-User-ID": userEmail ?? project.id } }
+      : {}),
   }
 }
 
@@ -250,6 +263,13 @@ async function runFlueTurn(
   // will carry resolved secrets, and env vars never show up in `ps` output.
   // (Env names are read on the runner side in cowork-runner/src/env.ts.)
   env.COWORK_SANDBOX_DIR = session.sandboxDir
+  // Same identifier as the model's X-User-ID (see modelConfigForRunner):
+  // CLI connector scripts (demo/bin/web-search.py, generate-image.py) read
+  // this directly from their inherited process env to attribute their own
+  // cortex-proxy calls to the requesting user, not a fallback constant.
+  if (options.userEmail) {
+    env.COWORK_USER_EMAIL = options.userEmail
+  }
   if (project) {
     // One credentials read covers the model key and every connector, gated to
     // the department secrets this project was granted.
@@ -257,7 +277,9 @@ async function runFlueTurn(
       await readCredentialsDocument(),
       project.composition.secrets,
     )
-    env.COWORK_MODEL_CONFIG = JSON.stringify(modelConfigForRunner(project, credentials))
+    env.COWORK_MODEL_CONFIG = JSON.stringify(
+      modelConfigForRunner(project, credentials, options.userEmail),
+    )
     // Hierarchical AGENTS.md: organization -> department chain -> tile ->
     // the requesting user's personal note, composed into one system prompt.
     const composedPrompt = composeAgentsPrompt({
