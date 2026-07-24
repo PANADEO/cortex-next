@@ -4,7 +4,7 @@ import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { requestEmail } from "./request-identity"
-import { readGovernanceConfig, visibleProjectsFor } from "./store"
+import { isOpenMode, readGovernanceConfig, visibleProjectsFor } from "./store"
 
 // The project-level access gate for every /api/cortex-cowork/sessions*
 // handler. Structurally mirrors requireAdmin() in admin-gate.ts, not
@@ -45,6 +45,22 @@ export async function requireProjectAccess(
   }
 
   const email = requestEmail(request)
+
+  // visibleProjectsFor() treats a missing email as "show everything" - correct
+  // for its original call site (GET /api/cortex-cowork/projects, a UI list
+  // filter: no identity just means an empty-feeling list, nothing is actually
+  // exposed by omission). Reused here as a write/read/delete authorization
+  // gate, that same branch is a fail-open bypass: a request with no
+  // x-auth-request-email header (requestEmail() returning undefined, e.g.
+  // oauth2-proxy bypassed) would otherwise pass in closed/non-bootstrap mode
+  // with zero credentials. Guard against that case here rather than in
+  // visibleProjectsFor() itself, which stays correct for its original,
+  // lower-stakes use. Open mode is intentionally unaffected - during
+  // bootstrap every request, including an anonymous one, passes by design.
+  if (!email && !isOpenMode(config)) {
+    return NextResponse.json({ message: "Authentication required" }, { status: 401 })
+  }
+
   const visible = visibleProjectsFor(config, email).some((candidate) => candidate.id === projectId)
   if (!visible) {
     return NextResponse.json({ message: "Project access denied" }, { status: 403 })

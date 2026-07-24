@@ -132,6 +132,33 @@ describe("GET /api/cortex-cowork/sessions/[sessionId]", () => {
 
     expect(response.status).toBe(200)
   })
+
+  // Fail-open regression (code review, 24.07.2026): a request with no
+  // x-auth-request-email header used to pass in closed mode via
+  // visibleProjectsFor()'s `!email` branch. Must now be denied (401).
+  it("closed/non-bootstrap mode: 401s a request with no email header at all - fail-open fix", async () => {
+    await writeConfig(closedConfig())
+    const sessionId = await createSession()
+    const { GET } = await loadHandler()
+
+    const response = await GET(requestAs(null), {
+      params: Promise.resolve({ sessionId }),
+    })
+
+    expect(response.status).toBe(401)
+  })
+
+  it("bootstrap/open mode: still reads the session with no email header - open mode has zero restrictions", async () => {
+    await writeConfig(openConfig())
+    const sessionId = await createSession()
+    const { GET } = await loadHandler()
+
+    const response = await GET(requestAs(null), {
+      params: Promise.resolve({ sessionId }),
+    })
+
+    expect(response.status).toBe(200)
+  })
 })
 
 describe("DELETE /api/cortex-cowork/sessions/[sessionId]", () => {
@@ -164,5 +191,22 @@ describe("DELETE /api/cortex-cowork/sessions/[sessionId]", () => {
 
     expect(response.status).toBe(200)
     expect(body.ok).toBe(true)
+  })
+
+  it("closed/non-bootstrap mode: 401s a request with no email header instead of deleting - fail-open fix", async () => {
+    await writeConfig(closedConfig())
+    const sessionId = await createSession()
+    const { DELETE, GET } = await loadHandler()
+
+    const response = await DELETE(requestAs(null), {
+      params: Promise.resolve({ sessionId }),
+    })
+    expect(response.status).toBe(401)
+
+    // Prove it wasn't deleted despite the denial.
+    const stillThere = await GET(requestAs("owner@example.com"), {
+      params: Promise.resolve({ sessionId }),
+    })
+    expect(stillThere.status).toBe(200)
   })
 })

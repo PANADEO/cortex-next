@@ -170,6 +170,22 @@ describe("requireProjectAccess", () => {
     expect(isDenied(result)).toBe(true)
     if (isDenied(result)) expect(result.status).toBe(404)
   })
+
+  // Regression for the fail-open bug found in code review (24.07.2026):
+  // visibleProjectsFor() has `if (openMode || explicitAdmin || !email) return
+  // true` - reused here, that `!email` branch let a request with NO
+  // x-auth-request-email header (requestEmail() -> undefined) through in
+  // CLOSED/non-bootstrap mode, with zero credentials. This must now be
+  // denied (401) before visibleProjectsFor() is ever called with that email.
+  it("closed/non-bootstrap mode: denies a request with no email header at all (401) - fail-open fix", async () => {
+    await writeConfig(closedConfig())
+    const { requireProjectAccess, isDenied } = await import("./project-gate")
+
+    const result = await requireProjectAccess(makeRequest(null), "proj-a")
+
+    expect(isDenied(result)).toBe(true)
+    if (isDenied(result)) expect(result.status).toBe(401)
+  })
 })
 
 describe("requireSessionAccess", () => {
@@ -213,5 +229,20 @@ describe("requireSessionAccess", () => {
 
     expect(isDenied(result)).toBe(true)
     if (isDenied(result)) expect(result.status).toBe(404)
+  })
+
+  // Same fail-open regression as requireProjectAccess, exercised through the
+  // delegation path: requireSessionAccess loads the session then calls
+  // requireProjectAccess(request, session.projectId) and returns its denial
+  // verbatim, so the missing-email guard must apply here transitively too.
+  it("closed/non-bootstrap mode: denies a request with no email header at all (401) - fail-open fix", async () => {
+    await writeConfig(closedConfig())
+    const sessionId = await createSession("proj-a")
+    const { requireSessionAccess, isDenied } = await import("./project-gate")
+
+    const result = await requireSessionAccess(makeRequest(null), sessionId)
+
+    expect(isDenied(result)).toBe(true)
+    if (isDenied(result)) expect(result.status).toBe(401)
   })
 })

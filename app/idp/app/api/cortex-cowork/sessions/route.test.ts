@@ -117,4 +117,34 @@ describe("POST /api/cortex-cowork/sessions", () => {
 
     expect(response.status).toBe(201)
   })
+
+  // Fail-open regression (code review, 24.07.2026): visibleProjectsFor()'s
+  // `!email` branch used to let a request with no x-auth-request-email header
+  // through in closed mode with zero credentials. Must now be denied (401).
+  it("closed/non-bootstrap mode: 401s a request with no email header at all - fail-open fix", async () => {
+    await writeConfig(closedConfig())
+    const { POST } = await loadHandler()
+
+    const response = await POST(postRequest(null, "proj-a"))
+
+    expect(response.status).toBe(401)
+  })
+
+  it("bootstrap/open mode: still creates a session with no email header - open mode has zero restrictions", async () => {
+    await writeConfig({
+      version: 2,
+      departments: ["wspolne"],
+      skillSources: [],
+      connectors: [],
+      roles: [],
+      userAssignments: {},
+      adminEmails: [],
+      projects: [project()],
+    })
+    const { POST } = await loadHandler()
+
+    const response = await POST(postRequest(null, "proj-a"))
+
+    expect(response.status).toBe(201)
+  })
 })
