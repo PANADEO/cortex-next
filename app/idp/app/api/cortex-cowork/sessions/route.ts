@@ -17,6 +17,10 @@ interface CreateSessionBody {
 /** Session summaries for a project (session switcher). */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const projectId = request.nextUrl.searchParams.get("projectId") ?? DEFAULT_COWORK_PROJECT_ID
+
+  const gate = await requireProjectAccess(request, projectId)
+  if (isDenied(gate)) return gate
+
   return NextResponse.json(await listSessionSummaries(projectId))
 }
 

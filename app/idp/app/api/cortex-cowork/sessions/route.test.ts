@@ -79,6 +79,46 @@ async function loadHandler() {
   return import("./route")
 }
 
+/** Non-bootstrap config with two projects, each scoped to a different role,
+ * so a requester who legitimately holds a role for proj-a is still denied
+ * proj-b - proves the GET gate scopes per-project, not "any role at all". */
+function closedConfigTwoProjects(): CoworkGovernanceConfig {
+  return {
+    version: 2,
+    departments: ["wspolne"],
+    skillSources: [],
+    connectors: [],
+    roles: [
+      { id: "analyst", name: "Analyst" },
+      { id: "manager", name: "Manager" },
+    ],
+    userAssignments: {
+      "owner@example.com": ["analyst"],
+      "other-owner@example.com": ["manager"],
+    },
+    adminEmails: ["admin@example.com"],
+    projects: [
+      project({ id: "proj-a", allowedRoleIds: ["analyst"] }),
+      project({ id: "proj-b", name: "Project B", allowedRoleIds: ["manager"] }),
+    ],
+  }
+}
+
+async function createSessionFor(projectId: string): Promise<string> {
+  const { createSandboxSession } = await import("@/features/cortex-cowork/server/sandbox-store")
+  const session = await createSandboxSession(project({ id: projectId }), [], 100_000)
+  return session.id
+}
+
+function getRequest(email: string | null, projectId: string): import("next/server").NextRequest {
+  const nextUrl = new URL(`http://localhost/api/cortex-cowork/sessions?projectId=${projectId}`)
+  const headers = new Headers()
+  if (email) headers.set("x-auth-request-email", email)
+  const request = new Request(nextUrl, { headers }) as Request & { nextUrl: URL }
+  request.nextUrl = nextUrl
+  return request as unknown as import("next/server").NextRequest
+}
+
 describe("POST /api/cortex-cowork/sessions", () => {
   it("closed/non-bootstrap mode: 403s a user without the project's role", async () => {
     await writeConfig(closedConfig())
@@ -146,5 +186,93 @@ describe("POST /api/cortex-cowork/sessions", () => {
     const response = await POST(postRequest(null, "proj-a"))
 
     expect(response.status).toBe(201)
+  })
+})
+
+// GET was left out of the original 4-handler pass (Obsidian task note,
+// "Poza zakresem") - called out there as the worst of the 5 out-of-scope
+// routes: it lists ALL sessions for a `?projectId=` query param with zero
+// identity check, and doesn't even require guessing a session UUID like the
+// other 4 do. Wired with the same requireProjectAccess() gate as POST above.
+describe("GET /api/cortex-cowork/sessions", () => {
+  it("closed/non-bootstrap mode: 403s a user without the project's role", async () => {
+    await writeConfig(closedConfig())
+    await createSessionFor("proj-a")
+    const { GET } = await loadHandler()
+
+    const response = await GET(getRequest("intruder@example.com", "proj-a"))
+
+    expect(response.status).toBe(403)
+  })
+
+  it("closed/non-bootstrap mode: 401s a request with no email header at all", async () => {
+    await writeConfig(closedConfig())
+    await createSessionFor("proj-a")
+    const { GET } = await loadHandler()
+
+    const response = await GET(getRequest(null, "proj-a"))
+
+    expect(response.status).toBe(401)
+  })
+
+  it("closed/non-bootstrap mode: the role holder lists their project's sessions (no regression)", async () => {
+    await writeConfig(closedConfig())
+    const sessionId = await createSessionFor("proj-a")
+    const { GET } = await loadHandler()
+
+    const response = await GET(getRequest("owner@example.com", "proj-a"))
+    const body = (await response.json()) as Array<{ id: string }>
+
+    expect(response.status).toBe(200)
+    expect(body.map((summary) => summary.id)).toContain(sessionId)
+  })
+
+  it("bootstrap/open mode: any authenticated user lists sessions unchanged", async () => {
+    await writeConfig({
+      version: 2,
+      departments: ["wspolne"],
+      skillSources: [],
+      connectors: [],
+      roles: [],
+      userAssignments: {},
+      adminEmails: [],
+      projects: [project()],
+    })
+    await createSessionFor("proj-a")
+    const { GET } = await loadHandler()
+
+    const response = await GET(getRequest("nobody-in-particular@example.com", "proj-a"))
+
+    expect(response.status).toBe(200)
+  })
+
+  // The headline scenario from the task note: a user with a real, valid role
+  // for a *different* project must not be able to enumerate proj-b's
+  // sessions just by typing its (often human-readable) projectId - no UUID
+  // guessing required, which is exactly what made this the most severe of
+  // the 5 out-of-scope routes.
+  it("closed/non-bootstrap mode: a role holder for proj-a cannot enumerate proj-b's sessions", async () => {
+    await writeConfig(closedConfigTwoProjects())
+    const projectBSessionId = await createSessionFor("proj-b")
+    const { GET } = await loadHandler()
+
+    const response = await GET(getRequest("owner@example.com", "proj-b"))
+    const body: unknown = await response.json()
+
+    expect(response.status).toBe(403)
+    // No session data of any kind leaked in the denial body.
+    expect(JSON.stringify(body)).not.toContain(projectBSessionId)
+  })
+
+  it("closed/non-bootstrap mode: a request with no identity at all cannot enumerate any project's sessions", async () => {
+    await writeConfig(closedConfigTwoProjects())
+    const projectBSessionId = await createSessionFor("proj-b")
+    const { GET } = await loadHandler()
+
+    const response = await GET(getRequest(null, "proj-b"))
+    const body: unknown = await response.json()
+
+    expect(response.status).toBe(401)
+    expect(JSON.stringify(body)).not.toContain(projectBSessionId)
   })
 })
