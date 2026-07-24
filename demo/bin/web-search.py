@@ -53,7 +53,10 @@ def extract_sources(data: dict, message: dict) -> list[str]:
     for annotation in message.get("annotations") or []:
         if not isinstance(annotation, dict) or annotation.get("type") != "url_citation":
             continue
-        url = (annotation.get("url_citation") or {}).get("url")
+        url_citation = annotation.get("url_citation")
+        if not isinstance(url_citation, dict):
+            continue
+        url = url_citation.get("url")
         if isinstance(url, str) and url not in urls:
             urls.append(url)
 
@@ -136,10 +139,39 @@ def main() -> int:
         print(f"Cortex Proxy request failed: {error}", file=sys.stderr)
         return 1
 
-    data = response.json()
-    message = (data.get("choices") or [{}])[0].get("message", {})
-    answer = message.get("content", "")
+    try:
+        data = response.json()
+    except ValueError as error:
+        print(f"Cortex Proxy returned a response that isn't valid JSON: {error}", file=sys.stderr)
+        return 1
+
+    if not isinstance(data, dict):
+        print(
+            f"Cortex Proxy returned an unexpected response shape (expected a JSON object, got {type(data).__name__}).",
+            file=sys.stderr,
+        )
+        return 1
+
+    choices = data.get("choices")
+    first_choice = choices[0] if isinstance(choices, list) and choices else {}
+    if not isinstance(first_choice, dict):
+        print(
+            "Cortex Proxy returned an unexpected response shape (choices[0] is not a JSON object).",
+            file=sys.stderr,
+        )
+        return 1
+
+    message = first_choice.get("message")
+    if not isinstance(message, dict):
+        message = {}
+    answer = message.get("content") or ""
+    if not isinstance(answer, str):
+        answer = str(answer)
     sources = extract_sources(data, message)
+
+    if not answer.strip() and not sources:
+        print("Cortex Proxy returned an empty response: no answer content and no citations.", file=sys.stderr)
+        return 1
 
     print(answer.strip())
     if sources:
