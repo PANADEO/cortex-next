@@ -141,15 +141,27 @@ def extract_image_data_uri(data: dict) -> str | None:
     precedent for this exact model/path):
     `choices[0].message.images[0].image_url.url`, an OpenAI-compatible
     chat-completions extension for `modalities: ["image", "text"]` responses.
+
+    Every access point is isinstance-guarded because cortex-proxy/OpenRouter
+    is an external boundary: a malformed or unexpected-shape response must
+    surface as None (-> a clean "no image data" message in main()), not an
+    uncaught AttributeError.
     """
-    choices = data.get("choices") or []
-    if not choices:
+    choices = data.get("choices")
+    first_choice = choices[0] if isinstance(choices, list) and choices else None
+    if not isinstance(first_choice, dict):
         return None
-    message = choices[0].get("message") or {}
-    images = message.get("images") or []
-    if not images:
+    message = first_choice.get("message")
+    if not isinstance(message, dict):
         return None
-    url = (images[0].get("image_url") or {}).get("url")
+    images = message.get("images")
+    first_image = images[0] if isinstance(images, list) and images else None
+    if not isinstance(first_image, dict):
+        return None
+    image_url = first_image.get("image_url")
+    if not isinstance(image_url, dict):
+        return None
+    url = image_url.get("url")
     return url if isinstance(url, str) else None
 
 
@@ -211,7 +223,19 @@ def main() -> int:
         print(f"Cortex Proxy request failed: {error}", file=sys.stderr)
         return 1
 
-    data = response.json()
+    try:
+        data = response.json()
+    except ValueError as error:
+        print(f"Cortex Proxy returned a response that isn't valid JSON: {error}", file=sys.stderr)
+        return 1
+
+    if not isinstance(data, dict):
+        print(
+            f"Cortex Proxy returned an unexpected response shape (expected a JSON object, got {type(data).__name__}).",
+            file=sys.stderr,
+        )
+        return 1
+
     image_url = extract_image_data_uri(data)
     if not image_url:
         print(
