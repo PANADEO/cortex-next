@@ -156,6 +156,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   return (
     <AppGate tileId={requiredTileId}>
       <AppShell
+        className="cortex-chrome"
         sidebarCollapsed={collapsed}
         {...(isBoardRoute ? { mainClassName: "overflow-hidden" } : {})}
         sidebar={

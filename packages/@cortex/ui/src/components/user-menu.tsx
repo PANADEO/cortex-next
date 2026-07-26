@@ -46,7 +46,7 @@ export function UserMenu({ user }: UserMenuProps) {
           aria-label="User menu"
         >
           <Avatar className="h-7 w-7">
-            <AvatarFallback className="bg-muted text-[10px] font-semibold">
+            <AvatarFallback className="bg-muted text-[11px] font-semibold">
               {initials(user?.name ?? null, user?.email ?? null)}
             </AvatarFallback>
           </Avatar>

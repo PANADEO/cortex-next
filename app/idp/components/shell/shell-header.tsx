@@ -27,7 +27,7 @@ export function ShellHeader() {
   const shellUser = useShellUser()
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur">
+    <header className="ch-shellbar sticky top-0 z-30">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-6">
         <div className="flex shrink-0 items-center gap-2.5">
           <Image
