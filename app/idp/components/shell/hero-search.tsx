@@ -10,59 +10,65 @@ interface HeroSearchProps {
   onChange: (value: string) => void
   view: HeroView
   onViewChange: (view: HeroView) => void
+  tileCount: number
+  categoryCount: number
 }
 
-export function HeroSearch({ value, onChange, view, onViewChange }: HeroSearchProps) {
+export function HeroSearch({
+  value,
+  onChange,
+  view,
+  onViewChange,
+  tileCount,
+  categoryCount,
+}: HeroSearchProps) {
   return (
-    <section className="mb-8 text-center">
-      <h1 className="text-xl font-semibold">Enterprise AI Hub</h1>
-      <p className="mt-0.5 text-xs text-muted-foreground">
-        Wybierz aplikację, której chcesz użyć
-      </p>
+    <header className="ch-mast">
+      <div className="ch-mast-row">
+        <div className="ch-mast-head">
+          <h1 className="ch-title">Enterprise AI Hub</h1>
+          <p className="ch-sub">Wybierz aplikację, której chcesz użyć</p>
+        </div>
 
-      <div className="mx-auto mt-4 max-w-xl">
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 shadow-sm focus-within:ring-2 focus-within:ring-ring">
-          <Search className="h-4 w-4 text-muted-foreground" />
+        <div className="ch-search">
+          <Search className="ch-search-icon" aria-hidden="true" />
           <input
             type="text"
             placeholder="Szukaj aplikacji…"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            className="ch-search-input"
             aria-label="Szukaj aplikacji"
           />
-          <span className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-            ⌘K
-          </span>
+          <span className="ch-search-kbd">⌘K</span>
         </div>
       </div>
 
-      <div className="mt-3 inline-flex rounded-md border border-border bg-card p-0.5">
-        <button
-          type="button"
-          onClick={() => onViewChange("functional")}
-          className={cn(
-            "rounded px-3 py-1 text-xs font-medium transition-colors",
-            view === "functional"
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          Funkcjonalnie
-        </button>
-        <button
-          type="button"
-          onClick={() => onViewChange("department")}
-          className={cn(
-            "rounded px-3 py-1 text-xs font-medium transition-colors",
-            view === "department"
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          Wg działu
-        </button>
+      <div className="ch-rule" aria-hidden="true" />
+
+      <div className="ch-meta">
+        <span>
+          Narzędzia: {tileCount} · Kategorie: {categoryCount}
+        </span>
+        <span className="ch-view" role="group" aria-label="Sposób grupowania">
+          <button
+            type="button"
+            onClick={() => onViewChange("functional")}
+            aria-pressed={view === "functional"}
+            className={cn("ch-view-btn", view === "functional" && "is-active")}
+          >
+            Funkcjonalnie
+          </button>
+          <button
+            type="button"
+            onClick={() => onViewChange("department")}
+            aria-pressed={view === "department"}
+            className={cn("ch-view-btn", view === "department" && "is-active")}
+          >
+            Wg działu
+          </button>
+        </span>
       </div>
-    </section>
+    </header>
   )
 }

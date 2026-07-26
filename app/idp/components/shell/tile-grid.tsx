@@ -134,6 +134,18 @@ export function TileGrid({ tileHrefOverrides }: TileGridProps = {}) {
     setActiveCategory("all")
   }
 
+  // Pusty string, a nie etykieta zastępcza: kafelek bez kategorii istnieje
+  // realnie (`document-parser`, `visual-guru` — manifest bez pól
+  // prezentacyjnych, plus każdy kafelek założony z UI), a `categoryFunctional`
+  // jest tu nullowalne, inaczej niż na `main`, skąd ten kod przyszedł.
+  const categoryTagFor = (tile: Tile): string => {
+    if (view === "functional") {
+      return tile.categoryFunctional ? categoryLabel(view, tile.categoryFunctional) : ""
+    }
+    const first = tile.categoryDepartment[0]
+    return first ? categoryLabel(view, first) : ""
+  }
+
   // Katalog jeszcze nie wrócił z GET /api/hub/tiles — bez tego pierwszy render
   // pokazywałby przez moment "Nie znaleziono aplikacji" (visibleTiles.length
   // === 0 podczas ładowania), nieodróżnialne od realnego braku wyników
@@ -160,37 +172,46 @@ export function TileGrid({ tileHrefOverrides }: TileGridProps = {}) {
         onChange={setSearchQuery}
         view={view}
         onViewChange={handleViewChange}
+        tileCount={authorizedTiles.length}
+        categoryCount={visibleCategories.length}
       />
-      <CategoryTabs
-        totalCount={searchedTiles.length}
-        favoritesCount={favoritesCount}
-        categories={visibleCategories}
-        activeId={activeCategory}
-        onSelect={setActiveCategory}
-      />
-      {visibleTiles.length === 0 ? (
-        <EmptyState
-          icon={Search}
-          title="Nie znaleziono aplikacji"
-          description="Spróbuj zmienić zapytanie lub wyczyścić filtry."
-          action={
-            <Button variant="outline" size="sm" onClick={handleClearFilters}>
-              Wyczyść filtry
-            </Button>
-          }
+      <div className="ch-workspace">
+        <CategoryTabs
+          totalCount={searchedTiles.length}
+          favoritesCount={favoritesCount}
+          categories={visibleCategories}
+          activeId={activeCategory}
+          onSelect={setActiveCategory}
         />
-      ) : (
-        <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {visibleTiles.map((tile) => (
-            <TileCard
-              key={tile.id}
-              tile={tile}
-              isFavorite={favorites.includes(tile.id)}
-              onToggleFavorite={toggleFavorite}
+        {visibleTiles.length === 0 ? (
+          <section className="ch-panel">
+            <EmptyState
+              icon={Search}
+              title="Nie znaleziono aplikacji"
+              description="Spróbuj zmienić zapytanie lub wyczyścić filtry."
+              className="ch-empty"
+              action={
+                <Button variant="outline" size="sm" onClick={handleClearFilters}>
+                  Wyczyść filtry
+                </Button>
+              }
             />
-          ))}
-        </section>
-      )}
+          </section>
+        ) : (
+          <section className="ch-panel ch-grid grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {visibleTiles.map((tile, index) => (
+              <TileCard
+                key={tile.id}
+                tile={tile}
+                isFavorite={favorites.includes(tile.id)}
+                onToggleFavorite={toggleFavorite}
+                categoryTag={categoryTagFor(tile)}
+                index={index}
+              />
+            ))}
+          </section>
+        )}
+      </div>
     </>
   )
 }

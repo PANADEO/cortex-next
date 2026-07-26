@@ -12,11 +12,11 @@ interface AuthedHomeProps {
 
 export function AuthedHome({ tileHrefOverrides }: AuthedHomeProps) {
   return (
-    <div className="relative flex min-h-screen flex-col bg-background text-foreground">
+    <div className="cortex-home relative flex min-h-screen flex-col bg-background text-foreground">
       <DotGrid animate={false} />
       <ShellHeader />
       <main className="relative flex-1">
-        <div className="mx-auto max-w-7xl px-6 pb-20 pt-9">
+        <div className="ch-scope mx-auto max-w-7xl px-6 pb-20 pt-9">
           <TileGrid tileHrefOverrides={tileHrefOverrides} />
         </div>
       </main>
