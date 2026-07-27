@@ -284,6 +284,24 @@ describe("intrastatApi", () => {
     })
   })
 
+  it("updates whether a declaration line is included in the XLSX export", async () => {
+    const fetchMock = mockJsonFetch({ id: "line-1", alerts: [], is_excluded: true })
+
+    await intrastatApi.patchLine("line-1", {
+      is_excluded: true,
+      exclusion_reason: "manual-exclusion",
+    })
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("/intrastat/api/lines/line-1")
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
+      method: "PATCH",
+      body: JSON.stringify({
+        is_excluded: true,
+        exclusion_reason: "manual-exclusion",
+      }),
+    })
+  })
+
   it("hides missing-field alerts when the declaration line has a final value", async () => {
     mockJsonFetch({
       items: [

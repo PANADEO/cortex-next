@@ -90,6 +90,22 @@ const line: IntrastatDeclarationLine = {
   updated_at: "2026-07-23T10:00:00Z",
 }
 
+const excludedCorrectionLine: IntrastatDeclarationLine = {
+  ...line,
+  id: "line-excluded",
+  invoice_id: "invoice-correction",
+  lp: 2,
+  invoice_number: "KOR/1",
+  document_type: "correction",
+  corrected_invoice_number: "FV/1",
+  corrected_invoice_date: "2026-07-23",
+  correction_reason: "Quantity correction",
+  correction_side: "before",
+  is_excluded: true,
+  exclusion_reason: "correction-before-version",
+  source_file: "correction.pdf",
+}
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: routerPush,
@@ -113,7 +129,7 @@ vi.mock("@/lib/intrastat/hooks", () => ({
     isFetching: false,
   }),
   useIntrastatLines: () => ({
-    data: { items: [line], total: 1, limit: 100, offset: 0 },
+    data: { items: [line, excludedCorrectionLine], total: 2, limit: 100, offset: 0 },
     isFetching: false,
     isPending: false,
   }),
@@ -155,6 +171,11 @@ vi.mock("@/components/intrastat/delete-batch-button", () => ({
   IntrastatDeleteBatchButton: () => <button type="button">Delete batch</button>,
 }))
 
+vi.mock("@/components/intrastat/correction-info", () => ({
+  IntrastatCorrectionInfo: ({ line: selectedLine }: { line: IntrastatDeclarationLine }) =>
+    selectedLine.document_type === "correction" ? <span>Correction</span> : null,
+}))
+
 vi.mock("@/components/intrastat/line-details-dialog", () => ({
   IntrastatLineDetailsDialog: ({
     line: selectedLine,
@@ -193,6 +214,22 @@ vi.mock("@cortex/ui", () => ({
     <button type="button" {...props}>
       {children}
     </button>
+  ),
+  Checkbox: ({
+    checked,
+    onCheckedChange,
+    ...props
+  }: Omit<InputHTMLAttributes<HTMLInputElement>, "checked" | "onChange"> & {
+    checked?: boolean | "indeterminate"
+    onCheckedChange?: (checked: boolean) => void
+  }) => (
+    <input
+      {...props}
+      type="checkbox"
+      checked={checked === true}
+      aria-checked={checked === "indeterminate" ? "mixed" : checked}
+      onChange={(event) => onCheckedChange?.(event.target.checked)}
+    />
   ),
   DataTable: ({
     columns,
@@ -351,6 +388,47 @@ describe("IntrastatReviewPage line actions", () => {
     await user.click(screen.getByRole("button", { name: "View line line-1" }))
 
     expect(screen.getByText("Details for line-1")).toBeInTheDocument()
+  })
+
+  it("excludes a selected line from the XLSX export without removing it from review", async () => {
+    const user = userEvent.setup()
+    window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
+    render(<IntrastatReviewPage />)
+
+    await user.click(screen.getByRole("checkbox", { name: "Select line line-1" }))
+    await user.click(screen.getByRole("button", { name: "Exclude from XLSX (1)" }))
+
+    await waitFor(() =>
+      expect(patchLine).toHaveBeenCalledWith({
+        lineId: "line-1",
+        payload: {
+          is_excluded: true,
+          exclusion_reason: "manual-exclusion",
+        },
+      }),
+    )
+    expect(screen.getByText("FV/1")).toBeInTheDocument()
+  })
+
+  it("restores an excluded correction line to the XLSX export", async () => {
+    const user = userEvent.setup()
+    window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
+    render(<IntrastatReviewPage />)
+
+    expect(screen.getByText("Excluded from XLSX")).toBeInTheDocument()
+    await user.click(screen.getByRole("checkbox", { name: "Select line line-excluded" }))
+    await user.click(screen.getByRole("button", { name: "Restore to XLSX (1)" }))
+
+    await waitFor(() =>
+      expect(patchLine).toHaveBeenCalledWith({
+        lineId: "line-excluded",
+        payload: {
+          is_excluded: false,
+          exclusion_reason: null,
+        },
+      }),
+    )
+    expect(screen.getByText("KOR/1")).toBeInTheDocument()
   })
 
   it("saves an edited mapping to the CN database for an authorized user", async () => {

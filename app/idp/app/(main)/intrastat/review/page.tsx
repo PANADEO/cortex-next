@@ -32,6 +32,7 @@ import type {
 import { useAuthorizedApps } from "@cortex/api"
 import {
   Button,
+  Checkbox,
   DataTable,
   EmptyState,
   Input,
@@ -71,6 +72,7 @@ const PAGE_SIZE = 100
 const CN_EDITOR_APP_CODE = "intrastat-cn-editor"
 const PREVIEW_VISIBLE_STORAGE_KEY = "intrastat.review.documentPreviewVisible"
 const PREVIEW_SPLIT_STORAGE_KEY = "intrastat-review-document-preview-split"
+const MANUAL_EXCLUSION_REASON = "manual-exclusion"
 const MATCH_OPTIONS: Array<{ value: IntrastatCnMatchStatus | "all"; label: string }> = [
   { value: "all", label: "All match statuses" },
   { value: "exact", label: "Exact" },
@@ -119,6 +121,8 @@ export default function IntrastatReviewPage() {
   const [cnSuggestionsOpen, setCnSuggestionsOpen] = useState(false)
   const [selectedSourceFile, setSelectedSourceFile] = useState<string | null>(null)
   const [documentPreviewVisible, setDocumentPreviewVisible] = useState(true)
+  const [selectedLineIds, setSelectedLineIds] = useState<Set<string>>(new Set())
+  const [isUpdatingExport, setIsUpdatingExport] = useState(false)
   const access = useAuthorizedApps()
   const batches = useIntrastatBatches({ limit: 100, offset: 0 })
   const selectedBatch = useIntrastatBatch(batchId)
@@ -169,6 +173,20 @@ export default function IntrastatReviewPage() {
   }, [batchId, batches.data?.items])
 
   const items = useMemo(() => lines.data?.items ?? [], [lines.data?.items])
+  const selectedLines = useMemo(
+    () => items.filter((line) => selectedLineIds.has(line.id)),
+    [items, selectedLineIds],
+  )
+  const selectedIncludedLines = useMemo(
+    () => selectedLines.filter((line) => !line.is_excluded),
+    [selectedLines],
+  )
+  const selectedExcludedLines = useMemo(
+    () => selectedLines.filter((line) => line.is_excluded),
+    [selectedLines],
+  )
+  const allVisibleSelected = items.length > 0 && items.every((line) => selectedLineIds.has(line.id))
+  const someVisibleSelected = items.some((line) => selectedLineIds.has(line.id))
   const tableItems = useMemo(() => {
     if (editor?.mode !== "create") return items
     const referenceIndex = items.findIndex((line) => line.id === editor.referenceLineId)
@@ -184,6 +202,7 @@ export default function IntrastatReviewPage() {
     editor?.form.item_index.trim() && cn8 && editor.form.description.trim(),
   )
   const mutationsDisabled =
+    isUpdatingExport ||
     Boolean(editor) ||
     selectedBatch.data?.status === "queued" ||
     selectedBatch.data?.status === "processing"
@@ -219,6 +238,67 @@ export default function IntrastatReviewPage() {
   const handleCancelEdit = () => {
     setCnSuggestionsOpen(false)
     setEditor(null)
+  }
+
+  const handleLineSelection = (lineId: string, selected: boolean) => {
+    setSelectedLineIds((current) => {
+      const next = new Set(current)
+      if (selected) next.add(lineId)
+      else next.delete(lineId)
+      return next
+    })
+  }
+
+  const handleSelectAllVisible = (selected: boolean) => {
+    setSelectedLineIds((current) => {
+      const next = new Set(current)
+      for (const line of items) {
+        if (selected) next.add(line.id)
+        else next.delete(line.id)
+      }
+      return next
+    })
+  }
+
+  const handleExportStateChange = async (
+    targetLines: IntrastatDeclarationLine[],
+    isExcluded: boolean,
+  ) => {
+    if (targetLines.length === 0) return
+    setIsUpdatingExport(true)
+    try {
+      await Promise.all(
+        targetLines.map((line) =>
+          patchLine.mutateAsync({
+            lineId: line.id,
+            payload: {
+              is_excluded: isExcluded,
+              exclusion_reason: isExcluded ? MANUAL_EXCLUSION_REASON : null,
+            },
+          }),
+        ),
+      )
+      const changedIds = new Set(targetLines.map((line) => line.id))
+      setSelectedLineIds((current) => {
+        const next = new Set(current)
+        for (const lineId of changedIds) next.delete(lineId)
+        return next
+      })
+      toast.success(
+        `${targetLines.length} line${targetLines.length === 1 ? "" : "s"} ${
+          isExcluded ? "excluded from" : "restored to"
+        } XLSX export`,
+      )
+    } catch (error) {
+      toast.error(
+        formatIntrastatError(
+          error,
+          isExcluded ? "Excluding lines failed" : "Restoring lines failed",
+        ),
+      )
+    } finally {
+      setIsUpdatingExport(false)
+    }
   }
 
   const handleSuggestionSelect = (suggestion: IntrastatCnSuggestion) => {
@@ -344,13 +424,30 @@ export default function IntrastatReviewPage() {
   const columns: ColumnDef<IntrastatDeclarationLine>[] = [
     {
       id: "actions",
-      header: "",
+      header: () => (
+        <Checkbox
+          aria-label="Select all visible lines"
+          checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
+          disabled={mutationsDisabled || items.length === 0}
+          onCheckedChange={(checked) => handleSelectAllVisible(checked === true)}
+        />
+      ),
       size: 180,
       cell: ({ row }) => {
         const isActive = editor?.line.id === row.original.id
+        const selectionCheckbox = (
+          <Checkbox
+            aria-label={`Select line ${row.original.id}`}
+            checked={selectedLineIds.has(row.original.id)}
+            disabled={mutationsDisabled || isDraftLine(row.original)}
+            onCheckedChange={(checked) => handleLineSelection(row.original.id, checked === true)}
+            onClick={(event) => event.stopPropagation()}
+          />
+        )
         if (isActive) {
           return (
             <div className="flex items-center gap-1">
+              {selectionCheckbox}
               <Button
                 size="sm"
                 variant="ghost"
@@ -401,6 +498,7 @@ export default function IntrastatReviewPage() {
         }
         return (
           <div className="flex items-center gap-1">
+            {selectionCheckbox}
             <Button
               size="sm"
               variant="ghost"
@@ -616,6 +714,26 @@ export default function IntrastatReviewPage() {
         ),
     },
     {
+      id: "export_status",
+      header: "Export",
+      size: 150,
+      cell: ({ row }) =>
+        row.original.is_excluded ? (
+          <span
+            className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground"
+            title={row.original.exclusion_reason ?? "Excluded from XLSX"}
+          >
+            <EyeOff className="h-4 w-4" aria-hidden="true" />
+            Excluded from XLSX
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs">
+            <Check className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+            Included
+          </span>
+        ),
+    },
+    {
       accessorKey: "cn_match_status",
       header: "Match",
       size: 140,
@@ -667,6 +785,7 @@ export default function IntrastatReviewPage() {
 
   const handleBatchChange = (nextBatchId: string) => {
     handleCancelEdit()
+    setSelectedLineIds(new Set())
     setBatchId(nextBatchId)
     setPage(0)
     setSelectedSourceFile(null)
@@ -795,6 +914,7 @@ export default function IntrastatReviewPage() {
                   placeholder="Search invoice, index, CN..."
                   value={search}
                   onChange={(event) => {
+                    setSelectedLineIds(new Set())
                     setPage(0)
                     setSearch(event.target.value)
                   }}
@@ -806,6 +926,7 @@ export default function IntrastatReviewPage() {
                 value={matchStatus}
                 disabled={Boolean(editor)}
                 onValueChange={(value) => {
+                  setSelectedLineIds(new Set())
                   setPage(0)
                   setMatchStatus(value as IntrastatCnMatchStatus | "all")
                 }}
@@ -821,6 +942,34 @@ export default function IntrastatReviewPage() {
                   ))}
                 </SelectContent>
               </Select>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={mutationsDisabled || selectedIncludedLines.length === 0}
+                onClick={() => void handleExportStateChange(selectedIncludedLines, true)}
+              >
+                {isUpdatingExport ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <EyeOff className="mr-2 h-4 w-4" />
+                )}
+                Exclude from XLSX
+                {selectedIncludedLines.length > 0 ? ` (${selectedIncludedLines.length})` : ""}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={mutationsDisabled || selectedExcludedLines.length === 0}
+                onClick={() => void handleExportStateChange(selectedExcludedLines, false)}
+              >
+                {isUpdatingExport ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Eye className="mr-2 h-4 w-4" />
+                )}
+                Restore to XLSX
+                {selectedExcludedLines.length > 0 ? ` (${selectedExcludedLines.length})` : ""}
+              </Button>
               <div className="ml-auto text-xs text-muted-foreground">
                 {lines.isFetching ? "Refreshing..." : `${total} total`}
               </div>
@@ -861,7 +1010,14 @@ export default function IntrastatReviewPage() {
                 Save or cancel the active line before changing pages.
               </p>
             ) : (
-              <Pagination page={page} pageCount={pageCount} onChange={setPage} />
+              <Pagination
+                page={page}
+                pageCount={pageCount}
+                onChange={(nextPage) => {
+                  setSelectedLineIds(new Set())
+                  setPage(nextPage)
+                }}
+              />
             )}
           </Panel>
 

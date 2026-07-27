@@ -172,6 +172,8 @@ export interface IntrastatLinePatchRequest {
   quantity?: number | null
   value?: number | null
   currency?: string | null
+  is_excluded?: boolean
+  exclusion_reason?: string | null
 }
 
 export interface IntrastatLineCreateRequest extends IntrastatLinePatchRequest {
