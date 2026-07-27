@@ -34,6 +34,12 @@ import {
   Button,
   Checkbox,
   DataTable,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   EmptyState,
   Input,
   PageHeader,
@@ -43,6 +49,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Textarea,
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -73,6 +80,7 @@ const CN_EDITOR_APP_CODE = "intrastat-cn-editor"
 const PREVIEW_VISIBLE_STORAGE_KEY = "intrastat.review.documentPreviewVisible"
 const PREVIEW_SPLIT_STORAGE_KEY = "intrastat-review-document-preview-split"
 const MANUAL_EXCLUSION_REASON = "manual-exclusion"
+const MAX_AI_CONTEXT_LENGTH = 4000
 const MATCH_OPTIONS: Array<{ value: IntrastatCnMatchStatus | "all"; label: string }> = [
   { value: "all", label: "All match statuses" },
   { value: "exact", label: "Exact" },
@@ -123,6 +131,8 @@ export default function IntrastatReviewPage() {
   const [documentPreviewVisible, setDocumentPreviewVisible] = useState(true)
   const [selectedLineIds, setSelectedLineIds] = useState<Set<string>>(new Set())
   const [isUpdatingExport, setIsUpdatingExport] = useState(false)
+  const [reprocessOpen, setReprocessOpen] = useState(false)
+  const [additionalAiContext, setAdditionalAiContext] = useState("")
   const access = useAuthorizedApps()
   const batches = useIntrastatBatches({ limit: 100, offset: 0 })
   const selectedBatch = useIntrastatBatch(batchId)
@@ -818,11 +828,20 @@ export default function IntrastatReviewPage() {
     })
   }
 
+  const handleOpenReprocess = () => {
+    setAdditionalAiContext(selectedBatch.data?.additional_ai_context ?? "")
+    setReprocessOpen(true)
+  }
+
   const handleReprocess = async () => {
     if (!batchId) return
     try {
-      await reprocess.mutateAsync(batchId)
+      await reprocess.mutateAsync({
+        batchId,
+        additionalAiContext: additionalAiContext.trim() || null,
+      })
       toast.success("Batch queued for reprocessing")
+      setReprocessOpen(false)
     } catch {
       toast.error("Batch reprocess failed")
     }
@@ -846,7 +865,7 @@ export default function IntrastatReviewPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={handleReprocess}
+              onClick={handleOpenReprocess}
               disabled={!batchId || reprocess.isPending || Boolean(editor)}
             >
               {reprocess.isPending ? (
@@ -866,6 +885,56 @@ export default function IntrastatReviewPage() {
           </div>
         }
       />
+
+      <Dialog
+        open={reprocessOpen}
+        onOpenChange={(open) => {
+          if (!reprocess.isPending) setReprocessOpen(open)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reprocess with AI instructions</DialogTitle>
+            <DialogDescription>
+              Run extraction again for all source documents in this batch. Current extracted lines
+              and manual corrections will be replaced.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label htmlFor="intrastat-reprocess-ai-context" className="text-sm font-medium">
+              Additional AI instructions
+            </label>
+            <Textarea
+              id="intrastat-reprocess-ai-context"
+              value={additionalAiContext}
+              onChange={(event) => setAdditionalAiContext(event.target.value)}
+              maxLength={MAX_AI_CONTEXT_LENGTH}
+              className="min-h-32 resize-y"
+              placeholder="For example: Merge each invoice with its matching packing list and treat them as one document. Use the packing list to supplement missing invoice data."
+            />
+            <p className="text-right text-xs text-muted-foreground">
+              {additionalAiContext.length} / {MAX_AI_CONTEXT_LENGTH}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setReprocessOpen(false)}
+              disabled={reprocess.isPending}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleReprocess} disabled={reprocess.isPending || !batchId}>
+              {reprocess.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <PlayCircle className="mr-2 h-4 w-4" />
+              )}
+              Reprocess batch
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="min-h-0 flex-1 overflow-hidden px-8 py-6">
         <PanelGroup

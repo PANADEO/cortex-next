@@ -57,6 +57,21 @@ describe("intrastatApi", () => {
     expect(options).toEqual({ clients: ["Jabil"], months: ["Czerwiec 2026"] })
   })
 
+  it("sends additional AI context when reprocessing a batch", async () => {
+    const fetchMock = mockJsonFetch({
+      id: "batch-1",
+      status: "queued",
+      additional_ai_context: "Merge matching documents.",
+    })
+    const payload = { additional_ai_context: "Merge matching documents." }
+
+    await intrastatApi.reprocessBatch("batch-1", payload)
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("/intrastat/api/batches/batch-1/reprocess")
+    expect(fetchMock.mock.calls[0]?.[1]?.method).toBe("POST")
+    expect(fetchMock.mock.calls[0]?.[1]?.body).toBe(JSON.stringify(payload))
+  })
+
   it("loads filesystem preview", async () => {
     const fetchMock = mockJsonFetch({
       configured: true,

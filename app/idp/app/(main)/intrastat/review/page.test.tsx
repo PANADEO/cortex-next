@@ -1,21 +1,35 @@
 // @vitest-environment jsdom
 import type { IntrastatDeclarationLine } from "@/lib/intrastat/types"
 import "@testing-library/jest-dom/vitest"
-import { cleanup, render, screen, waitFor } from "@testing-library/react"
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, ReactNode } from "react"
+import type {
+  ButtonHTMLAttributes,
+  HTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  TextareaHTMLAttributes,
+} from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import IntrastatReviewPage from "./page"
 
-const { authorizedApps, createLine, patchLine, routerPush, routerReplace, upsertCnResourceRow } =
-  vi.hoisted(() => ({
-    authorizedApps: { value: ["intrastat", "intrastat-cn-editor"] as string[] },
-    createLine: vi.fn(),
-    patchLine: vi.fn(),
-    routerPush: vi.fn(),
-    routerReplace: vi.fn(),
-    upsertCnResourceRow: vi.fn(),
-  }))
+const {
+  authorizedApps,
+  createLine,
+  patchLine,
+  reprocessBatch,
+  routerPush,
+  routerReplace,
+  upsertCnResourceRow,
+} = vi.hoisted(() => ({
+  authorizedApps: { value: ["intrastat", "intrastat-cn-editor"] as string[] },
+  createLine: vi.fn(),
+  patchLine: vi.fn(),
+  reprocessBatch: vi.fn(),
+  routerPush: vi.fn(),
+  routerReplace: vi.fn(),
+  upsertCnResourceRow: vi.fn(),
+}))
 
 const batches = [
   {
@@ -33,6 +47,7 @@ const batches = [
     created_at: "2026-06-01T10:00:00Z",
     updated_at: "2026-06-01T10:00:00Z",
     documents: [],
+    additional_ai_context: null,
   },
   {
     id: "batch-2",
@@ -49,6 +64,7 @@ const batches = [
     created_at: "2026-07-01T10:00:00Z",
     updated_at: "2026-07-01T10:00:00Z",
     documents: [],
+    additional_ai_context: null,
   },
 ]
 
@@ -147,7 +163,7 @@ vi.mock("@/lib/intrastat/hooks", () => ({
   }),
   useIntrastatReprocessBatch: () => ({
     isPending: false,
-    mutateAsync: vi.fn(),
+    mutateAsync: reprocessBatch,
   }),
   useIntrastatUpsertCnResourceRow: () => ({
     isPending: false,
@@ -262,6 +278,13 @@ vi.mock("@cortex/ui", () => ({
       </tbody>
     </table>
   ),
+  Dialog: ({ children, open }: { children?: ReactNode; open?: boolean }) =>
+    open ? <div role="dialog">{children}</div> : null,
+  DialogContent: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+  DialogDescription: ({ children }: { children?: ReactNode }) => <p>{children}</p>,
+  DialogFooter: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+  DialogHeader: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+  DialogTitle: ({ children }: { children?: ReactNode }) => <h2>{children}</h2>,
   EmptyState: ({ title }: { title: string }) => <div>{title}</div>,
   Input: (props: InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
   PageHeader: ({ actions, title }: { actions?: ReactNode; title: string }) => (
@@ -284,6 +307,7 @@ vi.mock("@cortex/ui", () => ({
     <button type="button">{children}</button>
   ),
   SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
+  Textarea: (props: TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea {...props} />,
   Tooltip: ({ children }: { children?: ReactNode }) => <>{children}</>,
   TooltipContent: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
   TooltipProvider: ({ children }: { children?: ReactNode }) => <>{children}</>,
@@ -300,6 +324,7 @@ beforeEach(() => {
   authorizedApps.value = ["intrastat", "intrastat-cn-editor"]
   patchLine.mockReset().mockResolvedValue(line)
   createLine.mockReset().mockResolvedValue({ ...line, id: "line-2", item_index: "NEW-100" })
+  reprocessBatch.mockReset().mockResolvedValue(batches[0])
   upsertCnResourceRow.mockReset().mockResolvedValue({})
 })
 
@@ -326,6 +351,27 @@ describe("IntrastatReviewPage batch selection", () => {
 })
 
 describe("IntrastatReviewPage line actions", () => {
+  it("reprocesses the batch with trimmed additional AI instructions", async () => {
+    const user = userEvent.setup()
+    window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
+    render(<IntrastatReviewPage />)
+
+    await user.click(screen.getByRole("button", { name: "Reprocess" }))
+    const dialog = screen.getByRole("dialog")
+    const instructions = within(dialog).getByRole("textbox", {
+      name: "Additional AI instructions",
+    })
+    await user.type(instructions, "  Merge the invoice with its packing list.  ")
+    await user.click(within(dialog).getByRole("button", { name: "Reprocess batch" }))
+
+    await waitFor(() =>
+      expect(reprocessBatch).toHaveBeenCalledWith({
+        batchId: "batch-1",
+        additionalAiContext: "Merge the invoice with its packing list.",
+      }),
+    )
+  })
+
   it("keeps the actions column first and sticky on the left", () => {
     window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
     render(<IntrastatReviewPage />)

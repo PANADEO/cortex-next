@@ -370,7 +370,16 @@ export function useIntrastatCreateLine(batchId: string) {
 export function useIntrastatReprocessBatch() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: intrastatApi.reprocessBatch,
+    mutationFn: ({
+      batchId,
+      additionalAiContext,
+    }: {
+      batchId: string
+      additionalAiContext: string | null
+    }) =>
+      intrastatApi.reprocessBatch(batchId, {
+        additional_ai_context: additionalAiContext,
+      }),
     onSuccess: (batch) => {
       client.setQueryData(intrastatQueryKeys.batchDetail(batch.id), batch)
       invalidateIntrastatMetadata(client)

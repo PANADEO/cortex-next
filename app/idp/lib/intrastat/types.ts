@@ -64,6 +64,7 @@ export interface IntrastatDocument {
 
 export interface IntrastatBatchDetail extends IntrastatBatchSummary {
   documents: IntrastatDocument[]
+  additional_ai_context: string | null
 }
 
 export interface IntrastatBatchListResponse {
@@ -76,6 +77,10 @@ export interface IntrastatBatchListResponse {
 export interface IntrastatBatchFilterOptionsResponse {
   clients: string[]
   months: string[]
+}
+
+export interface IntrastatReprocessBatchRequest {
+  additional_ai_context: string | null
 }
 
 export interface IntrastatFilesystemClient {

@@ -18,6 +18,7 @@ import type {
   IntrastatLineListResponse,
   IntrastatLinePatchRequest,
   IntrastatPollResponse,
+  IntrastatReprocessBatchRequest,
   IntrastatResourceInfo,
   IntrastatResourceUploadResponse,
   IntrastatSettings,
@@ -358,9 +359,11 @@ export const intrastatApi = {
     })
     if (!response.ok) throw await intrastatErrorFromResponse(response)
   },
-  reprocessBatch: (id: string) =>
+  reprocessBatch: (id: string, payload: IntrastatReprocessBatchRequest) =>
     request<IntrastatBatchDetail>(`/batches/${id}/reprocess`, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     }),
   lines: (
     batchId: string,
