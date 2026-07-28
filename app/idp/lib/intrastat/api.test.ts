@@ -57,6 +57,21 @@ describe("intrastatApi", () => {
     expect(options).toEqual({ clients: ["Jabil"], months: ["Czerwiec 2026"] })
   })
 
+  it("sends additional AI context when reprocessing a batch", async () => {
+    const fetchMock = mockJsonFetch({
+      id: "batch-1",
+      status: "queued",
+      additional_ai_context: "Merge matching documents.",
+    })
+    const payload = { additional_ai_context: "Merge matching documents." }
+
+    await intrastatApi.reprocessBatch("batch-1", payload)
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("/intrastat/api/batches/batch-1/reprocess")
+    expect(fetchMock.mock.calls[0]?.[1]?.method).toBe("POST")
+    expect(fetchMock.mock.calls[0]?.[1]?.body).toBe(JSON.stringify(payload))
+  })
+
   it("loads filesystem preview", async () => {
     const fetchMock = mockJsonFetch({
       configured: true,
@@ -260,6 +275,46 @@ describe("intrastatApi", () => {
       "Ambiguous CN match: 85322400, 85423269.",
       "Sum of line values (2000.00 EUR) does not match the invoice net total (2300.00 EUR).",
     ])
+  })
+
+  it("creates a declaration line in the selected batch", async () => {
+    const fetchMock = mockJsonFetch({ id: "line-2", alerts: [] })
+
+    await intrastatApi.createLine("batch-1", {
+      reference_line_id: "line-1",
+      item_index: "NEW-100",
+      cn_code: "85044095",
+      description: "Power supply",
+    })
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("/intrastat/api/batches/batch-1/lines")
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
+      method: "POST",
+      body: JSON.stringify({
+        reference_line_id: "line-1",
+        item_index: "NEW-100",
+        cn_code: "85044095",
+        description: "Power supply",
+      }),
+    })
+  })
+
+  it("updates whether a declaration line is included in the XLSX export", async () => {
+    const fetchMock = mockJsonFetch({ id: "line-1", alerts: [], is_excluded: true })
+
+    await intrastatApi.patchLine("line-1", {
+      is_excluded: true,
+      exclusion_reason: "manual-exclusion",
+    })
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("/intrastat/api/lines/line-1")
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
+      method: "PATCH",
+      body: JSON.stringify({
+        is_excluded: true,
+        exclusion_reason: "manual-exclusion",
+      }),
+    })
   })
 
   it("hides missing-field alerts when the declaration line has a final value", async () => {

@@ -4,7 +4,7 @@ import { IntrastatCorrectionInfo } from "@/components/intrastat/correction-info"
 import { IntrastatDeleteBatchButton } from "@/components/intrastat/delete-batch-button"
 import { IntrastatDocumentPreviewPanel } from "@/components/intrastat/document-preview-panel"
 import { IntrastatExportButtons } from "@/components/intrastat/export-buttons"
-import { IntrastatLineEditDialog } from "@/components/intrastat/line-edit-dialog"
+import { IntrastatLineDetailsDialog } from "@/components/intrastat/line-details-dialog"
 import { IntrastatMatchDetailsPopover } from "@/components/intrastat/match-details-popover"
 import { IntrastatPeriodInvoicesDialog } from "@/components/intrastat/period-invoices-dialog"
 import {
@@ -12,16 +12,34 @@ import {
   IntrastatStatusBadge,
   getIntrastatMatchLabel,
 } from "@/components/intrastat/status"
+import { formatIntrastatError, isIntrastatErrorDetail } from "@/lib/intrastat/api"
 import {
   useIntrastatBatch,
   useIntrastatBatches,
+  useIntrastatCnSuggestions,
+  useIntrastatCreateLine,
   useIntrastatLines,
+  useIntrastatPatchLine,
   useIntrastatReprocessBatch,
+  useIntrastatUpsertCnResourceRow,
 } from "@/lib/intrastat/hooks"
-import type { IntrastatCnMatchStatus, IntrastatDeclarationLine } from "@/lib/intrastat/types"
+import type {
+  IntrastatCnMatchStatus,
+  IntrastatCnSuggestion,
+  IntrastatDeclarationLine,
+  IntrastatLinePatchRequest,
+} from "@/lib/intrastat/types"
+import { useAuthorizedApps } from "@cortex/api"
 import {
   Button,
+  Checkbox,
   DataTable,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   EmptyState,
   Input,
   PageHeader,
@@ -31,6 +49,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Textarea,
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -39,13 +58,17 @@ import {
 import type { ColumnDef } from "@tanstack/react-table"
 import {
   AlertTriangle,
+  Check,
+  Database,
   Edit3,
   Eye,
   EyeOff,
   Loader2,
   PlayCircle,
+  Plus,
   Search,
   TableProperties,
+  X,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
@@ -53,8 +76,11 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { toast } from "sonner"
 
 const PAGE_SIZE = 100
+const CN_EDITOR_APP_CODE = "intrastat-cn-editor"
 const PREVIEW_VISIBLE_STORAGE_KEY = "intrastat.review.documentPreviewVisible"
 const PREVIEW_SPLIT_STORAGE_KEY = "intrastat-review-document-preview-split"
+const MANUAL_EXCLUSION_REASON = "manual-exclusion"
+const MAX_AI_CONTEXT_LENGTH = 4000
 const MATCH_OPTIONS: Array<{ value: IntrastatCnMatchStatus | "all"; label: string }> = [
   { value: "all", label: "All match statuses" },
   { value: "exact", label: "Exact" },
@@ -67,6 +93,26 @@ const MATCH_OPTIONS: Array<{ value: IntrastatCnMatchStatus | "all"; label: strin
   { value: "unmatched", label: "Unmatched" },
 ]
 
+type LineFormState = {
+  item_index: string
+  cn_code: string
+  description: string
+  net_weight: string
+  origin_country: string
+  delivery_terms: string
+  vat_number: string
+  quantity: string
+  value: string
+  currency: string
+}
+
+type ActiveLineEditor = {
+  mode: "edit" | "create"
+  line: IntrastatDeclarationLine
+  referenceLineId: string
+  form: LineFormState
+}
+
 function getBatchParam(): string | null {
   if (typeof window === "undefined") return null
   return new URLSearchParams(window.location.search).get("batch")
@@ -78,9 +124,16 @@ export default function IntrastatReviewPage() {
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState("")
   const [matchStatus, setMatchStatus] = useState<IntrastatCnMatchStatus | "all">("all")
-  const [editing, setEditing] = useState<IntrastatDeclarationLine | null>(null)
+  const [editor, setEditor] = useState<ActiveLineEditor | null>(null)
+  const [viewing, setViewing] = useState<IntrastatDeclarationLine | null>(null)
+  const [cnSuggestionsOpen, setCnSuggestionsOpen] = useState(false)
   const [selectedSourceFile, setSelectedSourceFile] = useState<string | null>(null)
   const [documentPreviewVisible, setDocumentPreviewVisible] = useState(true)
+  const [selectedLineIds, setSelectedLineIds] = useState<Set<string>>(new Set())
+  const [isUpdatingExport, setIsUpdatingExport] = useState(false)
+  const [reprocessOpen, setReprocessOpen] = useState(false)
+  const [additionalAiContext, setAdditionalAiContext] = useState("")
+  const access = useAuthorizedApps()
   const batches = useIntrastatBatches({ limit: 100, offset: 0 })
   const selectedBatch = useIntrastatBatch(batchId)
   const lines = useIntrastatLines(batchId, {
@@ -90,6 +143,24 @@ export default function IntrastatReviewPage() {
     search,
   })
   const reprocess = useIntrastatReprocessBatch()
+  const patchLine = useIntrastatPatchLine(batchId)
+  const createLine = useIntrastatCreateLine(batchId)
+  const upsertCnResourceRow = useIntrastatUpsertCnResourceRow()
+  const suggestionSearch = useMemo(
+    () =>
+      editor
+        ? (
+            editor.form.cn_code.trim() ||
+            editor.form.item_index.trim() ||
+            editor.form.description.trim()
+          ).trim()
+        : "",
+    [editor],
+  )
+  const suggestions = useIntrastatCnSuggestions(
+    suggestionSearch,
+    Boolean(editor) && cnSuggestionsOpen && suggestionSearch.length >= 2,
+  )
 
   useEffect(() => {
     const initialBatch = getBatchParam()
@@ -112,144 +183,619 @@ export default function IntrastatReviewPage() {
   }, [batchId, batches.data?.items])
 
   const items = useMemo(() => lines.data?.items ?? [], [lines.data?.items])
+  const selectedLines = useMemo(
+    () => items.filter((line) => selectedLineIds.has(line.id)),
+    [items, selectedLineIds],
+  )
+  const selectedIncludedLines = useMemo(
+    () => selectedLines.filter((line) => !line.is_excluded),
+    [selectedLines],
+  )
+  const selectedExcludedLines = useMemo(
+    () => selectedLines.filter((line) => line.is_excluded),
+    [selectedLines],
+  )
+  const allVisibleSelected = items.length > 0 && items.every((line) => selectedLineIds.has(line.id))
+  const someVisibleSelected = items.some((line) => selectedLineIds.has(line.id))
+  const tableItems = useMemo(() => {
+    if (editor?.mode !== "create") return items
+    const referenceIndex = items.findIndex((line) => line.id === editor.referenceLineId)
+    if (referenceIndex < 0) return items
+    return [...items.slice(0, referenceIndex + 1), editor.line, ...items.slice(referenceIndex + 1)]
+  }, [editor, items])
   const total = lines.data?.total ?? 0
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const isSaving = patchLine.isPending || createLine.isPending || upsertCnResourceRow.isPending
+  const canEditCnResource = access.apps.includes(CN_EDITOR_APP_CODE)
+  const cn8 = normalizedCn8(editor?.form.cn_code ?? "")
+  const canSaveToCnResource = Boolean(
+    editor?.form.item_index.trim() && cn8 && editor.form.description.trim(),
+  )
+  const mutationsDisabled =
+    isUpdatingExport ||
+    Boolean(editor) ||
+    selectedBatch.data?.status === "queued" ||
+    selectedBatch.data?.status === "processing"
 
-  const columns = useMemo<ColumnDef<IntrastatDeclarationLine>[]>(
-    () => [
-      {
-        accessorKey: "lp",
-        header: "LP",
-        size: 60,
-        cell: ({ row }) => <span className="font-mono text-xs">{row.original.lp}</span>,
-      },
-      {
-        accessorKey: "invoice_number",
-        header: "Invoice",
-        size: 260,
-        cell: ({ row }) => (
-          <div className="min-w-0">
-            <p
-              className={
-                row.original.is_excluded
-                  ? "truncate font-medium line-through"
-                  : "truncate font-medium"
-              }
-            >
-              {row.original.invoice_number}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {row.original.invoice_date ?? "No date"}
-            </p>
-            <IntrastatCorrectionInfo line={row.original} />
-          </div>
+  const updateEditor = (key: keyof LineFormState, value: string) => {
+    setEditor((current) =>
+      current ? { ...current, form: { ...current.form, [key]: value } } : current,
+    )
+  }
+
+  const handleStartEdit = (line: IntrastatDeclarationLine) => {
+    setSelectedSourceFile(line.source_file)
+    setCnSuggestionsOpen(false)
+    setEditor({
+      mode: "edit",
+      line,
+      referenceLineId: line.id,
+      form: lineFormFromLine(line),
+    })
+  }
+
+  const handleStartCreate = (reference: IntrastatDeclarationLine) => {
+    setSelectedSourceFile(reference.source_file)
+    setCnSuggestionsOpen(false)
+    setEditor({
+      mode: "create",
+      line: draftLineFromReference(reference),
+      referenceLineId: reference.id,
+      form: newLineFormFromReference(reference),
+    })
+  }
+
+  const handleCancelEdit = () => {
+    setCnSuggestionsOpen(false)
+    setEditor(null)
+  }
+
+  const handleLineSelection = (lineId: string, selected: boolean) => {
+    setSelectedLineIds((current) => {
+      const next = new Set(current)
+      if (selected) next.add(lineId)
+      else next.delete(lineId)
+      return next
+    })
+  }
+
+  const handleSelectAllVisible = (selected: boolean) => {
+    setSelectedLineIds((current) => {
+      const next = new Set(current)
+      for (const line of items) {
+        if (selected) next.add(line.id)
+        else next.delete(line.id)
+      }
+      return next
+    })
+  }
+
+  const handleExportStateChange = async (
+    targetLines: IntrastatDeclarationLine[],
+    isExcluded: boolean,
+  ) => {
+    if (targetLines.length === 0) return
+    setIsUpdatingExport(true)
+    try {
+      await Promise.all(
+        targetLines.map((line) =>
+          patchLine.mutateAsync({
+            lineId: line.id,
+            payload: {
+              is_excluded: isExcluded,
+              exclusion_reason: isExcluded ? MANUAL_EXCLUSION_REASON : null,
+            },
+          }),
         ),
+      )
+      const changedIds = new Set(targetLines.map((line) => line.id))
+      setSelectedLineIds((current) => {
+        const next = new Set(current)
+        for (const lineId of changedIds) next.delete(lineId)
+        return next
+      })
+      toast.success(
+        `${targetLines.length} line${targetLines.length === 1 ? "" : "s"} ${
+          isExcluded ? "excluded from" : "restored to"
+        } XLSX export`,
+      )
+    } catch (error) {
+      toast.error(
+        formatIntrastatError(
+          error,
+          isExcluded ? "Excluding lines failed" : "Restoring lines failed",
+        ),
+      )
+    } finally {
+      setIsUpdatingExport(false)
+    }
+  }
+
+  const handleSuggestionSelect = (suggestion: IntrastatCnSuggestion) => {
+    setEditor((current) =>
+      current
+        ? {
+            ...current,
+            form: {
+              ...current.form,
+              cn_code: suggestion.cn8 ?? suggestion.cn ?? current.form.cn_code,
+              description: suggestion.description ?? current.form.description,
+            },
+          }
+        : current,
+    )
+    setCnSuggestionsOpen(false)
+  }
+
+  const handleSaveLine = async (saveToCnResource: boolean) => {
+    if (!editor) return
+    const currentEditor = editor
+    let savedLine: IntrastatDeclarationLine
+    try {
+      const payload = linePatchFromForm(currentEditor.form)
+      savedLine =
+        currentEditor.mode === "create"
+          ? await createLine.mutateAsync({
+              ...payload,
+              reference_line_id: currentEditor.referenceLineId,
+              item_index: currentEditor.form.item_index.trim(),
+            })
+          : await patchLine.mutateAsync({
+              lineId: currentEditor.line.id,
+              payload,
+            })
+    } catch (error) {
+      toast.error(
+        formatIntrastatError(
+          error,
+          currentEditor.mode === "create" ? "Line creation failed" : "Line update failed",
+        ),
+      )
+      return
+    }
+
+    if (
+      saveToCnResource &&
+      canEditCnResource &&
+      canSaveToCnResource &&
+      cn8 &&
+      currentEditor.form.item_index.trim()
+    ) {
+      const resourcePayload = {
+        index_value: currentEditor.form.item_index.trim(),
+        cn8,
+        cn: cn8,
+        description: currentEditor.form.description.trim(),
+      }
+      try {
+        await upsertCnResourceRow.mutateAsync({ payload: resourcePayload })
+      } catch (error) {
+        if (!isIntrastatErrorDetail(error, "cn-resource-index-conflict")) {
+          toast.error(formatIntrastatError(error, "Line saved, but CN database update failed"))
+          handleCancelEdit()
+          return
+        }
+
+        const shouldReplace = window.confirm(
+          `Index ${resourcePayload.index_value} already has a different CN code. Replace it with ${cn8}?`,
+        )
+        if (!shouldReplace) {
+          toast.success("Intrastat line saved; CN database unchanged")
+          handleCancelEdit()
+          return
+        }
+        try {
+          await upsertCnResourceRow.mutateAsync({
+            payload: resourcePayload,
+            replaceConflict: true,
+          })
+        } catch (replaceError) {
+          toast.error(
+            formatIntrastatError(replaceError, "Line saved, but CN database update failed"),
+          )
+          handleCancelEdit()
+          return
+        }
+      }
+      toast.success("Intrastat line and CN database updated")
+    } else {
+      toast.success(
+        currentEditor.mode === "create" ? "Intrastat line created" : "Intrastat line updated",
+      )
+    }
+    setSelectedSourceFile(savedLine.source_file)
+    handleCancelEdit()
+  }
+
+  const renderEditorInput = (
+    line: IntrastatDeclarationLine,
+    key: keyof LineFormState,
+    label: string,
+    options?: { type?: "text" | "number"; uppercase?: boolean; className?: string },
+  ) => {
+    if (editor?.line.id !== line.id) return null
+    return (
+      <Input
+        aria-label={`${label} ${line.id}`}
+        type={options?.type ?? "text"}
+        value={editor.form[key]}
+        onChange={(event) =>
+          updateEditor(
+            key,
+            options?.uppercase ? event.target.value.toUpperCase() : event.target.value,
+          )
+        }
+        className={options?.className ?? "h-8 min-w-24"}
+        onClick={(event) => event.stopPropagation()}
+      />
+    )
+  }
+
+  const columns: ColumnDef<IntrastatDeclarationLine>[] = [
+    {
+      id: "actions",
+      header: () => (
+        <Checkbox
+          aria-label="Select all visible lines"
+          checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
+          disabled={mutationsDisabled || items.length === 0}
+          onCheckedChange={(checked) => handleSelectAllVisible(checked === true)}
+        />
+      ),
+      size: 180,
+      cell: ({ row }) => {
+        const isActive = editor?.line.id === row.original.id
+        const selectionCheckbox = (
+          <Checkbox
+            aria-label={`Select line ${row.original.id}`}
+            checked={selectedLineIds.has(row.original.id)}
+            disabled={mutationsDisabled || isDraftLine(row.original)}
+            onCheckedChange={(checked) => handleLineSelection(row.original.id, checked === true)}
+            onClick={(event) => event.stopPropagation()}
+          />
+        )
+        if (isActive) {
+          return (
+            <div className="flex items-center gap-1">
+              {selectionCheckbox}
+              <Button
+                size="sm"
+                variant="ghost"
+                aria-label={`Cancel line ${row.original.id}`}
+                title="Cancel"
+                disabled={isSaving}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  handleCancelEdit()
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                aria-label={`Save line ${row.original.id}`}
+                title="Save line"
+                disabled={isSaving}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  void handleSaveLine(false)
+                }}
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
+              </Button>
+              {canEditCnResource ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label={`Save line ${row.original.id} and add to CN database`}
+                  title="Save and add to CN database"
+                  disabled={isSaving || !canSaveToCnResource}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    void handleSaveLine(true)
+                  }}
+                >
+                  <Database className="h-4 w-4" />
+                </Button>
+              ) : null}
+            </div>
+          )
+        }
+        return (
+          <div className="flex items-center gap-1">
+            {selectionCheckbox}
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label={`View line ${row.original.id}`}
+              title="View details"
+              disabled={Boolean(editor)}
+              onClick={(event) => {
+                event.stopPropagation()
+                setViewing(row.original)
+              }}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label={`Edit line ${row.original.id}`}
+              title="Edit line"
+              disabled={mutationsDisabled}
+              onClick={(event) => {
+                event.stopPropagation()
+                handleStartEdit(row.original)
+              }}
+            >
+              <Edit3 className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label={`Add line after ${row.original.id}`}
+              title="Add line to this invoice"
+              disabled={mutationsDisabled}
+              onClick={(event) => {
+                event.stopPropagation()
+                handleStartCreate(row.original)
+              }}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        )
       },
-      {
-        accessorKey: "item_index",
-        header: "Index",
-        size: 170,
-        cell: ({ row }) => (
+    },
+    {
+      accessorKey: "lp",
+      header: "LP",
+      size: 60,
+      cell: ({ row }) => <span className="font-mono text-xs">{row.original.lp}</span>,
+    },
+    {
+      accessorKey: "invoice_number",
+      header: "Invoice",
+      size: 220,
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <p
+            className={
+              row.original.is_excluded
+                ? "truncate font-medium line-through"
+                : "truncate font-medium"
+            }
+          >
+            {row.original.invoice_number}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {row.original.invoice_date ?? "No date"}
+          </p>
+          <IntrastatCorrectionInfo line={row.original} />
+        </div>
+      ),
+    },
+    {
+      accessorKey: "item_index",
+      header: "Index",
+      size: 170,
+      cell: ({ row }) =>
+        editor?.mode === "create" && editor.line.id === row.original.id ? (
+          renderEditorInput(row.original, "item_index", "Item index", {
+            className: "h-8 min-w-36 font-mono",
+          })
+        ) : (
           <span className="font-mono text-xs">{row.original.item_index || "—"}</span>
         ),
+    },
+    {
+      accessorKey: "cn_code",
+      header: "CN",
+      size: 150,
+      cell: ({ row }) => {
+        if (editor?.line.id !== row.original.id) {
+          return <span className="font-mono text-xs">{row.original.cn_code ?? "—"}</span>
+        }
+        return (
+          <div className="relative">
+            <Input
+              aria-label={`CN code ${row.original.id}`}
+              value={editor.form.cn_code}
+              onFocus={() => setCnSuggestionsOpen(true)}
+              onChange={(event) => {
+                updateEditor("cn_code", event.target.value)
+                setCnSuggestionsOpen(true)
+              }}
+              onClick={(event) => event.stopPropagation()}
+              className="h-8 min-w-32 font-mono"
+            />
+            {cnSuggestionsOpen &&
+            (suggestions.isFetching || (suggestions.data?.items.length ?? 0) > 0) ? (
+              <div
+                className="absolute left-0 top-full z-30 mt-1 w-[420px] overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-lg"
+                onClick={(event) => event.stopPropagation()}
+              >
+                {(suggestions.data?.items ?? []).map((suggestion) => (
+                  <button
+                    key={suggestion.id}
+                    type="button"
+                    className="grid w-full grid-cols-[88px_110px_minmax(0,1fr)] gap-3 border-b border-border px-3 py-2 text-left text-xs last:border-b-0 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    onClick={() => handleSuggestionSelect(suggestion)}
+                  >
+                    <span className="font-mono font-medium">
+                      {suggestion.cn8 ?? suggestion.cn ?? "—"}
+                    </span>
+                    <span className="truncate font-mono text-muted-foreground">
+                      {suggestion.index_value}
+                    </span>
+                    <span className="truncate text-muted-foreground">
+                      {suggestion.description ?? "—"}
+                    </span>
+                  </button>
+                ))}
+                {suggestions.isFetching && (suggestions.data?.items.length ?? 0) === 0 ? (
+                  <div className="px-3 py-2 text-xs text-muted-foreground">
+                    Loading suggestions...
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        )
       },
-      {
-        accessorKey: "cn_code",
-        header: "CN",
-        size: 110,
-        cell: ({ row }) => <span className="font-mono text-xs">{row.original.cn_code ?? "—"}</span>,
-      },
-      {
-        accessorKey: "description",
-        header: "Description",
-        size: 270,
-        cell: ({ row }) => (
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      size: 280,
+      cell: ({ row }) =>
+        renderEditorInput(row.original, "description", "Description", {
+          className: "h-8 min-w-64",
+        }) ?? (
           <span className="block max-w-[260px] truncate">{row.original.description ?? "—"}</span>
         ),
-      },
-      {
-        accessorKey: "value",
-        header: "Value",
-        size: 130,
-        cell: ({ row }) => (
-          <span className="whitespace-nowrap">
-            {row.original.value ?? "—"} {row.original.currency ?? ""}
+    },
+    {
+      accessorKey: "quantity",
+      header: "Quantity",
+      size: 110,
+      cell: ({ row }) =>
+        renderEditorInput(row.original, "quantity", "Quantity", {
+          type: "number",
+        }) ?? <span className="whitespace-nowrap">{row.original.quantity ?? "—"}</span>,
+    },
+    {
+      accessorKey: "value",
+      header: "Value",
+      size: 120,
+      cell: ({ row }) =>
+        renderEditorInput(row.original, "value", "Value", { type: "number" }) ?? (
+          <span className="whitespace-nowrap">{row.original.value ?? "—"}</span>
+        ),
+    },
+    {
+      accessorKey: "currency",
+      header: "Currency",
+      size: 100,
+      cell: ({ row }) =>
+        renderEditorInput(row.original, "currency", "Currency", {
+          uppercase: true,
+        }) ?? <span className="font-mono text-xs">{row.original.currency ?? "—"}</span>,
+    },
+    {
+      accessorKey: "net_weight",
+      header: "Weight",
+      size: 110,
+      cell: ({ row }) =>
+        renderEditorInput(row.original, "net_weight", "Net weight", {
+          type: "number",
+        }) ?? <span className="whitespace-nowrap">{row.original.net_weight ?? "—"}</span>,
+    },
+    {
+      accessorKey: "origin_country",
+      header: "Origin",
+      size: 100,
+      cell: ({ row }) =>
+        renderEditorInput(row.original, "origin_country", "Origin", {
+          uppercase: true,
+        }) ?? <span className="font-mono text-xs">{row.original.origin_country ?? "—"}</span>,
+    },
+    {
+      accessorKey: "delivery_terms",
+      header: "Delivery",
+      size: 110,
+      cell: ({ row }) =>
+        renderEditorInput(row.original, "delivery_terms", "Delivery terms", {
+          uppercase: true,
+        }) ?? <span className="font-mono text-xs">{row.original.delivery_terms ?? "—"}</span>,
+    },
+    {
+      accessorKey: "vat_number",
+      header: "NIP/VAT",
+      size: 150,
+      cell: ({ row }) =>
+        renderEditorInput(row.original, "vat_number", "NIP/VAT") ?? (
+          <span className="font-mono text-xs">{row.original.vat_number ?? "—"}</span>
+        ),
+    },
+    {
+      id: "export_status",
+      header: "Export",
+      size: 150,
+      cell: ({ row }) =>
+        row.original.is_excluded ? (
+          <span
+            className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground"
+            title={row.original.exclusion_reason ?? "Excluded from XLSX"}
+          >
+            <EyeOff className="h-4 w-4" aria-hidden="true" />
+            Excluded from XLSX
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs">
+            <Check className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+            Included
           </span>
         ),
-      },
-      {
-        accessorKey: "net_weight",
-        header: "Weight",
-        size: 100,
-        cell: ({ row }) => (
-          <span className="whitespace-nowrap">{row.original.net_weight ?? "—"}</span>
+    },
+    {
+      accessorKey: "cn_match_status",
+      header: "Match",
+      size: 140,
+      cell: ({ row }) =>
+        isDraftLine(row.original) ? (
+          <span className="text-xs text-muted-foreground">New line</span>
+        ) : (
+          <IntrastatMatchDetailsPopover line={row.original} />
         ),
-      },
-      {
-        accessorKey: "cn_match_status",
-        header: "Match",
-        size: 140,
-        cell: ({ row }) => <IntrastatMatchDetailsPopover line={row.original} />,
-      },
-      {
-        accessorKey: "alerts",
-        header: "Alerts",
-        size: 110,
-        cell: ({ row }) =>
-          row.original.alerts.length > 0 ? (
-            <TooltipProvider delayDuration={150}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span
-                    className="inline-flex cursor-help items-center gap-1.5 whitespace-nowrap"
-                    tabIndex={0}
-                    aria-label={formatReviewCount(row.original.alerts.length)}
-                  >
-                    <AlertTriangle className="h-4 w-4 text-amber-500" aria-hidden="true" />
-                    <span className="text-xs text-muted-foreground">
-                      {row.original.alerts.length} field
-                      {row.original.alerts.length === 1 ? "" : "s"}
-                    </span>
+    },
+    {
+      accessorKey: "alerts",
+      header: "Alerts",
+      size: 110,
+      cell: ({ row }) =>
+        row.original.alerts.length > 0 ? (
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className="inline-flex cursor-help items-center gap-1.5 whitespace-nowrap"
+                  tabIndex={0}
+                  aria-label={formatReviewCount(row.original.alerts.length)}
+                >
+                  <AlertTriangle className="h-4 w-4 text-amber-500" aria-hidden="true" />
+                  <span className="text-xs text-muted-foreground">
+                    {row.original.alerts.length} field
+                    {row.original.alerts.length === 1 ? "" : "s"}
                   </span>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-80 border bg-popover p-3 text-popover-foreground shadow-lg">
-                  <p className="mb-2 text-sm font-medium">
-                    {formatReviewCount(row.original.alerts.length)}
-                  </p>
-                  <ul className="space-y-1 text-sm">
-                    {row.original.alerts.map((alert) => (
-                      <li key={alert}>{alert}</li>
-                    ))}
-                  </ul>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ) : (
-            <span className="text-xs text-muted-foreground">—</span>
-          ),
-      },
-      {
-        id: "actions",
-        header: "",
-        size: 80,
-        cell: ({ row }) => (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              setSelectedSourceFile(row.original.source_file)
-              setEditing(row.original)
-            }}
-          >
-            <Edit3 className="h-4 w-4" />
-          </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-80 border bg-popover p-3 text-popover-foreground shadow-lg">
+                <p className="mb-2 text-sm font-medium">
+                  {formatReviewCount(row.original.alerts.length)}
+                </p>
+                <ul className="space-y-1 text-sm">
+                  {row.original.alerts.map((alert) => (
+                    <li key={alert}>{alert}</li>
+                  ))}
+                </ul>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
         ),
-      },
-    ],
-    [],
-  )
+    },
+  ]
 
   const handleBatchChange = (nextBatchId: string) => {
+    handleCancelEdit()
+    setSelectedLineIds(new Set())
     setBatchId(nextBatchId)
     setPage(0)
     setSelectedSourceFile(null)
@@ -282,11 +828,20 @@ export default function IntrastatReviewPage() {
     })
   }
 
+  const handleOpenReprocess = () => {
+    setAdditionalAiContext(selectedBatch.data?.additional_ai_context ?? "")
+    setReprocessOpen(true)
+  }
+
   const handleReprocess = async () => {
     if (!batchId) return
     try {
-      await reprocess.mutateAsync(batchId)
+      await reprocess.mutateAsync({
+        batchId,
+        additionalAiContext: additionalAiContext.trim() || null,
+      })
       toast.success("Batch queued for reprocessing")
+      setReprocessOpen(false)
     } catch {
       toast.error("Batch reprocess failed")
     }
@@ -310,8 +865,8 @@ export default function IntrastatReviewPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={handleReprocess}
-              disabled={!batchId || reprocess.isPending}
+              onClick={handleOpenReprocess}
+              disabled={!batchId || reprocess.isPending || Boolean(editor)}
             >
               {reprocess.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -331,6 +886,56 @@ export default function IntrastatReviewPage() {
         }
       />
 
+      <Dialog
+        open={reprocessOpen}
+        onOpenChange={(open) => {
+          if (!reprocess.isPending) setReprocessOpen(open)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reprocess with AI instructions</DialogTitle>
+            <DialogDescription>
+              Run extraction again for all source documents in this batch. Current extracted lines
+              and manual corrections will be replaced.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label htmlFor="intrastat-reprocess-ai-context" className="text-sm font-medium">
+              Additional AI instructions
+            </label>
+            <Textarea
+              id="intrastat-reprocess-ai-context"
+              value={additionalAiContext}
+              onChange={(event) => setAdditionalAiContext(event.target.value)}
+              maxLength={MAX_AI_CONTEXT_LENGTH}
+              className="min-h-32 resize-y"
+              placeholder="For example: Merge each invoice with its matching packing list and treat them as one document. Use the packing list to supplement missing invoice data."
+            />
+            <p className="text-right text-xs text-muted-foreground">
+              {additionalAiContext.length} / {MAX_AI_CONTEXT_LENGTH}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setReprocessOpen(false)}
+              disabled={reprocess.isPending}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleReprocess} disabled={reprocess.isPending || !batchId}>
+              {reprocess.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <PlayCircle className="mr-2 h-4 w-4" />
+              )}
+              Reprocess batch
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="min-h-0 flex-1 overflow-hidden px-8 py-6">
         <PanelGroup
           key={documentPreviewVisible ? "with-document-preview" : "without-document-preview"}
@@ -344,7 +949,7 @@ export default function IntrastatReviewPage() {
             className="flex min-h-0 flex-col gap-4 overflow-hidden pr-4"
           >
             <div className="flex shrink-0 flex-wrap items-center gap-3">
-              <Select value={batchId} onValueChange={handleBatchChange}>
+              <Select value={batchId} onValueChange={handleBatchChange} disabled={Boolean(editor)}>
                 <SelectTrigger className="h-9 w-[340px]">
                   <SelectValue placeholder="Choose a batch" />
                 </SelectTrigger>
@@ -378,15 +983,19 @@ export default function IntrastatReviewPage() {
                   placeholder="Search invoice, index, CN..."
                   value={search}
                   onChange={(event) => {
+                    setSelectedLineIds(new Set())
                     setPage(0)
                     setSearch(event.target.value)
                   }}
+                  disabled={Boolean(editor)}
                   className="h-9 w-72 pl-9"
                 />
               </div>
               <Select
                 value={matchStatus}
+                disabled={Boolean(editor)}
                 onValueChange={(value) => {
+                  setSelectedLineIds(new Set())
                   setPage(0)
                   setMatchStatus(value as IntrastatCnMatchStatus | "all")
                 }}
@@ -402,6 +1011,34 @@ export default function IntrastatReviewPage() {
                   ))}
                 </SelectContent>
               </Select>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={mutationsDisabled || selectedIncludedLines.length === 0}
+                onClick={() => void handleExportStateChange(selectedIncludedLines, true)}
+              >
+                {isUpdatingExport ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <EyeOff className="mr-2 h-4 w-4" />
+                )}
+                Exclude from XLSX
+                {selectedIncludedLines.length > 0 ? ` (${selectedIncludedLines.length})` : ""}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={mutationsDisabled || selectedExcludedLines.length === 0}
+                onClick={() => void handleExportStateChange(selectedExcludedLines, false)}
+              >
+                {isUpdatingExport ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Eye className="mr-2 h-4 w-4" />
+                )}
+                Restore to XLSX
+                {selectedExcludedLines.length > 0 ? ` (${selectedExcludedLines.length})` : ""}
+              </Button>
               <div className="ml-auto text-xs text-muted-foreground">
                 {lines.isFetching ? "Refreshing..." : `${total} total`}
               </div>
@@ -410,13 +1047,16 @@ export default function IntrastatReviewPage() {
             <div className="min-h-0 flex-1 overflow-auto">
               <DataTable
                 columns={columns}
-                data={items}
+                data={tableItems}
                 className="w-max min-w-full overflow-visible [contain:none]"
+                tableClassName="[&_th:first-child]:sticky [&_th:first-child]:left-0 [&_th:first-child]:z-20 [&_th:first-child]:bg-muted [&_th:first-child]:shadow-[1px_0_0_hsl(var(--border))] [&_td:first-child]:sticky [&_td:first-child]:left-0 [&_td:first-child]:z-10 [&_td:first-child]:bg-inherit [&_td:first-child]:shadow-[1px_0_0_hsl(var(--border))]"
                 isLoading={lines.isPending && items.length === 0}
                 getRowId={(row) => row.id}
-                getRowClassName={(row) =>
-                  row.is_excluded ? "bg-muted/30 text-muted-foreground" : undefined
-                }
+                getRowClassName={(row) => {
+                  if (editor?.line.id === row.id)
+                    return "bg-primary/5 ring-1 ring-inset ring-primary/20"
+                  return row.is_excluded ? "bg-muted/30 text-muted-foreground" : "bg-card"
+                }}
                 onRowClick={handleLineSelect}
                 stickyHeader
                 bordered
@@ -434,7 +1074,20 @@ export default function IntrastatReviewPage() {
               />
             </div>
 
-            <Pagination page={page} pageCount={pageCount} onChange={setPage} />
+            {editor ? (
+              <p className="text-xs text-muted-foreground">
+                Save or cancel the active line before changing pages.
+              </p>
+            ) : (
+              <Pagination
+                page={page}
+                pageCount={pageCount}
+                onChange={(nextPage) => {
+                  setSelectedLineIds(new Set())
+                  setPage(nextPage)
+                }}
+              />
+            )}
           </Panel>
 
           {documentPreviewVisible ? (
@@ -458,12 +1111,11 @@ export default function IntrastatReviewPage() {
         </PanelGroup>
       </div>
 
-      <IntrastatLineEditDialog
-        batchId={batchId}
-        line={editing}
-        open={Boolean(editing)}
+      <IntrastatLineDetailsDialog
+        line={viewing}
+        open={Boolean(viewing)}
         onOpenChange={(next) => {
-          if (!next) setEditing(null)
+          if (!next) setViewing(null)
         }}
       />
     </div>
@@ -472,4 +1124,96 @@ export default function IntrastatReviewPage() {
 
 function formatReviewCount(count: number): string {
   return count === 1 ? "1 field requires review" : `${count} fields require review`
+}
+
+function lineFormFromLine(line: IntrastatDeclarationLine): LineFormState {
+  return {
+    item_index: line.item_index,
+    cn_code: line.cn_code ?? "",
+    description: line.description ?? "",
+    net_weight: valueToString(line.net_weight),
+    origin_country: line.origin_country ?? "",
+    delivery_terms: line.delivery_terms ?? "",
+    vat_number: line.vat_number ?? "",
+    quantity: valueToString(line.quantity),
+    value: valueToString(line.value),
+    currency: line.currency ?? "",
+  }
+}
+
+function newLineFormFromReference(reference: IntrastatDeclarationLine): LineFormState {
+  return {
+    item_index: "",
+    cn_code: "",
+    description: "",
+    net_weight: "",
+    origin_country: "",
+    delivery_terms: reference.delivery_terms ?? "",
+    vat_number: reference.vat_number ?? "",
+    quantity: "",
+    value: "",
+    currency: reference.currency ?? "",
+  }
+}
+
+function draftLineFromReference(reference: IntrastatDeclarationLine): IntrastatDeclarationLine {
+  const timestamp = new Date().toISOString()
+  return {
+    ...reference,
+    id: `draft:${reference.id}`,
+    item_index: "",
+    matched_index: null,
+    matched_fragment: null,
+    cn_code: null,
+    description: null,
+    quantity: null,
+    value: null,
+    net_weight: null,
+    origin_country: null,
+    cn_match_status: "unmatched",
+    confidence: 0,
+    match_confidence: 0,
+    alerts: [],
+    created_at: timestamp,
+    updated_at: timestamp,
+  }
+}
+
+function linePatchFromForm(form: LineFormState): IntrastatLinePatchRequest {
+  return {
+    cn_code: nullableText(form.cn_code),
+    description: nullableText(form.description),
+    net_weight: nullableNumber(form.net_weight),
+    origin_country: nullableText(form.origin_country),
+    delivery_terms: nullableText(form.delivery_terms),
+    vat_number: nullableText(form.vat_number),
+    quantity: nullableNumber(form.quantity),
+    value: nullableNumber(form.value),
+    currency: nullableText(form.currency),
+  }
+}
+
+function isDraftLine(line: IntrastatDeclarationLine): boolean {
+  return line.id.startsWith("draft:")
+}
+
+function normalizedCn8(value: string): string | null {
+  const digits = value.replace(/\D/g, "")
+  return digits.length >= 8 ? digits.slice(0, 8) : null
+}
+
+function valueToString(value: number | null): string {
+  return value == null ? "" : String(value)
+}
+
+function nullableText(value: string): string | null {
+  const trimmed = value.trim()
+  return trimmed ? trimmed : null
+}
+
+function nullableNumber(value: string): number | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? parsed : null
 }

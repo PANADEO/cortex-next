@@ -8,6 +8,7 @@ import type {
   IntrastatCnMatchStatus,
   IntrastatCnResourceRowRequest,
   IntrastatFilesystemClientRequest,
+  IntrastatLineCreateRequest,
   IntrastatLineListResponse,
   IntrastatLinePatchRequest,
   IntrastatTransactionKind,
@@ -355,10 +356,30 @@ export function useIntrastatPatchLine(batchId: string) {
   })
 }
 
+export function useIntrastatCreateLine(batchId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: IntrastatLineCreateRequest) => intrastatApi.createLine(batchId, payload),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: [...intrastatQueryKeys.all, "batches", batchId] })
+      invalidateIntrastatMetadata(client)
+    },
+  })
+}
+
 export function useIntrastatReprocessBatch() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: intrastatApi.reprocessBatch,
+    mutationFn: ({
+      batchId,
+      additionalAiContext,
+    }: {
+      batchId: string
+      additionalAiContext: string | null
+    }) =>
+      intrastatApi.reprocessBatch(batchId, {
+        additional_ai_context: additionalAiContext,
+      }),
     onSuccess: (batch) => {
       client.setQueryData(intrastatQueryKeys.batchDetail(batch.id), batch)
       invalidateIntrastatMetadata(client)
