@@ -38,12 +38,18 @@ export const COWORK_DEPARTMENT_PATTERN = /^[a-z0-9][a-z0-9-]*(\/[a-z0-9][a-z0-9-
  * reaches the browser. `baseUrl` unset = provider's default endpoint. An
  * OpenAI-compatible entry pointed at cortex-proxy is how proxy registration
  * plugs in later without new code paths.
+ *
+ * `headers` is NOT part of the persisted/UI-editable shape (no admin form
+ * writes it) - it exists here only so `modelConfigForRunner()`'s resolved
+ * per-turn config (chat-engine.ts, which injects a dynamic `X-User-ID`) is
+ * expressible without an `as` cast. Never persisted by the project store.
  */
 export interface CoworkModelConfig {
   provider: CoworkModelProvider
   modelId: string
   baseUrl?: string
   apiKeyRef?: string
+  headers?: Record<string, string>
 }
 
 export type CoworkSandboxMode = "local" | "docker"

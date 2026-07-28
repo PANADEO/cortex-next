@@ -1,9 +1,8 @@
 import { mkdir, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
-import {
-  getSandboxSession,
-  listInputFiles,
-} from "@/features/cortex-cowork/server/sandbox-store"
+import { listInputFiles } from "@/features/cortex-cowork/server/sandbox-store"
+import { isDenied, requireSessionAccess } from "@/lib/cortex-governance/project-gate"
+import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
 // Upload of user input files into the session sandbox's input/ directory -
@@ -38,26 +37,25 @@ async function unusedName(dir: string, filename: string): Promise<string> {
 }
 
 export async function GET(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> },
 ): Promise<NextResponse> {
   const { sessionId } = await params
-  const session = await getSandboxSession(sessionId)
-  if (!session) {
-    return NextResponse.json({ message: `Session not found: ${sessionId}` }, { status: 404 })
-  }
+  const gate = await requireSessionAccess(request, sessionId)
+  if (isDenied(gate)) return gate
+  const { session } = gate
+
   return NextResponse.json({ files: await listInputFiles(session) })
 }
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> },
 ): Promise<NextResponse> {
   const { sessionId } = await params
-  const session = await getSandboxSession(sessionId)
-  if (!session) {
-    return NextResponse.json({ message: `Session not found: ${sessionId}` }, { status: 404 })
-  }
+  const gate = await requireSessionAccess(request, sessionId)
+  if (isDenied(gate)) return gate
+  const { session } = gate
 
   const form = await request.formData().catch(() => null)
   const uploads = form?.getAll("files").filter((entry): entry is File => entry instanceof File)

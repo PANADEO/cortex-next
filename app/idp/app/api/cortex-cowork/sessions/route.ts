@@ -5,7 +5,7 @@ import {
   toCoworkSession,
 } from "@/features/cortex-cowork/server/sandbox-store"
 import { resolveGrantedSkills } from "@/features/cortex-cowork/server/skills-catalog"
-import { readGovernanceConfig } from "@/lib/cortex-governance/store"
+import { isDenied, requireProjectAccess } from "@/lib/cortex-governance/project-gate"
 import { DEFAULT_COWORK_PROJECT_ID } from "@cortex/types"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
@@ -17,6 +17,10 @@ interface CreateSessionBody {
 /** Session summaries for a project (session switcher). */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const projectId = request.nextUrl.searchParams.get("projectId") ?? DEFAULT_COWORK_PROJECT_ID
+
+  const gate = await requireProjectAccess(request, projectId)
+  if (isDenied(gate)) return gate
+
   return NextResponse.json(await listSessionSummaries(projectId))
 }
 
@@ -25,14 +29,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const body = (await request.json().catch(() => ({}))) as CreateSessionBody
     const projectId = body.projectId ?? DEFAULT_COWORK_PROJECT_ID
 
-    const config = await readGovernanceConfig()
-    const project = config.projects.find((candidate) => candidate.id === projectId)
-    if (!project || !project.enabled) {
-      return NextResponse.json({ message: `Unknown project: ${projectId}` }, { status: 404 })
-    }
+    const gate = await requireProjectAccess(request, projectId)
+    if (isDenied(gate)) return gate
+    const { config, project } = gate
 
-    // Access to the tile is gated by roles (visibleProjectsFor); the toolkit
-    // inside is the project's composition, same for every user who can open it.
+    // Access to the tile is gated by roles (requireProjectAccess); the
+    // toolkit inside is the project's composition, same for every user who
+    // can open it.
     const grantedSkills = await resolveGrantedSkills(config, project)
     const session = await createSandboxSession(
       project,

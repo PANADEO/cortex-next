@@ -2,7 +2,7 @@ import { isDenied, requireAdmin } from "@/lib/cortex-governance/admin-gate"
 import { upsertProject } from "@/lib/cortex-governance/store"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
-import { parseProjectBody } from "./validation"
+import { findInvalidGrantReferences, parseProjectBody } from "./validation"
 
 /** Admin list: every project, including disabled ones. */
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -23,6 +23,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(
       { message: `Project already exists: ${parsed.value.id}` },
       { status: 409 },
+    )
+  }
+  const invalidReferences = await findInvalidGrantReferences(parsed.value.composition, gate.config)
+  if (invalidReferences.length > 0) {
+    return NextResponse.json(
+      { message: "composition grants reference unknown catalog resources", invalidReferences },
+      { status: 400 },
     )
   }
 

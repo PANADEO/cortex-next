@@ -2,13 +2,20 @@
 # /// script
 # dependencies = ["httpx"]
 # ///
-"""Web search CLI connector for Cortex Cowork - Perplexity API (sonar models).
+"""Web search CLI connector for Cortex Cowork - Perplexity sonar models via cortex-proxy.
 
 Invoked by the cowork-runner as a CLI connector tool: the agent passes an
-argument list, the runner injects PERPLEXITY_API_KEY into the environment
-(resolved from the cortex-config credential store). Prints the grounded
-answer followed by a numbered source list; exits non-zero with a clear
-message on any failure so the agent can react.
+argument list, the runner injects CORTEX_PROXY_URL (and, if the deployment
+requires it, CORTEX_PROXY_API_KEY) into the environment (resolved from the
+cortex-config credential store). Prints the grounded answer followed by a
+numbered source list; exits non-zero with a clear message on any failure so
+the agent can react.
+
+Routed through cortex-proxy -> OpenRouter -> Perplexity instead of calling
+Perplexity's native API directly, so no separate PERPLEXITY_API_KEY is
+needed org-wide. See PROJECT/cortex2.0-task-perplexity-via-cortex-proxy.md
+(Obsidian) for the migration design and open verification items - notably,
+citation shape through this path is best-effort until confirmed live.
 
 The runner enforces a 60s tool timeout, so the slow "deep research" model is
 deliberately not offered here.
@@ -20,16 +27,52 @@ import sys
 
 import httpx
 
-API_URL = "https://api.perplexity.ai/chat/completions"
-MODELS = ["sonar", "sonar-pro", "sonar-reasoning-pro"]
+MODELS = ["perplexity/sonar", "perplexity/sonar-pro", "perplexity/sonar-reasoning-pro"]
 RECENCY = ["day", "week", "month", "year"]
 REQUEST_TIMEOUT_S = 50
 
 
+def extract_sources(data: dict, message: dict) -> list[str]:
+    """Collects source URLs, order-preserved, deduplicated, blanks filtered.
+
+    Blank/whitespace-only strings (e.g. "" or "   ") are treated as absent
+    citations and dropped, for both shapes below - otherwise they'd produce
+    a garbled "Sources:" entry and, more importantly, let a response with
+    empty content and only junk citations slip past the empty-response guard
+    in main() (sources would look non-empty while carrying no real URL).
+
+    Checks both known citation shapes since the exact one returned through
+    cortex-proxy/OpenRouter for Perplexity models is not yet confirmed by a
+    live call (see design note):
+      - top-level `citations`: native Perplexity chat-completions format,
+        a flat list of URL strings (docs.perplexity.ai/api-reference/chat-completions-post).
+      - `message.annotations`: OpenRouter's standardized web-search citation
+        format, `{"type": "url_citation", "url_citation": {"url": ..., ...}}`
+        (openrouter.ai/docs/guides/features/plugins/web-search).
+    """
+    urls: list[str] = []
+
+    for url in data.get("citations") or []:
+        if isinstance(url, str) and url.strip() and url not in urls:
+            urls.append(url)
+
+    for annotation in message.get("annotations") or []:
+        if not isinstance(annotation, dict) or annotation.get("type") != "url_citation":
+            continue
+        url_citation = annotation.get("url_citation")
+        if not isinstance(url_citation, dict):
+            continue
+        url = url_citation.get("url")
+        if isinstance(url, str) and url.strip() and url not in urls:
+            urls.append(url)
+
+    return urls
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Web search with citations (Perplexity)")
+    parser = argparse.ArgumentParser(description="Web search with citations (Perplexity via cortex-proxy)")
     parser.add_argument("query", nargs="+", help="Search query")
-    parser.add_argument("--model", choices=MODELS, default="sonar")
+    parser.add_argument("--model", choices=MODELS, default="perplexity/sonar")
     parser.add_argument("--recency", choices=RECENCY, help="Only sources from this period")
     parser.add_argument(
         "--domains",
@@ -39,14 +82,23 @@ def main() -> int:
     parser.add_argument("--max-tokens", type=int, default=1500)
     args = parser.parse_args()
 
-    api_key = os.environ.get("PERPLEXITY_API_KEY", "")
-    if not api_key:
+    base_url = os.environ.get("CORTEX_PROXY_URL", "")
+    if not base_url:
         print(
-            "PERPLEXITY_API_KEY is not set. The connector's credential ref is missing "
+            "CORTEX_PROXY_URL is not set. The connector's credential ref is missing "
             "or unresolved in the cortex-config credential store.",
             file=sys.stderr,
         )
         return 2
+
+    # Unlike the previous PERPLEXITY_API_KEY, an API key here is optional:
+    # cortex-proxy's authMiddleware validates X-User-ID, not the client's
+    # bearer token (confirmed against another cortex-proxy caller in this
+    # repo, app/idp/app/api/ai-tools/generate/route.ts).
+    api_key = os.environ.get("CORTEX_PROXY_API_KEY", "")
+    user_id = os.environ.get("COWORK_USER_EMAIL", "web-search-connector")
+
+    endpoint = f"{base_url.rstrip('/')}/v1/chat/completions"
 
     query = " ".join(args.query)
     payload: dict = {
@@ -68,29 +120,69 @@ def main() -> int:
     if args.academic:
         payload["search_mode"] = "academic"
 
+    headers = {
+        "Content-Type": "application/json",
+        "X-User-ID": user_id,
+        "X-App": "Cortex Cowork",
+        "X-Scope": "web-search",
+        "X-Source-App": "Cortex Cowork web-search connector",
+    }
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
     try:
         response = httpx.post(
-            API_URL,
+            endpoint,
             json=payload,
-            headers={"Authorization": f"Bearer {api_key}"},
+            headers=headers,
             timeout=REQUEST_TIMEOUT_S,
         )
         response.raise_for_status()
     except httpx.HTTPStatusError as error:
-        print(f"Perplexity API error {error.response.status_code}: {error.response.text[:500]}", file=sys.stderr)
+        print(f"Cortex Proxy error {error.response.status_code}: {error.response.text[:500]}", file=sys.stderr)
         return 1
     except httpx.HTTPError as error:
-        print(f"Perplexity request failed: {error}", file=sys.stderr)
+        print(f"Cortex Proxy request failed: {error}", file=sys.stderr)
         return 1
 
-    data = response.json()
-    answer = (data.get("choices") or [{}])[0].get("message", {}).get("content", "")
-    citations = data.get("citations") or []
+    try:
+        data = response.json()
+    except ValueError as error:
+        print(f"Cortex Proxy returned a response that isn't valid JSON: {error}", file=sys.stderr)
+        return 1
+
+    if not isinstance(data, dict):
+        print(
+            f"Cortex Proxy returned an unexpected response shape (expected a JSON object, got {type(data).__name__}).",
+            file=sys.stderr,
+        )
+        return 1
+
+    choices = data.get("choices")
+    first_choice = choices[0] if isinstance(choices, list) and choices else {}
+    if not isinstance(first_choice, dict):
+        print(
+            "Cortex Proxy returned an unexpected response shape (choices[0] is not a JSON object).",
+            file=sys.stderr,
+        )
+        return 1
+
+    message = first_choice.get("message")
+    if not isinstance(message, dict):
+        message = {}
+    answer = message.get("content") or ""
+    if not isinstance(answer, str):
+        answer = str(answer)
+    sources = extract_sources(data, message)
+
+    if not answer.strip() and not sources:
+        print("Cortex Proxy returned an empty response: no answer content and no citations.", file=sys.stderr)
+        return 1
 
     print(answer.strip())
-    if citations:
+    if sources:
         print("\nSources:")
-        for index, url in enumerate(citations, start=1):
+        for index, url in enumerate(sources, start=1):
             print(f"[{index}] {url}")
     return 0
 

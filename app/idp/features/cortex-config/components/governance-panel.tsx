@@ -72,9 +72,12 @@ export function GovernancePanel() {
   const config: CoworkGovernanceConfig = governance.data
   const openMode = Object.keys(config.userAssignments).length === 0
 
-  const saveRoles = (roles: CoworkRole[]) => updateGovernance.mutateAsync({ roles })
+  // Fire-and-forget: .mutate() (not .mutateAsync()) so a rejection is
+  // handled entirely by the mutation's onError toast, with no unhandled
+  // promise rejection to also worry about here.
+  const saveRoles = (roles: CoworkRole[]) => updateGovernance.mutate({ roles })
   const saveAssignments = (assignments: Record<string, string[]>) =>
-    updateGovernance.mutateAsync({ userAssignments: assignments })
+    updateGovernance.mutate({ userAssignments: assignments })
 
   return (
     <div className="space-y-4">
@@ -111,7 +114,7 @@ export function GovernancePanel() {
                   name={role.name}
                   badges={[role.id]}
                   editHref={`/cortex-config/governance/roles/${encodeURIComponent(role.id)}`}
-                  onDelete={() => void saveRoles(config.roles.filter((r) => r.id !== role.id))}
+                  onDelete={() => saveRoles(config.roles.filter((r) => r.id !== role.id))}
                 />
               ))
             )}
@@ -146,7 +149,7 @@ export function GovernancePanel() {
                   onDelete={() => {
                     const next = { ...config.userAssignments }
                     delete next[email]
-                    void saveAssignments(next)
+                    saveAssignments(next)
                   }}
                 />
               ))
@@ -179,7 +182,7 @@ export function GovernancePanel() {
                       className="ml-1 text-muted-foreground hover:text-destructive"
                       aria-label={`Usuń administratora ${email}`}
                       onClick={() =>
-                        void updateGovernance.mutateAsync({
+                        updateGovernance.mutate({
                           adminEmails: config.adminEmails.filter((admin) => admin !== email),
                         })
                       }
@@ -196,9 +199,10 @@ export function GovernancePanel() {
                 event.preventDefault()
                 const email = adminInput.trim().toLowerCase()
                 if (!email || config.adminEmails.includes(email)) return
-                void updateGovernance
-                  .mutateAsync({ adminEmails: [...config.adminEmails, email] })
-                  .then(() => setAdminInput(""))
+                updateGovernance.mutate(
+                  { adminEmails: [...config.adminEmails, email] },
+                  { onSuccess: () => setAdminInput("") },
+                )
               }}
             >
               <Input

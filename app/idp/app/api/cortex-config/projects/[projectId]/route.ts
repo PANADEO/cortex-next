@@ -2,7 +2,7 @@ import { isDenied, requireAdmin } from "@/lib/cortex-governance/admin-gate"
 import { deleteProject, upsertProject } from "@/lib/cortex-governance/store"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
-import { parseProjectBody } from "../validation"
+import { findInvalidGrantReferences, parseProjectBody } from "../validation"
 
 interface RouteContext {
   params: Promise<{ projectId: string }>
@@ -35,6 +35,13 @@ export async function PUT(request: NextRequest, context: RouteContext): Promise<
   }
   if (parsed.value.id !== projectId) {
     return NextResponse.json({ message: "Project id cannot be changed" }, { status: 400 })
+  }
+  const invalidReferences = await findInvalidGrantReferences(parsed.value.composition, gate.config)
+  if (invalidReferences.length > 0) {
+    return NextResponse.json(
+      { message: "composition grants reference unknown catalog resources", invalidReferences },
+      { status: 400 },
+    )
   }
 
   const project = await upsertProject(parsed.value, gate.config)

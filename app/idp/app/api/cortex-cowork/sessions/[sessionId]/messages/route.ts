@@ -1,6 +1,6 @@
 import { runChatTurn } from "@/features/cortex-cowork/server/chat-engine"
-import { getSandboxSession, recordUserMessage } from "@/features/cortex-cowork/server/sandbox-store"
-import { requestEmail } from "@/lib/cortex-governance/request-identity"
+import { recordUserMessage } from "@/features/cortex-cowork/server/sandbox-store"
+import { isDenied, requireSessionAccess } from "@/lib/cortex-governance/project-gate"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
@@ -13,10 +13,9 @@ export async function POST(
   { params }: { params: Promise<{ sessionId: string }> },
 ): Promise<NextResponse> {
   const { sessionId } = await params
-  const session = await getSandboxSession(sessionId)
-  if (!session) {
-    return NextResponse.json({ message: `Session not found: ${sessionId}` }, { status: 404 })
-  }
+  const gate = await requireSessionAccess(request, sessionId)
+  if (isDenied(gate)) return gate
+  const { session, email } = gate
 
   const body = (await request.json().catch(() => null)) as SendMessageBody | null
   const content = typeof body?.content === "string" ? body.content.trim() : ""
@@ -25,6 +24,6 @@ export async function POST(
   }
 
   await recordUserMessage(session, content)
-  const result = await runChatTurn(session, content, { userEmail: requestEmail(request) })
+  const result = await runChatTurn(session, content, { userEmail: email })
   return NextResponse.json(result)
 }

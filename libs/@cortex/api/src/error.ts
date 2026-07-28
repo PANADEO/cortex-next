@@ -4,18 +4,28 @@ export class ApiError extends Error {
   readonly status: number
   readonly errorCode: ErrorCode | null
   readonly variables: Record<string, string>
+  /**
+   * Full parsed error response body, verbatim. `message`/`errorCode`/`variables`
+   * cover the common shape; some endpoints attach extra structured fields
+   * (e.g. a list of the specific invalid values that failed validation) that
+   * a caller may want to render beyond the plain message. Undefined when the
+   * body wasn't valid JSON.
+   */
+  readonly details: unknown
 
   constructor(params: {
     status: number
     message: string
     errorCode?: ErrorCode | null
     variables?: Record<string, string>
+    details?: unknown
   }) {
     super(params.message)
     this.name = "ApiError"
     this.status = params.status
     this.errorCode = params.errorCode ?? null
     this.variables = params.variables ?? {}
+    this.details = params.details
   }
 
   static async fromResponse(response: Response): Promise<ApiError> {
@@ -32,6 +42,7 @@ export class ApiError extends Error {
       message: errorResponse?.message ?? response.statusText ?? "Request failed",
       errorCode: errorResponse?.error_code ?? null,
       variables: errorResponse?.variables ?? {},
+      details: body ?? undefined,
     })
   }
 }

@@ -1,20 +1,17 @@
-import {
-  artifactFilePath,
-  findArtifact,
-  getSandboxSession,
-} from "@/features/cortex-cowork/server/sandbox-store"
+import { artifactFilePath, findArtifact } from "@/features/cortex-cowork/server/sandbox-store"
+import { isDenied, requireSessionAccess } from "@/lib/cortex-governance/project-gate"
+import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { readFile } from "node:fs/promises"
 
 export async function GET(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ sessionId: string; artifactId: string }> },
 ): Promise<NextResponse | Response> {
   const { sessionId, artifactId } = await params
-  const session = await getSandboxSession(sessionId)
-  if (!session) {
-    return NextResponse.json({ message: `Session not found: ${sessionId}` }, { status: 404 })
-  }
+  const gate = await requireSessionAccess(request, sessionId)
+  if (isDenied(gate)) return gate
+  const { session } = gate
 
   const artifact = findArtifact(session, artifactId)
   if (!artifact) {
