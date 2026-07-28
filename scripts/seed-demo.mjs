@@ -4,23 +4,23 @@
 //   departments  badania, marketing, dotacje (next to the seeded "wspolne")
 //   sources      demo/skills/research -> badania, demo/skills/marketing -> marketing,
 //                demo/skills/dotacje -> dotacje
-//   connectors   web-search (Perplexity CLI, dept badania)
-//                generate-image (Gemini CLI, dept marketing)
+//   connectors   web-search (Perplexity via cortex-proxy, dept badania)
+//                generate-image (Gemini via cortex-proxy, dept marketing)
 //                extract-doc + make-docx (document CLI tools, dept dotacje, no creds)
 //   projects     research-desk (Research Desk), marketing-studio (Marketing Studio),
 //                dotacje-desk (Dotacje B+R)
-//   credentials  badania/perplexity-api-key, marketing/gemini-api-key
-//                (values from env or csec; skipped with a warning when absent)
 //
-// Idempotent: entries are upserted by id, existing credential values are kept
-// unless a fresh value was resolved. Run from the repo root:
+// No per-connector credentials needed: web-search/generate-image go through
+// cortex-proxy (CORTEX_PROXY_URL + COWORK_USER_EMAIL, both env-injected by
+// the runner) rather than a direct PERPLEXITY_API_KEY/GEMINI_API_KEY.
+//
+// Idempotent: entries are upserted by id. Run from the repo root:
 //
 //   node scripts/seed-demo.mjs
 //
 // The dev server picks the config up on the next request (the store reads
 // governance.json per request) - no restart needed.
 
-import { execFileSync } from "node:child_process"
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -28,7 +28,6 @@ import { fileURLToPath } from "node:url"
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const dataDir = process.env.COWORK_DATA_DIR ?? path.join(repoRoot, "app", "idp", ".data", "cortex-cowork")
 const governancePath = path.join(dataDir, "governance.json")
-const credentialsPath = path.join(dataDir, "credentials.json")
 
 const nowIso = new Date().toISOString()
 
@@ -51,21 +50,6 @@ function upsertById(list, entry) {
   const index = list.findIndex((item) => item.id === entry.id)
   if (index === -1) list.push(entry)
   else list[index] = { ...list[index], ...entry }
-}
-
-function resolveSecret(names) {
-  for (const name of names) {
-    if (process.env[name]) return process.env[name]
-  }
-  for (const name of names) {
-    try {
-      const value = execFileSync("csec", ["get", name], { encoding: "utf8" }).trim()
-      if (value) return value
-    } catch {
-      // csec absent or key not found - keep trying
-    }
-  }
-  return undefined
 }
 
 // --- governance ----------------------------------------------------------------
@@ -132,7 +116,6 @@ upsertById(config.connectors, {
     "Wyszukiwanie w internecie z cytowanymi źródłami (Perplexity). Argumenty: zapytanie oraz opcjonalnie --model sonar-pro, --recency day|week|month|year, --domains lista, --academic.",
   enabled: true,
   target: path.join(repoRoot, "demo", "bin", "web-search.py"),
-  credentialRefs: { PERPLEXITY_API_KEY: "badania/perplexity-api-key" },
 })
 upsertById(config.connectors, {
   id: "generate-image",
@@ -143,7 +126,6 @@ upsertById(config.connectors, {
     "Generowanie obrazu PNG (Gemini). Argumenty: prompt po angielsku, --style nazwa-stylu-lub-opis, --out pełna-ścieżka-do-artifacts.",
   enabled: true,
   target: path.join(repoRoot, "demo", "bin", "generate-image.py"),
-  credentialRefs: { GEMINI_API_KEY: "marketing/gemini-api-key" },
 })
 upsertById(config.connectors, {
   id: "extract-doc",
@@ -346,36 +328,4 @@ console.log(`  departments: ${config.departments.join(", ")}`)
 console.log(`  sources: ${config.skillSources.map((source) => source.id).join(", ")}`)
 console.log(`  connectors: ${config.connectors.map((connector) => connector.id).join(", ")}`)
 console.log(`  projects: ${config.projects.map((project) => project.id).join(", ")}`)
-
-// --- credentials ---------------------------------------------------------------
-
-const credentials = readJson(credentialsPath, { version: 1, values: {} })
-const wanted = [
-  {
-    path: "badania/perplexity-api-key",
-    sources: ["PERPLEXITY_API_KEY", "perplexity/api_key"],
-  },
-  {
-    path: "marketing/gemini-api-key",
-    sources: ["GEMINI_API_KEY", "gemini/api_key"],
-  },
-]
-
-for (const { path: credentialPath, sources } of wanted) {
-  const value = resolveSecret(sources)
-  if (value) {
-    credentials.values[credentialPath] = value
-    console.log(`credential set: ${credentialPath}`)
-  } else if (credentials.values[credentialPath]) {
-    console.log(`credential kept: ${credentialPath} (already present)`)
-  } else {
-    console.warn(
-      `credential MISSING: ${credentialPath} - set env ${sources[0]} (or csec) and re-run, ` +
-        "or paste it in cortex-config -> Sekrety.",
-    )
-  }
-}
-
-writeJsonAtomic(credentialsPath, credentials, 0o600)
-console.log(`credentials: ${credentialsPath}`)
 console.log("done - refresh the hub; the demo tiles resolve on next request.")
