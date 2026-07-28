@@ -57,7 +57,11 @@ function AgentsForm({
   const sortedDepartments = [...departments].sort()
 
   async function save() {
-    await update.mutateAsync({ agentsInstructions: { global, departments: byDepartment } })
+    try {
+      await update.mutateAsync({ agentsInstructions: { global, departments: byDepartment } })
+    } catch {
+      return
+    }
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }

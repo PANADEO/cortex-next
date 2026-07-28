@@ -61,7 +61,15 @@ function AssignmentForm({
     resolver: zodResolver(assignmentFormSchema),
     defaultValues,
   })
-  const submit = form.handleSubmit(onSubmit)
+  const submit = form.handleSubmit(async (values) => {
+    try {
+      await onSubmit(values)
+    } catch {
+      // Rejected save (e.g. 400 from governance/route.ts validation): stay on
+      // the page so the admin can fix it. The mutation's onError already
+      // surfaced a toast with the reason - see useUpdateGovernance.
+    }
+  })
 
   return (
     <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
