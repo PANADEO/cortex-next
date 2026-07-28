@@ -89,6 +89,7 @@ export function useUpdateGovernance() {
   const invalidate = useInvalidateGovernance()
   return useMutation({
     mutationFn: (update: GovernanceUpdate) => configApi.updateGovernance(update),
+    onError: (error) => toastApiError(error, "Nie udało się zapisać zmian w governance"),
     onSettled: invalidate,
   })
 }
@@ -132,6 +133,7 @@ export function useSetCredential() {
   return useMutation({
     mutationFn: ({ path, value }: { path: string; value: string }) =>
       configApi.setCredential(path, value),
+    onError: (error) => toastApiError(error, "Nie udało się zapisać sekretu"),
     onSettled: () => client.invalidateQueries({ queryKey: configQueryKeys.credentials() }),
   })
 }
@@ -140,6 +142,7 @@ export function useDeleteCredential() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (path: string) => configApi.deleteCredential(path),
+    onError: (error) => toastApiError(error, "Nie udało się usunąć sekretu"),
     onSettled: () => client.invalidateQueries({ queryKey: configQueryKeys.credentials() }),
   })
 }
@@ -165,6 +168,7 @@ export function useUpdateDepartments() {
   const invalidate = useInvalidateCatalog()
   return useMutation({
     mutationFn: (departments: string[]) => configApi.updateDepartments(departments),
+    onError: (error) => toastApiError(error, "Nie udało się zapisać departamentów"),
     onSettled: invalidate,
   })
 }
@@ -173,6 +177,7 @@ export function useUpdateSkillSources() {
   const invalidate = useInvalidateCatalog()
   return useMutation({
     mutationFn: (sources: CoworkSkillSource[]) => configApi.updateSkillSources(sources),
+    onError: (error) => toastApiError(error, "Nie udało się zapisać źródeł skilli"),
     onSettled: invalidate,
   })
 }
@@ -181,6 +186,7 @@ export function useUpdateConnectors() {
   const invalidate = useInvalidateCatalog()
   return useMutation({
     mutationFn: (connectors: CoworkConnectorConfig[]) => configApi.updateConnectors(connectors),
+    onError: (error) => toastApiError(error, "Nie udało się zapisać konektorów"),
     onSettled: invalidate,
   })
 }
