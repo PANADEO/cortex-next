@@ -152,6 +152,17 @@ if (!config.roles.some((role) => role.id === "analyst")) {
   config.roles.push({ id: "analyst", name: "Analyst", description: "Domyślna rola dostępu" })
 }
 
+// CORTEX_PROXY_URL is a bare host (e.g. "http://cortex-proxy", no path) -
+// the convention every consumer in this org uses (ilustromat's own
+// .env.example) and how demo/bin/web-search.py/generate-image.py already
+// read it (they append /v1/chat/completions themselves). Flue's
+// registerProvider() wants baseUrl to already include /v1 (its own doc's
+// example: "https://api.anthropic.com/v1"), so this is the one place that
+// appends it.
+function cortexProxyBaseUrlWithV1() {
+  return `${process.env.CORTEX_PROXY_URL ?? "http://cortex-proxy"}/v1`
+}
+
 function demoProject(overrides) {
   return {
     enabled: true,
@@ -165,7 +176,7 @@ function demoProject(overrides) {
     // slug, not Anthropic's native hyphenated one.
     model: {
       provider: "openai-compatible",
-      baseUrl: process.env.CORTEX_PROXY_URL ?? "http://cortex-proxy/v1",
+      baseUrl: cortexProxyBaseUrlWithV1(),
       modelId: "anthropic/claude-opus-4.8",
     },
     sandbox: { mode: "local", allowedPaths: [] },
