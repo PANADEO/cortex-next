@@ -6,7 +6,7 @@
 // Awaria Postgresa odcina wszystkich zamiast wpuszczać kogokolwiek — świadomy
 // koszt, wymagany przez code-service/SKILL.md pkt 2.
 
-import { loadGrantedApplicationCodes } from "./rbac-store"
+import { loadGrantedApplicationCodes, loadGrantedScopes } from "./rbac-store"
 
 export interface TileAccessResult {
   allowed: boolean
@@ -22,6 +22,7 @@ const CACHE_TTL_MS = 30_000
 const CACHE_MAX_ENTRIES = 10_000
 
 const cache = new Map<string, CacheEntry>()
+const scopeCache = new Map<string, CacheEntry>()
 
 /**
  * Tożsamość z nagłówka wstrzykniętego przez oauth2-proxy; poza produkcją
@@ -54,23 +55,65 @@ export async function requireTileAccess(
   }
 }
 
+/**
+ * Warstwa GRANULARNA: czy użytkownik ma konkretną akcję W ŚRODKU kafelka
+ * (np. "manage-templates" w Ilustromacie). Osobne pytanie od requireTileAccess(),
+ * które odpowiada tylko "czy kafelek w ogóle".
+ *
+ * Fail-closed identycznie jak warstwa gruboziarnista, ale UWAGA na kolejność
+ * w route: sam scope NIE wystarcza. Handler chroniący akcję administracyjną
+ * musi przejść OBIE bramki — dostęp do kafelka i grant scope'u. Stąd ta
+ * funkcja sprawdza jedno i drugie, zamiast ufać, że wołający pamiętał o obu.
+ */
+export async function requireTileScope(
+  request: Request,
+  entitlementCode: string,
+  scopeCode: string,
+): Promise<TileAccessResult> {
+  const access = await requireTileAccess(request, entitlementCode)
+  if (!access.allowed || !access.email) return access
+
+  try {
+    const scopes = await getGrantedScopes(access.email)
+    return { allowed: scopes.includes(`${entitlementCode}:${scopeCode}`), email: access.email }
+  } catch (error) {
+    console.error("[rbac] odmowa dostępu — błąd odczytu scope'ów:", error)
+    return { allowed: false, email: access.email }
+  }
+}
+
 /** Czyści cache uprawnień. Do użycia w testach i po zmianie grantów z UI. */
 export function clearTileAccessCache(): void {
   cache.clear()
+  scopeCache.clear()
 }
 
-async function getGrantedCodes(email: string): Promise<string[]> {
-  const entry = cache.get(email)
+function getGrantedCodes(email: string): Promise<string[]> {
+  return cached(cache, email, loadGrantedApplicationCodes)
+}
+
+function getGrantedScopes(email: string): Promise<string[]> {
+  return cached(scopeCache, email, loadGrantedScopes)
+}
+
+/** Wspólny cache obu warstw uprawnień — osobne mapy, identyczna polityka
+ *  (TTL + wyrzucanie najstarszego wpisu po przekroczeniu limitu). */
+async function cached(
+  store: Map<string, CacheEntry>,
+  email: string,
+  load: (email: string) => Promise<string[]>,
+): Promise<string[]> {
+  const entry = store.get(email)
   if (entry && entry.expiresAt >= Date.now()) return entry.codes
-  if (entry) cache.delete(email)
+  if (entry) store.delete(email)
 
-  const codes = await loadGrantedApplicationCodes(email)
+  const codes = await load(email)
 
-  if (cache.size >= CACHE_MAX_ENTRIES && !cache.has(email)) {
-    const oldest = cache.keys().next().value
-    if (oldest !== undefined) cache.delete(oldest)
+  if (store.size >= CACHE_MAX_ENTRIES && !store.has(email)) {
+    const oldest = store.keys().next().value
+    if (oldest !== undefined) store.delete(oldest)
   }
-  cache.set(email, { codes, expiresAt: Date.now() + CACHE_TTL_MS })
+  store.set(email, { codes, expiresAt: Date.now() + CACHE_TTL_MS })
 
   return codes
 }

@@ -4,7 +4,13 @@
 
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js"
 import postgres from "postgres"
-import * as schema from "./schema/system-config"
+import * as ilustromatSchema from "./schema/ilustromat"
+import * as systemConfigSchema from "./schema/system-config"
+
+// Jedno połączenie obsługuje WSZYSTKIE schematy modułów (jedna baza,
+// schema-per-moduł). Migracje są osobne per moduł, ale klient jest wspólny —
+// inaczej każdy kafelek trzymałby własną pulę połączeń do tego samego Postgresa.
+const schema = { ...systemConfigSchema, ...ilustromatSchema }
 
 export type CortexDatabase = PostgresJsDatabase<typeof schema>
 
