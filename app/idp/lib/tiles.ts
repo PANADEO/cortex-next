@@ -1,6 +1,6 @@
 import type { CoworkTileArchetype } from "@cortex/types"
 import type { LucideIcon } from "lucide-react"
-import { CalendarClock, FileSpreadsheet, FileText, Image, Receipt, ScanText, Settings, ShieldCheck, Users, Workflow } from "lucide-react"
+import { CalendarClock, FileSpreadsheet, FileText, Image, Receipt, ScanText, Settings, ShieldCheck, Users, Video, Workflow } from "lucide-react"
 import { canAccessAiTool, isAiToolId } from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
@@ -220,6 +220,24 @@ export const TILES: ReadonlyArray<Tile> = [
     categoryFunctional: "misc",
     categoryDepartment: ["operations", "finance"],
     versionEndpoint: "/intrastat/version",
+    archetype: "dashboard",
+  },
+  {
+    // Świadomie link-only, nie natywny port — produkt już stabilny, osobna
+    // rodzina serwisów (frontend na Vercel, backend na innej domenie,
+    // whisper-service tylko przez VPN mesh), zero wspólnego Dockera do
+    // wciągnięcia w docker-compose. Domena zweryfikowana w README repo
+    // meeting-guru-frontend (Vercel, branch main -> chat.megu.me).
+    id: "meeting-guru",
+    label: "Nagrywanie Spotkań",
+    description: "Asystent spotkań sprzedażowych — nagrywanie, transkrypcja i wskazówki AI na żywo",
+    href: "https://chat.megu.me",
+    external: true,
+    icon: Video,
+    iconBg: "bg-teal-200 dark:bg-teal-900/40",
+    iconFg: "text-teal-700 dark:text-teal-300",
+    categoryFunctional: "agents",
+    categoryDepartment: ["operations"],
     archetype: "dashboard",
   },
   {
