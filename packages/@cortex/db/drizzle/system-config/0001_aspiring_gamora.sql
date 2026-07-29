@@ -1,0 +1,3 @@
+CREATE INDEX IF NOT EXISTS "permissions_matrix_application_id_idx" ON "system_config"."permissions_matrix" USING btree ("application_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "user_roles_role_id_idx" ON "system_config"."user_roles" USING btree ("role_id");--> statement-breakpoint
+ALTER TABLE "system_config"."applications" ADD CONSTRAINT "applications_target_allowed" CHECK ("system_config"."applications"."target" is null or "system_config"."applications"."target" in ('_self', '_blank'));

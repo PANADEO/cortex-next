@@ -28,6 +28,18 @@ Wejście: `Request` (czyta `X-Auth-Request-Email`, fallback `DEV_USER_EMAIL` poz
 3. Cache pattern (30s TTL) zostaje — teraz cache'uje wynik zapytania do własnej bazy zamiast do zewnętrznego serwisu.
 4. `getAccessResult`/`getAuthorizedAppsAtCortexAdmin` w `access.ts` — do usunięcia PO migracji, nie wcześniej (cortex-admin zostaje źródłem prawdy do czasu ukończenia Ścieżki E).
 
+## Cache uprawnień — zakres i świadome ograniczenia
+
+`requireTileAccess()` cache'uje kody grantów per e-mail (30 s TTL, max 10k wpisów, LRU-ish eviction).
+
+- **Unieważnienie jest natychmiastowe**: każda mutacja uprawnień w `system-config.ts` (`setUserRoles`, `setApplicationRoles`, `setRoleApplications`, `updateApplication`, `deleteApplication`) woła `clearTileAccessCache()`. Bez tego odebranie dostępu działałoby dopiero po TTL — dowód regresji: `system-config.integration.test.ts`.
+- **Single-flight**: równoległe żądania tego samego użytkownika przy zimnym cache dzielą jedno zapytanie do bazy. Licznik `generation` pilnuje, żeby odczyt rozpoczęty PRZED unieważnieniem nie zapisał nieaktualnego wyniku po nim.
+- **ZAAKCEPTOWANE OGRANICZENIE — cache jest per-proces.** Przy wielu instancjach appu `clearTileAccessCache()` czyści tylko własny proces; pozostałe dogaszają wpisy po TTL (do 30 s). Świadomie nie budujemy inwalidacji cross-instance (wymagałaby pub/sub albo współdzielonego cache) — 30 s okna na POZOSTAŁYCH instancjach jest akceptowalne dla modułu administracyjnego.
+
+## Ochrona przed samo-zablokowaniem
+
+`updateApplication`/`deleteApplication`/`setApplicationRoles` odrzucają (`SelfLockoutError` → HTTP 409) zmiany, które odcięłyby dostęp do modułu administracyjnego: zmianę `code`, dezaktywację i usunięcie wiersza `SYSTEM_CONFIG_APP_CODE` oraz pozostawienie go bez ani jednej uprawnionej roli. Blokada MUSI żyć w serwisie — blokada pola w formularzu nie zatrzymuje żądania wysłanego curlem.
+
 ## Rejestr kafelków przez UX — ten sam serwis, inny use case
 
 Wymóg Cezarego "ustawianie kafelków z UI, nie z plików" korzysta z TEGO SAMEGO schematu (`applications`/tabela rejestru) — CRUD na kafelkach to kolejny serwis w `@cortex/service` (np. `tile-registry.ts`), nie osobny mechanizm. Patrz `docs/tile-registry.md`.

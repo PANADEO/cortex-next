@@ -8,6 +8,7 @@ export const queryKeys = {
   users: () => [...queryKeys.all, "users"] as const,
   roles: () => [...queryKeys.all, "roles"] as const,
   applications: () => [...queryKeys.all, "applications"] as const,
+  applicationRoles: (id: string) => [...queryKeys.applications(), id, "roles"] as const,
 }
 
 export const endpoints = {
@@ -26,5 +27,9 @@ export const endpoints = {
     update: (id: string, body: ApplicationInput) =>
       apiClient.patch<Application>(`${BASE}/applications/${id}`, { jsonBody: body }),
     remove: (id: string) => apiClient.delete<{ ok: true }>(`${BASE}/applications/${id}`),
+    listRoles: (id: string) =>
+      apiClient.get<{ roleIds: string[] }>(`${BASE}/applications/${id}/roles`),
+    setRoles: (id: string, roleIds: string[]) =>
+      apiClient.put<{ ok: true }>(`${BASE}/applications/${id}/roles`, { jsonBody: { roleIds } }),
   },
 }

@@ -1,4 +1,9 @@
-import { UnknownRoleError, UnknownUserError, setUserRoles } from "@cortex/service"
+import {
+  UnknownApplicationError,
+  UnknownRoleError,
+  listApplicationRoleIds,
+  setApplicationRoles,
+} from "@cortex/service"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { z } from "zod"
@@ -11,8 +16,23 @@ interface RouteContext {
 }
 
 const bodySchema = z.object({
-  roleIds: z.array(z.string().uuid()).max(50),
+  roleIds: z.array(z.string().uuid()).max(200),
 })
+
+export async function GET(request: NextRequest, context: RouteContext): Promise<NextResponse> {
+  const denied = await denyUnlessAllowed(request)
+  if (denied) return denied
+
+  const { id } = await context.params
+  const invalidId = parseIdParam(id)
+  if (invalidId) return invalidId
+
+  try {
+    return NextResponse.json({ roleIds: await listApplicationRoleIds(id) })
+  } catch (error) {
+    return toErrorResponse(error)
+  }
+}
 
 export async function PUT(request: NextRequest, context: RouteContext): Promise<NextResponse> {
   const denied = await denyUnlessAllowed(request)
@@ -28,11 +48,11 @@ export async function PUT(request: NextRequest, context: RouteContext): Promise<
   if (invalidId) return invalidId
 
   try {
-    await setUserRoles(id, parsed.data.roleIds)
+    await setApplicationRoles(id, parsed.data.roleIds)
     return NextResponse.json({ ok: true })
   } catch (error) {
-    if (error instanceof UnknownUserError) {
-      return NextResponse.json({ error: "unknown-user" }, { status: 404 })
+    if (error instanceof UnknownApplicationError) {
+      return NextResponse.json({ error: "unknown-application" }, { status: 404 })
     }
     if (error instanceof UnknownRoleError) {
       return NextResponse.json({ error: "unknown-role" }, { status: 400 })

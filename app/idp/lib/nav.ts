@@ -183,10 +183,10 @@ export const SYSTEM_CONFIG_NAV: TileMenuSection[] = [
     label: "Instancja",
     items: [
       {
-        id: "kafelki",
-        label: "Rejestr kafelków",
+        id: "aplikacje",
+        label: "Aplikacje",
         icon: LayoutDashboard,
-        href: "/system-config/kafelki",
+        href: "/system-config/aplikacje",
       },
     ],
   },

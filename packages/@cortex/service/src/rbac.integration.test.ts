@@ -18,13 +18,17 @@ import {
   userRoles,
   users,
 } from "@cortex/db"
+import { randomUUID } from "node:crypto"
 import { eq } from "drizzle-orm"
 import { afterAll, beforeEach, describe, expect, it } from "vitest"
 import { clearTileAccessCache, requireTileAccess } from "./rbac"
 
 const hasDatabase = Boolean(process.env.DATABASE_URL)
 
-const SUFFIX = `itest-${Date.now()}`
+// Sam zegar nie wystarcza: oba pliki integracyjne startują równolegle i przy
+// trafieniu w tę samą milisekundę dostawały identyczne kody fixture'ów, więc
+// kasowały sobie nawzajem wiersze (obserwowany flake na FK user_roles).
+const SUFFIX = `itest-${process.pid}-${randomUUID().slice(0, 8)}`
 const APP_CODE = `kafelek-${SUFFIX}`
 const ROLE_CODE = `rola-${SUFFIX}`
 const EMAIL = `tester-${SUFFIX}@firma.pl`
