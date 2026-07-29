@@ -15,6 +15,7 @@ import { sql } from "drizzle-orm"
 import {
   boolean,
   check,
+  index,
   integer,
   pgSchema,
   primaryKey,
@@ -69,6 +70,9 @@ export const userRoles = systemConfig.table(
   },
   (table) => ({
     pk: primaryKey({ columns: [table.userId, table.roleId] }),
+    // Klucz złożony pokrywa odczyt po user_id; "kto ma tę rolę" (i kaskada przy
+    // usuwaniu roli) idzie po drugiej kolumnie i potrzebuje własnego indeksu.
+    byRole: index("user_roles_role_id_idx").on(table.roleId),
   }),
 )
 
@@ -105,6 +109,11 @@ export const applications = systemConfig.table(
       sql`(${table.kind} = 'native' and ${table.route} is not null and ${table.url} is null)
           or (${table.kind} <> 'native' and ${table.url} is not null and ${table.route} is null)`,
     ),
+    // Tak samo jak `kind`: dozwolone wartości pilnuje baza, nie tylko Zod.
+    targetAllowed: check(
+      "applications_target_allowed",
+      sql`${table.target} is null or ${table.target} in ('_self', '_blank')`,
+    ),
   }),
 )
 
@@ -123,6 +132,9 @@ export const permissionsMatrix = systemConfig.table(
   },
   (table) => ({
     pk: primaryKey({ columns: [table.roleId, table.applicationId] }),
+    // "które role mają dostęp do tej aplikacji" — ekran szczegółów aplikacji
+    // i kaskada przy usuwaniu aplikacji czytają po tej kolumnie.
+    byApplication: index("permissions_matrix_application_id_idx").on(table.applicationId),
   }),
 )
 
