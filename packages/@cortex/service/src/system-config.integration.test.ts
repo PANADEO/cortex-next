@@ -21,7 +21,7 @@ import {
   users,
 } from "@cortex/db"
 import { randomUUID } from "node:crypto"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest"
 import { clearTileAccessCache, requireTileAccess } from "./rbac"
 import {
@@ -29,6 +29,7 @@ import {
   SelfLockoutError,
   deleteApplication,
   setApplicationRoles,
+  setRoleApplications,
   setUserRoles,
   updateApplication,
 } from "./system-config"
@@ -67,6 +68,40 @@ function makeRequest(email: string): Request {
 async function canAccess(): Promise<boolean> {
   const result = await requireTileAccess(makeRequest(EMAIL), APP_CODE)
   return result.allowed
+}
+
+/** Ilu AKTYWNYCH ludzi realnie wejdzie do modułu — miara, którą niezmiennik ma
+ *  utrzymać powyżej zera niezależnie od tego, ile mutacji poszło naraz. */
+async function activeModuleHolders(moduleId: string): Promise<number> {
+  const rows = await getDb()
+    .select({ id: users.id })
+    .from(users)
+    .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    .innerJoin(permissionsMatrix, eq(permissionsMatrix.roleId, userRoles.roleId))
+    .where(and(eq(users.isActive, true), eq(permissionsMatrix.applicationId, moduleId)))
+
+  return new Set(rows.map((row) => row.id)).size
+}
+
+/** Otwiera drugie połączenie ZANIM zacznie się wyścig. postgres.js dokłada je
+ *  leniwie, więc PIERWSZA para równoległych transakcji w procesie wychodzi i tak
+ *  sekwencyjnie (druga czeka na nawiązanie połączenia i widzi już commit
+ *  pierwszej) — bez tego test współbieżności po cichu przestaje testować
+ *  współbieżność i przechodzi nawet na kodzie bez blokady. Zmierzone: bez
+ *  rozgrzania 1. próba wychodzi sekwencyjnie, kolejne 4/4 ścigają się. */
+async function warmPool(): Promise<void> {
+  const db = getDb()
+  const touch = async (tx: { select: typeof db.select }) => {
+    await tx.select({ id: users.id }).from(users).limit(1)
+  }
+
+  await Promise.all([db.transaction(touch), db.transaction(touch)])
+}
+
+function rejections(results: PromiseSettledResult<unknown>[]): unknown[] {
+  return results
+    .filter((result): result is PromiseRejectedResult => result.status === "rejected")
+    .map((result) => result.reason)
 }
 
 const NATIVE_INPUT = {
@@ -437,6 +472,119 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
       expect(deactivated?.isActive).toBe(false)
 
       expect(await deleteApplication(applicationId)).toBe(true)
+    })
+
+    // R1: niezmiennik był poprawny sekwencyjnie i nieszczelny współbieżnie.
+    // KAŻDE z tych żądań Z OSOBNA jest legalne — dopiero para puszczona naraz
+    // zostawiała zero ludzi z dostępem. Test SEKWENCYJNY tego nie złapie, więc
+    // te trzy odpalają obie mutacje przez Promise.allSettled. Asercja jest
+    // odporna na kolejność: dokładnie jedna ma przejść, druga dostać
+    // SelfLockoutError, a moduł ZAWSZE zostać z co najmniej jednym człowiekiem.
+    describe("wyścig dwóch równoległych mutacji (TOCTOU)", () => {
+      beforeEach(warmPool)
+
+      it("dwa równoległe odebrania ról — jedno przechodzi, moduł zostaje osiągalny", async () => {
+        const db = getDb()
+        await db.insert(userRoles).values({ userId: secondUserId, roleId })
+        clearTileAccessCache()
+        expect(await activeModuleHolders(systemConfigId)).toBe(2)
+
+        const results = await Promise.allSettled([
+          setUserRoles(userId, []),
+          setUserRoles(secondUserId, []),
+        ])
+
+        const rejected = rejections(results)
+        expect(rejected).toHaveLength(1)
+        expect(rejected[0]).toBeInstanceOf(SelfLockoutError)
+        expect(await activeModuleHolders(systemConfigId)).toBe(1)
+      })
+
+      it("ekran Aplikacje równolegle z ekranem Użytkownicy — jedno przechodzi", async () => {
+        const db = getDb()
+        // Bob jest jedynym aktywnym posiadaczem drugiej roli, więc przepięcie
+        // grantu na nią jest samo w sobie w pełni legalne — tak samo jak
+        // odebranie Bobowi tej roli, dopóki grant siedzi na roli Alice.
+        await db.insert(userRoles).values({ userId: secondUserId, roleId: emptyRoleId })
+        clearTileAccessCache()
+
+        const results = await Promise.allSettled([
+          setApplicationRoles(systemConfigId, [emptyRoleId]),
+          setUserRoles(secondUserId, []),
+        ])
+
+        const rejected = rejections(results)
+        expect(rejected).toHaveLength(1)
+        expect(rejected[0]).toBeInstanceOf(SelfLockoutError)
+        expect(await activeModuleHolders(systemConfigId)).toBeGreaterThanOrEqual(1)
+      })
+
+      it("kierunek rola->aplikacje bierze tę samą blokadę co pozostałe", async () => {
+        const db = getDb()
+        await db.insert(userRoles).values({ userId: secondUserId, roleId: emptyRoleId })
+        await db
+          .insert(permissionsMatrix)
+          .values({ roleId: emptyRoleId, applicationId: systemConfigId })
+        clearTileAccessCache()
+        expect(await activeModuleHolders(systemConfigId)).toBe(2)
+
+        const results = await Promise.allSettled([
+          setRoleApplications(roleId, []),
+          setUserRoles(secondUserId, []),
+        ])
+
+        const rejected = rejections(results)
+        expect(rejected).toHaveLength(1)
+        expect(rejected[0]).toBeInstanceOf(SelfLockoutError)
+        expect(await activeModuleHolders(systemConfigId)).toBeGreaterThanOrEqual(1)
+      })
+    })
+
+    // R2: setRoleApplications() nie ma dziś route'a, więc guard-coverage.test.ts
+    // jej nie widzi — te testy wołają ją WPROST, żeby niezmiennik był na
+    // miejscu w dniu, w którym ktoś dorobi ekran "rola -> aplikacje".
+    describe("setRoleApplications — kierunek rola -> aplikacje", () => {
+      it("odrzuca zdjęcie grantu ostatniej roli z aktywnym użytkownikiem", async () => {
+        await expect(setRoleApplications(roleId, [])).rejects.toBeInstanceOf(SelfLockoutError)
+
+        const granted = await getDb()
+          .select({ roleId: permissionsMatrix.roleId })
+          .from(permissionsMatrix)
+          .where(eq(permissionsMatrix.applicationId, systemConfigId))
+        expect(granted.map((row) => row.roleId)).toEqual([roleId])
+      })
+
+      it("odrzuca też zestaw, w którym modułu po prostu nie ma", async () => {
+        await expect(setRoleApplications(roleId, [applicationId])).rejects.toBeInstanceOf(
+          SelfLockoutError,
+        )
+      })
+
+      it("przepuszcza, gdy dostęp zachowuje inna rola z aktywnym użytkownikiem", async () => {
+        const db = getDb()
+        await db.insert(userRoles).values({ userId: secondUserId, roleId: emptyRoleId })
+        await db
+          .insert(permissionsMatrix)
+          .values({ roleId: emptyRoleId, applicationId: systemConfigId })
+
+        await setRoleApplications(roleId, [])
+
+        const granted = await db
+          .select({ roleId: permissionsMatrix.roleId })
+          .from(permissionsMatrix)
+          .where(eq(permissionsMatrix.applicationId, systemConfigId))
+        expect(granted.map((row) => row.roleId)).toEqual([emptyRoleId])
+      })
+
+      it("nie przeszkadza roli bez grantu do modułu (kontrola negatywna)", async () => {
+        await setRoleApplications(emptyRoleId, [applicationId])
+
+        const granted = await getDb()
+          .select({ applicationId: permissionsMatrix.applicationId })
+          .from(permissionsMatrix)
+          .where(eq(permissionsMatrix.roleId, emptyRoleId))
+        expect(granted.map((row) => row.applicationId)).toEqual([applicationId])
+      })
     })
   })
 

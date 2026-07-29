@@ -281,6 +281,16 @@ export async function setRoleApplications(roleId: string, applicationIds: string
       if (existing.length !== wanted.length) throw new UnknownApplicationError()
     }
 
+    // Trzecia oś tego samego niezmiennika. Ta funkcja nie ma dziś route'a, więc
+    // guard-coverage.test.ts jej NIE pilnuje (widzi tylko app/**/route.ts) —
+    // niezmiennik musi tu być, zanim ktoś dorobi ekran "rola -> aplikacje",
+    // bo inaczej lockout wróciłby bez ani jednego sygnału z testów.
+    await assertModuleStaysReachable(tx, {
+      direction: "role-applications",
+      roleId,
+      applicationIds: wanted,
+    })
+
     await tx.delete(permissionsMatrix).where(eq(permissionsMatrix.roleId, roleId))
     if (wanted.length > 0) {
       await tx
@@ -420,6 +430,7 @@ function assertKeepsModuleReachable(existing: ApplicationRow, input: Application
 type ModuleAccessChange =
   | { direction: "application-roles"; applicationId: string; roleIds: string[] }
   | { direction: "user-roles"; userId: string; roleIds: string[] }
+  | { direction: "role-applications"; roleId: string; applicationIds: string[] }
 
 /**
  * Niezmiennik: po tej operacji CO NAJMNIEJ JEDEN AKTYWNY UŻYTKOWNIK zachowuje
@@ -434,15 +445,30 @@ type ModuleAccessChange =
  * Operacja, która niczego nie pogarsza (moduł był nieosiągalny już przed nią),
  * przechodzi — blokada ma zapobiegać utracie dostępu, nie utrudniać wychodzenie
  * z awarii ręcznym SQL-em.
+ *
+ * Sprawdzenie jest POPRAWNE TYLKO POD BLOKADĄ WIERSZA. Bez `.for("update")`
+ * niżej niezmiennik był prawdziwy sekwencyjnie i nieszczelny współbieżnie:
+ * dwie transakcje w READ COMMITTED czytały stan sprzed zmiany tej drugiej,
+ * każda uznawała ją za "tego, kto zostaje", a zapisy szły w rozłączne wiersze
+ * `user_roles`/`permissions_matrix` — więc nie było konfliktu zapisu, obie się
+ * commitowały i razem zostawiały moduł bez ani jednego aktywnego człowieka.
  */
 async function assertModuleStaysReachable(
   tx: Transaction,
   change: ModuleAccessChange,
 ): Promise<void> {
+  // Ta blokada nie broni samego wiersza (jego pól pilnuje
+  // assertKeepsModuleReachable) — jest MUTEKSEM NA NIEZMIENNIKU. Każda mutacja
+  // osiągalności modułu bierze ją na tym jednym wierszu, więc druga transakcja
+  // czeka na commit pierwszej, a jej dalsze SELECT-y (READ COMMITTED = nowy
+  // snapshot na każdą instrukcję) widzą już zapisany stan i poprawnie odmawiają.
+  // Bierzemy ją PRZED każdym innym zapisem i zawsze na tym samym wierszu, więc
+  // nie ma cyklu i nie ma ryzyka deadlocka.
   const [moduleRow] = await tx
     .select({ id: applications.id })
     .from(applications)
     .where(eq(applications.code, SYSTEM_CONFIG_APP_CODE))
+    .for("update")
   if (!moduleRow) return
 
   if (change.direction === "application-roles" && change.applicationId !== moduleRow.id) return
@@ -455,16 +481,43 @@ async function assertModuleStaysReachable(
   ).map((row) => row.roleId)
 
   const userChange = change.direction === "user-roles" ? change : null
-  const grantsAfter = change.direction === "application-roles" ? change.roleIds : grantsNow
+  const grantsAfter = moduleGrantsAfter(change, grantsNow, moduleRow.id)
 
   if (await hasActiveHolder(tx, grantsAfter, userChange)) return
   if (!(await hasActiveHolder(tx, grantsNow, null))) return
 
-  throw new SelfLockoutError(
-    userChange
-      ? "Nie można odebrać tych ról — to ostatni aktywny użytkownik z dostępem do Konfiguracji Systemu, więc po zapisie nikt nie wszedłby już do tego modułu."
-      : "Co najmniej jeden aktywny użytkownik musi zachować dostęp do Konfiguracji Systemu — wskazane role nie mają ani jednego aktywnego użytkownika, więc po zapisie nikt nie wszedłby już do tego modułu.",
-  )
+  throw new SelfLockoutError(lockoutMessage(change))
+}
+
+/** Role z dostępem do modułu PO zapisie — każdy kierunek rusza inną oś. */
+function moduleGrantsAfter(
+  change: ModuleAccessChange,
+  grantsNow: string[],
+  moduleId: string,
+): string[] {
+  switch (change.direction) {
+    case "application-roles":
+      return change.roleIds
+    case "role-applications": {
+      // Zapis kasuje WSZYSTKIE granty tej roli i wstawia nowy zestaw, więc
+      // grant do modułu przeżywa dokładnie wtedy, gdy moduł jest na liście.
+      const withoutRole = grantsNow.filter((granted) => granted !== change.roleId)
+      return change.applicationIds.includes(moduleId) ? [...withoutRole, change.roleId] : withoutRole
+    }
+    case "user-roles":
+      return grantsNow
+  }
+}
+
+function lockoutMessage(change: ModuleAccessChange): string {
+  switch (change.direction) {
+    case "user-roles":
+      return "Nie można odebrać tych ról — to ostatni aktywny użytkownik z dostępem do Konfiguracji Systemu, więc po zapisie nikt nie wszedłby już do tego modułu."
+    case "application-roles":
+      return "Co najmniej jeden aktywny użytkownik musi zachować dostęp do Konfiguracji Systemu — wskazane role nie mają ani jednego aktywnego użytkownika, więc po zapisie nikt nie wszedłby już do tego modułu."
+    case "role-applications":
+      return "Nie można odebrać tej roli dostępu do Konfiguracji Systemu — to ostatnia rola z aktywnym użytkownikiem, więc po zapisie nikt nie wszedłby już do tego modułu."
+  }
 }
 
 /**
