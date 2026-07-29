@@ -11,7 +11,13 @@
 import { getFrameTemplate, saveTemplateAsset } from "@cortex/service"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { sha256 } from "@/lib/ilustromat/font-cache"
+import { materializeFont, sha256 } from "@/lib/ilustromat/font-cache"
+import {
+  FontVerificationError,
+  supportsFontFiles,
+  verifyFontRendering,
+  type FontVerificationInput,
+} from "@/lib/ilustromat/font-verification"
 import { inspectFont } from "@/lib/ilustromat/glyph-coverage"
 import { normalizeLogoToPng } from "@/lib/ilustromat/logo"
 import { denyUnlessTemplateManager, toErrorResponse } from "../../../_lib/guard"
@@ -83,12 +89,26 @@ export async function POST(request: NextRequest, context: Context): Promise<Next
       )
     }
 
+    // Bramka renderu weryfikacyjnego: fontkit powiedział tylko, że plik daje się
+    // sparsować i ma polskie znaki. Dopiero próbny render mówi, czy TEN plik
+    // faktycznie składa tekst — plik uszkodzony i rozjazd nazwy rodziny kończą
+    // się tak samo (cichy font zastępczy), więc zamykamy je razem, TU, a nie
+    // przy każdym compose().
+    const digest = sha256(bytes)
+    const verification = await verifyUploadedFont({
+      bytes,
+      family: inspection.family,
+      fontPath: materializeFont(bytes, digest),
+      bold: kind === "font-bold",
+    })
+    if (verification) return verification
+
     await saveTemplateAsset({
       templateId: id,
       kind: kind as "font-regular" | "font-bold",
       contentType: file.type || "font/ttf",
       bytes,
-      sha256: sha256(bytes),
+      sha256: digest,
       fontFamily: inspection.family,
       originalFilename: file.name,
     })
@@ -96,5 +116,34 @@ export async function POST(request: NextRequest, context: Context): Promise<Next
     return NextResponse.json({ kind, fontFamily: inspection.family })
   } catch (error) {
     return toErrorResponse(error)
+  }
+}
+
+/**
+ * Zwraca gotową odmowę albo null, gdy render weryfikacyjny przeszedł.
+ * Rozróżnia winę pliku od wady środowiska: gdy sharp ignoruje `fontfile`
+ * w ogóle (brak fontconfig — LUKA 5), żaden wgrany font nie ma szans, a
+ * użytkownik musi dostać komunikat, który wskazuje na środowisko, nie na plik.
+ */
+async function verifyUploadedFont(input: FontVerificationInput): Promise<NextResponse | null> {
+  try {
+    await verifyFontRendering(input)
+    return null
+  } catch (error) {
+    if (!(error instanceof FontVerificationError)) throw error
+
+    // Podmiana komunikatu TYLKO dla odmowy z atrybucji: uszkodzony plik jest
+    // uszkodzony niezależnie od środowiska i zwalanie tego na fontconfig
+    // wysłałoby użytkownika w złą stronę.
+    const blameEnvironment =
+      error.code === "font-not-applied" && !(await supportsFontFiles())
+    const message = blameEnvironment
+      ? "Środowisko renderujące ignoruje własne pliki fontów — nawet font z biblioteki " +
+        "nie jest w nim stosowany, więc szablon składałby się fontem zastępczym. " +
+        "Sprawdź pakiet fontconfig w obrazie aplikacji."
+      : error.message
+
+    console.error("[ilustromat] render weryfikacyjny odrzucił font:", error.code, error.message)
+    return NextResponse.json({ error: error.code, message }, { status: 400 })
   }
 }

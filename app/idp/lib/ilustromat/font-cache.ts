@@ -39,8 +39,14 @@ export function materializeFont(bytes: Buffer, digest?: string): string {
   const directory = fontCacheDirectory()
   const target = path.join(directory, `${hash}.ttf`)
 
-  if (materialized.has(target)) return target
-  if (existsSync(target)) {
+  // Pamięć procesu jest podpowiedzią, nie dowodem: /tmp sprząta systemd-tmpfiles,
+  // presja na ephemeral storage w k8s albo restart tmpfs. Bez tego existsSync()
+  // zniknięcie pliku dawało TRWAŁE 500 aż do restartu Node — ponowne wgranie
+  // fontu nie pomagało, bo ścieżka (sha256 treści) jest ta sama.
+  if (materialized.has(target)) {
+    if (existsSync(target)) return target
+    materialized.delete(target)
+  } else if (existsSync(target)) {
     materialized.add(target)
     return target
   }
