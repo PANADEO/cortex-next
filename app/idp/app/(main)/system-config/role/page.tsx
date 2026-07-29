@@ -1,5 +1,6 @@
 "use client"
 
+import { ScopeNote } from "@/features/system-config/components/scope-note"
 import { useKonfiguracjaRoles } from "@/features/system-config/hooks"
 import { Badge, EmptyState, PageHeader } from "@cortex/ui"
 import { KeyRound } from "lucide-react"
@@ -16,6 +17,8 @@ export default function RolePage() {
       />
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
+        <ScopeNote />
+
         {rolesQuery.isLoading ? (
           <p className="text-sm text-muted-foreground">Wczytywanie ról...</p>
         ) : rolesQuery.isError ? (

@@ -49,3 +49,21 @@ export function useDeleteApplication() {
     onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.applications() }),
   })
 }
+
+export function useApplicationRoles(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.applicationRoles(id ?? ""),
+    queryFn: () => endpoints.applications.listRoles(id as string),
+    enabled: Boolean(id),
+  })
+}
+
+export function useSetApplicationRoles() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, roleIds }: { id: string; roleIds: string[] }) =>
+      endpoints.applications.setRoles(id, roleIds),
+    onSuccess: (_data, { id }) =>
+      client.invalidateQueries({ queryKey: queryKeys.applicationRoles(id) }),
+  })
+}

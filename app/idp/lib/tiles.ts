@@ -184,8 +184,10 @@ export const TILES: ReadonlyArray<Tile> = [
     // huba — pełne odcięcie tiles.ts dopiero po migracji danych.
     id: "system-config",
     label: "Konfiguracja Systemu",
-    description: "Użytkownicy, role, uprawnienia i rejestr kafelków instancji",
-    href: "/system-config/uzytkownicy",
+    description: "Użytkownicy, role, uprawnienia i aplikacje instancji",
+    // Ten sam adres co `route` wiersza `system-config` w tabeli applications —
+    // rejestr i kod mają wskazywać dokładnie to samo miejsce.
+    href: "/system-config",
     icon: Settings,
     iconBg: "bg-slate-200 dark:bg-slate-800/60",
     iconFg: "text-slate-700 dark:text-slate-300",
