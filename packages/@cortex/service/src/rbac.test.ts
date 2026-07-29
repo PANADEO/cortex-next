@@ -163,3 +163,74 @@ describe("requireTileAccess — cache", () => {
     expect(intruder.allowed).toBe(false)
   })
 })
+
+describe("cache — pojedynczy odczyt w locie (single-flight)", () => {
+  it("dwa równoległe żądania tego samego usera robią JEDNO zapytanie", async () => {
+    let release: (codes: string[]) => void = () => {}
+    loadGrantedApplicationCodes.mockImplementation(
+      () => new Promise<string[]>((resolve) => (release = resolve)),
+    )
+
+    const first = requireTileAccess(makeRequest("admin@firma.pl"), ENTITLEMENT)
+    const second = requireTileAccess(makeRequest("admin@firma.pl"), ENTITLEMENT)
+
+    release([ENTITLEMENT])
+    const [a, b] = await Promise.all([first, second])
+
+    expect(loadGrantedApplicationCodes).toHaveBeenCalledTimes(1)
+    expect(a.allowed).toBe(true)
+    expect(b.allowed).toBe(true)
+  })
+
+  it("różni użytkownicy nie dzielą odczytu w locie", async () => {
+    loadGrantedApplicationCodes.mockImplementation(async (email) =>
+      email === "admin@firma.pl" ? [ENTITLEMENT] : [],
+    )
+
+    const [admin, intruder] = await Promise.all([
+      requireTileAccess(makeRequest("admin@firma.pl"), ENTITLEMENT),
+      requireTileAccess(makeRequest("intruz@firma.pl"), ENTITLEMENT),
+    ])
+
+    expect(admin.allowed).toBe(true)
+    expect(intruder.allowed).toBe(false)
+    expect(loadGrantedApplicationCodes).toHaveBeenCalledTimes(2)
+  })
+
+  it("po nieudanym odczycie kolejne żądanie próbuje ponownie", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+    loadGrantedApplicationCodes.mockRejectedValueOnce(new Error("connection refused"))
+    loadGrantedApplicationCodes.mockResolvedValueOnce([ENTITLEMENT])
+
+    const failed = await requireTileAccess(makeRequest("admin@firma.pl"), ENTITLEMENT)
+    const retried = await requireTileAccess(makeRequest("admin@firma.pl"), ENTITLEMENT)
+
+    expect(failed.allowed).toBe(false)
+    expect(retried.allowed).toBe(true)
+    consoleError.mockRestore()
+  })
+})
+
+describe("cache — unieważnienie wygrywa z odczytem w locie", () => {
+  it("wynik odczytu rozpoczętego PRZED czyszczeniem nie wraca do cache", async () => {
+    let release: (codes: string[]) => void = () => {}
+    loadGrantedApplicationCodes.mockImplementationOnce(
+      () => new Promise<string[]>((resolve) => (release = resolve)),
+    )
+
+    // Żądanie startuje przy zimnym cache, jeszcze z ważnym grantem...
+    const inFlight = requireTileAccess(makeRequest("admin@firma.pl"), ENTITLEMENT)
+
+    // ...w międzyczasie administrator odbiera uprawnienia (mutacja woła clear).
+    clearTileAccessCache()
+
+    release([ENTITLEMENT])
+    expect((await inFlight).allowed).toBe(true)
+
+    // Nieaktualny wynik NIE MOŻE osiąść w cache na kolejne 30 s.
+    loadGrantedApplicationCodes.mockResolvedValue([])
+    const afterRevoke = await requireTileAccess(makeRequest("admin@firma.pl"), ENTITLEMENT)
+
+    expect(afterRevoke.allowed).toBe(false)
+  })
+})

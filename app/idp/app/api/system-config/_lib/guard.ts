@@ -1,5 +1,6 @@
-import { SYSTEM_CONFIG_APP_CODE, requireTileAccess } from "@cortex/service"
+import { SYSTEM_CONFIG_APP_CODE, SelfLockoutError, requireTileAccess } from "@cortex/service"
 import { NextResponse } from "next/server"
+import { z } from "zod"
 
 /**
  * Bramka modułu — moduł administracyjny pilnuje sam siebie. Zwraca gotową
@@ -18,8 +19,24 @@ export async function denyUnlessAllowed(request: Request): Promise<NextResponse 
     : NextResponse.json({ error: "missing-email" }, { status: 401 })
 }
 
+const uuidSchema = z.string().uuid()
+
+/**
+ * Waliduje identyfikator ze ścieżki ZANIM trafi do zapytania. Bez tego
+ * nie-UUID leci do Postgresa i wraca jako 500 zamiast czytelnego 400.
+ */
+export function parseIdParam(id: string): NextResponse | null {
+  return uuidSchema.safeParse(id).success
+    ? null
+    : NextResponse.json({ error: "invalid-id" }, { status: 400 })
+}
+
 /** Mapuje wyjątki warstwy serwisowej na odpowiedzi HTTP. */
 export function toErrorResponse(error: unknown): NextResponse {
+  if (error instanceof SelfLockoutError) {
+    return NextResponse.json({ error: "self-lockout", message: error.message }, { status: 409 })
+  }
+
   if (isUniqueViolation(error)) {
     return NextResponse.json({ error: "duplicate-code" }, { status: 409 })
   }
