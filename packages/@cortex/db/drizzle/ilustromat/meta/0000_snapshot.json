@@ -1,0 +1,277 @@
+{
+  "id": "c2051d65-d66d-446e-bce3-49464a0d0ae6",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "ilustromat.frame_templates": {
+      "name": "frame_templates",
+      "schema": "ilustromat",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "color_bg": {
+          "name": "color_bg",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "color_text": {
+          "name": "color_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "color_accent": {
+          "name": "color_accent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "font_source": {
+          "name": "font_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'library'"
+        },
+        "font_library_id": {
+          "name": "font_library_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "logo_position": {
+          "name": "logo_position",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bottom-right'"
+        },
+        "corner_radius": {
+          "name": "corner_radius",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 28
+        },
+        "min_image_area_ratio": {
+          "name": "min_image_area_ratio",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0.45
+        },
+        "website_text": {
+          "name": "website_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "layout": {
+          "name": "layout",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'image-top'"
+        },
+        "text_align": {
+          "name": "text_align",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'left'"
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'system'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "frame_templates_font_source_allowed": {
+          "name": "frame_templates_font_source_allowed",
+          "value": "\"ilustromat\".\"frame_templates\".\"font_source\" in ('library', 'custom')"
+        },
+        "frame_templates_logo_position_allowed": {
+          "name": "frame_templates_logo_position_allowed",
+          "value": "\"ilustromat\".\"frame_templates\".\"logo_position\" in ('bottom-left', 'bottom-right')"
+        },
+        "frame_templates_layout_allowed": {
+          "name": "frame_templates_layout_allowed",
+          "value": "\"ilustromat\".\"frame_templates\".\"layout\" in ('image-top', 'image-bottom')"
+        },
+        "frame_templates_text_align_allowed": {
+          "name": "frame_templates_text_align_allowed",
+          "value": "\"ilustromat\".\"frame_templates\".\"text_align\" in ('left', 'center')"
+        },
+        "frame_templates_corner_radius_range": {
+          "name": "frame_templates_corner_radius_range",
+          "value": "\"ilustromat\".\"frame_templates\".\"corner_radius\" between 0 and 48"
+        },
+        "frame_templates_min_image_area_ratio_range": {
+          "name": "frame_templates_min_image_area_ratio_range",
+          "value": "\"ilustromat\".\"frame_templates\".\"min_image_area_ratio\" between 0.35 and 0.60"
+        },
+        "frame_templates_colors_hex": {
+          "name": "frame_templates_colors_hex",
+          "value": "\"ilustromat\".\"frame_templates\".\"color_bg\" ~ '^#[0-9A-Fa-f]{6}$'\n          and \"ilustromat\".\"frame_templates\".\"color_text\" ~ '^#[0-9A-Fa-f]{6}$'\n          and \"ilustromat\".\"frame_templates\".\"color_accent\" ~ '^#[0-9A-Fa-f]{6}$'"
+        },
+        "frame_templates_font_source_shape": {
+          "name": "frame_templates_font_source_shape",
+          "value": "(\"ilustromat\".\"frame_templates\".\"font_source\" = 'library' and \"ilustromat\".\"frame_templates\".\"font_library_id\" is not null)\n          or (\"ilustromat\".\"frame_templates\".\"font_source\" = 'custom' and \"ilustromat\".\"frame_templates\".\"font_library_id\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "ilustromat.template_assets": {
+      "name": "template_assets",
+      "schema": "ilustromat",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "template_id": {
+          "name": "template_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_type": {
+          "name": "content_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bytes": {
+          "name": "bytes",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sha256": {
+          "name": "sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "font_family": {
+          "name": "font_family",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "original_filename": {
+          "name": "original_filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "template_assets_template_id_frame_templates_id_fk": {
+          "name": "template_assets_template_id_frame_templates_id_fk",
+          "tableFrom": "template_assets",
+          "tableTo": "frame_templates",
+          "schemaTo": "ilustromat",
+          "columnsFrom": [
+            "template_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "template_assets_template_kind_unique": {
+          "name": "template_assets_template_kind_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "template_id",
+            "kind"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "template_assets_kind_allowed": {
+          "name": "template_assets_kind_allowed",
+          "value": "\"ilustromat\".\"template_assets\".\"kind\" in ('font-regular', 'font-bold', 'logo')"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {
+    "ilustromat": "ilustromat"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

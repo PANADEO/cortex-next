@@ -131,6 +131,7 @@ describe("/api/me/access route handler", () => {
       "cortex-config",
       "cortex-cowork",
       "system-config",
+      "ilustromat",
       "text-highlighter",
       "text-transformer",
       "text-analyzer",

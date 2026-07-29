@@ -83,7 +83,14 @@ export async function callCortexProxy(input: CortexProxyRequest): Promise<Cortex
   }
 }
 
-function buildCortexHeaders(input: CortexProxyRequest): Record<string, string> {
+/** Bierze tylko to, czego faktycznie używa — dzięki temu ten sam kod nagłówków
+ *  obsługuje ścieżkę tekstową i obrazkową bez rzutowań między ich typami. */
+function buildCortexHeaders(input: {
+  email: string
+  scope: string
+  appLabel?: string
+  sourceApp?: string
+}): Record<string, string> {
   const headers: Record<string, string> = {
     Accept: "application/json",
     "Content-Type": "application/json",
@@ -163,4 +170,128 @@ function readCortexContent(data: CortexResponse): string {
 function readTokensUsed(data: CortexResponse): number | null {
   const value = data.usage?.total_tokens
   return typeof value === "number" ? value : null
+}
+
+// ---------------------------------------------------------------------------
+// Wyjście OBRAZKOWE (Ilustromat)
+// ---------------------------------------------------------------------------
+//
+// Osobna funkcja, a nie flaga w callCortexProxy(), z trzech konkretnych
+// powodów — każdy z nich to realna różnica kontraktu, nie kosmetyka:
+//
+//  1. `modalities: ["image","text"]` — callCortexProxy() nigdy tego nie wysyła.
+//  2. Odpowiedź niesie obraz w choices[0].message.images[0].image_url.url jako
+//     data URI; readCortexContent() RZUCA, gdy content nie jest niepustym
+//     stringiem, więc ścieżka tekstowa nie potrafi tego odczytać.
+//  3. PUŁAPKA: isOpenRouterModel() zwraca true dla każdego id z ukośnikiem,
+//     w tym "google/gemini-3.1-flash-lite-image", i wtedy payload idzie gałęzią
+//     `prompt`-string zamiast messages[]. Model obrazkowy MUSI dostać
+//     messages[] — dokładnie tak, jak robi to produkcyjnie działający PoC
+//     w Pythonie (core/cortex_client.py zawsze wysyła messages).
+//
+// callCortexProxy() zostaje NIETKNIĘTY — obsługuje działający produkcyjnie
+// ruch AI Tools, a jego zachowania są celowe.
+
+export interface CortexProxyImageMessage {
+  role: "system" | "user" | "assistant"
+  content: string
+}
+
+export interface CortexProxyImageRequest {
+  baseUrl: string
+  email: string
+  model: string
+  scope: string
+  messages: CortexProxyImageMessage[]
+  temperature?: number
+  appLabel?: string
+  sourceApp?: string
+  timeoutMs?: number
+}
+
+export interface CortexProxyImageResult {
+  /** Data URI base64 prosto od upstreamu — dekodowanie należy do wołającego. */
+  dataUrl: string
+  model: string
+  tokensUsed: number | null
+}
+
+interface CortexImageChoice {
+  message?: {
+    images?: { image_url?: { url?: unknown } }[]
+  }
+}
+
+interface CortexImageResponse {
+  choices?: CortexImageChoice[]
+  usage?: { total_tokens?: unknown }
+}
+
+export class CortexProxyImageError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "CortexProxyImageError"
+  }
+}
+
+export async function callCortexProxyImage(
+  input: CortexProxyImageRequest,
+): Promise<CortexProxyImageResult> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), input.timeoutMs ?? REQUEST_TIMEOUT_MS)
+
+  try {
+    const response = await fetch(`${input.baseUrl.replace(/\/$/, "")}/v1/chat/completions`, {
+      method: "POST",
+      headers: buildCortexHeaders(input),
+      body: JSON.stringify({
+        model: input.model,
+        messages: input.messages,
+        temperature: input.temperature ?? 0.7,
+        modalities: ["image", "text"],
+      }),
+      signal: controller.signal,
+      cache: "no-store",
+    })
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "")
+      throw new CortexProxyImageError(text || `Cortex Proxy returned ${response.status}`)
+    }
+
+    const data = (await response.json()) as CortexImageResponse
+    return {
+      dataUrl: readCortexImage(data),
+      model: input.model,
+      tokensUsed: readTokensUsed(data as CortexResponse),
+    }
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+function readCortexImage(data: CortexImageResponse): string {
+  const images = data.choices?.[0]?.message?.images
+  if (!Array.isArray(images) || images.length === 0) {
+    throw new CortexProxyImageError(
+      "Model obrazkowy nie zwrócił obrazu (możliwe odrzucenie promptu ze " +
+        "względów bezpieczeństwa). Spróbuj zmienić opis pomysłu na ilustrację.",
+    )
+  }
+
+  const url = images[0]?.image_url?.url
+  if (typeof url !== "string" || !url.startsWith("data:")) {
+    throw new CortexProxyImageError(
+      "Nieoczekiwany format obrazu z cortex-proxy (oczekiwano data URI base64).",
+    )
+  }
+  return url
+}
+
+/** Dekoduje data URI na bufor. Wydzielone, bo używa tego i generacja,
+ *  i testy kontraktu odpowiedzi. */
+export function decodeDataUrl(dataUrl: string): Buffer {
+  const comma = dataUrl.indexOf(",")
+  if (comma === -1) throw new CortexProxyImageError("Data URI bez separatora ','")
+  return Buffer.from(dataUrl.slice(comma + 1), "base64")
 }

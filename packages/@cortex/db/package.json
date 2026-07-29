@@ -10,7 +10,10 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate --config drizzle.system-config.config.ts",
     "db:migrate": "drizzle-kit migrate --config drizzle.system-config.config.ts",
-    "db:seed": "node scripts/seed-system-config.mjs"
+    "db:seed": "node scripts/seed-system-config.mjs",
+    "db:generate:ilustromat": "drizzle-kit generate --config drizzle.ilustromat.config.ts",
+    "db:migrate:ilustromat": "drizzle-kit migrate --config drizzle.ilustromat.config.ts",
+    "db:seed:ilustromat": "node scripts/seed-ilustromat.mjs"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.0",

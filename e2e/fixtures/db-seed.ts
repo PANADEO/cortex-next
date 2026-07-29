@@ -26,9 +26,11 @@
 import {
   applications,
   applicationScopes,
+  frameTemplates,
   permissionsMatrix,
   roleApplicationScopes,
   roles,
+  templateAssets,
   userRoles,
   users,
   getDb,
@@ -37,12 +39,19 @@ import {
 
 const ADMIN_ROLE_CODE = "admin"
 const SYSTEM_CONFIG_APP_CODE = "system-config"
+const ILUSTROMAT_APP_CODE = "ilustromat"
+const MANAGE_TEMPLATES_SCOPE = "manage-templates"
 
 export type ScenarioName =
   | "empty"
   | "user-no-roles"
   | "admin-with-one-tile"
   | "five-tiles-one-external-link"
+  // Ilustromat: te dwa scenariusze różnią się WYŁĄCZNIE grantem scope'u —
+  // po to, żeby dało się pokazać, że dostęp do kafelka nie nadaje prawa do
+  // zmiany marki (warstwa granularna, application_scopes).
+  | "ilustromat-user"
+  | "ilustromat-template-manager"
 
 export interface ScenarioResult {
   /** Wstrzyknij jako nagłówek `x-auth-request-email` żeby "być" tym userem —
@@ -63,6 +72,12 @@ export async function resetSystemConfig(): Promise<void> {
   await db.delete(applications)
   await db.delete(roles)
   await db.delete(users)
+  // Schemat modułu Ilustromat. Czyszczony razem z system_config, bo scenariusz
+  // ma dawać JEDEN deterministyczny stan całej bazy, nie tylko jednego
+  // schematu. template_assets ma FK cascade, ale kasujemy jawnie — kolejność
+  // czytelna wprost, bez polegania na definicji FK.
+  await db.delete(templateAssets)
+  await db.delete(frameTemplates)
 }
 
 /**
@@ -155,7 +170,86 @@ export async function seedScenario(name: ScenarioName): Promise<ScenarioResult> 
         .values(inserted.map((app) => ({ roleId: role!.id, applicationId: app.id })))
       return { email, applications: inserted }
     }
+
+    case "ilustromat-user":
+      return seedIlustromat({ withManageTemplatesScope: false })
+
+    case "ilustromat-template-manager":
+      return seedIlustromat({ withManageTemplatesScope: true })
   }
+}
+
+/**
+ * Kafelek Ilustromat + dwa domyślne szablony marki (te same wartości co
+ * _seed_defaults() w PoC). `withManageTemplatesScope` decyduje o warstwie
+ * GRANULARNEJ: bez niego user ma dostęp do kafelka, ale nie ma prawa
+ * dotknąć szablonów.
+ */
+async function seedIlustromat(options: {
+  withManageTemplatesScope: boolean
+}): Promise<ScenarioResult> {
+  const db = getDb()
+  const email = options.withManageTemplatesScope
+    ? "ilustromat-admin@e2e.local"
+    : "ilustromat-user@e2e.local"
+
+  const [user] = await db.insert(users).values({ email, fullName: "Ilustromat E2E" }).returning()
+  const [role] = await db
+    .insert(roles)
+    .values({ code: `ilustromat-e2e-${options.withManageTemplatesScope}`, name: "Rola E2E" })
+    .returning()
+  const [app] = await db
+    .insert(applications)
+    .values({
+      code: ILUSTROMAT_APP_CODE,
+      name: "Ilustromat",
+      kind: "native",
+      route: "/ilustromat/generowanie",
+    })
+    .returning()
+
+  await db.insert(userRoles).values({ userId: user!.id, roleId: role!.id })
+  await db.insert(permissionsMatrix).values({ roleId: role!.id, applicationId: app!.id })
+
+  const [scope] = await db
+    .insert(applicationScopes)
+    .values({
+      applicationId: app!.id,
+      code: MANAGE_TEMPLATES_SCOPE,
+      name: "Zarządzanie szablonami marki",
+    })
+    .returning()
+
+  if (options.withManageTemplatesScope) {
+    await db
+      .insert(roleApplicationScopes)
+      .values({ roleId: role!.id, applicationScopeId: scope!.id })
+  }
+
+  await db.insert(frameTemplates).values([
+    {
+      id: "crido-violet",
+      name: "Crido — fioletowa (domyślna)",
+      colorBg: "#5B3DA8",
+      colorText: "#FFFFFF",
+      colorAccent: "#FF8C42",
+      fontSource: "library",
+      fontLibraryId: "noto-sans",
+      websiteText: "crido.pl",
+    },
+    {
+      id: "crido-light",
+      name: "Crido — jasna",
+      colorBg: "#FFFFFF",
+      colorText: "#3D267A",
+      colorAccent: "#FF8C42",
+      fontSource: "library",
+      fontLibraryId: "noto-sans",
+      websiteText: "crido.pl",
+    },
+  ])
+
+  return { email, applications: [app!] }
 }
 
 export { closeDb } from "@cortex/db"

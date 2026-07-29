@@ -6,7 +6,7 @@
 // Awaria Postgresa odcina wszystkich zamiast wpuszczać kogokolwiek — świadomy
 // koszt, wymagany przez code-service/SKILL.md pkt 2.
 
-import { loadGrantedApplicationCodes } from "./rbac-store"
+import { loadGrantedApplicationCodes, loadGrantedScopes } from "./rbac-store"
 
 export interface TileAccessResult {
   allowed: boolean
@@ -18,18 +18,25 @@ interface CacheEntry {
   expiresAt: number
 }
 
+/** Jedna warstwa cache'a: wpisy + odczyty-w-locie dla tej konkretnej warstwy
+ *  uprawnień (gruboziarnista `accessLayer` vs granularna `scopeLayer`). Osobne
+ *  mapy per warstwa, żeby dedup odczytów-w-locie jednej warstwy nie blokował
+ *  drugiej. */
+interface CacheLayer {
+  store: Map<string, CacheEntry>
+  inFlight: Map<string, Promise<string[]>>
+}
+
 const CACHE_TTL_MS = 30_000
 const CACHE_MAX_ENTRIES = 10_000
 
-const cache = new Map<string, CacheEntry>()
+const accessLayer: CacheLayer = { store: new Map(), inFlight: new Map() }
+const scopeLayer: CacheLayer = { store: new Map(), inFlight: new Map() }
 
-// Odczyty w locie, po jednym na e-mail — dwa równoległe żądania tego samego
-// użytkownika przy zimnym cache dzielą jedno zapytanie do bazy.
-const inFlight = new Map<string, Promise<string[]>>()
-
-// Rośnie przy każdym czyszczeniu cache. Odczyt rozpoczęty PRZED unieważnieniem
-// nie ma prawa zapisać swojego (już nieaktualnego) wyniku po nim — inaczej
-// odebranie uprawnień wracałoby do cache na kolejne 30 s.
+// Rośnie przy każdym czyszczeniu cache (obu warstw naraz — clearTileAccessCache()
+// zawsze czyści oba). Odczyt rozpoczęty PRZED unieważnieniem nie ma prawa
+// zapisać swojego (już nieaktualnego) wyniku po nim — inaczej odebranie
+// uprawnień wracałoby do cache na kolejne 30 s.
 let generation = 0
 
 /**
@@ -64,7 +71,34 @@ export async function requireTileAccess(
 }
 
 /**
- * Czyści cache uprawnień. Wołane z każdej mutacji uprawnień w
+ * Warstwa GRANULARNA: czy użytkownik ma konkretną akcję W ŚRODKU kafelka
+ * (np. "manage-templates" w Ilustromacie). Osobne pytanie od requireTileAccess(),
+ * które odpowiada tylko "czy kafelek w ogóle".
+ *
+ * Fail-closed identycznie jak warstwa gruboziarnista, ale UWAGA na kolejność
+ * w route: sam scope NIE wystarcza. Handler chroniący akcję administracyjną
+ * musi przejść OBIE bramki — dostęp do kafelka i grant scope'u. Stąd ta
+ * funkcja sprawdza jedno i drugie, zamiast ufać, że wołający pamiętał o obu.
+ */
+export async function requireTileScope(
+  request: Request,
+  entitlementCode: string,
+  scopeCode: string,
+): Promise<TileAccessResult> {
+  const access = await requireTileAccess(request, entitlementCode)
+  if (!access.allowed || !access.email) return access
+
+  try {
+    const scopes = await getGrantedScopes(access.email)
+    return { allowed: scopes.includes(`${entitlementCode}:${scopeCode}`), email: access.email }
+  } catch (error) {
+    console.error("[rbac] odmowa dostępu — błąd odczytu scope'ów:", error)
+    return { allowed: false, email: access.email }
+  }
+}
+
+/**
+ * Czyści cache uprawnień (obie warstwy). Wołane z każdej mutacji uprawnień w
  * @cortex/service/system-config.ts, żeby odebranie dostępu działało
  * natychmiast, a nie po wygaśnięciu TTL.
  *
@@ -73,37 +107,56 @@ export async function requireTileAccess(
  * code-service/REFERENCE.md.
  */
 export function clearTileAccessCache(): void {
-  cache.clear()
-  inFlight.clear()
+  accessLayer.store.clear()
+  accessLayer.inFlight.clear()
+  scopeLayer.store.clear()
+  scopeLayer.inFlight.clear()
   generation += 1
 }
 
-async function getGrantedCodes(email: string): Promise<string[]> {
-  const entry = cache.get(email)
-  if (entry && entry.expiresAt >= Date.now()) return entry.codes
-  if (entry) cache.delete(email)
+function getGrantedCodes(email: string): Promise<string[]> {
+  return cached(accessLayer, email, loadGrantedApplicationCodes)
+}
 
-  const pending = inFlight.get(email)
+function getGrantedScopes(email: string): Promise<string[]> {
+  return cached(scopeLayer, email, loadGrantedScopes)
+}
+
+/** Wspólna logika obu warstw uprawnień: TTL + dedup odczytów-w-locie (jeden
+ *  request do bazy na e-mail przy zimnym cache) + odporność na wyścig z
+ *  unieważnieniem (odczyt rozpoczęty przed clearTileAccessCache() nie zapisuje
+ *  już nieaktualnego wyniku po nim) + wyrzucanie najstarszego wpisu po
+ *  przekroczeniu limitu. */
+async function cached(
+  layer: CacheLayer,
+  email: string,
+  load: (email: string) => Promise<string[]>,
+): Promise<string[]> {
+  const entry = layer.store.get(email)
+  if (entry && entry.expiresAt >= Date.now()) return entry.codes
+  if (entry) layer.store.delete(email)
+
+  const pending = layer.inFlight.get(email)
   if (pending) return pending
 
   const startedAt = generation
-  const load = loadGrantedApplicationCodes(email)
+  const request = load(email)
     .then((codes) => {
-      if (generation === startedAt) rememberCodes(email, codes)
+      if (generation === startedAt) remember(layer, email, codes)
       return codes
     })
     .finally(() => {
-      if (inFlight.get(email) === load) inFlight.delete(email)
+      if (layer.inFlight.get(email) === request) layer.inFlight.delete(email)
     })
 
-  inFlight.set(email, load)
-  return load
+  layer.inFlight.set(email, request)
+  return request
 }
 
-function rememberCodes(email: string, codes: string[]): void {
-  if (cache.size >= CACHE_MAX_ENTRIES && !cache.has(email)) {
-    const oldest = cache.keys().next().value
-    if (oldest !== undefined) cache.delete(oldest)
+function remember(layer: CacheLayer, email: string, codes: string[]): void {
+  if (layer.store.size >= CACHE_MAX_ENTRIES && !layer.store.has(email)) {
+    const oldest = layer.store.keys().next().value
+    if (oldest !== undefined) layer.store.delete(oldest)
   }
-  cache.set(email, { codes, expiresAt: Date.now() + CACHE_TTL_MS })
+  layer.store.set(email, { codes, expiresAt: Date.now() + CACHE_TTL_MS })
 }

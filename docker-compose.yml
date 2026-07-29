@@ -60,6 +60,10 @@ services:
       # Administrator instancji, deklaratywnie — patrz packages/@cortex/db db:seed.
       # Usunięcie tej zmiennej odbiera kontu automatyczne przywracanie dostępu.
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      # Ilustromat — modele konfigurowalne per instancja klienta. Puste =
+      # domyślne z app/idp/lib/ilustromat/config.ts, nie awaria.
+      ILUSTROMAT_TEXT_MODEL: ${ILUSTROMAT_TEXT_MODEL:-}
+      ILUSTROMAT_IMAGE_MODEL: ${ILUSTROMAT_IMAGE_MODEL:-}
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     extra_hosts:
