@@ -1,7 +1,11 @@
 import { defineConfig, devices } from "@playwright/test"
 
 export default defineConfig({
-  testDir: "./e2e/issue-66",
+  // Cała e2e/ — nie tylko e2e/issue-66/ (legacy, PO-per-issue). Nowa
+  // struktura (e2e/poms, e2e/fixtures, e2e/support) żyje obok niej, patrz
+  // .claude/skills/code-e2e/SKILL.md.
+  testDir: "./e2e",
+  testMatch: "**/*.spec.ts",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0,

@@ -39,6 +39,8 @@
     "app/**/*.tsx",
     "packages/@cortex/**/*.ts",
     "packages/@cortex/**/*.tsx",
+    "e2e/**/*.ts",
+    "playwright.config.ts",
     "app/idp/.next/types/**/*.ts",
     "app/idp/next-env.d.ts"
   ],

@@ -31,6 +31,9 @@ app/idp/.data/cortex-cowork/
 /test-results
 /e2e/.auth
 
+# Agent worktrees (local tooling state, not source)
+.claude/worktrees/
+
 # Fleet Commander managed files
 .claude/agents/fleet-dev.md
 .claude/agents/fleet-planner.md
