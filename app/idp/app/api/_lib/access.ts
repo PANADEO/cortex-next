@@ -26,6 +26,12 @@ const AUTHORIZED_APP_CODES = [
   // idzie przez cortex-admin (patrz code-service/REFERENCE.md krok 4 — odcięcie
   // dopiero po migracji danych), więc kod musi być na tej allowliście.
   "system-config",
+  // Ilustromat. Ta sama sytuacja przejściowa co system-config: własne API
+  // modułu pilnuje się samo przez requireTileAccess() na @cortex/db, ale
+  // WIDOCZNOŚĆ kafelka w powłoce idzie jeszcze przez cortex-admin, więc kod
+  // musi być na tej allowliście — inaczej AppGate odcina stronę, zanim moduł
+  // zdąży cokolwiek powiedzieć.
+  "ilustromat",
   ...AI_TOOL_APP_CODES,
 ] as const
 

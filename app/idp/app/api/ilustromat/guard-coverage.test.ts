@@ -12,6 +12,7 @@
 // Dlatego wśród prób obejścia jest przypadek "ma dostęp do kafelka, ale nie ma
 // scope'u": endpoint administracyjny MUSI go odrzucić, a end-userowy przepuścić.
 
+import type * as CortexService from "@cortex/service"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const loadGrantedApplicationCodes = vi.hoisted(() => vi.fn<(email: string) => Promise<string[]>>())
@@ -56,7 +57,7 @@ const service = vi.hoisted(() => {
 })
 
 vi.mock("@cortex/service", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@cortex/service")>()
+  const actual = await importOriginal<typeof CortexService>()
   return { ...actual, ...service }
 })
 

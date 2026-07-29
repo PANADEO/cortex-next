@@ -40,7 +40,15 @@ RUN addgroup --system --gid 1001 nodejs && \
 # --script` shebang needs GNU coreutils' env instead. uv itself is a single
 # static binary - the astral-sh image is the documented way to add it to a
 # foreign base image without needing pip/python preinstalled.
-RUN apk add --no-cache coreutils
+#
+# fontconfig: wymagane przez renderowanie tekstu w `sharp` (pangocairo), z
+# którego korzysta Ilustromat. Bez tego pakietu sharp wypisuje przy KAŻDYM
+# renderze "Fontconfig error: Cannot load default config file", a — co
+# ważniejsze — metryki tekstu się rozjeżdżają: ten sam render dał 626x53 bez
+# fontconfiga i 626x54 z nim (zweryfikowane w node:22-alpine). To nie jest
+# kosmetyka logów, tylko determinizm składu: obraz Dockera jest referencją
+# renderu, maszyna dewelopera nie.
+RUN apk add --no-cache coreutils fontconfig
 COPY --from=ghcr.io/astral-sh/uv:0.11.30 /uv /uvx /usr/local/bin/
 
 # /app/app/idp/.data/* backs cortex-cowork (governance/sessions/credentials)

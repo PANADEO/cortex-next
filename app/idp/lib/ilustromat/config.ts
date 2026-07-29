@@ -21,12 +21,21 @@ export interface IlustromatConfig {
   imageModel: string
 }
 
+/** Pusty string to NIE jest wartość — docker-compose wstawia `VAR: ${VAR:-}`,
+ *  więc nieustawiona zmienna dociera tu jako "". Zodowe `.default()` łapie
+ *  wyłącznie `undefined`, więc bez tej normalizacji pusta zmienna wywracałaby
+ *  kontener na `min(1)` zamiast wziąć wartość domyślną. */
+function orUndefined(value: string | undefined): string | undefined {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : undefined
+}
+
 /** Czytane przy każdym wywołaniu, nie na starcie modułu — inaczej testy i
  *  build musiałyby mieć komplet zmiennych tylko po to, żeby zaimportować plik. */
 export function ilustromatConfig(): IlustromatConfig {
   const parsed = schema.parse({
-    ILUSTROMAT_TEXT_MODEL: process.env.ILUSTROMAT_TEXT_MODEL,
-    ILUSTROMAT_IMAGE_MODEL: process.env.ILUSTROMAT_IMAGE_MODEL,
+    ILUSTROMAT_TEXT_MODEL: orUndefined(process.env.ILUSTROMAT_TEXT_MODEL),
+    ILUSTROMAT_IMAGE_MODEL: orUndefined(process.env.ILUSTROMAT_IMAGE_MODEL),
   })
 
   return {

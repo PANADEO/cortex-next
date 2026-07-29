@@ -1,6 +1,6 @@
 import type { CoworkTileArchetype } from "@cortex/types"
 import type { LucideIcon } from "lucide-react"
-import { CalendarClock, FileSpreadsheet, FileText, Receipt, ScanText, Settings, ShieldCheck, Users, Workflow } from "lucide-react"
+import { CalendarClock, FileSpreadsheet, FileText, Image, Receipt, ScanText, Settings, ShieldCheck, Users, Workflow } from "lucide-react"
 import { canAccessAiTool, isAiToolId } from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
@@ -191,6 +191,20 @@ export const TILES: ReadonlyArray<Tile> = [
     iconFg: "text-slate-700 dark:text-slate-300",
     categoryFunctional: "admin-system",
     categoryDepartment: ["it"],
+    archetype: "dashboard",
+  },
+  {
+    // Port kafelka z PoC (Python/Streamlit). Marka jest DANĄ w schemacie
+    // "ilustromat" (szablony), nie stałą w kodzie.
+    id: "ilustromat",
+    label: "Ilustromat",
+    description: "Brandowane ilustracje do postów LinkedIn — generacja i gotowa ramka",
+    href: "/ilustromat/generowanie",
+    icon: Image,
+    iconBg: "bg-violet-200 dark:bg-violet-900/40",
+    iconFg: "text-violet-700 dark:text-violet-300",
+    categoryFunctional: "content-generation",
+    categoryDepartment: ["marketing"],
     archetype: "dashboard",
   },
   {
