@@ -68,7 +68,6 @@ interface GenerationOptions {
     dataUrl: string
     mimeType: string
   }
-  maxTokens?: number
   temperature?: number
 }
 
@@ -137,13 +136,10 @@ export function AiToolWorkspace({ toolId }: AiToolWorkspaceProps) {
     setIsGenerating(true)
     setError(null)
     try {
-      const maxTokens = options.maxTokens ?? tool.maxTokens
       const request = {
         toolId: tool.id,
-        scope: tool.scope,
         systemPrompt: prompts.systemPrompt,
         userPrompt: prompts.userPrompt,
-        ...(maxTokens !== undefined ? { maxTokens } : {}),
         ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
         ...(options.image ? { image: options.image } : {}),
       }
@@ -966,9 +962,7 @@ function InvoiceForm({ isGenerating, onGenerate }: ToolFormContext) {
       isGenerating={isGenerating || isPreparingFile}
       canSubmit={Boolean(image) && !isPreparingFile}
       onSubmit={() => {
-        const options: GenerationOptions = image
-          ? { image, maxTokens: 12000 }
-          : { maxTokens: 12000 }
+        const options: GenerationOptions = image ? { image } : {}
         return onGenerate(
           buildInvoicePrompt({ analysisType, includeJson, includeRisks, sourceNote }),
           options,
