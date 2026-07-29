@@ -1,6 +1,6 @@
 import { TileKind } from "@cortex/tile-sdk"
 import { describe, expect, it } from "vitest"
-import { APPLICATION_KINDS } from "./konfiguracja-systemu"
+import { APPLICATION_KINDS } from "./system-config"
 
 describe("APPLICATION_KINDS", () => {
   // Wartości dozwolone w bazie (check constraint applications_kind_allowed)

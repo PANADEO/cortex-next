@@ -23,7 +23,7 @@ Wejście: `Request` (czyta `X-Auth-Request-Email`, fallback `DEV_USER_EMAIL` poz
 
 ## Plan migracji (Ścieżka E)
 
-1. Schemat `konfiguracja_systemu` w `@cortex/db` (users/roles/user_roles/permissions_matrix/application_scopes/role_application_scopes — kształt wzorem audytu cortex-admin, `PROJECT/cortex-frontend-cortex-admin-audyt-funkcji.md`, sekcja "Rdzeń — PORTOWAĆ").
+1. Schemat `system_config` w `@cortex/db` (users/roles/user_roles/permissions_matrix/application_scopes/role_application_scopes — kształt wzorem audytu cortex-admin, `PROJECT/cortex-frontend-cortex-admin-audyt-funkcji.md`, sekcja "Rdzeń — PORTOWAĆ").
 2. `requireTileAccess()` w `@cortex/service` czyta z tego schematu zamiast HTTP do cortex-admin — usuwa cross-service round-trip.
 3. Cache pattern (30s TTL) zostaje — teraz cache'uje wynik zapytania do własnej bazy zamiast do zewnętrznego serwisu.
 4. `getAccessResult`/`getAuthorizedAppsAtCortexAdmin` w `access.ts` — do usunięcia PO migracji, nie wcześniej (cortex-admin zostaje źródłem prawdy do czasu ukończenia Ścieżki E).

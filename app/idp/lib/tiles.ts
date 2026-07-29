@@ -182,10 +182,10 @@ export const TILES: ReadonlyArray<Tile> = [
     // Wpis pozostaje w kodzie na czas P1: rejestr w bazie (tabela applications)
     // jest już źródłem prawdy dla UPRAWNIEŃ, ale pusty rejestr nie może wygasić
     // huba — pełne odcięcie tiles.ts dopiero po migracji danych.
-    id: "konfiguracja-systemu",
+    id: "system-config",
     label: "Konfiguracja Systemu",
     description: "Użytkownicy, role, uprawnienia i rejestr kafelków instancji",
-    href: "/konfiguracja-systemu/uzytkownicy",
+    href: "/system-config/uzytkownicy",
     icon: Settings,
     iconBg: "bg-slate-200 dark:bg-slate-800/60",
     iconFg: "text-slate-700 dark:text-slate-300",

@@ -11,7 +11,7 @@ description: Wewnętrzna warstwa serwisowa (logika biznesowa, RBAC/walidacja) w 
 
 ## Flagowy, pierwszy realny serwis: RBAC
 
-`requireTileAccess()` w `@cortex/service/src/rbac.ts` — **dziś celowo rzuca błąd, nie jest podłączone**. Prawdziwa, działająca logika autoryzacji dziś żyje w `app/idp/app/api/_lib/access.ts` (`getAccessResult`, pyta zewnętrzny `cortex-admin`) — używaj TEGO wzorca do czasu migracji (Ścieżka E, port cortex-admin → `konfiguracja_systemu` w `@cortex/db`). Pełny kontrakt: `REFERENCE.md` w tym folderze.
+`requireTileAccess()` w `@cortex/service/src/rbac.ts` — **dziś celowo rzuca błąd, nie jest podłączone**. Prawdziwa, działająca logika autoryzacji dziś żyje w `app/idp/app/api/_lib/access.ts` (`getAccessResult`, pyta zewnętrzny `cortex-admin`) — używaj TEGO wzorca do czasu migracji (Ścieżka E, port cortex-admin → `system_config` w `@cortex/db`). Pełny kontrakt: `REFERENCE.md` w tym folderze.
 
 ## Kiedy coś jest `code-service`, a kiedy nie
 

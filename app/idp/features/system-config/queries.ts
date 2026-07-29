@@ -1,10 +1,10 @@
 import { apiClient } from "@cortex/api"
 import type { Application, ApplicationInput, RoleSummary, UserWithRoles } from "./types"
 
-const BASE = "/api/konfiguracja-systemu"
+const BASE = "/api/system-config"
 
 export const queryKeys = {
-  all: ["konfiguracja-systemu"] as const,
+  all: ["system-config"] as const,
   users: () => [...queryKeys.all, "users"] as const,
   roles: () => [...queryKeys.all, "roles"] as const,
   applications: () => [...queryKeys.all, "applications"] as const,

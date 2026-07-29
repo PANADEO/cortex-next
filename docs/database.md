@@ -8,7 +8,7 @@ Nie osobne bazy per moduł, nie SQLite per moduł. Każdy moduł portowany do ś
 
 ## Co WCHODZI do tej bazy
 
-Moduły, które są częścią TEGO appu: uprawnienia/RBAC (`konfiguracja_systemu`), rejestr kafelków, historia AI Tools (dziś w SQLite — migracja zaplanowana, patrz niżej).
+Moduły, które są częścią TEGO appu: uprawnienia/RBAC (`system_config`), rejestr kafelków, historia AI Tools (dziś w SQLite — migracja zaplanowana, patrz niżej).
 
 ## Co NIE wchodzi — i dlaczego to nie jest niespójność
 

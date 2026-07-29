@@ -19,7 +19,7 @@ Nie konsolidować tych dwóch na siłę teraz — różne kształty danych, ró�
 
 ## Docelowo — rejestr edytowalny z UI (wymóg Cezarego, 28.07.2026)
 
-"Ustawianie kafelków w instancji ma być z UI, nie edycją plików." Realizacja: tabela `applications` (rozszerzona o `route`/`kind`/`url`) w schemacie `konfiguracja_systemu` (`@cortex/db`) + ekran CRUD w module Konfiguracja Systemu. Zastępuje hardcoded `tiles.ts` — nie plik `services-config.json` (to wzorzec starego `cortex-box-prototype`, świadomie porzucony).
+"Ustawianie kafelków w instancji ma być z UI, nie edycją plików." Realizacja: tabela `applications` (rozszerzona o `route`/`kind`/`url`) w schemacie `system_config` (`@cortex/db`) + ekran CRUD w module Konfiguracja Systemu. Zastępuje hardcoded `tiles.ts` — nie plik `services-config.json` (to wzorzec starego `cortex-box-prototype`, świadomie porzucony).
 
 ## Ścieżka pod przyszłą samodzielność klientów (nie teraz, ale projektować z myślą o tym)
 

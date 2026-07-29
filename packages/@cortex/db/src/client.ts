@@ -4,7 +4,7 @@
 
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js"
 import postgres from "postgres"
-import * as schema from "./schema/konfiguracja-systemu"
+import * as schema from "./schema/system-config"
 
 export type CortexDatabase = PostgresJsDatabase<typeof schema>
 

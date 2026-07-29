@@ -30,7 +30,7 @@ const ROLE_CODE = `rola-${SUFFIX}`
 const EMAIL = `tester-${SUFFIX}@firma.pl`
 
 function makeRequest(email: string): Request {
-  return new Request("http://localhost/api/konfiguracja-systemu/users", {
+  return new Request("http://localhost/api/system-config/users", {
     headers: { "x-auth-request-email": email },
   })
 }

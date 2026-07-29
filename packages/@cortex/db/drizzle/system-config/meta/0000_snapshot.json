@@ -4,9 +4,9 @@
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "konfiguracja_systemu.application_scopes": {
+    "system_config.application_scopes": {
       "name": "application_scopes",
-      "schema": "konfiguracja_systemu",
+      "schema": "system_config",
       "columns": {
         "id": {
           "name": "id",
@@ -47,7 +47,7 @@
           "name": "application_scopes_application_id_applications_id_fk",
           "tableFrom": "application_scopes",
           "tableTo": "applications",
-          "schemaTo": "konfiguracja_systemu",
+          "schemaTo": "system_config",
           "columnsFrom": [
             "application_id"
           ],
@@ -73,9 +73,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "konfiguracja_systemu.applications": {
+    "system_config.applications": {
       "name": "applications",
-      "schema": "konfiguracja_systemu",
+      "schema": "system_config",
       "columns": {
         "id": {
           "name": "id",
@@ -184,18 +184,18 @@
       "checkConstraints": {
         "applications_kind_allowed": {
           "name": "applications_kind_allowed",
-          "value": "\"konfiguracja_systemu\".\"applications\".\"kind\" in ('native', 'external-link', 'iframe')"
+          "value": "\"system_config\".\"applications\".\"kind\" in ('native', 'external-link', 'iframe')"
         },
         "applications_kind_shape": {
           "name": "applications_kind_shape",
-          "value": "(\"konfiguracja_systemu\".\"applications\".\"kind\" = 'native' and \"konfiguracja_systemu\".\"applications\".\"route\" is not null and \"konfiguracja_systemu\".\"applications\".\"url\" is null)\n          or (\"konfiguracja_systemu\".\"applications\".\"kind\" <> 'native' and \"konfiguracja_systemu\".\"applications\".\"url\" is not null and \"konfiguracja_systemu\".\"applications\".\"route\" is null)"
+          "value": "(\"system_config\".\"applications\".\"kind\" = 'native' and \"system_config\".\"applications\".\"route\" is not null and \"system_config\".\"applications\".\"url\" is null)\n          or (\"system_config\".\"applications\".\"kind\" <> 'native' and \"system_config\".\"applications\".\"url\" is not null and \"system_config\".\"applications\".\"route\" is null)"
         }
       },
       "isRLSEnabled": false
     },
-    "konfiguracja_systemu.permissions_matrix": {
+    "system_config.permissions_matrix": {
       "name": "permissions_matrix",
-      "schema": "konfiguracja_systemu",
+      "schema": "system_config",
       "columns": {
         "role_id": {
           "name": "role_id",
@@ -223,7 +223,7 @@
           "name": "permissions_matrix_role_id_roles_id_fk",
           "tableFrom": "permissions_matrix",
           "tableTo": "roles",
-          "schemaTo": "konfiguracja_systemu",
+          "schemaTo": "system_config",
           "columnsFrom": [
             "role_id"
           ],
@@ -237,7 +237,7 @@
           "name": "permissions_matrix_application_id_applications_id_fk",
           "tableFrom": "permissions_matrix",
           "tableTo": "applications",
-          "schemaTo": "konfiguracja_systemu",
+          "schemaTo": "system_config",
           "columnsFrom": [
             "application_id"
           ],
@@ -262,9 +262,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "konfiguracja_systemu.role_application_scopes": {
+    "system_config.role_application_scopes": {
       "name": "role_application_scopes",
-      "schema": "konfiguracja_systemu",
+      "schema": "system_config",
       "columns": {
         "role_id": {
           "name": "role_id",
@@ -292,7 +292,7 @@
           "name": "role_application_scopes_role_id_roles_id_fk",
           "tableFrom": "role_application_scopes",
           "tableTo": "roles",
-          "schemaTo": "konfiguracja_systemu",
+          "schemaTo": "system_config",
           "columnsFrom": [
             "role_id"
           ],
@@ -306,7 +306,7 @@
           "name": "role_application_scopes_application_scope_id_application_scopes_id_fk",
           "tableFrom": "role_application_scopes",
           "tableTo": "application_scopes",
-          "schemaTo": "konfiguracja_systemu",
+          "schemaTo": "system_config",
           "columnsFrom": [
             "application_scope_id"
           ],
@@ -331,9 +331,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "konfiguracja_systemu.roles": {
+    "system_config.roles": {
       "name": "roles",
-      "schema": "konfiguracja_systemu",
+      "schema": "system_config",
       "columns": {
         "id": {
           "name": "id",
@@ -398,9 +398,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "konfiguracja_systemu.user_roles": {
+    "system_config.user_roles": {
       "name": "user_roles",
-      "schema": "konfiguracja_systemu",
+      "schema": "system_config",
       "columns": {
         "user_id": {
           "name": "user_id",
@@ -428,7 +428,7 @@
           "name": "user_roles_user_id_users_id_fk",
           "tableFrom": "user_roles",
           "tableTo": "users",
-          "schemaTo": "konfiguracja_systemu",
+          "schemaTo": "system_config",
           "columnsFrom": [
             "user_id"
           ],
@@ -442,7 +442,7 @@
           "name": "user_roles_role_id_roles_id_fk",
           "tableFrom": "user_roles",
           "tableTo": "roles",
-          "schemaTo": "konfiguracja_systemu",
+          "schemaTo": "system_config",
           "columnsFrom": [
             "role_id"
           ],
@@ -467,9 +467,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "konfiguracja_systemu.users": {
+    "system_config.users": {
       "name": "users",
-      "schema": "konfiguracja_systemu",
+      "schema": "system_config",
       "columns": {
         "id": {
           "name": "id",
@@ -531,7 +531,7 @@
   },
   "enums": {},
   "schemas": {
-    "konfiguracja_systemu": "konfiguracja_systemu"
+    "system_config": "system_config"
   },
   "sequences": {},
   "roles": {},

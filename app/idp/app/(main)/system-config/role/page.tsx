@@ -1,6 +1,6 @@
 "use client"
 
-import { useKonfiguracjaRoles } from "@/features/konfiguracja-systemu/hooks"
+import { useKonfiguracjaRoles } from "@/features/system-config/hooks"
 import { Badge, EmptyState, PageHeader } from "@cortex/ui"
 import { KeyRound } from "lucide-react"
 

@@ -130,7 +130,7 @@ describe("/api/me/access route handler", () => {
       "intrastat-config-editor",
       "cortex-config",
       "cortex-cowork",
-      "konfiguracja-systemu",
+      "system-config",
       "text-highlighter",
       "text-transformer",
       "text-analyzer",

@@ -4,8 +4,8 @@ import {
   useKonfiguracjaRoles,
   useKonfiguracjaUsers,
   useSetUserRoles,
-} from "@/features/konfiguracja-systemu/hooks"
-import type { RoleSummary, UserWithRoles } from "@/features/konfiguracja-systemu/types"
+} from "@/features/system-config/hooks"
+import type { RoleSummary, UserWithRoles } from "@/features/system-config/types"
 import { toastApiError } from "@cortex/api"
 import {
   Badge,

@@ -8,9 +8,9 @@
   "scripts": {
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit",
-    "db:generate": "drizzle-kit generate --config drizzle.konfiguracja-systemu.config.ts",
-    "db:migrate": "drizzle-kit migrate --config drizzle.konfiguracja-systemu.config.ts",
-    "db:seed": "node scripts/seed-konfiguracja-systemu.mjs"
+    "db:generate": "drizzle-kit generate --config drizzle.system-config.config.ts",
+    "db:migrate": "drizzle-kit migrate --config drizzle.system-config.config.ts",
+    "db:seed": "node scripts/seed-system-config.mjs"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.0",

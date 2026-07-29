@@ -164,7 +164,7 @@ export const OKNA_CZASOWE_NAV: TileMenuSection[] = [
   },
 ]
 
-export const KONFIGURACJA_SYSTEMU_NAV: TileMenuSection[] = [
+export const SYSTEM_CONFIG_NAV: TileMenuSection[] = [
   {
     id: "dostep",
     label: "Dostęp",
@@ -173,9 +173,9 @@ export const KONFIGURACJA_SYSTEMU_NAV: TileMenuSection[] = [
         id: "uzytkownicy",
         label: "Użytkownicy",
         icon: Users,
-        href: "/konfiguracja-systemu/uzytkownicy",
+        href: "/system-config/uzytkownicy",
       },
-      { id: "role", label: "Role", icon: KeyRound, href: "/konfiguracja-systemu/role" },
+      { id: "role", label: "Role", icon: KeyRound, href: "/system-config/role" },
     ],
   },
   {
@@ -186,7 +186,7 @@ export const KONFIGURACJA_SYSTEMU_NAV: TileMenuSection[] = [
         id: "kafelki",
         label: "Rejestr kafelków",
         icon: LayoutDashboard,
-        href: "/konfiguracja-systemu/kafelki",
+        href: "/system-config/kafelki",
       },
     ],
   },
@@ -366,8 +366,8 @@ export function useIntrastatNavSections(): TileMenuSection[] {
   return INTRASTAT_NAV
 }
 
-export function useKonfiguracjaSystemuNavSections(): TileMenuSection[] {
-  return KONFIGURACJA_SYSTEMU_NAV
+export function useSystemConfigNavSections(): TileMenuSection[] {
+  return SYSTEM_CONFIG_NAV
 }
 
 export function useInvoiceSupervisorNavSections(): TileMenuSection[] {

@@ -1,5 +1,5 @@
 // Logika modułu Konfiguracja Systemu (code-service). Kontrolery w
-// app/idp/app/api/konfiguracja-systemu/** tylko walidują wejście i wołają to.
+// app/idp/app/api/system-config/** tylko walidują wejście i wołają to.
 // Zero surowego SQL poza tym plikiem i rbac-store.ts — dostęp przez Drizzle.
 
 import {
@@ -16,7 +16,7 @@ import { asc, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 
 export const ADMIN_ROLE_CODE = "admin"
-export const KONFIGURACJA_SYSTEMU_APP_CODE = "konfiguracja-systemu"
+export const SYSTEM_CONFIG_APP_CODE = "system-config"
 
 export interface RoleSummary {
   id: string

@@ -13,15 +13,15 @@ import { defineConfig } from "drizzle-kit"
 // nie odrzuca nieznanego klucza, a tabela stanu ląduje w domyślnym schemacie
 // `drizzle`. Zweryfikowane na żywo, patrz notatka Obsidian.
 export default defineConfig({
-  schema: "./src/schema/konfiguracja-systemu.ts",
-  out: "./drizzle/konfiguracja-systemu",
+  schema: "./src/schema/system-config.ts",
+  out: "./drizzle/system-config",
   dialect: "postgresql",
   // Schemat tabeli stanu migracji MUSI być inny niż schemat modułu:
   // drizzle-kit zakłada go sam przed uruchomieniem migracji, więc wskazanie
-  // "konfiguracja_systemu" wywraca własne `CREATE SCHEMA` migracji 0000
+  // "system_config" wywraca własne `CREATE SCHEMA` migracji 0000
   // ("schema already exists"). Stąd dedykowany schemat *_migrations.
   migrations: {
-    schema: "konfiguracja_systemu_migrations",
+    schema: "system_config_migrations",
     table: "__drizzle_migrations",
   },
   dbCredentials: {

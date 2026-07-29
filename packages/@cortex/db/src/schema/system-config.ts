@@ -24,10 +24,10 @@ import {
   uuid,
 } from "drizzle-orm/pg-core"
 
-export const konfiguracjaSystemu = pgSchema("konfiguracja_systemu")
+export const systemConfig = pgSchema("system_config")
 
 /** Dozwolone wartości `applications.kind`. Musi odpowiadać TileKind
- *  z @cortex/tile-sdk — pilnuje tego test konfiguracja-systemu.test.ts. */
+ *  z @cortex/tile-sdk — pilnuje tego test system-config.test.ts. */
 export const APPLICATION_KINDS = ["native", "external-link", "iframe"] as const
 export type ApplicationKind = (typeof APPLICATION_KINDS)[number]
 
@@ -35,7 +35,7 @@ const createdAt = timestamp("created_at", { withTimezone: true }).notNull().defa
 const updatedAt = timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 const grantedAt = timestamp("granted_at", { withTimezone: true }).notNull().defaultNow()
 
-export const users = konfiguracjaSystemu.table("users", {
+export const users = systemConfig.table("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   // Zawsze zapisywany lowercase — dopasowanie e-maili jest case-insensitive.
   email: text("email").notNull().unique(),
@@ -45,7 +45,7 @@ export const users = konfiguracjaSystemu.table("users", {
   updatedAt,
 })
 
-export const roles = konfiguracjaSystemu.table("roles", {
+export const roles = systemConfig.table("roles", {
   id: uuid("id").primaryKey().defaultRandom(),
   code: text("code").notNull().unique(),
   name: text("name").notNull(),
@@ -56,7 +56,7 @@ export const roles = konfiguracjaSystemu.table("roles", {
   updatedAt,
 })
 
-export const userRoles = konfiguracjaSystemu.table(
+export const userRoles = systemConfig.table(
   "user_roles",
   {
     userId: uuid("user_id")
@@ -72,7 +72,7 @@ export const userRoles = konfiguracjaSystemu.table(
   }),
 )
 
-export const applications = konfiguracjaSystemu.table(
+export const applications = systemConfig.table(
   "applications",
   {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -110,7 +110,7 @@ export const applications = konfiguracjaSystemu.table(
 
 /** Gruboziarnisty grant: rola ma dostęp do aplikacji (kafelka) albo nie.
  *  Odpowiednik permissions_matrix z cortex-admin. */
-export const permissionsMatrix = konfiguracjaSystemu.table(
+export const permissionsMatrix = systemConfig.table(
   "permissions_matrix",
   {
     roleId: uuid("role_id")
@@ -127,7 +127,7 @@ export const permissionsMatrix = konfiguracjaSystemu.table(
 )
 
 /** Akcje możliwe w ramach jednej aplikacji (np. view/edit/generate). */
-export const applicationScopes = konfiguracjaSystemu.table(
+export const applicationScopes = systemConfig.table(
   "application_scopes",
   {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -147,7 +147,7 @@ export const applicationScopes = konfiguracjaSystemu.table(
 )
 
 /** Granularny grant: rola ma konkretną akcję w konkretnej aplikacji. */
-export const roleApplicationScopes = konfiguracjaSystemu.table(
+export const roleApplicationScopes = systemConfig.table(
   "role_application_scopes",
   {
     roleId: uuid("role_id")

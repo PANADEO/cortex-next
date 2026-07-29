@@ -18,7 +18,7 @@
 import postgres from "postgres"
 
 const ADMIN_ROLE_CODE = "admin"
-const MODULE_APP_CODE = "konfiguracja-systemu"
+const MODULE_APP_CODE = "system-config"
 
 const databaseUrl = process.env.DATABASE_URL
 if (!databaseUrl) {
@@ -33,7 +33,7 @@ const sql = postgres(databaseUrl, { max: 1 })
 async function main() {
   await sql.begin(async (tx) => {
     const [role] = await tx`
-      insert into konfiguracja_systemu.roles (code, name, description, is_system)
+      insert into system_config.roles (code, name, description, is_system)
       values (${ADMIN_ROLE_CODE}, 'Administrator', 'Pełny dostęp do konfiguracji systemu', true)
       on conflict (code) do update set is_system = true
       returning id
@@ -41,12 +41,12 @@ async function main() {
     console.log(`[seed] rola ${ADMIN_ROLE_CODE}: ok`)
 
     const [application] = await tx`
-      insert into konfiguracja_systemu.applications
+      insert into system_config.applications
         (code, name, description, icon, category, kind, route, sort_order)
       values (
         ${MODULE_APP_CODE}, 'Konfiguracja Systemu',
         'Użytkownicy, role, uprawnienia i rejestr kafelków', 'Settings',
-        'Administracja', 'native', '/konfiguracja-systemu', 100
+        'Administracja', 'native', '/system-config', 100
       )
       on conflict (code) do nothing
       returning id
@@ -54,12 +54,12 @@ async function main() {
     const applicationId =
       application?.id ??
       (
-        await tx`select id from konfiguracja_systemu.applications where code = ${MODULE_APP_CODE}`
+        await tx`select id from system_config.applications where code = ${MODULE_APP_CODE}`
       )[0].id
     console.log(`[seed] aplikacja ${MODULE_APP_CODE}: ok`)
 
     await tx`
-      insert into konfiguracja_systemu.permissions_matrix (role_id, application_id)
+      insert into system_config.permissions_matrix (role_id, application_id)
       values (${role.id}, ${applicationId})
       on conflict do nothing
     `
@@ -72,8 +72,8 @@ async function main() {
 
     const [existingAdmin] = await tx`
       select u.email
-      from konfiguracja_systemu.users u
-      join konfiguracja_systemu.user_roles ur on ur.user_id = u.id
+      from system_config.users u
+      join system_config.user_roles ur on ur.user_id = u.id
       where ur.role_id = ${role.id} and u.is_active = true
       limit 1
     `
@@ -86,14 +86,14 @@ async function main() {
     }
 
     const [user] = await tx`
-      insert into konfiguracja_systemu.users (email, full_name)
+      insert into system_config.users (email, full_name)
       values (${bootstrapEmail}, 'Bootstrap Administrator')
       on conflict (email) do update set is_active = true
       returning id
     `
 
     await tx`
-      insert into konfiguracja_systemu.user_roles (user_id, role_id)
+      insert into system_config.user_roles (user_id, role_id)
       values (${user.id}, ${role.id})
       on conflict do nothing
     `

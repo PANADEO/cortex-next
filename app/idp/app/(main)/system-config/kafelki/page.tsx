@@ -4,8 +4,8 @@ import {
   useCreateApplication,
   useKonfiguracjaApplications,
   useUpdateApplication,
-} from "@/features/konfiguracja-systemu/hooks"
-import type { Application, ApplicationInput } from "@/features/konfiguracja-systemu/types"
+} from "@/features/system-config/hooks"
+import type { Application, ApplicationInput } from "@/features/system-config/types"
 import { toastApiError } from "@cortex/api"
 import { TileKind } from "@cortex/tile-sdk"
 import {

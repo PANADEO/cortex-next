@@ -3,12 +3,12 @@
 ## Wzorzec schema-per-moduł w Drizzle
 
 ```ts
-// packages/@cortex/db/src/schema/konfiguracja-systemu.ts
+// packages/@cortex/db/src/schema/system-config.ts
 import { pgSchema, uuid, text, timestamp } from "drizzle-orm/pg-core"
 
-export const konfiguracjaSystemu = pgSchema("konfiguracja_systemu")
+export const systemConfig = pgSchema("system_config")
 
-export const users = konfiguracjaSystemu.table("users", {
+export const users = systemConfig.table("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -22,13 +22,13 @@ Domyślnie Drizzle śledzi zastosowane migracje w tabeli `drizzle.__drizzle_migr
 **Rozwiązanie**: jawnie ustaw schemat tabeli migracji per moduł. Zweryfikowane na żywo (drizzle-kit 0.28.1, Postgres 16) — kształt opcji ma znaczenie:
 
 ```ts
-// packages/@cortex/db/drizzle.konfiguracja-systemu.config.ts
+// packages/@cortex/db/drizzle.system-config.config.ts
 export default defineConfig({
-  schema: "./src/schema/konfiguracja-systemu.ts",
-  out: "./drizzle/konfiguracja-systemu",
+  schema: "./src/schema/system-config.ts",
+  out: "./drizzle/system-config",
   dialect: "postgresql",
   migrations: {
-    schema: "konfiguracja_systemu_migrations", // NIE domyślne "drizzle"
+    schema: "system_config_migrations", // NIE domyślne "drizzle"
     table: "__drizzle_migrations",
   },
   dbCredentials: { url: process.env.DATABASE_URL ?? "" },
@@ -38,11 +38,11 @@ export default defineConfig({
 Dwie pułapki potwierdzone eksperymentalnie:
 
 1. **Płaskie `migrationsSchema` na najwyższym poziomie NIE DZIAŁA** w 0.28.x — `defineConfig` nie odrzuca nieznanego klucza, więc config wygląda poprawnie, a tabela stanu i tak ląduje w domyślnym schemacie `drizzle`. Poprawna jest zagnieżdżona forma `migrations: { schema, table }`.
-2. **Schemat tabeli migracji musi być INNY niż schemat modułu.** drizzle-kit zakłada go sam przed uruchomieniem migracji, więc wskazanie `konfiguracja_systemu` wywraca własne `CREATE SCHEMA` migracji 0000 błędem `schema "konfiguracja_systemu" already exists`. Stąd konwencja `<modul>_migrations`.
+2. **Schemat tabeli migracji musi być INNY niż schemat modułu.** drizzle-kit zakłada go sam przed uruchomieniem migracji, więc wskazanie `system_config` wywraca własne `CREATE SCHEMA` migracji 0000 błędem `schema "system_config" already exists`. Stąd konwencja `<modul>_migrations`.
 
 Każdy moduł = osobny plik configu + osobny `out` + osobny schemat migracji. Nie dzielić jednego `drizzle.config.ts` między moduły.
 
-## Kształt pierwszego schematu (`konfiguracja_systemu`, Ścieżka E)
+## Kształt pierwszego schematu (`system_config`, Ścieżka E)
 
 Wzorem audytu cortex-admin (`PROJECT/cortex-frontend-cortex-admin-audyt-funkcji.md`, sekcja "Rdzeń — PORTOWAĆ") — **siedem tabel, obie warstwy uprawnień naraz, nie tylko jedna**:
 - `users`, `roles`, `user_roles` — tożsamość i role.

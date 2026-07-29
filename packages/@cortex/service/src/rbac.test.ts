@@ -13,12 +13,12 @@ vi.mock("./rbac-store", () => ({ loadGrantedApplicationCodes }))
 
 const { clearTileAccessCache, requireTileAccess } = await import("./rbac")
 
-const ENTITLEMENT = "konfiguracja-systemu"
+const ENTITLEMENT = "system-config"
 
 function makeRequest(email: string | null): Request {
   const headers = new Headers()
   if (email !== null) headers.set("x-auth-request-email", email)
-  return new Request("http://localhost/api/konfiguracja-systemu/users", { headers })
+  return new Request("http://localhost/api/system-config/users", { headers })
 }
 
 beforeEach(() => {
@@ -82,7 +82,7 @@ describe("requireTileAccess — próby ominięcia", () => {
   })
 
   it("nie daje się oszukać podobnym kodem uprawnienia", async () => {
-    loadGrantedApplicationCodes.mockResolvedValue(["konfiguracja-systemu-readonly"])
+    loadGrantedApplicationCodes.mockResolvedValue(["system-config-readonly"])
     const result = await requireTileAccess(makeRequest("ktos@firma.pl"), ENTITLEMENT)
     expect(result.allowed).toBe(false)
   })
