@@ -14,6 +14,13 @@ import { expect, test } from "../fixtures/fixtures"
 import { asUser } from "../fixtures/fixtures"
 import { mockShellAccess } from "../support/mocks/shell-access"
 
+// Dev server kompiluje route'y NA ŻĄDANIE, więc pierwszy test w przebiegu
+// płaci za kompilację strony i endpointu (zmierzone: 43 s na zimno vs 6 s na
+// ciepło). Domyślne 30 s na test potrafi na to nie wystarczyć — podnosimy limit
+// wyłącznie dla tego pliku, zamiast ruszać globalną konfigurację, na której
+// stoją pozostałe suity.
+test.describe.configure({ timeout: 90_000 })
+
 test.describe("Ilustromat — generowanie", () => {
   test("użytkownik z grantem widzi ekran i szablony marki wczytane z bazy", async ({
     page,
@@ -30,10 +37,19 @@ test.describe("Ilustromat — generowanie", () => {
     await expect(ilustromatGenerowaniePage.emptyState).toBeVisible()
 
     // Dowód, że lista jedzie z PRAWDZIWEJ bazy przez requireTileAccess(),
-    // a nie z jakiegokolwiek mocka: nazwa pochodzi wprost z seeda.
-    await expect(
-      page.getByText("Crido — fioletowa (domyślna)", { exact: false }).first(),
-    ).toBeVisible()
+    // a nie z jakiegokolwiek mocka: nazwa pochodzi wprost z seeda i ląduje
+    // jako wybrana wartość selecta.
+    //
+    // Hojny timeout jest tu celowy, nie "na wszelki wypadek": pierwszy test
+    // w przebiegu trafia w dev server, który dopiero KOMPILUJE route
+    // /api/ilustromat/templates na żądanie (zmierzone: przebieg na zimno
+    // 43 s vs 6 s na ciepło). Domyślne 5 s wywracało ten test na zimnym
+    // starcie, mimo że aplikacja działa poprawnie.
+    await expect(ilustromatGenerowaniePage.templateSelect).toContainText("Crido — fioletowa", {
+      timeout: 30_000,
+    })
+    // Kontrola dopełniająca: z wczytanym szablonem generowanie jest odblokowane.
+    await expect(ilustromatGenerowaniePage.generateButton).toBeEnabled()
   })
 
   test("użytkownik bez grantu do kafelka nie dostaje danych modułu", async ({ page, seed }) => {
