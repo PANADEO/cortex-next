@@ -46,6 +46,10 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { systemConfigTile } from "../../manifest"
 
+/** Radix Select nie przyjmuje pustej wartości, a `target` w bazie bywa NULL —
+ *  stąd wartownik zamiast "". */
+const NO_TARGET = "default"
+
 interface FormState {
   name: string
   description: string
@@ -54,6 +58,7 @@ interface FormState {
   kind: TileKind
   route: string
   url: string
+  target: typeof NO_TARGET | "_self" | "_blank"
   isActive: boolean
   sortOrder: string
 }
@@ -67,11 +72,14 @@ function toFormState(application: Application): FormState {
     kind: application.kind,
     route: application.route ?? "",
     url: application.url ?? "",
+    target: application.target === "_blank" || application.target === "_self" ? application.target : NO_TARGET,
     isActive: application.isActive,
     sortOrder: String(application.sortOrder),
   }
 }
 
+/** Formularz wysyła KOMPLET pól wiersza, łącznie z `target` — pominięcie
+ *  któregokolwiek kasowało jego wartość przy każdej edycji. */
 function toInput(code: string, form: FormState): ApplicationInput {
   const isNative = form.kind === "native"
   return {
@@ -83,6 +91,7 @@ function toInput(code: string, form: FormState): ApplicationInput {
     kind: form.kind,
     route: isNative ? form.route.trim() : null,
     url: isNative ? null : form.url.trim(),
+    target: form.target === NO_TARGET ? null : form.target,
     isActive: form.isActive,
     sortOrder: Number.parseInt(form.sortOrder, 10) || 0,
   }
@@ -180,6 +189,10 @@ export default function AplikacjaSzczegolyPage() {
       await setApplicationRoles.mutateAsync({ id: application.id, roleIds: grantedRoleIds })
       toast.success("Zapisano uprawnienia")
     } catch (error) {
+      // Serwer odrzucił zapis (np. 409 samo-zablokowanie), więc granty zostały
+      // po staremu — checkboxy muszą wrócić do stanu z serwera. Bez tego ekran
+      // pokazuje odznaczoną rolę, której nikt nie odebrał.
+      setSelectedRoleIds(applicationRolesQuery.data?.roleIds ?? [])
       toastApiError(error, "Nie udało się zapisać uprawnień")
     }
   }
@@ -231,11 +244,12 @@ export default function AplikacjaSzczegolyPage() {
             <ShieldAlert className="h-4 w-4" />
             <AlertTitle>To jest aplikacja, z której właśnie korzystasz</AlertTitle>
             <AlertDescription>
-              Kodu tej aplikacji nie da się zmienić, a jej samej wyłączyć ani usunąć. To po tym
-              kodzie bramka sprawdza dostęp do Konfiguracji Systemu, więc taka zmiana odcięłaby od
-              niej wszystkich administratorów — łącznie z Tobą — i dałoby się to cofnąć tylko
-              ręcznie w bazie danych. Serwer odrzuca te operacje niezależnie od tego, co wyśle
-              przeglądarka.
+              Nie da się zmienić kodu, typu ani adresu tej aplikacji, ani jej wyłączyć czy usunąć.
+              To po tym kodzie bramka sprawdza dostęp do Konfiguracji Systemu, a typ i adres
+              opisują sam ten moduł — taka zmiana albo odcięłaby od niego wszystkich
+              administratorów (łącznie z Tobą), albo wyprowadziłaby administrację poza tę
+              aplikację, i dałoby się to cofnąć tylko ręcznie w bazie danych. Serwer odrzuca te
+              operacje niezależnie od tego, co wyśle przeglądarka.
             </AlertDescription>
           </Alert>
         ) : null}
@@ -301,7 +315,11 @@ export default function AplikacjaSzczegolyPage() {
 
             <div className="grid gap-1.5">
               <Label htmlFor="kind">Typ aplikacji</Label>
-              <Select value={form.kind} onValueChange={(value) => update("kind", value as TileKind)}>
+              <Select
+                value={form.kind}
+                disabled={isSelfManaged}
+                onValueChange={(value) => update("kind", value as TileKind)}
+              >
                 <SelectTrigger id="kind">
                   <SelectValue />
                 </SelectTrigger>
@@ -321,6 +339,7 @@ export default function AplikacjaSzczegolyPage() {
                 <Input
                   id="route"
                   value={form.route}
+                  disabled={isSelfManaged}
                   onChange={(event) => update("route", event.target.value)}
                   placeholder="/raportowanie-tokenow"
                 />
@@ -329,18 +348,38 @@ export default function AplikacjaSzczegolyPage() {
                 </span>
               </div>
             ) : (
-              <div className="grid gap-1.5">
-                <Label htmlFor="url">Adres zewnętrzny</Label>
-                <Input
-                  id="url"
-                  value={form.url}
-                  onChange={(event) => update("url", event.target.value)}
-                  placeholder="https://chat.example.com"
-                />
-                <span className="text-xs text-muted-foreground">
-                  Dozwolone wyłącznie adresy http:// i https://.
-                </span>
-              </div>
+              <>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="url">Adres zewnętrzny</Label>
+                  <Input
+                    id="url"
+                    value={form.url}
+                    disabled={isSelfManaged}
+                    onChange={(event) => update("url", event.target.value)}
+                    placeholder="https://chat.example.com"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    Dozwolone wyłącznie adresy http:// i https://.
+                  </span>
+                </div>
+
+                <div className="grid gap-1.5">
+                  <Label htmlFor="target">Otwieranie</Label>
+                  <Select
+                    value={form.target}
+                    onValueChange={(value) => update("target", value as FormState["target"])}
+                  >
+                    <SelectTrigger id="target">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_TARGET}>Domyślne</SelectItem>
+                      <SelectItem value="_self">To samo okno</SelectItem>
+                      <SelectItem value="_blank">Nowa karta</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
             )}
 
             <div className="grid gap-4 sm:grid-cols-2">

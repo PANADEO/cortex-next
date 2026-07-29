@@ -12,7 +12,7 @@ import {
   type ApplicationRow,
 } from "@cortex/db"
 import { TileKind } from "@cortex/tile-sdk"
-import { asc, eq, inArray } from "drizzle-orm"
+import { and, asc, eq, inArray, ne } from "drizzle-orm"
 import { z } from "zod"
 import { clearTileAccessCache } from "./rbac"
 
@@ -55,27 +55,28 @@ function isInternalRoute(value: string): boolean {
   return /^\/(?![/\\])\S*$/.test(value)
 }
 
+const applicationFieldsSchema = z.object({
+  code: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-z0-9-]+$/, "Kod może zawierać tylko małe litery, cyfry i myślnik"),
+  name: z.string().min(1).max(120),
+  description: z.string().max(500).nullish(),
+  icon: z.string().max(64).nullish(),
+  category: z.string().max(64).nullish(),
+  kind: TileKind,
+  route: z.string().max(200).nullish(),
+  url: z.string().url().max(500).nullish(),
+  target: z.enum(["_self", "_blank"]).nullish(),
+  isActive: z.boolean().optional(),
+  sortOrder: z.number().int().min(0).max(10_000).optional(),
+})
+
 /** Kafelek natywny opisuje `route`; zewnętrzny/iframe opisuje `url`.
  *  Ten sam niezmiennik jest wymuszony check constraintem w bazie — walidacja
  *  tutaj daje czytelny błąd 400 zamiast błędu Postgresa. */
-export const applicationInputSchema = z
-  .object({
-    code: z
-      .string()
-      .min(1)
-      .max(64)
-      .regex(/^[a-z0-9-]+$/, "Kod może zawierać tylko małe litery, cyfry i myślnik"),
-    name: z.string().min(1).max(120),
-    description: z.string().max(500).nullish(),
-    icon: z.string().max(64).nullish(),
-    category: z.string().max(64).nullish(),
-    kind: TileKind,
-    route: z.string().max(200).nullish(),
-    url: z.string().url().max(500).nullish(),
-    target: z.enum(["_self", "_blank"]).nullish(),
-    isActive: z.boolean().optional(),
-    sortOrder: z.number().int().min(0).max(10_000).optional(),
-  })
+export const applicationInputSchema = applicationFieldsSchema
   .refine((value) => (value.kind === "native" ? Boolean(value.route) : true), {
     message: "Kafelek natywny wymaga pola route",
     path: ["route"],
@@ -102,6 +103,16 @@ export const applicationInputSchema = z
   })
 
 export type ApplicationInput = z.infer<typeof applicationInputSchema>
+
+/**
+ * Wejście PATCH-a: każde pole opcjonalne, BEZ reguł międzypolowych. Te reguły
+ * (natywny ma route, zewnętrzny ma url) mają sens dopiero na scalonym wierszu,
+ * więc sprawdza je updateApplication na wyniku merge'a — inaczej `PATCH {name}`
+ * musiałby powtarzać cały wiersz, a pominięte pola lądowałyby jako domyślne.
+ */
+export const applicationPatchSchema = applicationFieldsSchema.partial()
+
+export type ApplicationPatch = z.infer<typeof applicationPatchSchema>
 
 export async function listUsers(): Promise<UserWithRoles[]> {
   const db = getDb()
@@ -180,6 +191,7 @@ export async function setUserRoles(userId: string, roleIds: string[]): Promise<v
     if (!user) throw new UnknownUserError(userId)
 
     await assertRolesExist(tx, wanted)
+    await assertModuleStaysReachable(tx, { direction: "user-roles", userId, roleIds: wanted })
 
     await tx.delete(userRoles).where(eq(userRoles.userId, userId))
     if (wanted.length > 0) {
@@ -206,19 +218,29 @@ export async function createApplication(input: ApplicationInput): Promise<Applic
   return created as ApplicationRow
 }
 
+/**
+ * PATCH z prawdziwą semantyką częściową: pola nieobecne w `patch` zostają takie,
+ * jakie są w bazie. Wcześniej ta funkcja przyjmowała komplet i nadpisywała
+ * pominięte pola domyślnymi wartościami — każda edycja z formularza po cichu
+ * kasowała `target`, `description`, `icon`, `category` i zerowała `sortOrder`.
+ *
+ * Reguły międzypolowe sprawdzamy na SCALONYM wierszu (rzuca ZodError → 400).
+ */
 export async function updateApplication(
   id: string,
-  input: ApplicationInput,
+  patch: ApplicationPatch,
 ): Promise<ApplicationRow | null> {
   const db = getDb()
 
   const [existing] = await db.select().from(applications).where(eq(applications.id, id))
   if (!existing) return null
-  assertKeepsModuleReachable(existing, input)
+
+  const merged = applicationInputSchema.parse(mergeApplicationInput(existing, patch))
+  assertKeepsModuleReachable(existing, merged)
 
   const [updated] = await db
     .update(applications)
-    .set({ ...toApplicationValues(input), updatedAt: new Date() })
+    .set({ ...toApplicationValues(merged), updatedAt: new Date() })
     .where(eq(applications.id, id))
     .returning()
 
@@ -292,22 +314,21 @@ export async function setApplicationRoles(applicationId: string, roleIds: string
 
   await db.transaction(async (tx) => {
     const [application] = await tx
-      .select({ id: applications.id, code: applications.code })
+      .select({ id: applications.id })
       .from(applications)
       .where(eq(applications.id, applicationId))
     if (!application) throw new UnknownApplicationError()
 
-    // Ten sam powód co przy dezaktywacji wiersza: moduł administracyjny bez
-    // ANI JEDNEJ uprawnionej roli jest nieosiągalny dla wszystkich i da się to
-    // odkręcić wyłącznie ręcznie w bazie. Odebranie grantu POJEDYNCZEJ roli
-    // zostaje dozwolone — dopóki zostaje ktokolwiek, jest komu to cofnąć.
-    if (application.code === SYSTEM_CONFIG_APP_CODE && wanted.length === 0) {
-      throw new SelfLockoutError(
-        "Co najmniej jedna rola musi zachować dostęp do Konfiguracji Systemu — inaczej nikt nie wejdzie do tego modułu.",
-      )
-    }
-
     await assertRolesExist(tx, wanted)
+    // Ten sam powód co przy dezaktywacji wiersza: moduł administracyjny, do
+    // którego nie sięga już ani jeden aktywny człowiek, da się odkręcić
+    // wyłącznie ręcznie w bazie. Odebranie grantu POJEDYNCZEJ roli zostaje
+    // dozwolone — dopóki zostaje ktokolwiek, jest komu to cofnąć.
+    await assertModuleStaysReachable(tx, {
+      direction: "application-roles",
+      applicationId,
+      roleIds: wanted,
+    })
 
     await tx.delete(permissionsMatrix).where(eq(permissionsMatrix.applicationId, applicationId))
     if (wanted.length > 0) {
@@ -378,6 +399,108 @@ function assertKeepsModuleReachable(existing: ApplicationRow, input: Application
       "Nie można dezaktywować aplikacji Konfiguracja Systemu — odcięłoby to dostęp do tego modułu wszystkim administratorom.",
     )
   }
+
+  // Ten wiersz nie jest zwykłym wpisem w rejestrze — opisuje SAM moduł
+  // administracyjny, który jest stroną w tej aplikacji. Podmiana typu na
+  // `external-link`/`iframe` albo ścieżki na obcy adres zamienia wejście do
+  // administracji w przekierowanie poza aplikację (finding 8 zastosowany do
+  // kafelka samej administracji), więc te pola też są niezmienne.
+  const next = toApplicationValues(input)
+  if (next.kind !== existing.kind || next.route !== existing.route || next.url !== existing.url) {
+    throw new SelfLockoutError(
+      "Nie można zmienić typu ani adresu aplikacji Konfiguracja Systemu — ten wiersz opisuje sam moduł administracyjny, a podmiana go na adres zewnętrzny wyprowadzałaby administratorów poza tę aplikację.",
+    )
+  }
+}
+
+/**
+ * Zmiana, która może odciąć ludzi od modułu administracyjnego. Dwa kierunki,
+ * jeden niezmiennik — dlatego jeden typ, nie dwie osobne ścieżki.
+ */
+type ModuleAccessChange =
+  | { direction: "application-roles"; applicationId: string; roleIds: string[] }
+  | { direction: "user-roles"; userId: string; roleIds: string[] }
+
+/**
+ * Niezmiennik: po tej operacji CO NAJMNIEJ JEDEN AKTYWNY UŻYTKOWNIK zachowuje
+ * dostęp do `system-config`.
+ *
+ * Liczenie samych RÓL nie wystarczało: rola bez ani jednego aktywnego
+ * użytkownika wygląda jak zabezpieczenie, a odcina wszystkich. Przepięcie
+ * administracji na taką rolę ("odznacz Administrator, zaznacz Inspektor,
+ * Zapisz") to dwa kliknięcia w UI i całkowity lockout modułu. Ten sam warunek
+ * zamyka drugi kierunek: odebranie SOBIE ostatniej roli z dostępem.
+ *
+ * Operacja, która niczego nie pogarsza (moduł był nieosiągalny już przed nią),
+ * przechodzi — blokada ma zapobiegać utracie dostępu, nie utrudniać wychodzenie
+ * z awarii ręcznym SQL-em.
+ */
+async function assertModuleStaysReachable(
+  tx: Transaction,
+  change: ModuleAccessChange,
+): Promise<void> {
+  const [moduleRow] = await tx
+    .select({ id: applications.id })
+    .from(applications)
+    .where(eq(applications.code, SYSTEM_CONFIG_APP_CODE))
+  if (!moduleRow) return
+
+  if (change.direction === "application-roles" && change.applicationId !== moduleRow.id) return
+
+  const grantsNow = (
+    await tx
+      .select({ roleId: permissionsMatrix.roleId })
+      .from(permissionsMatrix)
+      .where(eq(permissionsMatrix.applicationId, moduleRow.id))
+  ).map((row) => row.roleId)
+
+  const userChange = change.direction === "user-roles" ? change : null
+  const grantsAfter = change.direction === "application-roles" ? change.roleIds : grantsNow
+
+  if (await hasActiveHolder(tx, grantsAfter, userChange)) return
+  if (!(await hasActiveHolder(tx, grantsNow, null))) return
+
+  throw new SelfLockoutError(
+    userChange
+      ? "Nie można odebrać tych ról — to ostatni aktywny użytkownik z dostępem do Konfiguracji Systemu, więc po zapisie nikt nie wszedłby już do tego modułu."
+      : "Co najmniej jeden aktywny użytkownik musi zachować dostęp do Konfiguracji Systemu — wskazane role nie mają ani jednego aktywnego użytkownika, więc po zapisie nikt nie wszedłby już do tego modułu.",
+  )
+}
+
+/**
+ * Czy któryś AKTYWNY użytkownik ma choć jedną z tych ról. `override` opisuje
+ * użytkownika, którego role właśnie się zmieniają: jego liczymy wg nowego
+ * zestawu (jeszcze nie zapisanego), resztę wg stanu w bazie.
+ */
+async function hasActiveHolder(
+  tx: Transaction,
+  roleIds: string[],
+  override: { userId: string; roleIds: string[] } | null,
+): Promise<boolean> {
+  if (roleIds.length === 0) return false
+
+  if (override && override.roleIds.some((roleId) => roleIds.includes(roleId))) {
+    const [self] = await tx
+      .select({ isActive: users.isActive })
+      .from(users)
+      .where(eq(users.id, override.userId))
+    if (self?.isActive) return true
+  }
+
+  const holders = await tx
+    .select({ id: users.id })
+    .from(users)
+    .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    .where(
+      and(
+        eq(users.isActive, true),
+        inArray(userRoles.roleId, roleIds),
+        ...(override ? [ne(users.id, override.userId)] : []),
+      ),
+    )
+    .limit(1)
+
+  return holders.length > 0
 }
 
 function unique(values: string[]): string[] {
@@ -390,6 +513,29 @@ async function assertRolesExist(tx: Transaction, roleIds: string[]): Promise<voi
   if (roleIds.length === 0) return
   const existing = await tx.select({ id: roles.id }).from(roles).where(inArray(roles.id, roleIds))
   if (existing.length !== roleIds.length) throw new UnknownRoleError()
+}
+
+/** Scala PATCH z wierszem w bazie. `"pole" in patch` (a nie `??`) rozróżnia
+ *  "nie podano" od "podano null" — wyczyszczenie opisu ma zadziałać. */
+function mergeApplicationInput(existing: ApplicationRow, patch: ApplicationPatch) {
+  const kind = patch.kind ?? existing.kind
+  // Zmiana typu unieważnia adres poprzedniego typu — inaczej scalony wiersz
+  // miałby naraz `route` i `url` i odbiłby się od niezmiennika kształtu.
+  const kindChanged = kind !== existing.kind
+
+  return {
+    code: patch.code ?? existing.code,
+    name: patch.name ?? existing.name,
+    description: "description" in patch ? patch.description : existing.description,
+    icon: "icon" in patch ? patch.icon : existing.icon,
+    category: "category" in patch ? patch.category : existing.category,
+    kind,
+    route: "route" in patch ? patch.route : kindChanged ? null : existing.route,
+    url: "url" in patch ? patch.url : kindChanged ? null : existing.url,
+    target: "target" in patch ? patch.target : existing.target,
+    isActive: patch.isActive ?? existing.isActive,
+    sortOrder: patch.sortOrder ?? existing.sortOrder,
+  }
 }
 
 function toApplicationValues(input: ApplicationInput) {

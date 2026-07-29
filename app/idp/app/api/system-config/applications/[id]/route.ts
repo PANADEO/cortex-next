@@ -1,4 +1,4 @@
-import { applicationInputSchema, deleteApplication, updateApplication } from "@cortex/service"
+import { applicationPatchSchema, deleteApplication, updateApplication } from "@cortex/service"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { denyUnlessAllowed, parseIdParam, toErrorResponse } from "../../_lib/guard"
@@ -13,7 +13,9 @@ export async function PATCH(request: NextRequest, context: RouteContext): Promis
   const denied = await denyUnlessAllowed(request)
   if (denied) return denied
 
-  const parsed = applicationInputSchema.safeParse(await request.json().catch(() => null))
+  // PATCH przyjmuje SAME zmieniane pola — reguły międzypolowe (natywny ma
+  // route, zewnętrzny ma url) sprawdza serwis na wierszu po scaleniu.
+  const parsed = applicationPatchSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) {
     return NextResponse.json(
       { error: "invalid-request", message: parsed.error.issues[0]?.message },

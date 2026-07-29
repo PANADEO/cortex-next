@@ -54,6 +54,9 @@ export default function UzytkownicyPage() {
       toast.success(`Zaktualizowano role użytkownika ${edited.email}`)
       setEdited(null)
     } catch (error) {
+      // Zapis odrzucony (np. 409 — ostatni użytkownik z dostępem do modułu):
+      // role w bazie zostały po staremu, więc checkboxy też muszą wrócić.
+      setSelectedRoleIds(edited.roles.map((role) => role.id))
       toastApiError(error, "Nie udało się zapisać ról")
     }
   }

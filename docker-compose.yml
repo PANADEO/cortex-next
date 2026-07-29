@@ -57,8 +57,9 @@ services:
       CORTEX_PROXY_URL: ${CORTEX_PROXY_URL:-http://host.docker.internal:8240}
       # Pusty = brak nagłówka Authorization. NIE wpisywać tu prawdziwego klucza.
       CORTEX_PROXY_API_KEY: ${CORTEX_PROXY_API_KEY:-}
-      # Bootstrap pierwszego administratora — patrz packages/@cortex/db db:seed.
-      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      # Administrator instancji, deklaratywnie — patrz packages/@cortex/db db:seed.
+      # Usunięcie tej zmiennej odbiera kontu automatyczne przywracanie dostępu.
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     extra_hosts:

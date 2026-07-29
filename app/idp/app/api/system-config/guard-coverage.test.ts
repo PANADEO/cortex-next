@@ -16,15 +16,17 @@ vi.mock("@cortex/service/rbac-store", () => ({ loadGrantedApplicationCodes }))
 // Bramka (requireTileAccess) zostaje PRAWDZIWA — podmieniane są tylko funkcje
 // sięgające do bazy, żeby handler po ominiętej bramce oddał 200, a nie 500 na
 // braku DATABASE_URL. Inaczej test przechodziłby z niewłaściwego powodu.
-vi.mock("@cortex/service", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@cortex/service")>()
+//
+// Mocki trzymamy w nazwanym obiekcie, bo służą do DWÓCH rzeczy naraz: dają
+// handlerowi działającą warstwę serwisową i pozwalają sprawdzić, że przy
+// odmowie NIE zostały w ogóle zawołane (patrz asercja "bez skutku ubocznego").
+const service = vi.hoisted(() => {
   const application = {
     id: "11111111-1111-4111-8111-111111111111",
     code: "przykladowy-kafelek",
     name: "Przykładowy kafelek",
   }
   return {
-    ...actual,
     listUsers: vi.fn(async () => []),
     listRoles: vi.fn(async () => []),
     listApplications: vi.fn(async () => []),
@@ -37,6 +39,23 @@ vi.mock("@cortex/service", async (importOriginal) => {
     setRoleApplications: vi.fn(async () => undefined),
   }
 })
+
+vi.mock("@cortex/service", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@cortex/service")>()
+  return { ...actual, ...service }
+})
+
+/**
+ * Bramka ma stać PRZED jakąkolwiek pracą (`_lib/guard.ts`), nie tylko decydować
+ * o statusie odpowiedzi. Route, który najpierw kasuje aplikację, a dopiero
+ * potem pyta o uprawnienia, oddaje poprawne 403 i przechodziłby sam status —
+ * dlatego przy każdej odmowie sprawdzamy też, że warstwa serwisowa milczała.
+ */
+function expectNoServiceCall(): void {
+  for (const [name, fn] of Object.entries(service)) {
+    expect(fn, `${name} zostało zawołane mimo odmowy dostępu`).not.toHaveBeenCalled()
+  }
+}
 
 const { clearTileAccessCache } = await import("@cortex/service")
 
@@ -119,6 +138,7 @@ const BYPASS_ATTEMPTS = [
 beforeEach(() => {
   clearTileAccessCache()
   loadGrantedApplicationCodes.mockReset()
+  for (const fn of Object.values(service)) fn.mockClear()
   vi.unstubAllEnvs()
   vi.stubEnv("NODE_ENV", "production")
 })
@@ -137,6 +157,7 @@ describe.each(handlers)("$method $name", ({ method, handler }) => {
     const response = await handler(makeRequest(method, email), context)
 
     expect([401, 403]).toContain(response.status)
+    expectNoServiceCall()
   })
 
   it("odmawia gdy odczyt uprawnień pada (fail-closed)", async () => {
@@ -146,6 +167,7 @@ describe.each(handlers)("$method $name", ({ method, handler }) => {
     const response = await handler(makeRequest(method, "admin@firma.pl"), context)
 
     expect(response.status).toBe(403)
+    expectNoServiceCall()
     consoleError.mockRestore()
   })
 

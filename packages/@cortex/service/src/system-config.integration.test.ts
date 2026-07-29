@@ -20,6 +20,7 @@ import {
   userRoles,
   users,
 } from "@cortex/db"
+import { randomUUID } from "node:crypto"
 import { eq } from "drizzle-orm"
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest"
 import { clearTileAccessCache, requireTileAccess } from "./rbac"
@@ -34,14 +35,27 @@ import {
 
 const hasDatabase = Boolean(process.env.DATABASE_URL)
 
-const SUFFIX = `itest-${Date.now()}`
+// Patrz rbac.integration.test.ts — sam Date.now() kolidował przy równoległym
+// starcie obu plików i fixture'y kasowały się nawzajem.
+const SUFFIX = `itest-${process.pid}-${randomUUID().slice(0, 8)}`
 const APP_CODE = `kafelek-${SUFFIX}`
 const ROLE_CODE = `rola-${SUFFIX}`
 const EMAIL = `tester-${SUFFIX}@firma.pl`
+// Rola bez ANI JEDNEGO użytkownika i użytkownik nieaktywny — materiał na
+// dowód, że niezmiennik liczy ludzi, a nie role.
+const EXTERNAL_APP_CODE = `kafelek-zew-${SUFFIX}`
+const EMPTY_ROLE_CODE = `pusta-rola-${SUFFIX}`
+const INACTIVE_ROLE_CODE = `martwa-rola-${SUFFIX}`
+const INACTIVE_EMAIL = `nieaktywny-${SUFFIX}@firma.pl`
+const SECOND_EMAIL = `drugi-${SUFFIX}@firma.pl`
 
 let userId = ""
 let roleId = ""
 let applicationId = ""
+let emptyRoleId = ""
+let inactiveRoleId = ""
+let inactiveUserId = ""
+let secondUserId = ""
 
 function makeRequest(email: string): Request {
   return new Request("http://localhost/api/system-config/users", {
@@ -64,9 +78,15 @@ const NATIVE_INPUT = {
 
 async function cleanup(): Promise<void> {
   const db = getDb()
-  await db.delete(users).where(eq(users.email, EMAIL))
-  await db.delete(applications).where(eq(applications.code, APP_CODE))
-  await db.delete(roles).where(eq(roles.code, ROLE_CODE))
+  for (const email of [EMAIL, INACTIVE_EMAIL, SECOND_EMAIL]) {
+    await db.delete(users).where(eq(users.email, email))
+  }
+  for (const code of [APP_CODE, EXTERNAL_APP_CODE]) {
+    await db.delete(applications).where(eq(applications.code, code))
+  }
+  for (const code of [ROLE_CODE, EMPTY_ROLE_CODE, INACTIVE_ROLE_CODE]) {
+    await db.delete(roles).where(eq(roles.code, code))
+  }
 }
 
 describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () => {
@@ -87,6 +107,28 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
 
     await db.insert(userRoles).values({ userId, roleId })
     await db.insert(permissionsMatrix).values({ roleId, applicationId })
+
+    const [emptyRole] = await db
+      .insert(roles)
+      .values({ code: EMPTY_ROLE_CODE, name: "Rola bez użytkowników" })
+      .returning()
+    emptyRoleId = emptyRole!.id
+
+    const [inactiveRole] = await db
+      .insert(roles)
+      .values({ code: INACTIVE_ROLE_CODE, name: "Rola z samym nieaktywnym" })
+      .returning()
+    inactiveRoleId = inactiveRole!.id
+
+    const [inactiveUser] = await db
+      .insert(users)
+      .values({ email: INACTIVE_EMAIL, isActive: false })
+      .returning()
+    inactiveUserId = inactiveUser!.id
+    await db.insert(userRoles).values({ userId: inactiveUserId, roleId: inactiveRoleId })
+
+    const [secondUser] = await db.insert(users).values({ email: SECOND_EMAIL }).returning()
+    secondUserId = secondUser!.id
 
     clearTileAccessCache()
   })
@@ -185,6 +227,14 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
           .from(permissionsMatrix)
           .where(eq(permissionsMatrix.applicationId, systemConfigId))
       ).map((row) => row.roleId)
+
+      // Stan wyjściowy każdego testu w tym bloku: moduł osiągalny DOKŁADNIE
+      // przez rolę testową, którą ma aktywny użytkownik testowy. Bez tego wynik
+      // zależałby od tego, kogo akurat ma baza, na której puszczono suitę —
+      // a niezmiennik przepuszcza operacje na module i tak już nieosiągalnym.
+      await db.delete(permissionsMatrix).where(eq(permissionsMatrix.applicationId, systemConfigId))
+      await db.insert(permissionsMatrix).values({ roleId, applicationId: systemConfigId })
+      clearTileAccessCache()
     })
 
     afterEach(async () => {
@@ -267,6 +317,113 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
       expect(granted.map((row) => row.roleId)).toEqual([roleId])
     })
 
+    // Sedno N1: niezmiennik liczy AKTYWNYCH LUDZI, nie role. Sprawdzenie
+    // "wanted.length === 0" przepuszczało oba poniższe zapisy i dawało pełny
+    // lockout modułu dwoma kliknięciami w sekcji Uprawnienia.
+    it("odrzuca przepięcie na rolę, której nie ma ANI JEDEN użytkownik", async () => {
+      await expect(setApplicationRoles(systemConfigId, [emptyRoleId])).rejects.toBeInstanceOf(
+        SelfLockoutError,
+      )
+
+      const granted = await getDb()
+        .select({ roleId: permissionsMatrix.roleId })
+        .from(permissionsMatrix)
+        .where(eq(permissionsMatrix.applicationId, systemConfigId))
+      expect(granted.map((row) => row.roleId)).toEqual([roleId])
+    })
+
+    it("odrzuca przepięcie na rolę, której jedyny użytkownik jest NIEAKTYWNY", async () => {
+      await expect(setApplicationRoles(systemConfigId, [inactiveRoleId])).rejects.toBeInstanceOf(
+        SelfLockoutError,
+      )
+    })
+
+    it("przepuszcza przepięcie na rolę z aktywnym użytkownikiem (kontrola negatywna)", async () => {
+      const db = getDb()
+      await db.insert(userRoles).values({ userId: secondUserId, roleId: emptyRoleId })
+
+      await setApplicationRoles(systemConfigId, [emptyRoleId])
+
+      const granted = await db
+        .select({ roleId: permissionsMatrix.roleId })
+        .from(permissionsMatrix)
+        .where(eq(permissionsMatrix.applicationId, systemConfigId))
+      expect(granted.map((row) => row.roleId)).toEqual([emptyRoleId])
+    })
+
+    // Drugi kierunek TEGO SAMEGO niezmiennika (otwarte pytanie #1 z rundy 1):
+    // użytkownik odbierający rolę sobie samemu.
+    it("odrzuca odebranie ostatniemu aktywnemu użytkownikowi jego dostępu do modułu", async () => {
+      await expect(setUserRoles(userId, [])).rejects.toBeInstanceOf(SelfLockoutError)
+
+      const stillThere = await getDb()
+        .select({ roleId: userRoles.roleId })
+        .from(userRoles)
+        .where(eq(userRoles.userId, userId))
+      expect(stillThere.map((row) => row.roleId)).toContain(roleId)
+    })
+
+    it("odrzuca też przepięcie się na rolę bez dostępu do modułu", async () => {
+      await expect(setUserRoles(userId, [emptyRoleId])).rejects.toBeInstanceOf(SelfLockoutError)
+    })
+
+    it("pozwala odebrać rolę, gdy INNY aktywny użytkownik zachowuje dostęp", async () => {
+      const db = getDb()
+      await db.insert(userRoles).values({ userId: secondUserId, roleId })
+
+      await setUserRoles(userId, [])
+
+      const left = await db
+        .select({ roleId: userRoles.roleId })
+        .from(userRoles)
+        .where(eq(userRoles.userId, userId))
+      expect(left).toHaveLength(0)
+    })
+
+    it("nie liczy NIEAKTYWNEGO użytkownika jako zabezpieczenia", async () => {
+      const db = getDb()
+      await db.insert(userRoles).values({ userId: inactiveUserId, roleId })
+
+      await expect(setUserRoles(userId, [])).rejects.toBeInstanceOf(SelfLockoutError)
+    })
+
+    it("nie przeszkadza użytkownikowi bez dostępu do modułu (kontrola negatywna)", async () => {
+      const db = getDb()
+      await db.insert(userRoles).values({ userId: secondUserId, roleId: emptyRoleId })
+
+      await setUserRoles(secondUserId, [])
+
+      const left = await db
+        .select({ roleId: userRoles.roleId })
+        .from(userRoles)
+        .where(eq(userRoles.userId, secondUserId))
+      expect(left).toHaveLength(0)
+    })
+
+    // N5: `kind`/`route`/`url` wiersza system-config są tak samo niezmienne jak
+    // `code` — inaczej wejście do administracji da się podmienić na obcy adres.
+    it("odrzuca podmianę typu i adresu na zewnętrzny", async () => {
+      await expect(
+        updateApplication(systemConfigId, {
+          kind: "external-link",
+          url: "https://evil.example/przejete",
+        }),
+      ).rejects.toBeInstanceOf(SelfLockoutError)
+
+      const [row] = await getDb()
+        .select()
+        .from(applications)
+        .where(eq(applications.id, systemConfigId))
+      expect(row!.kind).toBe("native")
+      expect(row!.url).toBeNull()
+    })
+
+    it("odrzuca podmianę samej ścieżki", async () => {
+      await expect(
+        updateApplication(systemConfigId, { route: "/gdzie-indziej" }),
+      ).rejects.toBeInstanceOf(SelfLockoutError)
+    })
+
     it("zwykła aplikacja może zostać bez żadnej uprawnionej roli", async () => {
       await setApplicationRoles(applicationId, [])
       expect(await canAccess()).toBe(false)
@@ -280,6 +437,64 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
       expect(deactivated?.isActive).toBe(false)
 
       expect(await deleteApplication(applicationId)).toBe(true)
+    })
+  })
+
+  // N6: PATCH miał semantykę PUT — pola pominięte w body wracały do wartości
+  // domyślnych, więc formularz kasował `target` przy każdym zapisie.
+  describe("częściowa aktualizacja (PATCH)", () => {
+    let externalId = ""
+
+    beforeEach(async () => {
+      const [created] = await getDb()
+        .insert(applications)
+        .values({
+          code: EXTERNAL_APP_CODE,
+          name: "Czat zewnętrzny",
+          description: "Opis do zachowania",
+          icon: "MessageSquare",
+          category: "Narzędzia",
+          kind: "external-link",
+          url: "https://chat.example.com",
+          target: "_blank",
+          sortOrder: 100,
+        })
+        .returning()
+      externalId = created!.id
+    })
+
+    it("zmiana jednego pola NIE kasuje pozostałych", async () => {
+      const updated = await updateApplication(externalId, { name: "Czat zewnętrzny v2" })
+
+      expect(updated?.name).toBe("Czat zewnętrzny v2")
+      expect(updated?.target).toBe("_blank")
+      expect(updated?.description).toBe("Opis do zachowania")
+      expect(updated?.icon).toBe("MessageSquare")
+      expect(updated?.category).toBe("Narzędzia")
+      expect(updated?.sortOrder).toBe(100)
+      expect(updated?.url).toBe("https://chat.example.com")
+    })
+
+    it("jawny null czyści pole (odróżnia 'nie podano' od 'wyczyść')", async () => {
+      const updated = await updateApplication(externalId, { description: null })
+
+      expect(updated?.description).toBeNull()
+      expect(updated?.target).toBe("_blank")
+    })
+
+    it("zmiana typu przenosi adres i zeruje ten z poprzedniego typu", async () => {
+      const updated = await updateApplication(externalId, {
+        kind: "native",
+        route: "/czat-wewnetrzny",
+      })
+
+      expect(updated?.kind).toBe("native")
+      expect(updated?.route).toBe("/czat-wewnetrzny")
+      expect(updated?.url).toBeNull()
+    })
+
+    it("odrzuca PATCH, po którym scalony wiersz łamie kształt", async () => {
+      await expect(updateApplication(externalId, { kind: "native" })).rejects.toThrow()
     })
   })
 })

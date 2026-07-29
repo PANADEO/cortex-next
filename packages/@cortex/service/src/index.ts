@@ -9,6 +9,7 @@ export {
   UnknownRoleError,
   UnknownUserError,
   applicationInputSchema,
+  applicationPatchSchema,
   createApplication,
   deleteApplication,
   listApplicationRoleIds,
@@ -20,4 +21,4 @@ export {
   setUserRoles,
   updateApplication,
 } from "./system-config"
-export type { ApplicationInput, RoleSummary, UserWithRoles } from "./system-config"
+export type { ApplicationInput, ApplicationPatch, RoleSummary, UserWithRoles } from "./system-config"

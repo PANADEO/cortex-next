@@ -33,6 +33,15 @@ export function parseIdParam(id: string): NextResponse | null {
 
 /** Mapuje wyjątki warstwy serwisowej na odpowiedzi HTTP. */
 export function toErrorResponse(error: unknown): NextResponse {
+  // PATCH waliduje reguły międzypolowe dopiero po scaleniu z wierszem w bazie,
+  // czyli już w serwisie — bez tego błąd kształtu wracałby jako 500.
+  if (error instanceof z.ZodError) {
+    return NextResponse.json(
+      { error: "invalid-request", message: error.issues[0]?.message },
+      { status: 400 },
+    )
+  }
+
   if (error instanceof SelfLockoutError) {
     return NextResponse.json({ error: "self-lockout", message: error.message }, { status: 409 })
   }
