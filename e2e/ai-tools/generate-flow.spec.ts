@@ -1,24 +1,33 @@
 // Podstawowy przepływ każdego narzędzia tekstowego AI Tools:
 //   (a) strona przechodzi przez bramkę dostępu i się renderuje,
-//   (b) wpisany input trafia do /api/ai-tools/generate z poprawnym toolId/scope/promptem,
+//   (b) wpisany input trafia do /api/ai-tools/generate z poprawnym toolId i promptem,
 //   (c) wynik renderuje się na stronie.
 //
 // JEDEN plik zamiast sześciu `<narzedzie>.spec.ts`: wszystkie narzędzia
 // renderuje ten sam komponent (AiToolWorkspace) i różnią się WYŁĄCZNIE
-// konfiguracją pola wejściowego oraz oczekiwanym scope. Tabela poniżej JEST tą
-// różnicą — sześć plików po ~10 linii byłoby tą samą tabelą rozsypaną po
-// katalogu. Playwright i tak raportuje każde narzędzie jako osobny test.
+// konfiguracją pola wejściowego. Tabela poniżej JEST tą różnicą — sześć plików
+// po ~10 linii byłoby tą samą tabelą rozsypaną po katalogu. Playwright i tak
+// raportuje każde narzędzie jako osobny test.
 // Fakturomat (model wizyjny, upload pliku) to realnie inny UI → osobny plik.
 //
-// Wartości `label` i `scope` są tu WPISANE NA SZTYWNO, celowo nie importowane
-// z app/idp/lib/ai-tools/registry.ts. Test ma trzymać kontrakt, a nie podążać
-// za zmianą w rejestrze — podmiana scope'u (czyli atrybucji zużycia tokenów po
-// stronie cortex-proxy) musi zapalić się na czerwono.
+// Wartości `label` są tu WPISANE NA SZTYWNO, celowo nie importowane z
+// app/idp/lib/ai-tools/registry.ts. Test ma trzymać kontrakt, a nie podążać za
+// zmianą w rejestrze.
+//
+// `scope`/`model`/`maxTokens` NIE są już częścią żądania — wyprowadza je serwer
+// z `toolId`. Atrybucja zużycia tokenów (X-Scope/X-App) jest dowodzona tam,
+// gdzie realnie powstaje, czyli na nagłówkach wychodzących do cortex-proxy:
+// app/idp/app/api/ai-tools/generate-hardening.test.ts. Tutaj zostaje asercja
+// odwrotna: klient tych pól wysyłać NIE MOŻE.
 
 import { expect, test } from "@playwright/test"
 import { AiToolWorkspacePage } from "../poms/ai-tools/tool-workspace-page"
 import { expectNoConsoleErrors, installConsoleErrorTracker } from "../support/console"
-import { mockAiToolsGenerate, mockAiToolsHistory } from "../support/mocks/ai-tools-proxy"
+import {
+  mockAiToolsGenerate,
+  mockAiToolsHistory,
+  SERVER_DERIVED_FIELDS,
+} from "../support/mocks/ai-tools-proxy"
 import { mockIdpConfig } from "../support/mocks/idp-config"
 import { mockShellAccess } from "../support/mocks/shell-access"
 
@@ -32,8 +41,6 @@ interface TextToolCase {
   toolId: string
   /** Tytuł strony (<h1>) — AiToolDefinition.label. */
   label: string
-  /** AiToolDefinition.scope — nagłówek X-Scope wysyłany do cortex-proxy. */
-  scope: string
   /** Widoczna etykieta pola, które odblokowuje przycisk "Generuj". */
   inputLabel: string
   inputValue: string
@@ -43,42 +50,36 @@ const TEXT_TOOLS: readonly TextToolCase[] = [
   {
     toolId: "ai-summarizer",
     label: "Sumaryzator",
-    scope: "summarizer",
     inputLabel: "Tekst",
     inputValue: "Protokół ze spotkania zarządu w sprawie budżetu na kolejny kwartał.",
   },
   {
     toolId: "text-transformer",
     label: "Transformator tekstu",
-    scope: "text-transformer",
     inputLabel: "Tekst źródłowy",
     inputValue: "Niniejszym uprzejmie informujemy o konieczności dokonania korekty faktury.",
   },
   {
     toolId: "text-analyzer",
     label: "Analizator tekstu",
-    scope: "text-analyzer",
     inputLabel: "Tekst do analizy",
     inputValue: "Oferta wdrożenia systemu obiegu dokumentów dla działu księgowości.",
   },
   {
     toolId: "text-highlighter",
     label: "Podświetlacz tekstu",
-    scope: "text-highlighter",
     inputLabel: "Tekst do analizy",
     inputValue: "Umowa wchodzi w życie 1 marca, termin płatności wynosi 30 dni.",
   },
   {
     toolId: "linkedin-generator",
     label: "Generator LinkedIn",
-    scope: "linkedin-generator",
     inputLabel: "Temat",
     inputValue: "Automatyzacja obiegu faktur w firmie logistycznej",
   },
   {
     toolId: "content-guru",
     label: "Kreator treści",
-    scope: "content-creator",
     inputLabel: "Temat",
     inputValue: "Jak skrócić czas obsługi dokumentów celnych",
   },
@@ -114,11 +115,14 @@ test.describe("AI Tools — przepływ generowania", () => {
       expect(generate.requests).toHaveLength(1)
       const request = generate.requests[0]
       expect(request?.toolId).toBe(tool.toolId)
-      expect(request?.scope).toBe(tool.scope)
       expect(request?.userPrompt).toContain(tool.inputValue)
       expect(request?.systemPrompt?.length ?? 0).toBeGreaterThan(0)
       // Bez obrazu — te narzędzia nie są wizyjne.
       expect(request?.image).toBeUndefined()
+      // Pola kosztowo-atrybucyjne wyprowadza serwer, klient ich nie wysyła.
+      for (const field of SERVER_DERIVED_FIELDS) {
+        expect(request).not.toHaveProperty(field)
+      }
 
       expectNoConsoleErrors(tracker)
     })

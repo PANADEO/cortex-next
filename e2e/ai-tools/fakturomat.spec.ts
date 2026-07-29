@@ -10,7 +10,11 @@
 
 import { expect, test } from "@playwright/test"
 import { AiToolWorkspacePage } from "../poms/ai-tools/tool-workspace-page"
-import { mockAiToolsGenerate, mockAiToolsHistory } from "../support/mocks/ai-tools-proxy"
+import {
+  mockAiToolsGenerate,
+  mockAiToolsHistory,
+  SERVER_DERIVED_FIELDS,
+} from "../support/mocks/ai-tools-proxy"
 import { mockIdpConfig } from "../support/mocks/idp-config"
 import { mockShellAccess } from "../support/mocks/shell-access"
 
@@ -54,12 +58,14 @@ test.describe("AI Tools — Fakturomat", () => {
     expect(generate.requests).toHaveLength(1)
     const request = generate.requests[0]
     expect(request?.toolId).toBe("fakturomat")
-    expect(request?.scope).toBe("invoice-analyzer")
-    expect(request?.maxTokens).toBe(12000)
     expect(request?.image?.mimeType).toBe("image/png")
     expect(request?.image?.dataUrl.startsWith("data:image/png;base64,")).toBe(true)
     expect(request?.userPrompt).toContain("Przeanalizuj załączony obraz faktury")
-    // Bez jawnego `model` — route wybiera model wizyjny po obecności obrazu.
-    expect(request?.model).toBeUndefined()
+    // scope ("invoice-analyzer"), model wizyjny i limit 12000 tokenów wyprowadza
+    // serwer z `toolId` — dowód na wartościach docierających do cortex-proxy jest
+    // w app/idp/app/api/ai-tools/generate-hardening.test.ts. Klient ma ich NIE wysyłać.
+    for (const field of SERVER_DERIVED_FIELDS) {
+      expect(request).not.toHaveProperty(field)
+    }
   })
 })

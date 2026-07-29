@@ -1,14 +1,13 @@
 import { apiClient } from "@cortex/api"
 import type { AiToolId } from "./app-codes"
 
+/** `scope`, `model` i `maxTokens` są celowo poza kontraktem — serwer wyprowadza
+ *  je z `toolId` przez rejestr narzędzi i ignoruje cokolwiek przyśle klient. */
 export interface AiToolGenerateRequest {
   toolId: AiToolId
-  scope: string
   systemPrompt: string
   userPrompt: string
-  model?: string
   temperature?: number
-  maxTokens?: number
   image?: {
     dataUrl: string
     mimeType: string

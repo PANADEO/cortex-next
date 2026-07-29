@@ -1,5 +1,6 @@
-import { callCortexProxy } from "@cortex/api/cortex-proxy-client"
+import { callCortexProxy, type CortexProxyResult } from "@cortex/api/cortex-proxy-client"
 import { canAccessAiTool, isAiToolId } from "@/lib/ai-tools/app-codes"
+import { getAiToolDefinition } from "@/lib/ai-tools/registry"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { z } from "zod"
@@ -12,6 +13,7 @@ const DEFAULT_TEXT_MODEL = process.env.LLM_DEFAULT_MODEL ?? "anthropic/claude-so
 const DEFAULT_VISION_MODEL = process.env.AI_TOOLS_VISION_MODEL ?? "openai/gpt-4o-mini"
 
 const DEFAULT_APP_LABEL = "AI Tools"
+const DEFAULT_MAX_TOKENS = 8000
 
 // Etykiety specyficzne dla AI Tools (nagłówek X-App) — domena tego modułu,
 // dlatego zostają w kontrolerze i są wstrzykiwane do adaptera, a nie zaszyte
@@ -28,14 +30,16 @@ const SCOPE_LABELS: Record<string, string> = {
   "presentation-generator": "Presentation Generator",
 }
 
+// `scope`, `model` i `maxTokens` NIE są polami żądania — wyprowadza je serwer
+// z `toolId` przez rejestr narzędzi. Klient nie może ich podać: decydują o
+// atrybucji zużycia tokenów (X-Scope) i o koszcie wywołania, a RBAC weryfikuje
+// wyłącznie `toolId`. Przyjmowanie ich z body pozwalało użytkownikowi z grantem
+// na jedno narzędzie księgować zużycie na cudzy scope i podnosić limit tokenów.
 const generateRequestSchema = z.object({
   toolId: z.string().min(1),
-  scope: z.string().min(1).max(80),
   systemPrompt: z.string().min(1).max(20_000),
   userPrompt: z.string().min(1).max(80_000),
-  model: z.string().min(1).max(120).optional(),
   temperature: z.number().min(0).max(2).optional(),
-  maxTokens: z.number().int().min(512).max(16_000).optional(),
   image: z
     .object({
       dataUrl: z.string().min(1).max(16_000_000),
@@ -60,12 +64,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const body = parsed.data
-  if (!isAiToolId(body.toolId)) {
+  const tool = isAiToolId(body.toolId) ? getAiToolDefinition(body.toolId) : undefined
+  if (!tool) {
     return NextResponse.json({ error: "unknown-tool" }, { status: 404 })
   }
 
   const access = await getAccessResult(email)
-  if (!canAccessAiTool(access.apps, body.toolId)) {
+  if (!canAccessAiTool(access.apps, tool.id)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 })
   }
 
@@ -74,37 +79,46 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "cortex-proxy-not-configured" }, { status: 503 })
   }
 
-  const model = body.model ?? (body.image ? DEFAULT_VISION_MODEL : DEFAULT_TEXT_MODEL)
+  const model = body.image ? DEFAULT_VISION_MODEL : DEFAULT_TEXT_MODEL
 
+  let response: CortexProxyResult
   try {
-    const response = await callCortexProxy({
-      appLabel: SCOPE_LABELS[body.scope] ?? DEFAULT_APP_LABEL,
+    response = await callCortexProxy({
+      appLabel: SCOPE_LABELS[tool.scope] ?? DEFAULT_APP_LABEL,
       baseUrl: cortexProxyUrl,
       email,
       image: body.image,
-      maxTokens: body.maxTokens ?? 8000,
+      maxTokens: tool.maxTokens ?? DEFAULT_MAX_TOKENS,
       model,
-      scope: body.scope,
+      scope: tool.scope,
       systemPrompt: body.systemPrompt,
       temperature: body.temperature ?? 1,
       userPrompt: body.userPrompt,
     })
-
-    saveAiToolHistoryRecord({
-      content: response.content,
-      image: body.image,
-      model: response.model,
-      scope: body.scope,
-      systemPrompt: body.systemPrompt,
-      tokensUsed: response.tokensUsed,
-      toolId: body.toolId,
-      userEmail: email,
-      userPrompt: body.userPrompt,
-    })
-
-    return NextResponse.json(response satisfies GenerateResponse)
   } catch (error) {
     const message = error instanceof Error ? error.message : "Cortex Proxy request failed"
     return NextResponse.json({ error: "cortex-proxy-error", message }, { status: 502 })
   }
+
+  // Historia jest efektem ubocznym udanej generacji. Zapis MUSI zostać poza try
+  // obejmującym callCortexProxy(): odpowiedź LLM jest już opłacona, więc błąd
+  // SQLite (brak katalogu, pełny dysk, lock) nie może jej skasować ani podszyć
+  // się pod awarię integracji z cortex-proxy.
+  try {
+    saveAiToolHistoryRecord({
+      content: response.content,
+      image: body.image,
+      model: response.model,
+      scope: tool.scope,
+      systemPrompt: body.systemPrompt,
+      tokensUsed: response.tokensUsed,
+      toolId: tool.id,
+      userEmail: email,
+      userPrompt: body.userPrompt,
+    })
+  } catch (error) {
+    console.warn(`[ai-tools] history save failed for ${tool.id}:`, error)
+  }
+
+  return NextResponse.json(response satisfies GenerateResponse)
 }

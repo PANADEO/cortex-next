@@ -17,14 +17,18 @@ import type { Page, Route } from "@playwright/test"
 /** Kontrakt żądania z app/idp/lib/ai-tools/api.ts (AiToolGenerateRequest). */
 export interface CapturedGenerateRequest {
   toolId: string
-  scope: string
   systemPrompt: string
   userPrompt: string
-  model?: string
   temperature?: number
-  maxTokens?: number
   image?: { dataUrl: string; mimeType: string }
 }
+
+/** Pola, których klient wysyłać NIE MOŻE: serwer wyprowadza je z `toolId` przez
+ *  rejestr narzędzi (app/idp/app/api/ai-tools/generate/route.ts). Decydują o
+ *  atrybucji zużycia tokenów i o koszcie wywołania, a RBAC weryfikuje wyłącznie
+ *  `toolId` — przyjmowanie ich od klienta było luką (patrz
+ *  app/idp/app/api/ai-tools/generate-hardening.test.ts). */
+export const SERVER_DERIVED_FIELDS = ["scope", "model", "maxTokens"] as const
 
 export interface GenerateMockOptions {
   content?: string
