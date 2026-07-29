@@ -1,0 +1,10 @@
+import { defineTile } from "@cortex/tile-sdk"
+
+// Rejestr: patrz docs/tile-registry.md — ten manifest musi zostać dopięty
+// do rejestru kafelków (dziś: app/idp/lib/tiles.ts; docelowo: tabela w Postgres).
+export const {{camelCase id}}Tile = defineTile({
+  id: "{{id}}",
+  kind: "native",
+  label: "{{label}}",
+  entitlementCode: "{{entitlementCode}}",
+})

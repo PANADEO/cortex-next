@@ -5,7 +5,7 @@
   "tsx": true,
   "tailwind": {
     "config": "tailwind.config.ts",
-    "css": "libs/@cortex/styles/globals.css",
+    "css": "packages/@cortex/styles/globals.css",
     "baseColor": "neutral",
     "cssVariables": true,
     "prefix": ""

@@ -6,7 +6,7 @@ const config: Config = {
   darkMode: ["class"],
   content: [
     "./app/**/*.{ts,tsx,mdx}",
-    "./libs/**/*.{ts,tsx,mdx}",
+    "./packages/@cortex/**/*.{ts,tsx,mdx}",
     "./.ladle/**/*.{ts,tsx}",
   ],
   // Skin classes applied via classList at runtime — keep them in the bundle.

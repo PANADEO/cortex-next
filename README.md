@@ -2,6 +2,10 @@
 
 Prototyp nowego frontendu platformy **Cortex360**. Pierwszy zbudowany moduł: **IDP** (Invoice/Document Processing) — migrowany ze Streamlita na Next.js. Stanowi fundament architektoniczny i design-system dla kolejnych modułów Cortex360.
 
+## Architektura modułów (od 29.07.2026)
+
+Modularny monolit — jeden app, jeden build, bez Multi-Zones. Zacznij od [docs/modular-monolith.md](docs/modular-monolith.md), potem [docs/tile-registry.md](docs/tile-registry.md), [docs/database.md](docs/database.md), [docs/infrastructure.md](docs/infrastructure.md). Konwencje kodu jako skille: `.claude/skills/code-*`.
+
 ## Status
 
 Prototyp funkcjonalny. Aplikacja działa end-to-end na mockowanym backendzie (MSW) — bez integracji z produkcyjnym API. Scope prototypu obejmuje:

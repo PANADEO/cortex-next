@@ -1,6 +1,6 @@
 import { File, FileImage, FileSpreadsheet, FileText, type LucideIcon } from "lucide-react"
 
-// Mirror of `detectDocumentKind` in libs/@cortex/ui/src/components/document-viewer.tsx.
+// Mirror of `detectDocumentKind` in packages/@cortex/ui/src/components/document-viewer.tsx.
 // Kept here as a pure helper so consumers can decide preview routing without
 // dragging the SSR-unsafe pdfjs dynamic import. Update both when adding formats.
 export type PreviewableKind = "pdf" | "docx" | "xlsx" | "image" | "unsupported"

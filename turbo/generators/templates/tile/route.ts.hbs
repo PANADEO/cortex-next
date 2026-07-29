@@ -1,0 +1,16 @@
+import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
+import { requireTileAccess } from "@cortex/service"
+
+// Wzorzec: patrz app/idp/app/api/ai-tools/generate/route.ts (referencyjna
+// implementacja) + .claude/skills/code-api/SKILL.md. Route = tylko
+// parse -> auth -> wywołaj adapter integracyjny -> zwróć JSON.
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const access = await requireTileAccess(request, "{{entitlementCode}}")
+  if (!access.allowed) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 })
+  }
+
+  // TODO: zbuduj payload i wywołaj cortex-proxy przez code-integration
+  return NextResponse.json({ error: "not-implemented" }, { status: 501 })
+}

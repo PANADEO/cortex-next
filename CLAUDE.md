@@ -122,4 +122,5 @@ Konwencja commit message: `(feat|fix|chore|docs) v0.1.X — krótki opis`.
 ## Required Reading
 
 - **MUST follow:** [architecture_rules.md](architecture_rules.md) — naming/code/testing conventions
-- **MUST read:** [docs/frontend-architecture.md](docs/frontend-architecture.md) — decyzje stackowe i uzasadnienia
+- **MUST follow:** [docs/modular-monolith.md](docs/modular-monolith.md) — reguły modularnego monolitu (jeden app, bez Multi-Zones), warstwy `code-*`, patrz też `.claude/skills/code-*`
+- **MUST read:** [docs/frontend-architecture.md](docs/frontend-architecture.md) — decyzje stackowe i uzasadnienia (obsolete w części o strukturze, patrz banner w pliku)

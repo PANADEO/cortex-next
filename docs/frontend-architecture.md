@@ -6,6 +6,9 @@
 **Data:** 2026-04-20
 **Deadline na uwagi:** poniedziałek 12:00
 
+> [!WARNING]
+> **OBSOLETE od 29.07.2026** w części dot. struktury/workspace — patrz [docs/modular-monolith.md](modular-monolith.md) (aktualna reguła: modularny monolit, bez Multi-Zones, pnpm+turbo). Decyzje o stacku (Next.js/shadcn/Tailwind/TanStack/Zustand) niżej **nadal obowiązują** — nieaktualna jest tylko sekcja "Struktura — uproszczone monorepo" (od 29.07.2026 realny pnpm workspace, nie płaskie foldery).
+
 ## Kontekst
 
 Budujemy nowy frontend dla IDP jako pierwszy "kafelek" w platformie Cortex. Obecne narzędzie w Streamlit idzie do emerytury. Kolejne kafelki (poza IDP) są zaplanowane — architektura musi to wspierać od dnia zero.
