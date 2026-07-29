@@ -386,6 +386,7 @@ export const handlers = [
             "cortex-cowork",
             "okna-czasowe",
             "cortex-config",
+            "konfiguracja-systemu",
           ]
         : [],
       email,

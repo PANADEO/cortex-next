@@ -10,6 +10,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@cortex/db": "workspace:*"
+    "@cortex/db": "workspace:*",
+    "@cortex/tile-sdk": "workspace:*",
+    "drizzle-orm": "^0.36.0",
+    "zod": "^3.23.8"
   }
 }

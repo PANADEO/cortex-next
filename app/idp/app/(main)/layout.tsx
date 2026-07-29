@@ -10,6 +10,7 @@ import {
   useIdpNavSections,
   useIntrastatNavSections,
   useInvoiceSupervisorNavSections,
+  useKonfiguracjaSystemuNavSections,
   useOknaCzasoweNavSections,
   useStorePitNavSections,
 } from "@/lib/nav"
@@ -30,6 +31,7 @@ const KNOWN_TILE_SEGMENTS = new Set([
   "store-pit",
   "okna-czasowe",
   "cortex-config",
+  "konfiguracja-systemu",
   "intrastat",
   "invoice-supervisor",
 ])
@@ -72,6 +74,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const storePitNavSections = useStorePitNavSections()
   const oknaCzasoweNavSections = useOknaCzasoweNavSections()
   const cortexConfigNavSections = useCortexConfigNavSections()
+  const konfiguracjaSystemuNavSections = useKonfiguracjaSystemuNavSections()
   // Every nav hook returns a constant, so this map is stable per render; the
   // hooks stay called unconditionally above (rules of hooks).
   const navByTile: Record<string, typeof idpNavSections> = {
@@ -79,6 +82,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     "store-pit": storePitNavSections,
     "okna-czasowe": oknaCzasoweNavSections,
     "cortex-config": cortexConfigNavSections,
+    "konfiguracja-systemu": konfiguracjaSystemuNavSections,
     intrastat: intrastatNavSections,
     "invoice-supervisor": invoiceSupervisorNavSections,
   }

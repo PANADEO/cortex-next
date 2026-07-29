@@ -222,6 +222,9 @@ importers:
         specifier: ^3.4.0
         version: 3.4.9
     devDependencies:
+      '@cortex/tile-sdk':
+        specifier: workspace:*
+        version: link:../tile-sdk
       drizzle-kit:
         specifier: ^0.28.0
         version: 0.28.1
@@ -231,6 +234,15 @@ importers:
       '@cortex/db':
         specifier: workspace:*
         version: link:../db
+      '@cortex/tile-sdk':
+        specifier: workspace:*
+        version: link:../tile-sdk
+      drizzle-orm:
+        specifier: ^0.36.0
+        version: 0.36.4(@types/react@18.3.31)(postgres@3.4.9)(react@18.3.1)
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
 
   packages/@cortex/styles: {}
 

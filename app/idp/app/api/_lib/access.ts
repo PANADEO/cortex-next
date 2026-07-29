@@ -22,6 +22,10 @@ const AUTHORIZED_APP_CODES = [
   "intrastat-config-editor",
   "cortex-config",
   "cortex-cowork",
+  // Moduł Konfiguracja Systemu. Na czas przejściowy widoczność kafelka nadal
+  // idzie przez cortex-admin (patrz code-service/REFERENCE.md krok 4 — odcięcie
+  // dopiero po migracji danych), więc kod musi być na tej allowliście.
+  "konfiguracja-systemu",
   ...AI_TOOL_APP_CODES,
 ] as const
 

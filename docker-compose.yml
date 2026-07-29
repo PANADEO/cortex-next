@@ -1,0 +1,82 @@
+# Stack lokalny/deweloperski cortex-next. Cel docelowy: `docker compose up`
+# stawia całe środowisko (docs/infrastructure.md).
+#
+# Zakres TEGO pliku (Ścieżka E): Postgres + cortex-frontend.
+# Caddy, oauth2-proxy, Keycloak i chat/OpenWebUI są POZA zakresem — lokalnie
+# auth idzie przez DEV_USER_EMAIL, nie przez pełny łańcuch SSO.
+#
+# Plik produkcyjny (gotowy image z GHCR) to docker-compose.image.yml — ten
+# służy do developmentu i buduje obraz lokalnie.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    # NIE "cortex-postgres" — ta nazwa należy do stacku ~/REPO/cortex-admin
+    # (postgres:15, dane źródłowe do migracji). Kolizja nazw kontenerów
+    # zablokowałaby start albo skusiła do skasowania cudzych danych.
+    container_name: cortex-next-postgres
+    restart: unless-stopped
+    environment:
+      # UWAGA: wartości domyślne są WYŁĄCZNIE do lokalnego developmentu.
+      # W realnym środowisku podstawiane z sekretów, nigdy z tego pliku.
+      POSTGRES_USER: ${POSTGRES_USER:-cortex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cortex}
+      POSTGRES_DB: ${POSTGRES_DB:-cortex}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - cortex_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cortex} -d ${POSTGRES_DB:-cortex}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+
+  cortex-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cortex-frontend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      PORT: "80"
+      HOSTNAME: 0.0.0.0
+      # Jedna baza, schema-per-moduł — moduły NIE dostają osobnych baz.
+      DATABASE_URL: postgres://${POSTGRES_USER:-cortex}:${POSTGRES_PASSWORD:-cortex}@postgres:5432/${POSTGRES_DB:-cortex}
+      # cortex-proxy żyje POZA tym stackiem (osobny, wielo-konsumencki serwis —
+      # docs/database.md). Lokalnie: cd ~/REPO/cortex-proxy && docker compose up -d
+      # wystawia go na 8240 hosta.
+      CORTEX_PROXY_URL: ${CORTEX_PROXY_URL:-http://host.docker.internal:8240}
+      # Pusty = brak nagłówka Authorization. NIE wpisywać tu prawdziwego klucza.
+      CORTEX_PROXY_API_KEY: ${CORTEX_PROXY_API_KEY:-}
+      # Bootstrap pierwszego administratora — patrz packages/@cortex/db db:seed.
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+
+# TODO(cortex-next): gdy cortex-proxy ma stać w TYM stacku, nie obok — dociągnąć
+# jego własny compose przez include:, nie kopiować definicji tutaj
+# (.claude/skills/code-compose/SKILL.md). Wymaga sklonowanego repo obok:
+#
+# include:
+#   - path: ../cortex-proxy/docker-compose.yml
+#     project_directory: ../cortex-proxy
+#
+# Sekrety cortex-proxy (OPENROUTER_API_KEY itd.) zostają w .env TAMTEGO repo.
+
+volumes:
+  cortex_postgres_data:

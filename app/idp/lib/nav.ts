@@ -164,6 +164,34 @@ export const OKNA_CZASOWE_NAV: TileMenuSection[] = [
   },
 ]
 
+export const KONFIGURACJA_SYSTEMU_NAV: TileMenuSection[] = [
+  {
+    id: "dostep",
+    label: "Dostęp",
+    items: [
+      {
+        id: "uzytkownicy",
+        label: "Użytkownicy",
+        icon: Users,
+        href: "/konfiguracja-systemu/uzytkownicy",
+      },
+      { id: "role", label: "Role", icon: KeyRound, href: "/konfiguracja-systemu/role" },
+    ],
+  },
+  {
+    id: "instancja",
+    label: "Instancja",
+    items: [
+      {
+        id: "kafelki",
+        label: "Rejestr kafelków",
+        icon: LayoutDashboard,
+        href: "/konfiguracja-systemu/kafelki",
+      },
+    ],
+  },
+]
+
 export const INTRASTAT_NAV: TileMenuSection[] = [
   {
     id: "pipeline",
@@ -336,6 +364,10 @@ export function useOknaCzasoweNavSections(): TileMenuSection[] {
 
 export function useIntrastatNavSections(): TileMenuSection[] {
   return INTRASTAT_NAV
+}
+
+export function useKonfiguracjaSystemuNavSections(): TileMenuSection[] {
+  return KONFIGURACJA_SYSTEMU_NAV
 }
 
 export function useInvoiceSupervisorNavSections(): TileMenuSection[] {

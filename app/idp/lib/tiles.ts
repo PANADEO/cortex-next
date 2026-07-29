@@ -1,6 +1,6 @@
 import type { CoworkTileArchetype } from "@cortex/types"
 import type { LucideIcon } from "lucide-react"
-import { CalendarClock, FileSpreadsheet, FileText, Receipt, ScanText, ShieldCheck, Users, Workflow } from "lucide-react"
+import { CalendarClock, FileSpreadsheet, FileText, Receipt, ScanText, Settings, ShieldCheck, Users, Workflow } from "lucide-react"
 import { canAccessAiTool, isAiToolId } from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
@@ -173,6 +173,25 @@ export const TILES: ReadonlyArray<Tile> = [
     categoryFunctional: "admin-system",
     categoryDepartment: ["it"],
     archetype: "agent-config",
+  },
+  {
+    // Port funkcji cortex-admin. NIE mylić z "cortex-config" wyżej — tamto to
+    // governance Cortex Cowork, to jest konfiguracja systemu (users/role/
+    // uprawnienia/rejestr kafelków). Nazwy bliskie, byty różne.
+    //
+    // Wpis pozostaje w kodzie na czas P1: rejestr w bazie (tabela applications)
+    // jest już źródłem prawdy dla UPRAWNIEŃ, ale pusty rejestr nie może wygasić
+    // huba — pełne odcięcie tiles.ts dopiero po migracji danych.
+    id: "konfiguracja-systemu",
+    label: "Konfiguracja Systemu",
+    description: "Użytkownicy, role, uprawnienia i rejestr kafelków instancji",
+    href: "/konfiguracja-systemu/uzytkownicy",
+    icon: Settings,
+    iconBg: "bg-slate-200 dark:bg-slate-800/60",
+    iconFg: "text-slate-700 dark:text-slate-300",
+    categoryFunctional: "admin-system",
+    categoryDepartment: ["it"],
+    archetype: "dashboard",
   },
   {
     id: "intrastat",
