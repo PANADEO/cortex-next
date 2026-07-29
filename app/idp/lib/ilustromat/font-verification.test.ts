@@ -20,6 +20,7 @@ import {
   type FontProbe,
   type FontProbeRenderer,
 } from "./font-verification"
+import { pangoFontDescription } from "./pango"
 
 const entry = resolveFontLibraryEntry(null)
 let notoBytes: Buffer
@@ -171,8 +172,32 @@ describe("verifyFontRendering() — werdykt na wstrzykniętym rendererze", () =>
     }
 
     await verifyFontRendering({ ...input(), fontPath: custom, bold: true }, renderer)
-    expect(descriptions[0]).toBe(`${entry.family} Bold 64`)
+    expect(descriptions[0]).toBe(`${entry.family}, Bold 64`)
   })
+
+  it.each(["Times New Roman", "Arial Black", "Gotham Book", "Georgia"])(
+    "mierzy rodzinę %s tym samym opisem, którym pojedzie render — bez obcięcia przez Pango",
+    async (family) => {
+      // Bramka ma sens tylko wtedy, gdy pyta silnik DOKŁADNIE o to, o co potem
+      // zapyta compose(). Rodziny kończące się słowem kluczowym Pango
+      // (Roman, Black, Book) sprawdzały się do tej pory pod obciętą nazwą —
+      // czyli bramka mierzyła coś innego, niż zobaczy klient.
+      const custom = "/tmp/wlasny-font.ttf"
+      const descriptions: string[] = []
+      const renderer: FontProbeRenderer = async ({ text, description, fontPath }) => {
+        if (fontPath === custom) descriptions.push(description)
+        return probe(widthFromFile(text), fontPath === undefined ? "bez-pliku" : "z-plikiem")
+      }
+
+      await verifyFontRendering({ ...input(), family, fontPath: custom }, renderer)
+
+      expect(descriptions.length).toBeGreaterThan(0)
+      for (const description of descriptions) {
+        expect(description).toBe(pangoFontDescription({ family, bold: false, size: 64 }))
+        expect(description.split(",")[0]).toBe(family)
+      }
+    },
+  )
 
   it("odrzuca plik uszkodzony strukturalnie ZANIM cokolwiek wyrenderuje", async () => {
     // Kontrola pliku musi być pierwsza i musi wystarczyć sama: w Alpine render

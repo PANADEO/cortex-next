@@ -13,13 +13,35 @@ import { copyFileSync, mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import sharp from "sharp"
-import { beforeAll, describe, expect, it } from "vitest"
+import { beforeAll, describe, expect, it, vi } from "vitest"
 import { parseHexColor } from "./color"
 import { COMPOSER_CONSTANTS, MissingFontFileError, compose, type ComposeFonts } from "./composer"
 import { resolveFontLibraryEntry } from "./font-library"
 import { sampleGradientImage } from "./gradient"
 import { LINK_FORMAT, PORTRAIT_FORMAT, SQUARE_FORMAT } from "./presets"
 import type { FrameTemplate } from "./types"
+
+/**
+ * Opisy fontu, które compose() FAKTYCZNIE podał silnikowi tekstu. To jedyny
+ * deterministyczny sposób sprawdzenia tej warstwy: skutek złego opisu widać
+ * wyłącznie w rozwiązanej rodzinie, a na macOS `fontfile` jest ignorowany
+ * w całości (backend CoreText), więc porównanie pikseli nie dowiodłoby tu
+ * niczego. Sam sharp zostaje prawdziwy — mock tylko podsłuchuje wejście.
+ */
+const { fontDescriptions } = vi.hoisted(() => ({ fontDescriptions: [] as string[] }))
+
+vi.mock("sharp", async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown> & {
+    default: (input?: unknown, options?: unknown) => unknown
+  }
+  const original = actual.default
+  const wrapped = (input?: unknown, options?: unknown) => {
+    const text = (input as { text?: { font?: unknown } } | undefined)?.text
+    if (typeof text?.font === "string") fontDescriptions.push(text.font)
+    return original(input, options)
+  }
+  return { ...actual, default: Object.assign(wrapped, original) }
+})
 
 const { PADDING, BOTTOM_BAR_HEIGHT } = COMPOSER_CONSTANTS
 
@@ -357,5 +379,33 @@ describe("compose() — LUKA 2: brakujący plik fontu", () => {
         fonts: { family: "Noto Sans", regularPath: "/nie/ma/regular.ttf", boldPath: "/nie/ma/bold.ttf" },
       }),
     ).rejects.toThrow("/nie/ma/regular.ttf")
+  })
+})
+
+describe("compose() — LUKA 3: nazwa rodziny w opisie Pango", () => {
+  /** Rodziny, których ostatnie słowo Pango rozpoznaje jako styl/wagę. Bez
+   *  zakończenia listy rodzin przecinkiem opis "Times New Roman 44" znaczy dla
+   *  Pango rodzinę "Times New" ze stylem Roman, a "Arial Black 44" rodzinę
+   *  "Arial" z wagą Black — i kafelek wychodzi cudzym krojem, po cichu.
+   *  Zmierzone w Alpine na tych samych plikach: 801 px zamiast 730 px (TNR),
+   *  842 px zamiast 946 px (Arial Black). Georgia jest kontrolą. */
+  const FAMILIES = ["Times New Roman", "Arial Black", "Gotham Book", "Georgia"] as const
+
+  it.each(FAMILIES)("nie pozwala Pango obciąć rodziny %s", async (family) => {
+    fontDescriptions.length = 0
+
+    await compose({
+      background,
+      title: POLISH_TITLE,
+      subtitle: SUBTITLE,
+      format: SQUARE_FORMAT,
+      template: { ...VIOLET, fontSource: "custom", fontLibraryId: null },
+      fonts: { ...fonts, family },
+    })
+
+    expect(fontDescriptions.length).toBeGreaterThan(0)
+    for (const description of fontDescriptions) {
+      expect(description).toMatch(new RegExp(`^${family}, (Bold )?\\d+$`))
+    }
   })
 })

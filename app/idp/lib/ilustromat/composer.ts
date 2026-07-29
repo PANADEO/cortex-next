@@ -20,6 +20,7 @@ import { existsSync } from "node:fs"
 import sharp from "sharp"
 import { darken, parseHexColor, readableOn, toHexColor } from "./color"
 import { resolvePlacement } from "./layouts"
+import { pangoFontDescription } from "./pango"
 import type { FormatPreset } from "./presets"
 import type { FrameTemplate } from "./types"
 
@@ -104,13 +105,6 @@ function escapePangoMarkup(text: string): string {
     .replaceAll("'", "&apos;")
 }
 
-/** Opis Pango. Waga MUSI być w opisie — sam `fontfile` jej nie narzuca
- *  (LUKA 3, zweryfikowane: ten sam plik Bold daje inne metryki dla
- *  "Noto Sans 44" niż dla "Noto Sans Bold 44"). */
-function pangoDescription(fonts: ComposeFonts, bold: boolean, size: number): string {
-  return `${fonts.family}${bold ? " Bold" : ""} ${size}`
-}
-
 interface RenderedText {
   buffer: Buffer
   width: number
@@ -132,7 +126,7 @@ async function renderText(options: {
   const { data, info } = await sharp({
     text: {
       text: `<span foreground="${color}">${escapePangoMarkup(text)}</span>`,
-      font: pangoDescription(fonts, bold, size),
+      font: pangoFontDescription({ family: fonts.family, bold, size }),
       fontfile: bold ? fonts.boldPath : fonts.regularPath,
       rgba: true,
       dpi: TEXT_DPI,

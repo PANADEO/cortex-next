@@ -43,6 +43,7 @@ import { createHash } from "node:crypto"
 import * as fontkit from "fontkit"
 import sharp from "sharp"
 import { resolveFontLibraryEntry } from "./font-library"
+import { pangoFontDescription } from "./pango"
 
 /** Ciągi próbne dobrane pod ROZRÓŻNIALNOŚĆ krojów, nie pod urodę: pełne zdanie
  *  z diakrytykami, skrajnie szerokie i skrajnie wąskie znaki, cyfry i polskie
@@ -145,8 +146,11 @@ export function predictProbeInkWidth(bytes: Buffer, text: string = PROBE_TEXTS[0
   return (maxX - minX) * scale
 }
 
+/** TĄ SAMĄ funkcją co produkcyjny render (composer.ts) — inaczej bramka
+ *  mierzyłaby inny opis, niż pojedzie w kafelku, i mogłaby przepuścić font,
+ *  który w produkcji złoży się cudzym krojem. Patrz pango.ts. */
 function probeDescription(family: string, bold: boolean): string {
-  return `${family}${bold ? " Bold" : ""} ${PROBE_SIZE}`
+  return pangoFontDescription({ family, bold, size: PROBE_SIZE })
 }
 
 /** Znaki, których kontury muszą być w pliku. Podstawowa łacina, bo polskie
