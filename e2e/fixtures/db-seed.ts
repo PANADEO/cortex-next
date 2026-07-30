@@ -42,6 +42,7 @@ const SYSTEM_CONFIG_APP_CODE = "system-config"
 const ILUSTROMAT_APP_CODE = "ilustromat"
 const OKNA_CZASOWE_APP_CODE = "okna-czasowe"
 const MANAGE_TEMPLATES_SCOPE = "manage-templates"
+const TOKEN_USAGE_APP_CODE = "token-usage"
 
 export type ScenarioName =
   | "empty"
@@ -57,6 +58,9 @@ export type ScenarioName =
   // API stoi za requireTileAccess() na Postgresie, więc E2E ciągnące dane
   // przez route'y musi nieść PRAWDZIWY grant, nie tylko zamockowaną powłokę.
   | "okna-czasowe-user"
+  // Raportowanie Tokenow: kafelek admin-only, JEDNA warstwa uprawnien
+  // (bez application_scopes) - patrz app/idp/app/api/token-usage/_lib/guard.ts.
+  | "token-usage-admin"
 
 export interface ScenarioResult {
   /** Wstrzyknij jako nagłówek `x-auth-request-email` żeby "być" tym userem —
@@ -196,6 +200,30 @@ export async function seedScenario(name: ScenarioName): Promise<ScenarioResult> 
           name: "Okna czasowe",
           kind: "native",
           route: "/okna-czasowe/dashboard",
+        })
+        .returning()
+      await db.insert(userRoles).values({ userId: user!.id, roleId: role!.id })
+      await db.insert(permissionsMatrix).values({ roleId: role!.id, applicationId: app!.id })
+      return { email, applications: [app!] }
+    }
+
+    case "token-usage-admin": {
+      const email = "token-usage-admin@e2e.local"
+      const [user] = await db
+        .insert(users)
+        .values({ email, fullName: "Admin raportu tokenow" })
+        .returning()
+      const [role] = await db
+        .insert(roles)
+        .values({ code: ADMIN_ROLE_CODE, name: "Administrator", isSystem: true })
+        .returning()
+      const [app] = await db
+        .insert(applications)
+        .values({
+          code: TOKEN_USAGE_APP_CODE,
+          name: "Raportowanie Tokenow",
+          kind: "native",
+          route: "/token-usage",
         })
         .returning()
       await db.insert(userRoles).values({ userId: user!.id, roleId: role!.id })

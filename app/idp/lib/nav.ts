@@ -192,6 +192,20 @@ export const SYSTEM_CONFIG_NAV: TileMenuSection[] = [
   },
 ]
 
+// Kafelek jednoekranowy — jedna pozycja, żeby powłoka `(main)` pokazała nazwę
+// i sidebar tego kafelka zamiast dziedziczyć domyślną nawigację IDP.
+// Id "dashboard", bo pathToItemId() w (main)/layout.tsx tak właśnie mapuje
+// korzeń kafelka bez podstrony.
+export const TOKEN_USAGE_NAV: TileMenuSection[] = [
+  {
+    id: "raport",
+    label: "Raport",
+    items: [
+      { id: "dashboard", label: "Zużycie tokenów", icon: BarChart3, href: "/token-usage" },
+    ],
+  },
+]
+
 export const INTRASTAT_NAV: TileMenuSection[] = [
   {
     id: "pipeline",
@@ -368,6 +382,10 @@ export function useIntrastatNavSections(): TileMenuSection[] {
 
 export function useSystemConfigNavSections(): TileMenuSection[] {
   return SYSTEM_CONFIG_NAV
+}
+
+export function useTokenUsageNavSections(): TileMenuSection[] {
+  return TOKEN_USAGE_NAV
 }
 
 export function useInvoiceSupervisorNavSections(): TileMenuSection[] {
