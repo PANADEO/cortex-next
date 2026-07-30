@@ -104,11 +104,13 @@ async function main() {
     const [adminRole] = await tx`
       select id from system_config.roles where code = ${ADMIN_ROLE_CODE}
     `
+    // Twardy błąd, nie ostrzeżenie — uzasadnienie identyczne jak w
+    // seed-token-usage.mjs: exit 0 przy braku roli dawał zarejestrowany kafelek,
+    // do którego nikt nie ma dostępu, a `migrate` mimo to przechodził.
     if (!adminRole) {
-      console.log(
-        "[seed:ilustromat] brak roli admin — uruchom najpierw db:seed. Pomijam nadanie grantów.",
+      throw new Error(
+        "[seed:ilustromat] brak roli admin — uruchom najpierw seed-system-config.mjs (kolejność seedów w docker-compose.yml).",
       )
-      return
     }
 
     await tx`

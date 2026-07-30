@@ -48,11 +48,15 @@ async function main() {
     const [adminRole] = await tx`
       select id from system_config.roles where code = ${ADMIN_ROLE_CODE}
     `
+    // Twardy błąd, nie ostrzeżenie. Do 30.07.2026 ta gałąź logowała i kończyła
+    // się exit 0: usługa `migrate` przechodziła, aplikacja wstawała, kafelek był
+    // w rejestrze — i nikt nie miał do niego dostępu. Jedynym śladem była linijka
+    // w logu kontenera, który się już zakończył. Rzucenie wyjątku wycofuje też
+    // transakcję, więc rejestracja kafelka nie zostaje bez grantu.
     if (!adminRole) {
-      console.log(
-        "[seed:token-usage] brak roli admin — uruchom najpierw db:seed. Pomijam nadanie grantu.",
+      throw new Error(
+        "[seed:token-usage] brak roli admin — uruchom najpierw seed-system-config.mjs (kolejność seedów w docker-compose.yml).",
       )
-      return
     }
 
     await tx`

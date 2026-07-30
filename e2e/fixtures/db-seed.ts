@@ -241,7 +241,14 @@ export async function seedScenario(name: ScenarioName): Promise<ScenarioResult> 
   }
 }
 
-const SEED_SCRIPTS = ["seed-system-config.mjs", "seed-ilustromat.mjs"] as const
+// Kolejność i zawartość MUSZĄ odpowiadać komendzie usługi `migrate` w
+// docker-compose.yml / docker-compose.image.yml — inaczej macierz uprawnień
+// niżej dowodzi czegoś o rejestrze, którego na wdrożonym środowisku nie ma.
+const SEED_SCRIPTS = [
+  "seed-system-config.mjs",
+  "seed-ilustromat.mjs",
+  "seed-token-usage.mjs",
+] as const
 
 // Playwright uruchamia testy z katalogu konfiguracji (korzeń repo). Świadomie
 // bez import.meta.url — pliki testowe są transpilowane do CJS, w którym ten
