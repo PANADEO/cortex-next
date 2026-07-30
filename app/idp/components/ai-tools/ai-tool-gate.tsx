@@ -28,7 +28,7 @@ export function AiToolGate({ children, toolId }: AiToolGateProps) {
       <EmptyState
         icon={LockKeyhole}
         title="Brak dostępu do AI Tools"
-        description="Twoje konto nie ma włączonej tej aplikacji w Cortex Admin."
+        description="Twoje konto nie ma włączonej tej aplikacji. Skontaktuj się z administratorem instancji."
         action={
           <Button asChild variant="outline" size="sm">
             <Link href="/">Wróć do huba</Link>

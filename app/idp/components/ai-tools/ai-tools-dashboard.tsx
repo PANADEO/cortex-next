@@ -23,7 +23,7 @@ export function AiToolsDashboard() {
       <div className="flex min-h-0 flex-1 flex-col">
         <PageHeader
           title="AI Tools"
-          description="Narzędzia AI działające przez Cortex Proxy i uprawnienia Cortex Admin."
+          description="Narzędzia AI działające przez Cortex Proxy; uprawnienia z Konfiguracji Systemu."
         />
 
         <div className="flex flex-1 flex-col gap-6 px-8 py-6">

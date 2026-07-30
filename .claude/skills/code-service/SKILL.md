@@ -11,7 +11,14 @@ description: Wewnętrzna warstwa serwisowa (logika biznesowa, RBAC/walidacja) w 
 
 ## Flagowy, pierwszy realny serwis: RBAC
 
-`requireTileAccess()` w `@cortex/service/src/rbac.ts` — **dziś celowo rzuca błąd, nie jest podłączone**. Prawdziwa, działająca logika autoryzacji dziś żyje w `app/idp/app/api/_lib/access.ts` (`getAccessResult`, pyta zewnętrzny `cortex-admin`) — używaj TEGO wzorca do czasu migracji (Ścieżka E, port cortex-admin → `system_config` w `@cortex/db`). Pełny kontrakt: `REFERENCE.md` w tym folderze.
+`@cortex/service/src/rbac.ts` jest JEDYNYM źródłem uprawnień w tym repo — od 30.07.2026 również dla powłoki. Zewnętrzny `cortex-admin` został odcięty całkowicie (`app/idp/app/api/_lib/access.ts` usunięty, `CORTEX_ADMIN_API_*` skasowane z konfiguracji; nie ma fallbacku).
+
+Dwie funkcje, dwa różne pytania:
+
+- `requireTileAccess(request, code)` — „czy ten user ma TEN kafelek". Woła ją każdy route modułu. Fail-closed w środku (błąd bazy = `allowed:false` + log).
+- `getGrantedApplicationCodes(email)` — „co ten user ma w ogóle". Woła ją wyłącznie bramka powłoki (`GET /api/me/access`), bo musi oddać klientowi pełną listę. **Propaguje wyjątek**; fail-closed egzekwuje kontroler (`app/idp/app/api/_lib/granted-apps.ts`), żeby awaria bazy była logowalna i odróżnialna od „zero grantów".
+
+Obie chodzą po **tej samej warstwie cache** (`accessLayer`) — nowy, równoległy cache uprawnień jest błędem, nie optymalizacją: mutacja z UI woła `clearTileAccessCache()` raz i musi unieważnić jedno i drugie. Pełny kontrakt: `REFERENCE.md` w tym folderze.
 
 ## Kiedy coś jest `code-service`, a kiedy nie
 

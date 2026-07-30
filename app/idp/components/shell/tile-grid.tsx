@@ -4,6 +4,8 @@ import { canAccessAiTool, isAiToolId } from "@/lib/ai-tools/app-codes"
 import { useCoworkProjectTiles } from "@/features/cortex-cowork"
 import { useFavoritesStore } from "@/lib/stores/favorites-store"
 import {
+  canAccessTile,
+  COWORK_APP_CODE,
   DEPARTMENT_CATEGORIES,
   FUNCTIONAL_CATEGORIES,
   TILES,
@@ -65,9 +67,13 @@ export function TileGrid({ tileHrefOverrides }: TileGridProps = {}) {
     [tileHrefOverrides],
   )
 
-  // Code-backed tiles pass through the Cortex Admin per-app whitelist;
-  // task-chat project tiles are governed by cortex-config roles instead
-  // (the projects endpoint already filtered them for this user).
+  // Kafelki code-backed filtruje grant z `applications` (własny Postgres, przez
+  // /api/me/access). Kafelki task-chat nie mają tam własnego wiersza — płyną z
+  // governance store, który zna WYŁĄCZNIE role per projekt i o grant
+  // `cortex-cowork` nie pyta w ogóle. Dlatego SEKCJĘ bramkuje tu ten sam kod,
+  // którego na trasie pilnuje <AppGate tileId={COWORK_APP_CODE}>: bez tego user
+  // bez grantu widział na hubie kafelki, które trasa i tak odmawia. Filtrowanie
+  // PER PROJEKT zostaje po stronie governance — to osobna warstwa.
   const authorizedTiles = useMemo(
     () => [
       ...tiles.filter((tile) =>
@@ -75,7 +81,7 @@ export function TileGrid({ tileHrefOverrides }: TileGridProps = {}) {
           ? canAccessAiTool(authorized.apps, tile.id)
           : authorized.apps.includes(tile.id),
       ),
-      ...coworkProjects.tiles,
+      ...(canAccessTile(authorized.apps, COWORK_APP_CODE) ? coworkProjects.tiles : []),
     ],
     [authorized.apps, tiles, coworkProjects.tiles],
   )

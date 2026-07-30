@@ -3,6 +3,16 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+const loadGrantedApplicationCodes = vi.hoisted(() => vi.fn<(email: string) => Promise<string[]>>())
+
+// Uprawnienia z własnego Postgresa (@cortex/service) — podmieniamy sam odczyt
+// z bazy, bramka w handlerze zostaje prawdziwa.
+vi.mock("@cortex/service/rbac-store", () => ({
+  loadGrantedApplicationCodes,
+  loadGrantedScopes: vi.fn(async () => []),
+}))
+
+
 interface GenerateRoute {
   POST: (request: Request) => Promise<Response>
 }
@@ -31,6 +41,8 @@ function makeRequest(body: unknown, email: string | null = "u@example.com"): Req
 
 beforeEach(() => {
   vi.unstubAllEnvs()
+  loadGrantedApplicationCodes.mockReset()
+  loadGrantedApplicationCodes.mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -50,48 +62,31 @@ describe("/api/ai-tools/generate route handler", () => {
 
   it("returns 403 when user lacks the requested mini-app", async () => {
     vi.stubEnv("NODE_ENV", "production")
-    vi.stubEnv("CORTEX_ADMIN_API_BASE_URL", "http://cortex-admin")
-    vi.stubEnv("CORTEX_ADMIN_API_KEY", "admin-key")
     vi.stubEnv("CORTEX_PROXY_URL", "http://cortex-proxy")
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() =>
-        Promise.resolve(
-          new Response(JSON.stringify({ apps: ["idp"] }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }),
-        ),
-      ),
-    )
+    loadGrantedApplicationCodes.mockResolvedValue(["idp"])
+    const proxyFetch = vi.fn(() => Promise.resolve(new Response("{}", { status: 200 })))
+    vi.stubGlobal("fetch", proxyFetch)
     const { POST } = await loadHandler()
 
     const response = await POST(makeRequest(validBody))
 
     expect(response.status).toBe(403)
+    // Odmowa musi wyprzedzić skutek uboczny — żaden token nie może zostać spalony.
+    expect(proxyFetch).not.toHaveBeenCalled()
   })
 
   it("forwards authorized requests to Cortex Proxy with scope headers", async () => {
     const historyDir = mkdtempSync(path.join(tmpdir(), "cortex-ai-tools-history-test-"))
     vi.stubEnv("NODE_ENV", "production")
-    vi.stubEnv("CORTEX_ADMIN_API_BASE_URL", "http://cortex-admin")
-    vi.stubEnv("CORTEX_ADMIN_API_KEY", "admin-key")
     vi.stubEnv("CORTEX_PROXY_URL", "http://cortex-proxy")
     vi.stubEnv("CORTEX_PROXY_API_KEY", "proxy-key")
     vi.stubEnv("LLM_DEFAULT_MODEL", "anthropic/claude-sonnet-4.6")
     vi.stubEnv("AI_TOOLS_HISTORY_DIR", historyDir)
+    loadGrantedApplicationCodes.mockResolvedValue(["text-highlighter"])
 
     const fetchSpy = vi.fn(
       (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
         const url = String(input)
-        if (url.startsWith("http://cortex-admin")) {
-          return Promise.resolve(
-            new Response(JSON.stringify({ apps: ["text-highlighter"] }), {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            }),
-          )
-        }
         if (url === "http://cortex-proxy/v1/chat/completions") {
           return Promise.resolve(
             new Response(

@@ -1,8 +1,37 @@
 services:
+  # Krok wdrożeniowy uruchamiany PRZED aplikacją i kończący się (patrz
+  # docker-compose.yml, ta sama usługa z komentarzem "dlaczego"). Powłoka czyta
+  # uprawnienia z Postgresa i jest fail-closed, więc deploy na bazę bez migracji
+  # i bez rejestru aplikacji odcina wszystkich, łącznie z panelem, którym dałoby
+  # się to naprawić. DATABASE_URL i ADMIN_EMAIL przychodzą z .env środowiska.
+  migrate:
+    image: ghcr.io/panadeo/cortex-frontend:${IMAGE_TAG:-latest}
+    container_name: cortex-frontend-migrate${ENVIRONMENT_TAG}
+    restart: "no"
+    env_file:
+      - .env
+    command:
+      - sh
+      - -c
+      - >-
+        node packages/@cortex/db/scripts/migrate.mjs &&
+        node packages/@cortex/db/scripts/seed-system-config.mjs &&
+        node packages/@cortex/db/scripts/seed-ilustromat.mjs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+
   cortex-frontend:
     image: ghcr.io/panadeo/cortex-frontend:${IMAGE_TAG:-latest}
     container_name: cortex-frontend${ENVIRONMENT_TAG}
     restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     env_file:
       - .env
     environment:

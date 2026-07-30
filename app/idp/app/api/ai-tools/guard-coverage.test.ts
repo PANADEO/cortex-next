@@ -17,7 +17,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { AI_TOOL_APP_CODES, AI_TOOLS_TILE_ID, type AiToolId } from "@/lib/ai-tools/app-codes"
 import { getAiToolDefinition } from "@/lib/ai-tools/registry"
 
-const ADMIN_URL = "http://cortex-admin"
+// Uprawnienia idą z własnego Postgresa (@cortex/service), nie po HTTP do
+// cortex-admina — podmieniamy więc wyłącznie odczyt z bazy. Bramka
+// (getGrantedApplicationCodes + canAccessAiTool w handlerze) zostaje PRAWDZIWA,
+// inaczej test przechodziłby z niewłaściwego powodu.
+const loadGrantedApplicationCodes = vi.hoisted(() => vi.fn<(email: string) => Promise<string[]>>())
+
+vi.mock("@cortex/service/rbac-store", () => ({
+  loadGrantedApplicationCodes,
+  loadGrantedScopes: vi.fn(async () => []),
+}))
+
 const PROXY_URL = "http://cortex-proxy"
 const PROXY_ENDPOINT = `${PROXY_URL}/v1/chat/completions`
 
@@ -41,19 +51,12 @@ let historyDir: string | null = null
 function stubUpstreams(apps: readonly string[]): ProxyCall[] {
   const proxyCalls: ProxyCall[] = []
 
+  loadGrantedApplicationCodes.mockResolvedValue([...apps])
+
   vi.stubGlobal(
     "fetch",
     vi.fn((input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
       const url = String(input)
-
-      if (url.startsWith(ADMIN_URL)) {
-        return Promise.resolve(
-          new Response(JSON.stringify({ apps }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }),
-        )
-      }
 
       if (url === PROXY_ENDPOINT) {
         proxyCalls.push({
@@ -125,8 +128,8 @@ beforeEach(() => {
   // NODE_ENV=production wyłącza fallback DEV_USER_EMAIL w getRequestEmail() —
   // bez tego "brak nagłówka" nie znaczyłoby "brak tożsamości".
   vi.stubEnv("NODE_ENV", "production")
-  vi.stubEnv("CORTEX_ADMIN_API_BASE_URL", ADMIN_URL)
-  vi.stubEnv("CORTEX_ADMIN_API_KEY", "admin-key")
+  loadGrantedApplicationCodes.mockReset()
+  loadGrantedApplicationCodes.mockResolvedValue([])
   vi.stubEnv("CORTEX_PROXY_URL", PROXY_URL)
   vi.stubEnv("CORTEX_PROXY_API_KEY", "proxy-key")
   vi.stubEnv("LLM_DEFAULT_MODEL", "anthropic/claude-sonnet-4.6")

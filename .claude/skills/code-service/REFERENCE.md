@@ -1,6 +1,6 @@
 # code-service — REFERENCE
 
-## Kontrakt `requireTileAccess()` (docelowy, po migracji na Postgres)
+## Kontrakt `requireTileAccess()`
 
 ```ts
 interface TileAccessResult {
@@ -11,22 +11,33 @@ interface TileAccessResult {
 function requireTileAccess(request: Request, entitlementCode: string): Promise<TileAccessResult>
 ```
 
-Wejście: `Request` (czyta `X-Auth-Request-Email`, fallback `DEV_USER_EMAIL` poza produkcją — wzorem `getRequestEmail()` w `access.ts`). Wyjście: `allowed` fail-closed (brak headera/brak granta = `false`, nie `true`).
+Wejście: `Request` (czyta `X-Auth-Request-Email`, fallback `DEV_USER_EMAIL` poza produkcją — `getRequestEmail()` w `rbac.ts`, normalizuje adres do lowercase). Wyjście: `allowed` fail-closed (brak headera/brak granta/błąd bazy = `false`, nie `true`).
 
-## Dzisiejszy, działający wzorzec (do skopiowania, nie do zastąpienia bez migracji)
+## Kontrakt `getGrantedApplicationCodes()`
 
-`app/idp/app/api/_lib/access.ts`:
-- `getRequestEmail(headers)` — header w produkcji, `DEV_USER_EMAIL` w dev.
-- `getAuthorizedAppsAtCortexAdmin(email)` — HTTP do zewnętrznego `cortex-admin` (`CORTEX_ADMIN_API_BASE_URL`+`CORTEX_ADMIN_API_KEY`), zwraca listę kodów aplikacji.
-- Cache 30s per email (`CACHE_TTL_MS`), max 10k wpisów, prosty LRU-ish eviction.
-- `AUTHORIZED_APP_CODES` — allowlista tego, co frontend w ogóle przepuści z odpowiedzi cortex-admin.
+```ts
+function getGrantedApplicationCodes(email: string): Promise<string[]>
+```
 
-## Plan migracji (Ścieżka E)
+Pełna lista kodów aplikacji przyznanych temu adresowi. Jedyny konsument: `GET /api/me/access` (bramka powłoki), która musi oddać listę do przeglądarki. Adres normalizowany do lowercase w środku, więc wołający nie musi o tym pamiętać.
 
-1. Schemat `system_config` w `@cortex/db` (users/roles/user_roles/permissions_matrix/application_scopes/role_application_scopes — kształt wzorem audytu cortex-admin, `PROJECT/cortex-frontend-cortex-admin-audyt-funkcji.md`, sekcja "Rdzeń — PORTOWAĆ").
-2. `requireTileAccess()` w `@cortex/service` czyta z tego schematu zamiast HTTP do cortex-admin — usuwa cross-service round-trip.
-3. Cache pattern (30s TTL) zostaje — teraz cache'uje wynik zapytania do własnej bazy zamiast do zewnętrznego serwisu.
-4. `getAccessResult`/`getAuthorizedAppsAtCortexAdmin` w `access.ts` — do usunięcia PO migracji, nie wcześniej (cortex-admin zostaje źródłem prawdy do czasu ukończenia Ścieżki E).
+**Różnica względem `requireTileAccess()`, celowa:** ta funkcja NIE połyka błędu bazy, tylko go propaguje. Fail-closed robi kontroler (`app/idp/app/api/_lib/granted-apps.ts` → pusta lista). Dzięki temu awaria bazy jest logowalna i odróżnialna od „użytkownik nie ma grantów" — czym w wersji z cortex-adminem nie była (`catch { return [] }` zjadał wszystko).
+
+## Jeden cache dla obu ścieżek
+
+Obie funkcje idą przez prywatny `getGrantedCodes()` → `cached(accessLayer, …)`: 30 s TTL, max 10k wpisów, LRU-ish eviction, dedup odczytów-w-locie (single-flight) i licznik `generation` chroniący przed wyścigiem z `clearTileAccessCache()`.
+
+**Nie dobudowuj drugiego cache'a dla powłoki.** Mutacja uprawnień z UI woła `clearTileAccessCache()` jeden raz — równoległy cache oznaczałby, że odebranie dostępu działa natychmiast w API modułu, a w hubie dopiero po wygaśnięciu cudzego TTL. Dowód, że dzielą wpis: `rbac.test.ts`, opis „wspólny cache z requireTileAccess".
+
+## Źródło uprawnień: własny Postgres, bez fallbacku (od 30.07.2026)
+
+`app/idp/app/api/_lib/access.ts` (HTTP do `cortex-admin`, drugi cache, allowlista `AUTHORIZED_APP_CODES`) **został usunięty w całości**, razem z `CORTEX_ADMIN_API_BASE_URL`/`CORTEX_ADMIN_API_KEY` i martwym `CORTEX_APP_CODE`.
+
+Konsekwencje, o których trzeba wiedzieć pisząc kod:
+
+- **Rejestr w bazie JEST allowlistą.** Nie ma już drugiej listy kodów w kodzie. Nowy kafelek = wiersz w `system_config.applications` (seed `packages/@cortex/db/scripts/seed-system-config.mjs`), nie wpis w tablicy TS. To strukturalnie usuwa klasę błędu „dwie ręcznie utrzymywane listy się rozjechały" (dotąd gubiła `sp-console`, `sp-client`, `okna-czasowe`, `meeting-guru`).
+- **Migracje + seed są krokiem deployu** (usługa `migrate` w `docker-compose.yml` / `docker-compose.image.yml`). Aplikacja wstająca na pustej bazie odcina wszystkich, łącznie z panelem, którym dałoby się to naprawić.
+- **Awaria Postgresa gasi teraz także powłokę**, nie tylko API modułów. Świadomy koszt: netto liczba serwisów, których awaria gasi instancję, spadła z dwóch (cortex-admin + backend IDP) do jednego.
 
 ## Cache uprawnień — zakres i świadome ograniczenia
 

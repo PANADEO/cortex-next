@@ -35,6 +35,42 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  # KROK WDROŻENIOWY, nie usługa: stosuje migracje, rejestruje aplikacje
+  # i uzgadnia konto ADMIN_EMAIL, po czym KOŃCZY się. cortex-frontend startuje
+  # dopiero po jego powodzeniu (service_completed_successfully).
+  #
+  # Dlaczego to musi istnieć: powłoka czyta uprawnienia z tego Postgresa
+  # (GET /api/me/access), a bramka jest fail-closed. Kontener wstający na
+  # pustej bazie = zero grantów dla wszystkich, w tym dla panelu Konfiguracji
+  # Systemu, którym dałoby się to naprawić — czyli dokładnie ten stan, który
+  # ta zmiana usuwa, tylko z innego powodu. Do 30.07.2026 nic tych kroków nie
+  # uruchamiało; było to niewidoczne wyłącznie dlatego, że powłoka nie dotykała
+  # bazy.
+  #
+  # Ten sam obraz co aplikacja — migracje i seed mają jechać z dokładnie tego
+  # kodu, który zaraz wstanie, nie z checkoutu na maszynie operatora.
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cortex-next-migrate
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-cortex}:${POSTGRES_PASSWORD:-cortex}@postgres:5432/${POSTGRES_DB:-cortex}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+    command:
+      - sh
+      - -c
+      - >-
+        node packages/@cortex/db/scripts/migrate.mjs &&
+        node packages/@cortex/db/scripts/seed-system-config.mjs &&
+        node packages/@cortex/db/scripts/seed-ilustromat.mjs
+    security_opt:
+      - no-new-privileges:true
+
   cortex-frontend:
     build:
       context: .
@@ -44,6 +80,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"

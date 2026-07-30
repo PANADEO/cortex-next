@@ -1,18 +1,41 @@
-// SECURITY: This handler trusts the `x-auth-request-email` header. It MUST run
-// behind oauth2-proxy / Caddy `forward_auth`, which strips any client-supplied
-// value and re-injects the authenticated email. Exposing this route directly to
-// the public internet would let anyone forge identity by setting the header.
-import { requestEmail } from "@/lib/cortex-governance/request-identity"
+// Bramka POWŁOKI: co ten użytkownik widzi w hubie i przez które kafelki
+// przechodzi AppGate. Źródłem jest WYŁĄCZNIE własny Postgres (system_config)
+// przez @cortex/service — nie ma już HTTP do zewnętrznego cortex-admin i nie
+// ma fallbacku na niego (świadoma decyzja: dwa źródła prawdy w bramce
+// fail-closed to dokładnie ten mechanizm, przez który "zapomniana"
+// konfiguracja daje inne uprawnienia niż pokazuje UI).
+//
+// SECURITY: handler ufa nagłówkowi `x-auth-request-email`. MUSI stać za
+// oauth2-proxy / Caddy `forward_auth`, które usuwają wartość podaną przez
+// klienta i wstrzykują uwierzytelniony adres. Wystawienie tej trasy wprost do
+// internetu pozwoliłoby podszyć się pod dowolną tożsamość jednym nagłówkiem.
+//
+// KONTRAKT (celowo niezmieniony — AppGate na nim polega):
+//   200 { allowed, apps, email } — także przy odmowie i przy awarii bazy.
+//   401 { error } — wyłącznie gdy nie da się ustalić tożsamości.
+// Odmowa NIE jest 4xx: `AppGate` rozróżnia "nie masz dostępu" (denied) od
+// "bramka się wywaliła" (error) po treści, a nie po kodzie HTTP. Zamiana na
+// 403 przeniosłaby usera na inny ekran dla tego samego stanu.
+import { getRequestEmail } from "@cortex/service"
+import type { AuthorizedAppsResponse } from "@cortex/api"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
-import { getAccessResult } from "../../_lib/access"
+import { grantedAppCodes } from "../../_lib/granted-apps"
+
+export const runtime = "nodejs"
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const email = requestEmail(request) ?? null
+  const email = getRequestEmail(request.headers)
 
   if (!email) {
     return NextResponse.json({ error: "missing-email" }, { status: 401 })
   }
 
-  return NextResponse.json(await getAccessResult(email))
+  const apps = await grantedAppCodes(email)
+
+  return NextResponse.json({
+    allowed: apps.length > 0,
+    apps,
+    email,
+  } satisfies AuthorizedAppsResponse)
 }

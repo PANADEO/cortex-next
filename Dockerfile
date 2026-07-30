@@ -1,5 +1,19 @@
 FROM node:22-alpine AS base
 
+# UWAGA (30.07.2026): ten Dockerfile jest NIESPÓJNY z repozytorium i build się
+# NIE UDAJE — `cortex-next` jest workspace'em pnpm (pnpm-workspace.yaml,
+# pnpm-lock.yaml, packages/@cortex/*), a etapy niżej instalują przez
+# `npm ci` z package-lock.json, którego w repo nie ma:
+#   ERROR: "/package-lock.json": not found   (zweryfikowane `docker build`)
+# Przyczyna jest preegzystująca i niezwiązana z uprawnieniami — plik nie był
+# aktualizowany od commita wprowadzającego pnpm+turbo. Przełożenie obrazu na
+# pnpm to osobne zadanie (build/deployment), świadomie nietknięte tutaj.
+#
+# DOPÓKI TO NIE ZOSTANIE NAPRAWIONE, usługa `migrate` z docker-compose*.yml
+# (migracje + seed rejestru aplikacji) NIE WSTANIE — a bez niej powłoka na
+# świeżym środowisku odcina wszystkich. To jest twardy warunek wdrożenia tej
+# zmiany na jakiekolwiek środowisko kontenerowe.
+
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -70,6 +84,16 @@ COPY --from=builder --chown=nextjs:nodejs /app/app/idp/public ./app/idp/public
 COPY --from=cowork-runner-deps --chown=nextjs:nodejs /app/cowork-runner/node_modules ./cowork-runner/node_modules
 COPY --chown=nextjs:nodejs cowork-runner/package.json cowork-runner/flue.config.ts ./cowork-runner/
 COPY --chown=nextjs:nodejs cowork-runner/src ./cowork-runner/src
+
+# Migracje i seedy to KROK DEPLOYU uruchamiany z tego obrazu (usługa `migrate`
+# w docker-compose.yml / docker-compose.image.yml), nie część startu serwera.
+# Standalone output ich nie wciąga, bo nie importuje ich żaden kod aplikacji:
+# potrzebne są skrypty .mjs oraz pliki migracji SQL wraz z meta/_journal.json.
+# Skrypty wymagają w runtime `drizzle-orm` i `postgres` — obie są zależnościami
+# @cortex/db i trafiają do standalone przez tracing client.ts, więc rozwiązują
+# się z /app/node_modules.
+COPY --from=builder --chown=nextjs:nodejs /app/packages/@cortex/db/drizzle ./packages/@cortex/db/drizzle
+COPY --chown=nextjs:nodejs packages/@cortex/db/scripts ./packages/@cortex/db/scripts
 
 # Skill/connector assets read from disk at runtime (SKILL.md + CLI scripts),
 # not imported by app code, so Next's standalone output tracing misses them.

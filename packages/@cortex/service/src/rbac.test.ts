@@ -11,7 +11,9 @@ const loadGrantedApplicationCodes = vi.hoisted(() => vi.fn<(email: string) => Pr
 
 vi.mock("./rbac-store", () => ({ loadGrantedApplicationCodes }))
 
-const { clearTileAccessCache, requireTileAccess } = await import("./rbac")
+const { clearTileAccessCache, getGrantedApplicationCodes, requireTileAccess } = await import(
+  "./rbac",
+)
 
 const ENTITLEMENT = "system-config"
 
@@ -232,5 +234,90 @@ describe("cache — unieważnienie wygrywa z odczytem w locie", () => {
     const afterRevoke = await requireTileAccess(makeRequest("admin@firma.pl"), ENTITLEMENT)
 
     expect(afterRevoke.allowed).toBe(false)
+  })
+})
+
+// Warstwa, z której korzysta POWŁOKA (GET /api/me/access). Kluczowa własność
+// nie jest tu funkcjonalna, tylko strukturalna: to MA BYĆ ta sama ścieżka
+// cache'a co requireTileAccess(). Dwa równoległe cache uprawnień to klasa
+// błędu, przez którą odebranie dostępu z UI działa natychmiast w API modułu,
+// a w powłoce dopiero po wygaśnięciu cudzego TTL.
+describe("getGrantedApplicationCodes — wspólny cache z requireTileAccess", () => {
+  it("zwraca całą listę kodów, nie odpowiedź tak/nie", async () => {
+    loadGrantedApplicationCodes.mockResolvedValue([ENTITLEMENT, "intrastat", "ai-tools"])
+
+    expect(await getGrantedApplicationCodes("admin@firma.pl")).toEqual([
+      ENTITLEMENT,
+      "intrastat",
+      "ai-tools",
+    ])
+  })
+
+  it("dzieli wpis cache z requireTileAccess — jedno zapytanie na obie ścieżki", async () => {
+    loadGrantedApplicationCodes.mockResolvedValue([ENTITLEMENT])
+
+    await requireTileAccess(makeRequest("admin@firma.pl"), ENTITLEMENT)
+    await getGrantedApplicationCodes("admin@firma.pl")
+
+    expect(loadGrantedApplicationCodes).toHaveBeenCalledTimes(1)
+  })
+
+  it("dzieli cache także w drugą stronę", async () => {
+    loadGrantedApplicationCodes.mockResolvedValue([ENTITLEMENT])
+
+    await getGrantedApplicationCodes("admin@firma.pl")
+    const access = await requireTileAccess(makeRequest("admin@firma.pl"), ENTITLEMENT)
+
+    expect(loadGrantedApplicationCodes).toHaveBeenCalledTimes(1)
+    expect(access.allowed).toBe(true)
+  })
+
+  it("clearTileAccessCache() unieważnia OBIE ścieżki naraz", async () => {
+    loadGrantedApplicationCodes.mockResolvedValue([ENTITLEMENT])
+    await getGrantedApplicationCodes("admin@firma.pl")
+
+    loadGrantedApplicationCodes.mockResolvedValue([])
+    clearTileAccessCache()
+
+    expect(await getGrantedApplicationCodes("admin@firma.pl")).toEqual([])
+    expect((await requireTileAccess(makeRequest("admin@firma.pl"), ENTITLEMENT)).allowed).toBe(false)
+  })
+
+  it("dedupuje odczyt w locie razem z requireTileAccess (single-flight)", async () => {
+    let release: (codes: string[]) => void = () => {}
+    loadGrantedApplicationCodes.mockImplementation(
+      () => new Promise<string[]>((resolve) => (release = resolve)),
+    )
+
+    const viaGate = requireTileAccess(makeRequest("admin@firma.pl"), ENTITLEMENT)
+    const viaShell = getGrantedApplicationCodes("admin@firma.pl")
+
+    release([ENTITLEMENT])
+    const [gate, shell] = await Promise.all([viaGate, viaShell])
+
+    expect(loadGrantedApplicationCodes).toHaveBeenCalledTimes(1)
+    expect(gate.allowed).toBe(true)
+    expect(shell).toEqual([ENTITLEMENT])
+  })
+
+  it("normalizuje e-mail, więc nie tworzy drugiego wpisu cache dla innej wielkości liter", async () => {
+    loadGrantedApplicationCodes.mockResolvedValue([ENTITLEMENT])
+
+    const lower = await getGrantedApplicationCodes("admin@firma.pl")
+    const upper = await getGrantedApplicationCodes("Admin@Firma.PL")
+
+    expect(upper).toEqual(lower)
+    expect(loadGrantedApplicationCodes).toHaveBeenCalledTimes(1)
+    expect(loadGrantedApplicationCodes).toHaveBeenCalledWith("admin@firma.pl")
+  })
+
+  it("PROPAGUJE błąd bazy zamiast go połykać", async () => {
+    // Świadoma różnica względem requireTileAccess(), które zwraca allowed:false.
+    // Fail-closed egzekwuje kontroler (_lib/granted-apps.ts) — dzięki temu
+    // awaria bazy jest logowalna i odróżnialna od "user nie ma grantów",
+    // czym w wersji z cortex-adminem nie była.
+    loadGrantedApplicationCodes.mockRejectedValue(new Error("connection refused"))
+
+    await expect(getGrantedApplicationCodes("admin@firma.pl")).rejects.toThrow("connection refused")
   })
 })
