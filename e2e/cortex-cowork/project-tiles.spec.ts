@@ -8,8 +8,18 @@
 // mockuje tego endpointu: mock zamieniłby go w sprawdzanie, czy React umie
 // wyrenderować tablicę.
 //
-// Mockowana jest wyłącznie POWŁOKA (mockShellAccess), bo /api/me/access idzie do
-// zewnętrznego cortex-admin, którego w tym repo nie ma.
+// Mockowana jest wyłącznie POWŁOKA (mockShellAccess). Od unifikacji bramek
+// (30.07.2026) /api/me/access to własny endpoint nad własnym Postgresem, więc
+// mock nie jest już koniecznością techniczną — jest wyborem: ustawia dokładnie
+// ten zestaw grantów, którego ten plik potrzebuje, bez seedowania bazy.
+//
+// GRANT `cortex-cowork` W MOCKU JEST CZĘŚCIĄ SCENARIUSZA, nie ozdobnikiem.
+// Hub bramkuje CAŁĄ sekcję kafelków task-chat tym grantem (tile-grid.tsx),
+// więc bez niego wszystkie asercje niżej sprawdzałyby pustą listę i milczały
+// o tym, co ten plik ma testować — filtr RÓL per projekt. Że sam grant działa
+// (ma go → widzi sekcję, nie ma → nie widzi), dowodzi realną ścieżką
+// e2e/shell/access-gate.spec.ts "kafelki task-chat na hubie widzi wyłącznie
+// user z grantem cortex-cowork"; tutaj nie duplikujemy tego na mocku.
 
 import { expect, test } from "@playwright/test"
 import { asUser } from "../fixtures/fixtures"
@@ -27,11 +37,18 @@ import { HubPage } from "../poms/shell/hub-page"
 import { mockIdpConfig } from "../support/mocks/idp-config"
 import { mockShellAccess } from "../support/mocks/shell-access"
 
-/** Hub renderuje kafelki code-backed razem z projektowymi; `apps: ["idp"]`
- *  daje minimalny, stały zestaw tych pierwszych, żeby asercje dotyczyły
- *  wyłącznie tego, co przyszło z governance. */
+/** COWORK_APP_CODE z app/idp/lib/tiles.ts. Powtórzony literałem, a nie
+ *  zaimportowany: tiles.ts ładuje w runtime lucide-react, którego proces
+ *  `playwright test` nie ma po co wciągać (tak samo robi access-gate.spec.ts). */
+const COWORK_APP_CODE = "cortex-cowork"
+
+/** Hub renderuje kafelki code-backed razem z projektowymi. `idp` daje minimalny,
+ *  stały zestaw tych pierwszych (punkt odniesienia "kafelki nadal są"),
+ *  `cortex-cowork` odblokowuje SEKCJĘ projektową — po czym o zawartości tej
+ *  sekcji decyduje już wyłącznie filtr ról w governance store, czyli to, co
+ *  ten plik testuje. */
 async function openHubAs(page: Parameters<typeof mockShellAccess>[0], email: string) {
-  await mockShellAccess(page, { email, apps: ["idp"] })
+  await mockShellAccess(page, { email, apps: ["idp", COWORK_APP_CODE] })
   await mockIdpConfig(page)
   await asUser(page, email)
   const hub = new HubPage(page)
