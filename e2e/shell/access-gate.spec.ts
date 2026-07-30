@@ -38,6 +38,9 @@ const GRANT_ONLY_CODES = new Set(["intrastat-cn-editor", "intrastat-config-edito
 const DENIED_HEADING = "Brak dostępu"
 const ERROR_HEADING = "Brak uprawnień"
 
+/** Nazwa projektu task-chat podstawianego zamiast governance store. */
+const COWORK_TILE_LABEL = "Projekt E2E Cowork"
+
 /**
  * Rozstrzygnięcie bramki dla bieżącej strony.
  *
@@ -155,6 +158,58 @@ test.describe("Bramka powłoki — macierz per kod aplikacji", () => {
     await expect(page.getByText("Intrastat", { exact: true })).toBeVisible()
     await expect(page.getByText("IDP", { exact: true })).toBeHidden()
     await expect(page.getByText("Ilustromat", { exact: true })).toBeHidden()
+  })
+
+  // Kafelki task-chat NIE mają wiersza w rejestrze aplikacji — hub dociąga je z
+  // governance store, który zna wyłącznie role PER PROJEKT i o grant
+  // `cortex-cowork` nie pyta w ogóle. Zaślepiony jest tu WYŁĄCZNIE ten store
+  // (żeby test nie zależał od zawartości JSON-a na dysku i od ról projektu —
+  // to osobna warstwa). Uprawnienia nadal idą z bazy przez prawdziwy
+  // /api/me/access, więc bramkę sekcji test sprawdza realną ścieżką.
+  test("kafelki task-chat na hubie widzi wyłącznie user z grantem cortex-cowork", async ({
+    page,
+  }) => {
+    await mockIdpConfig(page)
+    let currentEmail = ""
+    await page.route("**/user/me", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ email: currentEmail, has_access: true }),
+      })
+    })
+    await page.route("**/api/cortex-cowork/projects", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([
+          {
+            id: "projekt-e2e",
+            name: COWORK_TILE_LABEL,
+            description: "Kafelek task-chat z governance store",
+            exportEnabled: false,
+            briefs: [],
+          },
+        ]),
+      })
+    })
+
+    currentEmail = accessMatrixEmail("intrastat")
+    await asUser(page, currentEmail)
+    await page.goto("/")
+    await settle(page)
+
+    // Własny kafelek widoczny — dowód, że hub się wyrenderował, więc ukryty
+    // kafelek Coworka nie jest artefaktem pustej strony.
+    await expect(page.getByText("Intrastat", { exact: true })).toBeVisible()
+    await expect(page.getByText(COWORK_TILE_LABEL, { exact: true })).toBeHidden()
+
+    currentEmail = accessMatrixEmail("cortex-cowork")
+    await asUser(page, currentEmail)
+    await page.goto("/")
+    await settle(page)
+
+    await expect(page.getByText(COWORK_TILE_LABEL, { exact: true })).toBeVisible()
   })
 
   test("grant zbiorczy ai-tools odsłania wszystkie dziewięć narzędzi", async ({ page }) => {

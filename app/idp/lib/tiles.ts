@@ -95,6 +95,15 @@ export const DEPARTMENT_CATEGORIES: ReadonlyArray<{
   { id: "hr", label: "HR" },
 ]
 
+/**
+ * Kod modułu Cortex Cowork w rejestrze `applications`. Moduł nie ma wiersza w
+ * TILES (kafelki task-chat dociąga governance store per user), ale dostęp do
+ * niego jest bramkowany tym samym grantem co każdy inny kafelek. Stała jest
+ * jedna, bo grantu pilnują DWA miejsca — trasa `(cowork)` i sekcja task-chat
+ * na hubie — a ich rozjazd to dokładnie kafelek, który widać i który odmawia.
+ */
+export const COWORK_APP_CODE = "cortex-cowork"
+
 // Task-chat tiles are NOT listed here: they come from the cortex-config
 // governance store and are merged into the hub grid at render time (see
 // useCoworkProjectTiles). This array holds only code-backed tiles.
