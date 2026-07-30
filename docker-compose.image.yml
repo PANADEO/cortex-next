@@ -4,6 +4,10 @@ services:
   # uprawnienia z Postgresa i jest fail-closed, więc deploy na bazę bez migracji
   # i bez rejestru aplikacji odcina wszystkich, łącznie z panelem, którym dałoby
   # się to naprawić. DATABASE_URL i ADMIN_EMAIL przychodzą z .env środowiska.
+  #
+  # Łańcuch seedów musi być IDENTYCZNY z docker-compose.yml — te dwa pliki
+  # rozjeżdżające się po cichu to dokładnie ten błąd, przez który kafelek
+  # token-usage był martwy po `docker compose up` do 30.07.2026.
   migrate:
     image: ghcr.io/panadeo/cortex-frontend:${IMAGE_TAG:-latest}
     container_name: cortex-frontend-migrate${ENVIRONMENT_TAG}
@@ -16,7 +20,8 @@ services:
       - >-
         node packages/@cortex/db/scripts/migrate.mjs &&
         node packages/@cortex/db/scripts/seed-system-config.mjs &&
-        node packages/@cortex/db/scripts/seed-ilustromat.mjs
+        node packages/@cortex/db/scripts/seed-ilustromat.mjs &&
+        node packages/@cortex/db/scripts/seed-token-usage.mjs
     logging:
       driver: "json-file"
       options:

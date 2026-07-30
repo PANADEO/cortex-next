@@ -49,6 +49,13 @@ services:
   #
   # Ten sam obraz co aplikacja — migracje i seed mają jechać z dokładnie tego
   # kodu, który zaraz wstanie, nie z checkoutu na maszynie operatora.
+  #
+  # KOLEJNOŚĆ SEEDÓW JEST ZNACZĄCA: seed-system-config.mjs zakłada rolę `admin`,
+  # a seedy modułowe (ilustromat, token-usage) nadają jej granty. Uruchomione
+  # przed nim nie mają czego grantować i od 30.07.2026 kończą się BŁĘDEM
+  # (wcześniej: log i exit 0 — kafelek rejestrował się bez dostępu dla kogokolwiek).
+  # Każdy nowy kafelek z własnym seedem dopisujemy TUTAJ, na koniec łańcucha —
+  # inaczej jest zarejestrowany w kodzie i niewidoczny na wdrożonym środowisku.
   migrate:
     build:
       context: .
@@ -67,7 +74,8 @@ services:
       - >-
         node packages/@cortex/db/scripts/migrate.mjs &&
         node packages/@cortex/db/scripts/seed-system-config.mjs &&
-        node packages/@cortex/db/scripts/seed-ilustromat.mjs
+        node packages/@cortex/db/scripts/seed-ilustromat.mjs &&
+        node packages/@cortex/db/scripts/seed-token-usage.mjs
     security_opt:
       - no-new-privileges:true
 
