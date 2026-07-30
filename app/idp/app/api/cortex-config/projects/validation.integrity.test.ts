@@ -1,15 +1,55 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import path from "node:path"
 import { builtinSkillsDir } from "@/lib/data-dir"
 import type { CoworkGovernanceConfig, CoworkProjectComposition } from "@cortex/types"
-import { describe, expect, it } from "vitest"
-import { findInvalidGrantReferences } from "./validation"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+// Tylko typ — znika przy transpilacji, więc nie ładuje modułu przed
+// podstawieniem COWORK_DATA_DIR (patrz komentarz niżej).
+import type * as Validation from "./validation"
 
 // Exercises findInvalidGrantReferences against the REAL catalog: the actual
 // built-in skills folder on disk (csv-export, excel-report - see
 // features/cortex-cowork/skills/*/SKILL.md) and a real credentials.json read
-// through COWORK_DATA_DIR (set by the test runner invocation - see the run
-// command documented in the Obsidian task note's "Testy" section). This is
-// not mocked: it proves the disk-backed skill scan and the credentials store
-// read actually reject/accept for real, not just against an in-memory stub.
+// through COWORK_DATA_DIR. Not mocked: it proves the disk-backed skill scan
+// and the credentials store read actually reject/accept for real, not just
+// against an in-memory stub.
+//
+// The data dir is seeded here, per test, in a temp directory. It used to be
+// supplied by the test runner invocation instead, which is why this file was
+// permanently red under a plain `pnpm test` on a clean checkout: nothing in
+// the repo set COWORK_DATA_DIR, so the one test needing a real secret could
+// never pass. A test that only works with an environment documented outside
+// the repo is a test nobody can trust - the seed belongs here.
+//
+// credentials.ts resolves COWORK_DATA_DIR at MODULE LOAD, so the env has to be
+// stubbed before the import - hence resetModules() plus dynamic import inside
+// each test rather than a static one at the top.
+
+const SECRET_PATH = "wspolne/llm/cortex-proxy"
+
+let dataDir: string
+
+async function loadValidation(): Promise<typeof Validation> {
+  return import("./validation")
+}
+
+beforeEach(() => {
+  vi.resetModules()
+  vi.unstubAllEnvs()
+  dataDir = mkdtempSync(path.join(tmpdir(), "cortex-config-validation-"))
+  writeFileSync(
+    path.join(dataDir, "credentials.json"),
+    JSON.stringify({ version: 1, values: { [SECRET_PATH]: "wartosc-testowa" } }),
+    "utf8",
+  )
+  vi.stubEnv("COWORK_DATA_DIR", dataDir)
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+  rmSync(dataDir, { force: true, recursive: true })
+})
 
 function baseConfig(overrides: Partial<CoworkGovernanceConfig> = {}): CoworkGovernanceConfig {
   return {
@@ -49,6 +89,8 @@ describe("findInvalidGrantReferences (real catalog on disk + real credentials st
       secrets: { branches: [], leaves: ["sekret/ktorego/nie-ma"] },
     }
 
+    const { findInvalidGrantReferences } = await loadValidation()
+
     const invalid = await findInvalidGrantReferences(composition, baseConfig())
 
     expect(invalid).toEqual(
@@ -67,8 +109,10 @@ describe("findInvalidGrantReferences (real catalog on disk + real credentials st
     const composition: CoworkProjectComposition = {
       skills: { branches: ["wspolne"], leaves: ["csv-export"] },
       connectors: { branches: [], leaves: ["jira"] },
-      secrets: { branches: [], leaves: ["wspolne/llm/cortex-proxy"] },
+      secrets: { branches: [], leaves: [SECRET_PATH] },
     }
+
+    const { findInvalidGrantReferences } = await loadValidation()
 
     const invalid = await findInvalidGrantReferences(composition, baseConfig())
 
@@ -94,6 +138,8 @@ describe("findInvalidGrantReferences (real catalog on disk + real credentials st
       ],
     })
 
+    const { findInvalidGrantReferences } = await loadValidation()
+
     expect(await findInvalidGrantReferences(composition, config)).toEqual([])
   })
 
@@ -103,6 +149,8 @@ describe("findInvalidGrantReferences (real catalog on disk + real credentials st
       connectors: { branches: [], leaves: [] },
       secrets: { branches: [], leaves: [] },
     }
+
+    const { findInvalidGrantReferences } = await loadValidation()
 
     expect(await findInvalidGrantReferences(composition, baseConfig())).toEqual([])
   })
