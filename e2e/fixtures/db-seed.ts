@@ -45,6 +45,12 @@ const ILUSTROMAT_APP_CODE = "ilustromat"
 const OKNA_CZASOWE_APP_CODE = "okna-czasowe"
 const MANAGE_TEMPLATES_SCOPE = "manage-templates"
 const TOKEN_USAGE_APP_CODE = "token-usage"
+const COWORK_APP_CODE = "cortex-cowork"
+// Musi się zgadzać z e2e/fixtures/json-store.ts COWORK_STRANGER_EMAIL — ten
+// sam e-mail, dwie warstwy: JSON store (governance open-mode) i tu, Postgres
+// (grant platformowy, którego od 30.07.2026 wymaga bootstrapTrusts() nawet
+// w trybie otwartym — patrz app/idp/lib/cortex-governance/bootstrap-trust.ts).
+const COWORK_STRANGER_EMAIL = "obcy@cortex.local"
 
 export type ScenarioName =
   | "empty"
@@ -66,6 +72,13 @@ export type ScenarioName =
   // Raportowanie Tokenow: kafelek admin-only, JEDNA warstwa uprawnien
   // (bez application_scopes) - patrz app/idp/app/api/token-usage/_lib/guard.ts.
   | "token-usage-admin"
+  // Cortex Cowork, tryb otwarty: bootstrapTrusts() (naprawa 30.07.2026,
+  // zamknięcie otwartego panelu governance) wymaga REALNEGO grantu
+  // `cortex-cowork` z Postgresa nawet gdy governance.json jest w trybie
+  // otwartym (zero przypisanych ról) — sam mock powłoki już nie wystarcza
+  // dla GET /api/cortex-cowork/projects w tym trybie. Grant dla dokładnie
+  // e-maila używanego jako "obcy" w scenariuszach JSON (COWORK_STRANGER_EMAIL).
+  | "cowork-open-mode-stranger"
 
 export interface ScenarioResult {
   /** Wstrzyknij jako nagłówek `x-auth-request-email` żeby "być" tym userem —
@@ -232,6 +245,27 @@ export async function seedScenario(name: ScenarioName): Promise<ScenarioResult> 
           name: "Raportowanie Tokenow",
           kind: "native",
           route: "/token-usage",
+        })
+        .returning()
+      await db.insert(userRoles).values({ userId: user!.id, roleId: role!.id })
+      await db.insert(permissionsMatrix).values({ roleId: role!.id, applicationId: app!.id })
+      return { email, applications: [app!] }
+    }
+
+    case "cowork-open-mode-stranger": {
+      const email = COWORK_STRANGER_EMAIL
+      const [user] = await db.insert(users).values({ email, fullName: "Obcy E2E" }).returning()
+      const [role] = await db
+        .insert(roles)
+        .values({ code: "cowork-open-mode-e2e", name: "Rola E2E" })
+        .returning()
+      const [app] = await db
+        .insert(applications)
+        .values({
+          code: COWORK_APP_CODE,
+          name: "Cortex Config",
+          kind: "native",
+          route: "/cortex-config/projects",
         })
         .returning()
       await db.insert(userRoles).values({ userId: user!.id, roleId: role!.id })

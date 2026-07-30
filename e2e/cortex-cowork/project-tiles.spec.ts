@@ -21,8 +21,7 @@
 // e2e/shell/access-gate.spec.ts "kafelki task-chat na hubie widzi wyłącznie
 // user z grantem cortex-cowork"; tutaj nie duplikujemy tego na mocku.
 
-import { expect, test } from "@playwright/test"
-import { asUser } from "../fixtures/fixtures"
+import { asUser, expect, test } from "../fixtures/fixtures"
 import {
   COWORK_ADMIN_EMAIL,
   COWORK_ANALYST_EMAIL,
@@ -99,8 +98,14 @@ test.describe("Cortex Cowork — kafelki projektów na hubie", () => {
 
   test("tryb otwarty: przed pierwszym przypisaniem roli każdy widzi wszystkie włączone projekty", async ({
     page,
+    seed,
   }) => {
     await seedCowork("open-mode")
+    // Naprawa 30.07.2026 (zamknięcie otwartego panelu governance):
+    // bootstrapTrusts() wymaga REALNEGO grantu `cortex-cowork` z Postgresa
+    // nawet w trybie otwartym governance.json — sam mock powłoki (poniżej)
+    // już nie wystarcza dla GET /api/cortex-cowork/projects w tym trybie.
+    await seed("cowork-open-mode-stranger")
 
     const hub = await openHubAs(page, COWORK_STRANGER_EMAIL)
 
