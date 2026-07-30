@@ -32,6 +32,12 @@ const AUTHORIZED_APP_CODES = [
   // musi być na tej allowliście — inaczej AppGate odcina stronę, zanim moduł
   // zdąży cokolwiek powiedzieć.
   "ilustromat",
+  // Okna czasowe — identycznie jak Ilustromat. Dopisane 30.07.2026, ŚWIADOMIE
+  // DOPIERO PO domknięciu bramki modułu (api/okna-czasowe/_lib/guard.ts):
+  // wcześniej ten wpis otworzyłby w powłoce kafelek, którego API nie sprawdzało
+  // niczego, czyli zamieniłby kafelek nieosiągalny dla nikogo na osiągalny
+  // przez wszystkich. Kolejność tych dwóch zmian jest częścią poprawki.
+  "okna-czasowe",
   ...AI_TOOL_APP_CODES,
 ] as const
 

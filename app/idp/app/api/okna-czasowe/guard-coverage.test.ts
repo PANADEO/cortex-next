@@ -291,3 +291,46 @@ describe("skutki uboczne, których odmowa nie może wywołać", () => {
     )
   })
 })
+
+// Druga bramka tego samego kafelka, od strony POWŁOKI: kod `okna-czasowe` musi
+// być na allowliście AUTHORIZED_APP_CODES (app/idp/app/api/_lib/access.ts), bo
+// getAuthorizedAppsAtCortexAdmin() filtruje przez nią odpowiedź cortex-admina.
+// Do 30.07.2026 kodu tam nie było i /api/me/access wycinał kafelek WSZYSTKIM,
+// nawet po przyznaniu dostępu w cortex-adminie. Sprawdzane zachowaniem
+// prawdziwego route'u, nie grepem po źródle.
+describe("GET /api/me/access — widoczność kafelka w powłoce", () => {
+  function stubCortexAdmin(apps: string[]): void {
+    vi.stubEnv("CORTEX_ADMIN_API_BASE_URL", "http://cortex-admin")
+    vi.stubEnv("CORTEX_ADMIN_API_KEY", "admin-key")
+    fetchSpy.mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ apps }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    )
+  }
+
+  async function appsFor(email: string): Promise<string[]> {
+    const { GET } = await import("../me/access/route")
+    const response = await GET(buildRequest("GET", email) as Parameters<typeof GET>[0])
+    const body = (await response.json()) as { apps: string[] }
+    expect(response.status).toBe(200)
+    return body.apps
+  }
+
+  it("przepuszcza kod okna-czasowe przyznany przez cortex-admin", async () => {
+    stubCortexAdmin(["okna-czasowe", "intrastat"])
+
+    // Kontrola pozytywna na sąsiednim kodzie: gdyby route był po prostu zepsuty
+    // i oddawał wszystko, ta asercja nie odróżniłaby tego od poprawki.
+    expect(await appsFor(GRANTED_EMAIL)).toEqual(["okna-czasowe", "intrastat"])
+  })
+
+  it("nadal odcina kod spoza allowlisty", async () => {
+    stubCortexAdmin(["okna-czasowe", "kafelek-ktorego-nie-ma"])
+
+    expect(await appsFor(GRANTED_EMAIL)).toEqual(["okna-czasowe"])
+  })
+})
