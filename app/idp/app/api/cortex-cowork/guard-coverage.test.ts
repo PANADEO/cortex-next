@@ -14,19 +14,33 @@
 // ŻADEN handler modułu nie odpowiada 200 na żądanie bez tożsamości. Dopisanie
 // kolejnego wyjątku wymaga rozmontowania tej pętli, nie dopisania wpisu.
 //
-// Jedyny świadomy wyjątek to tryb OPEN (bootstrap, zero przypisań ról) —
-// osobny opis niżej, przy teście, który go utrwala.
+// Do 30.07.2026 był jeszcze jeden świadomy wyjątek: tryb OPEN (bootstrap, zero
+// przypisań ról) przechodził KAŻDE żądanie, anonimowe włącznie. To był stan
+// startowy każdego świeżego wdrożenia, a nie chwilowy etap konfiguracji, więc
+// wyjątek zniknął — tryb otwarty nadal pomija filtr RÓL, ale nie pomija już
+// grantu `cortex-cowork` z system_config (lib/cortex-governance/bootstrap-trust.ts).
 
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
+import { setGrants } from "@/lib/cortex-governance/testing/grants"
 import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import type * as CortexService from "@cortex/service"
 
 const ADMIN_EMAIL = "admin@example.com"
 const ANALYST_EMAIL = "analityk@example.com"
 const MANAGER_EMAIL = "manager@example.com"
 const OUTSIDER_EMAIL = "obcy@example.com"
+
+// Mock system_config, żeby ta suita została bez Postgresa. Wszyscy nazwani
+// wyżej mają grant na kafelek — przedmiotem tych testów jest warstwa
+// GOVERNANCE (role, adminEmails), nie warstwa platformy.
+vi.mock("@cortex/service", async (importOriginal) => {
+  const actual = await importOriginal<typeof CortexService>()
+  const { fakeRequireTileAccess } = await import("@/lib/cortex-governance/testing/grants")
+  return { ...actual, requireTileAccess: fakeRequireTileAccess }
+})
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH"
 const HTTP_METHODS: HttpMethod[] = ["GET", "POST", "PUT", "DELETE", "PATCH"]
@@ -117,6 +131,12 @@ const ROUTE_CONTEXT = {
 beforeEach(() => {
   vi.resetModules()
   vi.unstubAllEnvs()
+  setGrants({
+    [ADMIN_EMAIL]: ["cortex-cowork"],
+    [ANALYST_EMAIL]: ["cortex-cowork"],
+    [MANAGER_EMAIL]: ["cortex-cowork"],
+    [OUTSIDER_EMAIL]: ["cortex-cowork"],
+  })
   dataDir = mkdtempSync(path.join(tmpdir(), "cortex-cowork-guard-"))
   // NODE_ENV=production wyłącza fallback DEV_USER_EMAIL w requestEmail() —
   // bez tego "brak nagłówka" nie znaczyłoby "brak tożsamości".
@@ -258,17 +278,33 @@ describe("GET /api/cortex-cowork/projects — filtr ról po stronie serwera", ()
     expect(identified.names).toEqual([])
   })
 
-  // Świadomy wyjątek, nie przeoczenie: w trybie bootstrap (zero przypisań ról)
-  // instancja jest jeszcze nieskonfigurowana i przechodzi KAŻDE żądanie, także
-  // anonimowe — dokładnie tak, jak requireProjectAccess() traktuje sesje.
-  // Gdyby ten wyjątek miał kiedyś zniknąć, ma zniknąć w OBU miejscach naraz.
-  it("tryb otwarty: anonimowe żądanie nadal widzi projekty (bootstrap, zgodnie z project-gate)", async () => {
+  // Wyjątek zniknął 30.07.2026 i zniknął w OBU miejscach naraz, tak jak
+  // zapowiadał komentarz, który tu wcześniej stał. Tryb otwarty jest stanem
+  // startowym KAŻDEGO świeżego wdrożenia (governance.json w .gitignore, pusty
+  // wolumen w docker-compose.image.yml), więc "przechodzi każde żądanie"
+  // znaczyło w praktyce "panel i kafelki stoją otworem", a nie "chwilowo, na
+  // czas konfiguracji".
+  it("tryb otwarty: anonimowe żądanie dostaje 401, nie listę projektów", async () => {
     await writeConfig(openModeConfig())
 
     const { status, names } = await listProjectsAs(null)
 
+    expect(status).toBe(401)
+    expect(names).toEqual([])
+  })
+
+  // Druga połowa tej samej reguły: tożsamość jest, ale grantu na kafelek nie
+  // ma. Hub takiemu użytkownikowi tej sekcji i tak nie renderuje (tile-grid.tsx
+  // pyta o ten sam kod), więc API przestaje oddawać nazwy, opisy i briefy
+  // projektów, których UI by nie pokazało.
+  it("tryb otwarty: bez grantu cortex-cowork lista jest pusta (200)", async () => {
+    setGrants({})
+    await writeConfig(openModeConfig())
+
+    const { status, names } = await listProjectsAs(OUTSIDER_EMAIL)
+
     expect(status).toBe(200)
-    expect(names.sort()).toEqual(["Projekt Analiza", "Projekt Raporty"])
+    expect(names).toEqual([])
   })
 })
 

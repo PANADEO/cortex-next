@@ -1,8 +1,10 @@
 import type { SandboxSession } from "@/features/cortex-cowork/server/sandbox-store"
 import { getSandboxSession } from "@/features/cortex-cowork/server/sandbox-store"
+import { COWORK_APP_CODE } from "@/lib/tiles"
 import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
+import { bootstrapTrusts, denyAnonymous } from "./bootstrap-trust"
 import { requestEmail } from "./request-identity"
 import { isOpenMode, readGovernanceConfig, visibleProjectsFor } from "./store"
 
@@ -20,36 +22,19 @@ export interface ProjectAccessContext {
 }
 
 /**
- * The module's single answer to "this request carries no identity at all":
- * 401, the same code /api/me/access and /api/cortex-cowork/my-instructions
- * already return. Shared by requireProjectAccess() and by the tile list
- * (GET /api/cortex-cowork/projects) so both surfaces of the module answer an
- * anonymous caller identically instead of drifting apart.
- *
- * A missing x-auth-request-email header means oauth2-proxy was bypassed, not
- * "a user with no roles" - that second case is a legitimate 200 with an empty
- * list (see canAccessTile: an empty grant hides tiles, it is not an error).
- *
- * Open mode is intentionally exempt: while no user->role assignment exists at
- * all, the instance is in bootstrap and every request, anonymous included,
- * passes by design (isOpenMode in store.ts).
- */
-export function denyAnonymous(
-  config: CoworkGovernanceConfig,
-  email: string | undefined,
-): NextResponse | null {
-  if (email || isOpenMode(config)) return null
-  return NextResponse.json({ message: "Authentication required" }, { status: 401 })
-}
-
-/**
  * Can this requester create/read/act on sessions for `projectId`? Reuses
  * visibleProjectsFor() - the exact same filter GET /api/cortex-cowork/projects
  * uses to decide which tiles a user sees - instead of a second, parallel
  * implementation of the open-mode/admin/role rules that could drift from it.
- * That also means bootstrap/open mode (see isOpenMode in store.ts) is
- * respected automatically: while no user has a role assignment, every
- * enabled project is visible to everyone, by design.
+ * Open mode (see isOpenMode in store.ts) still skips the ROLE filter - no
+ * user has been assigned a role yet, so there is nothing to filter on - but
+ * since 30.07.2026 it no longer skips the system_config grant. Until then,
+ * "no role assignments exist" meant every authenticated caller could open
+ * every enabled project and start a billable agent session, which on a fresh
+ * cortex-next instance is its permanent starting state; the hub had already
+ * been tightened to hide these tiles without the `cortex-cowork` grant
+ * (tile-grid.tsx), so the API was simply more permissive than the UI it
+ * serves. Rationale for keying bootstrap trust off the grant: bootstrap-trust.ts.
  *
  * 404 for a project id that doesn't exist in the config at all (typo/stale
  * link); 403 once the project is confirmed to exist but this requester
@@ -69,8 +54,12 @@ export async function requireProjectAccess(
 
   const email = requestEmail(request)
 
-  const anonymous = denyAnonymous(config, email)
+  const anonymous = denyAnonymous(email)
   if (anonymous) return anonymous
+
+  if (isOpenMode(config) && !(await bootstrapTrusts(request, COWORK_APP_CODE))) {
+    return NextResponse.json({ message: "Project access denied" }, { status: 403 })
+  }
 
   const visible = visibleProjectsFor(config, email).some((candidate) => candidate.id === projectId)
   if (!visible) {

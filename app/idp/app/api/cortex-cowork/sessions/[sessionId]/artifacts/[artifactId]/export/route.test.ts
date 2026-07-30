@@ -4,6 +4,8 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import type * as CortexService from "@cortex/service"
+import { setGrants } from "@/lib/cortex-governance/testing/grants"
 
 // Extension of the tile-level auth gate (Obsidian task note, "Rozszerzenie:
 // 5 dodatkowych route'ów") to a route the original 4-handler pass left
@@ -13,11 +15,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 // real temp directory (distinct from COWORK_DATA_DIR) so the ALLOW case
 // proves a real file landed on disk, not just a 200 status.
 
+
+// Open mode stopped meaning "no restrictions" on 30.07.2026: it still skips
+// the governance ROLE filter, but the caller must hold the cortex-cowork
+// grant in system_config (see lib/cortex-governance/bootstrap-trust.ts).
+// Mocked so this suite stays DB-free; setGrants() drives it per test.
+const GRANTED_EMAIL = "granted@example.com"
+
+vi.mock("@cortex/service", async (importOriginal) => {
+  const actual = await importOriginal<typeof CortexService>()
+  const { fakeRequireTileAccess } = await import("@/lib/cortex-governance/testing/grants")
+  return { ...actual, requireTileAccess: fakeRequireTileAccess }
+})
+
 let dataDir: string
 let exportDir: string
 
 beforeEach(() => {
   vi.resetModules()
+  setGrants({ [GRANTED_EMAIL]: ["cortex-cowork"] })
   vi.unstubAllEnvs()
   dataDir = mkdtempSync(path.join(tmpdir(), "cortex-cowork-export-route-test-"))
   exportDir = mkdtempSync(path.join(tmpdir(), "cortex-cowork-export-share-test-"))
@@ -163,14 +179,26 @@ describe("POST /api/cortex-cowork/sessions/[sessionId]/artifacts/[artifactId]/ex
     const { sessionId, artifactId } = await createSessionWithArtifact()
     const { POST } = await loadHandler()
 
-    const response = await POST(requestAs("whoever@example.com"), {
+    const response = await POST(requestAs(GRANTED_EMAIL), {
       params: Promise.resolve({ sessionId, artifactId }),
     })
 
     expect(response.status).toBe(200)
   })
 
-  it("bootstrap/open mode: still exports with no email header - open mode has zero restrictions", async () => {
+  it("bootstrap/open mode: denies a caller without the cortex-cowork grant (403)", async () => {
+    await writeConfig(openConfig())
+    const { sessionId, artifactId } = await createSessionWithArtifact()
+    const { POST } = await loadHandler()
+
+    const response = await POST(requestAs("nobody@example.com"), {
+      params: Promise.resolve({ sessionId, artifactId }),
+    })
+
+    expect(response.status).toBe(403)
+  })
+
+  it("bootstrap/open mode: denies an export with no email header (401)", async () => {
     await writeConfig(openConfig())
     const { sessionId, artifactId } = await createSessionWithArtifact()
     const { POST } = await loadHandler()
@@ -179,6 +207,6 @@ describe("POST /api/cortex-cowork/sessions/[sessionId]/artifacts/[artifactId]/ex
       params: Promise.resolve({ sessionId, artifactId }),
     })
 
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(401)
   })
 })

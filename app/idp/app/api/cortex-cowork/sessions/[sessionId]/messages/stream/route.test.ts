@@ -3,6 +3,8 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import type * as CortexService from "@cortex/service"
+import { setGrants } from "@/lib/cortex-governance/testing/grants"
 
 // Extension of the tile-level auth gate (Obsidian task note, "Rozszerzenie:
 // 5 dodatkowych route'ów") to a route the original 4-handler pass left
@@ -16,10 +18,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 // "did the handler do real work" without needing to drain or mock the SSE
 // stream / chat engine.
 
+
+// Open mode stopped meaning "no restrictions" on 30.07.2026: it still skips
+// the governance ROLE filter, but the caller must hold the cortex-cowork
+// grant in system_config (see lib/cortex-governance/bootstrap-trust.ts).
+// Mocked so this suite stays DB-free; setGrants() drives it per test.
+const GRANTED_EMAIL = "granted@example.com"
+
+vi.mock("@cortex/service", async (importOriginal) => {
+  const actual = await importOriginal<typeof CortexService>()
+  const { fakeRequireTileAccess } = await import("@/lib/cortex-governance/testing/grants")
+  return { ...actual, requireTileAccess: fakeRequireTileAccess }
+})
+
 let dataDir: string
 
 beforeEach(() => {
   vi.resetModules()
+  setGrants({ [GRANTED_EMAIL]: ["cortex-cowork"] })
   vi.unstubAllEnvs()
   dataDir = mkdtempSync(path.join(tmpdir(), "cortex-cowork-messages-stream-route-test-"))
   vi.stubEnv("COWORK_DATA_DIR", dataDir)
@@ -154,14 +170,27 @@ describe("POST /api/cortex-cowork/sessions/[sessionId]/messages/stream", () => {
     const sessionId = await createSession()
     const { POST } = await loadHandler()
 
-    const response = await POST(postRequest("whoever@example.com"), {
+    const response = await POST(postRequest(GRANTED_EMAIL), {
       params: Promise.resolve({ sessionId }),
     })
 
     expect(response.status).toBe(200)
   })
 
-  it("bootstrap/open mode: still opens the stream with no email header - open mode has zero restrictions", async () => {
+  // The most expensive route in the module to leave open: it drives the LLM.
+  it("bootstrap/open mode: denies a caller without the cortex-cowork grant (403)", async () => {
+    await writeConfig(openConfig())
+    const sessionId = await createSession()
+    const { POST } = await loadHandler()
+
+    const response = await POST(postRequest("nobody@example.com"), {
+      params: Promise.resolve({ sessionId }),
+    })
+
+    expect(response.status).toBe(403)
+  })
+
+  it("bootstrap/open mode: denies opening the stream with no email header (401)", async () => {
     await writeConfig(openConfig())
     const sessionId = await createSession()
     const { POST } = await loadHandler()
@@ -170,6 +199,6 @@ describe("POST /api/cortex-cowork/sessions/[sessionId]/messages/stream", () => {
       params: Promise.resolve({ sessionId }),
     })
 
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(401)
   })
 })

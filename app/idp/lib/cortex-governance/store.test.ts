@@ -5,7 +5,13 @@ import type {
 } from "@cortex/types"
 import { grantMatches, secretPathGranted } from "@cortex/types"
 import { describe, expect, it } from "vitest"
-import { grantedConnectors, isAdmin, rolesForUser, visibleProjectsFor } from "./store"
+import {
+  grantedConnectors,
+  isBootstrapAdminMode,
+  isExplicitAdmin,
+  rolesForUser,
+  visibleProjectsFor,
+} from "./store"
 
 function project(overrides: Partial<CoworkProjectConfig> = {}): CoworkProjectConfig {
   return {
@@ -100,17 +106,38 @@ describe("grantedConnectors", () => {
   })
 })
 
-describe("isAdmin bootstrap", () => {
-  it("treats everyone as admin while adminEmails is empty", () => {
-    expect(isAdmin(config({ adminEmails: [] }), "anyone@x.pl")).toBe(true)
-    expect(isAdmin(config({ adminEmails: [] }), undefined)).toBe(true)
+// This block used to assert the OPPOSITE, on isAdmin(), and pinned the
+// vulnerability as intended behaviour:
+//
+//   expect(isAdmin(config({ adminEmails: [] }), "anyone@x.pl")).toBe(true)
+//   expect(isAdmin(config({ adminEmails: [] }), undefined)).toBe(true)
+//
+// The second line is a test asserting that an ANONYMOUS caller administers a
+// fresh instance. isAdmin() no longer exists (see the note in store.ts): an
+// empty adminEmails list is now only one INPUT to the decision, and the
+// decision itself needs the caller's system_config grant, which this file
+// cannot see. What is left here is the pair of pure predicates, and the rule
+// that neither of them alone says "yes, you are an admin" - proven at the
+// gate in admin-gate.test.ts.
+describe("admin predicates", () => {
+  it("reports bootstrap mode from an empty adminEmails list, for ANY caller", () => {
+    // Deliberately the same answer for an identified and an anonymous caller:
+    // this predicate describes the DOCUMENT, not the requester. Reading it as
+    // "and therefore they may administer" is the bug that was here.
+    expect(isBootstrapAdminMode(config({ adminEmails: [] }))).toBe(true)
+    expect(isBootstrapAdminMode(config({ adminEmails: ["boss@x.pl"] }))).toBe(false)
   })
 
-  it("locks down once an admin email is set", () => {
+  it("never treats an unnamed caller as an explicit admin, bootstrap or not", () => {
+    expect(isExplicitAdmin(config({ adminEmails: [] }), "anyone@x.pl")).toBe(false)
+    expect(isExplicitAdmin(config({ adminEmails: [] }), undefined)).toBe(false)
+  })
+
+  it("recognises a named admin case-insensitively once the list is set", () => {
     const cfg = config({ adminEmails: ["boss@x.pl"] })
-    expect(isAdmin(cfg, "boss@x.pl")).toBe(true)
-    expect(isAdmin(cfg, "BOSS@X.PL")).toBe(true)
-    expect(isAdmin(cfg, "other@x.pl")).toBe(false)
+    expect(isExplicitAdmin(cfg, "boss@x.pl")).toBe(true)
+    expect(isExplicitAdmin(cfg, "BOSS@X.PL")).toBe(true)
+    expect(isExplicitAdmin(cfg, "other@x.pl")).toBe(false)
   })
 })
 
@@ -167,12 +194,23 @@ describe("visibleProjectsFor", () => {
     expect(visibleProjectsFor(cfg, undefined)).toEqual([])
   })
 
-  // The other half of the same rule: bootstrap stays open on purpose, exactly
-  // as requireProjectAccess() treats it (see denyAnonymous in project-gate.ts).
-  it("still shows enabled projects without identity while in open mode", () => {
+  // The other half of the same rule, and the half that was still open until
+  // 30.07.2026. This assertion used to read "still SHOWS enabled projects
+  // without identity while in open mode" - and open mode is the state every
+  // fresh instance starts in, so in practice the anonymous leak this file
+  // claimed to have closed was still reachable on exactly the deployments
+  // that matter. No identity, no projects, in every mode.
+  it("returns nothing for a request without identity in open mode too", () => {
+    const cfg = config({ projects: [project({ id: "a" }), project({ id: "b" })] })
+    expect(visibleProjectsFor(cfg, undefined)).toEqual([])
+  })
+
+  // Open mode keeps doing its actual job for an IDENTIFIED caller: no role
+  // has been assigned yet, so the role filter cannot be what decides.
+  it("still shows enabled projects to an identified caller in open mode", () => {
     const cfg = config({ projects: [project({ id: "a" }), project({ id: "b" })] })
     expect(
-      visibleProjectsFor(cfg, undefined)
+      visibleProjectsFor(cfg, "u@x.pl")
         .map((p) => p.id)
         .sort(),
     ).toEqual(["a", "b"])

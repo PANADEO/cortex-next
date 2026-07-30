@@ -104,6 +104,16 @@ export const DEPARTMENT_CATEGORIES: ReadonlyArray<{
  */
 export const COWORK_APP_CODE = "cortex-cowork"
 
+/**
+ * Kod panelu governance (kafelek "Cortex Config") w rejestrze `applications`.
+ * Wpis w TILES niżej używa tego samego łańcucha jako `id` — stała istnieje, bo
+ * od 30.07.2026 pyta o niego także bramka MODUŁU (requireAdmin w
+ * lib/cortex-governance/admin-gate.ts), a nie tylko powłoka. Literał w dwóch
+ * bramkach, które muszą się zgadzać, to dokładnie ten rodzaj rozjazdu, przez
+ * który panel wpuszcza kogoś, kogo hub już nie pokazuje.
+ */
+export const CORTEX_CONFIG_APP_CODE = "cortex-config"
+
 // Task-chat tiles are NOT listed here: they come from the cortex-config
 // governance store and are merged into the hub grid at render time (see
 // useCoworkProjectTiles). This array holds only code-backed tiles.
