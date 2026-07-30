@@ -57,6 +57,13 @@ services:
       CORTEX_PROXY_URL: ${CORTEX_PROXY_URL:-http://host.docker.internal:8240}
       # Pusty = brak nagłówka Authorization. NIE wpisywać tu prawdziwego klucza.
       CORTEX_PROXY_API_KEY: ${CORTEX_PROXY_API_KEY:-}
+      # INNY SEKRET niż powyższy — kafelek "Raportowanie Tokenów" (GET /usage).
+      # CORTEX_PROXY_API_KEY idzie jako "Authorization: Bearer" do
+      # /v1/chat/completions i proxy i tak nadpisuje go kluczem upstreamu;
+      # ten tutaj idzie jako "X-Admin-API-Key" i jest sprawdzany przeciwko
+      # ADMIN_API_KEY w env cortex-proxy. Pomylenie ich daje ciche 401.
+      # Puste = kafelek zwraca 503, reszta aplikacji działa normalnie.
+      CORTEX_PROXY_ADMIN_API_KEY: ${CORTEX_PROXY_ADMIN_API_KEY:-}
       # Administrator instancji, deklaratywnie — patrz packages/@cortex/db db:seed.
       # Usunięcie tej zmiennej odbiera kontu automatyczne przywracanie dostępu.
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}

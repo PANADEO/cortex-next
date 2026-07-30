@@ -9,6 +9,7 @@ Status: 29.07.2026. Pełny obraz stanu przejściowego — część modułów jes
 | Okna czasowe | skany JustWatch | `app/idp/.data/okna-czasowe/*.json` | bez zmian teraz, jak wyżej |
 | Konfiguracja Systemu (Ścieżka E, budowane) | users/role/permissions/rejestr kafelków | — (jeszcze nie istnieje) | Postgres, schema `system_config`, od startu na docelowym wzorcu |
 | Ilustromat (integracja, budowane) | generowane obrazy, szablony marki | **poza cortex-frontend** — żyje w osobnym serwisie Ilustromat | bez zmian — to `code-integration`, nie nasze dane |
+| Raportowanie Tokenów | zużycie tokenów i liczba żądań | **poza cortex-frontend** — SQLite w kontenerze cortex-proxy (`./data/cortex-proxy.db`), czytane przez `GET /usage` | bez zmian — `code-integration`, nie nasze dane |
 | Asystent Onboardingowy / FAQ HR | wiedza (Knowledge), historia rozmów | **poza cortex-frontend** — żyje w OpenWebUI | bez zmian — `external-link`, zero danych po naszej stronie |
 
 ## Zasada

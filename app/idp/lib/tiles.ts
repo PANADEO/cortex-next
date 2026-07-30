@@ -1,6 +1,6 @@
 import type { CoworkTileArchetype } from "@cortex/types"
 import type { LucideIcon } from "lucide-react"
-import { CalendarClock, FileSpreadsheet, FileText, Image, Receipt, ScanText, Settings, ShieldCheck, Users, Video, Workflow } from "lucide-react"
+import { BarChart3, CalendarClock, FileSpreadsheet, FileText, Image, Receipt, ScanText, Settings, ShieldCheck, Users, Video, Workflow } from "lucide-react"
 import { canAccessAiTool, isAiToolId } from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
@@ -207,6 +207,24 @@ export const TILES: ReadonlyArray<Tile> = [
     iconFg: "text-violet-700 dark:text-violet-300",
     categoryFunctional: "content-generation",
     categoryDepartment: ["marketing"],
+    archetype: "dashboard",
+  },
+  {
+    // Port warstwy PREZENTACJI z cortex-admin (token_usage.py). Backend zostaje
+    // tam, gdzie był: dane zbiera i agreguje cortex-proxy we własnym SQLite,
+    // my czytamy je przez GET /usage (code-integration). Zero własnych tabel.
+    //
+    // Admin-only w praktyce: raport pokazuje aktywność wszystkich użytkowników
+    // instancji, więc grant w seedzie dostaje wyłącznie rola administracyjna.
+    id: "token-usage",
+    label: "Raportowanie Tokenów",
+    description: "Zużycie tokenów i liczba żądań przechodzących przez cortex-proxy",
+    href: "/token-usage",
+    icon: BarChart3,
+    iconBg: "bg-sky-200 dark:bg-sky-900/40",
+    iconFg: "text-sky-700 dark:text-sky-300",
+    categoryFunctional: "admin-system",
+    categoryDepartment: ["it"],
     archetype: "dashboard",
   },
   {

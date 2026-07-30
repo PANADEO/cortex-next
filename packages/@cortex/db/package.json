@@ -13,7 +13,8 @@
     "db:seed": "node scripts/seed-system-config.mjs",
     "db:generate:ilustromat": "drizzle-kit generate --config drizzle.ilustromat.config.ts",
     "db:migrate:ilustromat": "drizzle-kit migrate --config drizzle.ilustromat.config.ts",
-    "db:seed:ilustromat": "node scripts/seed-ilustromat.mjs"
+    "db:seed:ilustromat": "node scripts/seed-ilustromat.mjs",
+    "db:seed:token-usage": "node scripts/seed-token-usage.mjs"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.0",

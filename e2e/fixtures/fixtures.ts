@@ -11,6 +11,7 @@ import type { Page } from "@playwright/test"
 import { closeDb, seedScenario, type ScenarioName, type ScenarioResult } from "./db-seed"
 import { IlustromatGenerowaniePage } from "../poms/ilustromat/generowanie-page"
 import { IlustromatSzablonyPage } from "../poms/ilustromat/szablony-page"
+import { TokenUsagePage } from "../poms/token-usage/token-usage-page"
 import { UsersPage } from "../poms/system-config/users-page"
 
 /**
@@ -31,6 +32,7 @@ interface TestFixtures {
   usersPage: UsersPage
   ilustromatGenerowaniePage: IlustromatGenerowaniePage
   ilustromatSzablonyPage: IlustromatSzablonyPage
+  tokenUsagePage: TokenUsagePage
 }
 
 interface WorkerFixtures {
@@ -63,6 +65,10 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 
   ilustromatSzablonyPage: async ({ page }, use) => {
     await use(new IlustromatSzablonyPage(page))
+  },
+
+  tokenUsagePage: async ({ page }, use) => {
+    await use(new TokenUsagePage(page))
   },
 })
 
