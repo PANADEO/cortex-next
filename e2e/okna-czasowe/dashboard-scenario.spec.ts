@@ -7,8 +7,18 @@
 //
 // docs/data-locations.md: ten moduł ŚWIADOMIE nie jest migrowany do Postgresa,
 // więc pliki JSON są tu docelowym nośnikiem, nie stanem przejściowym.
+//
+// ⚠️ WYMAGA POSTGRESA (zmiana z 30.07.2026). Nośnikiem danych są dalej pliki,
+// ale API modułu stoi od tej pory za `requireTileAccess()` na @cortex/db, więc
+// samo zamockowanie powłoki (`mockShellAccess`) już nie wystarcza: bez
+// prawdziwego grantu route'y oddają 403 i tabela zostaje pusta. Stąd DWIE
+// warstwy w każdym teście — `seed("okna-czasowe-user")` + `asUser()` na RBAC
+// modułu i `mockShellAccess()` na AppGate. Ten sam układ co e2e/ilustromat.
+//
+// Uruchomienie: DATABASE_URL musi wskazywać bazę DO WYRZUCENIA — seedScenario()
+// czyści cały schemat system_config (patrz nagłówek e2e/fixtures/db-seed.ts).
 
-import { expect, test } from "@playwright/test"
+import { asUser, expect, test } from "../fixtures/fixtures"
 import {
   OKNA_AVAILABLE_FILM,
   OKNA_UNAVAILABLE_FILM,
@@ -18,10 +28,16 @@ import { OknaCzasoweDashboardPage } from "../poms/okna-czasowe/dashboard-page"
 import { mockIdpConfig } from "../support/mocks/idp-config"
 import { mockShellAccess } from "../support/mocks/shell-access"
 
-const EMAIL = "demo@cortex.local"
+// Pierwszy test w przebiegu płaci za kompilację strony i route'ów przez dev
+// server — patrz ten sam komentarz w e2e/ilustromat/ilustromat-scenario.spec.ts.
+test.describe.configure({ timeout: 90_000 })
 
-async function openDashboard(page: Parameters<typeof mockIdpConfig>[0]) {
-  await mockShellAccess(page, { email: EMAIL, apps: ["okna-czasowe"] })
+async function openDashboard(
+  page: Parameters<typeof mockIdpConfig>[0],
+  email: string,
+): Promise<OknaCzasoweDashboardPage> {
+  await asUser(page, email)
+  await mockShellAccess(page, { email, apps: ["okna-czasowe"] })
   await mockIdpConfig(page)
   const dashboard = new OknaCzasoweDashboardPage(page)
   await dashboard.goto()
@@ -29,19 +45,24 @@ async function openDashboard(page: Parameters<typeof mockIdpConfig>[0]) {
 }
 
 test.describe("Okna czasowe — dashboard", () => {
-  test("pusty stan: brak plików danych daje komunikat zamiast pustej tabeli", async ({ page }) => {
+  test("pusty stan: brak plików danych daje komunikat zamiast pustej tabeli", async ({
+    page,
+    seed,
+  }) => {
+    const { email } = await seed("okna-czasowe-user")
     await seedOknaCzasowe("empty")
 
-    const dashboard = await openDashboard(page)
+    const dashboard = await openDashboard(page, email)
 
     await expect(dashboard.heading).toBeVisible()
     await expect(dashboard.emptyState).toBeVisible()
   })
 
-  test("dane z plików JSON trafiają do liczników i do tabeli", async ({ page }) => {
+  test("dane z plików JSON trafiają do liczników i do tabeli", async ({ page, seed }) => {
+    const { email } = await seed("okna-czasowe-user")
     await seedOknaCzasowe("two-films-one-available")
 
-    const dashboard = await openDashboard(page)
+    const dashboard = await openDashboard(page, email)
 
     await expect(dashboard.emptyState).toHaveCount(0)
     // Dwa filmy w films.json, jeden ze snapshotem available:true.
@@ -56,10 +77,12 @@ test.describe("Okna czasowe — dashboard", () => {
 
   test("wiersz filmu pokazuje dostępność, typ oferty i cenę z ostatniego snapshotu", async ({
     page,
+    seed,
   }) => {
+    const { email } = await seed("okna-czasowe-user")
     await seedOknaCzasowe("two-films-one-available")
 
-    const dashboard = await openDashboard(page)
+    const dashboard = await openDashboard(page, email)
 
     const available = dashboard.filmRow(OKNA_AVAILABLE_FILM)
     await expect(available).toContainText("Dostępny")
@@ -77,7 +100,8 @@ test.describe("Okna czasowe — dashboard", () => {
     await expect(unavailable).not.toContainText("RENT")
   })
 
-  test('"Skanuj teraz" uderza w POST /api/okna-czasowe/scan', async ({ page }) => {
+  test('"Skanuj teraz" uderza w POST /api/okna-czasowe/scan', async ({ page, seed }) => {
+    const { email } = await seed("okna-czasowe-user")
     await seedOknaCzasowe("two-films-one-available")
 
     // Skan wychodzi do publicznego API JustWatch, więc w teście przechwytujemy
@@ -104,7 +128,7 @@ test.describe("Okna czasowe — dashboard", () => {
       })
     })
 
-    const dashboard = await openDashboard(page)
+    const dashboard = await openDashboard(page, email)
     await dashboard.scanButton.click()
 
     await expect(page.getByText("Skan zakończony: 2 filmów")).toBeVisible()

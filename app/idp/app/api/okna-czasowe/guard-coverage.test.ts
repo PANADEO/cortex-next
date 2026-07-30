@@ -1,45 +1,56 @@
-// ⚠️ TEN PLIK DOKUMENTUJE LUKĘ, NIE POTWIERDZA POPRAWNOŚCI.
+// Pokrycie bramki dla CAŁEJ powierzchni /api/okna-czasowe, na ścieżce ŻĄDANIA.
 //
-// Moduł "Okna czasowe" nie ma ŻADNEJ bramki dostępu na ścieżce żądania. Żaden
-// z pięciu plików route.ts pod /api/okna-czasowe nie woła `requireTileAccess()`
-// (@cortex/service), `requireAdmin()` ani nawet `getRequestEmail()` — pełny
-// odczyt, zapis, usunięcie i uruchomienie skanu są dostępne dla dowolnego
-// żądania, bez tożsamości. `app/idp/middleware.ts` też nic tu nie sprawdza:
-// przepisuje wyłącznie ścieżki innych kafelków, a dla /api/** robi
-// NextResponse.next().
+// Historia tego pliku: do 30.07.2026 były to testy CHARAKTERYZACYJNE — moduł nie
+// miał żadnej autoryzacji (anonimowy POST /films → 201 Created, anonimowy DELETE
+// kasował cudzy rekord, anonimowy POST /scan wypuszczał ruch wychodzący do
+// JustWatch), a testy utrwalały ten stan jako wykonywalny dowód luki. Bramka
+// (_lib/guard.ts, requireTileAccess) domknęła go, więc plik jest dziś normalnym
+// testem bramki: te same scenariusze, odwrócone oczekiwania.
 //
-// RBAC tego kafelka jest dziś WYŁĄCZNIE wizualny: `AppGate` (komponent React)
-// sprawdza `canAccessTile(apps, "okna-czasowe")` przed wyrenderowaniem strony.
-// AppGate nigdy nie owija Route Handlerów — to dokładnie ta sama klasa błędu,
-// którą project-gate.ts opisuje dla sesji Cortex Cowork ("AppGate is a
-// client-side React component that never wraps Route Handlers, which is exactly
-// the gap this closes"), tyle że tutaj nikt jej jeszcze nie zamknął.
+// Kluczowa własność: NIE MA tu ręcznej listy endpointów. `import.meta.glob`
+// wciąga każdy route.ts modułu z dysku, więc nowy endpoint dodany bez bramki
+// zapala ten plik od razu, bez edycji testu.
 //
-// Testy niżej są CHARAKTERYZACJĄ stanu obecnego: asertują to, co kod robi dziś,
-// żeby luka miała wykonywalny dowód, a nie tylko akapit w notatce. W chwili
-// dodania bramki zrobią się czerwone — wtedy trzeba je przepisać na oczekiwane
-// 401/403, a nie „naprawić" przez rozluźnienie asercji.
-//
-// Nie naprawiane tutaj świadomie: to zmiana logiki produkcyjnej, a zadaniem tej
-// zmiany było dopisanie testów. Opis z dowodem (live curl, 201 Created na
-// anonimowym POST): Obsidian PROJECT/cortex-frontend-testy-pozostalych-kafelkow.md.
+// Klasa błędu, którą to łapie: RBAC widoczny wyłącznie w UI. `AppGate` to
+// komponent React, który nigdy nie owija Route Handlerów — dokładnie ta sama
+// diagnoza, którą project-gate.ts postawił dla sesji Cortex Cowork.
 
-import { mkdtempSync, readFileSync, rmSync } from "node:fs"
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import type { Film } from "@/features/okna-czasowe/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+
+// Podmieniany jest WYŁĄCZNIE odczyt uprawnień z bazy — sama bramka
+// (requireTileAccess) zostaje prawdziwa. Inaczej test dowodziłby poprawności
+// mocka, a nie kodu, który stoi na ścieżce żądania.
+const loadGrantedApplicationCodes = vi.hoisted(() => vi.fn<(email: string) => Promise<string[]>>())
+const loadGrantedScopes = vi.hoisted(() => vi.fn<(email: string) => Promise<string[]>>())
+
+vi.mock("@cortex/service/rbac-store", () => ({ loadGrantedApplicationCodes, loadGrantedScopes }))
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH"
 const HTTP_METHODS: HttpMethod[] = ["GET", "POST", "PUT", "DELETE", "PATCH"]
 
 type Handler = (request: unknown, context?: unknown) => Promise<Response>
 
-// scan/route.ts celowo poza globem: jego handler woła publiczne API JustWatch
-// po sieci. Jest omówiony osobnym testem niżej, ze stubem fetch.
-const routeModules = import.meta.glob<Record<string, unknown>>("./{data,films,log}/**/route.ts")
+const ENTITLEMENT = "okna-czasowe"
+const GRANTED_EMAIL = "uprawniony@firma.pl"
+
+// Wszystkie route'y modułu, ze scan/ włącznie: przy odmowie scan NIE MA prawa
+// dotknąć sieci, więc iterowanie po nim jest bezpieczne i jest sednem sprawy.
+const routeModules = import.meta.glob<Record<string, unknown>>("./**/route.ts")
+
+const ROUTE_SOURCES = [
+  "data/route.ts",
+  "films/route.ts",
+  "films/[id]/route.ts",
+  "log/route.ts",
+  "scan/route.ts",
+]
 
 let dataDir: string
+let fetchSpy: ReturnType<typeof vi.fn>
 
 const SEEDED_FILM: Film = {
   id: "film-1",
@@ -60,17 +71,31 @@ function readFilmsFromDisk(): Film[] {
   return JSON.parse(readFileSync(path.join(dataDir, "films.json"), "utf8")) as Film[]
 }
 
-/** Żądanie BEZ nagłówka `x-auth-request-email` — czyli takie, jakie dotarłoby
- *  do kontenera z pominięciem oauth2-proxy. */
-function anonymousRequest(method: HttpMethod): unknown {
+/** Pełny stan katalogu danych. Sam kod 401/403 nie wystarcza: handler, który
+ *  najpierw zapisuje, a dopiero potem odmawia, oddawałby poprawny status i
+ *  przechodziłby test statusu. Odmowa musi wyprzedzić KAŻDY zapis. */
+function snapshotDataDir(): Record<string, string> {
+  const snapshot: Record<string, string> = {}
+  for (const entry of readdirSync(dataDir).sort()) {
+    snapshot[entry] = readFileSync(path.join(dataDir, entry), "utf8")
+  }
+  return snapshot
+}
+
+/** Ciało CELOWO poprawne — przejdzie walidację Zod. Gdyby bramka wypadła,
+ *  żądanie ma szansę dojść do 201/200, a nie odbić się o 400 i przypadkiem
+ *  „zaliczyć" test odmowy. */
+function buildRequest(method: HttpMethod, email: string | null): unknown {
   const nextUrl = new URL("http://localhost/api/okna-czasowe")
+  const headers = new Headers({ "content-type": "application/json" })
+  if (email !== null) headers.set("x-auth-request-email", email)
   const init: RequestInit =
     method === "GET" || method === "DELETE"
-      ? { method }
+      ? { method, headers }
       : {
           method,
-          headers: new Headers({ "content-type": "application/json" }),
-          body: JSON.stringify({ title: "Anonimowy Zapis", year: 2026, foreignTitles: [] }),
+          headers,
+          body: JSON.stringify({ title: "Film z żądania", year: 2026, foreignTitles: [] }),
         }
   const request = new Request(nextUrl, init) as Request & { nextUrl: URL }
   request.nextUrl = nextUrl
@@ -79,16 +104,60 @@ function anonymousRequest(method: HttpMethod): unknown {
 
 const ROUTE_CONTEXT = { params: Promise.resolve({ id: SEEDED_FILM.id }) }
 
+async function handlersOf(
+  load: () => Promise<Record<string, unknown>>,
+): Promise<{ method: HttpMethod; handler: Handler }[]> {
+  const routeModule = await load()
+  return HTTP_METHODS.filter((method) => typeof routeModule[method] === "function").map(
+    (method) => ({ method, handler: routeModule[method] as Handler }),
+  )
+}
+
+/** Brak tożsamości to 401, tożsamość bez grantu to 403 — rozróżnienie jest
+ *  częścią kontraktu (zaloguj się vs poproś o uprawnienia), więc test sprawdza
+ *  konkretny kod, nie „którykolwiek z dwóch". */
+const BYPASS_ATTEMPTS = [
+  { label: "brak nagłówka tożsamości", email: null, granted: [] as string[], status: 401 },
+  { label: "obcy e-mail spoza bazy", email: "intruz@obca-firma.pl", granted: [], status: 403 },
+  { label: "znany e-mail bez żadnej roli", email: "bez-roli@firma.pl", granted: [], status: 403 },
+  {
+    label: "rola z grantem do innego kafelka",
+    email: "ktos@firma.pl",
+    granted: ["intrastat", "idp"],
+    status: 403,
+  },
+  {
+    label: "grant do łudząco podobnego kodu",
+    email: "ktos@firma.pl",
+    granted: ["okna-czasowe-admin"],
+    status: 403,
+  },
+]
+
 beforeEach(async () => {
   vi.resetModules()
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
+  loadGrantedApplicationCodes.mockReset()
+  loadGrantedScopes.mockReset()
+  loadGrantedScopes.mockResolvedValue([])
   dataDir = mkdtempSync(path.join(tmpdir(), "okna-czasowe-guard-"))
-  // NODE_ENV=production wyłącza fallback DEV_USER_EMAIL wszędzie tam, gdzie
-  // jakakolwiek bramka by go czytała — czyli „brak nagłówka" znaczy naprawdę
-  // „brak tożsamości", a nie „lokalny dev user".
+  // NODE_ENV=production wyłącza fallback DEV_USER_EMAIL w getRequestEmail() —
+  // bez tego „brak nagłówka" nie znaczyłoby „brak tożsamości", tylko „lokalny
+  // dev user", i cała gałąź 401 byłaby nietestowana.
   vi.stubEnv("NODE_ENV", "production")
   vi.stubEnv("OKNA_CZASOWE_DATA_DIR", dataDir)
+  // Każde wyjście do sieci przechodzi przez tę atrapę: przy odmowie licznik
+  // wywołań ma zostać na zerze (POST /scan woła publiczne API JustWatch).
+  fetchSpy = vi.fn(() =>
+    Promise.resolve(
+      new Response(JSON.stringify({ data: { popularTitles: { edges: [] } } }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    ),
+  )
+  vi.stubGlobal("fetch", fetchSpy)
   await seedFilms([SEEDED_FILM])
 })
 
@@ -98,130 +167,127 @@ afterEach(() => {
   rmSync(dataDir, { force: true, recursive: true })
 })
 
-describe("okna-czasowe — bramka na ścieżce żądania NIE ISTNIEJE (luka udokumentowana)", () => {
-  it("glob odkrywa pliki route.ts modułu", () => {
-    expect(Object.keys(routeModules).length).toBeGreaterThanOrEqual(3)
+describe("okna-czasowe — bramka na ścieżce żądania", () => {
+  it("glob odkrywa wszystkie pliki route.ts modułu", () => {
+    // Bez tego wyczyszczony glob dałby zielony plik bez ani jednej realnej asercji.
+    expect(Object.keys(routeModules).sort()).toEqual(
+      ROUTE_SOURCES.map((source) => `./${source}`).sort(),
+    )
   })
 
-  // Statyczny dowód, niezależny od tego, co zwrócą handlery: w kodzie modułu nie
-  // ma ani jednego wywołania czegokolwiek, co czyta tożsamość żądania. Gdy
-  // ktokolwiek doda bramkę, ten test zapali się jako pierwszy i wskaże, że resztę
-  // pliku trzeba przepisać.
-  it("żaden route.ts modułu nie odwołuje się do tożsamości żądania", () => {
+  // Tripwire statyczny, niezależny od statusów: żaden route modułu nie może
+  // istnieć bez wywołania bramki. Zapala się natychmiast, gdy ktoś ją usunie
+  // albo doda nowy plik bez niej — zanim jeszcze dojdzie do asercji zachowania.
+  it("każdy route.ts modułu woła bramkę", () => {
     const moduleDir = path.dirname(new URL(import.meta.url).pathname)
-    const sources = ["data/route.ts", "films/route.ts", "films/[id]/route.ts", "log/route.ts", "scan/route.ts"]
 
-    for (const source of sources) {
+    for (const source of ROUTE_SOURCES) {
       const code = readFileSync(path.join(moduleDir, source), "utf8")
-      expect(code, `${source} — bramka pojawiła się, zaktualizuj ten plik testów`).not.toMatch(
-        /requireTileAccess|requireAdmin|getRequestEmail|requestEmail|x-auth-request-email/,
-      )
+      expect(code, `${source} — brak wywołania denyUnlessAllowed()`).toMatch(/denyUnlessAllowed/)
     }
   })
+})
 
-  for (const [modulePath, load] of Object.entries(routeModules)) {
-    it(`LUKA (do naprawy): ${modulePath} obsługuje żądanie bez tożsamości zamiast odmówić`, async () => {
-      const routeModule = await load()
-      const handlers = HTTP_METHODS.filter((method) => typeof routeModule[method] === "function")
+for (const [modulePath, load] of Object.entries(routeModules)) {
+  describe(modulePath, () => {
+    it.each(BYPASS_ATTEMPTS)("odmawia $status: $label", async ({ email, granted, status }) => {
+      loadGrantedApplicationCodes.mockResolvedValue(granted)
+      const before = snapshotDataDir()
+      const handlers = await handlersOf(load)
 
       expect(handlers.length).toBeGreaterThan(0)
 
-      for (const method of handlers) {
-        const handler = routeModule[method] as Handler
-        const response = await handler(anonymousRequest(method), ROUTE_CONTEXT)
+      for (const { method, handler } of handlers) {
+        const response = await handler(buildRequest(method, email), ROUTE_CONTEXT)
 
-        // Stan docelowy po naprawie: 401 (brak tożsamości) lub 403 (brak grantu
-        // na kafelek `okna-czasowe`). Stan dzisiejszy: pełna obsługa.
-        expect(response.status, `${modulePath} ${method}`).toBeLessThan(400)
+        expect(response.status, `${modulePath} ${method}`).toBe(status)
+      }
+
+      // Odmowa wyprzedza jakąkolwiek pracę: zero zapisów na dysk i zero ruchu
+      // wychodzącego z serwera.
+      expect(snapshotDataDir()).toEqual(before)
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
+    it("odmawia 403 gdy odczyt uprawnień pada (fail-closed)", async () => {
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+      loadGrantedApplicationCodes.mockRejectedValue(new Error("connection refused"))
+      const before = snapshotDataDir()
+      const handlers = await handlersOf(load)
+
+      for (const { method, handler } of handlers) {
+        const response = await handler(buildRequest(method, GRANTED_EMAIL), ROUTE_CONTEXT)
+
+        expect(response.status, `${modulePath} ${method}`).toBe(403)
+      }
+
+      expect(snapshotDataDir()).toEqual(before)
+      expect(fetchSpy).not.toHaveBeenCalled()
+      consoleError.mockRestore()
+    })
+
+    // Kontrola pozytywna: bez niej wszystkie powyższe asercje przechodziłyby
+    // także wtedy, gdyby moduł był po prostu zepsuty i odmawiał wszystkim.
+    it("przepuszcza użytkownika z grantem na kafelek", async () => {
+      loadGrantedApplicationCodes.mockResolvedValue([ENTITLEMENT])
+      const handlers = await handlersOf(load)
+
+      for (const { method, handler } of handlers) {
+        const response = await handler(buildRequest(method, GRANTED_EMAIL), ROUTE_CONTEXT)
+
+        expect([401, 403], `${modulePath} ${method}`).not.toContain(response.status)
       }
     })
-  }
+  })
+}
 
-  it("LUKA (do naprawy): anonimowy POST /films dopisuje film do pliku na dysku", async () => {
+describe("skutki uboczne, których odmowa nie może wywołać", () => {
+  it("anonimowy POST /films nie dopisuje filmu do pliku na dysku", async () => {
+    loadGrantedApplicationCodes.mockResolvedValue([])
     const { POST } = await import("./films/route")
 
-    const response = await POST(anonymousRequest("POST") as Parameters<typeof POST>[0])
+    const response = await POST(buildRequest("POST", null) as Parameters<typeof POST>[0])
 
-    expect(response.status).toBe(201)
-    expect(readFilmsFromDisk().map((film) => film.title)).toEqual([
-      SEEDED_FILM.title,
-      "Anonimowy Zapis",
-    ])
+    expect(response.status).toBe(401)
+    expect(readFilmsFromDisk()).toEqual([SEEDED_FILM])
   })
 
-  it("LUKA (do naprawy): anonimowy DELETE /films/[id] kasuje cudzy film", async () => {
+  it("anonimowy DELETE /films/[id] nie kasuje cudzego filmu", async () => {
+    loadGrantedApplicationCodes.mockResolvedValue([])
     const { DELETE } = await import("./films/[id]/route")
 
     const response = await DELETE(
-      anonymousRequest("DELETE") as Parameters<typeof DELETE>[0],
+      buildRequest("DELETE", null) as Parameters<typeof DELETE>[0],
       ROUTE_CONTEXT,
     )
 
-    expect(response.status).toBe(200)
-    expect(readFilmsFromDisk()).toEqual([])
+    expect(response.status).toBe(401)
+    expect(readFilmsFromDisk()).toEqual([SEEDED_FILM])
   })
 
-  // Druga, niezależna luka tego samego kafelka, od strony POWŁOKI: kod
-  // "okna-czasowe" nie występuje na allowliście AUTHORIZED_APP_CODES
-  // (app/idp/app/api/_lib/access.ts), a getAuthorizedAppsAtCortexAdmin()
-  // filtruje odpowiedź cortex-admina przez tę allowlistę. Skutek: nawet gdy
-  // cortex-admin przyzna użytkownikowi dostęp do tego kafelka, /api/me/access
-  // go NIE zwróci, canAccessTile() zwróci false i AppGate odetnie stronę
-  // każdemu. Sprawdzane zachowaniem prawdziwego route'u, nie grepem po źródle.
-  it("LUKA (do naprawy): /api/me/access wycina kod okna-czasowe, więc kafelek jest nieosiągalny dla wszystkich", async () => {
-    vi.stubEnv("CORTEX_ADMIN_API_BASE_URL", "http://cortex-admin")
-    vi.stubEnv("CORTEX_ADMIN_API_KEY", "admin-key")
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() =>
-        Promise.resolve(
-          new Response(JSON.stringify({ apps: ["okna-czasowe", "intrastat"] }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }),
-        ),
-      ),
-    )
-    const { GET } = await import("../me/access/route")
-
-    const nextUrl = new URL("http://localhost/api/me/access")
-    const request = new Request(nextUrl, {
-      headers: new Headers({ "x-auth-request-email": "ktos@example.com" }),
-    }) as Request & { nextUrl: URL }
-    request.nextUrl = nextUrl
-
-    const response = await GET(request as Parameters<typeof GET>[0])
-    const body = (await response.json()) as { apps: string[] }
-
-    expect(response.status).toBe(200)
-    // Kontrola pozytywna: kod, który JEST na allowliście, przechodzi — czyli
-    // brak `okna-czasowe` to skutek allowlisty, nie zepsutego route'u.
-    expect(body.apps).toContain("intrastat")
-    expect(body.apps).not.toContain("okna-czasowe")
-  })
-
-  // Najdroższy z całej piątki: nie tylko czyta i pisze, ale wypuszcza z serwera
-  // ruch wychodzący do zewnętrznego API — czyli anonimowe żądanie potrafi
-  // wygenerować obciążenie po stronie JustWatch w imieniu tej instalacji.
-  it("LUKA (do naprawy): anonimowy POST /scan uruchamia odpytanie zewnętrznego JustWatch", async () => {
-    const calls: string[] = []
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((input: Parameters<typeof fetch>[0]) => {
-        calls.push(String(input))
-        return Promise.resolve(
-          new Response(JSON.stringify({ data: { popularTitles: { edges: [] } } }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }),
-        )
-      }),
-    )
+  // Najdroższa z odmów: /scan wypuszcza z serwera ruch WYCHODZĄCY do publicznego
+  // API JustWatch, więc bez bramki anonimowe żądanie generowałoby obciążenie po
+  // stronie zewnętrznego serwisu w imieniu tej instalacji. 403 zwrócone PO
+  // wykonaniu skanu byłoby tu bezwartościowe.
+  it("POST /scan bez grantu nie odpytuje zewnętrznego JustWatch", async () => {
+    loadGrantedApplicationCodes.mockResolvedValue(["intrastat"])
     const { POST } = await import("./scan/route")
 
-    const response = await POST()
+    const response = await POST(buildRequest("POST", "ktos@firma.pl") as Parameters<typeof POST>[0])
+
+    expect(response.status).toBe(403)
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it("POST /scan z grantem faktycznie odpytuje JustWatch", async () => {
+    loadGrantedApplicationCodes.mockResolvedValue([ENTITLEMENT])
+    const { POST } = await import("./scan/route")
+
+    const response = await POST(buildRequest("POST", GRANTED_EMAIL) as Parameters<typeof POST>[0])
 
     expect(response.status).toBe(200)
-    expect(calls.some((url) => url.includes("apis.justwatch.com"))).toBe(true)
+    expect(fetchSpy.mock.calls.some(([input]) => String(input).includes("apis.justwatch.com"))).toBe(
+      true,
+    )
   })
 })

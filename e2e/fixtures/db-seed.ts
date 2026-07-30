@@ -40,6 +40,7 @@ import {
 const ADMIN_ROLE_CODE = "admin"
 const SYSTEM_CONFIG_APP_CODE = "system-config"
 const ILUSTROMAT_APP_CODE = "ilustromat"
+const OKNA_CZASOWE_APP_CODE = "okna-czasowe"
 const MANAGE_TEMPLATES_SCOPE = "manage-templates"
 
 export type ScenarioName =
@@ -52,6 +53,10 @@ export type ScenarioName =
   // zmiany marki (warstwa granularna, application_scopes).
   | "ilustromat-user"
   | "ilustromat-template-manager"
+  // Okna czasowe. Kafelek trzyma dane w plikach JSON, ale od 30.07.2026 jego
+  // API stoi za requireTileAccess() na Postgresie, więc E2E ciągnące dane
+  // przez route'y musi nieść PRAWDZIWY grant, nie tylko zamockowaną powłokę.
+  | "okna-czasowe-user"
 
 export interface ScenarioResult {
   /** Wstrzyknij jako nagłówek `x-auth-request-email` żeby "być" tym userem —
@@ -176,6 +181,27 @@ export async function seedScenario(name: ScenarioName): Promise<ScenarioResult> 
 
     case "ilustromat-template-manager":
       return seedIlustromat({ withManageTemplatesScope: true })
+
+    case "okna-czasowe-user": {
+      const email = "okna-czasowe-user@e2e.local"
+      const [user] = await db.insert(users).values({ email, fullName: "Okna czasowe E2E" }).returning()
+      const [role] = await db
+        .insert(roles)
+        .values({ code: "okna-czasowe-e2e", name: "Rola E2E" })
+        .returning()
+      const [app] = await db
+        .insert(applications)
+        .values({
+          code: OKNA_CZASOWE_APP_CODE,
+          name: "Okna czasowe",
+          kind: "native",
+          route: "/okna-czasowe/dashboard",
+        })
+        .returning()
+      await db.insert(userRoles).values({ userId: user!.id, roleId: role!.id })
+      await db.insert(permissionsMatrix).values({ roleId: role!.id, applicationId: app!.id })
+      return { email, applications: [app!] }
+    }
   }
 }
 

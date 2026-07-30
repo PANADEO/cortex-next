@@ -3,12 +3,16 @@ import type { Film } from "@/features/okna-czasowe/types"
 import { store } from "@/lib/okna-czasowe/store"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
+import { denyUnlessAllowed } from "../../_lib/guard"
 
 interface RouteContext {
   params: Promise<{ id: string }>
 }
 
 export async function PUT(request: NextRequest, context: RouteContext): Promise<NextResponse> {
+  const denied = await denyUnlessAllowed(request)
+  if (denied) return denied
+
   const { id } = await context.params
   const parsed = filmInputSchema.safeParse(await request.json())
   if (!parsed.success) {
@@ -39,7 +43,10 @@ export async function PUT(request: NextRequest, context: RouteContext): Promise<
   return NextResponse.json(updated)
 }
 
-export async function DELETE(_request: NextRequest, context: RouteContext): Promise<NextResponse> {
+export async function DELETE(request: NextRequest, context: RouteContext): Promise<NextResponse> {
+  const denied = await denyUnlessAllowed(request)
+  if (denied) return denied
+
   const { id } = await context.params
   const films = await store.listFilms()
   const remaining = films.filter((f) => f.id !== id)
