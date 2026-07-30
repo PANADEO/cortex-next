@@ -1,5 +1,5 @@
 import { buildSkillCatalog } from "@/features/cortex-cowork/server/skills-catalog"
-import { denyAnonymous } from "@/lib/cortex-governance/project-gate"
+import { denyAnonymous } from "@/lib/cortex-governance/bootstrap-trust"
 import { requestEmail } from "@/lib/cortex-governance/request-identity"
 import { readGovernanceConfig } from "@/lib/cortex-governance/store"
 import type { NextRequest } from "next/server"
@@ -19,7 +19,7 @@ import { NextResponse } from "next/server"
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const config = await readGovernanceConfig()
 
-  const anonymous = denyAnonymous(config, requestEmail(request))
+  const anonymous = denyAnonymous(requestEmail(request))
   if (anonymous) return anonymous
 
   return NextResponse.json(await buildSkillCatalog(config))

@@ -3,6 +3,8 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import type * as CortexService from "@cortex/service"
+import { setGrants } from "@/lib/cortex-governance/testing/grants"
 
 // Extension of the tile-level auth gate (Obsidian task note, "Rozszerzenie:
 // 5 dodatkowych route'ów") to a route the original 4-handler pass left
@@ -10,10 +12,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 // check on either GET or POST. Same real-disk-backed pattern as
 // sessions/[sessionId]/route.test.ts.
 
+
+// Open mode stopped meaning "no restrictions" on 30.07.2026: it still skips
+// the governance ROLE filter, but the caller must hold the cortex-cowork
+// grant in system_config (see lib/cortex-governance/bootstrap-trust.ts).
+// Mocked so this suite stays DB-free; setGrants() drives it per test.
+const GRANTED_EMAIL = "granted@example.com"
+
+vi.mock("@cortex/service", async (importOriginal) => {
+  const actual = await importOriginal<typeof CortexService>()
+  const { fakeRequireTileAccess } = await import("@/lib/cortex-governance/testing/grants")
+  return { ...actual, requireTileAccess: fakeRequireTileAccess }
+})
+
 let dataDir: string
 
 beforeEach(() => {
   vi.resetModules()
+  setGrants({ [GRANTED_EMAIL]: ["cortex-cowork"] })
   vi.unstubAllEnvs()
   dataDir = mkdtempSync(path.join(tmpdir(), "cortex-cowork-files-route-test-"))
   vi.stubEnv("COWORK_DATA_DIR", dataDir)
@@ -154,11 +170,23 @@ describe("GET /api/cortex-cowork/sessions/[sessionId]/files", () => {
     const sessionId = await createSession()
     const { GET } = await loadHandler()
 
-    const response = await GET(getRequest("whoever@example.com"), {
+    const response = await GET(getRequest(GRANTED_EMAIL), {
       params: Promise.resolve({ sessionId }),
     })
 
     expect(response.status).toBe(200)
+  })
+
+  it("bootstrap/open mode: denies a caller without the cortex-cowork grant (403)", async () => {
+    await writeConfig(openConfig())
+    const sessionId = await createSession()
+    const { GET } = await loadHandler()
+
+    const response = await GET(getRequest("nobody@example.com"), {
+      params: Promise.resolve({ sessionId }),
+    })
+
+    expect(response.status).toBe(403)
   })
 })
 
@@ -217,10 +245,22 @@ describe("POST /api/cortex-cowork/sessions/[sessionId]/files", () => {
     const sessionId = await createSession()
     const { POST } = await loadHandler()
 
-    const response = await POST(uploadRequest("whoever@example.com"), {
+    const response = await POST(uploadRequest(GRANTED_EMAIL), {
       params: Promise.resolve({ sessionId }),
     })
 
     expect(response.status).toBe(201)
+  })
+
+  it("bootstrap/open mode: denies an upload from a caller without the grant (403)", async () => {
+    await writeConfig(openConfig())
+    const sessionId = await createSession()
+    const { POST } = await loadHandler()
+
+    const response = await POST(uploadRequest("nobody@example.com"), {
+      params: Promise.resolve({ sessionId }),
+    })
+
+    expect(response.status).toBe(403)
   })
 })

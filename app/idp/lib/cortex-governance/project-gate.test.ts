@@ -3,6 +3,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import type * as CortexService from "@cortex/service"
 
 // Regression coverage for the /api/cortex-cowork/sessions/** authorization
 // hole (Obsidian task "cortex2.0-task-tile-level-auth"): every handler used
@@ -24,12 +25,34 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 // store.ts resolves COWORK_DATA_DIR into a module-level constant at import
 // time (see COWORK_DATA_DIR in store.ts); the same trick is already used by
 // app/api/me/access/route.test.ts and app/api/ai-tools/history/route.test.ts.
+//
+// system_config is mocked (30.07.2026): open mode now additionally requires
+// the caller's `cortex-cowork` grant, and this file must stay in the DB-free
+// part of the suite. Everything else here is still real.
+
+const GRANTED_EMAIL = "granted@example.com"
+
+/** Stands in for system_config.applications: who holds which tile grant. */
+let grants: Record<string, string[]>
+
+vi.mock("@cortex/service", async (importOriginal) => {
+  const actual = await importOriginal<typeof CortexService>()
+  return {
+    ...actual,
+    requireTileAccess: vi.fn(async (request: Request, entitlementCode: string) => {
+      const email = request.headers.get("x-auth-request-email")
+      if (!email) return { allowed: false, email: null }
+      return { allowed: (grants[email] ?? []).includes(entitlementCode), email }
+    }),
+  }
+})
 
 let dataDir: string
 
 beforeEach(() => {
   vi.resetModules()
   vi.unstubAllEnvs()
+  grants = { [GRANTED_EMAIL]: ["cortex-cowork"] }
   dataDir = mkdtempSync(path.join(tmpdir(), "cortex-cowork-project-gate-test-"))
   vi.stubEnv("COWORK_DATA_DIR", dataDir)
 })
@@ -110,15 +133,64 @@ async function createSession(projectId: string): Promise<string> {
 }
 
 describe("requireProjectAccess", () => {
-  it("bootstrap/open mode: passes everyone through unchanged (no admins, no role assignments)", async () => {
+  // This test used to assert that open mode "passes everyone through
+  // unchanged", anonymous included, and that is the third request in the
+  // audyt 6.1 proof: POST /api/cortex-cowork/sessions -> 201 for a caller
+  // with no grant, i.e. a billable agent session started by a stranger on a
+  // fresh instance. Open mode still skips the ROLE filter (nothing has been
+  // assigned yet), but no longer the system_config grant.
+  it("bootstrap/open mode: admits an identified caller who holds the cortex-cowork grant", async () => {
     await writeConfig(config()) // adminEmails: [], userAssignments: {} - the default
     const { requireProjectAccess, isDenied } = await import("./project-gate")
 
-    const anyone = await requireProjectAccess(makeRequest("nobody-in-particular@example.com"), "proj-a")
-    const anonymous = await requireProjectAccess(makeRequest(null), "proj-a")
+    const result = await requireProjectAccess(makeRequest(GRANTED_EMAIL), "proj-a")
 
-    expect(isDenied(anyone)).toBe(false)
-    expect(isDenied(anonymous)).toBe(false)
+    expect(isDenied(result)).toBe(false)
+  })
+
+  it("bootstrap/open mode: denies an identified caller without the grant (403)", async () => {
+    await writeConfig(config())
+    const { requireProjectAccess, isDenied } = await import("./project-gate")
+
+    const result = await requireProjectAccess(
+      makeRequest("nobody-in-particular@example.com"),
+      "proj-a",
+    )
+
+    expect(isDenied(result)).toBe(true)
+    if (isDenied(result)) expect(result.status).toBe(403)
+  })
+
+  it("bootstrap/open mode: denies an anonymous request (401)", async () => {
+    await writeConfig(config())
+    const { requireProjectAccess, isDenied } = await import("./project-gate")
+
+    const result = await requireProjectAccess(makeRequest(null), "proj-a")
+
+    expect(isDenied(result)).toBe(true)
+    if (isDenied(result)) expect(result.status).toBe(401)
+  })
+
+  // The grant does not become a master key: it substitutes for the ROLE
+  // filter only while no role has been assigned anywhere.
+  it("bootstrap/open mode: still hides a disabled project from a granted caller", async () => {
+    await writeConfig(config({ projects: [project({ id: "proj-a", enabled: false })] }))
+    const { requireProjectAccess, isDenied } = await import("./project-gate")
+
+    const result = await requireProjectAccess(makeRequest(GRANTED_EMAIL), "proj-a")
+
+    expect(isDenied(result)).toBe(true)
+    if (isDenied(result)) expect(result.status).toBe(403)
+  })
+
+  it("closed/non-bootstrap mode: the grant alone does NOT replace a role assignment", async () => {
+    await writeConfig(closedConfig())
+    const { requireProjectAccess, isDenied } = await import("./project-gate")
+
+    const result = await requireProjectAccess(makeRequest(GRANTED_EMAIL), "proj-a")
+
+    expect(isDenied(result)).toBe(true)
+    if (isDenied(result)) expect(result.status).toBe(403)
   })
 
   it("closed/non-bootstrap mode: denies a user without the project's role (403)", async () => {
@@ -189,14 +261,28 @@ describe("requireProjectAccess", () => {
 })
 
 describe("requireSessionAccess", () => {
-  it("bootstrap/open mode: any authenticated user can reach any session unchanged", async () => {
+  it("bootstrap/open mode: a granted user reaches a session in that project", async () => {
+    await writeConfig(config())
+    const sessionId = await createSession("proj-a")
+    const { requireSessionAccess, isDenied } = await import("./project-gate")
+
+    const result = await requireSessionAccess(makeRequest(GRANTED_EMAIL), sessionId)
+
+    expect(isDenied(result)).toBe(false)
+  })
+
+  // Delegation path: requireSessionAccess loads the session and defers to
+  // requireProjectAccess, so the open-mode grant requirement has to apply
+  // transitively - otherwise a known session id would be the way around it.
+  it("bootstrap/open mode: denies a caller without the grant (403), even with a valid session id", async () => {
     await writeConfig(config())
     const sessionId = await createSession("proj-a")
     const { requireSessionAccess, isDenied } = await import("./project-gate")
 
     const result = await requireSessionAccess(makeRequest("whoever@example.com"), sessionId)
 
-    expect(isDenied(result)).toBe(false)
+    expect(isDenied(result)).toBe(true)
+    if (isDenied(result)) expect(result.status).toBe(403)
   })
 
   it("closed/non-bootstrap mode: denies GET/POST/DELETE-equivalent access to another user's session", async () => {

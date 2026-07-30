@@ -215,11 +215,20 @@ export function isOpenMode(config: CoworkGovernanceConfig): boolean {
   return Object.keys(config.userAssignments).length === 0
 }
 
-function isBootstrapAdminMode(config: CoworkGovernanceConfig): boolean {
+/**
+ * Nobody has been named an administrator yet (fresh instance). NOT a licence
+ * to administer on its own - see bootstrap-trust.ts for what a caller
+ * additionally has to hold while this is true.
+ */
+export function isBootstrapAdminMode(config: CoworkGovernanceConfig): boolean {
   return config.adminEmails.length === 0
 }
 
-function isExplicitAdmin(config: CoworkGovernanceConfig, email: string | undefined): boolean {
+/** Named in adminEmails. The only unconditional admin answer this file gives. */
+export function isExplicitAdmin(
+  config: CoworkGovernanceConfig,
+  email: string | undefined,
+): boolean {
   return config.adminEmails.some((admin) => emailsMatch(admin, email))
 }
 
@@ -229,16 +238,24 @@ export function rolesForUser(config: CoworkGovernanceConfig, email: string): Cow
   return config.roles.filter((role) => roleIds.includes(role.id))
 }
 
-/**
- * Admin check with the same bootstrap semantics as role assignments: while
- * adminEmails is empty (fresh install) every authenticated user may
- * administer, so the first admin can bootstrap from the UI. Adding the first
- * email locks the panel down.
- */
-export function isAdmin(config: CoworkGovernanceConfig, email: string | undefined): boolean {
-  if (isBootstrapAdminMode(config)) return true
-  return isExplicitAdmin(config, email)
-}
+// isAdmin(config, email) USED TO LIVE HERE and was removed on 30.07.2026.
+// It read:
+//
+//   if (isBootstrapAdminMode(config)) return true
+//   return isExplicitAdmin(config, email)
+//
+// - i.e. while adminEmails was empty it answered true for EVERY caller,
+// including one with no identity at all (email === undefined). Since
+// governance.json is gitignored and ships as an empty volume, that was the
+// starting state of every new deployment, and requireAdmin() was its only
+// caller. Live proof of what it granted an unauthenticated request is in the
+// Obsidian note (audyt 6.1 + "Naprawa").
+//
+// It is gone rather than corrected because the correct rule cannot be
+// expressed here: it depends on the caller's system_config grant, which is
+// neither in this document nor readable synchronously. The decision now lives
+// in the async gates - see bootstrap-trust.ts - and callers compose
+// isExplicitAdmin() with isBootstrapAdminMode() instead.
 
 /**
  * Projects a user should see as tiles: enabled, and either open mode, or the
@@ -246,25 +263,31 @@ export function isAdmin(config: CoworkGovernanceConfig, email: string | undefine
  * everything (to reach misconfigured tiles); bootstrap-admin does NOT bypass
  * the role filter once assignments exist.
  *
- * NO IDENTITY MEANS NO PROJECTS. Until 30.07.2026 a missing email fell into
- * the same branch as open mode and returned EVERY enabled project - so an
- * anonymous GET /api/cortex-cowork/projects (oauth2-proxy bypassed) got the
- * names, descriptions and briefs of all of them, in closed mode too. An
- * unidentified caller holds no role assignment, so the role filter must
- * answer with an empty list, not with everything. Open mode is intentionally
- * unaffected: while no assignment exists at all, every enabled project is
- * visible to everyone by design (see isOpenMode).
+ * NO IDENTITY MEANS NO PROJECTS, IN EVERY MODE. Until 30.07.2026 a missing
+ * email fell into the same branch as open mode and returned EVERY enabled
+ * project - so an anonymous GET /api/cortex-cowork/projects (oauth2-proxy
+ * bypassed) got the names, descriptions and briefs of all of them. The first
+ * round of that fix only closed it for CLOSED mode and left open mode - the
+ * state every fresh instance is in - still answering an anonymous caller with
+ * everything. An unidentified caller holds no role assignment and no grant,
+ * so the filter answers with an empty list regardless of mode; the callers
+ * reject it outright before ever getting here (denyAnonymous).
+ *
+ * Open mode still skips the ROLE filter for an identified caller, which is
+ * its purpose - nobody has been assigned a role yet. What it does not skip is
+ * the system_config grant, and that is enforced by the gates, not here (see
+ * bootstrap-trust.ts).
  */
 export function visibleProjectsFor(
   config: CoworkGovernanceConfig,
   email: string | undefined,
 ): CoworkProjectConfig[] {
+  if (!email) return []
   const openMode = isOpenMode(config)
   const explicitAdmin = isExplicitAdmin(config, email)
   return config.projects.filter((project) => {
     if (!project.enabled) return false
     if (openMode || explicitAdmin) return true
-    if (!email) return false
     const userRoleIds = new Set(config.userAssignments[email.toLowerCase()] ?? [])
     return project.allowedRoleIds.some((roleId) => userRoleIds.has(roleId))
   })

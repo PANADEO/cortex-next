@@ -20,11 +20,23 @@
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
+import { setGrants } from "@/lib/cortex-governance/testing/grants"
 import type { CoworkGovernanceConfig } from "@cortex/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import type * as CortexService from "@cortex/service"
 
 const ADMIN_EMAIL = "admin@example.com"
 const OUTSIDER_EMAIL = "obcy@example.com"
+/** Ktoś, komu deploy nadał kafelek `cortex-config` — czyli ADMIN_EMAIL z seeda. */
+const DEPLOY_ADMIN_EMAIL = "deploy-admin@example.com"
+
+// Mock system_config: od 30.07.2026 tryb bootstrap pyta o grant na kafelek,
+// zamiast wpuszczać każdego. Suita zostaje bez Postgresa.
+vi.mock("@cortex/service", async (importOriginal) => {
+  const actual = await importOriginal<typeof CortexService>()
+  const { fakeRequireTileAccess } = await import("@/lib/cortex-governance/testing/grants")
+  return { ...actual, requireTileAccess: fakeRequireTileAccess }
+})
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH"
 const HTTP_METHODS: HttpMethod[] = ["GET", "POST", "PUT", "DELETE", "PATCH"]
@@ -127,6 +139,7 @@ const ROUTE_CONTEXT = { params: Promise.resolve({ projectId: "proj-a" }) }
 beforeEach(() => {
   vi.resetModules()
   vi.unstubAllEnvs()
+  setGrants({ [DEPLOY_ADMIN_EMAIL]: ["cortex-config"] })
   dataDir = mkdtempSync(path.join(tmpdir(), "cortex-config-guard-"))
   // NODE_ENV=production wyłącza fallback DEV_USER_EMAIL w requestEmail() —
   // bez tego "brak nagłówka" nie znaczyłoby "brak tożsamości".
@@ -170,6 +183,11 @@ describe("cortex-config — bramka admina na ścieżce żądania", () => {
         }
       })
 
+      // 401, nie 403: od 30.07.2026 bramka rozstrzyga "to żądanie nie ma
+      // ŻADNEJ tożsamości" osobno i PRZED sprawdzeniem uprawnień — dokładnie
+      // ten sam kod i ta sama kolejność co w project-gate.ts. Wcześniej brak
+      // nagłówka szedł prosto do isAdmin(), które w trybie bootstrap mówiło
+      // "tak" (patrz admin-gate.test.ts).
       it("każdy eksportowany handler odmawia żądaniu bez tożsamości i nic nie zapisuje", async () => {
         await writeConfig(closedConfig())
         const routeModule = await load()
@@ -179,6 +197,24 @@ describe("cortex-config — bramka admina na ścieżce żądania", () => {
           const before = dirSnapshot()
           const handler = routeModule[method] as Handler
           const response = await handler(buildRequest(method, null), ROUTE_CONTEXT)
+
+          expect(response.status, `${modulePath} ${method}`).toBe(401)
+          expect(dirSnapshot(), `${modulePath} ${method} zapisał na dysk mimo odmowy`).toBe(before)
+        }
+      })
+
+      // Ta sama pętla, ale na konfiguracji BOOTSTRAP (pusta lista adminów) —
+      // czyli w stanie, w którym startuje każde świeże wdrożenie. To jest
+      // powierzchnia, która do 30.07.2026 odpowiadała 200 na wszystko.
+      it("każdy eksportowany handler odmawia w trybie bootstrap użytkownikowi bez grantu", async () => {
+        await writeConfig({ ...closedConfig(), adminEmails: [] })
+        const routeModule = await load()
+        const handlers = HTTP_METHODS.filter((method) => typeof routeModule[method] === "function")
+
+        for (const method of handlers) {
+          const before = dirSnapshot()
+          const handler = routeModule[method] as Handler
+          const response = await handler(buildRequest(method, OUTSIDER_EMAIL), ROUTE_CONTEXT)
 
           expect(response.status, `${modulePath} ${method}`).toBe(403)
           expect(dirSnapshot(), `${modulePath} ${method} zapisał na dysk mimo odmowy`).toBe(before)
@@ -215,14 +251,20 @@ describe("cortex-config — jawny admin przechodzi (kontrola pozytywna)", () => 
     expect(dirSnapshot()).not.toBe(before)
   })
 
-  // Bootstrap: dopóki adminEmails jest puste, każdy jest adminem — po to, żeby
-  // pierwszy admin mógł się w ogóle dodać z UI (isAdmin() w store.ts). Test
-  // pilnuje, żeby zaostrzenie bramki nie zablokowało świeżej instalacji.
-  it("przy pustej liście adminów przechodzi każdy uwierzytelniony (tryb bootstrap)", async () => {
+  // Bootstrap, wersja po poprawce: dopóki adminEmails jest puste, przechodzi
+  // ten, komu DEPLOY nadał kafelek `cortex-config` — czyli konto z ADMIN_EMAIL,
+  // które seed-system-config.mjs uzgadnia przy każdym wdrożeniu. To jest
+  // LEGALNA ścieżka inicjalizacji świeżego środowiska i ten test jej pilnuje:
+  // gdyby zniknęła, nowej instancji nie dałoby się w ogóle skonfigurować.
+  // Wcześniej ten test brzmiał "przechodzi każdy uwierzytelniony" i utrwalał
+  // lukę z audytu 6.1.
+  it("w trybie bootstrap przechodzi administrator zadeklarowany przez deploy", async () => {
     await writeConfig({ ...closedConfig(), adminEmails: [] })
     const { GET } = await import("./route")
 
-    const response = await GET(buildRequest("GET", OUTSIDER_EMAIL) as Parameters<typeof GET>[0])
+    const response = await GET(
+      buildRequest("GET", DEPLOY_ADMIN_EMAIL) as Parameters<typeof GET>[0],
+    )
 
     expect(response.status).toBe(200)
   })

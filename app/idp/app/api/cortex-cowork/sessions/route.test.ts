@@ -3,6 +3,8 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import type * as CortexService from "@cortex/service"
+import { setGrants } from "@/lib/cortex-governance/testing/grants"
 
 // Route-level proof for the "criterio zrobione" in the Obsidian task note:
 // "User bez roli uprawniającej do projektu X dostaje 403/404 na POST
@@ -11,10 +13,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 // future edit that forgets to call the gate before doing real work would
 // fail this test even if project-gate.test.ts still passed.
 
+
+// Open mode stopped meaning "no restrictions" on 30.07.2026: it still skips
+// the governance ROLE filter, but the caller must hold the cortex-cowork
+// grant in system_config (see lib/cortex-governance/bootstrap-trust.ts).
+// Mocked so this suite stays DB-free; setGrants() drives it per test.
+const GRANTED_EMAIL = "granted@example.com"
+
+vi.mock("@cortex/service", async (importOriginal) => {
+  const actual = await importOriginal<typeof CortexService>()
+  const { fakeRequireTileAccess } = await import("@/lib/cortex-governance/testing/grants")
+  return { ...actual, requireTileAccess: fakeRequireTileAccess }
+})
+
 let dataDir: string
 
 beforeEach(() => {
   vi.resetModules()
+  setGrants({ [GRANTED_EMAIL]: ["cortex-cowork"] })
   vi.unstubAllEnvs()
   dataDir = mkdtempSync(path.join(tmpdir(), "cortex-cowork-sessions-route-test-"))
   vi.stubEnv("COWORK_DATA_DIR", dataDir)
@@ -153,9 +169,31 @@ describe("POST /api/cortex-cowork/sessions", () => {
     })
     const { POST } = await loadHandler()
 
-    const response = await POST(postRequest("nobody-in-particular@example.com", "proj-a"))
+    const response = await POST(postRequest(GRANTED_EMAIL, "proj-a"))
 
     expect(response.status).toBe(201)
+  })
+
+  // THE third request of the audyt 6.1 proof. On a fresh instance (empty
+  // governance.json = open mode) this used to answer 201 for a caller the
+  // shell reports as {"allowed":false,"apps":[]} - a stranger starting a
+  // billable agent session in a sandbox.
+  it("bootstrap/open mode: denies a caller who holds no cortex-cowork grant (403)", async () => {
+    await writeConfig({
+      version: 2,
+      departments: ["wspolne"],
+      skillSources: [],
+      connectors: [],
+      roles: [],
+      userAssignments: {},
+      adminEmails: [],
+      projects: [project()],
+    })
+    const { POST } = await loadHandler()
+
+    const response = await POST(postRequest("nobody-in-particular@example.com", "proj-a"))
+
+    expect(response.status).toBe(403)
   })
 
   // Fail-open regression (code review, 24.07.2026): visibleProjectsFor()'s
@@ -170,7 +208,7 @@ describe("POST /api/cortex-cowork/sessions", () => {
     expect(response.status).toBe(401)
   })
 
-  it("bootstrap/open mode: still creates a session with no email header - open mode has zero restrictions", async () => {
+  it("bootstrap/open mode: denies a session request with no email header (401)", async () => {
     await writeConfig({
       version: 2,
       departments: ["wspolne"],
@@ -185,7 +223,7 @@ describe("POST /api/cortex-cowork/sessions", () => {
 
     const response = await POST(postRequest(null, "proj-a"))
 
-    expect(response.status).toBe(201)
+    expect(response.status).toBe(401)
   })
 })
 
@@ -241,9 +279,28 @@ describe("GET /api/cortex-cowork/sessions", () => {
     await createSessionFor("proj-a")
     const { GET } = await loadHandler()
 
-    const response = await GET(getRequest("nobody-in-particular@example.com", "proj-a"))
+    const response = await GET(getRequest(GRANTED_EMAIL, "proj-a"))
 
     expect(response.status).toBe(200)
+  })
+
+  it("bootstrap/open mode: denies listing to a caller without the grant (403)", async () => {
+    await writeConfig({
+      version: 2,
+      departments: ["wspolne"],
+      skillSources: [],
+      connectors: [],
+      roles: [],
+      userAssignments: {},
+      adminEmails: [],
+      projects: [project()],
+    })
+    await createSessionFor("proj-a")
+    const { GET } = await loadHandler()
+
+    const response = await GET(getRequest("nobody-in-particular@example.com", "proj-a"))
+
+    expect(response.status).toBe(403)
   })
 
   // The headline scenario from the task note: a user with a real, valid role

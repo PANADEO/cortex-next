@@ -75,11 +75,26 @@ test.describe("Cortex Cowork — bramka panelu governance", () => {
     await expect(governance.entityRow("Manager")).toBeVisible()
   })
 
-  test("tryb otwarty: dopóki nikt nie ma przypisanej roli, panel wpuszcza każdego i mówi o tym wprost", async ({
+  // Do 30.07.2026 ten test brzmiał "tryb otwarty: panel wpuszcza każdego" i
+  // utrwalał lukę z audytu 6.1: pusta lista adminEmails (czyli stan KAŻDEGO
+  // świeżego wdrożenia) czyniła administratorem dowolnego użytkownika, a nawet
+  // żądanie bez tożsamości. Dziś bootstrap pyta system_config o grant na
+  // kafelek `cortex-config` — patrz app/idp/lib/cortex-governance/bootstrap-trust.ts.
+  //
+  // UWAGA NA TO, CZEGO TEN TEST NIE DOWODZI. Ta suita jedzie BEZ Postgresa
+  // (playwright.config.ts nie podaje DATABASE_URL), więc odczyt grantu tutaj
+  // zawsze kończy się odmową — fail-closed. Test dowodzi zatem strony
+  // ODMOWNEJ, i to w jej najostrzejszym wariancie: powłoka wpuszcza
+  // (mockShellAccess daje kod `cortex-config`), a moduł i tak odmawia, bo
+  // klient nie może sobie sam nadać grantu podmianą odpowiedzi /api/me/access.
+  //
+  // Strona POZYTYWNA bootstrapu (administrator zadeklarowany przez
+  // ADMIN_EMAIL faktycznie inicjalizuje świeżą instancję) jest sprawdzana tam,
+  // gdzie da się podstawić system_config: admin-gate.test.ts oraz
+  // app/api/cortex-config/guard-coverage.test.ts.
+  test("tryb otwarty: sam grant z powłoki nie wystarcza, moduł odmawia w bootstrapie", async ({
     page,
   }) => {
-    // isAdmin() ma semantykę bootstrapu: pusta lista adminEmails oznacza, że
-    // każdy może administrować — inaczej nikt nie mógłby dodać pierwszego admina.
     await seedCowork("open-mode")
     await mockShellAccess(page, { email: COWORK_ANALYST_EMAIL, apps: ["cortex-config"] })
     await mockIdpConfig(page)
@@ -88,8 +103,9 @@ test.describe("Cortex Cowork — bramka panelu governance", () => {
     const governance = new GovernancePage(page)
     await governance.goto()
 
+    // Powłoka wpuściła (nagłówek strony jest), odmówił dopiero requireAdmin().
     await expect(governance.heading).toBeVisible()
-    await expect(governance.accessDeniedModule).toHaveCount(0)
-    await expect(governance.openModeBanner).toBeVisible()
+    await expect(governance.accessDeniedModule).toBeVisible()
+    await expect(governance.openModeBanner).toHaveCount(0)
   })
 })
