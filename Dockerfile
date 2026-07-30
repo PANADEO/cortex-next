@@ -1,23 +1,22 @@
 FROM node:22-alpine AS base
 
-# UWAGA (30.07.2026): ten Dockerfile jest NIESPÓJNY z repozytorium i build się
-# NIE UDAJE — `cortex-next` jest workspace'em pnpm (pnpm-workspace.yaml,
-# pnpm-lock.yaml, packages/@cortex/*), a etapy niżej instalują przez
-# `npm ci` z package-lock.json, którego w repo nie ma:
-#   ERROR: "/package-lock.json": not found   (zweryfikowane `docker build`)
-# Przyczyna jest preegzystująca i niezwiązana z uprawnieniami — plik nie był
-# aktualizowany od commita wprowadzającego pnpm+turbo. Przełożenie obrazu na
-# pnpm to osobne zadanie (build/deployment), świadomie nietknięte tutaj.
-#
-# DOPÓKI TO NIE ZOSTANIE NAPRAWIONE, usługa `migrate` z docker-compose*.yml
-# (migracje + seed rejestru aplikacji) NIE WSTANIE — a bez niej powłoka na
-# świeżym środowisku odcina wszystkich. To jest twardy warunek wdrożenia tej
-# zmiany na jakiekolwiek środowisko kontenerowe.
+# `packageManager` w package.json (pnpm@10.32.1) pozwala corepackowi dobrać
+# dokładnie tę wersję przy pierwszym użyciu `pnpm` w dowolnym etapie niżej —
+# enable tutaj, raz, w wspólnym przodku wszystkich stage'ów.
+RUN corepack enable
 
 FROM base AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
+# Cały workspace potrzebny PRZED `pnpm install` — pnpm rozwiązuje zależności
+# między pakietami @cortex/* z ich package.json, nie tylko z korzenia.
+# Kopiowanie całego `packages/` (nie tylko plików package.json) jest prostsze
+# i bezpieczniejsze niż selektywne COPY per-pakiet (Docker COPY z globem typu
+# `packages/@cortex/*/package.json` spłaszczyłoby wszystkie do jednego pliku
+# w katalogu docelowym — kolizja nazw) kosztem nieco grubszego cache'a: zmiana
+# w źródle @cortex/* unieważnia tę warstwę, nie tylko zmiana zależności.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages ./packages
+RUN pnpm install --frozen-lockfile
 
 # cowork-runner is a standalone Flue project (spawned as a subprocess per
 # chat turn, not bundled into the Next.js build) with its own lockfile.
@@ -31,14 +30,19 @@ RUN npm ci --ignore-scripts
 
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Całe /app z `deps`, nie tylko korzeniowy node_modules: pnpm tworzy symlinki
+# node_modules WEWNĄTRZ każdego pakietu (packages/@cortex/*/node_modules ->
+# ../../../node_modules/.pnpm/...), więc samo skopiowanie korzenia zerwałoby
+# rozwiązywanie zależności per-pakiet. `.dockerignore` wyklucza node_modules
+# z kontekstu builda, więc kolejny COPY (pełne źródło) niczego tu nie nadpisze.
+COPY --from=deps /app ./
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG VERSION=dev
 ARG NEXT_PUBLIC_BASE_PATH=
 ENV NEXT_PUBLIC_SHELL_VERSION=$VERSION
 ENV NEXT_PUBLIC_BASE_PATH=$NEXT_PUBLIC_BASE_PATH
-RUN npm run build
+RUN pnpm run build
 
 FROM base AS runner
 WORKDIR /app
@@ -89,11 +93,19 @@ COPY --chown=nextjs:nodejs cowork-runner/src ./cowork-runner/src
 # w docker-compose.yml / docker-compose.image.yml), nie część startu serwera.
 # Standalone output ich nie wciąga, bo nie importuje ich żaden kod aplikacji:
 # potrzebne są skrypty .mjs oraz pliki migracji SQL wraz z meta/_journal.json.
-# Skrypty wymagają w runtime `drizzle-orm` i `postgres` — obie są zależnościami
-# @cortex/db i trafiają do standalone przez tracing client.ts, więc rozwiązują
-# się z /app/node_modules.
+#
+# `drizzle-orm`/`postgres` NIE trafiają do /app/node_modules przez tracing
+# Next.js — zweryfikowane realnym `docker run` + `node migrate.mjs`:
+# ERR_MODULE_NOT_FOUND na drizzle-orm, mimo że deps-stage ma je poprawnie
+# zainstalowane (tracer podąża tylko za importami faktycznie użytymi przez
+# route'y/strony, a te skrypty nie są importowane przez żaden kod appki —
+# wcześniejszy komentarz zakładał inaczej, bez sprawdzenia w kontenerze).
+# Osobny, minimalny install tych dwóch pakietów w runtime, niezależny od
+# tracingu — drizzle-kit (devDependency @cortex/db) nie jest tu potrzebny,
+# migrate.mjs woła migrator z samego drizzle-orm.
 COPY --from=builder --chown=nextjs:nodejs /app/packages/@cortex/db/drizzle ./packages/@cortex/db/drizzle
 COPY --chown=nextjs:nodejs packages/@cortex/db/scripts ./packages/@cortex/db/scripts
+RUN pnpm add --prod drizzle-orm@^0.36.0 postgres@^3.4.0
 
 # Skill/connector assets read from disk at runtime (SKILL.md + CLI scripts),
 # not imported by app code, so Next's standalone output tracing misses them.
