@@ -20,6 +20,29 @@ export interface ProjectAccessContext {
 }
 
 /**
+ * The module's single answer to "this request carries no identity at all":
+ * 401, the same code /api/me/access and /api/cortex-cowork/my-instructions
+ * already return. Shared by requireProjectAccess() and by the tile list
+ * (GET /api/cortex-cowork/projects) so both surfaces of the module answer an
+ * anonymous caller identically instead of drifting apart.
+ *
+ * A missing x-auth-request-email header means oauth2-proxy was bypassed, not
+ * "a user with no roles" - that second case is a legitimate 200 with an empty
+ * list (see canAccessTile: an empty grant hides tiles, it is not an error).
+ *
+ * Open mode is intentionally exempt: while no user->role assignment exists at
+ * all, the instance is in bootstrap and every request, anonymous included,
+ * passes by design (isOpenMode in store.ts).
+ */
+export function denyAnonymous(
+  config: CoworkGovernanceConfig,
+  email: string | undefined,
+): NextResponse | null {
+  if (email || isOpenMode(config)) return null
+  return NextResponse.json({ message: "Authentication required" }, { status: 401 })
+}
+
+/**
  * Can this requester create/read/act on sessions for `projectId`? Reuses
  * visibleProjectsFor() - the exact same filter GET /api/cortex-cowork/projects
  * uses to decide which tiles a user sees - instead of a second, parallel
@@ -46,20 +69,8 @@ export async function requireProjectAccess(
 
   const email = requestEmail(request)
 
-  // visibleProjectsFor() treats a missing email as "show everything" - correct
-  // for its original call site (GET /api/cortex-cowork/projects, a UI list
-  // filter: no identity just means an empty-feeling list, nothing is actually
-  // exposed by omission). Reused here as a write/read/delete authorization
-  // gate, that same branch is a fail-open bypass: a request with no
-  // x-auth-request-email header (requestEmail() returning undefined, e.g.
-  // oauth2-proxy bypassed) would otherwise pass in closed/non-bootstrap mode
-  // with zero credentials. Guard against that case here rather than in
-  // visibleProjectsFor() itself, which stays correct for its original,
-  // lower-stakes use. Open mode is intentionally unaffected - during
-  // bootstrap every request, including an anonymous one, passes by design.
-  if (!email && !isOpenMode(config)) {
-    return NextResponse.json({ message: "Authentication required" }, { status: 401 })
-  }
+  const anonymous = denyAnonymous(config, email)
+  if (anonymous) return anonymous
 
   const visible = visibleProjectsFor(config, email).some((candidate) => candidate.id === projectId)
   if (!visible) {

@@ -132,6 +132,10 @@ describe("/api/me/access route handler", () => {
       "cortex-cowork",
       "system-config",
       "ilustromat",
+      // Dopisane 30.07.2026 razem z bramką /api/okna-czasowe/** — bez tego kodu
+      // cortex-admin nie był o kafelek nawet pytany, więc /api/me/access odcinał
+      // go wszystkim (patrz komentarz przy AUTHORIZED_APP_CODES w _lib/access.ts).
+      "okna-czasowe",
       "text-highlighter",
       "text-transformer",
       "text-analyzer",

@@ -245,6 +245,15 @@ export function isAdmin(config: CoworkGovernanceConfig, email: string | undefine
  * user holds one of the project's allowed roles. An EXPLICIT admin sees
  * everything (to reach misconfigured tiles); bootstrap-admin does NOT bypass
  * the role filter once assignments exist.
+ *
+ * NO IDENTITY MEANS NO PROJECTS. Until 30.07.2026 a missing email fell into
+ * the same branch as open mode and returned EVERY enabled project - so an
+ * anonymous GET /api/cortex-cowork/projects (oauth2-proxy bypassed) got the
+ * names, descriptions and briefs of all of them, in closed mode too. An
+ * unidentified caller holds no role assignment, so the role filter must
+ * answer with an empty list, not with everything. Open mode is intentionally
+ * unaffected: while no assignment exists at all, every enabled project is
+ * visible to everyone by design (see isOpenMode).
  */
 export function visibleProjectsFor(
   config: CoworkGovernanceConfig,
@@ -254,7 +263,8 @@ export function visibleProjectsFor(
   const explicitAdmin = isExplicitAdmin(config, email)
   return config.projects.filter((project) => {
     if (!project.enabled) return false
-    if (openMode || explicitAdmin || !email) return true
+    if (openMode || explicitAdmin) return true
+    if (!email) return false
     const userRoleIds = new Set(config.userAssignments[email.toLowerCase()] ?? [])
     return project.allowedRoleIds.some((roleId) => userRoleIds.has(roleId))
   })

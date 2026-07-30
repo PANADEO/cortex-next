@@ -153,6 +153,30 @@ describe("visibleProjectsFor", () => {
     })
     expect(visibleProjectsFor(cfg, "boss@x.pl").map((p) => p.id)).toEqual(["restricted"])
   })
+
+  // Regression, 30.07.2026: a missing email used to share a branch with open
+  // mode and returned EVERY enabled project, so an anonymous request to
+  // GET /api/cortex-cowork/projects got names, descriptions and briefs of all
+  // of them. No identity means no role assignment, so the filter must answer
+  // with nothing.
+  it("returns nothing for a request without identity once assignments exist", () => {
+    const cfg = config({
+      projects: [project({ id: "a" }), project({ id: "b", allowedRoleIds: ["csv-user"] })],
+      userAssignments: { "u@x.pl": ["analyst"] },
+    })
+    expect(visibleProjectsFor(cfg, undefined)).toEqual([])
+  })
+
+  // The other half of the same rule: bootstrap stays open on purpose, exactly
+  // as requireProjectAccess() treats it (see denyAnonymous in project-gate.ts).
+  it("still shows enabled projects without identity while in open mode", () => {
+    const cfg = config({ projects: [project({ id: "a" }), project({ id: "b" })] })
+    expect(
+      visibleProjectsFor(cfg, undefined)
+        .map((p) => p.id)
+        .sort(),
+    ).toEqual(["a", "b"])
+  })
 })
 
 describe("rolesForUser", () => {

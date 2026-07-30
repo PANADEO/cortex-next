@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test"
+import { E2E_COWORK_DATA_DIR, E2E_OKNA_CZASOWE_DATA_DIR } from "./e2e/fixtures/json-store"
 
 // testDir "./e2e" obejmuje OBIE struktury naraz: legacy `e2e/issue-66/**`
 // (PO-ISSUE, mockuje wszystko przez page.route) i nową (`e2e/<kafelek>/*.spec.ts`
@@ -55,6 +56,17 @@ export default defineConfig({
             // Next middleware which would otherwise rewrite to a missing IDP backend.
             NEXT_PUBLIC_API_MOCKING: "disabled",
             NEXT_PUBLIC_DEV_USER_EMAIL: "demo@cortex.local",
+            // Store'y plikowe (Cortex Cowork, Okna czasowe) czytają swój katalog
+            // danych RAZ, przy ładowaniu modułu — więc musi go dostać proces
+            // dev servera, nie proces `playwright test`. Osobne katalogi e2e:
+            // seed je czyści przed każdym scenariuszem, a lokalny `.data/`
+            // dewelopera zostaje nietknięty. Patrz e2e/fixtures/json-store.ts.
+            COWORK_DATA_DIR: E2E_COWORK_DATA_DIR,
+            OKNA_CZASOWE_DATA_DIR: E2E_OKNA_CZASOWE_DATA_DIR,
+            // Bez tego `getRequestEmail()`/`requestEmail()` mają poza produkcją
+            // fallback na DEV_USER_EMAIL — "brak nagłówka" przestałoby wtedy
+            // znaczyć "brak tożsamości" i testy bramek nic by nie dowodziły.
+            DEV_USER_EMAIL: "",
           },
         },
       }),
