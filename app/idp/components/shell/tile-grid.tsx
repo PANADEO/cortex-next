@@ -65,9 +65,10 @@ export function TileGrid({ tileHrefOverrides }: TileGridProps = {}) {
     [tileHrefOverrides],
   )
 
-  // Code-backed tiles pass through the Cortex Admin per-app whitelist;
-  // task-chat project tiles are governed by cortex-config roles instead
-  // (the projects endpoint already filtered them for this user).
+  // Code-backed tiles are filtered by the grants in `applications` (own
+  // Postgres, via /api/me/access); task-chat project tiles are governed by
+  // cortex-config roles instead (the projects endpoint already filtered them
+  // for this user).
   const authorizedTiles = useMemo(
     () => [
       ...tiles.filter((tile) =>

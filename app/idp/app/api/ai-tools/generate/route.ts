@@ -4,7 +4,8 @@ import { getAiToolDefinition } from "@/lib/ai-tools/registry"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { getAccessResult, getRequestEmail } from "../../_lib/access"
+import { getRequestEmail } from "@cortex/service"
+import { grantedAppCodes } from "../../_lib/granted-apps"
 import { saveAiToolHistoryRecord } from "../../_lib/ai-tools-history"
 
 export const runtime = "nodejs"
@@ -69,8 +70,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "unknown-tool" }, { status: 404 })
   }
 
-  const access = await getAccessResult(email)
-  if (!canAccessAiTool(access.apps, tool.id)) {
+  const apps = await grantedAppCodes(email)
+  if (!canAccessAiTool(apps, tool.id)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 })
   }
 

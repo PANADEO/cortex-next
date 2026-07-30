@@ -21,7 +21,7 @@ import {
 import { randomUUID } from "node:crypto"
 import { eq } from "drizzle-orm"
 import { afterAll, beforeEach, describe, expect, it } from "vitest"
-import { clearTileAccessCache, requireTileAccess } from "./rbac"
+import { clearTileAccessCache, getGrantedApplicationCodes, requireTileAccess } from "./rbac"
 
 const hasDatabase = Boolean(process.env.DATABASE_URL)
 
@@ -108,5 +108,81 @@ describe.skipIf(!hasDatabase)("requireTileAccess — prawdziwy Postgres", () => 
     clearTileAccessCache()
     const result = await requireTileAccess(makeRequest(`nikt-${SUFFIX}@firma.pl`), APP_CODE)
     expect(result.allowed).toBe(false)
+  })
+
+  // Ta sama warstwa SQL widziana przez funkcję, z której korzysta POWŁOKA
+  // (GET /api/me/access). requireTileAccess() pyta "czy ten jeden kod",
+  // getGrantedApplicationCodes() zwraca całą listę do przeglądarki — więc
+  // dodatkowo liczy się to, czego w liście NIE MA i ile razy występuje.
+  describe("getGrantedApplicationCodes — lista dla powłoki", () => {
+    async function codesFor(email: string): Promise<string[]> {
+      clearTileAccessCache()
+      return getGrantedApplicationCodes(email)
+    }
+
+    it("zwraca przyznany kod", async () => {
+      expect(await codesFor(EMAIL)).toEqual([APP_CODE])
+    })
+
+    it("nie zwraca kodów aplikacji, do których user nie ma grantu", async () => {
+      const db = getDb()
+      const foreignCode = `obcy-${SUFFIX}`
+      await db
+        .insert(applications)
+        .values({ code: foreignCode, name: "Cudzy", kind: "native", route: `/${foreignCode}` })
+
+      const codes = await codesFor(EMAIL)
+
+      expect(codes).not.toContain(foreignCode)
+      await db.delete(applications).where(eq(applications.code, foreignCode))
+    })
+
+    it("pusta lista dla nieznanego użytkownika (a nie wyjątek)", async () => {
+      expect(await codesFor(`nikt-${SUFFIX}@firma.pl`)).toEqual([])
+    })
+
+    it("pusta lista dla użytkownika dezaktywowanego", async () => {
+      await getDb().update(users).set({ isActive: false }).where(eq(users.email, EMAIL))
+      expect(await codesFor(EMAIL)).toEqual([])
+    })
+
+    it("pomija aplikacje nieaktywne", async () => {
+      await getDb()
+        .update(applications)
+        .set({ isActive: false })
+        .where(eq(applications.code, APP_CODE))
+      expect(await codesFor(EMAIL)).toEqual([])
+    })
+
+    it("dopasowuje e-mail bez względu na wielkość liter", async () => {
+      expect(await codesFor(EMAIL.toUpperCase())).toEqual([APP_CODE])
+    })
+
+    it("DEDUPLIKUJE kod przyznany przez dwie różne role", async () => {
+      // Bez selectDistinct w rbac-store ten sam kod wracał dwa razy. Dla
+      // requireTileAccess() (includes()) nieszkodliwe, ale ta lista jedzie
+      // teraz wprost do przeglądarki jako `apps` — a warstwa, która kiedyś
+      // deduplikowała po drodze, zniknęła razem z cortex-adminem.
+      const db = getDb()
+      const secondRoleCode = `rola2-${SUFFIX}`
+      const [user] = await db.select().from(users).where(eq(users.email, EMAIL))
+      const [application] = await db
+        .select()
+        .from(applications)
+        .where(eq(applications.code, APP_CODE))
+      const [secondRole] = await db
+        .insert(roles)
+        .values({ code: secondRoleCode, name: "Druga rola" })
+        .returning()
+
+      await db.insert(userRoles).values({ userId: user!.id, roleId: secondRole!.id })
+      await db
+        .insert(permissionsMatrix)
+        .values({ roleId: secondRole!.id, applicationId: application!.id })
+
+      expect(await codesFor(EMAIL)).toEqual([APP_CODE])
+
+      await db.delete(roles).where(eq(roles.code, secondRoleCode))
+    })
   })
 })

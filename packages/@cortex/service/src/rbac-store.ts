@@ -18,8 +18,12 @@ import { and, eq } from "drizzle-orm"
  * "co wolno W ŚRODKU kafelka", nie "czy kafelek w ogóle".
  */
 export async function loadGrantedApplicationCodes(email: string): Promise<string[]> {
+  // selectDistinct, nie select: użytkownik z dwiema rolami dającymi ten sam
+  // grant dostawał ten kod dwa razy. Dla requireTileAccess() (includes())
+  // nieszkodliwe, ale ta sama lista jedzie teraz do przeglądarki jako `apps`
+  // w /api/me/access — duplikaty wyciekłyby do klienta i do wpisów cache.
   const rows = await getDb()
-    .select({ code: applications.code })
+    .selectDistinct({ code: applications.code })
     .from(users)
     .innerJoin(userRoles, eq(userRoles.userId, users.id))
     .innerJoin(permissionsMatrix, eq(permissionsMatrix.roleId, userRoles.roleId))

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react"
-import { createElement } from "react"
+import { createElement, type ReactNode } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 interface MeMock {
@@ -12,12 +12,19 @@ interface MeMock {
 interface AuthorizedMock {
   allowed: boolean | null
   apps: string[]
+  email: string | null
   isLoading: boolean
   isError: boolean
 }
 
 let meMock: MeMock = { isPending: true, isError: false }
-let authorizedMock: AuthorizedMock = { allowed: null, apps: [], isLoading: true, isError: false }
+let authorizedMock: AuthorizedMock = {
+  allowed: null,
+  apps: [],
+  email: null,
+  isLoading: true,
+  isError: false,
+}
 
 vi.mock("next/image", () => ({
   default: (props: Record<string, unknown>) => createElement("img", props),
@@ -28,11 +35,11 @@ vi.mock("@cortex/api", () => ({
   useAuthorizedApps: () => authorizedMock,
 }))
 
-import { AppGate } from "./app-gate"
+import { AppGate, HubGate } from "./app-gate"
 
 beforeEach(() => {
   meMock = { isPending: true, isError: false }
-  authorizedMock = { allowed: null, apps: [], isLoading: true, isError: false }
+  authorizedMock = { allowed: null, apps: [], email: null, isLoading: true, isError: false }
 })
 
 afterEach(() => {
@@ -42,257 +49,245 @@ afterEach(() => {
 
 const Child = () => createElement("div", { "data-testid": "child" }, "child-content")
 
-describe("AppGate", () => {
-  it("renders nothing while either signal is loading", () => {
-    meMock = { isPending: true, isError: false }
-    authorizedMock = { allowed: null, apps: [], isLoading: true, isError: false }
+/** Zalogowany, sprawny backend IDP, dostęp do wymienionych kafelków. */
+function signedIn(apps: string[], options: { hasAccess?: boolean; email?: string } = {}): void {
+  const email = options.email ?? "u@x.com"
+  meMock = {
+    isPending: false,
+    isError: false,
+    data: { email, has_access: options.hasAccess ?? true },
+  }
+  authorizedMock = { allowed: apps.length > 0, apps, email, isLoading: false, isError: false }
+}
 
-    const { container } = render(createElement(AppGate, null, createElement(Child)))
+/** Backend IDP nieosiągalny (albo nieobecny w środowisku) — /user/me błądzi,
+ *  tożsamość i uprawnienia znamy wyłącznie z własnego /api/me/access. */
+function idpBackendDown(apps: string[], email = "u@x.com"): void {
+  meMock = { isPending: false, isError: true }
+  authorizedMock = { allowed: apps.length > 0, apps, email, isLoading: false, isError: false }
+}
 
+function renderGate(tileId: string | null, children: ReactNode = <Child />) {
+  return render(<AppGate tileId={tileId}>{children}</AppGate>)
+}
+
+function expectDenied(): void {
+  expect(screen.queryByTestId("child")).toBeNull()
+  expect(screen.getByRole("heading", { name: "Brak dostępu" })).not.toBeNull()
+}
+
+function expectError(): void {
+  expect(screen.queryByTestId("child")).toBeNull()
+  expect(screen.getByRole("button", { name: "Spróbuj ponownie" })).not.toBeNull()
+}
+
+function expectAllowed(): void {
+  expect(screen.getByTestId("child").textContent).toBe("child-content")
+}
+
+describe("AppGate — stany ładowania", () => {
+  it("nic nie renderuje, dopóki oba sygnały się ładują", () => {
+    const { container } = renderGate("idp")
     expect(container.firstChild).toBeNull()
   })
 
-  it("renders nothing while only authorizedApps is loading", () => {
-    meMock = {
-      isPending: false,
-      isError: false,
-      data: { email: "u@x.com", has_access: true },
-    }
-    authorizedMock = { allowed: null, apps: [], isLoading: true, isError: false }
+  it("nic nie renderuje, dopóki ładuje się samo /api/me/access", () => {
+    meMock = { isPending: false, isError: false, data: { email: "u@x.com", has_access: true } }
+    authorizedMock = { allowed: null, apps: [], email: null, isLoading: true, isError: false }
 
-    const { container } = render(createElement(AppGate, null, createElement(Child)))
+    const { container } = renderGate("idp")
 
     expect(container.firstChild).toBeNull()
   })
+})
 
-  it("renders error variant when useMe errors out", () => {
-    meMock = { isPending: false, isError: true }
-    authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
-
-    render(createElement(AppGate, null, createElement(Child)))
-
-    expect(screen.getByRole("heading", { name: "Brak uprawnień" })).not.toBeNull()
-    expect(screen.getByRole("button", { name: "Spróbuj ponownie" })).not.toBeNull()
+describe("AppGate — uprawnienia z /api/me/access", () => {
+  it("wpuszcza przy zgodnym kodzie kafelka", () => {
+    signedIn(["intrastat"])
+    renderGate("intrastat")
+    expectAllowed()
   })
 
-  it("renders denied variant when has_access is false", () => {
-    meMock = {
-      isPending: false,
-      isError: false,
-      data: { email: "no@x.com", has_access: false },
-    }
-    authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
-
-    render(createElement(AppGate, null, createElement(Child)))
-
-    expect(screen.getByRole("heading", { name: "Brak dostępu" })).not.toBeNull()
-    expect(screen.getByText("no@x.com")).not.toBeNull()
-    expect(screen.getByRole("button", { name: "Wyloguj się" })).not.toBeNull()
+  it("odmawia dostępu do kafelka, którego user nie ma", () => {
+    signedIn(["idp"])
+    renderGate("intrastat")
+    expectDenied()
   })
 
-  it("renders denied variant when authorizedApps returns allowed:false (with email from useMe)", () => {
-    meMock = {
-      isPending: false,
-      isError: false,
-      data: { email: "u@x.com", has_access: true },
-    }
-    authorizedMock = { allowed: false, apps: [], isLoading: false, isError: false }
+  it("odmawia, gdy tileId jest null — nierozpoznana trasa, fail-closed", () => {
+    signedIn(["idp"])
+    renderGate(null)
+    expectDenied()
+  })
 
-    render(createElement(AppGate, null, createElement(Child)))
-
-    expect(screen.getByRole("heading", { name: "Brak dostępu" })).not.toBeNull()
+  it("odmawia przy allowed:false, z e-mailem na ekranie", () => {
+    signedIn([])
+    renderGate("intrastat")
+    expectDenied()
     expect(screen.getByText("u@x.com")).not.toBeNull()
   })
 
-  it("renders error variant when authorizedApps allowed is null after loading (fail-closed)", () => {
-    meMock = {
-      isPending: false,
-      isError: false,
-      data: { email: "u@x.com", has_access: true },
-    }
-    authorizedMock = { allowed: null, apps: [], isLoading: false, isError: true }
+  it("pokazuje wariant błędu, gdy /api/me/access się wywali (fail-closed)", () => {
+    meMock = { isPending: false, isError: false, data: { email: "u@x.com", has_access: true } }
+    authorizedMock = { allowed: null, apps: [], email: null, isLoading: false, isError: true }
 
-    render(createElement(AppGate, null, createElement(Child)))
+    renderGate("intrastat")
 
-    expect(screen.getByRole("button", { name: "Spróbuj ponownie" })).not.toBeNull()
+    expectError()
+  })
+})
+
+describe("AppGate — has_access dotyczy WYŁĄCZNIE kafelka idp (D7)", () => {
+  it("odmawia idp przy has_access:false, mimo grantu w bazie", () => {
+    signedIn(["idp"], { hasAccess: false })
+    renderGate("idp")
+    expectDenied()
   })
 
-  it("renders children when both signals are positive", () => {
-    meMock = {
-      isPending: false,
-      isError: false,
-      data: { email: "u@x.com", has_access: true },
-    }
-    authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
-
-    render(createElement(AppGate, null, createElement(Child)))
-
-    expect(screen.getByTestId("child").textContent).toBe("child-content")
+  it("wpuszcza idp przy has_access:true i grancie", () => {
+    signedIn(["idp"])
+    renderGate("idp")
+    expectAllowed()
   })
 
-  it("blocks even when has_access:true if authorized:false (defence in depth)", () => {
-    meMock = {
-      isPending: false,
-      isError: false,
-      data: { email: "u@x.com", has_access: true },
-    }
-    authorizedMock = { allowed: false, apps: [], isLoading: false, isError: false }
-
-    render(createElement(AppGate, null, createElement(Child)))
-
-    expect(screen.queryByTestId("child")).toBeNull()
-    expect(screen.getByRole("heading", { name: "Brak dostępu" })).not.toBeNull()
+  it("NIE odmawia innego kafelka przy has_access:false", () => {
+    signedIn(["intrastat"], { hasAccess: false })
+    renderGate("intrastat")
+    expectAllowed()
   })
 
-  it("blocks even when authorized:true if has_access:false (defence in depth)", () => {
-    meMock = {
-      isPending: false,
-      isError: false,
-      data: { email: "u@x.com", has_access: false },
-    }
-    authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
-
-    render(createElement(AppGate, null, createElement(Child)))
-
-    expect(screen.queryByTestId("child")).toBeNull()
-    expect(screen.getByRole("heading", { name: "Brak dostępu" })).not.toBeNull()
+  it("blokuje idp, gdy backend IDP jest nieosiągalny", () => {
+    // Kafelek idp bez potwierdzenia z /user/me to jedyny przypadek, w którym
+    // awaria tamtego backendu nadal odcina — i ma odcinać.
+    idpBackendDown(["idp"])
+    renderGate("idp")
+    expectError()
   })
 
-  describe("tileId (CTX-568 — tile-scoped access)", () => {
-    it("skips the tile check when tileId is omitted (backward-compat)", () => {
-      meMock = {
-        isPending: false,
-        isError: false,
-        data: { email: "u@x.com", has_access: true },
-      }
-      authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
+  it("WPUSZCZA inne kafelki, gdy backend IDP jest nieosiągalny", () => {
+    // Sedno D7: wcześniej me.isError odcinało KAŻDĄ stronę, więc środowisko bez
+    // backendu IDP (a takie jest cortex-next) było martwe niezależnie od tego,
+    // co mówił własny Postgres.
+    idpBackendDown(["ilustromat"])
+    renderGate("ilustromat")
+    expectAllowed()
+  })
 
-      render(createElement(AppGate, null, createElement(Child)))
+  it("przy nieosiągalnym /user/me bierze e-mail na ekran odmowy z /api/me/access", () => {
+    idpBackendDown([], "kto@firma.pl")
+    renderGate("ilustromat")
+    expectDenied()
+    expect(screen.getByText("kto@firma.pl")).not.toBeNull()
+  })
 
-      expect(screen.getByTestId("child").textContent).toBe("child-content")
-    })
+  it("nadal odmawia kafelka bez grantu, gdy backend IDP jest nieosiągalny", () => {
+    idpBackendDown(["idp-basic"])
+    renderGate("ilustromat")
+    expectDenied()
+  })
+})
 
-    it("denies when tileId is null — unresolved path, fail-closed", () => {
-      meMock = {
-        isPending: false,
-        isError: false,
-        data: { email: "u@x.com", has_access: true },
-      }
-      authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
+describe("AppGate — AI Tools", () => {
+  it("wpuszcza narzędzie przez grant zbiorczy ai-tools", () => {
+    signedIn(["ai-tools"])
+    renderGate("linkedin-generator")
+    expectAllowed()
+  })
 
-      render(
-        <AppGate tileId={null}>
-          <Child />
-        </AppGate>,
-      )
+  it("wpuszcza narzędzie przez jego własny kod", () => {
+    signedIn(["linkedin-generator"])
+    renderGate("linkedin-generator")
+    expectAllowed()
+  })
 
-      expect(screen.queryByTestId("child")).toBeNull()
-      expect(screen.getByRole("heading", { name: "Brak dostępu" })).not.toBeNull()
-    })
+  it("odmawia narzędzia, gdy user ma grant na inne", () => {
+    signedIn(["text-analyzer"])
+    renderGate("linkedin-generator")
+    expectDenied()
+  })
 
-    it("denies access to a tile the user is not assigned to — the idp-basic/intrastat regression", () => {
-      meMock = {
-        isPending: false,
-        isError: false,
-        data: { email: "u@x.com", has_access: true },
-      }
-      authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
+  it("wpuszcza na hub /ai-tools przy grancie zbiorczym", () => {
+    signedIn(["ai-tools"])
+    renderGate("ai-tools")
+    expectAllowed()
+  })
 
-      render(
-        <AppGate tileId="intrastat">
-          <Child />
-        </AppGate>,
-      )
+  it("wpuszcza na hub /ai-tools użytkownika z JEDNYM narzędziem", () => {
+    // Ta sama reguła co AiToolGate bez toolId — inaczej pozycja "Dashboard"
+    // w sidebarze prowadziłaby do ekranu odmowy.
+    signedIn(["linkedin-generator"])
+    renderGate("ai-tools")
+    expectAllowed()
+  })
 
-      expect(screen.queryByTestId("child")).toBeNull()
-      expect(screen.getByRole("heading", { name: "Brak dostępu" })).not.toBeNull()
-    })
+  it("odmawia huba /ai-tools bez żadnego narzędzia", () => {
+    signedIn(["intrastat"])
+    renderGate("ai-tools")
+    expectDenied()
+  })
+})
 
-    it("allows a matching tile", () => {
-      meMock = {
-        isPending: false,
-        isError: false,
-        data: { email: "u@x.com", has_access: true },
-      }
-      authorizedMock = { allowed: true, apps: ["intrastat"], isLoading: false, isError: false }
+describe("AppGate — cortex-cowork jest teraz sprawdzany per kod", () => {
+  it("wpuszcza przy grancie cortex-cowork", () => {
+    signedIn(["cortex-cowork"])
+    renderGate("cortex-cowork")
+    expectAllowed()
+  })
 
-      render(
-        <AppGate tileId="intrastat">
-          <Child />
-        </AppGate>,
-      )
+  it("odmawia użytkownikowi z innym grantem", () => {
+    // Regresja, którą to zamyka: layout (cowork) wołał <AppGate> BEZ tileId,
+    // więc do Coworka wchodził każdy, kto miał jakikolwiek grant.
+    signedIn(["idp"])
+    renderGate("cortex-cowork")
+    expectDenied()
+  })
+})
 
-      expect(screen.getByTestId("child").textContent).toBe("child-content")
-    })
+describe("HubGate — hub nie jest kafelkiem", () => {
+  function renderHub() {
+    return render(
+      <HubGate>
+        <Child />
+      </HubGate>,
+    )
+  }
 
-    it("allows an ai-tool via the blanket 'ai-tools' grant", () => {
-      meMock = {
-        isPending: false,
-        isError: false,
-        data: { email: "u@x.com", has_access: true },
-      }
-      authorizedMock = { allowed: true, apps: ["ai-tools"], isLoading: false, isError: false }
+  it("wpuszcza na podstawie samego allowed", () => {
+    signedIn(["intrastat"])
+    renderHub()
+    expectAllowed()
+  })
 
-      render(
-        <AppGate tileId="linkedin-generator">
-          <Child />
-        </AppGate>,
-      )
+  it("odmawia, gdy user nie ma żadnego grantu", () => {
+    signedIn([])
+    renderHub()
+    expectDenied()
+    expect(screen.getByText("u@x.com")).not.toBeNull()
+  })
 
-      expect(screen.getByTestId("child").textContent).toBe("child-content")
-    })
+  it("IGNORUJE has_access — hub to nie kafelek idp", () => {
+    signedIn(["intrastat"], { hasAccess: false })
+    renderHub()
+    expectAllowed()
+  })
 
-    it("denies an ai-tool when apps only grant a different tool", () => {
-      meMock = {
-        isPending: false,
-        isError: false,
-        data: { email: "u@x.com", has_access: true },
-      }
-      authorizedMock = { allowed: true, apps: ["text-analyzer"], isLoading: false, isError: false }
+  it("działa, gdy backend IDP jest nieosiągalny", () => {
+    idpBackendDown(["intrastat"])
+    renderHub()
+    expectAllowed()
+  })
 
-      render(
-        <AppGate tileId="linkedin-generator">
-          <Child />
-        </AppGate>,
-      )
+  it("pokazuje wariant błędu, gdy /api/me/access się wywali", () => {
+    meMock = { isPending: false, isError: false, data: { email: "u@x.com", has_access: true } }
+    authorizedMock = { allowed: null, apps: [], email: null, isLoading: false, isError: true }
 
-      expect(screen.queryByTestId("child")).toBeNull()
-      expect(screen.getByRole("heading", { name: "Brak dostępu" })).not.toBeNull()
-    })
+    renderHub()
 
-    it("still denies tileId='idp' on has_access:false (has_access is idp-specific, checked first)", () => {
-      meMock = {
-        isPending: false,
-        isError: false,
-        data: { email: "u@x.com", has_access: false },
-      }
-      authorizedMock = { allowed: true, apps: ["idp"], isLoading: false, isError: false }
+    expectError()
+  })
 
-      render(
-        <AppGate tileId="idp">
-          <Child />
-        </AppGate>,
-      )
-
-      expect(screen.queryByTestId("child")).toBeNull()
-      expect(screen.getByRole("heading", { name: "Brak dostępu" })).not.toBeNull()
-    })
-
-    it("does NOT deny idp-basic/intrastat access on has_access:false — has_access is idp-specific, irrelevant to other tiles", () => {
-      meMock = {
-        isPending: false,
-        isError: false,
-        data: { email: "u@x.com", has_access: false },
-      }
-      authorizedMock = { allowed: true, apps: ["intrastat"], isLoading: false, isError: false }
-
-      render(
-        <AppGate tileId="intrastat">
-          <Child />
-        </AppGate>,
-      )
-
-      expect(screen.getByTestId("child").textContent).toBe("child-content")
-    })
+  it("nic nie renderuje w trakcie ładowania", () => {
+    const { container } = renderHub()
+    expect(container.firstChild).toBeNull()
   })
 })

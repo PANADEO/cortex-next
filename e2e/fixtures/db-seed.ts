@@ -36,6 +36,8 @@ import {
   getDb,
   type ApplicationRow,
 } from "@cortex/db"
+import { execFileSync } from "node:child_process"
+import path from "node:path"
 
 const ADMIN_ROLE_CODE = "admin"
 const SYSTEM_CONFIG_APP_CODE = "system-config"
@@ -47,6 +49,9 @@ export type ScenarioName =
   | "user-no-roles"
   | "admin-with-one-tile"
   | "five-tiles-one-external-link"
+  // Rejestr zseedowany PRAWDZIWYM skryptem deployowym + jeden użytkownik na
+  // każdy kod, z dokładnie jednym grantem. Podstawa macierzy uprawnień powłoki.
+  | "registry-one-user-per-code"
   // Ilustromat: te dwa scenariusze różnią się WYŁĄCZNIE grantem scope'u —
   // po to, żeby dało się pokazać, że dostęp do kafelka nie nadaje prawa do
   // zmiany marki (warstwa granularna, application_scopes).
@@ -171,12 +176,87 @@ export async function seedScenario(name: ScenarioName): Promise<ScenarioResult> 
       return { email, applications: inserted }
     }
 
+    case "registry-one-user-per-code":
+      return seedRegistryPerCodeUsers()
+
     case "ilustromat-user":
       return seedIlustromat({ withManageTemplatesScope: false })
 
     case "ilustromat-template-manager":
       return seedIlustromat({ withManageTemplatesScope: true })
   }
+}
+
+const SEED_SCRIPTS = ["seed-system-config.mjs", "seed-ilustromat.mjs"] as const
+
+// Playwright uruchamia testy z katalogu konfiguracji (korzeń repo). Świadomie
+// bez import.meta.url — pliki testowe są transpilowane do CJS, w którym ten
+// zapis jest błędem składniowym.
+const dbPackageDir = path.resolve(process.cwd(), "packages/@cortex/db")
+
+/**
+ * Uruchamia PRAWDZIWE skrypty seedujące — te same, które w deployu odpala
+ * usługa `migrate` z docker-compose. Świadomie przez `node`, a nie przez
+ * przepisanie ich zawartości do TypeScriptu: gdyby test miał własną kopię
+ * rejestru aplikacji, sprawdzałby zgodność kopii z samą sobą, a rozjazd
+ * z produkcyjnym seedem przechodziłby niezauważony. To dokładnie ta klasa
+ * błędu ("dwie ręcznie utrzymywane listy"), którą ta migracja likwiduje.
+ *
+ * Wymaga wcześniejszych migracji — schemat musi już istnieć.
+ */
+export function runRegistrySeed(options: { adminEmail?: string } = {}): void {
+  const databaseUrl = process.env.DATABASE_URL
+  if (!databaseUrl) throw new Error("runRegistrySeed: DATABASE_URL nie jest ustawione")
+
+  for (const script of SEED_SCRIPTS) {
+    execFileSync("node", [path.join(dbPackageDir, "scripts", script)], {
+      env: {
+        ...process.env,
+        DATABASE_URL: databaseUrl,
+        // Pusty ADMIN_EMAIL = seed w ogóle nie dotyka bloku administratora.
+        ADMIN_EMAIL: options.adminEmail ?? "",
+      },
+      stdio: "pipe",
+    })
+  }
+}
+
+/** `<kod>@matrix.e2e.local` — użytkownik z grantem WYŁĄCZNIE do tego kodu. */
+export function accessMatrixEmail(code: string): string {
+  return `${code}@matrix.e2e.local`
+}
+
+/**
+ * Zseedowany rejestr + po jednym koncie na każdy istniejący kod aplikacji.
+ * Konta powstają NA PODSTAWIE ZAWARTOŚCI BAZY po seedzie, nie z listy w tym
+ * pliku — dopisanie kodu do produkcyjnego seeda automatycznie rozszerza
+ * macierz w testach.
+ */
+async function seedRegistryPerCodeUsers(): Promise<ScenarioResult> {
+  runRegistrySeed()
+  const db = getDb()
+  const registry = await db.select().from(applications)
+
+  for (const application of registry) {
+    const [user] = await db
+      .insert(users)
+      .values({ email: accessMatrixEmail(application.code), fullName: `Tylko ${application.code}` })
+      .returning()
+    const [role] = await db
+      .insert(roles)
+      .values({ code: `matrix-${application.code}`, name: `Tylko ${application.code}` })
+      .returning()
+
+    await db.insert(userRoles).values({ userId: user!.id, roleId: role!.id })
+    await db.insert(permissionsMatrix).values({ roleId: role!.id, applicationId: application.id })
+  }
+
+  // `email` scenariusza to konto BEZ ŻADNYCH grantów — punkt odniesienia dla
+  // asercji "odmowa". Konta per kod bierze się z accessMatrixEmail().
+  const noGrants = "bez-grantow@matrix.e2e.local"
+  await db.insert(users).values({ email: noGrants, fullName: "Bez grantów" })
+
+  return { email: noGrants, applications: registry }
 }
 
 /**

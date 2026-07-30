@@ -15,6 +15,7 @@ import {
   useStorePitNavSections,
 } from "@/lib/nav"
 import { useSidebarStore } from "@/lib/stores/sidebar-store"
+import { AI_TOOLS_TILE_ID } from "@/lib/ai-tools/app-codes"
 import { resolveRequiredTileId, TILES } from "@/lib/tiles"
 import { AppShell, TileMenu } from "@cortex/ui"
 import Image from "next/image"
@@ -48,7 +49,11 @@ function pathToTileId(pathname: string): string {
   const segments = pathname.split("/").filter(Boolean)
   const first = segments[0]
   const second = segments[1]
-  if (first === "ai-tools" && second && TILES.some((tile) => tile.id === second)) return second
+  if (first === "ai-tools") {
+    // Hub AI Tools (`/ai-tools`, bez segmentu narzędzia) też należy do rodziny
+    // AI Tools — inaczej dostawałby sidebar IDP na czas przekierowania na hub.
+    return second && TILES.some((tile) => tile.id === second) ? second : AI_TOOLS_TILE_ID
+  }
   return first && KNOWN_TILE_SEGMENTS.has(first) ? first : "idp"
 }
 
@@ -86,7 +91,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     intrastat: intrastatNavSections,
     "invoice-supervisor": invoiceSupervisorNavSections,
   }
-  const isAiToolPage = tile?.href.startsWith("/ai-tools/") ?? false
+  const isAiToolPage = tileId === AI_TOOLS_TILE_ID || (tile?.href.startsWith("/ai-tools/") ?? false)
   const navSections = isAiToolPage ? [] : (navByTile[tileId] ?? idpNavSections)
   const tileLabel = tile?.label ?? TILE_LABELS[tileId] ?? "IDP"
 

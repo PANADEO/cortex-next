@@ -1,4 +1,10 @@
-export { clearTileAccessCache, getRequestEmail, requireTileAccess, requireTileScope } from "./rbac"
+export {
+  clearTileAccessCache,
+  getGrantedApplicationCodes,
+  getRequestEmail,
+  requireTileAccess,
+  requireTileScope,
+} from "./rbac"
 export type { TileAccessResult } from "./rbac"
 export { loadGrantedApplicationCodes, loadGrantedScopes } from "./rbac-store"
 export {

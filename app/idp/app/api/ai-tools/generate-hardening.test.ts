@@ -20,7 +20,16 @@ import path from "node:path"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { AI_TOOLS_TILE_ID } from "@/lib/ai-tools/app-codes"
 
-const ADMIN_URL = "http://cortex-admin"
+// Uprawnienia idą z własnego Postgresa (@cortex/service), nie po HTTP do
+// cortex-admina — podmieniamy wyłącznie odczyt z bazy, sama bramka w handlerze
+// zostaje prawdziwa.
+const loadGrantedApplicationCodes = vi.hoisted(() => vi.fn<(email: string) => Promise<string[]>>())
+
+vi.mock("@cortex/service/rbac-store", () => ({
+  loadGrantedApplicationCodes,
+  loadGrantedScopes: vi.fn(async () => []),
+}))
+
 const PROXY_URL = "http://cortex-proxy"
 const PROXY_ENDPOINT = `${PROXY_URL}/v1/chat/completions`
 const TEXT_MODEL = "anthropic/claude-sonnet-4.6"
@@ -41,19 +50,12 @@ let historyDir: string | null = null
 function stubUpstreams(apps: readonly string[], proxyStatus = 200): ProxyCall[] {
   const proxyCalls: ProxyCall[] = []
 
+  loadGrantedApplicationCodes.mockResolvedValue([...apps])
+
   vi.stubGlobal(
     "fetch",
     vi.fn((input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
       const url = String(input)
-
-      if (url.startsWith(ADMIN_URL)) {
-        return Promise.resolve(
-          new Response(JSON.stringify({ apps }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }),
-        )
-      }
 
       if (url === PROXY_ENDPOINT) {
         proxyCalls.push({
@@ -100,8 +102,8 @@ beforeEach(() => {
   vi.unstubAllEnvs()
   historyDir = mkdtempSync(path.join(tmpdir(), "cortex-ai-tools-hardening-"))
   vi.stubEnv("NODE_ENV", "production")
-  vi.stubEnv("CORTEX_ADMIN_API_BASE_URL", ADMIN_URL)
-  vi.stubEnv("CORTEX_ADMIN_API_KEY", "admin-key")
+  loadGrantedApplicationCodes.mockReset()
+  loadGrantedApplicationCodes.mockResolvedValue([])
   vi.stubEnv("CORTEX_PROXY_URL", PROXY_URL)
   vi.stubEnv("CORTEX_PROXY_API_KEY", "proxy-key")
   vi.stubEnv("LLM_DEFAULT_MODEL", TEXT_MODEL)

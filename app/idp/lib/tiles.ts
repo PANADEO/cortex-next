@@ -1,7 +1,7 @@
 import type { CoworkTileArchetype } from "@cortex/types"
 import type { LucideIcon } from "lucide-react"
 import { CalendarClock, FileSpreadsheet, FileText, Image, Receipt, ScanText, Settings, ShieldCheck, Users, Video, Workflow } from "lucide-react"
-import { canAccessAiTool, isAiToolId } from "./ai-tools/app-codes"
+import { AI_TOOLS_TILE_ID, canAccessAiTool, hasAnyAiToolAccess, isAiToolId } from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
 export type TileCategoryFunctional =
@@ -265,6 +265,13 @@ export const TILES: ReadonlyArray<Tile> = [
  */
 export function resolveRequiredTileId(pathname: string): string | null {
   const rootSegments = pathname.split("/").filter(Boolean).slice(0, 2)
+  // Hub AI Tools (`/ai-tools`) nie ma własnego wiersza w TILES — kafelkami są
+  // poszczególne narzędzia. Bez tego wyjątku pozycja "Dashboard" z sidebara
+  // (lib/nav.ts AI_TOOLS_DASHBOARD_ITEM) zawsze kończyła się AccessDeniedScreen,
+  // a zbiorczy grant `ai-tools` nie otwierał niczego pod własnym adresem.
+  // Wyłącznie ścieżka dokładna: `/ai-tools/<nieznany-slug>` zostaje odmową,
+  // nie awansuje po cichu na hub.
+  if (rootSegments.length === 1 && rootSegments[0] === AI_TOOLS_TILE_ID) return AI_TOOLS_TILE_ID
   const byId = TILES.find((tile) => rootSegments.includes(tile.id))
   if (byId) return byId.id
   // Some tiles (sp-console/sp-client) share one URL segment instead of putting
@@ -283,6 +290,12 @@ export function resolveRequiredTileId(pathname: string): string | null {
 }
 
 export function canAccessTile(apps: readonly string[], tileId: string): boolean {
+  // Hub AI Tools: wystarczy dostęp do CZEGOKOLWIEK w środku — ta sama reguła,
+  // którą stosuje AiToolGate wywołany bez toolId. Zbiorczy grant `ai-tools`
+  // nie jest tu wymagany: user z jednym narzędziem też ma po co tam wejść.
+  if (tileId === AI_TOOLS_TILE_ID) {
+    return hasAnyAiToolAccess(apps)
+  }
   if (isAiToolId(tileId)) {
     return canAccessAiTool(apps, tileId)
   }

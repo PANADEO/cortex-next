@@ -2,6 +2,16 @@ import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+
+const loadGrantedApplicationCodes = vi.hoisted(() => vi.fn<(email: string) => Promise<string[]>>())
+
+// Uprawnienia z własnego Postgresa (@cortex/service) — podmieniamy sam odczyt
+// z bazy, bramka w handlerze zostaje prawdziwa.
+vi.mock("@cortex/service/rbac-store", () => ({
+  loadGrantedApplicationCodes,
+  loadGrantedScopes: vi.fn(async () => []),
+}))
+
 import type { AiToolId } from "@/lib/ai-tools/app-codes"
 
 interface HistoryRoute {
@@ -51,19 +61,7 @@ describe("/api/ai-tools/history route handler", () => {
 
   it("returns 403 when user lacks access to the requested mini-app", async () => {
     vi.stubEnv("NODE_ENV", "production")
-    vi.stubEnv("CORTEX_ADMIN_API_BASE_URL", "http://cortex-admin")
-    vi.stubEnv("CORTEX_ADMIN_API_KEY", "admin-key")
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() =>
-        Promise.resolve(
-          new Response(JSON.stringify({ apps: ["content-guru"] }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }),
-        ),
-      ),
-    )
+    loadGrantedApplicationCodes.mockResolvedValue(["content-guru"])
     const { GET } = await loadHandler()
 
     const response = await GET(makeRequest("text-highlighter"))
@@ -73,19 +71,7 @@ describe("/api/ai-tools/history route handler", () => {
 
   it("returns history only for the current user and requested tool", async () => {
     vi.stubEnv("NODE_ENV", "production")
-    vi.stubEnv("CORTEX_ADMIN_API_BASE_URL", "http://cortex-admin")
-    vi.stubEnv("CORTEX_ADMIN_API_KEY", "admin-key")
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() =>
-        Promise.resolve(
-          new Response(JSON.stringify({ apps: ["text-highlighter"] }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }),
-        ),
-      ),
-    )
+    loadGrantedApplicationCodes.mockResolvedValue(["text-highlighter"])
     vi.resetModules()
     const { saveAiToolHistoryRecord } = await import("../../_lib/ai-tools-history")
     saveRecord("text-highlighter", "u@example.com", "visible")

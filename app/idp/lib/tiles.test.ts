@@ -23,11 +23,15 @@ describe("resolveRequiredTileId", () => {
     expect(resolveRequiredTileId("/ai-tools/linkedin-generator")).toBe("linkedin-generator")
   })
 
-  it("returns null for the bare ai-tools listing (no tool segment)", () => {
-    expect(resolveRequiredTileId("/ai-tools")).toBeNull()
+  it("resolves the bare ai-tools hub to the collective 'ai-tools' code", () => {
+    // Wcześniej null, czyli TWARDA ODMOWA: pozycja "Dashboard" w sidebarze
+    // (AI_TOOLS_DASHBOARD_ITEM -> /ai-tools) zawsze kończyła się ekranem
+    // "Brak dostępu", a zbiorczy grant `ai-tools` nie otwierał niczego pod
+    // własnym adresem.
+    expect(resolveRequiredTileId("/ai-tools")).toBe("ai-tools")
   })
 
-  it("returns null for an unrecognized tool slug", () => {
+  it("returns null for an unrecognized tool slug — no silent promotion to the hub", () => {
     expect(resolveRequiredTileId("/ai-tools/does-not-exist")).toBeNull()
   })
 
@@ -70,5 +74,22 @@ describe("canAccessTile", () => {
   it("denies when apps is empty", () => {
     expect(canAccessTile([], "idp")).toBe(false)
     expect(canAccessTile([], "linkedin-generator")).toBe(false)
+  })
+
+  describe("ai-tools hub", () => {
+    it("allows the hub via the blanket grant", () => {
+      expect(canAccessTile(["ai-tools"], "ai-tools")).toBe(true)
+    })
+
+    it("allows the hub for a user holding a single tool code", () => {
+      // Ta sama reguła co AiToolGate wywołany bez toolId (hasAnyAiToolAccess):
+      // kto ma cokolwiek w środku, ma po co wejść na hub.
+      expect(canAccessTile(["linkedin-generator"], "ai-tools")).toBe(true)
+    })
+
+    it("denies the hub without any AI tool access", () => {
+      expect(canAccessTile(["intrastat"], "ai-tools")).toBe(false)
+      expect(canAccessTile([], "ai-tools")).toBe(false)
+    })
   })
 })

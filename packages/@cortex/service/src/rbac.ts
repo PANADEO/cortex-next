@@ -50,8 +50,13 @@ let generation = 0
 export function getRequestEmail(headers: Headers): string | null {
   const devFallback = process.env.NODE_ENV !== "production" ? process.env.DEV_USER_EMAIL : undefined
   const raw = headers.get("x-auth-request-email") ?? devFallback ?? null
-  const normalized = raw?.trim().toLowerCase()
+  const normalized = normalizeEmail(raw)
   return normalized ? normalized : null
+}
+
+/** Kanoniczna postać adresu: kolumna users.email trzyma wyłącznie lowercase. */
+function normalizeEmail(value: string | null | undefined): string {
+  return value?.trim().toLowerCase() ?? ""
 }
 
 export async function requireTileAccess(
@@ -95,6 +100,29 @@ export async function requireTileScope(
     console.error("[rbac] odmowa dostępu — błąd odczytu scope'ów:", error)
     return { allowed: false, email: access.email }
   }
+}
+
+/**
+ * WSZYSTKIE kody aplikacji przyznane temu e-mailowi — pytanie "co ten user w
+ * ogóle ma", nie "czy ma ten konkretny kafelek". Jedyny konsument to bramka
+ * powłoki (`GET /api/me/access`), która musi oddać klientowi całą listę.
+ *
+ * Dzieli DOKŁADNIE tę samą warstwę cache'a co requireTileAccess() — ta sama
+ * `accessLayer`, ten sam TTL, ta sama inwalidacja przez clearTileAccessCache().
+ * To nie jest detal implementacyjny: drugi, równoległy cache uprawnień oznaczał
+ * -by, że odebranie dostępu z UI działa natychmiast w API modułów, a w powłoce
+ * dopiero po wygaśnięciu cudzego TTL.
+ *
+ * W przeciwieństwie do requireTileAccess() ta funkcja NIE połyka błędu bazy —
+ * propaguje wyjątek. Fail-closed egzekwuje wołający, dzięki czemu awaria bazy
+ * jest logowalna i odróżnialna od "user nie ma żadnych grantów".
+ */
+export function getGrantedApplicationCodes(email: string): Promise<string[]> {
+  // Normalizacja także tutaj, mimo że route dostaje adres już z
+  // getRequestEmail(): to jedyna publiczna funkcja tego modułu przyjmująca
+  // gołego stringa, więc bez tego wołający z "Jan@Firma.pl" dostałby po cichu
+  // pustą listę (i osobny wpis w cache) zamiast swoich uprawnień.
+  return getGrantedCodes(normalizeEmail(email))
 }
 
 /**

@@ -1,11 +1,11 @@
 "use client"
 
-import { useMe } from "@cortex/api"
+import { useAuthorizedApps, useMe } from "@cortex/api"
 import type { TileHrefOverrides } from "@/lib/tiles"
 import { useSearchParams } from "next/navigation"
 import { Suspense } from "react"
 import { getAuthErrorMessage } from "@/lib/auth-error-message"
-import { AppGate } from "./app-gate"
+import { HubGate } from "./app-gate"
 import { AuthedHome } from "./authed-home"
 import { LandingHero } from "./landing-hero"
 
@@ -32,14 +32,25 @@ function HomeShell({ tileHrefOverrides }: HomePageClientProps) {
 
 function HomeContent({ tileHrefOverrides }: HomePageClientProps) {
   const me = useMe()
+  const authorized = useAuthorizedApps()
 
-  if (me.isPending) return null
-  if (me.data) {
-    return (
-      <AppGate>
-        <AuthedHome tileHrefOverrides={tileHrefOverrides} />
-      </AppGate>
-    )
-  }
-  return <LandingHero />
+  // Hub NIE czeka na /user/me. Backend IDP bywa nieobecny i wtedy to żądanie
+  // potrafi wisieć bez rozstrzygnięcia (nie: kończyć się błędem) — oczekiwanie
+  // na nie zostawiało pustą stronę zamiast huba.
+  if (authorized.isLoading) return null
+
+  // "Czy ktokolwiek jest zalogowany" i "co mu wolno" to dwa różne pytania.
+  // Tożsamość może potwierdzić DOWOLNE z dwóch źródeł: /api/me/access, które
+  // zwraca e-mail z nagłówka wstrzykniętego przez oauth2-proxy (401, gdy nikt
+  // się nie przedstawił), albo /user/me. Wcześniej liczyło się wyłącznie
+  // /user/me, więc bez backendu IDP zalogowany użytkownik dostawał ekran
+  // marketingowy zamiast swojego huba.
+  const identified = Boolean(authorized.email) || Boolean(me.data)
+  if (!identified) return <LandingHero />
+
+  return (
+    <HubGate>
+      <AuthedHome tileHrefOverrides={tileHrefOverrides} />
+    </HubGate>
+  )
 }
