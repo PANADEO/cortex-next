@@ -7,11 +7,15 @@
 // to łapie: RBAC widoczny wyłącznie w UI (AppGate/CoworkShell) i nigdy
 // sprawdzany po stronie żądania.
 //
-// ⚠️ OTWARTE ENDPOINTY: dwa route'y przechodzą dziś anonimowo i są wpisane do
-// OPEN_ENDPOINTS niżej. To NIE jest akceptacja tego stanu — to jawna,
-// przeglądalna lista, którą trzeba świadomie rozszerzyć, żeby dołożyć kolejną
-// dziurę. Opis obu z dowodem: Obsidian PROJECT/cortex-frontend-testy-pozostalych-kafelkow.md,
-// sekcja "Znalezione przy okazji".
+// Do 30.07.2026 plik miał listę OPEN_ENDPOINTS z dwoma route'ami, które
+// przechodziły anonimowo: `projects` (visibleProjectsFor() traktował brak
+// e-maila jak "pokaż wszystko") i `skills` (zero sprawdzenia tożsamości). Obie
+// luki są domknięte, więc lista zniknęła — dziś reguła jest bezwarunkowa:
+// ŻADEN handler modułu nie odpowiada 200 na żądanie bez tożsamości. Dopisanie
+// kolejnego wyjątku wymaga rozmontowania tej pętli, nie dopisania wpisu.
+//
+// Jedyny świadomy wyjątek to tryb OPEN (bootstrap, zero przypisań ról) —
+// osobny opis niżej, przy teście, który go utrwala.
 
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -30,17 +34,6 @@ const HTTP_METHODS: HttpMethod[] = ["GET", "POST", "PUT", "DELETE", "PATCH"]
 type Handler = (request: unknown, context?: unknown) => Promise<Response>
 
 const routeModules = import.meta.glob<Record<string, unknown>>("./**/route.ts")
-
-/**
- * Endpointy, które DZIŚ odpowiadają 200 na żądanie bez żadnej tożsamości.
- * Wartość to opis luki, nie jej uzasadnienie — wpis tutaj ma być niewygodny.
- */
-const OPEN_ENDPOINTS: Record<string, string> = {
-  "./projects/route.ts":
-    "visibleProjectsFor() traktuje brak e-maila jako 'pokaż wszystko', więc anonimowe żądanie dostaje nazwy, opisy i briefy wszystkich włączonych projektów",
-  "./skills/route.ts":
-    "buildSkillCatalog() zwracany bez jakiegokolwiek sprawdzenia tożsamości — pełny katalog skilli instancji dla dowolnego żądania",
-}
 
 let dataDir: string
 
@@ -143,48 +136,26 @@ describe("cortex-cowork — bramki na ścieżce żądania", () => {
     expect(Object.keys(routeModules).length).toBeGreaterThanOrEqual(9)
   })
 
-  it("lista otwartych endpointów zawiera tylko istniejące pliki route.ts", () => {
-    // Nieaktualny wpis na allowliście = cicha zgoda na coś, czego już nie ma
-    // (albo literówka, przez którą prawdziwa dziura przechodzi bez alarmu).
-    for (const openPath of Object.keys(OPEN_ENDPOINTS)) {
-      expect(Object.keys(routeModules)).toContain(openPath)
-    }
-  })
-
   for (const [modulePath, load] of Object.entries(routeModules)) {
-    const knownOpen = OPEN_ENDPOINTS[modulePath]
-
     describe(modulePath, () => {
-      it(
-        knownOpen
-          ? `LUKA (udokumentowana, do naprawy): przechodzi bez tożsamości — ${knownOpen}`
-          : "żaden handler nie zwraca 200 żądaniu bez tożsamości",
-        async () => {
-          await writeConfig(closedConfig())
-          const routeModule = await load()
-          const handlers = HTTP_METHODS.filter((method) => typeof routeModule[method] === "function")
+      it("żaden handler nie zwraca 200 żądaniu bez tożsamości", async () => {
+        await writeConfig(closedConfig())
+        const routeModule = await load()
+        const handlers = HTTP_METHODS.filter((method) => typeof routeModule[method] === "function")
 
-          expect(handlers.length).toBeGreaterThan(0)
+        expect(handlers.length).toBeGreaterThan(0)
 
-          for (const method of handlers) {
-            const handler = routeModule[method] as Handler
-            const response = await handler(
-              buildRequest(method, null, "?projectId=proj-analiza"),
-              ROUTE_CONTEXT,
-            )
+        for (const method of handlers) {
+          const handler = routeModule[method] as Handler
+          const response = await handler(
+            buildRequest(method, null, "?projectId=proj-analiza"),
+            ROUTE_CONTEXT,
+          )
 
-            if (knownOpen) {
-              // Charakteryzacja stanu obecnego. Gdy bramka zostanie dodana, ten
-              // test zrobi się czerwony — wtedy usuń wpis z OPEN_ENDPOINTS,
-              // a poniższa gałąź zacznie obowiązywać.
-              expect(response.status, `${modulePath} ${method}`).toBe(200)
-            } else {
-              expect(response.status, `${modulePath} ${method}`).not.toBe(200)
-              expect([401, 403, 404]).toContain(response.status)
-            }
-          }
-        },
-      )
+          expect(response.status, `${modulePath} ${method}`).not.toBe(200)
+          expect([401, 403, 404], `${modulePath} ${method}`).toContain(response.status)
+        }
+      })
     })
   }
 })
@@ -197,8 +168,11 @@ describe("GET /api/cortex-cowork/projects — filtr ról po stronie serwera", ()
   async function listProjectsAs(email: string | null): Promise<{ status: number; names: string[] }> {
     const { GET } = await import("./projects/route")
     const response = await GET(buildRequest("GET", email) as Parameters<typeof GET>[0])
-    const body = (await response.json()) as Array<{ name: string }>
-    return { status: response.status, names: body.map((tile) => tile.name) }
+    const body: unknown = await response.json()
+    // Odmowa oddaje obiekt z komunikatem, nie tablicę — brak nazw jest tu
+    // wynikiem, a nie błędem parsowania, więc nie rzucamy.
+    const names = Array.isArray(body) ? (body as Array<{ name: string }>).map((t) => t.name) : []
+    return { status: response.status, names }
   }
 
   it("analityk widzi wyłącznie projekt swojej roli", async () => {
@@ -255,18 +229,77 @@ describe("GET /api/cortex-cowork/projects — filtr ról po stronie serwera", ()
     expect(admin.names).not.toContain("Projekt Wylaczony")
   })
 
-  // LUKA (udokumentowana, do naprawy). project-gate.ts komentuje tę samą gałąź
-  // `!email` w visibleProjectsFor() jako "lower-stakes use... nothing is
-  // actually exposed by omission" i zabezpiecza się przed nią WŁASNYM
-  // sprawdzeniem — ale tylko dla sesji. Na tym endpoincie gałąź działa dalej i
-  // wypuszcza nazwy oraz opisy wszystkich włączonych projektów.
-  it("LUKA (udokumentowana, do naprawy): żądanie bez tożsamości dostaje wszystkie włączone projekty", async () => {
+  // Regresja domknięta 30.07.2026. Gałąź `!email` w visibleProjectsFor()
+  // wypuszczała anonimowemu żądaniu nazwy, opisy i briefy wszystkich włączonych
+  // projektów. project-gate.ts zauważył tę gałąź wcześniej, ale zabezpieczył
+  // przed nią wyłącznie sesje, uzasadniając to tym, że na liście kafelków "no
+  // identity just means an empty-feeling list" — co było nieprawdą właśnie
+  // tutaj. Dziś obie powierzchnie modułu odpowiadają tak samo (denyAnonymous).
+  it("żądanie bez tożsamości dostaje 401, a nie listę projektów", async () => {
     await writeConfig(closedConfig())
+
+    const { status, names } = await listProjectsAs(null)
+
+    expect(status).toBe(401)
+    expect(names).toEqual([])
+  })
+
+  // 401 dotyczy BRAKU TOŻSAMOŚCI, nie braku uprawnień — te dwa przypadki mają
+  // różne odpowiedzi i test trzyma je obok siebie, żeby nikt ich nie zlał w
+  // jedno "odmów wszystkim bez roli".
+  it("odróżnia brak tożsamości (401) od tożsamości bez roli (200 z pustą listą)", async () => {
+    await writeConfig(closedConfig())
+
+    const anonymous = await listProjectsAs(null)
+    const identified = await listProjectsAs(OUTSIDER_EMAIL)
+
+    expect(anonymous.status).toBe(401)
+    expect(identified.status).toBe(200)
+    expect(identified.names).toEqual([])
+  })
+
+  // Świadomy wyjątek, nie przeoczenie: w trybie bootstrap (zero przypisań ról)
+  // instancja jest jeszcze nieskonfigurowana i przechodzi KAŻDE żądanie, także
+  // anonimowe — dokładnie tak, jak requireProjectAccess() traktuje sesje.
+  // Gdyby ten wyjątek miał kiedyś zniknąć, ma zniknąć w OBU miejscach naraz.
+  it("tryb otwarty: anonimowe żądanie nadal widzi projekty (bootstrap, zgodnie z project-gate)", async () => {
+    await writeConfig(openModeConfig())
 
     const { status, names } = await listProjectsAs(null)
 
     expect(status).toBe(200)
     expect(names.sort()).toEqual(["Projekt Analiza", "Projekt Raporty"])
+  })
+})
+
+// Katalog skilli to metadane (id, nazwy, opisy, przypisanie do departamentów),
+// ale wciąż wgląd w wewnętrzną strukturę organizacji. Do 30.07.2026 handler nie
+// miał żadnej bramki i oddawał całość dowolnemu żądaniu.
+describe("GET /api/cortex-cowork/skills — wymóg tożsamości", () => {
+  async function readSkills(email: string | null): Promise<{ status: number; body: unknown }> {
+    const { GET } = await import("./skills/route")
+    const response = await GET(buildRequest("GET", email) as Parameters<typeof GET>[0])
+    return { status: response.status, body: await response.json() }
+  }
+
+  it("odmawia 401 żądaniu bez tożsamości i nie oddaje katalogu", async () => {
+    await writeConfig(closedConfig())
+
+    const { status, body } = await readSkills(null)
+
+    expect(status).toBe(401)
+    expect(Array.isArray(body)).toBe(false)
+  })
+
+  // Kontrola pozytywna: sam fakt zalogowania wystarcza — to nie jest bramka
+  // projektowa, więc użytkownik bez żadnej roli też ma dostać katalog.
+  it("przepuszcza zalogowanego użytkownika, także bez roli", async () => {
+    await writeConfig(closedConfig())
+
+    const { status, body } = await readSkills(OUTSIDER_EMAIL)
+
+    expect(status).toBe(200)
+    expect(Array.isArray(body)).toBe(true)
   })
 })
 
