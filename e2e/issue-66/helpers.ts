@@ -13,12 +13,36 @@ interface MockAuthOptions {
   authed?: boolean
   email?: string
   hasAccess?: boolean
+  /** Kody kafelków zwracane przez /api/me/access. Domyślnie sam `idp` — ta
+   *  legacy suita chodzi wyłącznie po `/idp/*` i po hubie. */
+  apps?: string[]
 }
 
+/** Jedyny kafelek, po którym chodzą testy z tej suity. */
+const IDP_APP_CODE = "idp"
+
+/**
+ * Powłoka Cortex360 bramkuje każdą stronę DWOMA niezależnymi sygnałami
+ * (`AppGate` w app/idp/components/shell/app-gate.tsx):
+ *
+ *   1. `GET /user/me`       — zewnętrzny backend IDP, `has_access`
+ *   2. `GET /api/me/access` — WŁASNY endpoint nad własnym Postgresem, granty
+ *
+ * Ta suita historycznie mockowała tylko (1), bo (2) nie było wtedy
+ * fail-closed w tym scenariuszu. Po unifikacji bramek (30.07.2026) jest, a
+ * `playwright.config.ts` celowo ustawia `DEV_USER_EMAIL: ""` — bez tożsamości
+ * zastępczej (2) odpowiada 401, AppGate odmawia i strona nigdy się nie
+ * renderuje. Dlatego (2) mockujemy tutaj razem z (1): oba opisują TĘ SAMĄ
+ * tożsamość, więc rozjazd między nimi byłby stanem, którego produkcja nie zna.
+ *
+ * `authed: false` znaczy "brak tożsamości" i musi zgasić OBA sygnały naraz —
+ * inaczej test anonimowy dowodziłby tylko tyle, że backend IDP nie odpowiada.
+ */
 export async function mockAuth(page: Page, opts: MockAuthOptions = {}): Promise<void> {
   const authed = opts.authed ?? true
   const email = opts.email ?? "demo@cortex.local"
   const hasAccess = opts.hasAccess ?? true
+  const apps = opts.apps ?? [IDP_APP_CODE]
 
   await page.route("**/user/me", async (route) => {
     if (!authed) {
@@ -34,6 +58,22 @@ export async function mockAuth(page: Page, opts: MockAuthOptions = {}): Promise<
         name: email.split("@")[0],
         has_access: hasAccess,
       }),
+    })
+  })
+
+  await page.route("**/api/me/access", async (route) => {
+    if (!authed) {
+      await route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "unauthenticated" }),
+      })
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ allowed: apps.length > 0, apps, email }),
     })
   })
 }
