@@ -1,9 +1,11 @@
 "use client"
 
 import {
+  useCreateUser,
   useKonfiguracjaRoles,
   useKonfiguracjaUsers,
   useSetUserRoles,
+  useUpdateUser,
 } from "@/features/system-config/hooks"
 import type { RoleSummary, UserWithRoles } from "@/features/system-config/types"
 import { toastApiError } from "@cortex/api"
@@ -16,21 +18,42 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   EmptyState,
+  Input,
   Label,
+  LoadingState,
   PageHeader,
 } from "@cortex/ui"
-import { UserCog, Users } from "lucide-react"
+import { MoreHorizontal, Pencil, Plus, Power, PowerOff, UserCog, Users } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
+
+interface NewUserForm {
+  email: string
+  fullName: string
+}
+
+const EMPTY_NEW_USER: NewUserForm = { email: "", fullName: "" }
 
 export default function UzytkownicyPage() {
   const usersQuery = useKonfiguracjaUsers()
   const rolesQuery = useKonfiguracjaRoles()
   const setUserRoles = useSetUserRoles()
+  const createUser = useCreateUser()
+  const updateUser = useUpdateUser()
 
   const [edited, setEdited] = useState<UserWithRoles | null>(null)
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([])
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [newUser, setNewUser] = useState<NewUserForm>(EMPTY_NEW_USER)
+
+  const [editedDetails, setEditedDetails] = useState<UserWithRoles | null>(null)
+  const [fullNameDraft, setFullNameDraft] = useState("")
 
   const users = usersQuery.data ?? []
   const roles = rolesQuery.data ?? []
@@ -60,16 +83,77 @@ export default function UzytkownicyPage() {
     }
   }
 
+  function openCreateUser() {
+    setNewUser(EMPTY_NEW_USER)
+    setIsCreateOpen(true)
+  }
+
+  async function handleCreateUser() {
+    try {
+      const created = await createUser.mutateAsync({
+        email: newUser.email.trim(),
+        fullName: newUser.fullName.trim() || null,
+      })
+      toast.success(`Dodano użytkownika ${created.email}`)
+      setIsCreateOpen(false)
+    } catch (error) {
+      toastApiError(error, "Nie udało się dodać użytkownika")
+    }
+  }
+
+  function openEditDetails(user: UserWithRoles) {
+    setFullNameDraft(user.fullName ?? "")
+    setEditedDetails(user)
+  }
+
+  async function handleSaveDetails() {
+    if (!editedDetails) return
+    try {
+      await updateUser.mutateAsync({
+        id: editedDetails.id,
+        body: { fullName: fullNameDraft.trim() || null },
+      })
+      toast.success(`Zapisano dane użytkownika ${editedDetails.email}`)
+      setEditedDetails(null)
+    } catch (error) {
+      toastApiError(error, "Nie udało się zapisać danych użytkownika")
+    }
+  }
+
+  // Dezaktywacja przechodzi przez assertModuleStaysReachable w serwisie —
+  // odrzucenie (409 self-lockout) oznacza, że to ostatni aktywny użytkownik
+  // z dostępem do Konfiguracji Systemu. Bez potwierdzenia: to ten sam poziom
+  // ryzyka co "Zmień role", które też zapisuje od razu po kliknięciu.
+  async function handleToggleActive(user: UserWithRoles) {
+    try {
+      await updateUser.mutateAsync({ id: user.id, body: { isActive: !user.isActive } })
+      toast.success(
+        user.isActive ? `Dezaktywowano użytkownika ${user.email}` : `Aktywowano użytkownika ${user.email}`,
+      )
+    } catch (error) {
+      toastApiError(
+        error,
+        user.isActive ? "Nie udało się dezaktywować użytkownika" : "Nie udało się aktywować użytkownika",
+      )
+    }
+  }
+
   return (
     <>
       <PageHeader
         title="Użytkownicy"
         description="Tożsamości i przypisane im role. Uprawnienia wynikają z ról, nie są nadawane bezpośrednio użytkownikowi."
+        actions={
+          <Button size="sm" onClick={openCreateUser}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            Dodaj użytkownika
+          </Button>
+        }
       />
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         {usersQuery.isLoading ? (
-          <p className="text-sm text-muted-foreground">Wczytywanie użytkowników...</p>
+          <LoadingState label="Wczytywanie użytkowników…" />
         ) : usersQuery.isError ? (
           <EmptyState
             icon={Users}
@@ -118,10 +202,42 @@ export default function UzytkownicyPage() {
                       )}
                     </td>
                     <td className="px-4 py-2 text-right">
-                      <Button size="sm" variant="outline" onClick={() => openRoleDialog(user)}>
-                        <UserCog className="mr-1.5 h-3.5 w-3.5" />
-                        Zmień role
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button size="sm" variant="outline" onClick={() => openRoleDialog(user)}>
+                          <UserCog className="mr-1.5 h-3.5 w-3.5" />
+                          Zmień role
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              aria-label={`Więcej akcji dla ${user.email}`}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEditDetails(user)}>
+                              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                              Edytuj dane
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleToggleActive(user)}>
+                              {user.isActive ? (
+                                <>
+                                  <PowerOff className="mr-1.5 h-3.5 w-3.5" />
+                                  Dezaktywuj
+                                </>
+                              ) : (
+                                <>
+                                  <Power className="mr-1.5 h-3.5 w-3.5" />
+                                  Aktywuj
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -130,6 +246,88 @@ export default function UzytkownicyPage() {
           </div>
         )}
       </div>
+
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nowy użytkownik</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="new-user-email">E-mail</Label>
+              <Input
+                id="new-user-email"
+                type="email"
+                value={newUser.email}
+                onChange={(event) => setNewUser((current) => ({ ...current, email: event.target.value }))}
+                placeholder="jan.kowalski@firma.pl"
+              />
+              <span className="text-xs text-muted-foreground">
+                To wyłącznie pre-provisioning — wiersz z e-mailem, żeby dało się nadać rolę zanim ta
+                osoba się zaloguje. Uwierzytelnianie działa przez oauth2-proxy, nie przez hasło.
+              </span>
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label htmlFor="new-user-name">Imię i nazwisko</Label>
+              <Input
+                id="new-user-name"
+                value={newUser.fullName}
+                onChange={(event) =>
+                  setNewUser((current) => ({ ...current, fullName: event.target.value }))
+                }
+                placeholder="opcjonalnie"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+              Anuluj
+            </Button>
+            <Button onClick={handleCreateUser} disabled={createUser.isPending}>
+              Utwórz
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editedDetails !== null} onOpenChange={(open) => !open && setEditedDetails(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Dane użytkownika {editedDetails?.email}</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="edit-user-email">E-mail</Label>
+              <Input id="edit-user-email" value={editedDetails?.email ?? ""} disabled />
+              <span className="text-xs text-muted-foreground">
+                Tożsamość nie jest edytowalna — inny e-mail to inny użytkownik.
+              </span>
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label htmlFor="edit-user-name">Imię i nazwisko</Label>
+              <Input
+                id="edit-user-name"
+                value={fullNameDraft}
+                onChange={(event) => setFullNameDraft(event.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditedDetails(null)}>
+              Anuluj
+            </Button>
+            <Button onClick={handleSaveDetails} disabled={updateUser.isPending}>
+              Zapisz
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={edited !== null} onOpenChange={(open) => !open && setEdited(null)}>
         <DialogContent>

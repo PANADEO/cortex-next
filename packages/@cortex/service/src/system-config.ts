@@ -10,11 +10,13 @@ import {
   userRoles,
   users,
   type ApplicationRow,
+  type RoleRow,
+  type UserRow,
 } from "@cortex/db"
 import { TileKind } from "@cortex/tile-sdk"
 import { and, asc, eq, inArray, ne } from "drizzle-orm"
 import { z } from "zod"
-import { clearTileAccessCache } from "./rbac"
+import { clearTileAccessCache, normalizeEmail } from "./rbac"
 
 export const ADMIN_ROLE_CODE = "admin"
 export const SYSTEM_CONFIG_APP_CODE = "system-config"
@@ -114,6 +116,57 @@ export const applicationPatchSchema = applicationFieldsSchema.partial()
 
 export type ApplicationPatch = z.infer<typeof applicationPatchSchema>
 
+/**
+ * "Utworzenie użytkownika" tutaj oznacza wyłącznie pre-provisioning — wiersz z
+ * e-mailem, żeby dało się nadać rolę zanim ta osoba się zaloguje. Brak hasła:
+ * jedynym mechanizmem uwierzytelniania jest nagłówek X-Auth-Request-Email
+ * z oauth2-proxy (CLAUDE.md § Auth).
+ */
+export const userInputSchema = z.object({
+  email: z.string().email().max(320),
+  fullName: z.string().max(200).nullish(),
+})
+
+export type UserInput = z.infer<typeof userInputSchema>
+
+/** Bez e-maila — zmiana tożsamości nie jest edycją, tylko innym użytkownikiem.
+ *  isActive tu, nie w osobnej funkcji: to pole przechodzi przez DOKŁADNIE ten
+ *  sam niezmiennik co reszta PATCH-a, więc nie ma powodu na osobną ścieżkę. */
+export const userPatchSchema = z
+  .object({
+    fullName: z.string().max(200).nullish(),
+    isActive: z.boolean(),
+  })
+  .partial()
+
+export type UserPatch = z.infer<typeof userPatchSchema>
+
+/** Kod roli, identyczny regex jak applications.code — niezmienny po utworzeniu
+ *  (patrz updateRole): seed (seed-system-config.mjs) robi idempotentny
+ *  `on conflict (code) do update` na tej kolumnie. `isSystem` celowo POZA tym
+ *  schematem — nigdy nie jest polem formularza, ani przy tworzeniu, ani edycji. */
+export const roleInputSchema = z.object({
+  code: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-z0-9-]+$/, "Kod może zawierać tylko małe litery, cyfry i myślnik"),
+  name: z.string().min(1).max(120),
+  description: z.string().max(500).nullish(),
+})
+
+export type RoleInput = z.infer<typeof roleInputSchema>
+
+/** Bez `code` (niezmienny) i bez `isSystem` (nigdy z formularza). */
+export const rolePatchSchema = z
+  .object({
+    name: z.string().min(1).max(120),
+    description: z.string().max(500).nullish(),
+  })
+  .partial()
+
+export type RolePatch = z.infer<typeof rolePatchSchema>
+
 export async function listUsers(): Promise<UserWithRoles[]> {
   const db = getDb()
 
@@ -163,6 +216,59 @@ export async function listUsers(): Promise<UserWithRoles[]> {
   return [...byId.values()]
 }
 
+/**
+ * Pre-provisioning: wstawia wiersz z e-mailem, bez ról. Nowy użytkownik nie ma
+ * jeszcze żadnego grantu, więc nie może zmienić niczyjego dostępu — bez
+ * clearTileAccessCache() (wzorem createApplication, który też go nie woła).
+ */
+export async function createUser(input: UserInput): Promise<UserRow> {
+  const [created] = await getDb()
+    .insert(users)
+    .values({ email: normalizeEmail(input.email), fullName: input.fullName ?? null })
+    .returning()
+
+  return created as UserRow
+}
+
+/**
+ * PATCH z prawdziwą semantyką częściową (patrz updateApplication) — pola
+ * nieobecne w `patch` zostają takie, jakie są w bazie.
+ *
+ * `isActive` jest jedynym polem tego PATCH-a, które może odciąć kogoś od
+ * modułu administracyjnego, więc dopiero TU (nie w formularzu) egzekwowany
+ * jest niezmiennik: dezaktywacja ostatniego aktywnego posiadacza dostępu do
+ * system-config rzuca SelfLockoutError, PRZED zapisem. Reaktywacja nigdy nie
+ * pogarsza sytuacji, więc przechodzi przez ten sam tor i zawsze się udaje.
+ */
+export async function updateUser(id: string, patch: UserPatch): Promise<UserRow | null> {
+  const db = getDb()
+
+  const updated = await db.transaction(async (tx) => {
+    const [existing] = await tx.select().from(users).where(eq(users.id, id))
+    if (!existing) return null
+
+    const nextIsActive = patch.isActive ?? existing.isActive
+    if (nextIsActive !== existing.isActive) {
+      await assertModuleStaysReachable(tx, { direction: "user-active", userId: id, isActive: nextIsActive })
+    }
+
+    const [row] = await tx
+      .update(users)
+      .set({
+        fullName: "fullName" in patch ? (patch.fullName ?? null) : existing.fullName,
+        isActive: nextIsActive,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning()
+
+    return (row as UserRow) ?? null
+  })
+
+  if (updated) clearTileAccessCache()
+  return updated
+}
+
 export async function listRoles(): Promise<RoleSummary[]> {
   const rows = await getDb()
     .select({
@@ -176,6 +282,82 @@ export async function listRoles(): Promise<RoleSummary[]> {
     .orderBy(asc(roles.code))
 
   return rows
+}
+
+/** Nowa rola nie ma jeszcze żadnego użytkownika ani grantu, więc nie może
+ *  zmienić niczyjego dostępu — bez clearTileAccessCache() (wzorem createApplication). */
+export async function createRole(input: RoleInput): Promise<RoleRow> {
+  const [created] = await getDb()
+    .insert(roles)
+    .values({ code: input.code, name: input.name, description: input.description ?? null })
+    .returning()
+
+  return created as RoleRow
+}
+
+/**
+ * `name`/`description` są czysto opisowe — nie wpływają na to, kto ma dostęp
+ * do czego (autoryzacja idzie przez role.id, nigdy przez kod ani nazwę), więc
+ * ta funkcja nie przechodzi przez assertModuleStaysReachable i nie musi czyścić
+ * cache'a uprawnień. `code` i `isSystem` nie są w rolePatchSchema — niezmienne
+ * z poziomu tego API.
+ */
+export async function updateRole(id: string, patch: RolePatch): Promise<RoleRow | null> {
+  const db = getDb()
+
+  const [existing] = await db.select().from(roles).where(eq(roles.id, id))
+  if (!existing) return null
+
+  const [updated] = await db
+    .update(roles)
+    .set({
+      name: patch.name ?? existing.name,
+      description: "description" in patch ? (patch.description ?? null) : existing.description,
+      updatedAt: new Date(),
+    })
+    .where(eq(roles.id, id))
+    .returning()
+
+  return (updated as RoleRow) ?? null
+}
+
+/**
+ * Usuwa rolę. `role_application_scopes`, `user_roles` i `permissions_matrix`
+ * mają ON DELETE CASCADE na role_id — ten DELETE automatycznie kasuje
+ * WSZYSTKIE granty tej roli, przypisania użytkowników do niej i jej granty
+ * zakresów, bez wywołania żadnego dzisiejszego niezmiennika. Stąd jawne
+ * wywołanie assertModuleStaysReachable PRZED DELETE, w tej samej transakcji.
+ *
+ * Kolejność dwóch checków jest świadoma i celowa: `isSystem` sprawdzany
+ * PIERWSZY, przed wzięciem blokady wiersza `applications` i policzeniem
+ * aktywnych posiadaczy dostępu. Rola systemowa nie da się usunąć NIEZALEŻNIE
+ * od tego, czy akurat jest (czy nie jest) ostatnim posiadaczem dostępu do
+ * system-config — to prostsza, bardziej absolutna reguła, więc wygrywa: gdy
+ * oba warunki są prawdziwe naraz, klient dostaje 409 system-role-protected,
+ * nie 409 self-lockout. Patrz test w system-config.integration.test.ts,
+ * który wprost sprawdza tę kolejność.
+ */
+export async function deleteRole(id: string): Promise<boolean> {
+  const db = getDb()
+
+  const removed = await db.transaction(async (tx) => {
+    const [existing] = await tx.select().from(roles).where(eq(roles.id, id))
+    if (!existing) return false
+
+    if (existing.isSystem) {
+      throw new SystemRoleProtectedError(
+        `Nie można usunąć roli systemowej "${existing.name}" — role systemowe są chronione przed usunięciem.`,
+      )
+    }
+
+    await assertModuleStaysReachable(tx, { direction: "role-deleted", roleId: id })
+
+    const deleted = await tx.delete(roles).where(eq(roles.id, id)).returning()
+    return deleted.length > 0
+  })
+
+  if (removed) clearTileAccessCache()
+  return removed
 }
 
 /**
@@ -378,6 +560,15 @@ export class SelfLockoutError extends Error {
   }
 }
 
+/** Próba usunięcia roli systemowej (np. `admin`) — chroniona niezależnie od
+ *  tego, ilu aktywnych użytkowników akurat ją trzyma. */
+export class SystemRoleProtectedError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "SystemRoleProtectedError"
+  }
+}
+
 /**
  * Ochrona przed samo-zablokowaniem, egzekwowana W SERWISIE, nie w formularzu —
  * blokada pola w UI nie zatrzymuje żądania wysłanego curlem.
@@ -424,13 +615,26 @@ function assertKeepsModuleReachable(existing: ApplicationRow, input: Application
 }
 
 /**
- * Zmiana, która może odciąć ludzi od modułu administracyjnego. Dwa kierunki,
- * jeden niezmiennik — dlatego jeden typ, nie dwie osobne ścieżki.
+ * Zmiana, która może odciąć ludzi od modułu administracyjnego. Pięć kierunków,
+ * jeden niezmiennik — dlatego jeden typ, nie pięć osobnych ścieżek.
+ *
+ * `user-active` (PATCH { isActive: false } na użytkowniku) i `role-deleted`
+ * (deleteRole) dokładają się do trójki, którą ta funkcja pilnowała od
+ * początku (application-roles/user-roles/role-applications) — żaden z tamtych
+ * trzech kierunków nie modeluje "ten sam zestaw ról, ale użytkownik przestaje
+ * być aktywny" ani "rola znika w całości razem ze WSZYSTKIMI swoimi grantami
+ * (kaskada FK)". To dokładnie ten sam kształt luki, który audyt bezpieczeństwa
+ * tego modułu znalazł już wcześniej — poprawka na jednej warstwie (np.
+ * `assertKeepsModuleReachable` dla wiersza `applications`), nie przeniesiona
+ * na drugą (mutacje, które omijają tamten wiersz, a i tak potrafią odciąć
+ * wszystkich).
  */
 type ModuleAccessChange =
   | { direction: "application-roles"; applicationId: string; roleIds: string[] }
   | { direction: "user-roles"; userId: string; roleIds: string[] }
   | { direction: "role-applications"; roleId: string; applicationIds: string[] }
+  | { direction: "user-active"; userId: string; isActive: boolean }
+  | { direction: "role-deleted"; roleId: string }
 
 /**
  * Niezmiennik: po tej operacji CO NAJMNIEJ JEDEN AKTYWNY UŻYTKOWNIK zachowuje
@@ -480,10 +684,10 @@ async function assertModuleStaysReachable(
       .where(eq(permissionsMatrix.applicationId, moduleRow.id))
   ).map((row) => row.roleId)
 
-  const userChange = change.direction === "user-roles" ? change : null
+  const holderOverride = toHolderOverride(change)
   const grantsAfter = moduleGrantsAfter(change, grantsNow, moduleRow.id)
 
-  if (await hasActiveHolder(tx, grantsAfter, userChange)) return
+  if (await hasActiveHolder(tx, grantsAfter, holderOverride)) return
   if (!(await hasActiveHolder(tx, grantsNow, null))) return
 
   throw new SelfLockoutError(lockoutMessage(change))
@@ -505,7 +709,14 @@ function moduleGrantsAfter(
       return change.applicationIds.includes(moduleId) ? [...withoutRole, change.roleId] : withoutRole
     }
     case "user-roles":
+    case "user-active":
+      // Zestaw RÓL z dostępem do modułu się nie zmienia — zmienia się to, czy
+      // konkretny użytkownik się w ogóle liczy (patrz toHolderOverride niżej).
       return grantsNow
+    case "role-deleted":
+      // ON DELETE CASCADE kasuje wszystkie granty tej roli razem z nią —
+      // grant do modułu (jeśli istniał) znika bezwarunkowo.
+      return grantsNow.filter((granted) => granted !== change.roleId)
   }
 }
 
@@ -517,27 +728,51 @@ function lockoutMessage(change: ModuleAccessChange): string {
       return "Co najmniej jeden aktywny użytkownik musi zachować dostęp do Konfiguracji Systemu — wskazane role nie mają ani jednego aktywnego użytkownika, więc po zapisie nikt nie wszedłby już do tego modułu."
     case "role-applications":
       return "Nie można odebrać tej roli dostępu do Konfiguracji Systemu — to ostatnia rola z aktywnym użytkownikiem, więc po zapisie nikt nie wszedłby już do tego modułu."
+    case "user-active":
+      return "Nie można dezaktywować tego użytkownika — to ostatni aktywny użytkownik z dostępem do Konfiguracji Systemu, więc po zapisie nikt nie wszedłby już do tego modułu."
+    case "role-deleted":
+      return "Nie można usunąć tej roli — to ostatnia rola z aktywnym użytkownikiem mającym dostęp do Konfiguracji Systemu, więc po usunięciu nikt nie wszedłby już do tego modułu."
+  }
+}
+
+/** Opisuje użytkownika, którego stan (role ALBO isActive) właśnie się zmienia
+ *  — jego liczymy wg NOWEGO, jeszcze nie zapisanego stanu, resztę wg bazy.
+ *  Tylko dwa kierunki dotyczą pojedynczego, konkretnego użytkownika. */
+type ActiveHolderOverride =
+  | { userId: string; kind: "roles"; roleIds: string[] }
+  | { userId: string; kind: "active"; isActive: boolean }
+
+function toHolderOverride(change: ModuleAccessChange): ActiveHolderOverride | null {
+  switch (change.direction) {
+    case "user-roles":
+      return { userId: change.userId, kind: "roles", roleIds: change.roleIds }
+    case "user-active":
+      return { userId: change.userId, kind: "active", isActive: change.isActive }
+    default:
+      return null
   }
 }
 
 /**
  * Czy któryś AKTYWNY użytkownik ma choć jedną z tych ról. `override` opisuje
- * użytkownika, którego role właśnie się zmieniają: jego liczymy wg nowego
- * zestawu (jeszcze nie zapisanego), resztę wg stanu w bazie.
+ * użytkownika, którego stan właśnie się zmienia: jego liczymy wg NOWEGO stanu
+ * (jeszcze nie zapisanego — inny zestaw ról, albo inne isActive), resztę wg
+ * stanu w bazie.
  */
 async function hasActiveHolder(
   tx: Transaction,
   roleIds: string[],
-  override: { userId: string; roleIds: string[] } | null,
+  override: ActiveHolderOverride | null,
 ): Promise<boolean> {
   if (roleIds.length === 0) return false
 
-  if (override && override.roleIds.some((roleId) => roleIds.includes(roleId))) {
-    const [self] = await tx
-      .select({ isActive: users.isActive })
-      .from(users)
-      .where(eq(users.id, override.userId))
-    if (self?.isActive) return true
+  if (override) {
+    const overrideCounts =
+      override.kind === "roles"
+        ? override.roleIds.some((roleId) => roleIds.includes(roleId)) &&
+          (await isCurrentlyActive(tx, override.userId))
+        : override.isActive && (await holdsAnyRole(tx, override.userId, roleIds))
+    if (overrideCounts) return true
   }
 
   const holders = await tx
@@ -554,6 +789,25 @@ async function hasActiveHolder(
     .limit(1)
 
   return holders.length > 0
+}
+
+/** Stan `isActive` W BAZIE (jeszcze nie zapisany nowy stan) — używane, gdy
+ *  override zmienia ROLE użytkownika, ale nie jego isActive. */
+async function isCurrentlyActive(tx: Transaction, userId: string): Promise<boolean> {
+  const [self] = await tx.select({ isActive: users.isActive }).from(users).where(eq(users.id, userId))
+  return self?.isActive ?? false
+}
+
+/** Role użytkownika W BAZIE (jeszcze nie zapisany nowy stan) — używane, gdy
+ *  override zmienia isActive użytkownika, ale nie jego role. */
+async function holdsAnyRole(tx: Transaction, userId: string, roleIds: string[]): Promise<boolean> {
+  const [self] = await tx
+    .select({ id: users.id })
+    .from(users)
+    .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    .where(and(eq(users.id, userId), inArray(userRoles.roleId, roleIds)))
+    .limit(1)
+  return Boolean(self)
 }
 
 function unique(values: string[]): string[] {

@@ -1,4 +1,9 @@
-import { SYSTEM_CONFIG_APP_CODE, SelfLockoutError, requireTileAccess } from "@cortex/service"
+import {
+  SYSTEM_CONFIG_APP_CODE,
+  SelfLockoutError,
+  SystemRoleProtectedError,
+  requireTileAccess,
+} from "@cortex/service"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
@@ -44,6 +49,13 @@ export function toErrorResponse(error: unknown): NextResponse {
 
   if (error instanceof SelfLockoutError) {
     return NextResponse.json({ error: "self-lockout", message: error.message }, { status: 409 })
+  }
+
+  if (error instanceof SystemRoleProtectedError) {
+    return NextResponse.json(
+      { error: "system-role-protected", message: error.message },
+      { status: 409 },
+    )
   }
 
   if (isUniqueViolation(error)) {

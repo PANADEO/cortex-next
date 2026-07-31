@@ -26,6 +26,19 @@ const service = vi.hoisted(() => {
     code: "przykladowy-kafelek",
     name: "Przykładowy kafelek",
   }
+  const user = {
+    id: "22222222-2222-4222-8222-222222222222",
+    email: "przykladowy@example.com",
+    fullName: "Przykładowy użytkownik",
+    isActive: true,
+  }
+  const role = {
+    id: "33333333-3333-4333-8333-333333333333",
+    code: "przykladowa-rola",
+    name: "Przykładowa rola",
+    description: null,
+    isSystem: false,
+  }
   return {
     listUsers: vi.fn(async () => []),
     listRoles: vi.fn(async () => []),
@@ -37,6 +50,11 @@ const service = vi.hoisted(() => {
     setUserRoles: vi.fn(async () => undefined),
     setApplicationRoles: vi.fn(async () => undefined),
     setRoleApplications: vi.fn(async () => undefined),
+    createUser: vi.fn(async () => user),
+    updateUser: vi.fn(async () => user),
+    createRole: vi.fn(async () => role),
+    updateRole: vi.fn(async () => role),
+    deleteRole: vi.fn(async () => true),
   }
 })
 

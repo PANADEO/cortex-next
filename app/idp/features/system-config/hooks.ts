@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { endpoints, queryKeys } from "./queries"
-import type { ApplicationInput } from "./types"
+import type { ApplicationInput, RoleInput, RolePatch, UserInput, UserPatch } from "./types"
 
 export function useKonfiguracjaUsers() {
   return useQuery({ queryKey: queryKeys.users(), queryFn: endpoints.users.list })
@@ -16,12 +16,52 @@ export function useKonfiguracjaApplications() {
   return useQuery({ queryKey: queryKeys.applications(), queryFn: endpoints.applications.list })
 }
 
+export function useCreateUser() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UserInput) => endpoints.users.create(body),
+    onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.users() }),
+  })
+}
+
+export function useUpdateUser() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UserPatch }) => endpoints.users.update(id, body),
+    onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.users() }),
+  })
+}
+
 export function useSetUserRoles() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: ({ id, roleIds }: { id: string; roleIds: string[] }) =>
       endpoints.users.setRoles(id, roleIds),
     onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.users() }),
+  })
+}
+
+export function useCreateRole() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (body: RoleInput) => endpoints.roles.create(body),
+    onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.roles() }),
+  })
+}
+
+export function useUpdateRole() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: RolePatch }) => endpoints.roles.update(id, body),
+    onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.roles() }),
+  })
+}
+
+export function useDeleteRole() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => endpoints.roles.remove(id),
+    onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.roles() }),
   })
 }
 

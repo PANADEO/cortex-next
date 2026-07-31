@@ -27,11 +27,15 @@ import { clearTileAccessCache, requireTileAccess } from "./rbac"
 import {
   SYSTEM_CONFIG_APP_CODE,
   SelfLockoutError,
+  SystemRoleProtectedError,
+  createUser,
   deleteApplication,
+  deleteRole,
   setApplicationRoles,
   setRoleApplications,
   setUserRoles,
   updateApplication,
+  updateUser,
 } from "./system-config"
 
 const hasDatabase = Boolean(process.env.DATABASE_URL)
@@ -222,6 +226,32 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
       await deleteApplication(applicationId)
 
       expect(await canAccess()).toBe(false)
+    })
+  })
+
+  // D1: createUser MUSI znormalizować e-mail dokładnie tak samo jak odczyt
+  // (getRequestEmail w rbac.ts), inaczej "Jan@Firma.pl" utworzony przez UI
+  // nigdy nie dopasuje się do znormalizowanego adresu z nagłówka auth i
+  // "istnieje" w UI, a nigdy nie zadziała.
+  describe("createUser — normalizacja e-maila", () => {
+    it("e-mail z wielkimi literami trafia w swój wiersz przy odczycie przez nagłówek auth", async () => {
+      const db = getDb()
+      const mixedCaseEmail = `Mieszany-${SUFFIX}@Firma.PL`
+
+      const created = await createUser({ email: mixedCaseEmail })
+      try {
+        expect(created.email).toBe(mixedCaseEmail.toLowerCase())
+
+        await db.insert(userRoles).values({ userId: created.id, roleId })
+        clearTileAccessCache()
+
+        // getRequestEmail (rbac.ts) normalizuje nagłówek do lowercase — to
+        // dokładnie to, co createUser musiał zrobić przy zapisie.
+        const result = await requireTileAccess(makeRequest(mixedCaseEmail.toLowerCase()), APP_CODE)
+        expect(result.allowed).toBe(true)
+      } finally {
+        await db.delete(users).where(eq(users.id, created.id))
+      }
     })
   })
 
@@ -584,6 +614,123 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
           .from(permissionsMatrix)
           .where(eq(permissionsMatrix.roleId, emptyRoleId))
         expect(granted.map((row) => row.applicationId)).toEqual([applicationId])
+      })
+    })
+
+    // Czwarty kierunek assertModuleStaysReachable (D1): PATCH { isActive: false }
+    // na użytkowniku. `userId` w tym bloku jest, przez konstrukcję beforeEach
+    // powyżej, JEDYNYM aktywnym posiadaczem dostępu do systemConfigId.
+    describe("updateUser — dezaktywacja użytkownika", () => {
+      it("SEDNO: odrzuca dezaktywację ostatniego aktywnego użytkownika z dostępem do modułu", async () => {
+        await expect(updateUser(userId, { isActive: false })).rejects.toBeInstanceOf(SelfLockoutError)
+
+        const [row] = await getDb().select().from(users).where(eq(users.id, userId))
+        expect(row!.isActive).toBe(true)
+      })
+
+      it("pozwala dezaktywować, gdy INNY aktywny użytkownik zachowuje dostęp", async () => {
+        const db = getDb()
+        await db.insert(userRoles).values({ userId: secondUserId, roleId })
+
+        const updated = await updateUser(userId, { isActive: false })
+
+        expect(updated?.isActive).toBe(false)
+      })
+
+      it("reaktywacja przechodzi ZAWSZE, nawet z modułu już nieosiągalnego", async () => {
+        // Odcinamy dostęp z pominięciem niezmiennika (bezpośredni UPDATE) —
+        // symulacja stanu, z którego normalnie dałoby się wyjść tylko ręcznym
+        // SQL-em. Operacja, która niczego nie pogarsza, ma prawo przejść.
+        await getDb().update(users).set({ isActive: false }).where(eq(users.id, userId))
+
+        const reactivated = await updateUser(userId, { isActive: true })
+
+        expect(reactivated?.isActive).toBe(true)
+      })
+
+      it("edycja samego fullName nie dotyka niezmiennika", async () => {
+        const updated = await updateUser(userId, { fullName: "Jan Kowalski" })
+
+        expect(updated?.fullName).toBe("Jan Kowalski")
+        expect(updated?.isActive).toBe(true)
+      })
+    })
+
+    // Piąty kierunek (D2): deleteRole(). ON DELETE CASCADE na role_id kasuje
+    // WSZYSTKIE granty/przypisania tej roli bez pytania — stąd jawne
+    // wywołanie assertModuleStaysReachable PRZED DELETE FROM roles.
+    describe("deleteRole — usunięcie roli", () => {
+      it("SEDNO: odrzuca usunięcie OSTATNIEJ roli dającej dostęp do modułu (self-lockout)", async () => {
+        await expect(deleteRole(roleId)).rejects.toBeInstanceOf(SelfLockoutError)
+
+        const [row] = await getDb().select().from(roles).where(eq(roles.id, roleId))
+        expect(row).toBeDefined()
+      })
+
+      it("pozwala usunąć rolę, gdy INNA rola z aktywnym użytkownikiem zachowuje dostęp", async () => {
+        const db = getDb()
+        await db.insert(userRoles).values({ userId: secondUserId, roleId: emptyRoleId })
+        await db
+          .insert(permissionsMatrix)
+          .values({ roleId: emptyRoleId, applicationId: systemConfigId })
+
+        const removed = await deleteRole(roleId)
+        expect(removed).toBe(true)
+
+        const [row] = await db.select().from(roles).where(eq(roles.id, roleId))
+        expect(row).toBeUndefined()
+      })
+
+      it("usunięcie roli kasuje kaskadowo jej granty i przypisania użytkowników", async () => {
+        const db = getDb()
+        await db.insert(userRoles).values({ userId: secondUserId, roleId: emptyRoleId })
+        await db
+          .insert(permissionsMatrix)
+          .values({ roleId: emptyRoleId, applicationId: systemConfigId })
+
+        await deleteRole(roleId)
+
+        const leftoverUserRoles = await db
+          .select()
+          .from(userRoles)
+          .where(eq(userRoles.roleId, roleId))
+        const leftoverGrants = await db
+          .select()
+          .from(permissionsMatrix)
+          .where(eq(permissionsMatrix.roleId, roleId))
+        expect(leftoverUserRoles).toHaveLength(0)
+        expect(leftoverGrants).toHaveLength(0)
+      })
+
+      // Kolejność dwóch checków w deleteRole(): isSystem sprawdzany PIERWSZY.
+      // Ta rola spełnia OBA warunki naraz (systemowa + jedyny posiadacz
+      // dostępu) — musi wygrać system-role-protected, nie self-lockout.
+      // Gdyby kolejność była odwrócona, ten test spadłby na złym typie błędu.
+      it("SEDNO: rola isSystem jest chroniona NIEZALEŻNIE od bycia ostatnim posiadaczem dostępu", async () => {
+        const db = getDb()
+        const systemRoleCode = `system-rola-${SUFFIX}`
+
+        const [systemRole] = await db
+          .insert(roles)
+          .values({ code: systemRoleCode, name: "Rola systemowa testowa", isSystem: true })
+          .returning()
+
+        try {
+          // Jedynym posiadaczem dostępu do modułu jest TERAZ ta rola systemowa.
+          await db.delete(permissionsMatrix).where(eq(permissionsMatrix.applicationId, systemConfigId))
+          await db
+            .insert(permissionsMatrix)
+            .values({ roleId: systemRole!.id, applicationId: systemConfigId })
+          await db.insert(userRoles).values({ userId, roleId: systemRole!.id })
+          clearTileAccessCache()
+
+          await expect(deleteRole(systemRole!.id)).rejects.toBeInstanceOf(SystemRoleProtectedError)
+
+          const [row] = await db.select().from(roles).where(eq(roles.id, systemRole!.id))
+          expect(row).toBeDefined()
+        } finally {
+          await db.delete(roles).where(eq(roles.id, systemRole!.id))
+        }
       })
     })
   })

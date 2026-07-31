@@ -54,8 +54,11 @@ export function getRequestEmail(headers: Headers): string | null {
   return normalized ? normalized : null
 }
 
-/** Kanoniczna postać adresu: kolumna users.email trzyma wyłącznie lowercase. */
-function normalizeEmail(value: string | null | undefined): string {
+/** Kanoniczna postać adresu: kolumna users.email trzyma wyłącznie lowercase.
+ *  Eksportowana — createUser() w system-config.ts musi znormalizować e-mail
+ *  DOKŁADNIE tak samo jak odczyt, inaczej "Jan@Firma.pl" utworzony przez UI
+ *  nigdy nie dopasuje się do znormalizowanego adresu z nagłówka auth. */
+export function normalizeEmail(value: string | null | undefined): string {
   return value?.trim().toLowerCase() ?? ""
 }
 

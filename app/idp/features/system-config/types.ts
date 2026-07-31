@@ -16,6 +16,45 @@ export interface UserWithRoles {
   roles: RoleSummary[]
 }
 
+/** Kształt zwracany przez POST/PATCH /users — bez ról (te dociąga osobne query,
+ *  odświeżane przez invalidateQueries po każdej mutacji). */
+export interface UserRecord {
+  id: string
+  email: string
+  fullName: string | null
+  isActive: boolean
+}
+
+export interface UserInput {
+  email: string
+  fullName?: string | null
+}
+
+export interface UserPatch {
+  fullName?: string | null
+  isActive?: boolean
+}
+
+/** Kształt zwracany przez POST/PATCH /roles. */
+export interface RoleRecord {
+  id: string
+  code: string
+  name: string
+  description: string | null
+  isSystem: boolean
+}
+
+export interface RoleInput {
+  code: string
+  name: string
+  description?: string | null
+}
+
+export interface RolePatch {
+  name?: string
+  description?: string | null
+}
+
 /** Kształt po stronie klienta: daty przychodzą z API jako stringi ISO, nie Date. */
 export interface Application {
   id: string
