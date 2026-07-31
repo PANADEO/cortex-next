@@ -27,23 +27,36 @@ import {
   AlertTitle,
   Button,
   Checkbox,
+  Combobox,
   EmptyState,
   Input,
   Label,
+  LoadingState,
   PageHeader,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Skeleton,
   Switch,
 } from "@cortex/ui"
 import { ArrowLeft, LayoutDashboard, ShieldAlert, Trash2 } from "lucide-react"
 import Link from "next/link"
+import dynamic from "next/dynamic"
 import { useParams, useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { systemConfigTile } from "../../manifest"
+
+/** Katalog `lucide-react` (D4/D5) jest duży — dociągamy go leniwie, dopiero
+ *  przy otwarciu pickera, nie przy każdym wejściu na tę stronę. Subpath
+ *  (nie barrel `@cortex/ui`) zapewnia realny code-split, wzorem `DocumentViewer`
+ *  (patrz komentarz w `packages/@cortex/ui/src/index.ts`). */
+const IconPicker = dynamic(
+  () => import("@cortex/ui/components/ui/icon-picker").then((mod) => mod.IconPicker),
+  { ssr: false, loading: () => <Skeleton className="h-9 w-full rounded-md" /> },
+)
 
 /** Radix Select nie przyjmuje pustej wartości, a `target` w bazie bywa NULL —
  *  stąd wartownik zamiast "". */
@@ -104,6 +117,15 @@ export default function AplikacjaSzczegolyPage() {
   const applicationsQuery = useKonfiguracjaApplications()
   const application = applicationsQuery.data?.find((item) => item.code === code)
 
+  // Katalog podpowiedzi dla comboboksa Kategorii — zero nowego endpointu,
+  // wartości już są w pamięci przeglądarki na tym ekranie (design doc D6).
+  const existingCategories = useMemo(() => {
+    const values = (applicationsQuery.data ?? [])
+      .map((item) => item.category)
+      .filter((category): category is string => Boolean(category))
+    return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b))
+  }, [applicationsQuery.data])
+
   const rolesQuery = useKonfiguracjaRoles()
   const applicationRolesQuery = useApplicationRoles(application?.id)
 
@@ -132,7 +154,7 @@ export default function AplikacjaSzczegolyPage() {
       <>
         <PageHeader title="Aplikacja" />
         <div className="px-8 py-6">
-          <p className="text-sm text-muted-foreground">Wczytywanie aplikacji...</p>
+          <LoadingState label="Wczytywanie aplikacji…" />
         </div>
       </>
     )
@@ -291,20 +313,16 @@ export default function AplikacjaSzczegolyPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <Label htmlFor="icon">Ikona</Label>
-                <Input
-                  id="icon"
-                  value={form.icon}
-                  onChange={(event) => update("icon", event.target.value)}
-                  placeholder="nazwa z lucide-react, np. Settings"
-                />
+                <IconPicker id="icon" value={form.icon} onChange={(value) => update("icon", value)} />
               </div>
 
               <div className="grid gap-1.5">
                 <Label htmlFor="category">Kategoria</Label>
-                <Input
+                <Combobox
                   id="category"
                   value={form.category}
-                  onChange={(event) => update("category", event.target.value)}
+                  onChange={(value) => update("category", value)}
+                  options={existingCategories}
                   placeholder="np. Administracja"
                 />
               </div>
@@ -420,7 +438,7 @@ export default function AplikacjaSzczegolyPage() {
 
           <div className="grid gap-4 rounded-lg border border-border p-4">
             {rolesQuery.isLoading || applicationRolesQuery.isLoading ? (
-              <p className="text-sm text-muted-foreground">Wczytywanie uprawnień...</p>
+              <LoadingState label="Wczytywanie uprawnień…" />
             ) : roles.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Nie zdefiniowano jeszcze żadnej roli, więc nie ma komu nadać dostępu.
