@@ -1,6 +1,5 @@
 "use client"
 
-import { ScopeNote } from "@/features/system-config/components/scope-note"
 import {
   useKonfiguracjaRoles,
   useKonfiguracjaUsers,
@@ -69,8 +68,6 @@ export default function UzytkownicyPage() {
       />
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
-        <ScopeNote />
-
         {usersQuery.isLoading ? (
           <p className="text-sm text-muted-foreground">Wczytywanie użytkowników...</p>
         ) : usersQuery.isError ? (

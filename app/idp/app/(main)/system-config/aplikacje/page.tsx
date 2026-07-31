@@ -1,6 +1,5 @@
 "use client"
 
-import { ScopeNote } from "@/features/system-config/components/scope-note"
 import { useCreateApplication, useKonfiguracjaApplications } from "@/features/system-config/hooks"
 import { KIND_LABELS, KIND_SHORT_LABELS } from "@/features/system-config/kinds"
 import { toastApiError } from "@cortex/api"
@@ -98,8 +97,6 @@ export default function AplikacjePage() {
       />
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
-        <ScopeNote />
-
         {applicationsQuery.isLoading ? (
           <p className="text-sm text-muted-foreground">Wczytywanie aplikacji...</p>
         ) : applicationsQuery.isError ? (

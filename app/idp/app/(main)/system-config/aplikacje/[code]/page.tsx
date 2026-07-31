@@ -1,6 +1,5 @@
 "use client"
 
-import { ScopeNote } from "@/features/system-config/components/scope-note"
 import {
   useApplicationRoles,
   useDeleteApplication,
@@ -237,8 +236,6 @@ export default function AplikacjaSzczegolyPage() {
       />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
-        <ScopeNote />
-
         {isSelfManaged ? (
           <Alert>
             <ShieldAlert className="h-4 w-4" />
