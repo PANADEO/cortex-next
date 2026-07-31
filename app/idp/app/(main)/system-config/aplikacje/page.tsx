@@ -1,6 +1,7 @@
 "use client"
 
 import { useCreateApplication, useKonfiguracjaApplications } from "@/features/system-config/hooks"
+import { resolveApplicationIcon } from "@/features/system-config/icons"
 import { KIND_LABELS, KIND_SHORT_LABELS } from "@/features/system-config/kinds"
 import { toastApiError } from "@cortex/api"
 import type { TileKind } from "@cortex/tile-sdk"
@@ -16,6 +17,7 @@ import {
   EmptyState,
   Input,
   Label,
+  LoadingState,
   PageHeader,
   Select,
   SelectContent,
@@ -23,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@cortex/ui"
-import { LayoutDashboard, Plus } from "lucide-react"
+import { ChevronRight, LayoutDashboard, Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -98,7 +100,7 @@ export default function AplikacjePage() {
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         {applicationsQuery.isLoading ? (
-          <p className="text-sm text-muted-foreground">Wczytywanie aplikacji...</p>
+          <LoadingState label="Wczytywanie aplikacji…" />
         ) : applicationsQuery.isError ? (
           <EmptyState
             icon={LayoutDashboard}
@@ -122,43 +124,49 @@ export default function AplikacjePage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
                 <tr>
+                  <th className="px-4 py-2" />
                   <th className="px-4 py-2 font-medium">Kod</th>
                   <th className="px-4 py-2 font-medium">Nazwa</th>
                   <th className="px-4 py-2 font-medium">Kategoria</th>
                   <th className="px-4 py-2 font-medium">Typ</th>
                   <th className="px-4 py-2 font-medium">Status</th>
+                  <th className="px-4 py-2" />
                 </tr>
               </thead>
               <tbody>
-                {applications.map((application) => (
-                  <tr
-                    key={application.id}
-                    tabIndex={0}
-                    role="link"
-                    aria-label={`Szczegóły aplikacji ${application.name}`}
-                    className="cursor-pointer border-t border-border outline-none hover:bg-muted/40 focus-visible:bg-muted/40"
-                    onClick={() => router.push(`/system-config/aplikacje/${application.code}`)}
-                    onKeyDown={(event) => {
-                      if (event.key !== "Enter" && event.key !== " ") return
-                      event.preventDefault()
-                      router.push(`/system-config/aplikacje/${application.code}`)
-                    }}
-                  >
-                    <td className="px-4 py-2 font-mono text-xs">{application.code}</td>
-                    <td className="px-4 py-2 font-medium">{application.name}</td>
-                    <td className="px-4 py-2 text-muted-foreground">
-                      {application.category ?? "-"}
-                    </td>
-                    <td className="px-4 py-2">
-                      <Badge variant="outline">{KIND_SHORT_LABELS[application.kind]}</Badge>
-                    </td>
-                    <td className="px-4 py-2">
-                      <Badge variant={application.isActive ? "default" : "secondary"}>
-                        {application.isActive ? "Aktywna" : "Wyłączona"}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
+                {applications.map((application) => {
+                  const Icon = resolveApplicationIcon(application.icon)
+                  return (
+                    <tr key={application.id} className="border-t border-border">
+                      <td className="px-4 py-2">
+                        <Icon className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                      </td>
+                      <td className="px-4 py-2 font-mono text-xs">{application.code}</td>
+                      <td className="px-4 py-2 font-medium">{application.name}</td>
+                      <td className="px-4 py-2 text-muted-foreground">
+                        {application.category ?? "-"}
+                      </td>
+                      <td className="px-4 py-2">
+                        <Badge variant="outline">{KIND_SHORT_LABELS[application.kind]}</Badge>
+                      </td>
+                      <td className="px-4 py-2">
+                        <Badge variant={application.isActive ? "default" : "secondary"}>
+                          {application.isActive ? "Aktywna" : "Wyłączona"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Otwórz szczegóły ${application.name}`}
+                          onClick={() => router.push(`/system-config/aplikacje/${application.code}`)}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
