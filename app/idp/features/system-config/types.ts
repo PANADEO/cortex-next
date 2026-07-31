@@ -86,3 +86,23 @@ export interface ApplicationInput {
   isActive?: boolean
   sortOrder?: number
 }
+
+/** Katalog zakresów granularnych jednej aplikacji (D8: definiowany przez kod
+ *  modułu/seed, nie tworzony z UI — `code` jest wyłącznie do wyświetlenia). */
+export interface ApplicationScope {
+  id: string
+  code: string
+  name: string
+}
+
+/** Wyłącznie etykieta jest edytowalna z tego panelu. */
+export interface ApplicationScopePatch {
+  name: string
+}
+
+/** Jeden wpis macierzy = jeden zakres + komplet ról, które go dziś mają
+ *  (pusta lista, nie brak wpisu, gdy zakres bez żadnego grantu). */
+export interface ApplicationScopeGrant {
+  scopeId: string
+  roleIds: string[]
+}

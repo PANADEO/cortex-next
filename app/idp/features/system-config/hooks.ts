@@ -4,6 +4,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { endpoints, queryKeys } from "./queries"
 import type { ApplicationInput, RoleInput, RolePatch, UserInput, UserPatch } from "./types"
 
+interface SetApplicationScopeRolesVars {
+  id: string
+  scopeId: string
+  roleIds: string[]
+}
+
+interface RenameApplicationScopeVars {
+  id: string
+  scopeId: string
+  name: string
+}
+
 export function useKonfiguracjaUsers() {
   return useQuery({ queryKey: queryKeys.users(), queryFn: endpoints.users.list })
 }
@@ -105,5 +117,49 @@ export function useSetApplicationRoles() {
       endpoints.applications.setRoles(id, roleIds),
     onSuccess: (_data, { id }) =>
       client.invalidateQueries({ queryKey: queryKeys.applicationRoles(id) }),
+  })
+}
+
+/** Katalog zakresów TEJ aplikacji (D8: definiowany przez kod modułu — tylko
+ *  odczyt, brak create/remove z tego panelu). */
+export function useApplicationScopes(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.applicationScopes(id ?? ""),
+    queryFn: () => endpoints.applications.listScopes(id as string),
+    enabled: Boolean(id),
+  })
+}
+
+/** Macierz zakres -> role w jednym zapytaniu (D9). */
+export function useApplicationScopeGrants(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.applicationScopeGrants(id ?? ""),
+    queryFn: () => endpoints.applications.listScopeGrants(id as string),
+    enabled: Boolean(id),
+  })
+}
+
+/** Zapis JEDNEJ kolumny macierzy (jeden zakres -> komplet ról). Wołający
+ *  (aplikacje/[code]/page.tsx) decyduje o wsadowości — woła to raz per
+ *  zmienioną kolumnę, równolegle przez Promise.all (D9). */
+export function useSetApplicationScopeRoles() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, scopeId, roleIds }: SetApplicationScopeRolesVars) =>
+      endpoints.applications.setScopeRoles(id, scopeId, roleIds),
+    onSuccess: (_data, { id }) =>
+      client.invalidateQueries({ queryKey: queryKeys.applicationScopeGrants(id) }),
+  })
+}
+
+/** Zmiana etykiety (`name`) zakresu. Endpoint istnieje od razu (D10); UI do
+ *  jej wywołania (inline-edycja w nagłówku kolumny macierzy) to świadome
+ *  cięcie v1 (D9) — ten hook dziś nie ma jeszcze konsumenta w page.tsx. */
+export function useRenameApplicationScope() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, scopeId, name }: RenameApplicationScopeVars) =>
+      endpoints.applications.renameScope(id, scopeId, name),
+    onSuccess: (_data, { id }) => client.invalidateQueries({ queryKey: queryKeys.applicationScopes(id) }),
   })
 }

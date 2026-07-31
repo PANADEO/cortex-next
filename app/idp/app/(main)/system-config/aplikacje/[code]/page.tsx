@@ -2,10 +2,13 @@
 
 import {
   useApplicationRoles,
+  useApplicationScopeGrants,
+  useApplicationScopes,
   useDeleteApplication,
   useKonfiguracjaApplications,
   useKonfiguracjaRoles,
   useSetApplicationRoles,
+  useSetApplicationScopeRoles,
   useUpdateApplication,
 } from "@/features/system-config/hooks"
 import { resolveApplicationIcon } from "@/features/system-config/icons"
@@ -29,6 +32,7 @@ import {
   Button,
   Checkbox,
   Combobox,
+  DataTable,
   EmptyState,
   Input,
   Label,
@@ -42,6 +46,7 @@ import {
   Skeleton,
   Switch,
 } from "@cortex/ui"
+import type { ColumnDef } from "@tanstack/react-table"
 import { ArrowLeft, LayoutDashboard, ShieldAlert, Trash2 } from "lucide-react"
 import Link from "next/link"
 import dynamic from "next/dynamic"
@@ -164,13 +169,22 @@ export default function AplikacjaSzczegolyPage() {
 
   const rolesQuery = useKonfiguracjaRoles()
   const applicationRolesQuery = useApplicationRoles(application?.id)
+  // D9: katalog zakresów tej aplikacji + macierz zakres -> role, w dwóch
+  // osobnych zapytaniach (katalog rzadko się zmienia, macierz owszem).
+  const applicationScopesQuery = useApplicationScopes(application?.id)
+  const applicationScopeGrantsQuery = useApplicationScopeGrants(application?.id)
 
   const updateApplication = useUpdateApplication()
   const deleteApplication = useDeleteApplication()
   const setApplicationRoles = useSetApplicationRoles()
+  const setApplicationScopeRoles = useSetApplicationScopeRoles()
 
   const [form, setForm] = useState<FormState | null>(null)
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[] | null>(null)
+  // Stan edycji macierzy zakresów: scopeId -> lista roleId, które go mają.
+  // `null` = jeszcze nie zsynchronizowany z serwerem (patrz useEffect niżej).
+  const [scopeGrants, setScopeGrants] = useState<Record<string, string[]> | null>(null)
+  const [isSavingScopes, setIsSavingScopes] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   // Gate na montowanie `IconPicker` — patrz komentarz przy jego `dynamic()`
   // wyżej. Placeholder poniżej pokazuje aktualnie wybraną ikonę (ta sama
@@ -189,6 +203,58 @@ export default function AplikacjaSzczegolyPage() {
   useEffect(() => {
     if (applicationRolesQuery.data) setSelectedRoleIds(applicationRolesQuery.data.roleIds)
   }, [applicationRolesQuery.data])
+
+  useEffect(() => {
+    if (applicationScopeGrantsQuery.data) {
+      setScopeGrants(
+        Object.fromEntries(applicationScopeGrantsQuery.data.map((grant) => [grant.scopeId, grant.roleIds])),
+      )
+    }
+  }, [applicationScopeGrantsQuery.data])
+
+  // Kolumny macierzy: jedna statyczna "Rola" + po jednej na każdy zakres tej
+  // aplikacji (D9). Musi żyć PRZED wczesnymi returnami niżej — to hook.
+  const scopeColumns = useMemo<ColumnDef<RoleSummary, unknown>[]>(() => {
+    const roleColumn: ColumnDef<RoleSummary, unknown> = {
+      id: "role",
+      header: "Rola",
+      cell: ({ row }) => (
+        <div className="grid gap-0.5">
+          <span className="font-medium">{row.original.name}</span>
+          <span className="text-xs text-muted-foreground">
+            {row.original.description ?? row.original.code}
+          </span>
+        </div>
+      ),
+    }
+
+    const columns = (applicationScopesQuery.data ?? []).map<ColumnDef<RoleSummary, unknown>>((scope) => ({
+      id: scope.id,
+      header: scope.name,
+      cell: ({ row }) => {
+        const roleId = row.original.id
+        return (
+          <Checkbox
+            checked={(scopeGrants?.[scope.id] ?? []).includes(roleId)}
+            onCheckedChange={(checked) =>
+              setScopeGrants((current) => {
+                const base = current ?? {}
+                const existing = base[scope.id] ?? []
+                const next =
+                  checked === true
+                    ? [...new Set([...existing, roleId])]
+                    : existing.filter((id) => id !== roleId)
+                return { ...base, [scope.id]: next }
+              })
+            }
+            aria-label={`${scope.name} — ${row.original.name}`}
+          />
+        )
+      },
+    }))
+
+    return [roleColumn, ...columns]
+  }, [applicationScopesQuery.data, scopeGrants])
 
   if (applicationsQuery.isLoading) {
     return (
@@ -223,6 +289,7 @@ export default function AplikacjaSzczegolyPage() {
 
   const roles = rolesQuery.data ?? []
   const grantedRoleIds = selectedRoleIds ?? []
+  const scopes = applicationScopesQuery.data ?? []
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => (current ? { ...current, [key]: value } : current))
@@ -256,6 +323,51 @@ export default function AplikacjaSzczegolyPage() {
       // pokazuje odznaczoną rolę, której nikt nie odebrał.
       setSelectedRoleIds(applicationRolesQuery.data?.roleIds ?? [])
       toastApiError(error, "Nie udało się zapisać uprawnień")
+    }
+  }
+
+  /**
+   * Zapis wsadowy macierzy zakresów (D9): JEDNO żądanie PUT per ZMIENIONĄ
+   * kolumnę (nie per komórka), równolegle przez Promise.all — przy typowych
+   * 1-3 zakresach na aplikację to 1-3 żądania, nie N×M. Kolumny bez zmian nie
+   * generują żadnego żądania.
+   */
+  async function handleSaveScopes() {
+    if (!application || !scopeGrants) return
+
+    const serverGrants = applicationScopeGrantsQuery.data ?? []
+    const serverByScope = new Map(serverGrants.map((grant) => [grant.scopeId, grant.roleIds]))
+
+    const changedScopeIds = scopes
+      .map((scope) => scope.id)
+      .filter((scopeId) => {
+        const before = [...(serverByScope.get(scopeId) ?? [])].sort()
+        const after = [...(scopeGrants[scopeId] ?? [])].sort()
+        return before.length !== after.length || before.some((roleId, index) => roleId !== after[index])
+      })
+
+    if (changedScopeIds.length === 0) return
+
+    setIsSavingScopes(true)
+    try {
+      await Promise.all(
+        changedScopeIds.map((scopeId) =>
+          setApplicationScopeRoles.mutateAsync({
+            id: application.id,
+            scopeId,
+            roleIds: scopeGrants[scopeId] ?? [],
+          }),
+        ),
+      )
+      toast.success("Zapisano zakresy")
+    } catch (error) {
+      // Błąd częściowy (jedna kolumna 409, inna 200) cofa lokalny stan do
+      // prawdy serwera dla WSZYSTKICH kolumn, wzorem handleSavePermissions —
+      // nie zostawia UI w stanie niespójnym z bazą.
+      setScopeGrants(Object.fromEntries(serverGrants.map((grant) => [grant.scopeId, grant.roleIds])))
+      toastApiError(error, "Nie udało się zapisać zakresów")
+    } finally {
+      setIsSavingScopes(false)
     }
   }
 
@@ -517,6 +629,45 @@ export default function AplikacjaSzczegolyPage() {
                 <div className="flex justify-end">
                   <Button onClick={handleSavePermissions} disabled={setApplicationRoles.isPending}>
                     Zapisz uprawnienia
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-4">
+          <div>
+            <h2 className="text-sm font-semibold tracking-tight">Zakresy</h2>
+            <p className="text-xs text-muted-foreground">
+              Granularne uprawnienia w środku tej aplikacji — konkretne akcje, nie sam dostęp do
+              kafelka.
+            </p>
+          </div>
+
+          <div className="grid gap-4 rounded-lg border border-border p-4">
+            {applicationScopesQuery.isLoading ||
+            applicationScopeGrantsQuery.isLoading ||
+            rolesQuery.isLoading ? (
+              <LoadingState label="Wczytywanie zakresów…" />
+            ) : scopes.length === 0 ? (
+              // D8/D9: świadoma, centralna decyzja tego modułu — katalog zakresów
+              // powstaje w kodzie modułu (seed), nie tutaj. Zero create/delete.
+              <p className="text-sm text-muted-foreground">
+                Ta aplikacja nie definiuje żadnych zakresów granularnych. Zakresy powstają w
+                kodzie modułu (razem z sekcją, którą chronią) — nie da się ich dodać z tego
+                panelu.
+              </p>
+            ) : roles.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nie zdefiniowano jeszcze żadnej roli, więc nie ma komu nadać zakresu.
+              </p>
+            ) : (
+              <>
+                <DataTable columns={scopeColumns} data={roles} getRowId={(role) => role.id} bordered />
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveScopes} disabled={isSavingScopes}>
+                    Zapisz zakresy
                   </Button>
                 </div>
               </>

@@ -39,6 +39,11 @@ const service = vi.hoisted(() => {
     description: null,
     isSystem: false,
   }
+  const scope = {
+    id: "44444444-4444-4444-8444-444444444444",
+    code: "przykladowy-zakres",
+    name: "Przykładowy zakres",
+  }
   return {
     listUsers: vi.fn(async () => []),
     listRoles: vi.fn(async () => []),
@@ -55,6 +60,10 @@ const service = vi.hoisted(() => {
     createRole: vi.fn(async () => role),
     updateRole: vi.fn(async () => role),
     deleteRole: vi.fn(async () => true),
+    listApplicationScopes: vi.fn(async () => [scope]),
+    renameApplicationScope: vi.fn(async () => scope),
+    listApplicationScopeGrants: vi.fn(async () => []),
+    setApplicationScopeRoles: vi.fn(async () => undefined),
   }
 })
 
@@ -117,7 +126,7 @@ function makeRequest(method: string, email: string | null): Request {
   })
 }
 
-const context = { params: Promise.resolve({ id: SOME_UUID }) }
+const context = { params: Promise.resolve({ id: SOME_UUID, scopeId: SOME_UUID }) }
 
 async function collectHandlers(): Promise<{ name: string; method: string; handler: Handler }[]> {
   const found: { name: string; method: string; handler: Handler }[] = []

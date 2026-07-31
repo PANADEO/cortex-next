@@ -3,13 +3,16 @@
 // Zero surowego SQL poza tym plikiem i rbac-store.ts — dostęp przez Drizzle.
 
 import {
+  applicationScopes,
   applications,
   getDb,
   permissionsMatrix,
+  roleApplicationScopes,
   roles,
   userRoles,
   users,
   type ApplicationRow,
+  type ApplicationScopeRow,
   type RoleRow,
   type UserRow,
 } from "@cortex/db"
@@ -166,6 +169,27 @@ export const rolePatchSchema = z
   .partial()
 
 export type RolePatch = z.infer<typeof rolePatchSchema>
+
+export interface ApplicationScopeSummary {
+  id: string
+  code: string
+  name: string
+}
+
+/** Macierz rola -> zakres: jeden wpis per zakres tej aplikacji, z listą ról,
+ *  które go dziś mają (pusta lista, nie brak wpisu, gdy zakres bez grantów). */
+export interface ApplicationScopeGrant {
+  scopeId: string
+  roleIds: string[]
+}
+
+/** Wyłącznie etykieta (`name`) — `code` jest niezmienny z poziomu tego API
+ *  (D8: katalog zakresów jest własnością seeda modułu, nie system-config). */
+export const applicationScopePatchSchema = z.object({
+  name: z.string().min(1).max(120),
+})
+
+export type ApplicationScopePatch = z.infer<typeof applicationScopePatchSchema>
 
 export async function listUsers(): Promise<UserWithRoles[]> {
   const db = getDb()
@@ -531,6 +555,114 @@ export async function setApplicationRoles(applicationId: string, roleIds: string
   clearTileAccessCache()
 }
 
+/**
+ * Katalog zakresów granularnych TEJ aplikacji (D8: wariant C — katalog jest
+ * DEFINIOWANY PRZEZ KOD MODUŁU, który z niego korzysta, poprzez własny seed;
+ * ta funkcja tylko go czyta). Świadomie brak create/delete tutaj — patrz
+ * brak POST/DELETE w route'ach `.../scopes`.
+ */
+export async function listApplicationScopes(applicationId: string): Promise<ApplicationScopeSummary[]> {
+  return getDb()
+    .select({ id: applicationScopes.id, code: applicationScopes.code, name: applicationScopes.name })
+    .from(applicationScopes)
+    .where(eq(applicationScopes.applicationId, applicationId))
+    .orderBy(asc(applicationScopes.code))
+}
+
+/**
+ * Zmiana etykiety (`name`) zakresu — czysto opisowa, zero wpływu na runtime:
+ * autoryzacja (`requireTileScope`) sprawdza `code`, nigdy `name`, więc ta
+ * funkcja nie woła `clearTileAccessCache()` i nie przechodzi przez żaden
+ * niezmiennik dostępności modułu.
+ *
+ * `applicationId` ze ścieżki MUSI się zgadzać z applicationId wiersza — bez
+ * tego warunku w WHERE dałoby się przez pomyloną parę (id aplikacji z jednego
+ * ekranu, id zakresu z innego) po cichu przemianować zakres cudzej aplikacji.
+ * Zero dopasowanych wierszy (zakres nie istnieje ALBO należy do innej
+ * aplikacji) zwraca `null`, które route mapuje na 404 — wzorem
+ * updateRole/updateApplication/updateUser, nie ciche zaakceptowanie.
+ */
+export async function renameApplicationScope(
+  applicationId: string,
+  scopeId: string,
+  name: string,
+): Promise<ApplicationScopeRow | null> {
+  const [updated] = await getDb()
+    .update(applicationScopes)
+    .set({ name })
+    .where(and(eq(applicationScopes.id, scopeId), eq(applicationScopes.applicationId, applicationId)))
+    .returning()
+
+  return (updated as ApplicationScopeRow) ?? null
+}
+
+/**
+ * Macierz zakres -> role W JEDNYM zapytaniu (D9: matryca ładuje się naraz,
+ * nie N osobnych żądań). LEFT JOIN, żeby zakres bez ANI JEDNEGO grantu też
+ * pojawił się w wyniku (z pustą listą `roleIds`) — bez tego kolumna w UI nie
+ * odróżniałaby "zakres istnieje, nikt go nie ma" od "zakres nie istnieje".
+ */
+export async function listApplicationScopeGrants(applicationId: string): Promise<ApplicationScopeGrant[]> {
+  const rows = await getDb()
+    .select({ scopeId: applicationScopes.id, roleId: roleApplicationScopes.roleId })
+    .from(applicationScopes)
+    .leftJoin(roleApplicationScopes, eq(roleApplicationScopes.applicationScopeId, applicationScopes.id))
+    .where(eq(applicationScopes.applicationId, applicationId))
+    .orderBy(asc(applicationScopes.code))
+
+  const byScope = new Map<string, string[]>()
+  for (const row of rows) {
+    const list = byScope.get(row.scopeId) ?? []
+    if (row.roleId) list.push(row.roleId)
+    byScope.set(row.scopeId, list)
+  }
+
+  return [...byScope.entries()].map(([scopeId, roleIds]) => ({ scopeId, roleIds }))
+}
+
+/**
+ * Granty JEDNEJ kolumny macierzy (jeden zakres -> komplet ról, które go
+ * mają) — zapis zawężony do edytowanego zakresu, analogicznie do
+ * setApplicationRoles. `applicationId` ze ścieżki jest zweryfikowany tak
+ * samo jak w renameApplicationScope (obrona przed pomyloną parą id).
+ *
+ * Świadomie BEZ assertModuleStaysReachable: warstwa granularna nigdy nie
+ * gatuje samego system-config — moduł administracyjny sprawdza WYŁĄCZNIE
+ * requireTileAccess, nigdy requireTileScope (zweryfikowane w
+ * app/idp/app/api/system-config/_lib/guard.ts), więc odebranie grantu
+ * zakresu nie może odciąć nikogo od tego modułu. Gdyby system-config kiedyś
+ * zaczął używać własnych zakresów wewnętrznych, ta funkcja będzie musiała
+ * dostać analogiczny niezmiennik jak D1/D2 (patrz `updateUser`/`deleteRole`)
+ * — nie teraz.
+ */
+export async function setApplicationScopeRoles(
+  applicationId: string,
+  scopeId: string,
+  roleIds: string[],
+): Promise<void> {
+  const db = getDb()
+  const wanted = unique(roleIds)
+
+  await db.transaction(async (tx) => {
+    const [scope] = await tx
+      .select({ id: applicationScopes.id })
+      .from(applicationScopes)
+      .where(and(eq(applicationScopes.id, scopeId), eq(applicationScopes.applicationId, applicationId)))
+    if (!scope) throw new UnknownApplicationScopeError()
+
+    await assertRolesExist(tx, wanted)
+
+    await tx.delete(roleApplicationScopes).where(eq(roleApplicationScopes.applicationScopeId, scopeId))
+    if (wanted.length > 0) {
+      await tx
+        .insert(roleApplicationScopes)
+        .values(wanted.map((roleId) => ({ roleId, applicationScopeId: scopeId })))
+    }
+  })
+
+  clearTileAccessCache()
+}
+
 export class UnknownUserError extends Error {
   constructor(userId: string) {
     super(`Nie ma użytkownika o id ${userId}`)
@@ -549,6 +681,15 @@ export class UnknownApplicationError extends Error {
   constructor() {
     super("Co najmniej jedna ze wskazanych aplikacji nie istnieje")
     this.name = "UnknownApplicationError"
+  }
+}
+
+/** Zakres nie istnieje ALBO nie należy do aplikacji ze ścieżki (pomylona para
+ *  id) — patrz setApplicationScopeRoles. */
+export class UnknownApplicationScopeError extends Error {
+  constructor() {
+    super("Zakres nie istnieje dla tej aplikacji")
+    this.name = "UnknownApplicationScopeError"
   }
 }
 

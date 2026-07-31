@@ -2,6 +2,8 @@ import { apiClient } from "@cortex/api"
 import type {
   Application,
   ApplicationInput,
+  ApplicationScope,
+  ApplicationScopeGrant,
   RoleInput,
   RolePatch,
   RoleRecord,
@@ -20,6 +22,8 @@ export const queryKeys = {
   roles: () => [...queryKeys.all, "roles"] as const,
   applications: () => [...queryKeys.all, "applications"] as const,
   applicationRoles: (id: string) => [...queryKeys.applications(), id, "roles"] as const,
+  applicationScopes: (id: string) => [...queryKeys.applications(), id, "scopes"] as const,
+  applicationScopeGrants: (id: string) => [...queryKeys.applications(), id, "scope-grants"] as const,
 }
 
 export const endpoints = {
@@ -49,5 +53,18 @@ export const endpoints = {
       apiClient.get<{ roleIds: string[] }>(`${BASE}/applications/${id}/roles`),
     setRoles: (id: string, roleIds: string[]) =>
       apiClient.put<{ ok: true }>(`${BASE}/applications/${id}/roles`, { jsonBody: { roleIds } }),
+    // D8-D10: katalog zakresów jest tylko do odczytu z tego panelu (brak
+    // create/remove — nie ma tu endpointów POST/DELETE do wywołania).
+    listScopes: (id: string) => apiClient.get<ApplicationScope[]>(`${BASE}/applications/${id}/scopes`),
+    renameScope: (id: string, scopeId: string, name: string) =>
+      apiClient.patch<ApplicationScope>(`${BASE}/applications/${id}/scopes/${scopeId}`, {
+        jsonBody: { name },
+      }),
+    listScopeGrants: (id: string) =>
+      apiClient.get<ApplicationScopeGrant[]>(`${BASE}/applications/${id}/scope-grants`),
+    setScopeRoles: (id: string, scopeId: string, roleIds: string[]) =>
+      apiClient.put<{ ok: true }>(`${BASE}/applications/${id}/scopes/${scopeId}/roles`, {
+        jsonBody: { roleIds },
+      }),
   },
 }

@@ -12,10 +12,12 @@
 //     packages/@cortex/service/src/system-config.integration.test.ts
 
 import {
+  applicationScopes,
   applications,
   closeDb,
   getDb,
   permissionsMatrix,
+  roleApplicationScopes,
   roles,
   userRoles,
   users,
@@ -23,15 +25,21 @@ import {
 import { randomUUID } from "node:crypto"
 import { and, eq } from "drizzle-orm"
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest"
-import { clearTileAccessCache, requireTileAccess } from "./rbac"
+import { clearTileAccessCache, requireTileAccess, requireTileScope } from "./rbac"
 import {
   SYSTEM_CONFIG_APP_CODE,
   SelfLockoutError,
   SystemRoleProtectedError,
+  UnknownApplicationScopeError,
+  UnknownRoleError,
   createUser,
   deleteApplication,
   deleteRole,
+  listApplicationScopeGrants,
+  listApplicationScopes,
+  renameApplicationScope,
   setApplicationRoles,
+  setApplicationScopeRoles,
   setRoleApplications,
   setUserRoles,
   updateApplication,
@@ -53,6 +61,11 @@ const EMPTY_ROLE_CODE = `pusta-rola-${SUFFIX}`
 const INACTIVE_ROLE_CODE = `martwa-rola-${SUFFIX}`
 const INACTIVE_EMAIL = `nieaktywny-${SUFFIX}@firma.pl`
 const SECOND_EMAIL = `drugi-${SUFFIX}@firma.pl`
+// D10: druga aplikacja, wyłącznie do testów "pomylonej pary" (applicationId,
+// scopeId) — renameApplicationScope/setApplicationScopeRoles muszą odrzucić
+// scopeId realny, ale należący do INNEJ aplikacji niż ta ze ścieżki.
+const OTHER_APP_CODE = `kafelek-inny-${SUFFIX}`
+const SCOPE_CODE = `zakres-${SUFFIX}`
 
 let userId = ""
 let roleId = ""
@@ -120,7 +133,7 @@ async function cleanup(): Promise<void> {
   for (const email of [EMAIL, INACTIVE_EMAIL, SECOND_EMAIL]) {
     await db.delete(users).where(eq(users.email, email))
   }
-  for (const code of [APP_CODE, EXTERNAL_APP_CODE]) {
+  for (const code of [APP_CODE, EXTERNAL_APP_CODE, OTHER_APP_CODE]) {
     await db.delete(applications).where(eq(applications.code, code))
   }
   for (const code of [ROLE_CODE, EMPTY_ROLE_CODE, INACTIVE_ROLE_CODE]) {
@@ -790,6 +803,183 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
 
     it("odrzuca PATCH, po którym scalony wiersz łamie kształt", async () => {
       await expect(updateApplication(externalId, { kind: "native" })).rejects.toThrow()
+    })
+  })
+
+  // D8-D10: warstwa granularna. `applicationId`/`roleId` to fixture'y z
+  // beforeEach nadrzędnego describe'a (kafelek/rola testowa z aktywnym
+  // użytkownikiem EMAIL) — reużywane tu zamiast tworzenia trzeciego kompletu.
+  describe("zakresy granularne (application_scopes)", () => {
+    let scopeId = ""
+    let otherApplicationId = ""
+
+    beforeEach(async () => {
+      const db = getDb()
+
+      const [scope] = await db
+        .insert(applicationScopes)
+        .values({ applicationId, code: SCOPE_CODE, name: "Zakres testowy" })
+        .returning()
+      scopeId = scope!.id
+
+      const [otherApplication] = await db
+        .insert(applications)
+        .values({ code: OTHER_APP_CODE, name: "Inny kafelek", kind: "native", route: `/${OTHER_APP_CODE}` })
+        .returning()
+      otherApplicationId = otherApplication!.id
+    })
+
+    describe("listApplicationScopes", () => {
+      it("zwraca katalog zakresów TEJ aplikacji", async () => {
+        expect(await listApplicationScopes(applicationId)).toEqual([
+          { id: scopeId, code: SCOPE_CODE, name: "Zakres testowy" },
+        ])
+      })
+
+      it("nie widzi zakresów innej aplikacji", async () => {
+        expect(await listApplicationScopes(otherApplicationId)).toEqual([])
+      })
+    })
+
+    describe("renameApplicationScope", () => {
+      it("zmienia etykietę, gdy scopeId należy do applicationId ze ścieżki", async () => {
+        const updated = await renameApplicationScope(applicationId, scopeId, "Nowa etykieta")
+
+        expect(updated?.name).toBe("Nowa etykieta")
+        expect(updated?.code).toBe(SCOPE_CODE) // code niezmienny — nie ma go w applicationScopePatchSchema
+      })
+
+      // SEDNO (D10): obrona przed pomyloną parą id — scopeId jest REALNY, ale
+      // należy do innej aplikacji niż ta w applicationId. Musi się zachować
+      // jak "nie znaleziono", nie ciche zaakceptowanie zapisu cudzego zakresu.
+      it("SEDNO: pomylona para (applicationId, scopeId) zwraca null, nie zapisuje", async () => {
+        const updated = await renameApplicationScope(
+          otherApplicationId,
+          scopeId,
+          "Nie powinno się zapisać",
+        )
+
+        expect(updated).toBeNull()
+
+        const [row] = await getDb()
+          .select()
+          .from(applicationScopes)
+          .where(eq(applicationScopes.id, scopeId))
+        expect(row!.name).toBe("Zakres testowy")
+      })
+
+      it("nieistniejący scopeId zwraca null", async () => {
+        expect(await renameApplicationScope(applicationId, randomUUID(), "X")).toBeNull()
+      })
+    })
+
+    describe("listApplicationScopeGrants", () => {
+      it("zwraca zakres z PUSTĄ listą ról, gdy nie ma jeszcze grantów (nie brak wpisu)", async () => {
+        expect(await listApplicationScopeGrants(applicationId)).toEqual([{ scopeId, roleIds: [] }])
+      })
+
+      it("odzwierciedla granty zapisane przez setApplicationScopeRoles", async () => {
+        await setApplicationScopeRoles(applicationId, scopeId, [roleId])
+
+        expect(await listApplicationScopeGrants(applicationId)).toEqual([{ scopeId, roleIds: [roleId] }])
+      })
+    })
+
+    describe("setApplicationScopeRoles", () => {
+      it("SEDNO: faktycznie zapisuje granty", async () => {
+        await setApplicationScopeRoles(applicationId, scopeId, [roleId])
+
+        const granted = await getDb()
+          .select({ roleId: roleApplicationScopes.roleId })
+          .from(roleApplicationScopes)
+          .where(eq(roleApplicationScopes.applicationScopeId, scopeId))
+        expect(granted.map((row) => row.roleId)).toEqual([roleId])
+      })
+
+      it("SEDNO: NADPISUJE, nie dokłada — drugi zapis zastępuje pierwszy", async () => {
+        await setApplicationScopeRoles(applicationId, scopeId, [roleId])
+        await setApplicationScopeRoles(applicationId, scopeId, [emptyRoleId])
+
+        const granted = await getDb()
+          .select({ roleId: roleApplicationScopes.roleId })
+          .from(roleApplicationScopes)
+          .where(eq(roleApplicationScopes.applicationScopeId, scopeId))
+        expect(granted.map((row) => row.roleId)).toEqual([emptyRoleId])
+      })
+
+      it("pusta lista czyści wszystkie granty tego zakresu", async () => {
+        await setApplicationScopeRoles(applicationId, scopeId, [roleId])
+        await setApplicationScopeRoles(applicationId, scopeId, [])
+
+        const granted = await getDb()
+          .select()
+          .from(roleApplicationScopes)
+          .where(eq(roleApplicationScopes.applicationScopeId, scopeId))
+        expect(granted).toHaveLength(0)
+      })
+
+      it("odrzuca nieznaną rolę (UnknownRoleError, nie zapisuje nic)", async () => {
+        await expect(
+          setApplicationScopeRoles(applicationId, scopeId, [randomUUID()]),
+        ).rejects.toBeInstanceOf(UnknownRoleError)
+
+        const granted = await getDb()
+          .select()
+          .from(roleApplicationScopes)
+          .where(eq(roleApplicationScopes.applicationScopeId, scopeId))
+        expect(granted).toHaveLength(0)
+      })
+
+      it("SEDNO: odrzuca pomyloną parę (applicationId spoza tej aplikacji)", async () => {
+        await expect(
+          setApplicationScopeRoles(otherApplicationId, scopeId, [roleId]),
+        ).rejects.toBeInstanceOf(UnknownApplicationScopeError)
+      })
+
+      // D9/D10 end-to-end: dowód, że ta funkcja realnie zasila DOKŁADNIE ten
+      // sam mechanizm co Ilustromat (requireTileScope), nie tylko wygląda
+      // podobnie w kodzie. Bez ręcznego clearTileAccessCache() — jeśli
+      // setApplicationScopeRoles przestanie czyścić cache, ten test spadnie.
+      it("czyści cache OD RAZU — requireTileScope widzi zmianę bez czekania na TTL", async () => {
+        await setApplicationScopeRoles(applicationId, scopeId, [roleId])
+        const granted = await requireTileScope(makeRequest(EMAIL), APP_CODE, SCOPE_CODE)
+        expect(granted.allowed).toBe(true)
+
+        await setApplicationScopeRoles(applicationId, scopeId, [])
+        const revoked = await requireTileScope(makeRequest(EMAIL), APP_CODE, SCOPE_CODE)
+        expect(revoked.allowed).toBe(false)
+      })
+
+      // D10, najważniejsze ryzyko tej sekcji: warstwa granularna NIE gatuje
+      // samego system-config (guard.ts tego modułu woła WYŁĄCZNIE
+      // requireTileAccess, nigdy requireTileScope — zweryfikowane osobno
+      // grepem). Odebranie JEDYNEGO grantu zakresu na wierszu system-config
+      // ma więc przejść bez błędu, w przeciwieństwie do analogicznej operacji
+      // na warstwie gruboziarnistej (setApplicationRoles), która w tym samym
+      // scenariuszu rzuciłaby SelfLockoutError.
+      it("NIE gatuje system-config — odebranie ostatniego grantu zakresu na module administracyjnym przechodzi", async () => {
+        const db = getDb()
+        const [systemConfigApp] = await db
+          .select({ id: applications.id })
+          .from(applications)
+          .where(eq(applications.code, SYSTEM_CONFIG_APP_CODE))
+        if (!systemConfigApp) return // brak wiersza w tej bazie — nic do sprawdzenia
+
+        const [systemScope] = await db
+          .insert(applicationScopes)
+          .values({ applicationId: systemConfigApp.id, code: `sc-zakres-${SUFFIX}`, name: "Testowy scope SC" })
+          .returning()
+
+        try {
+          await setApplicationScopeRoles(systemConfigApp.id, systemScope!.id, [roleId])
+
+          await expect(
+            setApplicationScopeRoles(systemConfigApp.id, systemScope!.id, []),
+          ).resolves.toBeUndefined()
+        } finally {
+          await db.delete(applicationScopes).where(eq(applicationScopes.id, systemScope!.id))
+        }
+      })
     })
   })
 })
