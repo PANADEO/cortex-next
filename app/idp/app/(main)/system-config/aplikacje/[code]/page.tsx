@@ -8,6 +8,7 @@ import {
   useSetApplicationRoles,
   useUpdateApplication,
 } from "@/features/system-config/hooks"
+import { resolveApplicationIcon } from "@/features/system-config/icons"
 import { KIND_LABELS } from "@/features/system-config/kinds"
 import type { Application, ApplicationInput, RoleSummary } from "@/features/system-config/types"
 import { toastApiError } from "@cortex/api"
@@ -49,14 +50,49 @@ import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { systemConfigTile } from "../../manifest"
 
-/** Katalog `lucide-react` (D4/D5) jest duży — dociągamy go leniwie, dopiero
- *  przy otwarciu pickera, nie przy każdym wejściu na tę stronę. Subpath
+/** Katalog `lucide-react` (D4/D5) jest duży — dociągamy go leniwie. Subpath
  *  (nie barrel `@cortex/ui`) zapewnia realny code-split, wzorem `DocumentViewer`
- *  (patrz komentarz w `packages/@cortex/ui/src/index.ts`). */
+ *  (patrz komentarz w `packages/@cortex/ui/src/index.ts`).
+ *
+ *  UWAGA: `next/dynamic({ ssr: false })` sam z siebie odracza fetch modułu
+ *  do MONTOWANIA komponentu, NIE do interakcji użytkownika — gdyby ten
+ *  komponent renderował się bezwarunkowo w formularzu, chunk ładowałby się
+ *  praktycznie od razu po wejściu na stronę szczegółów aplikacji, wbrew
+ *  zamierzeniu D4/D5. Dlatego poniżej montujemy go warunkowo, dopiero po
+ *  pierwszym kliknięciu/focusie placeholdera (patrz `isIconPickerActive`). */
 const IconPicker = dynamic(
   () => import("@cortex/ui/components/ui/icon-picker").then((mod) => mod.IconPicker),
   { ssr: false, loading: () => <Skeleton className="h-9 w-full rounded-md" /> },
 )
+
+/** Statyczny placeholder pokazujący aktualnie wybraną ikonę (przez
+ *  `resolveApplicationIcon`, ta sama jawna named-import lista co lista
+ *  Aplikacje — zero namespace-importu). Zajmuje miejsce prawdziwego
+ *  `IconPicker`, dopóki użytkownik faktycznie z nim nie wejdzie w interakcję. */
+function IconPickerPlaceholder({
+  id,
+  value,
+  onActivate,
+}: {
+  id?: string
+  value: string
+  onActivate: () => void
+}) {
+  const Icon = resolveApplicationIcon(value)
+  return (
+    <Button
+      id={id}
+      type="button"
+      variant="outline"
+      className="w-full justify-start gap-2 font-normal"
+      onClick={onActivate}
+      onFocus={onActivate}
+    >
+      <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <span className="truncate">{value || "Wybierz ikonę"}</span>
+    </Button>
+  )
+}
 
 /** Radix Select nie przyjmuje pustej wartości, a `target` w bazie bywa NULL —
  *  stąd wartownik zamiast "". */
@@ -136,6 +172,11 @@ export default function AplikacjaSzczegolyPage() {
   const [form, setForm] = useState<FormState | null>(null)
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[] | null>(null)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  // Gate na montowanie `IconPicker` — patrz komentarz przy jego `dynamic()`
+  // wyżej. Placeholder poniżej pokazuje aktualnie wybraną ikonę (ta sama
+  // jawna lista co lista Aplikacje, `resolveApplicationIcon`), więc przejście
+  // placeholder -> prawdziwy picker nie skacze wizualnie.
+  const [isIconPickerActive, setIsIconPickerActive] = useState(false)
 
   // Wiersz, którego uprawnieniem chroniony jest ten moduł — tę samą regułę
   // egzekwuje serwer (SelfLockoutError), UI tylko ją tłumaczy.
@@ -313,7 +354,15 @@ export default function AplikacjaSzczegolyPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <Label htmlFor="icon">Ikona</Label>
-                <IconPicker id="icon" value={form.icon} onChange={(value) => update("icon", value)} />
+                {isIconPickerActive ? (
+                  <IconPicker id="icon" value={form.icon} onChange={(value) => update("icon", value)} />
+                ) : (
+                  <IconPickerPlaceholder
+                    id="icon"
+                    value={form.icon}
+                    onActivate={() => setIsIconPickerActive(true)}
+                  />
+                )}
               </div>
 
               <div className="grid gap-1.5">

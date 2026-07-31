@@ -46,7 +46,16 @@ export {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "./components/ui/dropdown-menu"
-export { IconPicker } from "./components/ui/icon-picker"
+// IconPicker intentionally NOT reexported — its module has a top-level
+// `import * as Icons from "lucide-react"` (whole catalog, needed for the
+// picker's search grid). Reexporting it here would pull that catalog into
+// EVERY page that imports anything from this barrel, regardless of whether
+// the page uses IconPicker — defeating the `next/dynamic` code-split at the
+// one call site that does (`aplikacje/[code]/page.tsx`). Confirmed by real
+// `next build` measurement (31.07.2026): with this reexport present, First
+// Load JS grew by ~183-187 kB on EVERY route in the app, not just the one
+// that uses the picker. Same precedent as `DocumentViewer` below.
+// Import via subpath: "@cortex/ui/components/ui/icon-picker" + next/dynamic.
 export type { IconPickerProps } from "./components/ui/icon-picker"
 export { Input } from "./components/ui/input"
 export { Label } from "./components/ui/label"
