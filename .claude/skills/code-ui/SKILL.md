@@ -54,3 +54,21 @@ Przykład (dwie akcje, jedna zablokowana):
 ```
 
 Efekt uboczny wart odnotowania: prawdziwy `<button>`/`Link` dostaje obsługę klawiatury (`Tab`, `Enter`, focus-visible) za darmo z przeglądarki i Radixa — nie trzeba (i nie wolno) odtwarzać jej ręcznym `onKeyDown` na `<tr>`.
+
+## Breadcrumb
+
+Etykieta i linki breadcrumbu dla każdego kafelka muszą pochodzić z tego samego rejestru co
+sidebar (`TILES` w `lib/tiles.ts` dla etykiety root, `*_NAV` w `lib/nav.ts` dla etykiet
+segmentów środkowych), nie z osobnej ręcznie utrzymywanej listy kafelków w `lib/breadcrumbs.ts`.
+`breadcrumbs.ts`'s `labelForSegment()`/`navLabelsForSegment()` czytają te dwa rejestry
+bezpośrednio — nowy kafelek dopisany do `TILES` (i, jeśli ma własną nawigację, do `nav.ts`
+przez wpis w `NAV_SECTIONS_BY_SEGMENT`) dostaje poprawny breadcrumb automatycznie, bez
+trzeciego miejsca do aktualizacji. Dodanie nowego kafelka bez wpisu w `nav.ts` nadal daje
+DZIAŁający link (bo href segmentu to zawsze surowy `/${segment}` z URL, nigdy stała `/idp`)
+— tylko z mniej ładną etykietą segmentu (raw URL segment zamiast tłumaczonej nazwy). (Osobna,
+mała mapa `EXTRA_ROUTE_LABELS_BY_SEGMENT` w tym samym pliku wciąż istnieje — to nie jest
+rejestr tileId→kafelek, tylko kosmetyczne tłumaczenia pojedynczych segmentów tras dla
+idp-basic/intrastat, poza zakresem tej reguły.) To był już czwarty w tym repo przypadek tego
+samego wzorca (po `KNOWN_TILE_SEGMENTS` i `navByTile` w `(main)/layout.tsx`) — zanim
+dopiszesz kolejną osobną listę tileId→cokolwiek gdziekolwiek w repo, sprawdź najpierw, czy
+`TILES`/`nav.ts` już nie mają tej informacji.

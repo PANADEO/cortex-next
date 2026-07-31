@@ -102,6 +102,82 @@ describe("breadcrumbsFromPath", () => {
       { label: "abc-123" },
     ])
   })
+
+  it("maps /system-config/uzytkownicy to Konfiguracja Systemu / Użytkownicy", () => {
+    expect(breadcrumbsFromPath("/system-config/uzytkownicy")).toEqual([
+      { label: "Konfiguracja Systemu", href: "/" },
+      { label: "Użytkownicy" },
+    ])
+  })
+
+  it("maps /token-usage to Raportowanie Tokenów root with no trailing crumb", () => {
+    expect(breadcrumbsFromPath("/token-usage")).toEqual([
+      { label: "Raportowanie Tokenów", href: "/" },
+    ])
+  })
+
+  it("maps /ilustromat/szablony to Ilustromat / Szablony", () => {
+    expect(breadcrumbsFromPath("/ilustromat/szablony")).toEqual([
+      { label: "Ilustromat", href: "/" },
+      { label: "Szablony" },
+    ])
+  })
+
+  it("maps /cortex-config/projects to Cortex Config / Projekty", () => {
+    expect(breadcrumbsFromPath("/cortex-config/projects")).toEqual([
+      { label: "Cortex Config", href: "/" },
+      { label: "Projekty" },
+    ])
+  })
+
+  it("gives cortex-config a real root label and non-/idp/* middle links for a nested path", () => {
+    const trail = breadcrumbsFromPath("/cortex-config/governance/users/new")
+    expect(trail[0]).toEqual({ label: "Cortex Config", href: "/" })
+    for (const entry of trail.slice(1)) {
+      if (entry.href) {
+        expect(entry.href.startsWith("/idp/")).toBe(false)
+        expect(entry.href.startsWith("/cortex-config/")).toBe(true)
+      }
+    }
+    expect(trail[trail.length - 1]).toEqual({ label: "new" })
+  })
+
+  it("resolves the governance middle segment to the real /cortex-config/governance page", () => {
+    expect(breadcrumbsFromPath("/cortex-config/governance/users/new")).toEqual([
+      { label: "Cortex Config", href: "/" },
+      { label: "governance", href: "/cortex-config/governance" },
+      { label: "users", href: "/cortex-config/governance/users" },
+      { label: "new" },
+    ])
+  })
+
+  it("maps /store-pit/dashboard to sp-console's tile label, not sp-client's", () => {
+    expect(breadcrumbsFromPath("/store-pit/dashboard")).toEqual([
+      { label: "Store-Pit Re-Rating", href: "/" },
+      { label: "Overview" },
+    ])
+  })
+
+  it("maps /store-pit/clients to sp-client's tile label, not sp-console's", () => {
+    expect(breadcrumbsFromPath("/store-pit/clients")).toEqual([
+      { label: "Store-Pit Client Zone", href: "/" },
+      { label: "Clients" },
+    ])
+  })
+
+  it("falls back to the first store-pit tile for a segment neither sp-console nor sp-client owns by href", () => {
+    expect(breadcrumbsFromPath("/store-pit/pricing")).toEqual([
+      { label: "Store-Pit Re-Rating", href: "/" },
+      { label: "Pricing rules" },
+    ])
+  })
+
+  it("maps /okna-czasowe/films to Okna czasowe / Filmy", () => {
+    expect(breadcrumbsFromPath("/okna-czasowe/films")).toEqual([
+      { label: "Okna czasowe", href: "/" },
+      { label: "Filmy" },
+    ])
+  })
 })
 
 interface SeededPackage {
