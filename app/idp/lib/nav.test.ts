@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { filterNavSections, IDP_NAV, INTRASTAT_NAV, parseHiddenMenuItems } from "./nav"
+import { filterNavSections, IDP_NAV, ILUSTROMAT_NAV, INTRASTAT_NAV, parseHiddenMenuItems } from "./nav"
 
 function itemIds(sections: ReturnType<typeof filterNavSections>): string[] {
   return sections.flatMap((section) => section.items.map((item) => item.id))
@@ -56,5 +56,14 @@ describe("INTRASTAT_NAV", () => {
       "resources",
       "settings",
     ])
+  })
+})
+
+describe("ILUSTROMAT_NAV", () => {
+  it("links Generowanie and Szablony to their pages", () => {
+    expect(itemIds(ILUSTROMAT_NAV)).toEqual(["generowanie", "szablony"])
+
+    const hrefs = ILUSTROMAT_NAV.flatMap((section) => section.items.map((item) => item.href))
+    expect(hrefs).toEqual(["/ilustromat/generowanie", "/ilustromat/szablony"])
   })
 })

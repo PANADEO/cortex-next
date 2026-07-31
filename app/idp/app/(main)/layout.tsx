@@ -8,6 +8,7 @@ import {
   useCortexConfigNavSections,
   useIdpBasicNavSections,
   useIdpNavSections,
+  useIlustromatNavSections,
   useIntrastatNavSections,
   useInvoiceSupervisorNavSections,
   useSystemConfigNavSections,
@@ -37,6 +38,7 @@ const KNOWN_TILE_SEGMENTS = new Set([
   "intrastat",
   "invoice-supervisor",
   "token-usage",
+  "ilustromat",
 ])
 
 function pathToItemId(pathname: string): string {
@@ -76,6 +78,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const isBoardRoute = pathname === "/idp/dashboard" || pathname === "/idp/board"
   const idpNavSections = useIdpNavSections()
   const idpBasicNavSections = useIdpBasicNavSections()
+  const ilustromatNavSections = useIlustromatNavSections()
   const intrastatNavSections = useIntrastatNavSections()
   const invoiceSupervisorNavSections = useInvoiceSupervisorNavSections()
   const storePitNavSections = useStorePitNavSections()
@@ -94,6 +97,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     "token-usage": tokenUsageNavSections,
     intrastat: intrastatNavSections,
     "invoice-supervisor": invoiceSupervisorNavSections,
+    ilustromat: ilustromatNavSections,
   }
   const isAiToolPage = tileId === AI_TOOLS_TILE_ID || (tile?.href.startsWith("/ai-tools/") ?? false)
   const navSections = isAiToolPage ? [] : (navByTile[tileId] ?? idpNavSections)

@@ -236,6 +236,17 @@ export const INTRASTAT_NAV: TileMenuSection[] = [
   },
 ]
 
+export const ILUSTROMAT_NAV: TileMenuSection[] = [
+  {
+    id: "praca",
+    label: "Praca",
+    items: [
+      { id: "generowanie", label: "Generowanie", icon: Sparkles, href: "/ilustromat/generowanie" },
+      { id: "szablony", label: "Szablony", icon: FileText, href: "/ilustromat/szablony" },
+    ],
+  },
+]
+
 // cortex-cowork renders its own Codex-style shell (no TileMenu nav).
 
 export const CORTEX_CONFIG_NAV: TileMenuSection[] = [
@@ -378,6 +389,10 @@ export function useOknaCzasoweNavSections(): TileMenuSection[] {
 
 export function useIntrastatNavSections(): TileMenuSection[] {
   return INTRASTAT_NAV
+}
+
+export function useIlustromatNavSections(): TileMenuSection[] {
+  return ILUSTROMAT_NAV
 }
 
 export function useSystemConfigNavSections(): TileMenuSection[] {
