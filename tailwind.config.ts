@@ -85,6 +85,7 @@ const config: Config = {
           DEFAULT: "#4A90E2",
           dark: "#2563eb",
           light: "#dbeafe",
+          foreground: "#ffffff",
         },
       },
       borderRadius: {

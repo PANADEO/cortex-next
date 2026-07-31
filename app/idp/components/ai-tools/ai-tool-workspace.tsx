@@ -248,7 +248,7 @@ function HistoryPanel({ error, isLoading, items, onRefresh, onSelect }: HistoryP
         {isLoading ? (
           <div className="flex min-h-[120px] items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Ładuję historię...
+            Wczytywanie historii…
           </div>
         ) : items.length === 0 && !error ? (
           <div className="flex min-h-[120px] items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
@@ -292,7 +292,7 @@ function HistoryPanel({ error, isLoading, items, onRefresh, onSelect }: HistoryP
 function createPreview(value: string): string {
   const normalized = value.replace(/\s+/g, " ").trim()
   if (normalized.length <= 180) return normalized
-  return `${normalized.slice(0, 177)}...`
+  return `${normalized.slice(0, 177)}…`
 }
 
 function formatHistoryDate(value: string): string {
@@ -366,7 +366,7 @@ function HighlighterForm({ isGenerating, onGenerate }: ToolFormContext) {
         label="Tekst do analizy"
         value={text}
         onChange={setText}
-        placeholder="Wklej tekst, w którym mam znaleźć najważniejsze fragmenty..."
+        placeholder="Wklej tekst, w którym mam znaleźć najważniejsze fragmenty…"
         minHeight="min-h-[260px]"
       />
       <SelectField
@@ -443,7 +443,7 @@ function TransformerForm({ isGenerating, onGenerate }: ToolFormContext) {
         label="Tekst źródłowy"
         value={text}
         onChange={setText}
-        placeholder="Wklej tekst do przepisania..."
+        placeholder="Wklej tekst do przepisania…"
         minHeight="min-h-[240px]"
       />
       <div className="grid gap-3 sm:grid-cols-2">
@@ -542,7 +542,7 @@ function AnalyzerForm({ isGenerating, onGenerate }: ToolFormContext) {
         label="Tekst do analizy"
         value={text}
         onChange={setText}
-        placeholder="Wklej artykuł, ofertę, email albo notatkę..."
+        placeholder="Wklej artykuł, ofertę, email albo notatkę…"
         minHeight="min-h-[260px]"
       />
       <div className="space-y-1.5">
@@ -603,7 +603,7 @@ function SummarizerForm({ isGenerating, onGenerate }: ToolFormContext) {
         label="Tekst"
         value={text}
         onChange={setText}
-        placeholder="Wklej tekst albo wgraj plik .txt/.md..."
+        placeholder="Wklej tekst albo wgraj plik .txt/.md…"
         minHeight="min-h-[240px]"
       />
       <div className="grid gap-3 sm:grid-cols-2">
@@ -725,7 +725,7 @@ function ContentForm({ isGenerating, onGenerate }: ToolFormContext) {
         label="Szczegóły i ograniczenia"
         value={details}
         onChange={setDetails}
-        placeholder="Dodaj informacje o produkcie, ofercie, przykładach, słowach kluczowych, zakazanych sformułowaniach..."
+        placeholder="Dodaj informacje o produkcie, ofercie, przykładach, słowach kluczowych, zakazanych sformułowaniach…"
         minHeight="min-h-[140px]"
       />
     </ToolFormCard>
@@ -809,13 +809,13 @@ function LinkedinForm({ isGenerating, onGenerate }: ToolFormContext) {
         label="Słowa kluczowe"
         value={keywords}
         onChange={setKeywords}
-        placeholder="AI, automatyzacja, compliance..."
+        placeholder="AI, automatyzacja, compliance…"
       />
       <TextAreaField
         label="Kontekst"
         value={context}
         onChange={setContext}
-        placeholder="Dodaj własny przykład, obserwację albo dane..."
+        placeholder="Dodaj własny przykład, obserwację albo dane…"
         minHeight="min-h-[120px]"
       />
       <CheckboxGrid
@@ -896,7 +896,7 @@ function PresentationForm({ isGenerating, onGenerate }: ToolFormContext) {
         label="Materiał źródłowy"
         value={sourceText}
         onChange={setSourceText}
-        placeholder="Opcjonalnie wklej notatki, brief lub artykuł..."
+        placeholder="Opcjonalnie wklej notatki, brief lub artykuł…"
         minHeight="min-h-[180px]"
       />
       <CheckboxRow
@@ -1079,7 +1079,7 @@ function ChatForm({ isGenerating, onGenerate }: ToolFormContext) {
                 className={cn(
                   "rounded-md border px-3 py-2 text-sm",
                   message.role === "user"
-                    ? "ml-8 border-cortex/40 bg-cortex text-white"
+                    ? "ml-8 border-cortex/40 bg-cortex text-cortex-foreground"
                     : "mr-8 border-border bg-background text-foreground",
                 )}
               >
@@ -1091,7 +1091,7 @@ function ChatForm({ isGenerating, onGenerate }: ToolFormContext) {
         <Textarea
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
-          placeholder="Napisz wiadomość..."
+          placeholder="Napisz wiadomość…"
           className="min-h-[130px] text-sm"
         />
         <div className="flex justify-end gap-2 border-t border-border pt-4">
@@ -1234,7 +1234,7 @@ function ResultPanel({ content, error, isGenerating, model, title, tokensUsed }:
         {isGenerating ? (
           <div className="flex min-h-[360px] items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Generuję wynik przez Cortex Proxy...
+            Generowanie wyniku przez Cortex Proxy…
           </div>
         ) : content ? (
           <div className="max-h-[70vh] overflow-auto rounded-lg border border-border bg-muted/20 p-4">

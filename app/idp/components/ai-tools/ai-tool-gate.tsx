@@ -2,7 +2,7 @@
 
 import { canAccessAiTool, hasAnyAiToolAccess, type AiToolId } from "@/lib/ai-tools/app-codes"
 import { useAuthorizedApps } from "@cortex/api"
-import { Button, EmptyState } from "@cortex/ui"
+import { Button, EmptyState, LoadingState } from "@cortex/ui"
 import { LockKeyhole } from "lucide-react"
 import Link from "next/link"
 import type { ReactNode } from "react"
@@ -15,7 +15,7 @@ interface AiToolGateProps {
 export function AiToolGate({ children, toolId }: AiToolGateProps) {
   const authorized = useAuthorizedApps()
 
-  if (authorized.isLoading) return null
+  if (authorized.isLoading) return <LoadingState label="Sprawdzanie dostępu…" />
 
   const allowed = toolId
     ? canAccessAiTool(authorized.apps, toolId)

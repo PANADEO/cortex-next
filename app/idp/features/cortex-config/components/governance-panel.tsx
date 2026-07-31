@@ -25,12 +25,16 @@ function EntityRow({
   name,
   badges,
   editHref,
+  editAriaLabel,
   onDelete,
+  deleteAriaLabel,
 }: {
   name: string
   badges: string[]
   editHref: string
+  editAriaLabel: string
   onDelete: () => void
+  deleteAriaLabel: string
 }) {
   return (
     <div className="flex items-center justify-between rounded-md border p-2 text-sm">
@@ -43,7 +47,7 @@ function EntityRow({
         ))}
       </div>
       <div className="flex shrink-0 items-center gap-1">
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild variant="ghost" size="sm" aria-label={editAriaLabel}>
           <Link href={editHref}>
             <Pencil className="h-3.5 w-3.5" />
           </Link>
@@ -52,6 +56,7 @@ function EntityRow({
           variant="ghost"
           size="sm"
           className="text-destructive hover:text-destructive"
+          aria-label={deleteAriaLabel}
           onClick={onDelete}
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -114,7 +119,9 @@ export function GovernancePanel() {
                   name={role.name}
                   badges={[role.id]}
                   editHref={`/cortex-config/governance/roles/${encodeURIComponent(role.id)}`}
+                  editAriaLabel={`Edytuj rolę ${role.name}`}
                   onDelete={() => saveRoles(config.roles.filter((r) => r.id !== role.id))}
+                  deleteAriaLabel={`Usuń rolę ${role.name}`}
                 />
               ))
             )}
@@ -146,11 +153,13 @@ export function GovernancePanel() {
                   name={email}
                   badges={roleIds}
                   editHref={`/cortex-config/governance/users/${encodeURIComponent(email)}`}
+                  editAriaLabel={`Edytuj przypisanie ${email}`}
                   onDelete={() => {
                     const next = { ...config.userAssignments }
                     delete next[email]
                     saveAssignments(next)
                   }}
+                  deleteAriaLabel={`Usuń przypisanie ${email}`}
                 />
               ))
             )}

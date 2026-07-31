@@ -127,7 +127,12 @@ export function CatalogPanel() {
                   </span>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <Button asChild variant="ghost" size="sm">
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Edytuj źródło ${source.name}`}
+                  >
                     <Link href={`/cortex-config/catalog/sources/${encodeURIComponent(source.id)}`}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Link>
@@ -136,6 +141,7 @@ export function CatalogPanel() {
                     variant="ghost"
                     size="sm"
                     className="text-destructive hover:text-destructive"
+                    aria-label={`Usuń źródło ${source.name}`}
                     onClick={() =>
                       updateSources.mutate(skillSources.filter((s) => s.id !== source.id))
                     }
@@ -186,7 +192,12 @@ export function CatalogPanel() {
                   {!connector.enabled ? <Badge variant="outline">wyłączony</Badge> : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <Button asChild variant="ghost" size="sm">
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Edytuj konektor ${connector.name}`}
+                  >
                     <Link
                       href={`/cortex-config/catalog/connectors/${encodeURIComponent(connector.id)}`}
                     >
@@ -197,6 +208,7 @@ export function CatalogPanel() {
                     variant="ghost"
                     size="sm"
                     className="text-destructive hover:text-destructive"
+                    aria-label={`Usuń konektor ${connector.name}`}
                     onClick={() =>
                       updateConnectors.mutate(connectors.filter((c) => c.id !== connector.id))
                     }

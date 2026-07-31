@@ -40,7 +40,7 @@ export function DataCard({
           {isLoading ? (
             <Skeleton className="h-7 w-16" />
           ) : (
-            <p className={cn("text-2xl font-semibold tracking-tight", TONE_CLASSES[tone])}>
+            <p className={cn("text-2xl font-semibold tracking-tight tabular-nums", TONE_CLASSES[tone])}>
               {value}
             </p>
           )}

@@ -27,7 +27,7 @@ export function PageHeader({ title, description, actions, className }: PageHeade
             <TooltipTrigger asChild>
               <button
                 type="button"
-                aria-label="Page description"
+                aria-label="Opis strony"
                 className="text-muted-foreground transition-colors hover:text-foreground"
               >
                 <Info className="h-3.5 w-3.5" />
