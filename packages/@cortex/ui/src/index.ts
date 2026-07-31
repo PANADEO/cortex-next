@@ -25,6 +25,8 @@ export { Button, buttonVariants } from "./components/ui/button"
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./components/ui/card"
 export { Checkbox } from "./components/ui/checkbox"
 export { ColorInput } from "./components/ui/color-input"
+export { Combobox } from "./components/ui/combobox"
+export type { ComboboxProps } from "./components/ui/combobox"
 export {
   Dialog,
   DialogContent,
@@ -44,6 +46,8 @@ export {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "./components/ui/dropdown-menu"
+export { IconPicker } from "./components/ui/icon-picker"
+export type { IconPickerProps } from "./components/ui/icon-picker"
 export { Input } from "./components/ui/input"
 export { Label } from "./components/ui/label"
 export { Popover, PopoverContent, PopoverTrigger } from "./components/ui/popover"
