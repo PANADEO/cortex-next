@@ -16,6 +16,14 @@ interface DataTableProps<TData> {
   data: TData[]
   isLoading?: boolean
   emptyState?: ReactNode
+  /**
+   * @deprecated Robi cały `<tr>` klikalny — łamie regułę "Listy: row-actions,
+   * nie klik-w-wiersz" z `.claude/skills/code-ui/SKILL.md`. Zachowane wyłącznie
+   * dla dzisiejszych konsumentów tego propa; nie używaj w nowym kodzie —
+   * zamiast tego dedykowana kolumna akcji (ostatnia, `text-right`,
+   * `Button size="icon" variant="ghost"`). Nowe listy z akcjami w wierszu
+   * powinny w ogóle używać `CortexDataGrid`, nie `DataTable`.
+   */
   onRowClick?: (row: TData) => void
   getRowClassName?: (row: TData) => string | undefined
   className?: string
@@ -110,7 +118,7 @@ export function DataTable<TData>({
               <td colSpan={columns.length} className="p-0">
                 {emptyState ?? (
                   <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                    No data
+                    Brak danych
                   </div>
                 )}
               </td>

@@ -3,7 +3,7 @@
 import { buildDetailCsv, buildDetailJson, buildExportFileName } from "@/lib/token-usage/csv"
 import {
   Button,
-  DataTable,
+  CortexDataGrid,
   EmptyState,
   Label,
   Select,
@@ -34,18 +34,20 @@ interface DetailTableProps {
 }
 
 const columns: ColumnDef<UsageDetailRow, unknown>[] = [
-  { accessorKey: "user", header: "Użytkownik" },
-  { accessorKey: "app", header: "Aplikacja" },
-  { accessorKey: "scope", header: "Zakres" },
-  { accessorKey: "model", header: "Model" },
+  { accessorKey: "user", header: "Użytkownik", enableSorting: true },
+  { accessorKey: "app", header: "Aplikacja", enableSorting: true },
+  { accessorKey: "scope", header: "Zakres", enableSorting: true },
+  { accessorKey: "model", header: "Model", enableSorting: true },
   {
     accessorKey: "totalTokens",
     header: "Tokeny",
+    enableSorting: true,
     cell: ({ row }) => <span className="tabular-nums">{formatNumber(row.original.totalTokens)}</span>,
   },
   {
     accessorKey: "reasoningTokens",
     header: "Rozumowanie",
+    enableSorting: true,
     cell: ({ row }) => (
       <span className="tabular-nums text-muted-foreground">
         {formatNumber(row.original.reasoningTokens)}
@@ -55,6 +57,7 @@ const columns: ColumnDef<UsageDetailRow, unknown>[] = [
   {
     accessorKey: "requestCount",
     header: "Żądania",
+    enableSorting: true,
     cell: ({ row }) => (
       <span className="tabular-nums">{formatNumber(row.original.requestCount)}</span>
     ),
@@ -146,10 +149,12 @@ export function DetailTable({ report, range }: DetailTableProps) {
         </div>
       </div>
 
-      <DataTable
+      <CortexDataGrid
         columns={columns}
         data={rows}
         bordered
+        searchable
+        searchPlaceholder="Szukaj w szczegółach..."
         emptyState={
           <EmptyState
             icon={Inbox}

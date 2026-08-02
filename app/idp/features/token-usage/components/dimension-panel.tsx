@@ -1,7 +1,7 @@
 "use client"
 
 import { buildExportFileName, buildGroupCsv } from "@/lib/token-usage/csv"
-import { BarList, Button, DataTable, EmptyState } from "@cortex/ui"
+import { BarList, Button, CortexDataGrid, EmptyState } from "@cortex/ui"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Download, Inbox } from "lucide-react"
 import { downloadTextFile } from "../download"
@@ -32,10 +32,11 @@ export function DimensionPanel({
   showUserCount = true,
 }: DimensionPanelProps) {
   const columns: ColumnDef<UsageGroup, unknown>[] = [
-    { accessorKey: "key", header: dimensionLabel },
+    { accessorKey: "key", header: dimensionLabel, enableSorting: true },
     {
       accessorKey: "totalTokens",
       header: "Tokeny",
+      enableSorting: true,
       cell: ({ row }) => (
         <span className="tabular-nums">{formatNumber(row.original.totalTokens)}</span>
       ),
@@ -43,6 +44,7 @@ export function DimensionPanel({
     {
       accessorKey: "requestCount",
       header: "Żądania",
+      enableSorting: true,
       cell: ({ row }) => (
         <span className="tabular-nums">{formatNumber(row.original.requestCount)}</span>
       ),
@@ -52,6 +54,7 @@ export function DimensionPanel({
           {
             accessorKey: "userCount",
             header: "Użytkownicy",
+            enableSorting: true,
             cell: ({ row }) => (
               <span className="tabular-nums">{formatNumber(row.original.userCount)}</span>
             ),
@@ -61,6 +64,7 @@ export function DimensionPanel({
     {
       accessorKey: "share",
       header: "Udział",
+      enableSorting: true,
       cell: ({ row }) => (
         <span className="tabular-nums text-muted-foreground">{formatShare(row.original.share)}</span>
       ),
@@ -113,7 +117,7 @@ export function DimensionPanel({
         </p>
       ) : null}
 
-      <DataTable columns={columns} data={[...groups]} bordered getRowId={(row) => row.key} />
+      <CortexDataGrid columns={columns} data={[...groups]} bordered getRowId={(row) => row.key} />
     </section>
   )
 }

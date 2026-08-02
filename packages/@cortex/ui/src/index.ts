@@ -51,7 +51,7 @@ export {
 // picker's search grid). Reexporting it here would pull that catalog into
 // EVERY page that imports anything from this barrel, regardless of whether
 // the page uses IconPicker — defeating the `next/dynamic` code-split at the
-// one call site that does (`aplikacje/[code]/page.tsx`). Confirmed by real
+// one call site that does (`applications/[code]/page.tsx`). Confirmed by real
 // `next build` measurement (31.07.2026): with this reexport present, First
 // Load JS grew by ~183-187 kB on EVERY route in the app, not just the one
 // that uses the picker. Same precedent as `DocumentViewer` below.
@@ -93,6 +93,8 @@ export { Pagination } from "./components/pagination"
 export { DataCard } from "./components/data-card"
 export { PageHeader } from "./components/page-header"
 export { DataTable } from "./components/data-table"
+export { CortexDataGrid } from "./components/cortex-data-grid"
+export type { CortexDataGridProps } from "./components/cortex-data-grid"
 export { EmptyState } from "./components/empty-state"
 export { AppShell } from "./components/app-shell"
 export { TileMenu } from "./components/tile-menu"
