@@ -56,6 +56,12 @@ export {
 // Load JS grew by ~183-187 kB on EVERY route in the app, not just the one
 // that uses the picker. Same precedent as `DocumentViewer` below.
 // Import via subpath: "@cortex/ui/components/ui/icon-picker" + next/dynamic.
+//
+// Sibling module `./components/ui/icon-catalog` (also NOT reexported here,
+// also `import * as Icons`) exists for the exact same reason — see its
+// header comment and `resolveApplicationIcon()` in
+// app/idp/features/system-config/icons.ts (Krok 4,
+// PROJECT/cortex-frontend-hub-db-driven-projekt.md).
 export type { IconPickerProps } from "./components/ui/icon-picker"
 export { Input } from "./components/ui/input"
 export { Label } from "./components/ui/label"
