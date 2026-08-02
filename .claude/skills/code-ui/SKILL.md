@@ -25,11 +25,14 @@ Jeden asset, jeden mechanizm: `<Image className="dark:invert dark:hue-rotate-180
 
 Wiersz tabeli/listy **nigdy nie jest sam w sobie interaktywny** — bez `onClick`/`tabIndex`/`role="link"`/ręcznego `onKeyDown` na `<tr>`. Nawigacja i akcje idą wyłącznie przez dedykowany element w ostatniej kolumnie (nagłówek pusty: `<th className="px-4 py-2" />`), wyrównanej do prawej krawędzi (`text-right`). Klik w resztę wiersza nic nie robi — to nie jest zaniedbanie, to świadomy brak funkcji tam, gdzie nie ma jej po co budować.
 
-Dobór elementu zależy od liczby akcji i ich dostępności:
+**Zero widocznego tekstu na samym wierszu — zawsze `Button size="icon" variant="ghost"`, ta sama ikona 4×4, ten sam wariant, niezależnie od tego która z gałęzi niżej się stosuje.** Tekst opisujący akcję żyje wyłącznie w `title`/`aria-label` (tooltip + czytnik ekranu) albo wewnątrz otwartego `DropdownMenuItem` — nigdy jako widoczna etykieta przy przycisku w wierszu. Złamanie tej reguły (np. `Button size="sm" variant="outline"` z tekstem obok ikon-only przycisków w innych kolumnach/ekranach) jest dokładnie tym, co robi listę niespójną między ekranami tego samego modułu — to był realny bug (kolumna akcji w `uzytkownicy/page.tsx` miała widoczny tekst "Zmień role" obok przycisków bez tekstu w `role.tsx`/`aplikacje/page.tsx`), nie hipotetyczne ryzyko.
 
-- **Jedna akcja** (np. "przejdź do szczegółów", "zmień role") → jeden przycisk (`Button size="sm"` z tekstem, albo `Button size="icon" variant="ghost"` z samą ikoną dla nawigacji drill-down).
+Dobór WIDGETU (nie treści etykiety — ta zawsze jest ukryta) zależy od liczby akcji i ich dostępności:
+
+- **Jedna akcja** (np. "przejdź do szczegółów") → jeden `Button size="icon" variant="ghost"` z pasującą ikoną (`ChevronRight` dla nawigacji drill-down, konkretna ikona czynności dla akcji bezpośredniej).
 - **Dwie akcje, z których jedna bywa zablokowana z wyjaśnieniem** (np. Edytuj zawsze dostępne, Usuń zablokowane dla wiersza chronionego) → dwa osobne przyciski-ikony obok siebie. Stan zablokowany (`disabled` + `title`/tooltip tłumaczący dlaczego) ma być widoczny wprost, nie schowany w menu — użytkownik ma wiedzieć, że coś jest niemożliwe, zanim kliknie, nie dopiero po otwarciu menu.
-- **Dwie akcje o równej dostępności, albo trzy i więcej** → jeden przycisk-trigger (`Button size="icon" variant="ghost"` z `MoreHorizontal`) otwierający `DropdownMenu` (`@cortex/ui`).
+- **Dwie akcje o równej dostępności, albo trzy i więcej** → jeden przycisk-trigger (`Button size="icon" variant="ghost"` z `MoreHorizontal`) otwierający `DropdownMenu` (`@cortex/ui`) — treść etykiet idzie do środka, do `DropdownMenuItem`.
+- **Jedna akcja wyraźnie najczęstsza + reszta rzadsza** (np. lista użytkowników: "zmień role" dzieje się częściej niż "edytuj dane"/"dezaktywuj") → wyróżniona akcja zostaje osobnym `Button size="icon" variant="ghost"` (wciąż bez tekstu — sama ikona + `title`/`aria-label`), reszta trafia do sąsiadującego triggera `MoreHorizontal`. Nie dodawaj trzeciego wariantu wizualnego (obramowanie, tło, tekst) żeby "podkreślić" że to główna akcja — sama pozycja (pierwsza od lewej w grupie akcji) i dobór ikony wystarczą.
 
 Przykład (dwie akcje, jedna zablokowana):
 

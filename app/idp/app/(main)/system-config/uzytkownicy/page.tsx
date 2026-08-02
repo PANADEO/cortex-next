@@ -203,9 +203,14 @@ export default function UzytkownicyPage() {
                     </td>
                     <td className="px-4 py-2 text-right">
                       <div className="flex justify-end gap-1">
-                        <Button size="sm" variant="outline" onClick={() => openRoleDialog(user)}>
-                          <UserCog className="mr-1.5 h-3.5 w-3.5" />
-                          Zmień role
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => openRoleDialog(user)}
+                          title="Zmień role"
+                          aria-label={`Zmień role użytkownika ${user.email}`}
+                        >
+                          <UserCog className="h-4 w-4" />
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
