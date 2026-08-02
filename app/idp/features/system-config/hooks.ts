@@ -23,15 +23,15 @@ interface RenameApplicationScopeVars {
   name: string
 }
 
-export function useKonfiguracjaUsers() {
+export function useUsers() {
   return useQuery({ queryKey: queryKeys.users(), queryFn: endpoints.users.list })
 }
 
-export function useKonfiguracjaRoles() {
+export function useRoles() {
   return useQuery({ queryKey: queryKeys.roles(), queryFn: endpoints.roles.list })
 }
 
-export function useKonfiguracjaApplications() {
+export function useApplications() {
   return useQuery({ queryKey: queryKeys.applications(), queryFn: endpoints.applications.list })
 }
 
@@ -147,7 +147,7 @@ export function useApplicationScopeGrants(id: string | undefined) {
 }
 
 /** Zapis JEDNEJ kolumny macierzy (jeden zakres -> komplet ról). Wołający
- *  (aplikacje/[code]/page.tsx) decyduje o wsadowości — woła to raz per
+ *  (applications/[code]/page.tsx) decyduje o wsadowości — woła to raz per
  *  zmienioną kolumnę, równolegle przez Promise.all (D9). */
 export function useSetApplicationScopeRoles() {
   const client = useQueryClient()

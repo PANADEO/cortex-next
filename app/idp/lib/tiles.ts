@@ -220,7 +220,7 @@ export const TILES: ReadonlyArray<Tile> = [
     id: "ilustromat",
     label: "Ilustromat",
     description: "Brandowane ilustracje do postów LinkedIn — generacja i gotowa ramka",
-    href: "/ilustromat/generowanie",
+    href: "/ilustromat/generation",
     icon: Image,
     iconBg: "bg-violet-200 dark:bg-violet-900/40",
     iconFg: "text-violet-700 dark:text-violet-300",

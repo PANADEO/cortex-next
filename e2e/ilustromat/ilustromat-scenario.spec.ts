@@ -25,16 +25,16 @@ test.describe("Ilustromat — generowanie", () => {
   test("użytkownik z grantem widzi ekran i szablony marki wczytane z bazy", async ({
     page,
     seed,
-    ilustromatGenerowaniePage,
+    ilustromatGenerationPage,
   }) => {
     const { email } = await seed("ilustromat-user")
     await asUser(page, email)
     await mockShellAccess(page, { email, apps: ["ilustromat"] })
 
-    await ilustromatGenerowaniePage.goto()
+    await ilustromatGenerationPage.goto()
 
-    await expect(ilustromatGenerowaniePage.heading).toBeVisible()
-    await expect(ilustromatGenerowaniePage.emptyState).toBeVisible()
+    await expect(ilustromatGenerationPage.heading).toBeVisible()
+    await expect(ilustromatGenerationPage.emptyState).toBeVisible()
 
     // Dowód, że lista jedzie z PRAWDZIWEJ bazy przez requireTileAccess(),
     // a nie z jakiegokolwiek mocka: nazwa pochodzi wprost z seeda i ląduje
@@ -45,11 +45,11 @@ test.describe("Ilustromat — generowanie", () => {
     // /api/ilustromat/templates na żądanie (zmierzone: przebieg na zimno
     // 43 s vs 6 s na ciepło). Domyślne 5 s wywracało ten test na zimnym
     // starcie, mimo że aplikacja działa poprawnie.
-    await expect(ilustromatGenerowaniePage.templateSelect).toContainText("Crido — fioletowa", {
+    await expect(ilustromatGenerationPage.templateSelect).toContainText("Crido — fioletowa", {
       timeout: 30_000,
     })
     // Kontrola dopełniająca: z wczytanym szablonem generowanie jest odblokowane.
-    await expect(ilustromatGenerowaniePage.generateButton).toBeEnabled()
+    await expect(ilustromatGenerationPage.generateButton).toBeEnabled()
   })
 
   test("użytkownik bez grantu do kafelka nie dostaje danych modułu", async ({ page, seed }) => {
@@ -71,18 +71,18 @@ test.describe("Ilustromat — szablony marki", () => {
   test("kreator renderuje podgląd realną funkcją compose()", async ({
     page,
     seed,
-    ilustromatSzablonyPage,
+    ilustromatTemplatesPage,
   }) => {
     const { email } = await seed("ilustromat-template-manager")
     await asUser(page, email)
     await mockShellAccess(page, { email, apps: ["ilustromat"] })
 
-    await ilustromatSzablonyPage.goto()
-    await expect(ilustromatSzablonyPage.heading).toBeVisible()
+    await ilustromatTemplatesPage.goto()
+    await expect(ilustromatTemplatesPage.heading).toBeVisible()
 
     // Podgląd to prawdziwy PNG z serwera (image/png z route preview), nie
     // placeholder — naturalWidth > 0 dowodzi, że przeglądarka go zdekodowała.
-    const preview = ilustromatSzablonyPage.preview
+    const preview = ilustromatTemplatesPage.preview
     await expect(preview).toBeVisible({ timeout: 15_000 })
     await expect
       .poll(async () => preview.evaluate((img: HTMLImageElement) => img.naturalWidth), {
@@ -94,35 +94,35 @@ test.describe("Ilustromat — szablony marki", () => {
   test("lista pokazuje oba domyślne szablony z bazy", async ({
     page,
     seed,
-    ilustromatSzablonyPage,
+    ilustromatTemplatesPage,
   }) => {
     const { email } = await seed("ilustromat-template-manager")
     await asUser(page, email)
     await mockShellAccess(page, { email, apps: ["ilustromat"] })
 
-    await ilustromatSzablonyPage.goto()
+    await ilustromatTemplatesPage.goto()
 
-    await expect(ilustromatSzablonyPage.templateRow("Crido — fioletowa (domyślna)")).toBeVisible()
-    await expect(ilustromatSzablonyPage.templateRow("Crido — jasna")).toBeVisible()
+    await expect(ilustromatTemplatesPage.templateRow("Crido — fioletowa (domyślna)")).toBeVisible()
+    await expect(ilustromatTemplatesPage.templateRow("Crido — jasna")).toBeVisible()
   })
 
   test("ostrzega o kontraście poniżej progu WCAG AA", async ({
     page,
     seed,
-    ilustromatSzablonyPage,
+    ilustromatTemplatesPage,
   }) => {
     const { email } = await seed("ilustromat-template-manager")
     await asUser(page, email)
     await mockShellAccess(page, { email, apps: ["ilustromat"] })
 
-    await ilustromatSzablonyPage.goto()
-    await expect(ilustromatSzablonyPage.heading).toBeVisible()
+    await ilustromatTemplatesPage.goto()
+    await expect(ilustromatTemplatesPage.heading).toBeVisible()
 
     // Jasnoszary tekst na białym tle — kontrast ~1.6:1, głęboko poniżej 4.5:1.
-    await ilustromatSzablonyPage.colorBg.fill("#FFFFFF")
-    await ilustromatSzablonyPage.colorText.fill("#DDDDDD")
+    await ilustromatTemplatesPage.colorBg.fill("#FFFFFF")
+    await ilustromatTemplatesPage.colorText.fill("#DDDDDD")
 
-    await expect(ilustromatSzablonyPage.contrastWarning).toBeVisible()
+    await expect(ilustromatTemplatesPage.contrastWarning).toBeVisible()
   })
 })
 

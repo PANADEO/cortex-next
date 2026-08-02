@@ -86,7 +86,7 @@ function toDraft(template: FrameTemplateDto): FrameTemplateInputDto {
   }
 }
 
-export default function SzablonyPage() {
+export default function TemplatesPage() {
   const templatesQuery = useFrameTemplates()
   const createTemplate = useCreateTemplate()
   const updateTemplate = useUpdateTemplate()

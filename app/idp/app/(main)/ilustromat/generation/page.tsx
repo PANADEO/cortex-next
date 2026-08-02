@@ -41,7 +41,7 @@ import { toast } from "sonner"
  *  poza ścieżką każdego pojedynczego naciśnięcia klawisza. */
 const RECOMPOSE_DEBOUNCE_MS = 400
 
-export default function GenerowaniePage() {
+export default function GenerationPage() {
   const templatesQuery = useFrameTemplates(true)
   const generate = useGenerate()
   const compose = useCompose()

@@ -1,11 +1,11 @@
-// POM ekranu "Generowanie" (/ilustromat/generowanie). Jeden plik = jedna
+// POM ekranu "Generowanie" (/ilustromat/generation). Jeden plik = jedna
 // strona, granica pliku = granica route'a (code-e2e/SKILL.md).
 // Selektory role-based, zero data-testid.
 
 import type { Locator, Page } from "@playwright/test"
 import { BasePage } from "../shared/base-page"
 
-export class IlustromatGenerowaniePage extends BasePage {
+export class IlustromatGenerationPage extends BasePage {
   constructor(page: Page) {
     super(page)
   }
@@ -55,6 +55,6 @@ export class IlustromatGenerowaniePage extends BasePage {
    *  do timeoutu, więc zdarzenie `load` potrafi nigdy nie paść. Asercje i tak
    *  są web-first (auto-retry), więc nie tracimy na tym nic. */
   async goto(): Promise<void> {
-    await this.page.goto("/ilustromat/generowanie", { waitUntil: "domcontentloaded" })
+    await this.page.goto("/ilustromat/generation", { waitUntil: "domcontentloaded" })
   }
 }

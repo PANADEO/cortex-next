@@ -2,11 +2,11 @@
 
 import {
   useApplicationRoles,
+  useApplications,
   useApplicationScopeGrants,
   useApplicationScopes,
   useDeleteApplication,
-  useKonfiguracjaApplications,
-  useKonfiguracjaRoles,
+  useRoles,
   useSetApplicationRoles,
   useSetApplicationScopeRoles,
   useUpdateApplication,
@@ -150,12 +150,12 @@ function toInput(code: string, form: FormState): ApplicationInput {
   }
 }
 
-export default function AplikacjaSzczegolyPage() {
+export default function ApplicationDetailPage() {
   const params = useParams<{ code: string }>()
   const code = decodeURIComponent(params.code)
   const router = useRouter()
 
-  const applicationsQuery = useKonfiguracjaApplications()
+  const applicationsQuery = useApplications()
   const application = applicationsQuery.data?.find((item) => item.code === code)
 
   // Katalog podpowiedzi dla comboboksa Kategorii — zero nowego endpointu,
@@ -167,7 +167,7 @@ export default function AplikacjaSzczegolyPage() {
     return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b))
   }, [applicationsQuery.data])
 
-  const rolesQuery = useKonfiguracjaRoles()
+  const rolesQuery = useRoles()
   const applicationRolesQuery = useApplicationRoles(application?.id)
   // D9: katalog zakresów tej aplikacji + macierz zakres -> role, w dwóch
   // osobnych zapytaniach (katalog rzadko się zmienia, macierz owszem).
@@ -278,7 +278,7 @@ export default function AplikacjaSzczegolyPage() {
             description={`Kod ${code} nie występuje w rejestrze aplikacji.`}
             action={
               <Button size="sm" variant="outline" asChild>
-                <Link href="/system-config/aplikacje">Wróć do listy</Link>
+                <Link href="/system-config/applications">Wróć do listy</Link>
               </Button>
             }
           />
@@ -376,7 +376,7 @@ export default function AplikacjaSzczegolyPage() {
     try {
       await deleteApplication.mutateAsync(application.id)
       toast.success(`Usunięto aplikację ${application.name}`)
-      router.push("/system-config/aplikacje")
+      router.push("/system-config/applications")
     } catch (error) {
       toastApiError(error, "Nie udało się usunąć aplikacji")
     } finally {
@@ -392,7 +392,7 @@ export default function AplikacjaSzczegolyPage() {
         actions={
           <div className="flex items-center gap-2">
             <Button size="sm" variant="ghost" asChild>
-              <Link href="/system-config/aplikacje">
+              <Link href="/system-config/applications">
                 <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
                 Aplikacje
               </Link>

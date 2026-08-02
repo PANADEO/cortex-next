@@ -29,7 +29,7 @@ import {
 // per-ikonę deep-importy; nie potrafi tego zrobić dla namespace/wildcard
 // importu, bo nie da się statycznie ustalić, których właściwości on w ogóle
 // użyje. Namespace-import w tym miejscu psuł tree-shaking `lucide-react` DLA
-// CAŁEJ APLIKACJI — First Load JS KAŻDEJ trasy (nie tylko ekranów Aplikacje)
+// CAŁEJ APLIKACJI — First Load JS KAŻDEJ trasy (nie tylko ekranów /system-config/applications)
 // urósł o ~183-187 kB, bo cały katalog 1731 ikon lądował w chunku wspólnym
 // dla root layoutu. Odkryte przez review 31.07.2026 realnym pomiarem
 // `next build`. Lista niżej pokrywa WSZYSTKIE nazwy ikon dziś używane jako

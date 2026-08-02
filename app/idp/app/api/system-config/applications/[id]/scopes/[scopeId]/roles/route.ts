@@ -21,7 +21,7 @@ const bodySchema = z.object({
 /**
  * D9/D10: granty JEDNEJ kolumny macierzy (jeden zakres -> komplet ról).
  * Zapis wsadowy z UI woła to raz PER ZMIENIONĄ KOLUMNĘ, równolegle — nie
- * ten route decyduje o wsadowości, tylko wołający (aplikacje/[code]/page.tsx).
+ * ten route decyduje o wsadowości, tylko wołający (applications/[code]/page.tsx).
  */
 export async function PUT(request: NextRequest, context: RouteContext): Promise<NextResponse> {
   const denied = await denyUnlessAllowed(request)

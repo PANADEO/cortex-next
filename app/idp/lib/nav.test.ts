@@ -60,10 +60,10 @@ describe("INTRASTAT_NAV", () => {
 })
 
 describe("ILUSTROMAT_NAV", () => {
-  it("links Generowanie and Szablony to their pages", () => {
-    expect(itemIds(ILUSTROMAT_NAV)).toEqual(["generowanie", "szablony"])
+  it("links Generation and Templates to their pages", () => {
+    expect(itemIds(ILUSTROMAT_NAV)).toEqual(["generation", "templates"])
 
     const hrefs = ILUSTROMAT_NAV.flatMap((section) => section.items.map((item) => item.href))
-    expect(hrefs).toEqual(["/ilustromat/generowanie", "/ilustromat/szablony"])
+    expect(hrefs).toEqual(["/ilustromat/generation", "/ilustromat/templates"])
   })
 })

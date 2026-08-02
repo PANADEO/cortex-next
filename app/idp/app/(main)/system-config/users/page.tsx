@@ -2,10 +2,10 @@
 
 import {
   useCreateUser,
-  useKonfiguracjaRoles,
-  useKonfiguracjaUsers,
+  useRoles,
   useSetUserRoles,
   useUpdateUser,
+  useUsers,
 } from "@/features/system-config/hooks"
 import type { RoleSummary, UserWithRoles } from "@/features/system-config/types"
 import { toastApiError } from "@cortex/api"
@@ -39,9 +39,9 @@ interface NewUserForm {
 
 const EMPTY_NEW_USER: NewUserForm = { email: "", fullName: "" }
 
-export default function UzytkownicyPage() {
-  const usersQuery = useKonfiguracjaUsers()
-  const rolesQuery = useKonfiguracjaRoles()
+export default function UsersPage() {
+  const usersQuery = useUsers()
+  const rolesQuery = useRoles()
   const setUserRoles = useSetUserRoles()
   const createUser = useCreateUser()
   const updateUser = useUpdateUser()

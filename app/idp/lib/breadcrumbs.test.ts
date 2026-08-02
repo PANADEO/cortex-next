@@ -103,8 +103,8 @@ describe("breadcrumbsFromPath", () => {
     ])
   })
 
-  it("maps /system-config/uzytkownicy to Konfiguracja Systemu / Użytkownicy", () => {
-    expect(breadcrumbsFromPath("/system-config/uzytkownicy")).toEqual([
+  it("maps /system-config/users to Konfiguracja Systemu / Użytkownicy", () => {
+    expect(breadcrumbsFromPath("/system-config/users")).toEqual([
       { label: "Konfiguracja Systemu", href: "/" },
       { label: "Użytkownicy" },
     ])
@@ -116,8 +116,8 @@ describe("breadcrumbsFromPath", () => {
     ])
   })
 
-  it("maps /ilustromat/szablony to Ilustromat / Szablony", () => {
-    expect(breadcrumbsFromPath("/ilustromat/szablony")).toEqual([
+  it("maps /ilustromat/templates to Ilustromat / Szablony", () => {
+    expect(breadcrumbsFromPath("/ilustromat/templates")).toEqual([
       { label: "Ilustromat", href: "/" },
       { label: "Szablony" },
     ])

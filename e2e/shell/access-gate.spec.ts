@@ -295,7 +295,7 @@ test.describe("Bramka powłoki bez backendu IDP (D7)", () => {
     await asUser(page, email)
     await mockIdpConfig(page)
 
-    await page.goto("/ilustromat/generowanie")
+    await page.goto("/ilustromat/generation")
 
     expect(await gateOutcome(page)).toBe("allowed")
   })

@@ -10,7 +10,7 @@ description: Konwencje UI w cortex-frontend — tylko @cortex/ui + @cortex/style
 1. Komponenty wyłącznie z `@cortex/ui` (shadcn/ui + Radix). Nowy prymityw UI → dodaj do `@cortex/ui`, nie twórz lokalnego odpowiednika w module.
 2. Kolory/spacing wyłącznie przez tokeny `@cortex/styles` (CSS variables) — zero inline hex (`#4A90E2` itd.), zero magicznych wartości Tailwind poza tokenami.
 3. Zero emoji w UI copy, komentarzach, komunikatach błędów — produkt dla regulowanych klientów enterprise, ma wyglądać intencjonalnie.
-4. UI copy po polsku, identyfikatory kodu po angielsku (zmienne, funkcje, nazwy plików).
+4. UI copy po polsku, identyfikatory kodu po angielsku (zmienne, funkcje, nazwy plików). To obejmuje wprost **segmenty ścieżek URL** (foldery Next.js file-based routing — folder = URL) — zawsze angielskie, bez wyjątków typu "spójność z istniejącym polskim segmentem w tym samym module". Poprawka realnego błędu z 02.08.2026: `/system-config/{aplikacje,uzytkownicy}` i `/ilustromat/{generowanie,szablony}` (razem z komponentami `AplikacjePage`/`UzytkownicyPage`/`SzablonyPage`/`GenerowaniePage` i hookami-hybrydami `useKonfiguracjaApplications` itp.) zostały zbudowane po polsku — dla `system-config` była to jawna, ale błędna decyzja ([[cortex-frontend-aplikacje-ux-projekt]]: "Polski segment, spójnie z istniejącym `/system-config/uzytkownicy`"), tu odwrócona. Naprawione na `/system-config/{applications,users}` i `/ilustromat/{generation,templates}` — stare adresy żyją dalej jako 308 w `LEGACY_REDIRECTS` (`app/idp/middleware.ts`).
 5. Logo (`app/idp/public/cortex-logo.png`) i kolor marki `cortex` (`#4A90E2` w `tailwind.config.ts`) — nie wymyślać alternatyw.
 
 ## Nagłówki stron
@@ -25,7 +25,7 @@ Jeden asset, jeden mechanizm: `<Image className="dark:invert dark:hue-rotate-180
 
 Wiersz tabeli/listy **nigdy nie jest sam w sobie interaktywny** — bez `onClick`/`tabIndex`/`role="link"`/ręcznego `onKeyDown` na `<tr>`. Nawigacja i akcje idą wyłącznie przez dedykowany element w ostatniej kolumnie (nagłówek pusty: `<th className="px-4 py-2" />`), wyrównanej do prawej krawędzi (`text-right`). Klik w resztę wiersza nic nie robi — to nie jest zaniedbanie, to świadomy brak funkcji tam, gdzie nie ma jej po co budować.
 
-**Zero widocznego tekstu na samym wierszu — zawsze `Button size="icon" variant="ghost"`, ta sama ikona 4×4, ten sam wariant, niezależnie od tego która z gałęzi niżej się stosuje.** Tekst opisujący akcję żyje wyłącznie w `title`/`aria-label` (tooltip + czytnik ekranu) albo wewnątrz otwartego `DropdownMenuItem` — nigdy jako widoczna etykieta przy przycisku w wierszu. Złamanie tej reguły (np. `Button size="sm" variant="outline"` z tekstem obok ikon-only przycisków w innych kolumnach/ekranach) jest dokładnie tym, co robi listę niespójną między ekranami tego samego modułu — to był realny bug (kolumna akcji w `uzytkownicy/page.tsx` miała widoczny tekst "Zmień role" obok przycisków bez tekstu w `role.tsx`/`aplikacje/page.tsx`), nie hipotetyczne ryzyko.
+**Zero widocznego tekstu na samym wierszu — zawsze `Button size="icon" variant="ghost"`, ta sama ikona 4×4, ten sam wariant, niezależnie od tego która z gałęzi niżej się stosuje.** Tekst opisujący akcję żyje wyłącznie w `title`/`aria-label` (tooltip + czytnik ekranu) albo wewnątrz otwartego `DropdownMenuItem` — nigdy jako widoczna etykieta przy przycisku w wierszu. Złamanie tej reguły (np. `Button size="sm" variant="outline"` z tekstem obok ikon-only przycisków w innych kolumnach/ekranach) jest dokładnie tym, co robi listę niespójną między ekranami tego samego modułu — to był realny bug (kolumna akcji w `users/page.tsx` miała widoczny tekst "Zmień role" obok przycisków bez tekstu w `role.tsx`/`applications/page.tsx`), nie hipotetyczne ryzyko.
 
 Dobór WIDGETU (nie treści etykiety — ta zawsze jest ukryta) zależy od liczby akcji i ich dostępności:
 
@@ -75,3 +75,35 @@ idp-basic/intrastat, poza zakresem tej reguły.) To był już czwarty w tym repo
 samego wzorca (po `KNOWN_TILE_SEGMENTS` i `navByTile` w `(main)/layout.tsx`) — zanim
 dopiszesz kolejną osobną listę tileId→cokolwiek gdziekolwiek w repo, sprawdź najpierw, czy
 `TILES`/`nav.ts` już nie mają tej informacji.
+
+## Prefiks `Cortex*` — nasza warstwa abstrakcji nad biblioteką
+
+Komponent w `@cortex/ui` dostaje prefiks `Cortex` (np. `CortexDataGrid`), gdy **opakowuje albo
+zastępuje bibliotekę zewnętrzną własną, kontrolowaną warstwą zachowania** — dokłada API, stan albo
+reguły, których sama biblioteka nie ma, i które są specyficzne dla tego produktu. Sygnalizuje to
+wprost: "to NASZA warstwa, bezpieczna do rozszerzania albo podmiany biblioteki pod spodem
+niezależnie od reszty kodu".
+
+Nie każdy komponent w `@cortex/ui` tego wymaga. **Cienki re-eksport prymitywu** (np. `Button`,
+`Dialog`, `Select` — shadcn/ui + Radix, patrz reguła 1 wyżej) NIE dostaje prefiksu: to wierne
+1:1 owinięcie biblioteki, bez własnej logiki, więc nazwa biblioteki i tak jest tym, co dev
+faktycznie dostaje. Prefiks jest zarezerwowany dla przypadków, gdzie odpowiedź na pytanie
+"czym różni się to od gołego użycia biblioteki?" jest niepusta.
+
+**`CortexDataGrid`** (`packages/@cortex/ui/src/components/cortex-data-grid.tsx`) to pierwszy,
+wzorcowy przykład tej konwencji. Opakowuje TanStack Table własną warstwą: sortowanie klientowe
+(`enableSorting: true` per kolumna — opt-in, nie domyślne TanStack "wszystko sortowalne"),
+wyszukiwanie globalne (`searchable`), i domyślny brak paginacji ("pokaż wszystko" — paginacja
+jest opt-in przez `pageSize`, nigdy zachowaniem domyślnym, bo część ekranów administracyjnych
+— np. lista Aplikacji w trybie zmiany kolejności wierszy — wymaga widzieć cały zbiór naraz).
+Celowo NIE eksponuje `onRowClick`: to jedyny dozwolony sposób renderowania listy idący naprzód,
+więc musi być zgodny z regułą "Listy: row-actions, nie klik-w-wiersz" wyżej z definicji, nie
+przez dyscyplinę konsumenta.
+
+Niżej w warstwach zostaje `DataTable` (`components/data-table.tsx`) — surowy, niesortowany,
+niefiltrowany wrapper na TanStack (`getCoreRowModel()` i nic więcej), bez własnej logiki poza
+renderowaniem wierszy/skeletonu/empty-state. To NIE dostaje prefiksu `Cortex`, bo to właśnie ten
+cienki przypadek — i `CortexDataGrid` jest go zbudowany, nie jego zamiennikiem. `DataTable`
+został zachowany dla istniejących konsumentów (część z nich używa dziś przestarzałego
+`onRowClick` — patrz `@deprecated` przy tym propie w kodzie), ale **nowe ekrany z tabelami mają
+używać `CortexDataGrid`**, nie surowego `<table>` ani samego `DataTable`.

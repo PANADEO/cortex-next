@@ -3,7 +3,7 @@
 import {
   useCreateRole,
   useDeleteRole,
-  useKonfiguracjaRoles,
+  useRoles,
   useUpdateRole,
 } from "@/features/system-config/hooks"
 import type { RoleSummary } from "@/features/system-config/types"
@@ -47,7 +47,7 @@ const EMPTY_FORM: RoleForm = { code: "", name: "", description: "" }
 type DialogState = { role: RoleSummary | null } | null
 
 export default function RolePage() {
-  const rolesQuery = useKonfiguracjaRoles()
+  const rolesQuery = useRoles()
   const createRole = useCreateRole()
   const updateRole = useUpdateRole()
   const deleteRole = useDeleteRole()

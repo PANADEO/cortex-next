@@ -1,6 +1,6 @@
 // Przykład ILUSTRACYJNY konwencji z .claude/skills/code-e2e/SKILL.md — nie
 // pełne pokrycie modułu Konfiguracja Systemu. Wzorzec do skopiowania przy
-// pisaniu kolejnych testów (RolesPage, TilesRegistryPage, kafelki inne niż
+// pisaniu kolejnych testów (RolesPage, ApplicationsPage, kafelki inne niż
 // system-config).
 //
 // Wymaga: DATABASE_URL wskazujący na lokalny Postgres z wgraną migracją

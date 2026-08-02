@@ -1,6 +1,6 @@
 "use client"
 
-import { useCreateApplication, useKonfiguracjaApplications, useUpdateApplication } from "@/features/system-config/hooks"
+import { useApplications, useCreateApplication, useUpdateApplication } from "@/features/system-config/hooks"
 import { resolveApplicationIcon } from "@/features/system-config/icons"
 import { KIND_LABELS, KIND_SHORT_LABELS } from "@/features/system-config/kinds"
 import type { Application } from "@/features/system-config/types"
@@ -62,9 +62,9 @@ const EMPTY_FORM: NewApplicationForm = {
  *  dziś numerują (`index * 10`). */
 const SORT_ORDER_STEP = 10
 
-export default function AplikacjePage() {
+export default function ApplicationsPage() {
   const router = useRouter()
-  const applicationsQuery = useKonfiguracjaApplications()
+  const applicationsQuery = useApplications()
   const createApplication = useCreateApplication()
   const updateApplication = useUpdateApplication()
 
@@ -106,7 +106,7 @@ export default function AplikacjePage() {
       })
       setIsOpen(false)
       toast.success(`Dodano aplikację ${created.name}`)
-      router.push(`/system-config/aplikacje/${created.code}`)
+      router.push(`/system-config/applications/${created.code}`)
     } catch (error) {
       toastApiError(error, "Nie udało się dodać aplikacji")
     }
@@ -347,7 +347,7 @@ export default function AplikacjePage() {
                               size="icon"
                               variant="ghost"
                               aria-label={`Otwórz szczegóły ${application.name}`}
-                              onClick={() => router.push(`/system-config/aplikacje/${application.code}`)}
+                              onClick={() => router.push(`/system-config/applications/${application.code}`)}
                             >
                               <ChevronRight className="h-4 w-4" />
                             </Button>

@@ -73,7 +73,7 @@ async function main() {
       values (
         ${APP_CODE}, 'Ilustromat',
         'Generowanie brandowanych ilustracji do postów LinkedIn', 'Image',
-        'Treści', 'native', '/ilustromat/generowanie', 110
+        'Treści', 'native', '/ilustromat/generation', 110
       )
       on conflict (code) do nothing
       returning id

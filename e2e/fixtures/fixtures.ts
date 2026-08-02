@@ -9,8 +9,8 @@
 import { test as base } from "@playwright/test"
 import type { Page } from "@playwright/test"
 import { closeDb, seedScenario, type ScenarioName, type ScenarioResult } from "./db-seed"
-import { IlustromatGenerowaniePage } from "../poms/ilustromat/generowanie-page"
-import { IlustromatSzablonyPage } from "../poms/ilustromat/szablony-page"
+import { IlustromatGenerationPage } from "../poms/ilustromat/generation-page"
+import { IlustromatTemplatesPage } from "../poms/ilustromat/templates-page"
 import { TokenUsagePage } from "../poms/token-usage/token-usage-page"
 import { UsersPage } from "../poms/system-config/users-page"
 
@@ -30,8 +30,8 @@ export async function asUser(page: Page, email: string): Promise<void> {
 interface TestFixtures {
   seed: (scenario: ScenarioName) => Promise<ScenarioResult>
   usersPage: UsersPage
-  ilustromatGenerowaniePage: IlustromatGenerowaniePage
-  ilustromatSzablonyPage: IlustromatSzablonyPage
+  ilustromatGenerationPage: IlustromatGenerationPage
+  ilustromatTemplatesPage: IlustromatTemplatesPage
   tokenUsagePage: TokenUsagePage
 }
 
@@ -59,12 +59,12 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await use(new UsersPage(page))
   },
 
-  ilustromatGenerowaniePage: async ({ page }, use) => {
-    await use(new IlustromatGenerowaniePage(page))
+  ilustromatGenerationPage: async ({ page }, use) => {
+    await use(new IlustromatGenerationPage(page))
   },
 
-  ilustromatSzablonyPage: async ({ page }, use) => {
-    await use(new IlustromatSzablonyPage(page))
+  ilustromatTemplatesPage: async ({ page }, use) => {
+    await use(new IlustromatTemplatesPage(page))
   },
 
   tokenUsagePage: async ({ page }, use) => {

@@ -66,6 +66,18 @@ const LEGACY_REDIRECTS: ReadonlyArray<{ from: RegExp; to: string }> = [
   { from: /^\/board(\/.*)?$/, to: "/idp/board" },
   { from: /^\/verify(\/.*)?$/, to: "/idp/verify" },
   { from: /^\/classification(\/.*)?$/, to: "/idp/classification" },
+  // Naming-rule fix (02.08.2026): route segments must be English identifiers,
+  // no exceptions for "consistency with an existing Polish segment" — see
+  // .claude/skills/code-ui/SKILL.md rule 4. Reverses the explicit decision in
+  // [[cortex-frontend-aplikacje-ux-projekt]] ("Polski segment, spójnie z
+  // istniejącym /system-config/uzytkownicy"). `/system-config/kafelki` used to
+  // be its own client-side redirect page (`KafelkiRedirectPage`) — folded in
+  // here instead, same job, one mechanism.
+  { from: /^\/system-config\/aplikacje(\/.*)?$/, to: "/system-config/applications" },
+  { from: /^\/system-config\/uzytkownicy(\/.*)?$/, to: "/system-config/users" },
+  { from: /^\/system-config\/kafelki(\/.*)?$/, to: "/system-config/applications" },
+  { from: /^\/ilustromat\/generowanie(\/.*)?$/, to: "/ilustromat/generation" },
+  { from: /^\/ilustromat\/szablony(\/.*)?$/, to: "/ilustromat/templates" },
 ]
 
 const IDP_BASIC_API_PATTERNS: RegExp[] = [

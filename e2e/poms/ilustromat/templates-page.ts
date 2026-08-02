@@ -1,9 +1,9 @@
-// POM ekranu "Szablony marki" (/ilustromat/szablony).
+// POM ekranu "Szablony marki" (/ilustromat/templates).
 
 import type { Locator, Page } from "@playwright/test"
 import { BasePage } from "../shared/base-page"
 
-export class IlustromatSzablonyPage extends BasePage {
+export class IlustromatTemplatesPage extends BasePage {
   constructor(page: Page) {
     super(page)
   }
@@ -40,10 +40,10 @@ export class IlustromatSzablonyPage extends BasePage {
     return this.page.getByRole("listitem").filter({ hasText: name })
   }
 
-  /** `domcontentloaded` z tego samego powodu co w generowanie-page.ts:
+  /** `domcontentloaded` z tego samego powodu co w generation-page.ts:
    *  żądania powłoki do nieobecnego lokalnie backendu IDP potrafią nie pozwolić
    *  paść zdarzeniu `load`. */
   async goto(): Promise<void> {
-    await this.page.goto("/ilustromat/szablony", { waitUntil: "domcontentloaded" })
+    await this.page.goto("/ilustromat/templates", { waitUntil: "domcontentloaded" })
   }
 }

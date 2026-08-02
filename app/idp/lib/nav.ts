@@ -170,10 +170,10 @@ export const SYSTEM_CONFIG_NAV: TileMenuSection[] = [
     label: "Dostęp",
     items: [
       {
-        id: "uzytkownicy",
+        id: "users",
         label: "Użytkownicy",
         icon: Users,
-        href: "/system-config/uzytkownicy",
+        href: "/system-config/users",
       },
       { id: "role", label: "Role", icon: KeyRound, href: "/system-config/role" },
     ],
@@ -183,10 +183,10 @@ export const SYSTEM_CONFIG_NAV: TileMenuSection[] = [
     label: "Instancja",
     items: [
       {
-        id: "aplikacje",
+        id: "applications",
         label: "Aplikacje",
         icon: LayoutDashboard,
-        href: "/system-config/aplikacje",
+        href: "/system-config/applications",
       },
     ],
   },
@@ -241,8 +241,8 @@ export const ILUSTROMAT_NAV: TileMenuSection[] = [
     id: "praca",
     label: "Praca",
     items: [
-      { id: "generowanie", label: "Generowanie", icon: Sparkles, href: "/ilustromat/generowanie" },
-      { id: "szablony", label: "Szablony", icon: FileText, href: "/ilustromat/szablony" },
+      { id: "generation", label: "Generowanie", icon: Sparkles, href: "/ilustromat/generation" },
+      { id: "templates", label: "Szablony", icon: FileText, href: "/ilustromat/templates" },
     ],
   },
 ]

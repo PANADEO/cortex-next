@@ -34,7 +34,7 @@ e2e/
 
 `e2e/poms/<kafelek>/<strona>-page.ts`, klasa dziedziczy `BasePage` (`e2e/poms/shared/base-page.ts`) po wspólny sidebar/nawigację (`@cortex/ui` `AppShell`+`TileMenu` — identyczne dla każdego kafelka pod `(main)`). Lokatory jako properties/gettery w konstruktorze, akcje jako async metody. Wzorzec: `e2e/poms/system-config/users-page.ts`.
 
-**POM per kafelek, nie per moduł-jako-całość** — `system-config` ma osobny plik per stronę (`users-page.ts`, docelowo `roles-page.ts`, `kafelki-page.ts`), nie jeden monolityczny `SystemConfigPage` ze wszystkim. Granica pliku = granica route'a, tak jak granica kafelka = granica `app/idp/app/(main)/<id>/`.
+**POM per kafelek, nie per moduł-jako-całość** — `system-config` ma osobny plik per stronę (`users-page.ts`, docelowo `roles-page.ts`, `applications-page.ts`), nie jeden monolityczny `SystemConfigPage` ze wszystkim. Granica pliku = granica route'a, tak jak granica kafelka = granica `app/idp/app/(main)/<id>/`. Nazwa pliku/klasy POM-a idzie za angielskim segmentem trasy, nigdy za polskim — patrz code-ui/SKILL.md reguła 4.
 
 ## Selektory: role-based, NIE data-testid
 

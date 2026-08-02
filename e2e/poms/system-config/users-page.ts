@@ -1,8 +1,8 @@
-// POM dla /system-config/uzytkownicy
-// (app/idp/app/(main)/system-config/uzytkownicy/page.tsx).
+// POM dla /system-config/users
+// (app/idp/app/(main)/system-config/users/page.tsx).
 //
 // Przykład wzorcowy dla code-e2e/SKILL.md — kolejne POM-y modułu
-// (RolesPage → /system-config/role, TilesRegistryPage → /system-config/kafelki)
+// (RolesPage → /system-config/role, ApplicationsPage → /system-config/applications)
 // piszemy analogicznie: jeden plik per strona, dziedziczy BasePage, lokatory
 // jako properties/gettery, akcje jako async metody.
 
@@ -18,7 +18,7 @@ export class UsersPage extends BasePage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto("/system-config/uzytkownicy")
+    await this.page.goto("/system-config/users")
   }
 
   /** Wiersz tabeli po e-mailu — accessible name wiersza to konkatenacja

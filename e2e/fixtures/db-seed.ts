@@ -114,7 +114,7 @@ export async function resetSystemConfig(): Promise<void> {
  *
  *   const { email } = await seedScenario("admin-with-one-tile")
  *   await asUser(page, email)
- *   await page.goto("/system-config/uzytkownicy")
+ *   await page.goto("/system-config/users")
  *
  * Dodanie nowego scenariusza: nowy literal w `ScenarioName` + `case` niżej.
  * Nie dodawaj parametrów do `seedScenario()` (np. "custom" wariantu) — każdy
@@ -379,7 +379,7 @@ async function seedIlustromat(options: {
       code: ILUSTROMAT_APP_CODE,
       name: "Ilustromat",
       kind: "native",
-      route: "/ilustromat/generowanie",
+      route: "/ilustromat/generation",
     })
     .returning()
 
