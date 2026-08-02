@@ -48,6 +48,7 @@ export {
   listApplicationScopeGrants,
   listApplicationScopes,
   listApplications,
+  listHubApplications,
   listRoles,
   listUsers,
   renameApplicationScope,

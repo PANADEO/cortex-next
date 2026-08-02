@@ -395,6 +395,29 @@ export async function listApplications(): Promise<ApplicationRow[]> {
     .orderBy(asc(applications.sortOrder), asc(applications.code))
 }
 
+/**
+ * Katalog kafelków huba — WYŁĄCZNIE metadane wyglądu, ZERO logiki dostępu
+ * (D7, PROJECT/cortex-frontend-hub-db-driven-projekt.md). Siostra
+ * listApplications(), ale filtrowana i celowo węższa: tylko wiersze aktywne
+ * I oznaczone jako kafelek (AND, nie OR — wiersz typu "sam grant zbiorczy",
+ * np. `ai-tools`, ma `show_on_hub=false` mimo `is_active=true` i nie ma tu
+ * się pojawić).
+ *
+ * To zapytanie NIE JEST per-user i NIE WOLNO mu nim zostać: żaden JOIN z
+ * `permissions_matrix`/`user_roles`. "Kto widzi który kafelek" nadal
+ * rozstrzyga wyłącznie canAccessTile() po stronie klienta na liście z
+ * `/api/me/access` — powtórzenie tej reguły w SQL byłoby TRZECIM miejscem z
+ * tą samą logiką biznesową i realnie gubiłoby userów z samym zbiorczym
+ * grantem `ai-tools` (D7, rozważona i odrzucona alternatywa (b)).
+ */
+export async function listHubApplications(): Promise<ApplicationRow[]> {
+  return getDb()
+    .select()
+    .from(applications)
+    .where(and(eq(applications.isActive, true), eq(applications.showOnHub, true)))
+    .orderBy(asc(applications.sortOrder), asc(applications.code))
+}
+
 export async function createApplication(input: ApplicationInput): Promise<ApplicationRow> {
   const [created] = await getDb()
     .insert(applications)
