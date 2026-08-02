@@ -16,7 +16,7 @@ import {
   type RoleRow,
   type UserRow,
 } from "@cortex/db"
-import { TileKind } from "@cortex/tile-sdk"
+import { isHttpUrl, isInternalRoute, TileKind } from "@cortex/tile-sdk"
 import { and, asc, eq, inArray, ne } from "drizzle-orm"
 import { z } from "zod"
 import { clearTileAccessCache, normalizeEmail } from "./rbac"
@@ -38,26 +38,6 @@ export interface UserWithRoles {
   fullName: string | null
   isActive: boolean
   roles: RoleSummary[]
-}
-
-/** Adres zewnętrzny musi być realnym linkiem HTTP(S). `z.string().url()` tego
- *  NIE pilnuje — przepuszcza `javascript:`/`data:`/`file:`, czyli uśpiony stored
- *  XSS na moment, w którym rejestr zacznie zasilać nawigację. */
-function isHttpUrl(value: string): boolean {
-  try {
-    const { protocol } = new URL(value)
-    return protocol === "http:" || protocol === "https:"
-  } catch {
-    return false
-  }
-}
-
-/** Ścieżka natywna musi być ścieżką W TEJ aplikacji: jeden wiodący ukośnik,
- *  bez `//evil.com` (protocol-relative), bez `/\evil.com` (część przeglądarek
- *  traktuje backslash jak ukośnik) i bez pełnych URL-i — inaczej rejestr staje
- *  się open redirectem. */
-function isInternalRoute(value: string): boolean {
-  return /^\/(?![/\\])\S*$/.test(value)
 }
 
 const applicationFieldsSchema = z.object({

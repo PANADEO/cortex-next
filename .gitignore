@@ -19,6 +19,10 @@ coverage
 tsconfig.tsbuildinfo
 *.tsbuildinfo
 
+# Tile manifests — regenerated in the `builder` Docker stage from
+# app/idp/lib/tile-manifests.ts (scripts/generate-tile-manifests.mjs), not source.
+packages/@cortex/db/scripts/tile-manifests.generated.json
+
 # Okna czasowe — local JSON data store (runtime state, not source)
 app/idp/.data/okna-czasowe/*.json
 

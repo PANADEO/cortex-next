@@ -50,10 +50,16 @@ services:
   # Ten sam obraz co aplikacja — migracje i seed mają jechać z dokładnie tego
   # kodu, który zaraz wstanie, nie z checkoutu na maszynie operatora.
   #
-  # KOLEJNOŚĆ SEEDÓW JEST ZNACZĄCA: seed-system-config.mjs zakłada rolę `admin`,
-  # a seedy modułowe (ilustromat, token-usage) nadają jej granty. Uruchomione
-  # przed nim nie mają czego grantować i od 30.07.2026 kończą się BŁĘDEM
-  # (wcześniej: log i exit 0 — kafelek rejestrował się bez dostępu dla kogokolwiek).
+  # KOLEJNOŚĆ SEEDÓW JEST ZNACZĄCA: seed-tile-manifests.mjs musi wyprzedzać
+  # seed-system-config.mjs — rejestruje (nieaktywne) wiersze applications dla
+  # WSZYSTKICH kafelków natywnych opisanych manifestem (@cortex/tile-sdk
+  # defineTile(), PROJECT/cortex-frontend-hub-db-driven-projekt.md D10-rewizja
+  # c/d), żeby blok grantowania admina w seed-system-config.mjs ("wszystkie
+  # wiersze w applications") objął też świeżo zarejestrowane, choć jeszcze
+  # nieaktywowane, kody. seed-system-config.mjs zakłada rolę `admin`, a seedy
+  # modułowe (ilustromat, token-usage) nadają jej granty. Uruchomione przed
+  # nim nie mają czego grantować i od 30.07.2026 kończą się BŁĘDEM (wcześniej:
+  # log i exit 0 — kafelek rejestrował się bez dostępu dla kogokolwiek).
   # Każdy nowy kafelek z własnym seedem dopisujemy TUTAJ, na koniec łańcucha —
   # inaczej jest zarejestrowany w kodzie i niewidoczny na wdrożonym środowisku.
   migrate:
@@ -73,6 +79,7 @@ services:
       - -c
       - >-
         node packages/@cortex/db/scripts/migrate.mjs &&
+        node packages/@cortex/db/scripts/seed-tile-manifests.mjs &&
         node packages/@cortex/db/scripts/seed-system-config.mjs &&
         node packages/@cortex/db/scripts/seed-ilustromat.mjs &&
         node packages/@cortex/db/scripts/seed-token-usage.mjs

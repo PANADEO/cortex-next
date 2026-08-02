@@ -11,6 +11,7 @@
     "db:generate": "drizzle-kit generate --config drizzle.system-config.config.ts",
     "db:migrate": "drizzle-kit migrate --config drizzle.system-config.config.ts",
     "db:migrate:apply": "node scripts/migrate.mjs",
+    "db:seed:tile-manifests": "node scripts/seed-tile-manifests.mjs",
     "db:seed": "node scripts/seed-system-config.mjs",
     "db:generate:ilustromat": "drizzle-kit generate --config drizzle.ilustromat.config.ts",
     "db:migrate:ilustromat": "drizzle-kit migrate --config drizzle.ilustromat.config.ts",

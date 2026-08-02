@@ -7,4 +7,5 @@ export const systemConfigTile = defineTile({
   kind: "native",
   label: "Konfiguracja Systemu",
   entitlementCode: "system-config",
+  route: "/system-config",
 })

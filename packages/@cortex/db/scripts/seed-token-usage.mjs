@@ -29,21 +29,40 @@ const sql = postgres(databaseUrl, { max: 1 })
 
 async function main() {
   await sql.begin(async (tx) => {
+    // Rejestr kafelków: wiersz w applications istnieje już dzięki
+    // seed-tile-manifests.mjs (wcześniej w łańcuchu migrate — manifest
+    // tokenUsageTile w app/idp/app/(main)/token-usage/manifest.ts). Ten
+    // skrypt WYŁĄCZNIE go odczytuje, nie tworzy — druga, insertująca ścieżka
+    // do tego samego wiersza była redundantna po dodaniu
+    // seed-tile-manifests.mjs (PROJECT/cortex-frontend-hub-db-driven-projekt.md
+    // D10-rewizja c, otwarte pytanie f).
     const [application] = await tx`
-      insert into system_config.applications
-        (code, name, description, icon, category, kind, route, sort_order)
-      values (
-        ${APP_CODE}, 'Raportowanie Tokenów',
-        'Zużycie tokenów i liczba żądań przechodzących przez cortex-proxy', 'BarChart3',
-        'Administracja', 'native', '/token-usage', 120
-      )
-      on conflict (code) do nothing
-      returning id
+      select id from system_config.applications where code = ${APP_CODE}
     `
-    const applicationId =
-      application?.id ??
-      (await tx`select id from system_config.applications where code = ${APP_CODE}`)[0].id
+    if (!application) {
+      throw new Error(
+        "[seed:token-usage] brak wiersza applications dla 'token-usage' — uruchom najpierw seed-tile-manifests.mjs (kolejność seedów w docker-compose.yml).",
+      )
+    }
+    const applicationId = application.id
     console.log(`[seed:token-usage] aplikacja ${APP_CODE}: ok`)
+
+    // Raportowanie Tokenów jest już DZIŚ realnym, działającym modułem —
+    // dokładnie jak 22 wiersze zmigrowane w Kroku 1 (D6-rewizja: "Migrowanych
+    // ~24 dzisiejszych natywnych wierszy — plus ilustromat/token-usage
+    // rejestrowane poza seed-system-config.mjs — dostaje przy migracji
+    // activated_at = now()"). Jeśli to pierwszy deploy z manifestem na tej
+    // instancji, seed-tile-manifests.mjs (wcześniej w łańcuchu) właśnie
+    // stworzył ten wiersz jako NIEAKTYWNEGO kandydata (is_active=false,
+    // show_on_hub=false, activated_at=null — słuszny domyślny stan dla
+    // NOWYCH modułów, ale nie dla tego, który już działa). Cofamy to tutaj.
+    // Guard na activated_at IS NULL: nie cofa świadomej dezaktywacji admina
+    // po pierwszej aktywacji.
+    await tx`
+      update system_config.applications
+      set is_active = true, show_on_hub = true, activated_at = now()
+      where id = ${applicationId} and activated_at is null
+    `
 
     const [adminRole] = await tx`
       select id from system_config.roles where code = ${ADMIN_ROLE_CODE}

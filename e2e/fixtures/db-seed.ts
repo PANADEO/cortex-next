@@ -278,7 +278,14 @@ export async function seedScenario(name: ScenarioName): Promise<ScenarioResult> 
 // Kolejność i zawartość MUSZĄ odpowiadać komendzie usługi `migrate` w
 // docker-compose.yml / docker-compose.image.yml — inaczej macierz uprawnień
 // niżej dowodzi czegoś o rejestrze, którego na wdrożonym środowisku nie ma.
+// seed-tile-manifests.mjs PRZED seed-system-config.mjs (patrz komentarz w
+// docker-compose.yml) — czyta packages/@cortex/db/scripts/tile-manifests.generated.json,
+// wygenerowany przez `node scripts/generate-tile-manifests.mjs`
+// (package.json `test:e2e`/`test:e2e:ui` uruchamiają go PRZED `playwright
+// test`, bo lokalne e2e nie przechodzą przez etap `builder` Dockerfile, który
+// robi to samo w realnym deployu).
 const SEED_SCRIPTS = [
+  "seed-tile-manifests.mjs",
   "seed-system-config.mjs",
   "seed-ilustromat.mjs",
   "seed-token-usage.mjs",

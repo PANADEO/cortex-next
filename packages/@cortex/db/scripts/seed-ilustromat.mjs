@@ -65,23 +65,42 @@ async function main() {
       console.log(`[seed:ilustromat] szablon ${template.id}: ok`)
     }
 
-    // Rejestr kafelków: wiersz w applications to źródło prawdy dla uprawnień
-    // (po tym kodzie pyta requireTileAccess).
+    // Rejestr kafelków: wiersz w applications istnieje już dzięki
+    // seed-tile-manifests.mjs (wcześniej w łańcuchu migrate — manifest
+    // ilustromatTile w app/idp/app/(main)/ilustromat/manifest.ts). Ten skrypt
+    // WYŁĄCZNIE go odczytuje, nie tworzy — druga, insertująca ścieżka do tego
+    // samego wiersza była redundantna po dodaniu seed-tile-manifests.mjs
+    // (PROJECT/cortex-frontend-hub-db-driven-projekt.md D10-rewizja c,
+    // otwarte pytanie f).
     const [application] = await tx`
-      insert into system_config.applications
-        (code, name, description, icon, category, kind, route, sort_order)
-      values (
-        ${APP_CODE}, 'Ilustromat',
-        'Generowanie brandowanych ilustracji do postów LinkedIn', 'Image',
-        'Treści', 'native', '/ilustromat/generation', 110
-      )
-      on conflict (code) do nothing
-      returning id
+      select id from system_config.applications where code = ${APP_CODE}
     `
-    const applicationId =
-      application?.id ??
-      (await tx`select id from system_config.applications where code = ${APP_CODE}`)[0].id
+    // Twardy błąd, nie ostrzeżenie — ta sama logika co brak roli admin niżej:
+    // cichy exit 0 dałby granty do wiersza, który nigdy nie powstał.
+    if (!application) {
+      throw new Error(
+        "[seed:ilustromat] brak wiersza applications dla 'ilustromat' — uruchom najpierw seed-tile-manifests.mjs (kolejność seedów w docker-compose.yml).",
+      )
+    }
+    const applicationId = application.id
     console.log(`[seed:ilustromat] aplikacja ${APP_CODE}: ok`)
+
+    // Ilustromat jest już DZIŚ realnym, działającym modułem — dokładnie jak
+    // 22 wiersze zmigrowane w Kroku 1 (D6-rewizja: "Migrowanych ~24
+    // dzisiejszych natywnych wierszy — plus ilustromat/token-usage
+    // rejestrowane poza seed-system-config.mjs — dostaje przy migracji
+    // activated_at = now()"). Jeśli to pierwszy deploy z manifestem na tej
+    // instancji, seed-tile-manifests.mjs (wcześniej w łańcuchu) właśnie
+    // stworzył ten wiersz jako NIEAKTYWNEGO kandydata (is_active=false,
+    // show_on_hub=false, activated_at=null — słuszny domyślny stan dla
+    // NOWYCH modułów, ale nie dla tego, który już działa). Cofamy to tutaj.
+    // Guard na activated_at IS NULL: nie cofa świadomej dezaktywacji admina
+    // po pierwszej aktywacji.
+    await tx`
+      update system_config.applications
+      set is_active = true, show_on_hub = true, activated_at = now()
+      where id = ${applicationId} and activated_at is null
+    `
 
     // Warstwa GRANULARNA: scope decydujący, kto widzi "Szablony marki".
     // Ilustromat jest pierwszym realnym konsumentem tych tabel.

@@ -9,4 +9,5 @@ export const ilustromatTile = defineTile({
   kind: "native",
   label: "Ilustromat",
   entitlementCode: "ilustromat",
+  route: "/ilustromat/generation",
 })

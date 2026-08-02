@@ -44,6 +44,15 @@ ENV NEXT_PUBLIC_SHELL_VERSION=$VERSION
 ENV NEXT_PUBLIC_BASE_PATH=$NEXT_PUBLIC_BASE_PATH
 RUN pnpm run build
 
+# Generuje packages/@cortex/db/scripts/tile-manifests.generated.json z
+# app/idp/lib/tile-manifests.ts (barrel statycznie zbierający wszystkie
+# manifest.ts). Musi jechać TU, nie w kroku `migrate`: ten etap ma pełny
+# toolchain TS (i tak potrzebny do `next build` wyżej) oraz dostęp do plików
+# manifest.ts spod app/idp/app/(main)/** — etap `runner` niżej nie ma ani
+# jednego, ani drugiego (patrz komentarz przy COPY .../scripts niżej i
+# PROJECT/cortex-frontend-hub-db-driven-projekt.md D10-rewizja c).
+RUN node scripts/generate-tile-manifests.mjs
+
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
@@ -104,7 +113,13 @@ COPY --chown=nextjs:nodejs cowork-runner/src ./cowork-runner/src
 # tracingu — drizzle-kit (devDependency @cortex/db) nie jest tu potrzebny,
 # migrate.mjs woła migrator z samego drizzle-orm.
 COPY --from=builder --chown=nextjs:nodejs /app/packages/@cortex/db/drizzle ./packages/@cortex/db/drizzle
-COPY --chown=nextjs:nodejs packages/@cortex/db/scripts ./packages/@cortex/db/scripts
+# Z ETAPU `builder`, NIE z kontekstu builda: `builder` dopisał tu
+# tile-manifests.generated.json (RUN node scripts/generate-tile-manifests.mjs
+# wyżej) — kopiowanie z kontekstu (jak poprzednio) zostawiłoby ten artefakt
+# wyłącznie w etapie builder, nigdy nie docierając do obrazu, który faktycznie
+# startuje `migrate` (PROJECT/cortex-frontend-hub-db-driven-projekt.md
+# D10-rewizja c).
+COPY --from=builder --chown=nextjs:nodejs /app/packages/@cortex/db/scripts ./packages/@cortex/db/scripts
 RUN pnpm add --prod drizzle-orm@^0.36.0 postgres@^3.4.0
 
 # Skill/connector assets read from disk at runtime (SKILL.md + CLI scripts),

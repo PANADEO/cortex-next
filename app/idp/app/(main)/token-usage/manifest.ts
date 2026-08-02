@@ -16,4 +16,5 @@ export const tokenUsageTile = defineTile({
   kind: "native",
   label: "Raportowanie Tokenów",
   entitlementCode: "token-usage",
+  route: "/token-usage",
 })

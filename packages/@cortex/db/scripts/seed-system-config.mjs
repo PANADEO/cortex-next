@@ -22,6 +22,28 @@
 //   nie istnieje (Krok 3), to rozróżnienie jest teoretyczne; kiedy powstanie,
 //   ten upsert trzeba będzie zrewidować pod tym samym kątem co resztę pól.
 //
+//   WYJĄTEK — WIERSZ BEZ HISTORII AKTYWACJI (`activated_at is null`):
+//   częściowy upsert wyżej zakłada, że konflikt oznacza wiersz z prawdziwymi
+//   danymi. Odkąd seed-tile-manifests.mjs wyprzedza ten skrypt w łańcuchu
+//   migrate (docker-compose*.yml) i pre-tworzy wiersz dla KAŻDEGO kodu z
+//   manifestem — czyli dziś także dla większości kodów z APPLICATIONS niżej,
+//   nie tylko ilustromat/token-usage — pierwsze uruchomienie TEGO skryptu na
+//   świeżej bazie trafia w konflikt na niemal każdym kodzie, zanim
+//   kiedykolwiek zdążył wstawić własny wiersz. Bez wyjątku taki wiersz
+//   zostawałby TRWALE z placeholderem z seed-tile-manifests.mjs
+//   (is_active=false, name=label manifestu, icon/category=null) — częściowy
+//   upsert nigdy więcej by go nie dotknął. Dlatego: gdy istniejący wiersz ma
+//   `activated_at is null`, upsert DODATKOWO backfilluje
+//   name/description/icon/category/kind/route/url/target/sort_order/
+//   is_active do wartości z APPLICATIONS, tak jak przy świeżym INSERCIE — ten
+//   sam guard (`activated_at is null`) co w seed-ilustromat.mjs/
+//   seed-token-usage.mjs, tu wyrażony przez CASE WHEN w SET zamiast osobnego
+//   UPDATE (patrz komentarz przy zapytaniu niżej po co). Wiersz z
+//   jakąkolwiek historią aktywacji — zmigrowany w Kroku 1 z activated_at
+//   ustawionym, albo już zbackfillowany tą gałęzią w poprzednim uruchomieniu
+//   — zostaje odtąd całkowicie poza zasięgiem tego wyjątku: admin-edits na
+//   tych polach przez UI nadal przeżywają deploy.
+//
 //   ADMIN_EMAIL USTAWIONE — przy KAŻDYM uruchomieniu seed zapewnia, że ten
 //   DOKŁADNIE jeden adres ma: aktywne konto w `users` (zakłada je, jeśli nie
 //   istnieje; REAKTYWUJE, jeśli było wyłączone), rolę `admin` i grant tej roli
@@ -80,8 +102,12 @@ const ADMIN_ROLE_CODE = "admin"
 // nie ma odpowiednika w tiles.ts (nic tam nie renderują) — zostają `null`,
 // zgodnie ze schematem (D2/D3, PROJECT/cortex-frontend-hub-db-driven-projekt.md).
 //
-// `ilustromat` NIE jest tutaj świadomie: moduł z własnym schematem rejestruje
-// się we własnym seedzie (scripts/seed-ilustromat.mjs) — precedens zostaje.
+// `ilustromat`/`token-usage` NIE są tutaj świadomie: mają własne manifesty
+// (@cortex/tile-sdk defineTile()) i ich wiersz applications powstaje przez
+// seed-tile-manifests.mjs (wcześniej w łańcuchu migrate) — ich własne seedy
+// (scripts/seed-ilustromat.mjs, scripts/seed-token-usage.mjs) już tylko go
+// odczytują i grantują, nie insertują (PROJECT/cortex-frontend-hub-db-driven-projekt.md
+// D10-rewizja c, otwarte pytanie f).
 const APPLICATIONS = [
   {
     code: "idp",
@@ -390,13 +416,47 @@ async function main() {
           now()
         )
         -- Częściowy upsert: name/description/icon/category/kind/route/url/target/
-        -- sort_order NIE są tu (zostają "on conflict do nothing" w duchu), więc
-        -- zmiany zrobione w UI na tych polach przeżywają deploy jak dotychczas.
-        -- Backfillujemy WYŁĄCZNIE pięć nowych kolumn hub-renderu (Krok 1,
+        -- sort_order/is_active NIE są bezwarunkowo nadpisywane (zostają "on
+        -- conflict do nothing" w duchu), więc zmiany zrobione w UI na tych
+        -- polach przeżywają deploy jak dotychczas — Z WYJĄTKIEM niżej.
+        -- Backfillujemy bezwarunkowo WYŁĄCZNIE pięć kolumn hub-renderu (Krok 1,
         -- PROJECT/cortex-frontend-hub-db-driven-projekt.md) — activated_at przez
         -- coalesce, żeby drugi i kolejne uruchomienia NIE nadpisywały już
         -- ustawionej daty pierwszej aktywacji świeżym now().
+        --
+        -- WYJĄTEK (patrz komentarz na górze pliku): gdy istniejący wiersz ma
+        -- activated_at is null — nigdy nie miał prawdziwych danych, np.
+        -- pre-utworzony przez seed-tile-manifests.mjs jako nieaktywny kandydat
+        -- — CASE WHEN niżej backfillują TEŻ name/description/icon/category/
+        -- kind/route/url/target/sort_order/is_active z APPLICATIONS, jak przy
+        -- świeżym INSERCIE. Bezpieczne mimo że activated_at jest ustawiane w
+        -- TYM SAMYM SET: Postgres liczy wszystkie wyrażenia jednego
+        -- UPDATE/ON CONFLICT DO UPDATE SET względem wiersza SPRZED tej
+        -- operacji (jak OLD w triggerze), nie sekwencyjnie — odwołanie do
+        -- system_config.applications.activated_at w każdym CASE WHEN niżej
+        -- zawsze widzi wartość PRZED tym zapytaniem, więc dotyczy wyłącznie
+        -- wierszy bez żadnej historii aktywacji.
         on conflict (code) do update set
+          name = case when system_config.applications.activated_at is null
+            then excluded.name else system_config.applications.name end,
+          description = case when system_config.applications.activated_at is null
+            then excluded.description else system_config.applications.description end,
+          icon = case when system_config.applications.activated_at is null
+            then excluded.icon else system_config.applications.icon end,
+          category = case when system_config.applications.activated_at is null
+            then excluded.category else system_config.applications.category end,
+          kind = case when system_config.applications.activated_at is null
+            then excluded.kind else system_config.applications.kind end,
+          route = case when system_config.applications.activated_at is null
+            then excluded.route else system_config.applications.route end,
+          url = case when system_config.applications.activated_at is null
+            then excluded.url else system_config.applications.url end,
+          target = case when system_config.applications.activated_at is null
+            then excluded.target else system_config.applications.target end,
+          sort_order = case when system_config.applications.activated_at is null
+            then excluded.sort_order else system_config.applications.sort_order end,
+          is_active = case when system_config.applications.activated_at is null
+            then true else system_config.applications.is_active end,
           show_on_hub = excluded.show_on_hub,
           color = excluded.color,
           category_functional = excluded.category_functional,
