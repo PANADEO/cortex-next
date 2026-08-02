@@ -17,7 +17,7 @@ import {
   type UserRow,
 } from "@cortex/db"
 import { isHttpUrl, isInternalRoute, TileKind } from "@cortex/tile-sdk"
-import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm"
+import { and, asc, eq, inArray, isNotNull, isNull, ne, or } from "drizzle-orm"
 import { z } from "zod"
 import { clearTileAccessCache, normalizeEmail } from "./rbac"
 
@@ -408,10 +408,29 @@ export async function setUserRoles(userId: string, roleIds: string[]): Promise<v
   clearTileAccessCache()
 }
 
+/**
+ * Katalog dla ekranu admina Aplikacje. Wyklucza wiersze `kind='native'` z
+ * `activated_at is null` (Krok 5, PROJECT/cortex-frontend-hub-db-driven-projekt.md
+ * — "rozróżnienie wizualne na liście Aplikacje"): taki wiersz jest tylko
+ * REJESTRACJĄ manifestu (`seed-tile-manifests.mjs`, D10-rewizja c), nigdy nie
+ * aktywowaną w tej instancji — żyje wyłącznie w
+ * `listUnactivatedNativeApplications()`/SELECT-cie "Dodaj aplikację", dopóki
+ * ktoś go nie aktywuje. Bez tego filtra każdy zarejestrowany-ale-nieaktywny
+ * manifest wyglądałby na liście jak zwykły wyłączony wiersz, nieodróżnialny
+ * od aplikacji, którą admin świadomie wyłączył (`isActive=false` PO
+ * aktywacji) — dokładnie rozróżnienie, po które wprowadzono `activated_at`
+ * (D6-rewizja).
+ *
+ * Wiersz `native` aktywowany, a potem ręcznie wyłączony (`activated_at`
+ * ustawione, `isActive=false`) NIE jest tu filtrowany — pojawia się na
+ * liście jak każdy inny wyłączony wiersz, zgodnie z dzisiejszą konwencją
+ * (Badge "Wyłączona", `691da0c`).
+ */
 export async function listApplications(): Promise<ApplicationRow[]> {
   return getDb()
     .select()
     .from(applications)
+    .where(or(ne(applications.kind, "native"), isNotNull(applications.activatedAt)))
     .orderBy(asc(applications.sortOrder), asc(applications.code))
 }
 

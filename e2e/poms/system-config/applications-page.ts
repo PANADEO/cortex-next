@@ -49,4 +49,20 @@ export class ApplicationsPage extends BasePage {
   async row(code: string): Promise<Locator> {
     return this.page.getByRole("row", { name: new RegExp(code) })
   }
+
+  /** Wyłącza aktywną aplikację z listy (przycisk Power/PowerOff, `691da0c`) —
+   *  aria-label zależy od bieżącego stanu, więc wywołujący musi wiedzieć, że
+   *  wiersz jest dziś aktywny. */
+  async deactivate(applicationName: string): Promise<void> {
+    await this.page.getByRole("button", { name: `Wyłącz aplikację ${applicationName}` }).click()
+  }
+
+  /** Badge statusu ("Aktywna"/"Wyłączona") W KONKRETNYM wierszu — Krok 5
+   *  (PROJECT/cortex-frontend-hub-db-driven-projekt.md) sprawdza tym samym
+   *  locatorem native i external-link, żeby dowieść, że to ta sama konwencja
+   *  wizualna, nie nowy wariant. */
+  async statusBadge(code: string): Promise<Locator> {
+    const row = await this.row(code)
+    return row.getByText(/^(Aktywna|Wyłączona)$/)
+  }
 }

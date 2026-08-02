@@ -62,6 +62,19 @@ async function seedUnactivatedNativeCandidate(): Promise<void> {
   await db.insert(permissionsMatrix).values({ roleId: adminRole!.id, applicationId: candidate!.id })
 }
 
+/**
+ * Krok 5 (PROJECT/cortex-frontend-hub-db-driven-projekt.md — stan pusty
+ * SELECT-a): rejestr bez ŻADNEGO dodatkowego, ręcznie wstawionego kandydata —
+ * WSZYSTKIE ~24 dzisiejsze manifesty przychodzą z prawdziwych seedów już
+ * aktywowane (`activated_at = now()`, patrz seed-system-config.mjs), więc
+ * listUnactivatedNativeApplications() zwraca pustą listę tak samo, jak
+ * zwróciłaby na świeżym, w pełni zaktywowanym deployu.
+ */
+async function seedFullyActivatedRegistry(): Promise<void> {
+  await resetSystemConfig()
+  runRegistrySeed({ adminEmail: ADMIN_EMAIL })
+}
+
 test.describe("Aktywacja natywnego kafelka z listy manifestów (D6-rewizja/D10-rewizja d)", () => {
   test.beforeEach(async ({ page }) => {
     await seedUnactivatedNativeCandidate()
@@ -143,5 +156,118 @@ test.describe("Aktywacja natywnego kafelka z listy manifestów (D6-rewizja/D10-r
       data: { code: "kod-ktory-nigdy-nie-istnial" },
     })
     expect(response.status()).toBe(404)
+  })
+
+  // Krok 5 (PROJECT/cortex-frontend-hub-db-driven-projekt.md — "rozróżnienie
+  // wizualne na liście Aplikacje"): to samo rozróżnienie co test wyżej
+  // ("kafelek NIE widoczny na hubie..."), ale sprawdzone na liście ADMINA
+  // (/system-config/applications), nie na hubie. Wiersz native bez historii
+  // aktywacji żyje WYŁĄCZNIE w SELECT-cie "Dodaj aplikację" — nie ma się
+  // pojawić na liście głównej, dopóki ktoś go nie aktywuje.
+  test("wiersz native bez historii aktywacji NIE jest widoczny na liście Aplikacje, widoczny natychmiast po aktywacji", async ({
+    page,
+    applicationsPage,
+  }) => {
+    await applicationsPage.goto()
+    await expect(applicationsPage.heading).toBeVisible()
+    await expect(page.getByRole("row", { name: new RegExp(UNACTIVATED_CODE) })).toBeHidden()
+
+    await applicationsPage.openCreateDialog()
+    await applicationsPage.selectManifest(UNACTIVATED_NAME)
+    await applicationsPage.activateButton.click()
+    await expect(page).toHaveURL(`/system-config/applications/${UNACTIVATED_CODE}`)
+
+    await applicationsPage.goto()
+    await expect(page.getByRole("row", { name: new RegExp(UNACTIVATED_CODE) })).toBeVisible()
+  })
+})
+
+// Krok 5 (PROJECT/cortex-frontend-hub-db-driven-projekt.md, punkt 1): stan
+// pusty SELECT-a w formularzu "Dodaj aplikację", gdy WSZYSTKIE zarejestrowane
+// manifesty są już aktywowane — musi pokazać jasny komunikat, nie pustą,
+// mylącą listę wyglądającą jak stan ładowania albo błąd.
+test.describe("Pusty SELECT w \"Dodaj aplikację\", gdy wszystkie manifesty są już aktywowane (Krok 5)", () => {
+  test.beforeEach(async ({ page }) => {
+    await seedFullyActivatedRegistry()
+    await asUser(page, ADMIN_EMAIL)
+    await mockIdpConfig(page)
+    await page.route("**/user/me", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ email: ADMIN_EMAIL, has_access: true }),
+      })
+    })
+  })
+
+  test("pokazuje jasny komunikat zamiast pustej listy — SELECT w ogóle się nie renderuje", async ({
+    page,
+    applicationsPage,
+  }) => {
+    await applicationsPage.goto()
+    // kind domyślnie "native" (EMPTY_FORM) — dialog otwiera się od razu na
+    // ścieżce, której dotyczy ten stan pusty, bez dodatkowego przełączania.
+    await applicationsPage.openCreateDialog()
+
+    await expect(applicationsPage.noUnactivatedCandidatesLocator).toBeVisible()
+    await expect(
+      applicationsPage.dialog.getByText(
+        "każdy natywny moduł zarejestrowany dziś w kodzie jest już aktywny w tej instancji",
+      ),
+    ).toBeVisible()
+    // Dowód, że to naprawdę stan pusty, nie SELECT z zerem widocznych opcji —
+    // sam element SELECT nie istnieje w DOM.
+    await expect(page.locator("#manifest")).toHaveCount(0)
+    await expect(applicationsPage.activateButton).toBeDisabled()
+  })
+})
+
+// Krok 5, druga połowa "rozróżnienia wizualnego": wiersz native AKTYWOWANY,
+// a potem ręcznie wyłączony przez admina, musi zostać widoczny na liście —
+// zwykły wyszarzony wiersz, TĄ SAMĄ konwencją co dzisiejszy wyłączony
+// external-link (Badge "Wyłączona", `691da0c`), nie nowym wariantem.
+test.describe("Aktywowany-a-potem-wyłączony wiersz native — ten sam wygląd co dziś (Krok 5)", () => {
+  test.beforeEach(async ({ page }) => {
+    await seedUnactivatedNativeCandidate()
+    await asUser(page, ADMIN_EMAIL)
+    await mockIdpConfig(page)
+    await page.route("**/user/me", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ email: ADMIN_EMAIL, has_access: true }),
+      })
+    })
+
+    const activated = await page.request.post("/api/system-config/applications/activate", {
+      headers: { "x-auth-request-email": ADMIN_EMAIL },
+      data: { code: UNACTIVATED_CODE },
+    })
+    expect(activated.ok()).toBe(true)
+  })
+
+  test("wyłączony wiersz native i wyłączony wiersz external-link (meeting-guru) renderują identyczny Badge \"Wyłączona\"", async ({
+    page,
+    applicationsPage,
+  }) => {
+    await applicationsPage.goto()
+
+    await applicationsPage.deactivate(UNACTIVATED_NAME)
+    await applicationsPage.deactivate("Nagrywanie Spotkań") // meeting-guru, kind=external-link (realny seed)
+
+    const nativeBadge = await applicationsPage.statusBadge(UNACTIVATED_CODE)
+    const externalBadge = await applicationsPage.statusBadge("meeting-guru")
+
+    await expect(nativeBadge).toHaveText("Wyłączona")
+    await expect(externalBadge).toHaveText("Wyłączona")
+
+    // Nie tylko ten sam tekst — ten sam komponent (Badge variant="secondary"):
+    // Krok 5 reużywa istniejącą konwencję, nie wprowadza nowego wariantu dla
+    // wierszy native.
+    expect(await nativeBadge.getAttribute("class")).toBe(await externalBadge.getAttribute("class"))
+
+    // Wiersz zostaje na liście — dokładnie punkt 2 zakresu Kroku 5 (aktywowany
+    // wcześniej, wyłączony ręcznie != nigdy nieaktywowany).
+    await expect(page.getByRole("row", { name: new RegExp(UNACTIVATED_CODE) })).toBeVisible()
   })
 })

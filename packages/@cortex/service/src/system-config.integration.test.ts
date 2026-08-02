@@ -41,6 +41,7 @@ import {
   deleteRole,
   listApplicationScopeGrants,
   listApplicationScopes,
+  listApplications,
   listUnactivatedNativeApplications,
   renameApplicationScope,
   setApplicationRoles,
@@ -300,6 +301,12 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
               name: "Konfiguracja Systemu",
               kind: "native",
               route: "/system-config",
+              // Krok 5: listApplications() filtruje po activated_at (patrz opis
+              // funkcji) — bez tego pola ten fallback (wiersz zniknął, np. przez
+              // wyścig z inną suitą integracyjną na tej samej bazie) tworzyłby
+              // wiersz nieodróżnialny od "nigdy nieaktywowanego", niespójny z
+              // tym, co realny seed zawsze ustawia dla system-config.
+              activatedAt: new Date(),
             })
             .returning()
         )[0]!.id
@@ -1000,9 +1007,18 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
   describe("D6-rewizja/D10-rewizja d — kind=native wyłącznie przez aktywację manifestu", () => {
     const MANIFEST_CODE = `manifest-${SUFFIX}`
     const MANIFEST_ROUTE = `/${MANIFEST_CODE}`
+    // Krok 5: kontrola negatywna dla listApplications() poniżej — CELOWO
+    // własny, jednorazowy wiersz zamiast dzielonego singleton-a (np.
+    // system-config), za który odpowiada RÓWNOLEGLE inna suita integracyjna
+    // na tej samej, prawdziwej bazie (np. rbac.integration.test.ts). Dzielony
+    // wiersz okazał się realnie niedeterministyczny pod pełnym `pnpm test`
+    // (vitest uruchamia pliki integracyjne równolegle) — ten wiersz istnieje
+    // wyłącznie w obrębie tego testu, więc żaden wyścig go nie dotyczy.
+    const CONTROL_CODE = `manifest-control-${SUFFIX}`
 
     afterEach(async () => {
       await getDb().delete(applications).where(eq(applications.code, MANIFEST_CODE))
+      await getDb().delete(applications).where(eq(applications.code, CONTROL_CODE))
     })
 
     it("createApplication odrzuca kind=native (POST zostaje wyłącznie dla external-link/iframe)", async () => {
@@ -1160,6 +1176,65 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
       expect(row!.kind).toBe("external-link")
       expect(row!.route).toBeNull()
       expect(row!.url).toBe("https://chat.megu.me")
+    })
+
+    // Krok 5 (PROJECT/cortex-frontend-hub-db-driven-projekt.md — "rozróżnienie
+    // wizualne na liście Aplikacje"): wiersz native bez historii aktywacji
+    // (activated_at is null) żyje WYŁĄCZNIE w listUnactivatedNativeApplications()
+    // — nigdy nie powinien pojawić się na liście admina (listApplications(),
+    // konsument GET /api/system-config/applications). Dowód na dokładnie to
+    // rozróżnienie na JEDNYM wierszu przez cały cykl życia: nigdy-nieaktywowany
+    // (niewidoczny) -> aktywowany (widoczny) -> ręcznie wyłączony (WCIĄŻ
+    // widoczny — zwykły wyszarzony wiersz, jak dziś, `691da0c`).
+    //
+    // Kontrolą negatywną jest CONTROL_CODE — własny, jednorazowy, JUŻ
+    // aktywowany wiersz (patrz komentarz przy jego deklaracji) — celowo NIE
+    // `system-config` (dzielony singleton, potencjalnie dotknięty przez inną
+    // suitę integracyjną równolegle na tej samej bazie) ani `APP_CODE` z
+    // fixture'a tego pliku (`NATIVE_INPUT`, linia ok. 129, nie ustawia
+    // `activatedAt`, więc TEN konkretny testowy wiersz jest, ubocznie, sam w
+    // sobie "nigdy nieaktywowany" — poprawnie znikałby z listy, co dowodzi
+    // tego samego mechanizmu jeszcze raz, ale myliłoby czytelnika jako
+    // "kontrolę").
+    it("listApplications pomija native bez activated_at, ale widzi aktywowany-a-potem-wyłączony wiersz", async () => {
+      await getDb()
+        .insert(applications)
+        .values({
+          code: MANIFEST_CODE,
+          name: "Nigdy nieaktywowany moduł",
+          kind: "native",
+          route: MANIFEST_ROUTE,
+          isActive: false,
+          showOnHub: false,
+          activatedAt: null,
+        })
+      await getDb()
+        .insert(applications)
+        .values({
+          code: CONTROL_CODE,
+          name: "Kontrola — już aktywowany",
+          kind: "native",
+          route: `/${CONTROL_CODE}`,
+          isActive: true,
+          showOnHub: true,
+          activatedAt: new Date(),
+        })
+
+      const beforeActivation = (await listApplications()).map((row) => row.code)
+      expect(beforeActivation).not.toContain(MANIFEST_CODE)
+      expect(beforeActivation).toContain(CONTROL_CODE)
+
+      const activated = await activateApplication(MANIFEST_CODE)
+      expect(activated?.activatedAt).not.toBeNull()
+
+      const afterActivation = (await listApplications()).map((row) => row.code)
+      expect(afterActivation).toContain(MANIFEST_CODE)
+
+      // Ręczne wyłączenie PO aktywacji zostawia activated_at nietknięte —
+      // wiersz musi zostać widoczny, nie zniknąć z powrotem.
+      await updateApplication(activated!.id, { isActive: false })
+      const afterDeactivation = (await listApplications()).map((row) => row.code)
+      expect(afterDeactivation).toContain(MANIFEST_CODE)
     })
   })
 })
