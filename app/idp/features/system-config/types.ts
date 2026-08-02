@@ -87,6 +87,11 @@ export interface ApplicationInput {
   sortOrder?: number
 }
 
+/** PATCH przyjmuje wyłącznie zmieniane pola (`applicationPatchSchema` w
+ *  serwisie) — reguły międzypolowe (natywny ↔ route, embed ↔ url) walidowane
+ *  są po scaleniu z wierszem w bazie, nie tutaj. */
+export type ApplicationPatch = Partial<ApplicationInput>
+
 /** Katalog zakresów granularnych jednej aplikacji (D8: definiowany przez kod
  *  modułu/seed, nie tworzony z UI — `code` jest wyłącznie do wyświetlenia). */
 export interface ApplicationScope {

@@ -2,6 +2,7 @@ import { apiClient } from "@cortex/api"
 import type {
   Application,
   ApplicationInput,
+  ApplicationPatch,
   ApplicationScope,
   ApplicationScopeGrant,
   RoleInput,
@@ -46,7 +47,7 @@ export const endpoints = {
     list: () => apiClient.get<Application[]>(`${BASE}/applications`),
     create: (body: ApplicationInput) =>
       apiClient.post<Application>(`${BASE}/applications`, { jsonBody: body }),
-    update: (id: string, body: ApplicationInput) =>
+    update: (id: string, body: ApplicationPatch) =>
       apiClient.patch<Application>(`${BASE}/applications/${id}`, { jsonBody: body }),
     remove: (id: string) => apiClient.delete<{ ok: true }>(`${BASE}/applications/${id}`),
     listRoles: (id: string) =>

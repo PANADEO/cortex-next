@@ -113,7 +113,6 @@ interface FormState {
   url: string
   target: typeof NO_TARGET | "_self" | "_blank"
   isActive: boolean
-  sortOrder: string
 }
 
 function toFormState(application: Application): FormState {
@@ -127,12 +126,14 @@ function toFormState(application: Application): FormState {
     url: application.url ?? "",
     target: application.target === "_blank" || application.target === "_self" ? application.target : NO_TARGET,
     isActive: application.isActive,
-    sortOrder: String(application.sortOrder),
   }
 }
 
 /** Formularz wysyła KOMPLET pól wiersza, łącznie z `target` — pominięcie
- *  któregokolwiek kasowało jego wartość przy każdej edycji. */
+ *  któregokolwiek kasowało jego wartość przy każdej edycji. `sortOrder` NIE
+ *  jest tu polem formularza (patrz komentarz przy Switch `isActive` niżej) —
+ *  celowo pominięte, więc PATCH go nie dotyka i zostaje tym, co ustawił tryb
+ *  zmiany kolejności na liście Aplikacje. */
 function toInput(code: string, form: FormState): ApplicationInput {
   const isNative = form.kind === "native"
   return {
@@ -146,7 +147,6 @@ function toInput(code: string, form: FormState): ApplicationInput {
     url: isNative ? null : form.url.trim(),
     target: form.target === NO_TARGET ? null : form.target,
     isActive: form.isActive,
-    sortOrder: Number.parseInt(form.sortOrder, 10) || 0,
   }
 }
 
@@ -558,27 +558,21 @@ export default function AplikacjaSzczegolyPage() {
               </>
             )}
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="sortOrder">Kolejność</Label>
-                <Input
-                  id="sortOrder"
-                  type="number"
-                  value={form.sortOrder}
-                  onChange={(event) => update("sortOrder", event.target.value)}
-                />
-              </div>
-
-              <div className="flex items-end gap-2 pb-2">
-                <Switch
-                  id="isActive"
-                  checked={form.isActive}
-                  disabled={isSelfManaged}
-                  onCheckedChange={(checked) => update("isActive", checked)}
-                />
-                <Label htmlFor="isActive">Aplikacja aktywna</Label>
-              </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="isActive"
+                checked={form.isActive}
+                disabled={isSelfManaged}
+                onCheckedChange={(checked) => update("isActive", checked)}
+              />
+              <Label htmlFor="isActive">Aplikacja aktywna</Label>
             </div>
+
+            {/* Kolejność nie jest już edytowalna tutaj — patrz tryb zmiany
+                kolejności na liście Aplikacje (strzałki góra/dół). Trzymanie
+                tej samej wartości w dwóch miejscach naraz (surowy input tutaj
+                + reorder na liście) tylko rozjeżdżałoby oczekiwania: który z
+                nich wygrywa, jeśli ktoś edytuje oba niemal jednocześnie. */}
 
             <div className="flex justify-end">
               <Button onClick={handleSaveDetails} disabled={updateApplication.isPending}>

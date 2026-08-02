@@ -2,7 +2,14 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { endpoints, queryKeys } from "./queries"
-import type { ApplicationInput, RoleInput, RolePatch, UserInput, UserPatch } from "./types"
+import type {
+  ApplicationInput,
+  ApplicationPatch,
+  RoleInput,
+  RolePatch,
+  UserInput,
+  UserPatch,
+} from "./types"
 
 interface SetApplicationScopeRolesVars {
   id: string
@@ -88,7 +95,7 @@ export function useCreateApplication() {
 export function useUpdateApplication() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: ApplicationInput }) =>
+    mutationFn: ({ id, body }: { id: string; body: ApplicationPatch }) =>
       endpoints.applications.update(id, body),
     onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.applications() }),
   })
