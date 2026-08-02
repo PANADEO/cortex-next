@@ -1,6 +1,12 @@
 "use client"
 
-import { useApplications, useCreateApplication, useUpdateApplication } from "@/features/system-config/hooks"
+import {
+  useActivateApplication,
+  useApplications,
+  useCreateApplication,
+  useUnactivatedNativeApplications,
+  useUpdateApplication,
+} from "@/features/system-config/hooks"
 import { resolveApplicationIcon } from "@/features/system-config/icons"
 import { KIND_LABELS, KIND_SHORT_LABELS } from "@/features/system-config/kinds"
 import type { Application } from "@/features/system-config/types"
@@ -25,6 +31,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Skeleton,
 } from "@cortex/ui"
 import {
   ArrowDown,
@@ -42,19 +49,25 @@ import { toast } from "sonner"
 import { systemConfigTile } from "../manifest"
 
 interface NewApplicationForm {
+  kind: TileKind
+  // Ścieżka external-link/iframe (bez zmian, wolny tekst) — jak dziś.
   code: string
   name: string
-  kind: TileKind
-  route: string
   url: string
+  // Ścieżka native (D6-rewizja/D10-rewizja d): code/name/route NIE są tu
+  // wpisywane ręcznie — dochodzą wyłącznie z wybranego, zarejestrowanego
+  // manifestu (patrz selectedManifest niżej). Samo `manifestCode` steruje
+  // SELECT-em; reszta pól jest DERIVED z listy kandydatów w renderze, nie
+  // duplikowana w stanie, żeby nie mogła się z nią rozjechać.
+  manifestCode: string
 }
 
 const EMPTY_FORM: NewApplicationForm = {
+  kind: "native",
   code: "",
   name: "",
-  kind: "native",
-  route: "",
   url: "",
+  manifestCode: "",
 }
 
 /** Krok między kolejnymi wartościami po przenumerowaniu w trybie zmiany
@@ -67,9 +80,17 @@ export default function ApplicationsPage() {
   const applicationsQuery = useApplications()
   const createApplication = useCreateApplication()
   const updateApplication = useUpdateApplication()
+  const activateApplication = useActivateApplication()
 
   const [isOpen, setIsOpen] = useState(false)
   const [form, setForm] = useState<NewApplicationForm>(EMPTY_FORM)
+  // D6-rewizja/D10-rewizja d: kandydaci dla kind=native — manifesty
+  // zarejestrowane w kodzie (@cortex/tile-sdk defineTile()), jeszcze nigdy nie
+  // aktywowane w tej instancji. Pobierane tylko gdy faktycznie potrzebne
+  // (dialog otwarty i wybrany typ to native), nie na każde otwarcie strony.
+  const unactivatedNativeQuery = useUnactivatedNativeApplications(isOpen && form.kind === "native")
+  const unactivatedNative = unactivatedNativeQuery.data ?? []
+  const selectedManifest = unactivatedNative.find((candidate) => candidate.code === form.manifestCode)
 
   // Tryb zmiany kolejności: `localOrder` to robocza kopia listy, edytowana
   // strzałkami góra/dół. Poza tym trybem renderujemy zawsze świeże dane z
@@ -92,23 +113,48 @@ export default function ApplicationsPage() {
     setForm((current) => ({ ...current, [key]: value }))
   }
 
-  // Po utworzeniu wchodzimy od razu w szczegóły — tam jest sekcja Uprawnienia,
-  // bez której nowa aplikacja jest niedostępna dla nikogo.
+  // Zmiana typu resetuje resztę formularza: ścieżka native (wybór z listy
+  // manifestów) i ścieżka external-link/iframe (wolny tekst) nie mają ze sobą
+  // nic wspólnego poza polem `kind` — carry-over tylko myliłby.
+  function handleKindChange(kind: TileKind) {
+    setForm({ ...EMPTY_FORM, kind })
+  }
+
+  function selectManifest(manifestCode: string) {
+    update("manifestCode", manifestCode)
+  }
+
+  // Po utworzeniu/aktywacji wchodzimy od razu w szczegóły — tam jest sekcja
+  // Uprawnienia, bez której nowa aplikacja jest niedostępna dla nikogo.
   async function handleCreate() {
-    const isNative = form.kind === "native"
     try {
+      if (form.kind === "native") {
+        // Formularz nie pozwala kliknąć "Aktywuj" bez wyboru — patrz `disabled`
+        // niżej — ale serwis i tak odrzuciłby pusty/nieznany kod, więc to tylko
+        // wcześniejszy, czytelniejszy wyjazd.
+        if (!form.manifestCode) return
+        const activated = await activateApplication.mutateAsync(form.manifestCode)
+        setIsOpen(false)
+        toast.success(`Aktywowano aplikację ${activated.name}`)
+        router.push(`/system-config/applications/${activated.code}`)
+        return
+      }
+
       const created = await createApplication.mutateAsync({
         code: form.code.trim(),
         name: form.name.trim(),
         kind: form.kind,
-        route: isNative ? form.route.trim() : null,
-        url: isNative ? null : form.url.trim(),
+        route: null,
+        url: form.url.trim(),
       })
       setIsOpen(false)
       toast.success(`Dodano aplikację ${created.name}`)
       router.push(`/system-config/applications/${created.code}`)
     } catch (error) {
-      toastApiError(error, "Nie udało się dodać aplikacji")
+      toastApiError(
+        error,
+        form.kind === "native" ? "Nie udało się aktywować aplikacji" : "Nie udało się dodać aplikacji",
+      )
     }
   }
 
@@ -371,31 +417,8 @@ export default function ApplicationsPage() {
 
           <div className="grid gap-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="code">Kod uprawnienia</Label>
-              <Input
-                id="code"
-                value={form.code}
-                onChange={(event) => update("code", event.target.value)}
-                placeholder="np. raportowanie-tokenow"
-              />
-              <span className="text-xs text-muted-foreground">
-                Małe litery, cyfry i myślnik. Po utworzeniu nie da się zmienić.
-              </span>
-            </div>
-
-            <div className="grid gap-1.5">
-              <Label htmlFor="name">Nazwa</Label>
-              <Input
-                id="name"
-                value={form.name}
-                onChange={(event) => update("name", event.target.value)}
-                placeholder="np. Raportowanie Tokenów"
-              />
-            </div>
-
-            <div className="grid gap-1.5">
               <Label htmlFor="kind">Typ</Label>
-              <Select value={form.kind} onValueChange={(value) => update("kind", value as TileKind)}>
+              <Select value={form.kind} onValueChange={(value) => handleKindChange(value as TileKind)}>
                 <SelectTrigger id="kind">
                   <SelectValue />
                 </SelectTrigger>
@@ -410,29 +433,90 @@ export default function ApplicationsPage() {
             </div>
 
             {form.kind === "native" ? (
+              // D6-rewizja/D10-rewizja d: kind=native powstaje WYŁĄCZNIE przez
+              // aktywację zarejestrowanego manifestu — kod/nazwa/ścieżka nie są
+              // tu wolnym tekstem, tylko wyborem z listy tego, co realnie ma
+              // stronę w kodzie (defineTile() w danym module).
               <div className="grid gap-1.5">
-                <Label htmlFor="route">Ścieżka w aplikacji</Label>
-                <Input
-                  id="route"
-                  value={form.route}
-                  onChange={(event) => update("route", event.target.value)}
-                  placeholder="/raportowanie-tokenow"
-                />
+                <Label htmlFor="manifest">Moduł</Label>
+                {unactivatedNativeQuery.isLoading ? (
+                  <Skeleton className="h-9 w-full rounded-md" />
+                ) : unactivatedNative.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Brak niezaktywowanych modułów — każdy natywny moduł zarejestrowany dziś w kodzie
+                    jest już aktywny w tej instancji.
+                  </p>
+                ) : (
+                  <Select value={form.manifestCode} onValueChange={selectManifest}>
+                    <SelectTrigger id="manifest">
+                      <SelectValue placeholder="Wybierz moduł" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {unactivatedNative.map((candidate) => (
+                        <SelectItem key={candidate.code} value={candidate.code}>
+                          {candidate.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {selectedManifest ? (
+                  <div className="mt-2 grid gap-2 rounded-md border border-border p-3 text-xs">
+                    <div className="grid gap-0.5">
+                      <span className="text-muted-foreground">Kod uprawnienia</span>
+                      <span className="font-mono">{selectedManifest.code}</span>
+                    </div>
+                    <div className="grid gap-0.5">
+                      <span className="text-muted-foreground">Ścieżka w aplikacji</span>
+                      <span className="font-mono">{selectedManifest.route}</span>
+                    </div>
+                    <span className="text-muted-foreground">
+                      Kod i ścieżka pochodzą z kodu modułu — nieedytowalne, także po aktywacji.
+                    </span>
+                  </div>
+                ) : null}
               </div>
             ) : (
-              <div className="grid gap-1.5">
-                <Label htmlFor="url">Adres zewnętrzny</Label>
-                <Input
-                  id="url"
-                  value={form.url}
-                  onChange={(event) => update("url", event.target.value)}
-                  placeholder="https://chat.example.com"
-                />
-              </div>
+              <>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="code">Kod uprawnienia</Label>
+                  <Input
+                    id="code"
+                    value={form.code}
+                    onChange={(event) => update("code", event.target.value)}
+                    placeholder="np. czat-zewnetrzny"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    Małe litery, cyfry i myślnik. Po utworzeniu nie da się zmienić.
+                  </span>
+                </div>
+
+                <div className="grid gap-1.5">
+                  <Label htmlFor="name">Nazwa</Label>
+                  <Input
+                    id="name"
+                    value={form.name}
+                    onChange={(event) => update("name", event.target.value)}
+                    placeholder="np. Czat zewnętrzny"
+                  />
+                </div>
+
+                <div className="grid gap-1.5">
+                  <Label htmlFor="url">Adres zewnętrzny</Label>
+                  <Input
+                    id="url"
+                    value={form.url}
+                    onChange={(event) => update("url", event.target.value)}
+                    placeholder="https://chat.example.com"
+                  />
+                </div>
+              </>
             )}
 
             <p className="text-xs text-muted-foreground">
-              Pozostałe pola i uprawnienia ról ustawisz na stronie szczegółów, zaraz po utworzeniu.
+              Pozostałe pola i uprawnienia ról ustawisz na stronie szczegółów, zaraz po{" "}
+              {form.kind === "native" ? "aktywacji" : "utworzeniu"}.
             </p>
           </div>
 
@@ -440,8 +524,15 @@ export default function ApplicationsPage() {
             <Button variant="outline" onClick={() => setIsOpen(false)}>
               Anuluj
             </Button>
-            <Button onClick={handleCreate} disabled={createApplication.isPending}>
-              Utwórz
+            <Button
+              onClick={handleCreate}
+              disabled={
+                form.kind === "native"
+                  ? !form.manifestCode || activateApplication.isPending
+                  : createApplication.isPending
+              }
+            >
+              {form.kind === "native" ? "Aktywuj" : "Utwórz"}
             </Button>
           </DialogFooter>
         </DialogContent>

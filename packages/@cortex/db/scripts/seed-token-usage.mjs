@@ -58,9 +58,18 @@ async function main() {
     // NOWYCH modułów, ale nie dla tego, który już działa). Cofamy to tutaj.
     // Guard na activated_at IS NULL: nie cofa świadomej dezaktywacji admina
     // po pierwszej aktywacji.
+    //
+    // color/category_functional/category_department 1:1 z app/idp/lib/tiles.ts
+    // (Krok 1 dotknął tylko kodów z seed-system-config.mjs — token-usage ma
+    // WŁASNY seed właśnie dlatego, patrz komentarz wyżej — bez tego
+    // dopełnienia kafelek renderowałby się na hubie (Krok 3) z neutralnym
+    // kolorem zamiast błękitnego i bez zakładki kategorii, mimo że statyczny
+    // TILES miał obie wartości od zawsze).
     await tx`
       update system_config.applications
-      set is_active = true, show_on_hub = true, activated_at = now()
+      set is_active = true, show_on_hub = true, activated_at = now(),
+          color = 'sky', category_functional = 'admin-system',
+          category_department = array['it']
       where id = ${applicationId} and activated_at is null
     `
 

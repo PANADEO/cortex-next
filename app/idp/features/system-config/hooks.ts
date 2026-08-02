@@ -109,6 +109,30 @@ export function useDeleteApplication() {
   })
 }
 
+/** Kandydaci "Dodaj aplikację" dla kind=native (D6-rewizja/D10-rewizja d) —
+ *  pobierane tylko gdy dialog jest otwarty i typ wybrany to native (wołający
+ *  steruje `enabled`, patrz applications/page.tsx). */
+export function useUnactivatedNativeApplications(enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.unactivatedNativeApplications(),
+    queryFn: endpoints.applications.listUnactivatedNative,
+    enabled,
+  })
+}
+
+/** Aktywuje jeden zarejestrowany manifest — jedyna droga do wiersza
+ *  kind=native (zastępuje createApplication dla tej ścieżki formularza). */
+export function useActivateApplication() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (code: string) => endpoints.applications.activate(code),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: queryKeys.applications() })
+      client.invalidateQueries({ queryKey: queryKeys.unactivatedNativeApplications() })
+    },
+  })
+}
+
 export function useApplicationRoles(id: string | undefined) {
   return useQuery({
     queryKey: queryKeys.applicationRoles(id ?? ""),

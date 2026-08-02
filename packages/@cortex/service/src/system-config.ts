@@ -17,7 +17,7 @@ import {
   type UserRow,
 } from "@cortex/db"
 import { isHttpUrl, isInternalRoute, TileKind } from "@cortex/tile-sdk"
-import { and, asc, eq, inArray, ne } from "drizzle-orm"
+import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm"
 import { z } from "zod"
 import { clearTileAccessCache, normalizeEmail } from "./rbac"
 
@@ -56,6 +56,15 @@ const applicationFieldsSchema = z.object({
   target: z.enum(["_self", "_blank"]).nullish(),
   isActive: z.boolean().optional(),
   sortOrder: z.number().int().min(0).max(10_000).optional(),
+  // Hub-render (Krok 1/3, PROJECT/cortex-frontend-hub-db-driven-projekt.md
+  // D1/D2/D3). Wolny tekst jak `category` — zestaw dozwolonych wartości
+  // (5 funkcji, 5 działów) egzekwuje formularz (select/multi-select), nie ten
+  // schemat; ten sam poziom rygoru co dzisiejszy `category`, celowo, żeby nie
+  // dublować enuma zdefiniowanego po stronie klienta (app/idp/lib/tiles.ts).
+  showOnHub: z.boolean().optional(),
+  color: z.string().max(32).nullish(),
+  categoryFunctional: z.string().max(64).nullish(),
+  categoryDepartment: z.array(z.string().max(64)).max(20).nullish(),
 })
 
 /** Kafelek natywny opisuje `route`; zewnętrzny/iframe opisuje `url`.
@@ -98,6 +107,17 @@ export type ApplicationInput = z.infer<typeof applicationInputSchema>
 export const applicationPatchSchema = applicationFieldsSchema.partial()
 
 export type ApplicationPatch = z.infer<typeof applicationPatchSchema>
+
+/**
+ * Wejście aktywacji (D10-rewizja d, PROJECT/cortex-frontend-hub-db-driven-projekt.md):
+ * jedyne pole to `code` — ten sam kod, którym manifest zarejestrował się w
+ * `seed-tile-manifests.mjs`. Ten sam regex/limit co `applications.code`.
+ */
+export const activateApplicationInputSchema = z.object({
+  code: applicationFieldsSchema.shape.code,
+})
+
+export type ActivateApplicationInput = z.infer<typeof activateApplicationInputSchema>
 
 /**
  * "Utworzenie użytkownika" tutaj oznacza wyłącznie pre-provisioning — wiersz z
@@ -418,7 +438,70 @@ export async function listHubApplications(): Promise<ApplicationRow[]> {
     .orderBy(asc(applications.sortOrder), asc(applications.code))
 }
 
+/**
+ * Kandydaci do aktywacji: wiersze `kind=native` bez historii aktywacji —
+ * pre-utworzone przez `seed-tile-manifests.mjs` z manifestu (`defineTile()`
+ * w kodzie modułu), jeszcze nigdy nie włączone w tej instancji (D6-rewizja/
+ * D10-rewizja d). WYŁĄCZNIE admin-tooling: ta sama bramka co
+ * `GET /api/system-config/applications` (`requireTileAccess`,
+ * `SYSTEM_CONFIG_APP_CODE`) — Ryzyko #1 (hub-render, publiczny endpoint) tej
+ * ścieżki nie dotyczy.
+ */
+export async function listUnactivatedNativeApplications(): Promise<ApplicationRow[]> {
+  return getDb()
+    .select()
+    .from(applications)
+    .where(and(eq(applications.kind, "native"), isNull(applications.activatedAt)))
+    .orderBy(asc(applications.code))
+}
+
+/**
+ * Aktywuje jeden zarejestrowany-ale-nieaktywny wiersz `native` — jedyny
+ * sposób, w jaki `kind=native` może stać się widoczny/aktywny (D6-rewizja).
+ * UPDATE, nie INSERT: wiersz już istnieje (utworzony przez
+ * seed-tile-manifests.mjs). `kind='native'` w WHERE jest dodatkową obroną
+ * ponad zapis z projektu (ten sam mechanizm nie ma zastosowania do
+ * `external-link`/`iframe` — te powstają przez `createApplication()`, nigdy
+ * przez aktywację) — NIE osłabia `activated_at is null`, tylko go zawęża.
+ *
+ * `activated_at is null` w WHERE czyni operację bezpieczną na wyścig: drugie
+ * kliknięcie/drugi request na już aktywowanym kodzie aktualizuje zero
+ * wierszy, więc poniżej dociągamy wiersz zwykłym SELECT-em i zwracamy go
+ * NIE ZMIENIONY — no-op, nie błąd, nie podwójna aktywacja. `null` wraca
+ * WYŁĄCZNIE gdy kod w ogóle nie istnieje w rejestrze (pomyłka wywołania, nie
+ * wyścig).
+ */
+export async function activateApplication(code: string): Promise<ApplicationRow | null> {
+  const db = getDb()
+
+  const [activated] = await db
+    .update(applications)
+    .set({ isActive: true, showOnHub: true, activatedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(applications.code, code), eq(applications.kind, "native"), isNull(applications.activatedAt)))
+    .returning()
+
+  if (activated) {
+    clearTileAccessCache()
+    return activated as ApplicationRow
+  }
+
+  const [existing] = await db.select().from(applications).where(eq(applications.code, code))
+  return (existing as ApplicationRow) ?? null
+}
+
+/**
+ * `kind='native'` odrzucony PRZED insertem — jedyny sposób, w jaki wiersz
+ * `native` może dziś powstać, to aktywacja zarejestrowanego manifestu
+ * (`activateApplication`), nigdy dowolny tekst z formularza "Dodaj aplikację"
+ * (D6-rewizja/D10-rewizja d). To jest egzekwowanie w SERWISIE, nie tylko w
+ * UI: samo ukrycie pola `route` w formularzu niczego by nie gwarantowało dla
+ * żądania wysłanego z pominięciem przeglądarki.
+ */
 export async function createApplication(input: ApplicationInput): Promise<ApplicationRow> {
+  if (input.kind === "native") {
+    throw new NativeCreationNotAllowedError()
+  }
+
   const [created] = await getDb()
     .insert(applications)
     .values(toApplicationValues(input))
@@ -446,6 +529,7 @@ export async function updateApplication(
 
   const merged = applicationInputSchema.parse(mergeApplicationInput(existing, patch))
   assertKeepsModuleReachable(existing, merged)
+  assertNativeApplicationImmutable(existing, merged)
 
   const [updated] = await db
     .update(applications)
@@ -713,6 +797,29 @@ export class SystemRoleProtectedError extends Error {
   }
 }
 
+/** Próba utworzenia `kind='native'` przez `createApplication()` (formularz
+ *  "Dodaj aplikację" / POST bezpośredni) — D6-rewizja: jedyna droga do
+ *  natywnego wiersza jest aktywacja zarejestrowanego manifestu. */
+export class NativeCreationNotAllowedError extends Error {
+  constructor() {
+    super(
+      "Kafelek natywny (kind=\"native\") można utworzyć wyłącznie przez aktywację zarejestrowanego " +
+        "manifestu — wybierz go z listy niezaktywowanych modułów, nie z tego formularza.",
+    )
+    this.name = "NativeCreationNotAllowedError"
+  }
+}
+
+/** Próba zmiany `route`/`code`/`kind` na już istniejącym wierszu
+ *  `kind='native'` przez `updateApplication()` — patrz
+ *  assertNativeApplicationImmutable. */
+export class NativeApplicationImmutableError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "NativeApplicationImmutableError"
+  }
+}
+
 /**
  * Ochrona przed samo-zablokowaniem, egzekwowana W SERWISIE, nie w formularzu —
  * blokada pola w UI nie zatrzymuje żądania wysłanego curlem.
@@ -754,6 +861,57 @@ function assertKeepsModuleReachable(existing: ApplicationRow, input: Application
   if (next.kind !== existing.kind || next.route !== existing.route || next.url !== existing.url) {
     throw new SelfLockoutError(
       "Nie można zmienić typu ani adresu aplikacji Konfiguracja Systemu — ten wiersz opisuje sam moduł administracyjny, a podmiana go na adres zewnętrzny wyprowadzałaby administratorów poza tę aplikację.",
+    )
+  }
+}
+
+/**
+ * `route`/`code`/`kind` niezmienne dla WSZYSTKICH wierszy `kind='native'` po
+ * utworzeniu, nie tylko dla `system-config` (to pilnuje osobno
+ * `assertKeepsModuleReachable` wyżej, wołane PRZED tą funkcją — dla wiersza
+ * `system-config` to on rzuca pierwszy, z bardziej szczegółowym komunikatem
+ * o samo-zablokowaniu; ta funkcja dotyczy WSZYSTKICH POZOSTAŁYCH natywnych
+ * wierszy). D10-rewizja d: bez tego niezmiennik D6-rewizja ("kind=native
+ * powstaje wyłącznie przez aktywację manifestu") byłby prawdziwy tylko w
+ * momencie TWORZENIA — admin mógłby dzień później przez zwykłą edycję
+ * przepisać `route` aktywnego kafelka na dowolną, nieistniejącą ścieżkę,
+ * odtwarzając ten sam bug przesunięty w czasie. Blokuje WYŁĄCZNIE tę,
+ * ręczną ścieżkę admina (`updateApplication`/PATCH z UI) — NIE dotyczy
+ * `seed-tile-manifests.mjs`, który robi własny, osobny SQL upsert (poza tą
+ * funkcją w ogóle) i ma PRAWO resynchronizować `route`/`kind`/`url`/`target`
+ * z manifestu przy każdym deployu — `route` jako fakt kodu (D11) ma tam
+ * zawsze wygrywać, niezależnie od tego, czy wiersz był już aktywowany.
+ *
+ * Druga, symetryczna połowa tego samego niezmiennika (dopisana po review,
+ * które pokazało dziurę na żywym wierszu `meeting-guru`): PROMOCJA wiersza
+ * NIE-natywnego (`external-link`/`iframe`) DO `kind='native'` przez ten sam
+ * PATCH. `createApplication` blokuje `kind='native'` przy TWORZENIU
+ * (`NativeCreationNotAllowedError`), a ta funkcja dotąd pilnowała tylko
+ * wiersze JUŻ natywne (`if (existing.kind !== "native") return` — cichy
+ * no-op dla reszty) — więc `PATCH {"kind":"native","route":"/x"}` na
+ * istniejącym `external-link` wracał 200 i tworzył wiersz `native` z
+ * fabrykowaną trasą bez żadnego kodu za nią, drugą, nieogrodzoną drogą do
+ * dokładnie tego, przed czym broni D6-rewizja. `kind='native'` MOŻE dziś
+ * powstać wyłącznie przez `activateApplication()` (UPDATE na wierszu już
+ * zarejestrowanym przez manifest) — nigdy przez tę funkcję, niezależnie od
+ * tego, jaki był `existing.kind` PRZED edycją.
+ */
+function assertNativeApplicationImmutable(existing: ApplicationRow, input: ApplicationInput): void {
+  const next = toApplicationValues(input)
+
+  if (existing.kind !== "native") {
+    if (next.kind === "native") {
+      throw new NativeApplicationImmutableError(
+        "Nie można ustawić kind=\"native\" przez edycję (PATCH) — kafelek natywny powstaje wyłącznie " +
+          "przez aktywację zarejestrowanego manifestu, nie przez zmianę typu na istniejącym wierszu.",
+      )
+    }
+    return
+  }
+
+  if (next.code !== existing.code || next.kind !== existing.kind || next.route !== existing.route) {
+    throw new NativeApplicationImmutableError(
+      "Nie można zmienić kodu, typu ani ścieżki aktywowanego kafelka natywnego — route/code/kind ustala wyłącznie aktywacja zarejestrowanego manifestu.",
     )
   }
 }
@@ -986,6 +1144,10 @@ function mergeApplicationInput(existing: ApplicationRow, patch: ApplicationPatch
     target: "target" in patch ? patch.target : existing.target,
     isActive: patch.isActive ?? existing.isActive,
     sortOrder: patch.sortOrder ?? existing.sortOrder,
+    showOnHub: patch.showOnHub ?? existing.showOnHub,
+    color: "color" in patch ? patch.color : existing.color,
+    categoryFunctional: "categoryFunctional" in patch ? patch.categoryFunctional : existing.categoryFunctional,
+    categoryDepartment: "categoryDepartment" in patch ? patch.categoryDepartment : existing.categoryDepartment,
   }
 }
 
@@ -1003,5 +1165,9 @@ function toApplicationValues(input: ApplicationInput) {
     target: input.target ?? null,
     isActive: input.isActive ?? true,
     sortOrder: input.sortOrder ?? 0,
+    showOnHub: input.showOnHub ?? true,
+    color: input.color ?? null,
+    categoryFunctional: input.categoryFunctional ?? null,
+    categoryDepartment: input.categoryDepartment ?? null,
   }
 }

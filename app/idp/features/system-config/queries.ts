@@ -25,6 +25,8 @@ export const queryKeys = {
   applicationRoles: (id: string) => [...queryKeys.applications(), id, "roles"] as const,
   applicationScopes: (id: string) => [...queryKeys.applications(), id, "scopes"] as const,
   applicationScopeGrants: (id: string) => [...queryKeys.applications(), id, "scope-grants"] as const,
+  unactivatedNativeApplications: () =>
+    [...queryKeys.applications(), "unactivated-native"] as const,
 }
 
 export const endpoints = {
@@ -67,5 +69,13 @@ export const endpoints = {
       apiClient.put<{ ok: true }>(`${BASE}/applications/${id}/scopes/${scopeId}/roles`, {
         jsonBody: { roleIds },
       }),
+    // D6-rewizja/D10-rewizja d: kandydaci "Dodaj aplikację" dla kind=native —
+    // manifesty zarejestrowane w kodzie, jeszcze nie aktywowane w tej instancji.
+    listUnactivatedNative: () =>
+      apiClient.get<Application[]>(`${BASE}/applications/unactivated-native`),
+    // Jedyny sposób powstania wiersza kind=native — aktywacja po kodzie
+    // manifestu, nie POST/create (ten zostaje wyłącznie dla external-link/iframe).
+    activate: (code: string) =>
+      apiClient.post<Application>(`${BASE}/applications/activate`, { jsonBody: { code } }),
   },
 }

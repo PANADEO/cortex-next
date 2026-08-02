@@ -69,6 +69,13 @@ export interface Application {
   target: string | null
   isActive: boolean
   sortOrder: number
+  // Hub-render (Krok 1/3, PROJECT/cortex-frontend-hub-db-driven-projekt.md).
+  showOnHub: boolean
+  color: string | null
+  categoryFunctional: string | null
+  categoryDepartment: string[] | null
+  // NULL = zarejestrowany manifestem, nigdy nie aktywowany w tej instancji.
+  activatedAt: string | null
   createdAt: string
   updatedAt: string
 }
@@ -85,6 +92,10 @@ export interface ApplicationInput {
   target?: "_self" | "_blank" | null
   isActive?: boolean
   sortOrder?: number
+  showOnHub?: boolean
+  color?: string | null
+  categoryFunctional?: string | null
+  categoryDepartment?: string[] | null
 }
 
 /** PATCH przyjmuje wyłącznie zmieniane pola (`applicationPatchSchema` w

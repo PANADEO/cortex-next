@@ -30,12 +30,16 @@ export type { FrameTemplateInput, TemplateAssetInput } from "./ilustromat"
 export {
   ADMIN_ROLE_CODE,
   SYSTEM_CONFIG_APP_CODE,
+  NativeApplicationImmutableError,
+  NativeCreationNotAllowedError,
   SelfLockoutError,
   SystemRoleProtectedError,
   UnknownApplicationError,
   UnknownApplicationScopeError,
   UnknownRoleError,
   UnknownUserError,
+  activateApplication,
+  activateApplicationInputSchema,
   applicationInputSchema,
   applicationPatchSchema,
   applicationScopePatchSchema,
@@ -49,6 +53,7 @@ export {
   listApplicationScopes,
   listApplications,
   listHubApplications,
+  listUnactivatedNativeApplications,
   listRoles,
   listUsers,
   renameApplicationScope,
@@ -65,6 +70,7 @@ export {
   userPatchSchema,
 } from "./system-config"
 export type {
+  ActivateApplicationInput,
   ApplicationInput,
   ApplicationPatch,
   ApplicationScopeGrant,

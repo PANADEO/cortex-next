@@ -28,15 +28,20 @@ import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest"
 import { clearTileAccessCache, requireTileAccess, requireTileScope } from "./rbac"
 import {
   SYSTEM_CONFIG_APP_CODE,
+  NativeApplicationImmutableError,
+  NativeCreationNotAllowedError,
   SelfLockoutError,
   SystemRoleProtectedError,
   UnknownApplicationScopeError,
   UnknownRoleError,
+  activateApplication,
+  createApplication,
   createUser,
   deleteApplication,
   deleteRole,
   listApplicationScopeGrants,
   listApplicationScopes,
+  listUnactivatedNativeApplications,
   renameApplicationScope,
   setApplicationRoles,
   setApplicationScopeRoles,
@@ -790,19 +795,23 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
       expect(updated?.target).toBe("_blank")
     })
 
-    it("zmiana typu przenosi adres i zeruje ten z poprzedniego typu", async () => {
+    // Zmiana typu MIĘDZY external-link a iframe (obie strony wymagają `url`,
+    // żadna `route`) zostaje dozwolona — niezmiennik z D6-rewizja/D10-rewizja d
+    // (patrz opis niżej) blokuje WYŁĄCZNIE promocję do kind="native", nie
+    // zmiany typu w obrębie kind-ów nie-natywnych.
+    it("zmiana typu (external-link -> iframe) przenosi adres, gdy podany w tym samym PATCH-u", async () => {
       const updated = await updateApplication(externalId, {
-        kind: "native",
-        route: "/czat-wewnetrzny",
+        kind: "iframe",
+        url: "https://chat.example.com/iframe",
       })
 
-      expect(updated?.kind).toBe("native")
-      expect(updated?.route).toBe("/czat-wewnetrzny")
-      expect(updated?.url).toBeNull()
+      expect(updated?.kind).toBe("iframe")
+      expect(updated?.url).toBe("https://chat.example.com/iframe")
+      expect(updated?.route).toBeNull()
     })
 
     it("odrzuca PATCH, po którym scalony wiersz łamie kształt", async () => {
-      await expect(updateApplication(externalId, { kind: "native" })).rejects.toThrow()
+      await expect(updateApplication(externalId, { kind: "iframe" })).rejects.toThrow()
     })
   })
 
@@ -980,6 +989,177 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
           await db.delete(applicationScopes).where(eq(applicationScopes.id, systemScope!.id))
         }
       })
+    })
+  })
+
+  // D6-rewizja/D10-rewizja d (PROJECT/cortex-frontend-hub-db-driven-projekt.md):
+  // kind=native może powstać WYŁĄCZNIE przez aktywację manifestu, nigdy przez
+  // POST/createApplication — i route/code/kind stają się niezmienne po
+  // utworzeniu. Egzekwowane w SERWISIE (nie tylko w formularzu/routingu), więc
+  // testowane tutaj wprost na funkcjach serwisowych, na prawdziwym Postgresie.
+  describe("D6-rewizja/D10-rewizja d — kind=native wyłącznie przez aktywację manifestu", () => {
+    const MANIFEST_CODE = `manifest-${SUFFIX}`
+    const MANIFEST_ROUTE = `/${MANIFEST_CODE}`
+
+    afterEach(async () => {
+      await getDb().delete(applications).where(eq(applications.code, MANIFEST_CODE))
+    })
+
+    it("createApplication odrzuca kind=native (POST zostaje wyłącznie dla external-link/iframe)", async () => {
+      await expect(
+        createApplication({
+          code: MANIFEST_CODE,
+          name: "Kandydat natywny przez formularz",
+          kind: "native",
+          route: MANIFEST_ROUTE,
+        }),
+      ).rejects.toBeInstanceOf(NativeCreationNotAllowedError)
+    })
+
+    it("createApplication nadal akceptuje kind=external-link — ścieżka formularza bez zmian", async () => {
+      const created = await createApplication({
+        code: MANIFEST_CODE,
+        name: "Link zewnętrzny",
+        kind: "external-link",
+        url: "https://example.com",
+      })
+      expect(created.kind).toBe("external-link")
+      expect(created.activatedAt).toBeNull()
+    })
+
+    it("listUnactivatedNativeApplications widzi wiersz native z activated_at=null, pomija aktywowane i external-link", async () => {
+      await getDb()
+        .insert(applications)
+        .values({
+          code: MANIFEST_CODE,
+          name: "Nieaktywowany moduł",
+          kind: "native",
+          route: MANIFEST_ROUTE,
+          isActive: false,
+          showOnHub: false,
+          activatedAt: null,
+        })
+
+      const candidates = await listUnactivatedNativeApplications()
+      const codes = candidates.map((row) => row.code)
+
+      expect(codes).toContain(MANIFEST_CODE)
+      // APP_CODE (fixture beforeEach) jest native, ale aktywny/nie ma activated_at
+      // ustawionego celowo na null w tym teście — sprawdzone osobno niżej z
+      // jawnym activatedAt, żeby nie polegać na domyślnym stanie fixture'a.
+      expect(codes).not.toContain(EXTERNAL_APP_CODE)
+    })
+
+    it("activateApplication aktywuje wiersz i jest bezpieczna na wyścig — drugie wywołanie to no-op, nie błąd", async () => {
+      await getDb()
+        .insert(applications)
+        .values({
+          code: MANIFEST_CODE,
+          name: "Nieaktywowany moduł",
+          kind: "native",
+          route: MANIFEST_ROUTE,
+          isActive: false,
+          showOnHub: false,
+          activatedAt: null,
+        })
+
+      const first = await activateApplication(MANIFEST_CODE)
+      expect(first?.isActive).toBe(true)
+      expect(first?.showOnHub).toBe(true)
+      expect(first?.activatedAt).not.toBeNull()
+
+      const activatedCandidates = await listUnactivatedNativeApplications()
+      expect(activatedCandidates.map((row) => row.code)).not.toContain(MANIFEST_CODE)
+
+      // Drugie wywołanie (np. drugi klik/drugi request na wyścigu): no-op,
+      // zwraca wiersz NIE ZMIENIONY — nie rzuca, nie podwaja aktywacji.
+      const second = await activateApplication(MANIFEST_CODE)
+      expect(second?.activatedAt?.getTime()).toBe(first?.activatedAt?.getTime())
+    })
+
+    it("activateApplication zwraca null dla nieistniejącego kodu (pomyłka wywołania, nie wyścig)", async () => {
+      expect(await activateApplication(`nie-istnieje-${SUFFIX}`)).toBeNull()
+    })
+
+    it("updateApplication odrzuca zmianę route/code/kind na już aktywowanym wierszu native", async () => {
+      await expect(
+        updateApplication(applicationId, { route: "/inna-sciezka" }),
+      ).rejects.toBeInstanceOf(NativeApplicationImmutableError)
+
+      await expect(
+        updateApplication(applicationId, { code: `${APP_CODE}-zmieniony` }),
+      ).rejects.toBeInstanceOf(NativeApplicationImmutableError)
+
+      await expect(
+        updateApplication(applicationId, { kind: "external-link", url: "https://example.com" }),
+      ).rejects.toBeInstanceOf(NativeApplicationImmutableError)
+    })
+
+    it("updateApplication nadal pozwala zmieniać pola hub-renderu (name/color/categoryFunctional/showOnHub) na wierszu native", async () => {
+      const updated = await updateApplication(applicationId, {
+        name: "Nowa nazwa kafelka",
+        color: "violet",
+        categoryFunctional: "misc",
+        categoryDepartment: ["it"],
+        showOnHub: false,
+      })
+
+      expect(updated?.name).toBe("Nowa nazwa kafelka")
+      expect(updated?.color).toBe("violet")
+      expect(updated?.categoryFunctional).toBe("misc")
+      expect(updated?.categoryDepartment).toEqual(["it"])
+      expect(updated?.showOnHub).toBe(false)
+      // route/kind/code NIE dotknięte przez tę edycję.
+      expect(updated?.route).toBe(NATIVE_INPUT.route)
+      expect(updated?.kind).toBe("native")
+    })
+
+    it("updateApplication NIE blokuje zmiany route/kind na wierszu external-link — niezmiennik dotyczy wyłącznie native", async () => {
+      const [external] = await getDb()
+        .insert(applications)
+        .values({
+          code: EXTERNAL_APP_CODE,
+          name: "Zewnętrzny",
+          kind: "external-link",
+          url: "https://example.com",
+        })
+        .returning()
+
+      const updated = await updateApplication(external!.id, {
+        url: "https://example.com/inna-sciezka",
+      })
+      expect(updated?.url).toBe("https://example.com/inna-sciezka")
+    })
+
+    // SEDNO tego fixa: druga, dotąd nieogrodzona droga do kind="native" —
+    // PATCH na JUŻ ISTNIEJĄCYM wierszu external-link/iframe ustawiający
+    // kind:"native" (dowiezione live na produkcyjnym wierszu meeting-guru
+    // podczas review). createApplication blokuje kind="native" wyłącznie przy
+    // TWORZENIU (NativeCreationNotAllowedError); assertNativeApplicationImmutable
+    // pilnowała dotąd wyłącznie wierszy JUŻ natywnych
+    // (`if (existing.kind !== "native") return` — cichy no-op dla reszty), więc
+    // ta konkretna promocja przechodziła bez błędu i tworzyła wiersz native z
+    // wymyśloną trasą, bez żadnego kodu za nią — dokładnie ta luka, przed którą
+    // ma bronić D6-rewizja.
+    it("SEDNO: odrzuca PATCH promujący ISTNIEJĄCY external-link do kind=native", async () => {
+      const [external] = await getDb()
+        .insert(applications)
+        .values({
+          code: EXTERNAL_APP_CODE,
+          name: "Zewnętrzny (kandydat na promocję)",
+          kind: "external-link",
+          url: "https://chat.megu.me",
+        })
+        .returning()
+
+      await expect(
+        updateApplication(external!.id, { kind: "native", route: "/sciezka-znikad" }),
+      ).rejects.toBeInstanceOf(NativeApplicationImmutableError)
+
+      const [row] = await getDb().select().from(applications).where(eq(applications.id, external!.id))
+      expect(row!.kind).toBe("external-link")
+      expect(row!.route).toBeNull()
+      expect(row!.url).toBe("https://chat.megu.me")
     })
   })
 })

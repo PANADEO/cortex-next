@@ -1,6 +1,5 @@
 "use client"
 
-import { canAccessAiTool, isAiToolId } from "@/lib/ai-tools/app-codes"
 import { useCoworkProjectTiles } from "@/features/cortex-cowork"
 import { useFavoritesStore } from "@/lib/stores/favorites-store"
 import {
@@ -8,16 +7,16 @@ import {
   COWORK_APP_CODE,
   DEPARTMENT_CATEGORIES,
   FUNCTIONAL_CATEGORIES,
-  TILES,
   type Tile,
   type TileHrefOverrides,
 } from "@/lib/tiles"
-import { useAuthorizedApps } from "@cortex/api"
-import { Button, EmptyState } from "@cortex/ui"
+import { useAuthorizedApps, useHubTiles } from "@cortex/api"
+import { Button, EmptyState, LoadingState } from "@cortex/ui"
 import { Search } from "lucide-react"
 import { useDeferredValue, useMemo, useState } from "react"
 import { CategoryTabs, type CategoryTab } from "./category-tabs"
 import { HeroSearch, type HeroView } from "./hero-search"
+import { hubApplicationsToTiles } from "./hub-tile"
 import { TileCard } from "./tile-card"
 
 type ActiveCategory = "all" | "favorites" | string
@@ -57,30 +56,35 @@ export function TileGrid({ tileHrefOverrides }: TileGridProps = {}) {
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite)
   const authorized = useAuthorizedApps()
   const coworkProjects = useCoworkProjectTiles()
+  // Katalog kafelków code-backed (Krok 3, D7): WYŁĄCZNIE metadane wyglądu z
+  // GET /api/hub/tiles, już przefiltrowane po stronie serwera do
+  // is_active=true AND show_on_hub=true. Kto z tego katalogu faktycznie widzi
+  // dany kafelek nadal rozstrzyga wyłącznie canAccessTile() niżej — ten hook
+  // nie ma i nie może mieć logiki dostępu.
+  const hub = useHubTiles()
 
-  const tiles = useMemo(
-    () =>
-      TILES.map((tile) => {
-        const href = tileHrefOverrides?.[tile.id]
-        return href ? { ...tile, href } : tile
-      }),
-    [tileHrefOverrides],
-  )
+  const tiles = useMemo(() => {
+    const mapped = hubApplicationsToTiles(hub.tiles)
+    if (!tileHrefOverrides) return mapped
+    return mapped.map((tile) => {
+      const href = tileHrefOverrides[tile.id]
+      return href ? { ...tile, href } : tile
+    })
+  }, [hub.tiles, tileHrefOverrides])
 
   // Kafelki code-backed filtruje grant z `applications` (własny Postgres, przez
-  // /api/me/access). Kafelki task-chat nie mają tam własnego wiersza — płyną z
-  // governance store, który zna WYŁĄCZNIE role per projekt i o grant
-  // `cortex-cowork` nie pyta w ogóle. Dlatego SEKCJĘ bramkuje tu ten sam kod,
-  // którego na trasie pilnuje <AppGate tileId={COWORK_APP_CODE}>: bez tego user
-  // bez grantu widział na hubie kafelki, które trasa i tak odmawia. Filtrowanie
-  // PER PROJEKT zostaje po stronie governance — to osobna warstwa.
+  // /api/me/access) przez JEDNO miejsce z regułą dostępu — canAccessTile()
+  // (D9: usuwa duplikowane "blanket ai-tools OR konkretny kod", które tu
+  // wcześniej żyło osobno od AppGate). Kafelki task-chat nie mają własnego
+  // wiersza w rejestrze — płyną z governance store, który zna WYŁĄCZNIE role
+  // per projekt i o grant `cortex-cowork` nie pyta w ogóle. Dlatego SEKCJĘ
+  // bramkuje tu ten sam kod, którego na trasie pilnuje
+  // <AppGate tileId={COWORK_APP_CODE}>: bez tego user bez grantu widział na
+  // hubie kafelki, które trasa i tak odmawia. Filtrowanie PER PROJEKT zostaje
+  // po stronie governance — to osobna warstwa.
   const authorizedTiles = useMemo(
     () => [
-      ...tiles.filter((tile) =>
-        isAiToolId(tile.id)
-          ? canAccessAiTool(authorized.apps, tile.id)
-          : authorized.apps.includes(tile.id),
-      ),
+      ...tiles.filter((tile) => canAccessTile(authorized.apps, tile.id)),
       ...(canAccessTile(authorized.apps, COWORK_APP_CODE) ? coworkProjects.tiles : []),
     ],
     [authorized.apps, tiles, coworkProjects.tiles],
@@ -128,6 +132,25 @@ export function TileGrid({ tileHrefOverrides }: TileGridProps = {}) {
   const handleClearFilters = () => {
     setSearchQuery("")
     setActiveCategory("all")
+  }
+
+  // Katalog jeszcze nie wrócił z GET /api/hub/tiles — bez tego pierwszy render
+  // pokazywałby przez moment "Nie znaleziono aplikacji" (visibleTiles.length
+  // === 0 podczas ładowania), nieodróżnialne od realnego braku wyników
+  // wyszukiwania. `authorized`/HubGate już przepuściły tego usera (patrz
+  // app-gate.tsx) — to tylko chwilowy stan sieci, nie decyzja o dostępie.
+  if (hub.isLoading) {
+    return <LoadingState label="Wczytywanie aplikacji…" />
+  }
+
+  if (hub.isError) {
+    return (
+      <EmptyState
+        icon={Search}
+        title="Nie udało się wczytać aplikacji"
+        description="Spróbuj odświeżyć stronę. Jeśli problem się powtarza, sprawdź połączenie z bazą danych."
+      />
+    )
   }
 
   return (

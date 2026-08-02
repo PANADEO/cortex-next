@@ -22,7 +22,11 @@ export interface Tile {
   icon: LucideIcon
   iconBg: string
   iconFg: string
-  categoryFunctional: TileCategoryFunctional
+  // `null` = kafelek dodany z UI Aplikacje bez wybranej kategorii (D3,
+  // PROJECT/cortex-frontend-hub-db-driven-projekt.md) — zdegradowany, nie
+  // zepsuty: kafelek zostaje widoczny w zakładce "Wszystkie", ale nie trafia
+  // do żadnej zakładki kategorii (patrz tileBelongsTo w tile-grid.tsx).
+  categoryFunctional: TileCategoryFunctional | null
   categoryDepartment: TileCategoryDepartment[]
   /** Platform taxonomy (see docs/ROADMAP.md): what kind of thing this tile depicts. */
   archetype: CoworkTileArchetype

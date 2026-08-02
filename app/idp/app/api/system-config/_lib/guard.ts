@@ -1,5 +1,7 @@
 import {
   SYSTEM_CONFIG_APP_CODE,
+  NativeApplicationImmutableError,
+  NativeCreationNotAllowedError,
   SelfLockoutError,
   SystemRoleProtectedError,
   requireTileAccess,
@@ -54,6 +56,20 @@ export function toErrorResponse(error: unknown): NextResponse {
   if (error instanceof SystemRoleProtectedError) {
     return NextResponse.json(
       { error: "system-role-protected", message: error.message },
+      { status: 409 },
+    )
+  }
+
+  if (error instanceof NativeCreationNotAllowedError) {
+    return NextResponse.json(
+      { error: "native-requires-activation", message: error.message },
+      { status: 400 },
+    )
+  }
+
+  if (error instanceof NativeApplicationImmutableError) {
+    return NextResponse.json(
+      { error: "native-application-immutable", message: error.message },
       { status: 409 },
     )
   }

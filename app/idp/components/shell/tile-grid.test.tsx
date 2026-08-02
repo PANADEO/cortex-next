@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest"
+import type { HubTile } from "@cortex/api"
 import { cleanup, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
@@ -19,8 +20,63 @@ let authorizedMock: AuthorizedMock = {
   isError: false,
 }
 
+interface HubTilesMock {
+  tiles: HubTile[]
+  isLoading: boolean
+  isError: boolean
+}
+
+/** Kształt jednego wiersza tak, jak GET /api/hub/tiles go dziś zwraca —
+ *  fixture, nie static TILES: Krok 3 przełącza TileGrid na useHubTiles(). */
+function hubRow(partial: { code: string; name: string } & Partial<HubTile>) {
+  return {
+    id: partial.code,
+    description: null,
+    icon: null,
+    category: null,
+    kind: "native" as const,
+    route: `/${partial.code}`,
+    url: null,
+    target: null,
+    isActive: true,
+    sortOrder: 0,
+    showOnHub: true,
+    color: null,
+    categoryFunctional: null,
+    categoryDepartment: null,
+    activatedAt: "2026-01-01T00:00:00.000Z",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    ...partial,
+  }
+}
+
+// Katalog huba nie zwraca wiersze grant-only (ai-tools, cortex-cowork,
+// intrastat-*-editor — show_on_hub=false) — fixture pomija je celowo, jak
+// robi to prawdziwy listHubApplications().
+const HUB_TILES_FIXTURE = [
+  hubRow({
+    code: "idp",
+    name: "IDP",
+    route: "/idp/dashboard",
+    description: "Procesowanie i ekstrakcja danych z dokumentów handlowych",
+  }),
+  hubRow({ code: "idp-basic", name: "IDP Basic", route: "/idp-basic/dashboard" }),
+  hubRow({ code: "intrastat", name: "Intrastat", route: "/intrastat/dashboard" }),
+  hubRow({ code: "text-highlighter", name: "Podświetlacz tekstu", route: "/ai-tools/text-highlighter" }),
+  hubRow({ code: "text-transformer", name: "Transformator tekstu", route: "/ai-tools/text-transformer" }),
+  hubRow({ code: "fakturomat", name: "Analizator faktur", route: "/ai-tools/fakturomat" }),
+]
+
+let hubTilesMock: HubTilesMock = {
+  tiles: HUB_TILES_FIXTURE,
+  isLoading: false,
+  isError: false,
+}
+
 vi.mock("@cortex/api", () => ({
   useAuthorizedApps: () => authorizedMock,
+  useHubTiles: () => hubTilesMock,
 }))
 
 // TileGrid merges in governed task-chat project tiles from a query hook; the
@@ -66,6 +122,7 @@ afterEach(() => {
     isLoading: false,
     isError: false,
   }
+  hubTilesMock = { tiles: HUB_TILES_FIXTURE, isLoading: false, isError: false }
   coworkTilesMock = { tiles: [], projects: [], isLoading: false }
 })
 
@@ -145,6 +202,26 @@ describe("TileGrid", () => {
     render(<TileGrid />)
 
     expect(screen.getByText("Nie znaleziono aplikacji")).not.toBeNull()
+  })
+
+  // Krok 3: katalog jeszcze w locie (GET /api/hub/tiles) nie może przez moment
+  // wyglądać jak "brak wyników" — HubGate już przepuścił tego usera, to tylko
+  // opóźnienie sieci.
+  it("pokazuje stan ładowania zamiast pustego stanu, dopóki katalog huba się nie wczyta", () => {
+    hubTilesMock = { tiles: [], isLoading: true, isError: false }
+
+    render(<TileGrid />)
+
+    expect(screen.getByText("Wczytywanie aplikacji…")).not.toBeNull()
+    expect(screen.queryByText("Nie znaleziono aplikacji")).toBeNull()
+  })
+
+  it("pokazuje osobny komunikat błędu, gdy katalog huba nie wczytał się wcale", () => {
+    hubTilesMock = { tiles: [], isLoading: false, isError: true }
+
+    render(<TileGrid />)
+
+    expect(screen.getByText("Nie udało się wczytać aplikacji")).not.toBeNull()
   })
 
   // Regresja: governance store nie zna grantów z system_config, więc bez bramki

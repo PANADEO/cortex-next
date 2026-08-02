@@ -12,6 +12,7 @@ import { closeDb, seedScenario, type ScenarioName, type ScenarioResult } from ".
 import { IlustromatGenerationPage } from "../poms/ilustromat/generation-page"
 import { IlustromatTemplatesPage } from "../poms/ilustromat/templates-page"
 import { TokenUsagePage } from "../poms/token-usage/token-usage-page"
+import { ApplicationsPage } from "../poms/system-config/applications-page"
 import { UsersPage } from "../poms/system-config/users-page"
 
 /**
@@ -30,6 +31,7 @@ export async function asUser(page: Page, email: string): Promise<void> {
 interface TestFixtures {
   seed: (scenario: ScenarioName) => Promise<ScenarioResult>
   usersPage: UsersPage
+  applicationsPage: ApplicationsPage
   ilustromatGenerationPage: IlustromatGenerationPage
   ilustromatTemplatesPage: IlustromatTemplatesPage
   tokenUsagePage: TokenUsagePage
@@ -57,6 +59,10 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 
   usersPage: async ({ page }, use) => {
     await use(new UsersPage(page))
+  },
+
+  applicationsPage: async ({ page }, use) => {
+    await use(new ApplicationsPage(page))
   },
 
   ilustromatGenerationPage: async ({ page }, use) => {

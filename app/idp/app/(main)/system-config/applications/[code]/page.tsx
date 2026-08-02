@@ -13,10 +13,13 @@ import {
 } from "@/features/system-config/hooks"
 import { resolveApplicationIcon } from "@/features/system-config/icons"
 import { KIND_LABELS } from "@/features/system-config/kinds"
+import { TILE_COLOR_OPTIONS } from "@/features/system-config/colors"
 import type { Application, ApplicationInput, RoleSummary } from "@/features/system-config/types"
+import { DEPARTMENT_CATEGORIES, FUNCTIONAL_CATEGORIES } from "@/lib/tiles"
 import { toastApiError } from "@cortex/api"
 import type { TileKind } from "@cortex/tile-sdk"
 import { TileKind as TileKindSchema } from "@cortex/tile-sdk"
+import { cn } from "@cortex/utils"
 import {
   Alert,
   AlertDescription,
@@ -99,9 +102,10 @@ function IconPickerPlaceholder({
   )
 }
 
-/** Radix Select nie przyjmuje pustej wartości, a `target` w bazie bywa NULL —
- *  stąd wartownik zamiast "". */
+/** Radix Select nie przyjmuje pustej wartości, a `target`/`categoryFunctional`
+ *  w bazie bywają NULL — stąd wartownik zamiast "". */
 const NO_TARGET = "default"
+const NO_FUNCTIONAL_CATEGORY = "none"
 
 interface FormState {
   name: string
@@ -113,6 +117,11 @@ interface FormState {
   url: string
   target: typeof NO_TARGET | "_self" | "_blank"
   isActive: boolean
+  // Hub-render (Krok 3, PROJECT/cortex-frontend-hub-db-driven-projekt.md D1-D3).
+  showOnHub: boolean
+  color: string
+  categoryFunctional: typeof NO_FUNCTIONAL_CATEGORY | string
+  categoryDepartment: string[]
 }
 
 function toFormState(application: Application): FormState {
@@ -126,6 +135,10 @@ function toFormState(application: Application): FormState {
     url: application.url ?? "",
     target: application.target === "_blank" || application.target === "_self" ? application.target : NO_TARGET,
     isActive: application.isActive,
+    showOnHub: application.showOnHub,
+    color: application.color ?? "",
+    categoryFunctional: application.categoryFunctional ?? NO_FUNCTIONAL_CATEGORY,
+    categoryDepartment: application.categoryDepartment ?? [],
   }
 }
 
@@ -147,6 +160,10 @@ function toInput(code: string, form: FormState): ApplicationInput {
     url: isNative ? null : form.url.trim(),
     target: form.target === NO_TARGET ? null : form.target,
     isActive: form.isActive,
+    showOnHub: form.showOnHub,
+    color: form.color || null,
+    categoryFunctional: form.categoryFunctional === NO_FUNCTIONAL_CATEGORY ? null : form.categoryFunctional,
+    categoryDepartment: form.categoryDepartment.length > 0 ? form.categoryDepartment : null,
   }
 }
 
@@ -186,6 +203,11 @@ export default function ApplicationDetailPage() {
   const [scopeGrants, setScopeGrants] = useState<Record<string, string[]> | null>(null)
   const [isSavingScopes, setIsSavingScopes] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  // Krok 3 (D5/D1, ostrzeżenie przy wyłączaniu WIDOCZNEGO kafelka): otwarte
+  // wyłącznie gdy admin wyłącza show_on_hub na kafelku, który TERAZ faktycznie
+  // renderuje się na hubie (isActive && showOnHub) — wyłączenie już-ukrytego
+  // wiersza albo włączenie z powrotem nie potrzebuje potwierdzenia.
+  const [isHideFromHubWarningOpen, setIsHideFromHubWarningOpen] = useState(false)
   // Gate na montowanie `IconPicker` — patrz komentarz przy jego `dynamic()`
   // wyżej. Placeholder poniżej pokazuje aktualnie wybraną ikonę (ta sama
   // jawna lista co lista Aplikacje, `resolveApplicationIcon`), więc przejście
@@ -290,9 +312,44 @@ export default function ApplicationDetailPage() {
   const roles = rolesQuery.data ?? []
   const grantedRoleIds = selectedRoleIds ?? []
   const scopes = applicationScopesQuery.data ?? []
+  // D10-rewizja d: route/code/kind niezmienne dla KAŻDEGO już aktywowanego
+  // wiersza kind=native, nie tylko dla system-config (isSelfManaged pilnuje
+  // tego jednego, szczególnego przypadku osobno, z bardziej opisowym
+  // komunikatem). Serwer (updateApplication) odrzuca te zmiany niezależnie od
+  // tego pola — disabled tu jest wyjaśnieniem z wyprzedzeniem, nie jedyną
+  // linią obrony, dokładnie jak isSelfManaged wyżej.
+  const isNativeLocked = application.kind === "native"
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => (current ? { ...current, [key]: value } : current))
+  }
+
+  function toggleDepartment(id: string, checked: boolean) {
+    setForm((current) => {
+      if (!current) return current
+      const next = checked
+        ? [...new Set([...current.categoryDepartment, id])]
+        : current.categoryDepartment.filter((existingId) => existingId !== id)
+      return { ...current, categoryDepartment: next }
+    })
+  }
+
+  // D1/D5 (Krok 3): wyłączenie show_on_hub na kafelku, który TERAZ jest
+  // widoczny (isActive && showOnHub), ostrzega przed zapisem — user hubu
+  // straci go natychmiast po "Zapisz dane". Włączenie z powrotem albo
+  // wyłączenie już-niewidocznego wiersza nie zmienia nic widocznego, więc nie
+  // potrzebuje potwierdzenia.
+  function handleShowOnHubChange(checked: boolean) {
+    if (!checked && form?.isActive && form.showOnHub) {
+      setIsHideFromHubWarningOpen(true)
+      return
+    }
+    update("showOnHub", checked)
+  }
+
+  function confirmHideFromHub() {
+    update("showOnHub", false)
+    setIsHideFromHubWarningOpen(false)
   }
 
   function toggleRole(roleId: string, checked: boolean) {
@@ -490,10 +547,78 @@ export default function ApplicationDetailPage() {
             </div>
 
             <div className="grid gap-1.5">
+              <Label id="color-label">Kolor</Label>
+              <div className="flex flex-wrap gap-2" role="group" aria-labelledby="color-label">
+                {TILE_COLOR_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={form.color === option.value}
+                    aria-label={option.label}
+                    title={option.label}
+                    onClick={() => update("color", option.value)}
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-full transition-all",
+                      option.iconBg,
+                      form.color === option.value
+                        ? "ring-2 ring-cortex ring-offset-2 ring-offset-background"
+                        : "opacity-70 hover:opacity-100",
+                    )}
+                  >
+                    <span className={cn("h-3 w-3 rounded-full", option.iconFg)} aria-hidden="true" />
+                  </button>
+                ))}
+              </div>
+              <span className="text-xs text-muted-foreground">
+                Kolor ikony kafelka na hubie. Bez wyboru kafelek dostaje neutralny kolor domyślny.
+              </span>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-1.5">
+                <Label htmlFor="categoryFunctional">Kategoria funkcjonalna (zakładka „Funkcje”)</Label>
+                <Select
+                  value={form.categoryFunctional}
+                  onValueChange={(value) => update("categoryFunctional", value)}
+                >
+                  <SelectTrigger id="categoryFunctional">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_FUNCTIONAL_CATEGORY}>Brak</SelectItem>
+                    {FUNCTIONAL_CATEGORIES.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label id="department-label">Kategoria działu (zakładka „Działy”)</Label>
+                <div className="flex flex-col gap-2 rounded-md border border-border p-3">
+                  {DEPARTMENT_CATEGORIES.map((option) => (
+                    <div key={option.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`department-${option.id}`}
+                        checked={form.categoryDepartment.includes(option.id)}
+                        onCheckedChange={(checked) => toggleDepartment(option.id, checked === true)}
+                      />
+                      <Label htmlFor={`department-${option.id}`} className="cursor-pointer font-normal">
+                        {option.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-1.5">
               <Label htmlFor="kind">Typ aplikacji</Label>
               <Select
                 value={form.kind}
-                disabled={isSelfManaged}
+                disabled={isSelfManaged || isNativeLocked}
                 onValueChange={(value) => update("kind", value as TileKind)}
               >
                 <SelectTrigger id="kind">
@@ -507,6 +632,12 @@ export default function ApplicationDetailPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {isNativeLocked && !isSelfManaged ? (
+                <span className="text-xs text-muted-foreground">
+                  Kafelek natywny — typ i ścieżka są ustalane wyłącznie przez aktywację
+                  zarejestrowanego manifestu, nie da się ich tu zmienić.
+                </span>
+              ) : null}
             </div>
 
             {form.kind === "native" ? (
@@ -515,7 +646,7 @@ export default function ApplicationDetailPage() {
                 <Input
                   id="route"
                   value={form.route}
-                  disabled={isSelfManaged}
+                  disabled={isSelfManaged || isNativeLocked}
                   onChange={(event) => update("route", event.target.value)}
                   placeholder="/raportowanie-tokenow"
                 />
@@ -567,6 +698,20 @@ export default function ApplicationDetailPage() {
               />
               <Label htmlFor="isActive">Aplikacja aktywna</Label>
             </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                id="showOnHub"
+                checked={form.showOnHub}
+                onCheckedChange={handleShowOnHubChange}
+              />
+              <Label htmlFor="showOnHub">Widoczna na stronie głównej (hub)</Label>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              Osobny przełącznik od „Aplikacja aktywna” (D1): „aktywna” decyduje o uprawnieniu, ten
+              przełącznik wyłącznie o tym, czy kafelek renderuje się na hubie. Wyłączenie nie odbiera
+              nikomu dostępu — tylko chowa kartę.
+            </span>
 
             {/* Kolejność nie jest już edytowalna tutaj — patrz tryb zmiany
                 kolejności na liście Aplikacje (strzałki góra/dół). Trzymanie
@@ -683,6 +828,24 @@ export default function ApplicationDetailPage() {
             <AlertDialogAction onClick={handleDelete} disabled={deleteApplication.isPending}>
               Usuń
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isHideFromHubWarningOpen} onOpenChange={setIsHideFromHubWarningOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Schować {application.name} z hubu?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ten kafelek jest dziś widoczny na stronie głównej. Po zapisaniu zniknie z hubu KAŻDEGO
+              użytkownika, który dziś go widzi — uprawnienia (kto ma dostęp) się nie zmieniają, tylko
+              karta przestaje się renderować. Dopiero po kliknięciu „Zapisz dane” zmiana staje się
+              realna.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmHideFromHub}>Schowaj z hubu</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
