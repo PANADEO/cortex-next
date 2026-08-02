@@ -25,11 +25,11 @@ Praktyczne skutki:
 
 - Kod nieobecny w `applications` **nigdy** nie trafi do `apps` — SQL go nie zwróci. Nowy kafelek wymaga wiersza w rejestrze (seed `packages/@cortex/db/scripts/seed-system-config.mjs`), nie tylko wpisu w `TILES`.
 - Kafelek obecny w `TILES`, ale bez wiersza w `applications`, jest nieosiągalny dla wszystkich — i to jest zachowanie zamierzone (fail-closed), nie usterka.
-- Kod obecny w `applications`, ale bez wpisu w `TILES`, jest **uprawnieniem, nie kafelkiem**: nie wyrenderuje się w hubie, ale otwiera funkcje w środku innego kafelka. Dziś trzy takie: `ai-tools` (grant zbiorczy na wszystkie narzędzia AI) oraz `intrastat-cn-editor` / `intrastat-config-editor` (przyciski edycji w Intrastacie; realną egzekucją zajmuje się zewnętrzny backend FastAPI).
+- Kod obecny w `applications`, ale bez wpisu w `TILES`, jest **uprawnieniem, nie kafelkiem**: nie wyrenderuje się w hubie, ale otwiera funkcje w środku innego kafelka. Dziś cztery takie: `ai-tools` i `cortex-cowork` (granty zbiorcze — kod sam nigdy nie renderuje własnej karty, tylko bramkuje rodzinę kafelków renderowaną gdzie indziej) oraz `intrastat-cn-editor` / `intrastat-config-editor` (przyciski edycji w Intrastacie; realną egzekucją zajmuje się zewnętrzny backend FastAPI).
 - `route`/`url` w rejestrze są celowo identyczne z `href` odpowiadającego wpisu w `TILES` — rejestr i kod mają wskazywać to samo miejsce.
 
-> [!warning] Do rozstrzygnięcia przed „hubem z bazy"
-> Schemat NIE odróżnia dziś „kafelka" od „samego uprawnienia" — jedno i drugie to wiersz w `applications`. Dopóki hub renderuje z `TILES`, jest to nieszkodliwe (te trzy kody po prostu nie mają odpowiednika w kodzie). W momencie, w którym hub zacznie renderować z rejestru, trzeba je rozróżnić — dedykowaną `category`, flagą w schemacie albo osobną tabelą. Decyzja nie została podjęta; patrz otwarte pytanie 2 w `PROJECT/cortex-frontend-unifikacja-bramek-projekt.md`.
+> [!warning] Rozstrzygnięte na poziomie schematu, hub wciąż renderuje z `TILES`
+> Schemat od Kroku 1 (`PROJECT/cortex-frontend-hub-db-driven-projekt.md`, D1) odróżnia „kafelek" od „samego uprawnienia" kolumną `show_on_hub` (`false` dla tych czterech kodów, `true` domyślnie dla reszty). Dopóki hub faktycznie renderuje z `TILES`, a nie z rejestru (Krok 3 tego samego dokumentu), kolumna nie ma jeszcze żadnego konsumenta — nieszkodliwe, ale warte pamiętania przy czytaniu tego akapitu jako "wciąż otwarte".
 
 ## Docelowo — rejestr edytowalny z UI (wymóg Cezarego, 28.07.2026)
 

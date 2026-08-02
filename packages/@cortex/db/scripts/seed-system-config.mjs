@@ -5,11 +5,22 @@
 //
 // Model: DEKLARACJA STANU DOCELOWEGO, nie jednorazowy bootstrap.
 //
-//   REJESTR APLIKACJI — seed zakłada brakujące wiersze w `applications`
-//   (`on conflict do nothing`, więc zmiany nazwy/ikony/kategorii zrobione
-//   w UI PRZEŻYWAJĄ deploy). To jest jedyne źródło prawdy o tym, jakie kody
-//   uprawnień w ogóle istnieją w tej instancji: powłoka (`/api/me/access`)
-//   czyta wyłącznie tę tabelę, nie żadną allowlistę w kodzie.
+//   REJESTR APLIKACJI — seed zakłada brakujące wiersze w `applications`.
+//   Dla name/description/icon/category/kind/route/url/target/sort_order
+//   działa `on conflict do nothing`, więc zmiany zrobione w UI PRZEŻYWAJĄ
+//   deploy. To jest jedyne źródło prawdy o tym, jakie kody uprawnień w ogóle
+//   istnieją w tej instancji: powłoka (`/api/me/access`) czyta wyłącznie tę
+//   tabelę, nie żadną allowlistę w kodzie.
+//
+//   PIĘĆ KOLUMN HUB-RENDERU (show_on_hub/color/category_functional/
+//   category_department/activated_at, Krok 1 —
+//   PROJECT/cortex-frontend-hub-db-driven-projekt.md) mają WŁASNY, częściowy
+//   upsert: `on conflict do update` ograniczony wyłącznie do tych pięciu
+//   kolumn (activated_at przez coalesce — nigdy nie cofa raz ustawionej
+//   daty). Reszta kolumn wiersza zostaje nietknięta. Zero konsumenta czyta te
+//   pola jeszcze (hub nadal renderuje z tiles.ts) — dopóki UI do ich edycji
+//   nie istnieje (Krok 3), to rozróżnienie jest teoretyczne; kiedy powstanie,
+//   ten upsert trzeba będzie zrewidować pod tym samym kątem co resztę pól.
 //
 //   ADMIN_EMAIL USTAWIONE — przy KAŻDYM uruchomieniu seed zapewnia, że ten
 //   DOKŁADNIE jeden adres ma: aktywne konto w `users` (zakłada je, jeśli nie
@@ -55,14 +66,19 @@ const ADMIN_ROLE_CODE = "admin"
 // odpowiadającego wpisu w app/idp/lib/tiles.ts — rejestr i kod mają wskazywać
 // dokładnie to samo miejsce (ten sam zabieg co przy `system-config`).
 //
-// Trzy wiersze NIE są kafelkami, tylko uprawnieniami: `ai-tools` (grant
-// zbiorczy na wszystkie narzędzia AI, obok grantów per narzędzie) oraz
-// `intrastat-cn-editor` / `intrastat-config-editor` (odblokowują przyciski
-// edycji WEWNĄTRZ kafelka Intrastat; realną egzekucją zajmuje się zewnętrzny
-// backend FastAPI). Mają `route`, bo schemat wymaga go dla kind='native' —
-// wskazuje ekran, którego dotyczą. Rozróżnienie "kafelek vs samo uprawnienie"
-// nie jest jeszcze w schemacie; stanie się potrzebne dopiero, gdy hub zacznie
-// renderować z rejestru zamiast z tiles.ts.
+// Cztery wiersze NIE są kafelkami, tylko uprawnieniami (stąd showOnHub: false
+// niżej): `ai-tools` i `cortex-cowork` (granty zbiorcze — kod sam nigdy nie
+// renderuje własnej karty, tylko bramkuje rodzinę kafelków renderowaną gdzie
+// indziej) oraz `intrastat-cn-editor` / `intrastat-config-editor`
+// (odblokowują przyciski edycji WEWNĄTRZ kafelka Intrastat; realną
+// egzekucją zajmuje się zewnętrzny backend FastAPI). Mają `route`, bo schemat
+// wymaga go dla kind='native' — wskazuje ekran, którego dotyczą.
+//
+// `color`/`categoryFunctional`/`categoryDepartment` są 1:1 z
+// app/idp/lib/tiles.ts (`iconBg` -> nazwa rodziny koloru Tailwind) i
+// AI_TOOL_TILE_STYLE dla narzędzi AI. Dla czterech wierszy-uprawnień wyżej
+// nie ma odpowiednika w tiles.ts (nic tam nie renderują) — zostają `null`,
+// zgodnie ze schematem (D2/D3, PROJECT/cortex-frontend-hub-db-driven-projekt.md).
 //
 // `ilustromat` NIE jest tutaj świadomie: moduł z własnym schematem rejestruje
 // się we własnym seedzie (scripts/seed-ilustromat.mjs) — precedens zostaje.
@@ -75,6 +91,9 @@ const APPLICATIONS = [
     category: "Dokumenty",
     kind: "native",
     route: "/idp/dashboard",
+    color: "rose",
+    categoryFunctional: "misc",
+    categoryDepartment: ["operations"],
   },
   {
     code: "idp-basic",
@@ -84,6 +103,9 @@ const APPLICATIONS = [
     category: "Dokumenty",
     kind: "native",
     route: "/idp-basic/dashboard",
+    color: "sky",
+    categoryFunctional: "misc",
+    categoryDepartment: ["operations"],
   },
   {
     code: "sp-console",
@@ -93,6 +115,9 @@ const APPLICATIONS = [
     category: "Finanse",
     kind: "native",
     route: "/store-pit/dashboard",
+    color: "cyan",
+    categoryFunctional: "agents",
+    categoryDepartment: ["finance", "operations"],
   },
   {
     code: "sp-client",
@@ -102,6 +127,9 @@ const APPLICATIONS = [
     category: "Finanse",
     kind: "native",
     route: "/store-pit/clients",
+    color: "indigo",
+    categoryFunctional: "misc",
+    categoryDepartment: ["finance"],
   },
   {
     code: "okna-czasowe",
@@ -111,6 +139,9 @@ const APPLICATIONS = [
     category: "Badania",
     kind: "native",
     route: "/okna-czasowe/dashboard",
+    color: "amber",
+    categoryFunctional: "research",
+    categoryDepartment: ["marketing"],
   },
   {
     code: "cortex-config",
@@ -120,6 +151,9 @@ const APPLICATIONS = [
     category: "Administracja",
     kind: "native",
     route: "/cortex-config/projects",
+    color: "emerald",
+    categoryFunctional: "admin-system",
+    categoryDepartment: ["it"],
   },
   {
     code: "cortex-cowork",
@@ -129,6 +163,7 @@ const APPLICATIONS = [
     category: "Agenci",
     kind: "native",
     route: "/cortex-cowork",
+    showOnHub: false,
   },
   {
     code: "intrastat",
@@ -138,6 +173,9 @@ const APPLICATIONS = [
     category: "Dokumenty",
     kind: "native",
     route: "/intrastat/dashboard",
+    color: "emerald",
+    categoryFunctional: "misc",
+    categoryDepartment: ["operations", "finance"],
   },
   {
     code: "invoice-supervisor",
@@ -147,6 +185,9 @@ const APPLICATIONS = [
     category: "Finanse",
     kind: "native",
     route: "/invoice-supervisor/inbox",
+    color: "orange",
+    categoryFunctional: "misc",
+    categoryDepartment: ["finance", "operations"],
   },
   {
     code: "meeting-guru",
@@ -157,6 +198,9 @@ const APPLICATIONS = [
     kind: "external-link",
     url: "https://chat.megu.me",
     target: "_blank",
+    color: "teal",
+    categoryFunctional: "agents",
+    categoryDepartment: ["operations"],
   },
   {
     code: "system-config",
@@ -166,6 +210,9 @@ const APPLICATIONS = [
     category: "Administracja",
     kind: "native",
     route: "/system-config",
+    color: "slate",
+    categoryFunctional: "admin-system",
+    categoryDepartment: ["it"],
   },
   {
     code: "ai-tools",
@@ -175,6 +222,7 @@ const APPLICATIONS = [
     category: "AI Tools",
     kind: "native",
     route: "/ai-tools",
+    showOnHub: false,
   },
   {
     code: "text-highlighter",
@@ -184,6 +232,9 @@ const APPLICATIONS = [
     category: "AI Tools",
     kind: "native",
     route: "/ai-tools/text-highlighter",
+    color: "blue",
+    categoryFunctional: "content-generation",
+    categoryDepartment: ["marketing", "operations", "it"],
   },
   {
     code: "text-transformer",
@@ -193,6 +244,9 @@ const APPLICATIONS = [
     category: "AI Tools",
     kind: "native",
     route: "/ai-tools/text-transformer",
+    color: "blue",
+    categoryFunctional: "content-generation",
+    categoryDepartment: ["marketing", "operations", "it"],
   },
   {
     code: "text-analyzer",
@@ -202,6 +256,9 @@ const APPLICATIONS = [
     category: "AI Tools",
     kind: "native",
     route: "/ai-tools/text-analyzer",
+    color: "blue",
+    categoryFunctional: "content-generation",
+    categoryDepartment: ["marketing", "operations", "it"],
   },
   {
     code: "ai-summarizer",
@@ -211,6 +268,9 @@ const APPLICATIONS = [
     category: "AI Tools",
     kind: "native",
     route: "/ai-tools/ai-summarizer",
+    color: "blue",
+    categoryFunctional: "content-generation",
+    categoryDepartment: ["marketing", "operations", "it"],
   },
   {
     code: "content-guru",
@@ -220,6 +280,9 @@ const APPLICATIONS = [
     category: "AI Tools",
     kind: "native",
     route: "/ai-tools/content-guru",
+    color: "violet",
+    categoryFunctional: "content-generation",
+    categoryDepartment: ["marketing", "hr", "operations"],
   },
   {
     code: "linkedin-generator",
@@ -229,6 +292,9 @@ const APPLICATIONS = [
     category: "AI Tools",
     kind: "native",
     route: "/ai-tools/linkedin-generator",
+    color: "violet",
+    categoryFunctional: "content-generation",
+    categoryDepartment: ["marketing", "hr", "operations"],
   },
   {
     code: "visual-guru",
@@ -238,6 +304,9 @@ const APPLICATIONS = [
     category: "AI Tools",
     kind: "native",
     route: "/ai-tools/visual-guru",
+    color: "violet",
+    categoryFunctional: "content-generation",
+    categoryDepartment: ["marketing", "hr", "operations"],
   },
   {
     code: "fakturomat",
@@ -247,6 +316,9 @@ const APPLICATIONS = [
     category: "AI Tools",
     kind: "native",
     route: "/ai-tools/fakturomat",
+    color: "amber",
+    categoryFunctional: "misc",
+    categoryDepartment: ["finance", "operations"],
   },
   {
     code: "ai-daily-assistant",
@@ -256,6 +328,9 @@ const APPLICATIONS = [
     category: "AI Tools",
     kind: "native",
     route: "/ai-tools/ai-daily-assistant",
+    color: "indigo",
+    categoryFunctional: "agents",
+    categoryDepartment: ["operations", "it"],
   },
   {
     code: "intrastat-cn-editor",
@@ -265,6 +340,7 @@ const APPLICATIONS = [
     category: "Uprawnienia",
     kind: "native",
     route: "/intrastat/resources",
+    showOnHub: false,
   },
   {
     code: "intrastat-config-editor",
@@ -274,6 +350,7 @@ const APPLICATIONS = [
     category: "Uprawnienia",
     kind: "native",
     route: "/intrastat/settings",
+    showOnHub: false,
   },
 ]
 
@@ -301,20 +378,37 @@ async function main() {
     for (const [index, application] of APPLICATIONS.entries()) {
       const [row] = await tx`
         insert into system_config.applications
-          (code, name, description, icon, category, kind, route, url, target, sort_order)
+          (code, name, description, icon, category, kind, route, url, target, sort_order,
+           show_on_hub, color, category_functional, category_department, activated_at)
         values (
           ${application.code}, ${application.name}, ${application.description},
           ${application.icon}, ${application.category}, ${application.kind},
           ${application.route ?? null}, ${application.url ?? null},
-          ${application.target ?? null}, ${index * 10}
+          ${application.target ?? null}, ${index * 10},
+          ${application.showOnHub ?? true}, ${application.color ?? null},
+          ${application.categoryFunctional ?? null}, ${application.categoryDepartment ?? null},
+          now()
         )
-        on conflict (code) do nothing
-        returning id
+        -- Częściowy upsert: name/description/icon/category/kind/route/url/target/
+        -- sort_order NIE są tu (zostają "on conflict do nothing" w duchu), więc
+        -- zmiany zrobione w UI na tych polach przeżywają deploy jak dotychczas.
+        -- Backfillujemy WYŁĄCZNIE pięć nowych kolumn hub-renderu (Krok 1,
+        -- PROJECT/cortex-frontend-hub-db-driven-projekt.md) — activated_at przez
+        -- coalesce, żeby drugi i kolejne uruchomienia NIE nadpisywały już
+        -- ustawionej daty pierwszej aktywacji świeżym now().
+        on conflict (code) do update set
+          show_on_hub = excluded.show_on_hub,
+          color = excluded.color,
+          category_functional = excluded.category_functional,
+          category_department = excluded.category_department,
+          activated_at = coalesce(system_config.applications.activated_at, excluded.activated_at)
+        returning id, (xmax = 0) as inserted
       `
-      if (row) inserted += 1
+      if (row?.inserted) inserted += 1
     }
     console.log(
-      `[seed] rejestr aplikacji: ${APPLICATIONS.length} kodów, dopisano ${inserted} nowych`,
+      `[seed] rejestr aplikacji: ${APPLICATIONS.length} kodów, dopisano ${inserted} nowych ` +
+        `(pozostałe: backfill show_on_hub/color/category_functional/category_department/activated_at)`,
     )
 
     if (!adminEmail) {

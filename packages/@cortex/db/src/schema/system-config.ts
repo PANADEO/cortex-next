@@ -94,6 +94,26 @@ export const applications = systemConfig.table(
     target: text("target"),
     isActive: boolean("is_active").notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
+    // Odróżnia kafelek od samego uprawnienia (docs/tile-registry.md,
+    // PROJECT/cortex-frontend-hub-db-driven-projekt.md D1). `false` dla
+    // wierszy, które nigdy nie renderują własnej karty na hubie (np. grant
+    // zbiorczy `ai-tools`, flagi funkcji Intrastatu).
+    showOnHub: boolean("show_on_hub").notNull().default(true),
+    // Nazwa tokenu koloru (np. "rose", "sky"), NIE surowe klasy Tailwind —
+    // JIT skanuje wyłącznie literalne stringi w źródłach, więc klasa
+    // złożona w runtime z wartości bazy nigdy by się nie wygenerowała (D2).
+    // Mapowanie token -> klasy żyje w kodzie (resolveTileColor, poza
+    // zakresem tej migracji).
+    color: text("color"),
+    // Oś "Funkcje" na hubie — osobna od `category` (wolny tekst admina).
+    categoryFunctional: text("category_functional"),
+    categoryDepartment: text("category_department").array(),
+    // NULL = wiersz zarejestrowany w kodzie, nigdy nie aktywowany w tej
+    // instancji. Nie-NULL = był aktywowany co najmniej raz — automatyczny
+    // fakt ustawiany wyłącznie przez operację aktywacji, nigdy edytowany
+    // ręcznie przez admina (D6-rewizja 02.08.2026, zastępuje wycofane
+    // `has_implementation`).
+    activatedAt: timestamp("activated_at", { withTimezone: true }),
     createdAt,
     updatedAt,
   },
