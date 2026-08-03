@@ -61,7 +61,7 @@ describe("/api/ai-tools/history route handler", () => {
 
   it("returns 403 when user lacks access to the requested mini-app", async () => {
     vi.stubEnv("NODE_ENV", "production")
-    loadGrantedApplicationCodes.mockResolvedValue(["content-guru"])
+    loadGrantedApplicationCodes.mockResolvedValue(["linkedin-generator"])
     const { GET } = await loadHandler()
 
     const response = await GET(makeRequest("text-highlighter"))
@@ -76,7 +76,7 @@ describe("/api/ai-tools/history route handler", () => {
     const { saveAiToolHistoryRecord } = await import("../../_lib/ai-tools-history")
     saveRecord("text-highlighter", "u@example.com", "visible")
     saveRecord("text-highlighter", "other@example.com", "hidden user")
-    saveRecord("content-guru", "u@example.com", "hidden tool")
+    saveRecord("linkedin-generator", "u@example.com", "hidden tool")
 
     function saveRecord(toolId: AiToolId, userEmail: string, content: string): void {
       saveAiToolHistoryRecord({

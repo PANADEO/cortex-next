@@ -343,21 +343,18 @@ export const TILES: ReadonlyArray<Tile> = [
     archetype: "dashboard",
   },
   {
-    // Round B (PROJECT/cortex-frontend-content-guru-full-port-projekt.md D1):
-    // wpis RĘCZNY, umieszczony PRZED `...AI_TOOL_DEFINITIONS.map(aiToolTile)`
-    // niżej celowo — `id`/`entitlementCode` w AI_TOOL_DEFINITIONS wciąż mają
-    // "content-guru" (usunięcie stamtąd jest ŚWIADOMIE odłożone do atomowego
-    // cutoveru, patrz komentarz w lib/ai-tools/manifests/content-guru.manifest.ts),
-    // więc bez tego wpisu `TILES.find(t => t.id === "content-guru")` w
-    // app/(main)/layout.tsx trafiałby na SYNTETYCZNY wpis z
-    // `aiToolTile()` (href zawsze `/ai-tools/${id}`) — `isAiToolPage` wypadłoby
-    // `true` dla /content-guru/**, chowając sidebar na WSZYSTKICH czterech
-    // trasach kafelka (realny bug znaleziony przy budowie tej rundy, nie
-    // hipotetyczny: Array.prototype.find() zwraca PIERWSZE dopasowanie, więc
-    // ten wpis, będąc wcześniej w tablicy, wygrywa). Nie renderuje duplikatu
-    // karty na hubie — TileGrid czyta z bazy (useHubTiles(), Krok 3 projektu
-    // hub-db-driven), nie z tej stałej; TILES służy dziś wyłącznie do
-    // rozstrzygania sidebar/breadcrumb w app-shellu.
+    // Round B (PROJECT/cortex-frontend-content-guru-full-port-projekt.md D1),
+    // wpis RĘCZNY. Faza 10 (ten sam dokument) usunęła "content-guru" z
+    // AI_TOOL_DEFINITIONS, więc `aiToolTile()` niżej już nie generuje
+    // konkurencyjnego syntetycznego wpisu pod tym samym id — ten wpis jest
+    // dziś JEDYNYM źródłem `TILES.find(t => t.id === "content-guru")` w
+    // app/(main)/layout.tsx (sidebar/breadcrumb rozstrzygnięcie). Zostaje mimo
+    // to jako osobny, ręczny wpis (nie generowany z AI_TOOL_DEFINITIONS) —
+    // kafelek ma własny model danych i multi-ekranowy przepływ, nie pasuje
+    // już do kształtu `aiToolTile()`. Nie renderuje duplikatu karty na hubie —
+    // TileGrid czyta z bazy (useHubTiles(), Krok 3 projektu hub-db-driven),
+    // nie z tej stałej; TILES służy dziś wyłącznie do rozstrzygania
+    // sidebar/breadcrumb w app-shellu.
     id: "content-guru",
     label: "Content Guru",
     description: "Generowanie roboczych treści marketingowych, produktowych i rekrutacyjnych",

@@ -225,7 +225,6 @@ describe("AI Tools /generate — scope, model i limit tokenów pochodzą z rejes
     { toolId: "text-transformer", scope: "text-transformer", app: "Text Transformer", max: 8000 },
     { toolId: "text-analyzer", scope: "text-analyzer", app: "Text Analyzer", max: 8000 },
     { toolId: "ai-summarizer", scope: "summarizer", app: "Summarizer", max: 8000 },
-    { toolId: "content-guru", scope: "content-creator", app: "Content Creator", max: 8000 },
     {
       toolId: "linkedin-generator",
       scope: "linkedin-generator",

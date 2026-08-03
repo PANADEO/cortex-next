@@ -6,7 +6,6 @@ import {
   MessageSquareText,
   Presentation,
   ReceiptText,
-  Sparkles,
   TextCursorInput,
   Wand2,
 } from "lucide-react"
@@ -74,16 +73,6 @@ export const AI_TOOL_DEFINITIONS: readonly AiToolDefinition[] = [
     icon: FileText,
     scope: "summarizer",
     isFeatured: true,
-  },
-  {
-    id: "content-guru",
-    label: "Kreator treści",
-    shortLabel: "Kreator treści",
-    description: "Generuje robocze treści marketingowe, produktowe, rekrutacyjne i PR.",
-    category: "Treści",
-    icon: Sparkles,
-    scope: "content-creator",
-    maxTokens: 8000,
   },
   {
     id: "linkedin-generator",

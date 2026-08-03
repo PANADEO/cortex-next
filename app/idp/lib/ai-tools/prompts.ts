@@ -36,15 +36,6 @@ export interface SummarizePromptInput {
   tone: string
 }
 
-export interface ContentPromptInput {
-  contentType: string
-  topic: string
-  audience: string
-  tone: string
-  language: string
-  details: string
-}
-
 export interface LinkedinPromptInput {
   topic: string
   postType: string
@@ -143,27 +134,6 @@ Zwróć:
 3. Rzeczy niepewne lub wymagające sprawdzenia.
 Nie pomijaj ograniczeń źródła.`,
     userPrompt: input.text,
-  }
-}
-
-export function buildContentPrompt(input: ContentPromptInput): PromptPair {
-  return {
-    systemPrompt: `Jesteś senior copywriterem B2B. Tworzysz treść roboczą, którą można dalej edytować bez przepisywania od zera.
-
-Typ treści: ${input.contentType}
-Odbiorca: ${input.audience}
-Ton: ${input.tone}
-Język: ${input.language}
-
-Wymagania:
-- zacznij od mocnej struktury,
-- unikaj generycznych fraz,
-- dopisz wariant nagłówka lub hooka,
-- zakończ konkretnym CTA, jeśli pasuje do typu treści.`,
-    userPrompt: `Temat: ${input.topic}
-
-Dodatkowe informacje:
-${input.details || "Brak."}`,
   }
 }
 

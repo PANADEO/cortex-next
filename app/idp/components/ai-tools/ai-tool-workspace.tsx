@@ -11,7 +11,6 @@ import {
 import type { AiToolId } from "@/lib/ai-tools/app-codes"
 import {
   buildAnalyzePrompt,
-  buildContentPrompt,
   buildHighlightPrompt,
   buildInvoicePrompt,
   buildLinkedinPrompt,
@@ -324,8 +323,6 @@ function renderToolForm(toolId: AiToolId, context: ToolFormContext) {
       return <AnalyzerForm {...context} />
     case "ai-summarizer":
       return <SummarizerForm {...context} />
-    case "content-guru":
-      return <ContentForm {...context} />
     case "linkedin-generator":
       return <LinkedinForm {...context} />
     case "presentation-generator":
@@ -655,78 +652,6 @@ function SummarizerForm({ isGenerating, onGenerate }: ToolFormContext) {
         value={tone}
         onChange={setTone}
         options={["Neutralny", "Formalny", "Przyjazny", "Popularnonaukowy"]}
-      />
-    </ToolFormCard>
-  )
-}
-
-function ContentForm({ isGenerating, onGenerate }: ToolFormContext) {
-  const [contentType, setContentType] = useState("Artykuł blogowy")
-  const [topic, setTopic] = useState("")
-  const [audience, setAudience] = useState("")
-  const [tone, setTone] = useState("Profesjonalny")
-  const [language, setLanguage] = useState("Polski")
-  const [details, setDetails] = useState("")
-
-  return (
-    <ToolFormCard
-      title="Brief treści"
-      description="Wymusza strukturę i informacje wejściowe, żeby wynik był mniej generyczny."
-      isGenerating={isGenerating}
-      canSubmit={topic.trim().length > 0}
-      onSubmit={() =>
-        onGenerate(buildContentPrompt({ contentType, topic, audience, tone, language, details }), {
-          temperature: 0.8,
-        })
-      }
-    >
-      <SelectField
-        label="Typ treści"
-        value={contentType}
-        onChange={setContentType}
-        options={[
-          "Artykuł blogowy",
-          "Post na media społecznościowe",
-          "Email marketingowy",
-          "Opis produktu",
-          "Ogłoszenie o pracę",
-          "Recenzja",
-          "Instrukcja",
-          "Komunikat prasowy",
-        ]}
-      />
-      <InputField
-        label="Temat"
-        value={topic}
-        onChange={setTopic}
-        placeholder="np. Automatyzacja obsługi dokumentów w firmie logistycznej"
-      />
-      <InputField
-        label="Odbiorca"
-        value={audience}
-        onChange={setAudience}
-        placeholder="np. dyrektor operacyjny, zespół sprzedaży, kandydaci IT"
-      />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <SelectField
-          label="Ton"
-          value={tone}
-          onChange={setTone}
-          options={["Profesjonalny", "Ekspercki", "Przyjazny", "Inspirujący", "Konkretny"]}
-        />
-        <SelectField
-          label="Język"
-          value={language}
-          onChange={setLanguage}
-          options={["Polski", "Angielski", "Niemiecki", "Francuski"]}
-        />
-      </div>
-      <TextAreaField
-        label="Szczegóły i ograniczenia"
-        value={details}
-        onChange={setDetails}
-        placeholder="Dodaj informacje o produkcie, ofercie, przykładach, słowach kluczowych, zakazanych sformułowaniach…"
-        minHeight="min-h-[140px]"
       />
     </ToolFormCard>
   )

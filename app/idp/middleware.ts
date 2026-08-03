@@ -84,6 +84,13 @@ const LEGACY_REDIRECTS: ReadonlyArray<{ from: RegExp; to: string }> = [
   // is a genuine URL change, not just an internal identifier rename. Frees
   // the `visual-guru` id for the upcoming real image-generation tile.
   { from: /^\/ai-tools\/visual-guru(\/.*)?$/, to: "/ai-tools/presentation-generator" },
+  // Cutover (PROJECT/cortex-frontend-content-guru-full-port-projekt.md D1,
+  // Faza 10): Content Guru graduated from the generic AI Tools hub tool to
+  // its own native module (own data model, own screens under /content-guru).
+  // `id`/`entitlementCode` stayed "content-guru" throughout (no RBAC grant
+  // migration needed), only the route changed — same class of redirect as
+  // the visual-guru rename above, not a code/grant change.
+  { from: /^\/ai-tools\/content-guru(\/.*)?$/, to: "/content-guru" },
 ]
 
 const IDP_BASIC_API_PATTERNS: RegExp[] = [

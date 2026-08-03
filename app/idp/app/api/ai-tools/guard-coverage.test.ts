@@ -149,7 +149,7 @@ describe("AI Tools — bramka dostępu na ścieżce żądania", () => {
   // Sanity check samego testu: gdyby rejestr się wyczyścił, pętle niżej
   // przestałyby cokolwiek sprawdzać, a plik nadal byłby zielony.
   it("rejestr narzędzi nie jest pusty", () => {
-    expect(AI_TOOL_APP_CODES.length).toBeGreaterThanOrEqual(9)
+    expect(AI_TOOL_APP_CODES.length).toBeGreaterThanOrEqual(8)
   })
 
   it("POST /generate bez tożsamości zwraca 401 i nie woła cortex-proxy", async () => {

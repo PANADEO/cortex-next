@@ -25,7 +25,6 @@ const SCOPE_LABELS: Record<string, string> = {
   "text-analyzer": "Text Analyzer",
   "text-transformer": "Text Transformer",
   "text-highlighter": "Text Highlighter",
-  "content-creator": "Content Creator",
   summarizer: "Summarizer",
   "invoice-analyzer": "Invoice Analyzer",
   "presentation-generator": "Presentation Generator",

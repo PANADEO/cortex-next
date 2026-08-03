@@ -5,7 +5,6 @@ export const AI_TOOL_APP_CODES = [
   "text-transformer",
   "text-analyzer",
   "ai-summarizer",
-  "content-guru",
   "linkedin-generator",
   "presentation-generator",
   "fakturomat",

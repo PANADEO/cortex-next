@@ -3,12 +3,15 @@
 //   (b) wpisany input trafia do /api/ai-tools/generate z poprawnym toolId i promptem,
 //   (c) wynik renderuje się na stronie.
 //
-// JEDEN plik zamiast sześciu `<narzedzie>.spec.ts`: wszystkie narzędzia
+// JEDEN plik zamiast pięciu `<narzedzie>.spec.ts`: wszystkie narzędzia
 // renderuje ten sam komponent (AiToolWorkspace) i różnią się WYŁĄCZNIE
-// konfiguracją pola wejściowego. Tabela poniżej JEST tą różnicą — sześć plików
+// konfiguracją pola wejściowego. Tabela poniżej JEST tą różnicą — pięć plików
 // po ~10 linii byłoby tą samą tabelą rozsypaną po katalogu. Playwright i tak
 // raportuje każde narzędzie jako osobny test.
 // Fakturomat (model wizyjny, upload pliku) to realnie inny UI → osobny plik.
+// Content Guru odszedł z AI Tools do własnego modułu pod /content-guru
+// (PROJECT/cortex-frontend-content-guru-full-port-projekt.md, Faza 10) — nie
+// jest już `toolId`, testowany osobno w e2e/content-guru/.
 //
 // Wartości `label` są tu WPISANE NA SZTYWNO, celowo nie importowane z
 // app/idp/lib/ai-tools/registry.ts. Test ma trzymać kontrakt, a nie podążać za
@@ -76,12 +79,6 @@ const TEXT_TOOLS: readonly TextToolCase[] = [
     label: "Generator LinkedIn",
     inputLabel: "Temat",
     inputValue: "Automatyzacja obiegu faktur w firmie logistycznej",
-  },
-  {
-    toolId: "content-guru",
-    label: "Kreator treści",
-    inputLabel: "Temat",
-    inputValue: "Jak skrócić czas obsługi dokumentów celnych",
   },
 ]
 

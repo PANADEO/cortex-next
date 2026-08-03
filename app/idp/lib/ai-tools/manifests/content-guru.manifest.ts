@@ -6,22 +6,15 @@ import { defineTile } from "@cortex/tile-sdk"
 // zmian (PROJECT/cortex-frontend-content-guru-full-port-projekt.md D1) —
 // zachowuje istniejące granty RBAC, nie ma migracji uprawnień.
 //
-// `route` wskazuje już docelową Fazę 1 ("/content-guru", własny folder poza
-// AI Tools hub — kafelek dostaje własny model danych, patrz
-// packages/@cortex/db/src/schema/content-guru.ts), ale ŻADNA strona pod tym
-// adresem jeszcze nie istnieje w tej zmianie (Faza 0 = wyłącznie
-// schemat+migracja+config, zero UI). Świadomie NIE usunięto jeszcze
-// "content-guru" z AI_TOOL_DEFINITIONS/AiToolId (app/idp/lib/ai-tools/{registry,app-codes}.ts)
-// i świadomie NIE dodano LEGACY_REDIRECTS wpisu /ai-tools/content-guru ->
-// /content-guru w middleware.ts — kafelek na hubie linkuje dziś do
-// `/ai-tools/${id}` z registry.ts (app/idp/lib/tiles.ts:aiToolTile()),
-// NIEZALEŻNIE od tego pola `route` (które dziś zasila wyłącznie ten wiersz
-// applications, martwe dla renderu huba dopóki hub-DB-driven-render Krok 3
-// nie wystartuje). Dodanie 308 z /ai-tools/content-guru DZIŚ przekierowałoby
-// żywy, działający kafelek (stary, cienki buildContentPrompt()) na pustą
-// stronę (Faza 1 jeszcze nieistniejąca) — cutover obu (redirect + usunięcie
-// z AI_TOOL_DEFINITIONS) ma się zdarzyć ATOMOWO, gdy /content-guru faktycznie
-// zacznie renderować coś w miejsce starego narzędzia, nie wcześniej.
+// Faza 10 (cutover, ten sam dokument): atomowa zamiana dokonana — usunięto
+// "content-guru" z AI_TOOL_DEFINITIONS/AI_TOOL_APP_CODES
+// (app/idp/lib/ai-tools/{registry,app-codes}.ts) i dodano LEGACY_REDIRECTS
+// wpis /ai-tools/content-guru -> /content-guru (308) w middleware.ts. Kafelek
+// na hubie i w sidebarze linkuje dziś do `route` z tego manifestu przez
+// ręczny wpis w app/idp/lib/tiles.ts (patrz komentarz tam) — Rounds A-E
+// zbudowały realny ekran pod /content-guru, więc stary, cienki
+// buildContentPrompt()-owy tool jest w pełni wycofany, nie tylko przekierowany
+// na pustkę.
 export const contentGuruTile = defineTile({
   id: "content-guru",
   kind: "native",
