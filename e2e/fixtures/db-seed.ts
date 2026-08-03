@@ -26,7 +26,11 @@
 import {
   applications,
   applicationScopes,
+  calculations as geoScoreCalculations,
+  config as geoScoreConfig,
   frameTemplates,
+  generations,
+  generationVariants,
   jobs,
   permissionsMatrix,
   roleApplicationScopes,
@@ -36,7 +40,20 @@ import {
   users,
   getDb,
   type ApplicationRow,
+  type Grade,
 } from "@cortex/db"
+// Jedyny import z @cortex/service w tym pliku — CELOWO wyłącznie DANE
+// (literał `GEO_SCORE_CONFIG_DEFAULTS`, zero funkcji/logiki), żeby nie
+// zakładać CZWARTEJ ręcznie utrzymywanej kopii tych samych ~90 linii wag/
+// benchmarków/list słów (constants.py, seed-geo-score-calculator.mjs,
+// service.ts już mają po jednej — komentarz w geo-score-calculator.ts
+// wprost nazywa trzecią kopię świadomą; czwarta nie zwiększałaby ryzyka
+// dryfu inaczej niż trzecia, ale po co ją w ogóle dopisywać). Import
+// rozwiązuje się identycznie jak "@cortex/db" (alias tsconfig "paths" na
+// packages/@cortex/service/src/index.ts, ten sam mechanizm), nie przez
+// bare node_modules resolution — inaczej niż przestroga o `drizzle-orm`
+// w e2e/shell/hub-activation.spec.ts (tamta dotyczy pakietu BEZ aliasu).
+import { GEO_SCORE_CONFIG_DEFAULTS } from "@cortex/service"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 
@@ -57,6 +74,19 @@ const DOCUMENT_PARSER_APP_CODE = "document-parser"
 // "Rekordy per-user" pkt 5, wzorem COWORK_STRANGER_EMAIL) — dowodzi izolacji
 // historii Parser Dokumentów bez logowania się jako drugi user.
 const DOCUMENT_PARSER_FOREIGN_EMAIL = "document-parser-foreign@e2e.local"
+const VISUAL_GURU_APP_CODE = "visual-guru"
+// Jak wyżej, dla archiwum Visual Guru (§8 design docu, Tor A).
+const VISUAL_GURU_FOREIGN_EMAIL = "visual-guru-foreign@e2e.local"
+const GEO_SCORE_CALCULATOR_APP_CODE = "geo-score-calculator"
+// Jak wyżej, dla historii GEO Score Calculator (design doc §7 pkt 4 —
+// historia jest per-user; schema/geo-score-calculator.ts nazywa to wprost
+// pierwszym przypadkiem "userEmail jako FILTR WIDOCZNOŚCI", nie tylko
+// śladem audytowym).
+const GEO_SCORE_CALCULATOR_FOREIGN_EMAIL = "geo-score-calculator-foreign@e2e.local"
+// 1x1 przezroczysty PNG — jedyne, co testom Toru A potrzeba jako "obraz
+// wynikowy" w bytea; treść bajtów jest bez znaczenia dla żadnej asercji.
+const FIXTURE_PNG_BASE64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
 
 export type ScenarioName =
   | "empty"
@@ -90,6 +120,23 @@ export type ScenarioName =
   // plus jeden wiersz podrzucony pod DOCUMENT_PARSER_FOREIGN_EMAIL — dowód
   // izolacji per-user (Tor A, sekcja 6.3 design docu).
   | "document-parser-with-history"
+  // Visual Guru: grant do kafelka + dwie generacje właściciela testu (z i
+  // bez obrazu referencyjnego, różna liczba wariantów), plus jeden wiersz
+  // podrzucony pod VISUAL_GURU_FOREIGN_EMAIL — dowód izolacji per-user
+  // (Tor A, design doc §8).
+  | "visual-guru-with-history"
+  // GEO Score Calculator, Faza 4 (E2E): grant do kafelka + WSPÓLNY config
+  // (singleton, domyślne wartości — GEO_SCORE_CONFIG_DEFAULTS) + pusta
+  // historia. Do kalkulatora (analiza przez PRAWDZIWY mikroserwis Python,
+  // design doc §6 — jedyny moduł dzisiejszej rundy testowany bez mocka
+  // sieci), pustego stanu Historii i Ustawień z defaultami.
+  | "geo-score-calculator-user"
+  // Jak wyżej + 6 zaseedowanych `calculations` właściciela testu (oceny
+  // A/B/B/C/D/F, różne daty — sort/filter/search w CortexDataGrid), plus
+  // jeden wiersz podrzucony pod GEO_SCORE_CALCULATOR_FOREIGN_EMAIL — dowód
+  // izolacji per-user (code-service SKILL.md "Rekordy per-user" pkt 5,
+  // wzorem document-parser-with-history/visual-guru-with-history).
+  | "geo-score-calculator-with-history"
 
 export interface ScenarioResult {
   /** Wstrzyknij jako nagłówek `x-auth-request-email` żeby "być" tym userem —
@@ -118,6 +165,15 @@ export async function resetSystemConfig(): Promise<void> {
   await db.delete(frameTemplates)
   // Schemat modułu Parser Dokumentów — ten sam powód co Ilustromat wyżej.
   await db.delete(jobs)
+  // Schemat modułu Visual Guru — dzieci (generation_variants) przed rodzicem
+  // (generations), kolejność czytelna wprost, bez polegania na FK cascade.
+  await db.delete(generationVariants)
+  await db.delete(generations)
+  // Schemat modułu GEO Score Calculator — dwie niezależne tabele (brak FK
+  // między nimi, patrz schema/geo-score-calculator.ts), kasowane osobno tak
+  // jak reszta tego bloku.
+  await db.delete(geoScoreCalculations)
+  await db.delete(geoScoreConfig)
 }
 
 /**
@@ -288,6 +344,15 @@ export async function seedScenario(name: ScenarioName): Promise<ScenarioResult> 
 
     case "document-parser-with-history":
       return seedDocumentParserWithHistory()
+
+    case "visual-guru-with-history":
+      return seedVisualGuruWithHistory()
+
+    case "geo-score-calculator-user":
+      return seedGeoScoreCalculatorUser()
+
+    case "geo-score-calculator-with-history":
+      return seedGeoScoreCalculatorWithHistory()
   }
 }
 
@@ -542,6 +607,301 @@ async function seedDocumentParserWithHistory(): Promise<ScenarioResult> {
       imageCount: 1,
       completedAt: new Date(),
     },
+  ])
+
+  return { email, applications: [app!] }
+}
+
+/**
+ * Kafelek Visual Guru + archiwum dla właściciela testu: jedna generacja BEZ
+ * obrazu referencyjnego (4 warianty), jedna Z obrazem referencyjnym (2
+ * warianty, `referenceImageFileName` ustawione — D5: tylko ślad, nigdy
+ * bajty), plus jeden wiersz podrzucony pod VISUAL_GURU_FOREIGN_EMAIL — dowód
+ * izolacji per-user bez logowania się jako drugi user (code-service
+ * SKILL.md "Rekordy per-user" pkt 5).
+ */
+async function seedVisualGuruWithHistory(): Promise<ScenarioResult> {
+  const db = getDb()
+  const email = "visual-guru-user@e2e.local"
+  const image = Buffer.from(FIXTURE_PNG_BASE64, "base64")
+
+  const [user] = await db.insert(users).values({ email, fullName: "Visual Guru E2E" }).returning()
+  const [role] = await db.insert(roles).values({ code: "visual-guru-e2e", name: "Rola E2E" }).returning()
+  const [app] = await db
+    .insert(applications)
+    .values({ code: VISUAL_GURU_APP_CODE, name: "Visual Guru", kind: "native", route: "/visual-guru" })
+    .returning()
+
+  await db.insert(userRoles).values({ userId: user!.id, roleId: role!.id })
+  await db.insert(permissionsMatrix).values({ roleId: role!.id, applicationId: app!.id })
+
+  const [noReference] = await db
+    .insert(generations)
+    .values({
+      id: "11111111-1111-1111-1111-111111111111",
+      userEmail: email,
+      prompt: "Minimalistyczna ilustracja lisa na tle gór",
+      additionalContext: "Płaski styl wektorowy, ciepła paleta",
+      hadReferenceImage: false,
+      referenceImageFileName: null,
+      model: "google/gemini-3.1-flash-lite-image",
+      variantCount: 4,
+    })
+    .returning()
+  await db.insert(generationVariants).values(
+    Array.from({ length: 4 }, (_, variantIndex) => ({
+      generationId: noReference!.id,
+      variantIndex,
+      image,
+      contentType: "image/png",
+    })),
+  )
+
+  const [withReference] = await db
+    .insert(generations)
+    .values({
+      id: "22222222-2222-2222-2222-222222222222",
+      userEmail: email,
+      prompt: "Baner produktowy w stylu logo firmy",
+      additionalContext: null,
+      hadReferenceImage: true,
+      referenceImageFileName: "logo-firmy.png",
+      model: "google/gemini-3.1-flash-lite-image",
+      variantCount: 2,
+    })
+    .returning()
+  await db.insert(generationVariants).values(
+    Array.from({ length: 2 }, (_, variantIndex) => ({
+      generationId: withReference!.id,
+      variantIndex,
+      image,
+      contentType: "image/png",
+    })),
+  )
+
+  // Podrzucony rekord CUDZY — test dowodzi, że nigdy nie wychodzi na
+  // liście/w szczegółach właściciela testu.
+  const [foreign] = await db
+    .insert(generations)
+    .values({
+      id: "33333333-3333-3333-3333-333333333333",
+      userEmail: VISUAL_GURU_FOREIGN_EMAIL,
+      prompt: "Cudzy prompt niewidoczny dla właściciela testu",
+      hadReferenceImage: false,
+      referenceImageFileName: null,
+      model: "google/gemini-3.1-flash-lite-image",
+      variantCount: 1,
+    })
+    .returning()
+  await db.insert(generationVariants).values({
+    generationId: foreign!.id,
+    variantIndex: 0,
+    image,
+    contentType: "image/png",
+  })
+
+  return { email, applications: [app!] }
+}
+
+/** Insertuje jedyny, WSPÓLNY (singleton, `id: true`) wiersz konfiguracji —
+ *  identyczne wartości co `GEO_SCORE_CONFIG_DEFAULTS`/seed-geo-score-
+ *  calculator.mjs, żeby Kalkulator (POST /analyze) i Ustawienia mają
+ *  spójny, znany-z-góry punkt startowy w każdym scenariuszu tego modułu. */
+async function insertDefaultGeoScoreConfig(): Promise<void> {
+  await getDb()
+    .insert(geoScoreConfig)
+    .values({ id: true, updatedBy: "e2e-seed@cortex.local", ...GEO_SCORE_CONFIG_DEFAULTS })
+}
+
+interface GeoScoreHistoryFixtureSpec {
+  id: string
+  userEmail: string
+  /** Słowo unikalne w całym scenariuszu — cel wyszukiwania w
+   *  `history-scenario.spec.ts` (searchable CortexDataGrid szuka w tekście). */
+  companyLabel: string
+  totalScore: number
+  grade: Grade
+  createdAt: Date
+}
+
+/** Buduje wiersz `calculations` z wewnętrznie spójnym `result` (kontrakt
+ *  POST /analyze) — jeden zaokrąglony procent w tekście jako jedyny
+ *  "znaleziony" przykład statystyki, z `position` policzonym przez
+ *  `indexOf()` zamiast twardo wpisaną liczbą (ten sam powód co highlight.ts:
+ *  offset musi realnie wskazywać na `statValue` w `textContent`, inaczej
+ *  ekran szczegółów (§4.3, podświetlanie) dostałby niespójne dane). */
+function buildGeoScoreHistoryRow(spec: GeoScoreHistoryFixtureSpec): typeof geoScoreCalculations.$inferInsert {
+  const statValue = `${Math.round(spec.totalScore)}%`
+  const text = `${spec.companyLabel} zwiększyła przychody o ${statValue} w tym kwartale dzięki wdrożeniu nowego systemu raportowania.`
+  const statPosition = text.indexOf(statValue)
+  const wordCount = text.trim().split(/\s+/).length
+
+  const result = {
+    totalScore: spec.totalScore,
+    grade: spec.grade,
+    wordCount,
+    statistics: {
+      score: spec.totalScore,
+      count: 1,
+      per100Words: Number(((1 / wordCount) * 100).toFixed(2)),
+      examples: [{ value: statValue, position: statPosition }],
+    },
+    actionVerbs: {
+      score: spec.totalScore,
+      actionVerbCount: 1,
+      totalVerbCount: 2,
+      ratio: 0.5,
+      foundVerbs: ["zwiększyła"],
+      method: "spacy" as const,
+    },
+    structure: { score: spec.totalScore, bulletCount: 0, per500Words: 0, hasHeaders: false, paragraphCount: 1 },
+    objectivity: { score: spec.totalScore, subjectiveCount: 0, subjectiveRatio: 0, foundWords: [] },
+    recommendations: ["Dodaj bullet points lub listę numerowaną z kluczowymi informacjami"],
+  }
+
+  return {
+    id: spec.id,
+    userEmail: spec.userEmail,
+    textContent: text,
+    textPreview: text,
+    wordCount,
+    totalScore: spec.totalScore,
+    grade: spec.grade,
+    statsScore: spec.totalScore,
+    verbsScore: spec.totalScore,
+    structureScore: spec.totalScore,
+    objectivityScore: spec.totalScore,
+    result,
+    configSnapshot: { id: true, updatedBy: "e2e-seed@cortex.local", ...GEO_SCORE_CONFIG_DEFAULTS },
+    createdAt: spec.createdAt,
+  }
+}
+
+/** Kafelek GEO Score Calculator, pusta historia + WSPÓLNY config z
+ *  defaultami — Kalkulator (analiza przez PRAWDZIWY mikroserwis Python,
+ *  design doc §6), pusty stan Historii, Ustawienia z defaultami. */
+async function seedGeoScoreCalculatorUser(): Promise<ScenarioResult> {
+  const db = getDb()
+  const email = "geo-score-calculator-user@e2e.local"
+
+  const [user] = await db.insert(users).values({ email, fullName: "GEO Score Calculator E2E" }).returning()
+  const [role] = await db
+    .insert(roles)
+    .values({ code: "geo-score-calculator-e2e", name: "Rola E2E" })
+    .returning()
+  const [app] = await db
+    .insert(applications)
+    .values({
+      code: GEO_SCORE_CALCULATOR_APP_CODE,
+      name: "Kalkulator GEO Score",
+      kind: "native",
+      route: "/geo-score-calculator",
+    })
+    .returning()
+
+  await db.insert(userRoles).values({ userId: user!.id, roleId: role!.id })
+  await db.insert(permissionsMatrix).values({ roleId: role!.id, applicationId: app!.id })
+  await insertDefaultGeoScoreConfig()
+
+  return { email, applications: [app!] }
+}
+
+/** Jak `seedGeoScoreCalculatorUser()`, plus 6 zaseedowanych analiz
+ *  właściciela testu (oceny A/B/B/C/D/F, malejące daty dla sensownego
+ *  sortu po kolumnie "Data") i jeden wiersz podrzucony pod
+ *  GEO_SCORE_CALCULATOR_FOREIGN_EMAIL — dowód izolacji per-user bez
+ *  logowania się jako drugi user (code-service SKILL.md "Rekordy
+ *  per-user" pkt 5). */
+async function seedGeoScoreCalculatorWithHistory(): Promise<ScenarioResult> {
+  const db = getDb()
+  const email = "geo-score-calculator-history-user@e2e.local"
+  const dayMs = 24 * 60 * 60 * 1000
+  const now = Date.now()
+
+  const [user] = await db.insert(users).values({ email, fullName: "GEO Score Calculator E2E" }).returning()
+  const [role] = await db
+    .insert(roles)
+    .values({ code: "geo-score-calculator-history-e2e", name: "Rola E2E" })
+    .returning()
+  const [app] = await db
+    .insert(applications)
+    .values({
+      code: GEO_SCORE_CALCULATOR_APP_CODE,
+      name: "Kalkulator GEO Score",
+      kind: "native",
+      route: "/geo-score-calculator",
+    })
+    .returning()
+
+  await db.insert(userRoles).values({ userId: user!.id, roleId: role!.id })
+  await db.insert(permissionsMatrix).values({ roleId: role!.id, applicationId: app!.id })
+  await insertDefaultGeoScoreConfig()
+
+  // `createdAt` NIE koreluje monotonicznie z `totalScore` (przetasowane
+  // przesunięcia dni) — CELOWO, żeby test sortowania po kolumnie "Wynik"
+  // (history-scenario.spec.ts) odróżniał efekt sortu od domyślnej kolejności
+  // (`desc(createdAt)`, listMyCalculations()). Ta sama korelacja
+  // przypadkiem pokrywałaby się z sortem po wyniku, gdyby daty rosły/malały
+  // razem z oceną, i test niczego by nie dowodził.
+  await db.insert(geoScoreCalculations).values([
+    buildGeoScoreHistoryRow({
+      id: "a0000000-0000-0000-0000-000000000001",
+      userEmail: email,
+      companyLabel: "Vistulon",
+      totalScore: 94.5,
+      grade: "A",
+      createdAt: new Date(now - 2 * dayMs),
+    }),
+    buildGeoScoreHistoryRow({
+      id: "a0000000-0000-0000-0000-000000000002",
+      userEmail: email,
+      companyLabel: "Nordbrama",
+      totalScore: 82.0,
+      grade: "B",
+      createdAt: new Date(now - 5 * dayMs),
+    }),
+    buildGeoScoreHistoryRow({
+      id: "a0000000-0000-0000-0000-000000000003",
+      userEmail: email,
+      companyLabel: "Baltexon",
+      totalScore: 76.5,
+      grade: "B",
+      createdAt: new Date(now),
+    }),
+    buildGeoScoreHistoryRow({
+      id: "a0000000-0000-0000-0000-000000000004",
+      userEmail: email,
+      companyLabel: "Ceratech",
+      totalScore: 63.0,
+      grade: "C",
+      createdAt: new Date(now - 4 * dayMs),
+    }),
+    buildGeoScoreHistoryRow({
+      id: "a0000000-0000-0000-0000-000000000005",
+      userEmail: email,
+      companyLabel: "Wiklinex",
+      totalScore: 47.5,
+      grade: "D",
+      createdAt: new Date(now - 1 * dayMs),
+    }),
+    buildGeoScoreHistoryRow({
+      id: "a0000000-0000-0000-0000-000000000006",
+      userEmail: email,
+      companyLabel: "Rekineza",
+      totalScore: 21.0,
+      grade: "F",
+      createdAt: new Date(now - 3 * dayMs),
+    }),
+    // Podrzucony rekord CUDZY — test dowodzi, że nigdy nie wychodzi na
+    // liście/w szczegółach właściciela testu.
+    buildGeoScoreHistoryRow({
+      id: "a0000000-0000-0000-0000-000000000007",
+      userEmail: GEO_SCORE_CALCULATOR_FOREIGN_EMAIL,
+      companyLabel: "Cudzyfirm",
+      totalScore: 55.0,
+      grade: "D",
+      createdAt: new Date(now),
+    }),
   ])
 
   return { email, applications: [app!] }

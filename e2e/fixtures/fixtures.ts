@@ -17,6 +17,13 @@ import { UsersPage } from "../poms/system-config/users-page"
 import { DocumentParserUploadPage } from "../poms/document-parser/upload-page"
 import { DocumentParserHistoryPage } from "../poms/document-parser/history-page"
 import { DocumentParserJobDetailPage } from "../poms/document-parser/job-detail-page"
+import { VisualGuruGeneratorPage } from "../poms/visual-guru/generator-page"
+import { VisualGuruHistoryPage } from "../poms/visual-guru/history-page"
+import { VisualGuruHistoryDetailPage } from "../poms/visual-guru/history-detail-page"
+import { GeoScoreCalculatorPage } from "../poms/geo-score-calculator/calculator-page"
+import { GeoScoreCalculatorHistoryPage } from "../poms/geo-score-calculator/history-page"
+import { GeoScoreCalculatorHistoryDetailPage } from "../poms/geo-score-calculator/history-detail-page"
+import { GeoScoreCalculatorSettingsPage } from "../poms/geo-score-calculator/settings-page"
 
 /**
  * Ustawia `x-auth-request-email` na WSZYSTKICH kolejnych żądaniach tej strony
@@ -41,6 +48,13 @@ interface TestFixtures {
   documentParserUploadPage: DocumentParserUploadPage
   documentParserHistoryPage: DocumentParserHistoryPage
   documentParserJobDetailPage: DocumentParserJobDetailPage
+  visualGuruGeneratorPage: VisualGuruGeneratorPage
+  visualGuruHistoryPage: VisualGuruHistoryPage
+  visualGuruHistoryDetailPage: VisualGuruHistoryDetailPage
+  geoScoreCalculatorPage: GeoScoreCalculatorPage
+  geoScoreCalculatorHistoryPage: GeoScoreCalculatorHistoryPage
+  geoScoreCalculatorHistoryDetailPage: GeoScoreCalculatorHistoryDetailPage
+  geoScoreCalculatorSettingsPage: GeoScoreCalculatorSettingsPage
 }
 
 interface WorkerFixtures {
@@ -93,6 +107,34 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 
   documentParserJobDetailPage: async ({ page }, use) => {
     await use(new DocumentParserJobDetailPage(page))
+  },
+
+  visualGuruGeneratorPage: async ({ page }, use) => {
+    await use(new VisualGuruGeneratorPage(page))
+  },
+
+  visualGuruHistoryPage: async ({ page }, use) => {
+    await use(new VisualGuruHistoryPage(page))
+  },
+
+  visualGuruHistoryDetailPage: async ({ page }, use) => {
+    await use(new VisualGuruHistoryDetailPage(page))
+  },
+
+  geoScoreCalculatorPage: async ({ page }, use) => {
+    await use(new GeoScoreCalculatorPage(page))
+  },
+
+  geoScoreCalculatorHistoryPage: async ({ page }, use) => {
+    await use(new GeoScoreCalculatorHistoryPage(page))
+  },
+
+  geoScoreCalculatorHistoryDetailPage: async ({ page }, use) => {
+    await use(new GeoScoreCalculatorHistoryDetailPage(page))
+  },
+
+  geoScoreCalculatorSettingsPage: async ({ page }, use) => {
+    await use(new GeoScoreCalculatorSettingsPage(page))
   },
 })
 
