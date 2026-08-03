@@ -83,3 +83,14 @@ export type {
   UserPatch,
   UserWithRoles,
 } from "./system-config"
+export {
+  VISUAL_GURU_APP_CODE,
+  createGeneration,
+  getMyGeneration,
+  listMyGenerations,
+} from "./visual-guru"
+export type {
+  CreateGenerationInput,
+  GenerationVariantInput,
+  GenerationWithVariants,
+} from "./visual-guru"

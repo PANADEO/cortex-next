@@ -52,6 +52,18 @@ const MODULES = [
     migrationsSchema: "document_parser_migrations",
     migrationsTable: "__drizzle_migrations",
   },
+  {
+    name: "content-guru",
+    folder: "drizzle/content-guru",
+    migrationsSchema: "content_guru_migrations",
+    migrationsTable: "__drizzle_migrations",
+  },
+  {
+    name: "visual-guru",
+    folder: "drizzle/visual-guru",
+    migrationsSchema: "visual_guru_migrations",
+    migrationsTable: "__drizzle_migrations",
+  },
 ]
 
 const databaseUrl = process.env.DATABASE_URL

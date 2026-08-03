@@ -1,6 +1,6 @@
 import type { CoworkTileArchetype } from "@cortex/types"
 import type { LucideIcon } from "lucide-react"
-import { BarChart3, CalendarClock, FileSpreadsheet, FileText, Gauge, Image, Receipt, ScanText, Settings, ShieldCheck, Users, Video, Workflow } from "lucide-react"
+import { BarChart3, CalendarClock, FileSpreadsheet, FileText, Gauge, Image, Receipt, ScanText, Settings, ShieldCheck, Users, Video, Wand2, Workflow } from "lucide-react"
 import { AI_TOOLS_TILE_ID, canAccessAiTool, hasAnyAiToolAccess, isAiToolId } from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
@@ -307,6 +307,22 @@ export const TILES: ReadonlyArray<Tile> = [
     icon: Gauge,
     iconBg: "bg-fuchsia-200 dark:bg-fuchsia-900/40",
     iconFg: "text-fuchsia-700 dark:text-fuchsia-300",
+    categoryFunctional: "content-generation",
+    categoryDepartment: ["marketing"],
+    archetype: "dashboard",
+  },
+  {
+    // Osobny kafelek generacji obrazów (D1, design doc), NIE tryb Ilustromatu
+    // — surowy wynik AI, zero brandingu/kompozycji. Faza 0 (fundament) —
+    // patrz manifest.ts w tym samym folderze: brak jeszcze page.tsx, kafelek
+    // startuje jako nieaktywny kandydat w rejestrze (wzorem geo-score-calculator).
+    id: "visual-guru",
+    label: "Visual Guru",
+    description: "Generowanie obrazów AI ze swobodnego promptu, opcjonalnie sterowane obrazem referencyjnym",
+    href: "/visual-guru",
+    icon: Wand2,
+    iconBg: "bg-pink-200 dark:bg-pink-900/40",
+    iconFg: "text-pink-700 dark:text-pink-300",
     categoryFunctional: "content-generation",
     categoryDepartment: ["marketing"],
     archetype: "dashboard",

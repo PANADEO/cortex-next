@@ -198,9 +198,24 @@ function readTokensUsed(data: CortexResponse): number | null {
 // callCortexProxy() zostaje NIETKNIĘTY — obsługuje działający produkcyjnie
 // ruch AI Tools, a jego zachowania są celowe.
 
+/** Ten sam kształt części contentu, którego callCortexProxy()'s buildCortexPayload()
+ *  już używa dla wejścia wizyjnego (analiza obrazu przez model tekstowy) — nie nowy
+ *  wynalazek, zastosowanie istniejącego, sprawdzonego wzorca do siostrzanej funkcji
+ *  obrazkowej. cortex-proxy już rozumie ten kształt jako string ALBO tablicę części
+ *  (pkg/proxy/anonymize.go, isTextPart() — zweryfikowane w źródle Go, nie założone,
+ *  patrz PROJECT/cortex-frontend-visual-guru-tile-projekt.md sekcja 1.5/3). */
+export type CortexProxyImageContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string; detail?: "auto" | "low" | "high" } }
+
 export interface CortexProxyImageMessage {
   role: "system" | "user" | "assistant"
-  content: string
+  /** `string` zostaje pierwszym, wciąż legalnym wariantem — Ilustromatu (jedynego
+   *  dzisiejszego wołającego) ani ta zmiana typu, ani zero linii runtime poniżej
+   *  nie dotyka: callCortexProxyImage() przekazuje `input.messages` verbatim,
+   *  nigdy nie inspekcjonuje kształtu `.content`. Tablica części to nowy,
+   *  opt-in kształt dla wołających z obrazem referencyjnym (Visual Guru). */
+  content: string | CortexProxyImageContentPart[]
 }
 
 export interface CortexProxyImageRequest {

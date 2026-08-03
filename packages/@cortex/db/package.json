@@ -21,7 +21,11 @@
     "db:migrate:geo-score-calculator": "drizzle-kit migrate --config drizzle.geo-score-calculator.config.ts",
     "db:seed:geo-score-calculator": "node scripts/seed-geo-score-calculator.mjs",
     "db:generate:document-parser": "drizzle-kit generate --config drizzle.document-parser.config.ts",
-    "db:migrate:document-parser": "drizzle-kit migrate --config drizzle.document-parser.config.ts"
+    "db:migrate:document-parser": "drizzle-kit migrate --config drizzle.document-parser.config.ts",
+    "db:generate:content-guru": "drizzle-kit generate --config drizzle.content-guru.config.ts",
+    "db:migrate:content-guru": "drizzle-kit migrate --config drizzle.content-guru.config.ts",
+    "db:generate:visual-guru": "drizzle-kit generate --config drizzle.visual-guru.config.ts",
+    "db:migrate:visual-guru": "drizzle-kit migrate --config drizzle.visual-guru.config.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.0",

@@ -305,7 +305,22 @@ const APPLICATIONS = [
     icon: "Sparkles",
     category: "AI Tools",
     kind: "native",
-    route: "/ai-tools/content-guru",
+    // Faza 0 (PROJECT/cortex-frontend-content-guru-full-port-projekt.md D1):
+    // route zmieniony z "/ai-tools/content-guru" na docelowy "/content-guru",
+    // spójnie z content-guru.manifest.ts. Na już aktywowanym wierszu (jak na
+    // każdej realnej instancji) TA linia i tak nie decyduje o finalnej
+    // wartości — `route` tego kodu jest strukturalnym polem manifestu i
+    // seed-tile-manifests.mjs (uruchamiany PRZED tym skryptem w łańcuchu
+    // migrate) nadpisuje je bezwarunkowo, na każdym deployu, patrz komentarz
+    // przy `on conflict` tamtego skryptu — to WYSTARCZYŁO, żeby zaktualizować
+    // już aktywowany wiersz (zweryfikowane empirycznie 03.08.2026, żaden
+    // ręczny UPDATE nie był potrzebny, w przeciwieństwie do rename
+    // presentation-generator, gdzie zmieniał się `code`, nie tylko `route`).
+    // Ta wartość tutaj ma znaczenie wyłącznie na ŚWIEŻEJ bazie
+    // (activated_at IS NULL) — tam wygrywa, bo częściowy upsert niżej
+    // backfilluje route razem z resztą kolumn. Aktualizowana dla spójności
+    // obu źródeł.
+    route: "/content-guru",
     color: "violet",
     categoryFunctional: "content-generation",
     categoryDepartment: ["marketing", "hr", "operations"],

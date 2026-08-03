@@ -30,6 +30,7 @@ import { spClientTile } from "@/app/(main)/store-pit/clients/manifest"
 import { spConsoleTile } from "@/app/(main)/store-pit/dashboard/manifest"
 import { systemConfigTile } from "@/app/(main)/system-config/manifest"
 import { tokenUsageTile } from "@/app/(main)/token-usage/manifest"
+import { visualGuruTile } from "@/app/(main)/visual-guru/manifest"
 import { cortexCoworkTile } from "@/app/(cowork)/cortex-cowork/manifest"
 import { aiDailyAssistantTile } from "./ai-tools/manifests/ai-daily-assistant.manifest"
 import { aiSummarizerTile } from "./ai-tools/manifests/ai-summarizer.manifest"
@@ -69,4 +70,5 @@ export const ALL_TILE_MANIFESTS: readonly TileManifest[] = [
   tokenUsageTile,
   geoScoreCalculatorTile,
   documentParserTile,
+  visualGuruTile,
 ]

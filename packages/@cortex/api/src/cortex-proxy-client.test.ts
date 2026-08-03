@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { callCortexProxy, isOpenRouterModel, type CortexProxyRequest } from "./cortex-proxy-client"
+import {
+  callCortexProxy,
+  callCortexProxyImage,
+  CortexProxyImageError,
+  isOpenRouterModel,
+  type CortexProxyImageRequest,
+  type CortexProxyRequest,
+} from "./cortex-proxy-client"
 
 const OPENROUTER_MODEL = "anthropic/claude-sonnet-4.6"
 const OPENAI_MODEL = "gpt-4.1"
@@ -205,5 +212,143 @@ describe("callCortexProxy — odpowiedzi i błędy", () => {
   it("rzuca przy odpowiedzi bez użytecznej treści", async () => {
     stubFetch(okResponse({ choices: [{ message: { content: "   " } }] }))
     await expect(callCortexProxy(baseInput())).rejects.toThrow("Unexpected Cortex Proxy response")
+  })
+})
+
+// ---------------------------------------------------------------------------
+// callCortexProxyImage() — Faza 0 Visual Guru: rozszerzenie CortexProxyImageMessage.content
+// (PROJECT/cortex-frontend-visual-guru-tile-projekt.md sekcja 3). Dwa cele:
+//  1. Dowieść, że Ilustromatu jedyne dzisiejsze wywołanie (content: string)
+//     zachowuje się identycznie po zmianie typu — zero regresji.
+//  2. Dowieść, że nowy kształt (content: część[]) jest poprawnie budowany i
+//     wysyłany — bez inspekcji kształtu, verbatim, jak deklaruje sekcja 3.
+// ---------------------------------------------------------------------------
+
+const imageValidBody = {
+  choices: [{ message: { images: [{ image_url: { url: "data:image/png;base64,AAA" } }] } }],
+  usage: { total_tokens: 456 },
+}
+
+function baseImageInput(overrides: Partial<CortexProxyImageRequest> = {}): CortexProxyImageRequest {
+  return {
+    baseUrl: "http://localhost:8240",
+    email: "user@example.com",
+    model: "google/gemini-3.1-flash-lite-image",
+    scope: "visual-guru-generation",
+    messages: [{ role: "user", content: "wygeneruj obraz" }],
+    ...overrides,
+  }
+}
+
+describe("callCortexProxyImage — content: string (Ilustromat, wsteczna kompatybilność)", () => {
+  it("przekazuje messages z content: string verbatim, bez zmiany kształtu", async () => {
+    const fetchMock = stubFetch(okResponse(imageValidBody))
+    await callCortexProxyImage(
+      baseImageInput({ messages: [{ role: "user", content: "ilustracja teł do posta LinkedIn" }] }),
+    )
+
+    const payload = readPayload(fetchMock)
+    expect(payload.messages).toEqual([{ role: "user", content: "ilustracja teł do posta LinkedIn" }])
+  })
+
+  it("wysyła modalities:[image,text] i domyślną temperaturę 0.7", async () => {
+    const fetchMock = stubFetch(okResponse(imageValidBody))
+    await callCortexProxyImage(baseImageInput())
+
+    const payload = readPayload(fetchMock)
+    expect(payload.modalities).toEqual(["image", "text"])
+    expect(payload.temperature).toBe(0.7)
+  })
+
+  it("zwraca dataUrl, model i tokensUsed z odpowiedzi", async () => {
+    stubFetch(okResponse(imageValidBody))
+    const result = await callCortexProxyImage(baseImageInput())
+    expect(result).toEqual({
+      dataUrl: "data:image/png;base64,AAA",
+      model: "google/gemini-3.1-flash-lite-image",
+      tokensUsed: 456,
+    })
+  })
+})
+
+describe("callCortexProxyImage — content: część[] (Visual Guru, nowy kształt)", () => {
+  it("przekazuje multi-part content (tekst + image_url) verbatim", async () => {
+    const fetchMock = stubFetch(okResponse(imageValidBody))
+    const referenceDataUrl = "data:image/png;base64,cmVmZXJlbmNl"
+
+    await callCortexProxyImage(
+      baseImageInput({
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "bazuj ściśle na załączonym obrazie referencyjnym" },
+              { type: "image_url", image_url: { url: referenceDataUrl, detail: "high" } },
+            ],
+          },
+        ],
+      }),
+    )
+
+    const payload = readPayload(fetchMock)
+    expect(payload.messages).toEqual([
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "bazuj ściśle na załączonym obrazie referencyjnym" },
+          { type: "image_url", image_url: { url: referenceDataUrl, detail: "high" } },
+        ],
+      },
+    ])
+  })
+
+  it("obsługuje wiele obrazów referencyjnych w jednej wiadomości", async () => {
+    const fetchMock = stubFetch(okResponse(imageValidBody))
+    await callCortexProxyImage(
+      baseImageInput({
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "prompt" },
+              { type: "image_url", image_url: { url: "data:image/png;base64,AAA" } },
+              { type: "image_url", image_url: { url: "data:image/png;base64,BBB" } },
+            ],
+          },
+        ],
+      }),
+    )
+
+    const payload = readPayload(fetchMock)
+    const content = (payload.messages as Array<{ content: unknown }>)[0]?.content as unknown[]
+    expect(content).toHaveLength(3)
+  })
+})
+
+describe("callCortexProxyImage — nagłówki, timeout, błędy", () => {
+  it("wysyła te same nagłówki identyfikujące co callCortexProxy", async () => {
+    const fetchMock = stubFetch(okResponse(imageValidBody))
+    await callCortexProxyImage(baseImageInput({ appLabel: "Visual Guru", sourceApp: "Cortex360 Visual Guru" }))
+
+    const headers = readHeaders(fetchMock)
+    expect(headers["X-User-ID"]).toBe("user@example.com")
+    expect(headers["X-Scope"]).toBe("visual-guru-generation")
+    expect(headers["X-App"]).toBe("Visual Guru")
+    expect(headers["X-Source-App"]).toBe("Cortex360 Visual Guru")
+  })
+
+  it("rzuca CortexProxyImageError gdy brak obrazu w odpowiedzi", async () => {
+    stubFetch(okResponse({ choices: [{ message: {} }] }))
+    await expect(callCortexProxyImage(baseImageInput())).rejects.toBeInstanceOf(CortexProxyImageError)
+  })
+
+  it("rzuca CortexProxyImageError gdy url nie jest data URI", async () => {
+    stubFetch(okResponse({ choices: [{ message: { images: [{ image_url: { url: "https://example.com/x.png" } }] } }] }))
+    await expect(callCortexProxyImage(baseImageInput())).rejects.toThrow("Nieoczekiwany format obrazu")
+  })
+
+  it("rzuca CortexProxyImageError na odpowiedź nie-ok", async () => {
+    stubFetch(new Response("model niedostępny", { status: 400 }))
+    await expect(callCortexProxyImage(baseImageInput())).rejects.toBeInstanceOf(CortexProxyImageError)
   })
 })

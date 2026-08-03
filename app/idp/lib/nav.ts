@@ -312,6 +312,23 @@ export const GEO_SCORE_CALCULATOR_NAV: TileMenuSection[] = [
   },
 ]
 
+// Faza 0 (fundament) — rejestr sub-nawigacji dwóch ekranów zaprojektowanych w
+// PROJECT/cortex-frontend-visual-guru-tile-projekt.md §6 (Generator/Archiwum),
+// przed tym jak którykolwiek z nich fizycznie istnieje jako page.tsx (Faza
+// 1/2). Nieszkodliwe do czasu aktywacji: kafelek jest dziś nieaktywnym
+// kandydatem (seed-tile-manifests.mjs), więc TileMenu go jeszcze nie
+// renderuje — wzorem GEO_SCORE_CALCULATOR_NAV wyżej.
+export const VISUAL_GURU_NAV: TileMenuSection[] = [
+  {
+    id: "praca",
+    label: "Praca",
+    items: [
+      { id: "generator", label: "Generator", icon: Sparkles, href: "/visual-guru" },
+      { id: "archiwum", label: "Archiwum", icon: History, href: "/visual-guru/history" },
+    ],
+  },
+]
+
 export const INVOICE_SUPERVISOR_NAV: TileMenuSection[] = [
   {
     id: "praca",
@@ -433,6 +450,10 @@ export function useInvoiceSupervisorNavSections(): TileMenuSection[] {
 
 export function useGeoScoreCalculatorNavSections(): TileMenuSection[] {
   return GEO_SCORE_CALCULATOR_NAV
+}
+
+export function useVisualGuruNavSections(): TileMenuSection[] {
+  return VISUAL_GURU_NAV
 }
 
 export function useAiToolsNavSections(): TileMenuSection[] {

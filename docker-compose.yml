@@ -129,6 +129,15 @@ services:
       # patrz app/idp/lib/geo-score-calculator/config.ts. Puste = domyślny
       # adres kontenera geo-score-calculator niżej, nie awaria.
       GEO_SCORE_SERVICE_URL: ${GEO_SCORE_SERVICE_URL:-}
+      # Content Guru — lista dozwolonych modeli (comma-separated), Select na
+      # ekranie generowania wybiera spośród nich (Faza 1, jeszcze nie
+      # zbudowany — patrz app/idp/lib/content-guru/config.ts). Puste =
+      # domyślna dwuelementowa lista z tego pliku, nie awaria.
+      CONTENT_GURU_MODELS: ${CONTENT_GURU_MODELS:-}
+      # Visual Guru — model obrazkowy, ten sam adapter co Ilustromat
+      # (Ścieżka B — content multi-part, zero zmian w cortex-proxy). Puste =
+      # domyślne z app/idp/lib/visual-guru/config.ts, nie awaria.
+      VISUAL_GURU_IMAGE_MODEL: ${VISUAL_GURU_IMAGE_MODEL:-}
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     extra_hosts:
