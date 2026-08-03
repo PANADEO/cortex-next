@@ -36,10 +36,10 @@ import { aiSummarizerTile } from "./ai-tools/manifests/ai-summarizer.manifest"
 import { contentGuruTile } from "./ai-tools/manifests/content-guru.manifest"
 import { fakturomatTile } from "./ai-tools/manifests/fakturomat.manifest"
 import { linkedinGeneratorTile } from "./ai-tools/manifests/linkedin-generator.manifest"
+import { presentationGeneratorTile } from "./ai-tools/manifests/presentation-generator.manifest"
 import { textAnalyzerTile } from "./ai-tools/manifests/text-analyzer.manifest"
 import { textHighlighterTile } from "./ai-tools/manifests/text-highlighter.manifest"
 import { textTransformerTile } from "./ai-tools/manifests/text-transformer.manifest"
-import { visualGuruTile } from "./ai-tools/manifests/visual-guru.manifest"
 import type { TileManifest } from "@cortex/tile-sdk"
 
 export const ALL_TILE_MANIFESTS: readonly TileManifest[] = [
@@ -60,7 +60,7 @@ export const ALL_TILE_MANIFESTS: readonly TileManifest[] = [
   aiSummarizerTile,
   contentGuruTile,
   linkedinGeneratorTile,
-  visualGuruTile,
+  presentationGeneratorTile,
   fakturomatTile,
   aiDailyAssistantTile,
   intrastatCnEditorTile,

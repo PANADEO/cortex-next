@@ -233,7 +233,7 @@ describe("AI Tools /generate — scope, model i limit tokenów pochodzą z rejes
       max: 8000,
     },
     {
-      toolId: "visual-guru",
+      toolId: "presentation-generator",
       scope: "presentation-generator",
       app: "Presentation Generator",
       max: 12_000,

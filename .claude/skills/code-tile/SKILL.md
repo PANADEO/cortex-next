@@ -36,4 +36,4 @@ Generuje `app/idp/app/(main)/<id>/{page.tsx,manifest.ts}` + `app/idp/app/api/<id
 
 ## Znane kolizje nazw (do sprawdzenia przed nazwaniem nowego kafelka)
 
-`visual-guru` = generator prezentacji (nie obrazów), `cortex-config` = governance Cortex Cowork (nie ogólna konfiguracja systemu), `ai-daily-assistant` — usuwany na rzecz OpenWebUI. Pełna lista: `PROJECT/cortex-frontend-tiles-inwentaryzacja.md`.
+`presentation-generator` = generator prezentacji (dawniej błędnie `visual-guru` — id skorygowany 03.08.2026, `PROJECT/cortex-next-todo.md` "visual-guru: dokończyć rename"). `visual-guru` jest odtąd WOLNY, zarezerwowany dla nadchodzącego prawdziwego generatora obrazów (`PROJECT/cortex-frontend-visual-guru-tile-projekt.md`) — nie używaj tego id do niczego innego. `cortex-config` = governance Cortex Cowork (nie ogólna konfiguracja systemu), `ai-daily-assistant` — usuwany na rzecz OpenWebUI. Pełna lista: `PROJECT/cortex-frontend-tiles-inwentaryzacja.md`.

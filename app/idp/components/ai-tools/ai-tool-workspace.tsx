@@ -328,7 +328,7 @@ function renderToolForm(toolId: AiToolId, context: ToolFormContext) {
       return <ContentForm {...context} />
     case "linkedin-generator":
       return <LinkedinForm {...context} />
-    case "visual-guru":
+    case "presentation-generator":
       return <PresentationForm {...context} />
     case "fakturomat":
       return <InvoiceForm {...context} />

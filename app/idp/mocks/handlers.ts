@@ -379,7 +379,7 @@ export const handlers = [
             "ai-summarizer",
             "content-guru",
             "linkedin-generator",
-            "visual-guru",
+            "presentation-generator",
             "fakturomat",
             "ai-daily-assistant",
             "invoice-supervisor",

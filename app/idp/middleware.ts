@@ -78,6 +78,12 @@ const LEGACY_REDIRECTS: ReadonlyArray<{ from: RegExp; to: string }> = [
   { from: /^\/system-config\/kafelki(\/.*)?$/, to: "/system-config/applications" },
   { from: /^\/ilustromat\/generowanie(\/.*)?$/, to: "/ilustromat/generation" },
   { from: /^\/ilustromat\/szablony(\/.*)?$/, to: "/ilustromat/templates" },
+  // id rename fix (03.08.2026): `visual-guru` was a leftover misnomer for the
+  // Presentation Generator tile (PROJECT/cortex-next-todo.md, "visual-guru:
+  // dokończyć rename") — `[tool]` route segment equals the AiToolId, so this
+  // is a genuine URL change, not just an internal identifier rename. Frees
+  // the `visual-guru` id for the upcoming real image-generation tile.
+  { from: /^\/ai-tools\/visual-guru(\/.*)?$/, to: "/ai-tools/presentation-generator" },
 ]
 
 const IDP_BASIC_API_PATTERNS: RegExp[] = [

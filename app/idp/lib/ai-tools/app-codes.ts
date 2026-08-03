@@ -7,7 +7,7 @@ export const AI_TOOL_APP_CODES = [
   "ai-summarizer",
   "content-guru",
   "linkedin-generator",
-  "visual-guru",
+  "presentation-generator",
   "fakturomat",
   "ai-daily-assistant",
 ] as const

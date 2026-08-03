@@ -95,7 +95,7 @@ export const AI_TOOL_DEFINITIONS: readonly AiToolDefinition[] = [
     scope: "linkedin-generator",
   },
   {
-    id: "visual-guru",
+    id: "presentation-generator",
     label: "Generator prezentacji",
     shortLabel: "Prezentacje",
     description: "Projektuje strukturę prezentacji i slajdy gotowe do eksportu jako HTML.",
