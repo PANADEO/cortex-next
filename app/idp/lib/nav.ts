@@ -288,6 +288,30 @@ export const CORTEX_CONFIG_NAV: TileMenuSection[] = [
   },
 ]
 
+// Faza 0 (fundament) — rejestr sub-nawigacji trzech ekranów zaprojektowanych
+// w PROJECT/cortex-frontend-geo-score-calculator-port-projekt.md §4, przed
+// tym jak którykolwiek z nich fizycznie istnieje jako page.tsx (Faza 1-3).
+// Nieszkodliwe do czasu aktywacji: kafelek jest dziś nieaktywnym kandydatem
+// (packages/@cortex/db/scripts/seed-geo-score-calculator.mjs), więc TileMenu
+// go jeszcze nie renderuje — patrz manifest.ts w tym samym module.
+export const GEO_SCORE_CALCULATOR_NAV: TileMenuSection[] = [
+  {
+    id: "praca",
+    label: "Praca",
+    items: [
+      { id: "kalkulator", label: "Kalkulator", icon: Calculator, href: "/geo-score-calculator" },
+      { id: "historia", label: "Historia", icon: History, href: "/geo-score-calculator/history" },
+    ],
+  },
+  {
+    id: "konfiguracja",
+    label: "Konfiguracja",
+    items: [
+      { id: "ustawienia", label: "Ustawienia", icon: Settings, href: "/geo-score-calculator/settings" },
+    ],
+  },
+]
+
 export const INVOICE_SUPERVISOR_NAV: TileMenuSection[] = [
   {
     id: "praca",
@@ -405,6 +429,10 @@ export function useTokenUsageNavSections(): TileMenuSection[] {
 
 export function useInvoiceSupervisorNavSections(): TileMenuSection[] {
   return INVOICE_SUPERVISOR_NAV
+}
+
+export function useGeoScoreCalculatorNavSections(): TileMenuSection[] {
+  return GEO_SCORE_CALCULATOR_NAV
 }
 
 export function useAiToolsNavSections(): TileMenuSection[] {

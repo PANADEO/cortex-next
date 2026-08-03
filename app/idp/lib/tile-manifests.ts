@@ -16,6 +16,8 @@
 
 import { aiToolsTile } from "@/app/(main)/ai-tools/manifest"
 import { cortexConfigTile } from "@/app/(main)/cortex-config/manifest"
+import { documentParserTile } from "@/app/(main)/document-parser/manifest"
+import { geoScoreCalculatorTile } from "@/app/(main)/geo-score-calculator/manifest"
 import { idpBasicTile } from "@/app/(main)/idp-basic/manifest"
 import { idpTile } from "@/app/(main)/idp/manifest"
 import { ilustromatTile } from "@/app/(main)/ilustromat/manifest"
@@ -65,4 +67,6 @@ export const ALL_TILE_MANIFESTS: readonly TileManifest[] = [
   intrastatConfigEditorTile,
   ilustromatTile,
   tokenUsageTile,
+  geoScoreCalculatorTile,
+  documentParserTile,
 ]

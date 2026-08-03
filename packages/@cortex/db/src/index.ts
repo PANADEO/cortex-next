@@ -1,3 +1,5 @@
 export { closeDb, getDb, type CortexDatabase } from "./client"
 export * from "./schema/system-config"
 export * from "./schema/ilustromat"
+export * from "./schema/document-parser"
+export * from "./schema/geo-score-calculator"

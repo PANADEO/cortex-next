@@ -16,7 +16,12 @@
     "db:generate:ilustromat": "drizzle-kit generate --config drizzle.ilustromat.config.ts",
     "db:migrate:ilustromat": "drizzle-kit migrate --config drizzle.ilustromat.config.ts",
     "db:seed:ilustromat": "node scripts/seed-ilustromat.mjs",
-    "db:seed:token-usage": "node scripts/seed-token-usage.mjs"
+    "db:seed:token-usage": "node scripts/seed-token-usage.mjs",
+    "db:generate:geo-score-calculator": "drizzle-kit generate --config drizzle.geo-score-calculator.config.ts",
+    "db:migrate:geo-score-calculator": "drizzle-kit migrate --config drizzle.geo-score-calculator.config.ts",
+    "db:seed:geo-score-calculator": "node scripts/seed-geo-score-calculator.mjs",
+    "db:generate:document-parser": "drizzle-kit generate --config drizzle.document-parser.config.ts",
+    "db:migrate:document-parser": "drizzle-kit migrate --config drizzle.document-parser.config.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.0",

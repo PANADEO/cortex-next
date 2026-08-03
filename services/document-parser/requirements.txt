@@ -1,0 +1,22 @@
+# Runtime + test deps together, one file — see .claude/skills/code-python-service
+# (the built image must be able to run its own pytest suite in CI, so
+# splitting prod/dev requirements buys nothing here).
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+httpx==0.28.1
+pytest==8.3.4
+# multipart/form-data parsing for POST /jobs (UploadFile + Form fields) —
+# Starlette needs this at runtime, not just for tests.
+python-multipart==0.0.20
+
+# Pipeline deps (ported logic, src/pipeline.py) — same libraries as
+# ~/REPO/cortex-document-parser/requirements.txt for the parts this backend
+# actually keeps (conversion client, PDF rendering, image handling, LLM call).
+openai==1.57.0
+pypdfium2==4.30.0
+Pillow==11.0.0
+# unoconvert is a CLI ENTRY POINT of the `unoserver` pip package, used here
+# purely as a thin RPC client talking to the separate unoserver/ sidecar
+# container over the network (design doc §1.2) — this backend does NOT
+# install LibreOffice/python3-uno itself, only the sidecar does.
+unoserver==3.7

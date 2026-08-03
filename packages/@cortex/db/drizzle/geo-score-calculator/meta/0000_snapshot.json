@@ -1,0 +1,276 @@
+{
+  "id": "01d55660-8587-4130-b99e-68a365d12b88",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "geo_score_calculator.calculations": {
+      "name": "calculations",
+      "schema": "geo_score_calculator",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_email": {
+          "name": "user_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text_content": {
+          "name": "text_content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text_preview": {
+          "name": "text_preview",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "word_count": {
+          "name": "word_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_score": {
+          "name": "total_score",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grade": {
+          "name": "grade",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stats_score": {
+          "name": "stats_score",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verbs_score": {
+          "name": "verbs_score",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "structure_score": {
+          "name": "structure_score",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "objectivity_score": {
+          "name": "objectivity_score",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "result": {
+          "name": "result",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "config_snapshot": {
+          "name": "config_snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "calculations_user_email_created_at_idx": {
+          "name": "calculations_user_email_created_at_idx",
+          "columns": [
+            {
+              "expression": "user_email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "calculations_grade_allowed": {
+          "name": "calculations_grade_allowed",
+          "value": "\"geo_score_calculator\".\"calculations\".\"grade\" in ('A','B','C','D','F')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "geo_score_calculator.config": {
+      "name": "config",
+      "schema": "geo_score_calculator",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "boolean",
+          "primaryKey": true,
+          "notNull": true,
+          "default": true
+        },
+        "weight_statistics": {
+          "name": "weight_statistics",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "weight_action_verbs": {
+          "name": "weight_action_verbs",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "weight_structure": {
+          "name": "weight_structure",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "weight_objectivity": {
+          "name": "weight_objectivity",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "benchmark_stats": {
+          "name": "benchmark_stats",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "benchmark_verbs": {
+          "name": "benchmark_verbs",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "benchmark_structure": {
+          "name": "benchmark_structure",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "benchmark_objectivity": {
+          "name": "benchmark_objectivity",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grade_a_min": {
+          "name": "grade_a_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grade_b_min": {
+          "name": "grade_b_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grade_c_min": {
+          "name": "grade_c_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grade_d_min": {
+          "name": "grade_d_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action_verbs": {
+          "name": "action_verbs",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subjective_words": {
+          "name": "subjective_words",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "false_positives": {
+          "name": "false_positives",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bullet_patterns": {
+          "name": "bullet_patterns",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {
+    "geo_score_calculator": "geo_score_calculator"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

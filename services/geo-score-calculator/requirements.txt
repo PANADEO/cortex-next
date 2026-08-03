@@ -1,0 +1,13 @@
+# Runtime + test deps in one file — see services/_template-python-service and
+# code-python-service/SKILL.md "Testy": the same image that serves traffic
+# must also be able to run `pytest` on itself inside CI
+# (.github/workflows/docker-build.yml, python-services job).
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+httpx==0.28.1
+pytest==8.3.4
+# Polish POS tagging for the action-verbs analyzer (D2 Option A — spaCy stays,
+# port faithful to geo_calc/app/backend/analyzers/verbs.py). Model itself is
+# downloaded separately in the Dockerfile (`python -m spacy download
+# pl_core_news_sm`), at build time.
+spacy==3.7.5

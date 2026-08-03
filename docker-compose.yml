@@ -82,7 +82,8 @@ services:
         node packages/@cortex/db/scripts/seed-tile-manifests.mjs &&
         node packages/@cortex/db/scripts/seed-system-config.mjs &&
         node packages/@cortex/db/scripts/seed-ilustromat.mjs &&
-        node packages/@cortex/db/scripts/seed-token-usage.mjs
+        node packages/@cortex/db/scripts/seed-token-usage.mjs &&
+        node packages/@cortex/db/scripts/seed-geo-score-calculator.mjs
     security_opt:
       - no-new-privileges:true
 
@@ -124,6 +125,10 @@ services:
       # domyślne z app/idp/lib/ilustromat/config.ts, nie awaria.
       ILUSTROMAT_TEXT_MODEL: ${ILUSTROMAT_TEXT_MODEL:-}
       ILUSTROMAT_IMAGE_MODEL: ${ILUSTROMAT_IMAGE_MODEL:-}
+      # GEO Score Calculator — mikroserwis Python w TYM compose (Docker DNS),
+      # patrz app/idp/lib/geo-score-calculator/config.ts. Puste = domyślny
+      # adres kontenera geo-score-calculator niżej, nie awaria.
+      GEO_SCORE_SERVICE_URL: ${GEO_SCORE_SERVICE_URL:-}
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     extra_hosts:
@@ -152,6 +157,88 @@ services:
     # nigdy z hosta. To jest posturę bezpieczeństwa opisaną w obu design
     # dokach (GEO Score D3, Parser Dokumentów D6) — zweryfikowana realnym
     # `curl` z hosta (fail) i z sąsiedniego kontenera (pass), nie założona.
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=50m
+
+  # Pierwszy REALNY konsument wzorca services/ (PROJECT/cortex-frontend-
+  # parser-dokumentow-port-projekt.md D2-D7). BEZ profilu, w przeciwieństwie
+  # do template-python-service wyżej — cortex-frontend realnie tego
+  # potrzebuje, ma startować z domyślnego `docker compose up`.
+  #
+  # Backend robi WYŁĄCZNIE: unoconvert (klient RPC, gada z unoserver niżej),
+  # render stron PDF (pypdfium2), wywołanie modelu wizyjnego przez
+  # cortex-proxy — nie ma własnej trwałej bazy (D2). Historia zadań żyje w
+  # Postgresie (schema document_parser, packages/@cortex/db/src/schema/
+  # document-parser.ts), właścicielem jest Next.js BFF (Faza 2, jeszcze nie
+  # zbudowana w tym repo) — ten serwis nie jest jeszcze wołany przez nic w
+  # tym compose, poza własnym healthcheckiem.
+  document-parser-backend:
+    build:
+      context: services/document-parser
+    container_name: document-parser-backend
+    restart: unless-stopped
+    environment:
+      UNO_HOST: document-parser-unoserver
+      UNO_PORT: "2003"
+      CORTEX_PROXY_URL: ${CORTEX_PROXY_URL:-http://host.docker.internal:8240}
+      CORTEX_PROXY_API_KEY: ${CORTEX_PROXY_API_KEY:-}
+      # Bez wartości domyślnej (design doc Q3) — legacy placeholder "gpt-5.2"
+      # był jawnie nazwany niezweryfikowanym. Puste = /health i konwersja
+      # działają, ale wywołanie modelu wizyjnego kończy się czytelnym
+      # DependencyError (src/pipeline.py), dopóki instancja nie ustawi tej
+      # zmiennej na realny model dostępny przez cortex-proxy.
+      DOCUMENT_PARSER_VISION_MODEL: ${DOCUMENT_PARSER_VISION_MODEL:-}
+    depends_on:
+      document-parser-unoserver:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # BRAK ports: — osiągalny WYŁĄCZNIE przez Docker DNS z cortex-frontend
+    # (D6) — dokładnie ta sama postawa co template-python-service wyżej.
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=512m
+
+  # LibreOffice headless (docker/unoserver/Dockerfile w PANADEO/cortex-
+  # document-parser, port 1:1 — design doc §1.2). Sidecar drugiego
+  # kontenera dla document-parser-backend, dokładnie wzorzec opisany w
+  # .claude/skills/code-python-service/SKILL.md "Struktura katalogu".
+  document-parser-unoserver:
+    build:
+      context: services/document-parser/unoserver
+    container_name: document-parser-unoserver
+    restart: unless-stopped
+    command: ["python3", "-m", "unoserver.server", "--interface", "0.0.0.0", "--port", "2003"]
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "unoserver"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=512M
+
+  # Drugi REALNY konsument wzorca services/ (PROJECT/cortex-frontend-geo-
+  # score-calculator-port-projekt.md D3/D4/D5, Faza 0). BEZ profilu, tak jak
+  # document-parser-backend wyżej — cortex-frontend realnie tego potrzebuje.
+  #
+  # Bezstanowy: POST /analyze przyjmuje pełną migawkę konfiguracji w ciele
+  # żądania i zwraca wynik, zero własnej bazy/wolumenu (D3) — config i
+  # historia analiz żyją w Postgresie (schema geo_score_calculator), których
+  # właścicielem jest Next.js (Faza 1+, jeszcze nie zbudowana w tym repo).
+  geo-score-calculator:
+    build:
+      context: services/geo-score-calculator
+    container_name: cortex-next-geo-score-calculator
+    restart: unless-stopped
+    # BRAK ports: — osiągalny WYŁĄCZNIE przez Docker DNS z cortex-frontend
+    # (http://geo-score-calculator:8000), ta sama postawa co
+    # template-python-service/document-parser-backend wyżej.
     security_opt:
       - no-new-privileges:true
     tmpfs:

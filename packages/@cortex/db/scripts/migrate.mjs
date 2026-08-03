@@ -40,6 +40,18 @@ const MODULES = [
     migrationsSchema: "ilustromat_migrations",
     migrationsTable: "__drizzle_migrations",
   },
+  {
+    name: "geo-score-calculator",
+    folder: "drizzle/geo-score-calculator",
+    migrationsSchema: "geo_score_calculator_migrations",
+    migrationsTable: "__drizzle_migrations",
+  },
+  {
+    name: "document-parser",
+    folder: "drizzle/document-parser",
+    migrationsSchema: "document_parser_migrations",
+    migrationsTable: "__drizzle_migrations",
+  },
 ]
 
 const databaseUrl = process.env.DATABASE_URL
