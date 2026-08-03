@@ -63,9 +63,10 @@ export default defineConfig({
             // dewelopera zostaje nietknięty. Patrz e2e/fixtures/json-store.ts.
             COWORK_DATA_DIR: E2E_COWORK_DATA_DIR,
             OKNA_CZASOWE_DATA_DIR: E2E_OKNA_CZASOWE_DATA_DIR,
-            // Bez tego `getRequestEmail()`/`requestEmail()` mają poza produkcją
-            // fallback na DEV_USER_EMAIL — "brak nagłówka" przestałoby wtedy
-            // znaczyć "brak tożsamości" i testy bramek nic by nie dowodziły.
+            // Bez tego `getRequestEmail()`/`requestEmail()` mają fallback na
+            // DEV_USER_EMAIL (rbac.ts — bramkowany wyłącznie jej obecnością,
+            // nie NODE_ENV) — "brak nagłówka" przestałoby wtedy znaczyć "brak
+            // tożsamości" i testy bramek nic by nie dowodziły.
             DEV_USER_EMAIL: "",
           },
         },

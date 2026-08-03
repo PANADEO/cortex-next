@@ -48,7 +48,13 @@ beforeEach(() => {
   loadGrantedApplicationCodes.mockReset()
   loadGrantedApplicationCodes.mockResolvedValue([])
   vi.unstubAllEnvs()
-  vi.stubEnv("NODE_ENV", "production")
+  // getRequestEmail() nie odczytuje już NODE_ENV (rbac.ts — build standalone
+  // ma je zamrożone na "production" przez webpack DefinePlugin, więc ten
+  // warunek był martwy w skompilowanym obrazie). Fallback bramkowany
+  // wyłącznie obecnością DEV_USER_EMAIL — pustym stringiem gasimy go tu
+  // jawnie, żeby "brak nagłówka" niżej znaczyło "brak tożsamości" niezależnie
+  // od tego, co akurat ma w env maszyna uruchamiająca testy.
+  vi.stubEnv("DEV_USER_EMAIL", "")
 })
 
 afterEach(() => {
@@ -57,26 +63,20 @@ afterEach(() => {
 
 describe("GET /api/me/access — tożsamość", () => {
   it("odmawia 401 bez nagłówka i bez DEV_USER_EMAIL", async () => {
-    vi.stubEnv("NODE_ENV", "development")
-    vi.stubEnv("DEV_USER_EMAIL", "")
-
     const response = await GET(makeRequest(null))
 
     expect(response.status).toBe(401)
     expect(loadGrantedApplicationCodes).not.toHaveBeenCalled()
   })
 
-  it("IGNORUJE DEV_USER_EMAIL na produkcji", async () => {
-    vi.stubEnv("DEV_USER_EMAIL", "leaked@dev.local")
-
-    const response = await GET(makeRequest(null))
-
-    expect(response.status).toBe(401)
-    expect(loadGrantedApplicationCodes).not.toHaveBeenCalled()
-  })
-
-  it("poza produkcją używa DEV_USER_EMAIL, gdy nagłówka nie ma", async () => {
-    vi.stubEnv("NODE_ENV", "development")
+  // Regresja: standalone build ma NODE_ENV=production zamrożone przez webpack
+  // DefinePlugin (patrz komentarz przy getRequestEmail w rbac.ts) — stary
+  // warunek `NODE_ENV !== "production"` był w skompilowanym obrazie Dockera
+  // martwym kodem, więc DEV_USER_EMAIL nigdy tam nie działał. Ten test
+  // dowodzi, że fallback działa TEŻ z NODE_ENV=production ustawionym —
+  // dokładnie układ z docker-compose.yml.
+  it("honoruje DEV_USER_EMAIL nawet z NODE_ENV=production", async () => {
+    vi.stubEnv("NODE_ENV", "production")
     vi.stubEnv("DEV_USER_EMAIL", "dev@cortex.local")
     loadGrantedApplicationCodes.mockResolvedValue(["idp"])
 
@@ -87,8 +87,7 @@ describe("GET /api/me/access — tożsamość", () => {
     expect(body.apps).toEqual(["idp"])
   })
 
-  it("nagłówek wygrywa z DEV_USER_EMAIL poza produkcją", async () => {
-    vi.stubEnv("NODE_ENV", "development")
+  it("nagłówek wygrywa z DEV_USER_EMAIL", async () => {
     vi.stubEnv("DEV_USER_EMAIL", "dev@cortex.local")
 
     const { status, body } = await call("real@user.com")

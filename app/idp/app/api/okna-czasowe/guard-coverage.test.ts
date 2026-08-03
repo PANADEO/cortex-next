@@ -142,10 +142,11 @@ beforeEach(async () => {
   loadGrantedScopes.mockReset()
   loadGrantedScopes.mockResolvedValue([])
   dataDir = mkdtempSync(path.join(tmpdir(), "okna-czasowe-guard-"))
-  // NODE_ENV=production wyłącza fallback DEV_USER_EMAIL w getRequestEmail() —
-  // bez tego „brak nagłówka" nie znaczyłoby „brak tożsamości", tylko „lokalny
-  // dev user", i cała gałąź 401 byłaby nietestowana.
-  vi.stubEnv("NODE_ENV", "production")
+  // getRequestEmail() nie odczytuje NODE_ENV (rbac.ts) — fallback bramkowany
+  // wyłącznie obecnością DEV_USER_EMAIL. Gasimy ją tu jawnie: bez tego „brak
+  // nagłówka" nie znaczyłoby „brak tożsamości", tylko „lokalny dev user", i
+  // cała gałąź 401 byłaby nietestowana (albo zależna od env maszyny).
+  vi.stubEnv("DEV_USER_EMAIL", "")
   vi.stubEnv("OKNA_CZASOWE_DATA_DIR", dataDir)
   // Każde wyjście do sieci przechodzi przez tę atrapę: przy odmowie licznik
   // wywołań ma zostać na zerze (POST /scan woła publiczne API JustWatch).

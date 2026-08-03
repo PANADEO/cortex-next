@@ -50,9 +50,10 @@ beforeEach(() => {
   vi.unstubAllEnvs()
   grants = { [GRANTED_EMAIL]: ["cortex-config", "cortex-cowork"], [GRANTLESS_EMAIL]: [] }
   dataDir = mkdtempSync(path.join(tmpdir(), "cortex-admin-gate-"))
-  // Without this, requestEmail() falls back to DEV_USER_EMAIL and "no header"
-  // would not mean "no identity".
-  vi.stubEnv("NODE_ENV", "production")
+  // requestEmail() no longer reads NODE_ENV (rbac.ts getRequestEmail) — the
+  // fallback is gated purely on DEV_USER_EMAIL being set. Clear it explicitly:
+  // without this, "no header" would not mean "no identity".
+  vi.stubEnv("DEV_USER_EMAIL", "")
   vi.stubEnv("COWORK_DATA_DIR", dataDir)
 })
 

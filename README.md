@@ -132,6 +132,7 @@ Zero zmian w kodzie feature'ów — types, endpointy, error handling, auth heade
 
 | Plik | Zawartość |
 |---|---|
+| [docs/local-run.md](docs/local-run.md) | Uruchomienie lokalne przez `docker compose up` — jedna komenda, gotowy admin, klikanie po appce |
 | [CLAUDE.md](CLAUDE.md) | Instrukcje dla agentów AI — kontekst projektu, technology stack, repository layout |
 | [architecture_rules.md](architecture_rules.md) | Reguły kodowe — naming, konwencje, feature modules, testing, deployment |
 | [docs/frontend-architecture.md](docs/frontend-architecture.md) | Decyzje stackowe z uzasadnieniem (framework, UI, state, error handling, feature flags) |

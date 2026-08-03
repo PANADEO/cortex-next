@@ -125,9 +125,10 @@ function foreignGrant(toolId: AiToolId): AiToolId {
 beforeEach(() => {
   vi.unstubAllEnvs()
   historyDir = mkdtempSync(path.join(tmpdir(), "cortex-ai-tools-guard-"))
-  // NODE_ENV=production wyłącza fallback DEV_USER_EMAIL w getRequestEmail() —
-  // bez tego "brak nagłówka" nie znaczyłoby "brak tożsamości".
-  vi.stubEnv("NODE_ENV", "production")
+  // getRequestEmail() nie odczytuje NODE_ENV (rbac.ts) — fallback bramkowany
+  // wyłącznie obecnością DEV_USER_EMAIL. Gasimy ją tu jawnie: bez tego "brak
+  // nagłówka" nie znaczyłoby "brak tożsamości".
+  vi.stubEnv("DEV_USER_EMAIL", "")
   loadGrantedApplicationCodes.mockReset()
   loadGrantedApplicationCodes.mockResolvedValue([])
   vi.stubEnv("CORTEX_PROXY_URL", PROXY_URL)

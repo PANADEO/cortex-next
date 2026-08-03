@@ -138,9 +138,10 @@ beforeEach(() => {
     [OUTSIDER_EMAIL]: ["cortex-cowork"],
   })
   dataDir = mkdtempSync(path.join(tmpdir(), "cortex-cowork-guard-"))
-  // NODE_ENV=production wyłącza fallback DEV_USER_EMAIL w requestEmail() —
-  // bez tego "brak nagłówka" nie znaczyłoby "brak tożsamości".
-  vi.stubEnv("NODE_ENV", "production")
+  // requestEmail() nie odczytuje NODE_ENV (rbac.ts getRequestEmail) — fallback
+  // bramkowany wyłącznie obecnością DEV_USER_EMAIL. Gasimy ją tu jawnie: bez
+  // tego "brak nagłówka" nie znaczyłoby "brak tożsamości".
+  vi.stubEnv("DEV_USER_EMAIL", "")
   vi.stubEnv("COWORK_DATA_DIR", dataDir)
 })
 

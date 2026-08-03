@@ -40,16 +40,43 @@ const scopeLayer: CacheLayer = { store: new Map(), inFlight: new Map() }
 let generation = 0
 
 /**
- * Tożsamość z nagłówka wstrzykniętego przez oauth2-proxy; poza produkcją
- * dopuszczalny fallback na DEV_USER_EMAIL. Wzorzec 1:1 z
- * app/idp/app/api/_lib/access.ts (getRequestEmail).
+ * Tożsamość z nagłówka wstrzykniętego przez oauth2-proxy, z fallbackiem na
+ * DEV_USER_EMAIL gdy nagłówek jest nieobecny. Jedyna implementacja tej reguły
+ * w repo — app/idp/lib/cortex-governance/request-identity.ts to cienki adapter
+ * wołający wprost tę funkcję, nie równoległa kopia.
+ *
+ * Fallback bramkowany WYŁĄCZNIE obecnością DEV_USER_EMAIL — celowo NIE
+ * `NODE_ENV !== "production"`. `next build` zawsze kompiluje się z
+ * NODE_ENV=production (Dockerfile, etap `runner`: `ENV NODE_ENV=production`),
+ * a webpack DefinePlugin zamraża `process.env.NODE_ENV` w skompilowanym
+ * standalone outpucie na stałe — ustawienie NODE_ENV w env kontenera w ogóle
+ * nie ma wpływu na tę gałąź, bo runtime już jej nie odczytuje. Efekt: warunek
+ * `NODE_ENV !== "production"` jest w obrazie Dockera zamrożony na `false` na
+ * zawsze, więc DEV_USER_EMAIL nigdy nie działał w skompilowanym artefakcie —
+ * ani lokalnie (docker-compose.yml), ani na demo-dev — zweryfikowane
+ * empirycznie 03.08.2026: `next build` + standalone `server.js` z
+ * NODE_ENV=production i DEV_USER_EMAIL ustawionym w env procesu (dokładnie
+ * układ z docker-compose.yml) → `GET /api/me/access` zwracał 401
+ * `{"error":"missing-email"}` na starym kodzie; na tym niżej — 200 z
+ * poprawnie rozpoznanym e-mailem. Nawet ustawienie NODE_ENV=development W
+ * RUNTIME (symulacja "a może pomoże") nie zmieniało wyniku — potwierdza to,
+ * że wartość jest zamrożona w bundlu, nie odczytywana na żywo.
+ *
+ * Bezpieczne mimo usunięcia gałęzi NODE_ENV: prawdziwy deploy (Ansible/
+ * Semaphore, docker-compose.image.yml + `.env` z sekretów) nigdy nie
+ * definiuje DEV_USER_EMAIL — nie ma jej w żadnym miejscu tej konfiguracji.
+ * Nawet gdyby ktoś ją tam przez pomyłkę dodał, fallback ma NIŻSZY priorytet
+ * niż nagłówek `x-auth-request-email` (patrz `??` niżej) i włącza się tylko,
+ * gdy ten nagłówek jest w ogóle nieobecny — a na demo-dev/produkcji Caddy +
+ * oauth2-proxy zatrzymują nieautoryzowany ruch PRZED Next.js (CLAUDE.md,
+ * sekcja Auth), więc żądanie bez nagłówka tam w ogóle nie dociera do tej
+ * funkcji.
  *
  * E-mail normalizowany do lowercase — kolumna users.email trzyma wyłącznie
  * lowercase, więc bez tego "Jan@Firma.pl" nie trafiłby w swój wiersz.
  */
 export function getRequestEmail(headers: Headers): string | null {
-  const devFallback = process.env.NODE_ENV !== "production" ? process.env.DEV_USER_EMAIL : undefined
-  const raw = headers.get("x-auth-request-email") ?? devFallback ?? null
+  const raw = headers.get("x-auth-request-email") ?? process.env.DEV_USER_EMAIL ?? null
   const normalized = normalizeEmail(raw)
   return normalized ? normalized : null
 }

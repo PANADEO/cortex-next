@@ -59,7 +59,11 @@ beforeEach(() => {
   listHubApplications.mockReset()
   listHubApplications.mockResolvedValue([FIXTURE_TILE])
   vi.unstubAllEnvs()
-  vi.stubEnv("NODE_ENV", "production")
+  // getRequestEmail() nie odczytuje już NODE_ENV (rbac.ts) — fallback
+  // bramkowany wyłącznie obecnością DEV_USER_EMAIL, gaszony tu jawnie, żeby
+  // "brak nagłówka" niżej znaczyło "brak tożsamości" niezależnie od env
+  // maszyny uruchamiającej testy.
+  vi.stubEnv("DEV_USER_EMAIL", "")
 })
 
 afterEach(() => {
@@ -68,26 +72,19 @@ afterEach(() => {
 
 describe("GET /api/hub/tiles — tożsamość", () => {
   it("odmawia 401 bez nagłówka i bez DEV_USER_EMAIL", async () => {
-    vi.stubEnv("NODE_ENV", "development")
-    vi.stubEnv("DEV_USER_EMAIL", "")
-
     const response = await GET(makeRequest(null))
 
     expect(response.status).toBe(401)
     expect(listHubApplications).not.toHaveBeenCalled()
   })
 
-  it("IGNORUJE DEV_USER_EMAIL na produkcji", async () => {
-    vi.stubEnv("DEV_USER_EMAIL", "leaked@dev.local")
-
-    const response = await GET(makeRequest(null))
-
-    expect(response.status).toBe(401)
-    expect(listHubApplications).not.toHaveBeenCalled()
-  })
-
-  it("poza produkcją używa DEV_USER_EMAIL, gdy nagłówka nie ma", async () => {
-    vi.stubEnv("NODE_ENV", "development")
+  // Regresja: standalone build ma NODE_ENV=production zamrożone przez webpack
+  // DefinePlugin — stary warunek `NODE_ENV !== "production"` był w
+  // skompilowanym obrazie Dockera martwym kodem (patrz komentarz przy
+  // getRequestEmail w rbac.ts). Ten test dowodzi, że fallback działa TEŻ z
+  // NODE_ENV=production ustawionym — dokładnie układ z docker-compose.yml.
+  it("honoruje DEV_USER_EMAIL nawet z NODE_ENV=production", async () => {
+    vi.stubEnv("NODE_ENV", "production")
     vi.stubEnv("DEV_USER_EMAIL", "dev@cortex.local")
 
     const response = await GET(makeRequest(null))

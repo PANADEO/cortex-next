@@ -6,9 +6,12 @@ import type { NextRequest } from "next/server"
  * z @cortex/service — JEDNA implementacja tej reguły w repo, wspólna z bramką
  * RBAC, zamiast trzeciej równoległej kopii tego samego `??`-łańcucha.
  *
- * Model zaufania bez zmian: nagłówek `x-auth-request-email` wstrzykuje
- * oauth2-proxy na brzegu (wartości od klienta są tam usuwane), z fallbackiem
- * na DEV_USER_EMAIL poza produkcją.
+ * Model zaufania: nagłówek `x-auth-request-email` wstrzykuje oauth2-proxy na
+ * brzegu (wartości od klienta są tam usuwane) i ZAWSZE wygrywa, gdy obecny —
+ * z fallbackiem na DEV_USER_EMAIL WYŁĄCZNIE gdy nagłówek jest nieobecny,
+ * niezależnie od NODE_ENV (patrz `getRequestEmail()` w rbac.ts po co — real
+ * deploye nigdy nie ustawiają DEV_USER_EMAIL, a nawet gdyby, nagłówek i tak
+ * ma pierwszeństwo).
  *
  * Względem poprzedniej, lokalnej kopii dochodzą dwie własności wersji
  * serwisowej: e-mail jest normalizowany do lowercase (tak samo dopasowuje go

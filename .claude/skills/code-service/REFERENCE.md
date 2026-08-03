@@ -11,7 +11,7 @@ interface TileAccessResult {
 function requireTileAccess(request: Request, entitlementCode: string): Promise<TileAccessResult>
 ```
 
-Wejście: `Request` (czyta `X-Auth-Request-Email`, fallback `DEV_USER_EMAIL` poza produkcją — `getRequestEmail()` w `rbac.ts`, normalizuje adres do lowercase). Wyjście: `allowed` fail-closed (brak headera/brak granta/błąd bazy = `false`, nie `true`).
+Wejście: `Request` (czyta `X-Auth-Request-Email`, fallback `DEV_USER_EMAIL` WYŁĄCZNIE gdy nagłówek nieobecny — niezależnie od `NODE_ENV`, bo webpack zamraża tę wartość w standalone buildzie; `getRequestEmail()` w `rbac.ts`, normalizuje adres do lowercase). Wyjście: `allowed` fail-closed (brak headera/brak granta/błąd bazy = `false`, nie `true`).
 
 ## Kontrakt `getGrantedApplicationCodes()`
 

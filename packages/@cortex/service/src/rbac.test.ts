@@ -28,7 +28,6 @@ beforeEach(() => {
   loadGrantedApplicationCodes.mockReset()
   loadGrantedApplicationCodes.mockResolvedValue([])
   vi.unstubAllEnvs()
-  vi.stubEnv("NODE_ENV", "production")
 })
 
 afterEach(() => {
@@ -50,8 +49,7 @@ describe("requireTileAccess — próby ominięcia", () => {
     }
   })
 
-  it("IGNORUJE DEV_USER_EMAIL na produkcji", async () => {
-    vi.stubEnv("DEV_USER_EMAIL", "admin@cortex.local")
+  it("IGNORUJE DEV_USER_EMAIL gdy nieustawione — brak fallbacku znikąd", async () => {
     loadGrantedApplicationCodes.mockResolvedValue([ENTITLEMENT])
 
     const result = await requireTileAccess(makeRequest(null), ENTITLEMENT)
@@ -106,8 +104,27 @@ describe("requireTileAccess — dostęp przyznany", () => {
     expect(loadGrantedApplicationCodes).toHaveBeenCalledWith("admin@firma.pl")
   })
 
-  it("honoruje DEV_USER_EMAIL poza produkcją", async () => {
-    vi.stubEnv("NODE_ENV", "development")
+  it("honoruje DEV_USER_EMAIL niezależnie od NODE_ENV", async () => {
+    vi.stubEnv("DEV_USER_EMAIL", "dev@cortex.local")
+    loadGrantedApplicationCodes.mockResolvedValue([ENTITLEMENT])
+
+    const result = await requireTileAccess(makeRequest(null), ENTITLEMENT)
+
+    expect(result).toEqual({ allowed: true, email: "dev@cortex.local" })
+  })
+
+  // Regresja: standalone build zawsze ma NODE_ENV=production zamrożone przez
+  // webpack DefinePlugin (patrz komentarz przy getRequestEmail w rbac.ts) —
+  // stary warunek `NODE_ENV !== "production"` był w skompilowanym obrazie
+  // Dockera martwym kodem, DEV_USER_EMAIL nigdy nie działał ani lokalnie
+  // (docker-compose.yml), ani teoretycznie na demo-dev. Ten test dowodzi, że
+  // fallback działa TEŻ z NODE_ENV=production ustawionym — dokładnie układ z
+  // docker-compose.yml (`environment: NODE_ENV: production`) — zweryfikowane
+  // dodatkowo empirycznie: `next build` + standalone `server.js` z
+  // NODE_ENV=production i DEV_USER_EMAIL w env procesu, `GET /api/me/access`
+  // (03.08.2026).
+  it("honoruje DEV_USER_EMAIL nawet z NODE_ENV=production (dokładnie układ docker-compose.yml)", async () => {
+    vi.stubEnv("NODE_ENV", "production")
     vi.stubEnv("DEV_USER_EMAIL", "dev@cortex.local")
     loadGrantedApplicationCodes.mockResolvedValue([ENTITLEMENT])
 
@@ -117,7 +134,6 @@ describe("requireTileAccess — dostęp przyznany", () => {
   })
 
   it("nagłówek ma pierwszeństwo przed DEV_USER_EMAIL", async () => {
-    vi.stubEnv("NODE_ENV", "development")
     vi.stubEnv("DEV_USER_EMAIL", "dev@cortex.local")
     loadGrantedApplicationCodes.mockResolvedValue([ENTITLEMENT])
 
