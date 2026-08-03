@@ -23,3 +23,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip3 install --no-cache-dir --break-system-packages unoserver
 
 WORKDIR /app
+
+# Test-only additions on top of the near-verbatim port above (which stops at
+# `WORKDIR /app`, exactly as ported). This sidecar has no application source
+# to `COPY . .` — only pytest + a smoke suite, so CI's universal
+# `docker run <tag> pytest` gate (.github/workflows/docker-build.yml,
+# python-services job) passes for real instead of failing with "pytest:
+# executable file not found in $PATH".
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
+
+COPY pytest.ini .
+COPY tests/ tests/

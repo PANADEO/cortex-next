@@ -1,0 +1,10 @@
+# Test-only dependency. This sidecar has no Python application code of its
+# own — `unoserver` itself is installed as a system pip package in the
+# Dockerfile's own RUN step (near-verbatim port, see that file's top
+# comment), not from this requirements.txt. pytest is pinned to the same
+# version used by every other services/ image
+# (.claude/skills/code-python-service/SKILL.md) purely so this image can
+# satisfy the CI job's universal rule (.github/workflows/docker-build.yml,
+# python-services: `docker run <tag> pytest` before push) exactly like every
+# other service — no special-casing needed in the shared workflow logic.
+pytest==8.3.4

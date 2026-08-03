@@ -24,7 +24,9 @@ services/<nazwa>/
 └── .dockerignore            # __pycache__/.pytest_cache/.venv — nie wciągać do obrazu
 ```
 
-Serwis z drugim kontenerem (np. przyszły `document-parser` + jego `unoserver` sidecar, patrz `PROJECT/cortex-frontend-parser-dokumentow-port-projekt.md` §1.2/D3) dostaje po prostu drugi folder z własnym Dockerfile: `services/document-parser/unoserver/Dockerfile` obok `services/document-parser/Dockerfile` — CI (patrz niżej) znajduje oba automatycznie, bez zmian w YAML.
+Serwis z drugim kontenerem (np. `document-parser` + jego `unoserver` sidecar, patrz `PROJECT/cortex-frontend-parser-dokumentow-port-projekt.md` §1.2/D3) dostaje po prostu drugi folder z własnym Dockerfile: `services/document-parser/unoserver/Dockerfile` obok `services/document-parser/Dockerfile` — CI (patrz niżej) znajduje oba automatycznie, bez zmian w YAML.
+
+**Sidecar BEZ własnego `main.py`/FastAPI (np. `unoserver`) nadal potrzebuje własnego `requirements.txt` (choćby tylko `pytest==8.3.4`) + `pytest.ini` + `tests/`** — `python-services` job w CI (patrz niżej) bezwarunkowo robi `docker run <tag> pytest` na KAŻDYM zdyskretyzowanym obrazie, niezależnie od tego czy ma FastAPI. Brak testów = `exec: "pytest": executable file not found in $PATH`, exit 127, obraz nigdy nie zostaje wypchnięty — dokładnie tak padł `document-parser-unoserver` (commit `2d13ef5`), zanim dostał ten dopisek. Testy takiego sidecara nie mają `TestClient`u do owinięcia (nie ma appki) — zamiast tego subprocess smoke-testy na realnych binarkach/modułach, które sidecar faktycznie opakowuje (np. `soffice --version`, `unoconvert --version`, `python3 -c "import unoserver.server"` — dokładnie moduł, który `docker-compose.yml`'s `command:` uruchamia jako CMD), patrz `services/document-parser/unoserver/tests/test_smoke.py`. To wciąż genuine coverage, nie `assert True` — łapie realnie zepsutą instalację LibreOffice/UNO.
 
 Realne serwisy rozrosną się (`main.py` → pakiet `src/` z `pipeline.py`, routerami itd.) — kształt szkieletu to punkt startowy, nie sztywna forma do wiecznego trzymania.
 
