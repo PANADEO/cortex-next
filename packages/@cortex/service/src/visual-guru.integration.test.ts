@@ -10,11 +10,17 @@
 //   DATABASE_URL=postgres://cortex:cortex@localhost:5432/cortex pnpm vitest run \
 //     packages/@cortex/service/src/visual-guru.integration.test.ts
 
-import { closeDb, generations, getDb } from "@cortex/db"
+import { closeDb, generationVariants, generations, getDb } from "@cortex/db"
 import { randomUUID } from "node:crypto"
 import { eq } from "drizzle-orm"
 import { afterAll, beforeEach, describe, expect, it } from "vitest"
-import { createGeneration, getMyGeneration, listMyGenerations } from "./visual-guru"
+import {
+  createGeneration,
+  deleteGeneration,
+  getMyGeneration,
+  listMyGenerations,
+  listMyGenerationsWithFirstVariant,
+} from "./visual-guru"
 
 const hasDatabase = Boolean(process.env.DATABASE_URL)
 
@@ -110,5 +116,72 @@ describe.skipIf(!hasDatabase)("visual-guru service — prawdziwy Postgres", () =
     expect(found?.hadReferenceImage).toBe(true)
     expect(found?.referenceImageFileName).toBe("logo.png")
     expect(found?.variants.map((v) => v.variantIndex)).toEqual([0, 1, 2])
+  })
+
+  it("listMyGenerationsWithFirstVariant zwraca miniaturę wariantu 0, izolując cudze rekordy", async () => {
+    await createGeneration(OWNER_EMAIL, {
+      prompt: "z miniaturą",
+      hadReferenceImage: false,
+      model: "google/gemini-3.1-flash-lite-image",
+      variants: [
+        { variantIndex: 0, image: Buffer.from("thumb"), contentType: "image/png" },
+        { variantIndex: 1, image: Buffer.from("second") },
+      ],
+    })
+    await createGeneration(FOREIGN_OWNER_EMAIL, {
+      prompt: "cudza miniatura",
+      hadReferenceImage: false,
+      model: "google/gemini-3.1-flash-lite-image",
+      variants: [{ variantIndex: 0, image: Buffer.from("foreign-thumb") }],
+    })
+
+    const rows = await listMyGenerationsWithFirstVariant(OWNER_EMAIL)
+
+    expect(rows).toHaveLength(1)
+    expect(rows[0]?.firstVariantImage?.toString()).toBe("thumb")
+    expect(rows[0]?.firstVariantContentType).toBe("image/png")
+    expect(rows.some((row) => row.userEmail === FOREIGN_OWNER_EMAIL)).toBe(false)
+  })
+
+  it("deleteGeneration usuwa generację WŁASCICIELA razem z wariantami (cascade)", async () => {
+    const created = await createGeneration(OWNER_EMAIL, {
+      prompt: "do usunięcia",
+      hadReferenceImage: false,
+      model: "google/gemini-3.1-flash-lite-image",
+      variants: [{ variantIndex: 0, image: Buffer.from("x") }],
+    })
+
+    const deleted = await deleteGeneration(OWNER_EMAIL, created.id)
+    expect(deleted).toBe(true)
+
+    const remainingGeneration = await getMyGeneration(OWNER_EMAIL, created.id)
+    expect(remainingGeneration).toBeUndefined()
+
+    const db = getDb()
+    const orphanedVariants = await db
+      .select()
+      .from(generationVariants)
+      .where(eq(generationVariants.generationId, created.id))
+    expect(orphanedVariants).toHaveLength(0)
+  })
+
+  it("deleteGeneration zwraca false dla cudzej generacji — NIE usuwa nic (izolacja przy DELETE)", async () => {
+    const foreign = await createGeneration(FOREIGN_OWNER_EMAIL, {
+      prompt: "cudza, nie do ruszenia",
+      hadReferenceImage: false,
+      model: "google/gemini-3.1-flash-lite-image",
+      variants: [{ variantIndex: 0, image: Buffer.from("foreign") }],
+    })
+
+    const deleted = await deleteGeneration(OWNER_EMAIL, foreign.id)
+    expect(deleted).toBe(false)
+
+    const stillThere = await getMyGeneration(FOREIGN_OWNER_EMAIL, foreign.id)
+    expect(stillThere).toBeDefined()
+  })
+
+  it("deleteGeneration zwraca false dla nieistniejącego id", async () => {
+    const deleted = await deleteGeneration(OWNER_EMAIL, "00000000-0000-0000-0000-000000000000")
+    expect(deleted).toBe(false)
   })
 })

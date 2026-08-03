@@ -61,6 +61,51 @@ export function listMyGenerations(userEmail: string): Promise<GenerationRow[]> {
     .orderBy(desc(generations.createdAt))
 }
 
+export interface GenerationListItem extends GenerationRow {
+  /** Wariant o `variantIndex = 0` — jedyny potrzebny dla miniatury w kolumnie
+   *  listy (design doc §6.2). `null` tylko w teoretycznym przypadku generacji
+   *  bez ani jednego zapisanego wariantu (np. przerwana odpowiedź modelu z
+   *  `variantCount = 0`) — createGeneration() nie tworzy takich wierszy w
+   *  normalnym biegu, ale kolumna jest nullable, więc LEFT JOIN, nie INNER. */
+  firstVariantImage: Buffer | null
+  firstVariantContentType: string | null
+}
+
+/** Wzorem listMyGenerations() (filtr w WHERE, sort po createdAt), rozszerzone
+ *  o LEFT JOIN pierwszego wariantu — ekran /visual-guru/history (§6.2)
+ *  potrzebuje miniatury w kolumnie listy bez pobierania WSZYSTKICH wariantów
+ *  każdej generacji (to, co zrobiłoby wielokrotne wywołanie getMyGeneration,
+ *  niepotrzebnie ciągnąc bajty pozostałych wariantów przez sieć). */
+export async function listMyGenerationsWithFirstVariant(userEmail: string): Promise<GenerationListItem[]> {
+  const rows = await getDb()
+    .select({
+      id: generations.id,
+      userEmail: generations.userEmail,
+      prompt: generations.prompt,
+      additionalContext: generations.additionalContext,
+      hadReferenceImage: generations.hadReferenceImage,
+      referenceImageFileName: generations.referenceImageFileName,
+      model: generations.model,
+      variantCount: generations.variantCount,
+      createdAt: generations.createdAt,
+      firstVariantImage: generationVariants.image,
+      firstVariantContentType: generationVariants.contentType,
+    })
+    .from(generations)
+    .leftJoin(
+      generationVariants,
+      and(eq(generationVariants.generationId, generations.id), eq(generationVariants.variantIndex, 0)),
+    )
+    .where(eq(generations.userEmail, userEmail))
+    .orderBy(desc(generations.createdAt))
+
+  return rows.map((row) => ({
+    ...row,
+    firstVariantImage: row.firstVariantImage ?? null,
+    firstVariantContentType: row.firstVariantContentType ?? null,
+  }))
+}
+
 /** Szczegóły JEDNEJ generacji + jej warianty. Właścicielstwo w WHERE, nie
  *  sprawdzane po fetchu. `undefined` zarówno dla "nie istnieje", jak i
  *  "cudze" — route (Faza 1) mapuje oba na 404, NIGDY 403 (403 zdradzałby, że
@@ -130,4 +175,21 @@ export async function createGeneration(
 
     return { ...generation, variants }
   })
+}
+
+/**
+ * Usuwa JEDNĄ generację (i, przez FK `onDelete: "cascade"` na
+ * `generation_variants.generation_id`, wszystkie jej warianty razem z nią —
+ * brak osobnego DELETE na wariantach, tak jak `deleteFrameTemplate()` w
+ * ilustromat.ts liczy na cascade `template_assets`). Właścicielstwo w WHERE,
+ * nie sprawdzane po fetchu — `false` zarówno dla "nie istnieje", jak i
+ * "cudze" (wzorem `removeForbiddenPhrase()` w content-guru.ts), route (Faza
+ * 2) mapuje na 404, NIGDY 403.
+ */
+export async function deleteGeneration(userEmail: string, id: string): Promise<boolean> {
+  const deleted = await getDb()
+    .delete(generations)
+    .where(and(eq(generations.id, id), eq(generations.userEmail, userEmail)))
+    .returning()
+  return deleted.length > 0
 }

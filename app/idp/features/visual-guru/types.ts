@@ -35,3 +35,33 @@ export interface GenerateResponseDto {
   createdAt: string
   variants: GeneratedVariantDto[]
 }
+
+// Kontrakt GET /api/visual-guru/history (§6.2) — jeden wiersz archiwum.
+// `firstVariantDataUrl` to jedyny wariant potrzebny do miniatury w kolumnie
+// listy; `null` tylko w teoretycznym przypadku generacji bez zapisanego
+// wariantu (patrz GenerationListItem w @cortex/service/src/visual-guru.ts).
+export interface GenerationListItemDto {
+  id: string
+  prompt: string
+  model: string
+  variantCount: number
+  hadReferenceImage: boolean
+  createdAt: string
+  firstVariantDataUrl: string | null
+}
+
+// Kontrakt GET /api/visual-guru/history/:id (§6.3) — pełne szczegóły + WSZYSTKIE
+// warianty. `referenceImageFileName` to jedyny ślad obrazu referencyjnego
+// wystawiany klientowi (D5 — same bajty nigdy nie trafiają do Postgresa, więc
+// nie ma ich skąd zwrócić).
+export interface GenerationDetailDto {
+  id: string
+  prompt: string
+  additionalContext: string | null
+  model: string
+  variantCount: number
+  hadReferenceImage: boolean
+  referenceImageFileName: string | null
+  createdAt: string
+  variants: GeneratedVariantDto[]
+}
