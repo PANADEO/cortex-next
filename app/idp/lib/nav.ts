@@ -347,18 +347,18 @@ export const DOCUMENT_PARSER_NAV: TileMenuSection[] = [
   },
 ]
 
-// Round B (PROJECT/cortex-frontend-content-guru-full-port-projekt.md D1/D8):
-// cztery trasy istnieją dziś (generowanie + szablony + dwa profile) z
-// docelowych sześciu — historia i zakazane frazy dochodzą w kolejnych
-// rundach, dopisywane tutaj dopiero gdy ich page.tsx realnie powstanie
-// (wzorem komentarza przy GEO_SCORE_CALCULATOR_NAV — martwy link w sidebarze
-// zanim ekran istnieje).
+// Round D (PROJECT/cortex-frontend-content-guru-full-port-projekt.md D1/D8):
+// pięć tras istnieją dziś (generowanie + historia + szablony + dwa profile)
+// z docelowych sześciu — zakazane frazy to osobna runda, dopisywana tutaj
+// dopiero gdy jej page.tsx realnie powstanie (wzorem komentarza przy
+// GEO_SCORE_CALCULATOR_NAV — martwy link w sidebarze zanim ekran istnieje).
 export const CONTENT_GURU_NAV: TileMenuSection[] = [
   {
     id: "praca",
     label: "Praca",
     items: [
       { id: "generowanie", label: "Generowanie", icon: Sparkles, href: "/content-guru" },
+      { id: "historia", label: "Historia", icon: History, href: "/content-guru/history" },
       { id: "szablony", label: "Szablony", icon: FileText, href: "/content-guru/templates" },
       {
         id: "profile-klienta",

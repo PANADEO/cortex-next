@@ -22,8 +22,13 @@
 //    lib/content-guru/profile-markdown.ts jako sekcja kontekstu, i jego id
 //    zapisywany w content_archive.{client,market}ProfileId (kolumny już
 //    istniały w schemacie Fazy 0).
-// Mini-generatory (keywordPhrase/metaDescription) nadal poza zakresem
-// (Round D) — te dwa parametry promptu zostają `null`.
+// Round D (design doc D8, §1.4/§4.1): `keywordPhrase`/`metaDescription`
+// opcjonalne — panel "SEO i metadane" na ekranie generowania jest wspólny
+// dla wszystkich trybów, ale tylko "Pojedyncza" faktycznie wysyła te dwie
+// wartości do promptu/archiwum (batch/pakiet zostają `null`, wzorem
+// run-batch-generation.ts — nie każdy z N*M elementów batcha ma sens z tą
+// samą frazą/meta, poza zakresem Round D). `metaDescription` capowane na 160
+// znaków — legacy walidował to twardo przed submitem.
 
 import { NextResponse, type NextRequest } from "next/server"
 import { z } from "zod"
@@ -33,6 +38,7 @@ import {
   marketProfileToMarkdown,
 } from "@/lib/content-guru/profile-markdown"
 import { ContentGuruServiceError } from "@/lib/content-guru/integration-client"
+import { META_DESCRIPTION_MAX_CHARS } from "@/lib/content-guru/mini-generators"
 import { runContentGeneration } from "@/lib/content-guru/run-generation"
 import { requireContentGuruAccess } from "../_lib/guard"
 
@@ -47,6 +53,8 @@ const requestSchema = z.object({
   templateId: z.string().uuid().optional(),
   clientProfileId: z.string().uuid().optional(),
   marketProfileId: z.string().uuid().optional(),
+  keywordPhrase: z.string().trim().max(200).optional(),
+  metaDescription: z.string().trim().max(META_DESCRIPTION_MAX_CHARS).optional(),
 })
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -109,6 +117,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const forbiddenPhraseRows = await listMyForbiddenPhrases(email)
     const forbiddenPhrases = forbiddenPhraseRows.map((row) => row.phrase)
 
+    const keywordPhrase = parsed.data.keywordPhrase ?? null
+    const metaDescription = parsed.data.metaDescription ?? null
+
     const generated = await runContentGeneration({
       email,
       model,
@@ -119,8 +130,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       template,
       clientContext,
       marketContext,
-      keywordPhrase: null,
-      metaDescription: null,
+      keywordPhrase,
+      metaDescription,
       forbiddenPhrases,
     })
 
@@ -132,8 +143,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       matchedForbiddenPhrases: generated.matchedForbiddenPhrases,
       targetAudience: targetAudience || null,
       additionalInfo: additionalInfo || null,
-      keywordPhrase: null,
-      metaDescription: null,
+      keywordPhrase,
+      metaDescription,
       modelUsed: generated.model,
       clientProfileId,
       marketProfileId,

@@ -6,6 +6,9 @@ import type {
   ClientProfileInputDto,
   CreateGenerationJobRequestDto,
   GenerateContentRequestDto,
+  GenerateKeywordPhraseRequestDto,
+  GenerateMetaDescriptionRequestDto,
+  GenerateTopicsRequestDto,
   GenerationJobDto,
   MarketProfileInputDto,
   TemplateInputDto,
@@ -175,5 +178,39 @@ export function useGenerationJob(jobId: string | null) {
     queryFn: () => endpoints.jobs.get(jobId as string),
     enabled: jobId !== null,
     refetchInterval: (query) => (isJobInProgress(query.state.data) ? JOB_POLL_INTERVAL_MS : false),
+  })
+}
+
+// ---- archiwum (Round D, design doc §4.5 — /content-guru/history) ----
+
+export function useMyArchive() {
+  return useQuery({ queryKey: queryKeys.archive(), queryFn: endpoints.archive.list })
+}
+
+/** `id: null` wyłącza zapytanie całkowicie (`enabled: false`) — wzorem
+ *  `useGenerationJob()` powyżej, dla momentu przed nawodnieniem `useParams()`. */
+export function useArchiveEntry(id: string | null) {
+  return useQuery({
+    queryKey: queryKeys.archiveEntry(id ?? ""),
+    queryFn: () => endpoints.archive.get(id as string),
+    enabled: id !== null,
+  })
+}
+
+// ---- mini-generatory (Round D, D8) ----
+
+export function useGenerateTopics() {
+  return useMutation({ mutationFn: (body: GenerateTopicsRequestDto) => endpoints.miniGenerators.topics(body) })
+}
+
+export function useGenerateKeywordPhrase() {
+  return useMutation({
+    mutationFn: (body: GenerateKeywordPhraseRequestDto) => endpoints.miniGenerators.keyword(body),
+  })
+}
+
+export function useGenerateMetaDescriptionMini() {
+  return useMutation({
+    mutationFn: (body: GenerateMetaDescriptionRequestDto) => endpoints.miniGenerators.metaDescription(body),
   })
 }

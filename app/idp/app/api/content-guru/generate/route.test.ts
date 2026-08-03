@@ -433,4 +433,57 @@ describe("POST /api/content-guru/generate", () => {
       )
     })
   })
+
+  // Round D — D8: fraza kluczowa/meta description są teraz opcjonalnie
+  // wysyłane z panelu "SEO i metadane" (wcześniej zawsze null, patrz komentarz
+  // nagłówkowy route.ts).
+  describe("Round D — fraza kluczowa/meta description", () => {
+    it("keywordPhrase/metaDescription podane -> trafiają do promptu i do archiwum", async () => {
+      service.listMyForbiddenPhrases.mockResolvedValueOnce([])
+      generateContent.mockResolvedValueOnce({
+        content: "Treść z SEO.",
+        tokensUsed: 90,
+        model: VALID_BODY.model,
+      })
+
+      await POST(
+        makeRequest({
+          ...VALID_BODY,
+          keywordPhrase: "automatyzacja procesów",
+          metaDescription: "Poznaj automatyzację procesów finansowych.",
+        }) as never,
+      )
+
+      const promptArgs = generateContent.mock.calls[0]?.[0]
+      expect(promptArgs.systemPrompt).toContain("automatyzacja procesów")
+      expect(promptArgs.systemPrompt).toContain("Poznaj automatyzację procesów finansowych.")
+      expect(service.saveArchiveEntry).toHaveBeenCalledWith(
+        EMAIL,
+        expect.objectContaining({
+          keywordPhrase: "automatyzacja procesów",
+          metaDescription: "Poznaj automatyzację procesów finansowych.",
+        }),
+      )
+    })
+
+    it("bez keywordPhrase/metaDescription -> oba zostają null (kontrakt Round A/B/C bez zmian)", async () => {
+      service.listMyForbiddenPhrases.mockResolvedValueOnce([])
+      generateContent.mockResolvedValueOnce({ content: "Treść bez SEO.", tokensUsed: 70, model: VALID_BODY.model })
+
+      await POST(makeRequest(VALID_BODY) as never)
+
+      expect(service.saveArchiveEntry).toHaveBeenCalledWith(
+        EMAIL,
+        expect.objectContaining({ keywordPhrase: null, metaDescription: null }),
+      )
+    })
+
+    it("400 gdy metaDescription przekracza 160 znaków", async () => {
+      const response = await POST(
+        makeRequest({ ...VALID_BODY, metaDescription: "A".repeat(161) }) as never,
+      )
+      expect(response.status).toBe(400)
+      expect(generateContent).not.toHaveBeenCalled()
+    })
+  })
 })

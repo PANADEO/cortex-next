@@ -15,6 +15,10 @@ export interface GenerateContentRequestDto {
   templateId?: string
   clientProfileId?: string
   marketProfileId?: string
+  // Round D (D8) — panel "SEO i metadane", tylko tryb "Pojedyncza" faktycznie
+  // wysyła te dwie wartości (patrz komentarz w generate/route.ts).
+  keywordPhrase?: string
+  metaDescription?: string
 }
 
 export type ContentGuruGenerationStatus = "done" | "done-with-warnings"
@@ -151,4 +155,60 @@ export interface CreateGenerationJobRequestDto {
 export interface CreateGenerationJobResponseDto {
   jobId: string
   status: GenerationJobStatus
+}
+
+// ---- archiwum (Round D, design doc §4.5 — /content-guru/history) ----
+
+export interface ContentArchiveEntryDto {
+  id: string
+  userEmail: string
+  contentType: string
+  topic: string | null
+  generatedContent: string
+  status: ContentGuruGenerationStatus
+  matchedForbiddenPhrases: string[] | null
+  targetAudience: string | null
+  additionalInfo: string | null
+  keywordPhrase: string | null
+  metaDescription: string | null
+  modelUsed: string
+  clientProfileId: string | null
+  marketProfileId: string | null
+  metadata: Record<string, unknown>
+  createdAt: string
+}
+
+// ---- mini-generatory (Round D, D8) ----
+
+export interface GenerateTopicsRequestDto {
+  transcript: string
+  topicCount: number
+  model: string
+}
+
+export interface GenerateTopicsResponseDto {
+  topics: string[]
+}
+
+export interface GenerateKeywordPhraseRequestDto {
+  topic: string
+  targetAudience?: string
+  additionalInfo?: string
+  model: string
+}
+
+export interface GenerateKeywordPhraseResponseDto {
+  keywordPhrase: string
+}
+
+export interface GenerateMetaDescriptionRequestDto {
+  topic: string
+  keywordPhrase?: string
+  targetAudience?: string
+  additionalInfo?: string
+  model: string
+}
+
+export interface GenerateMetaDescriptionResponseDto {
+  metaDescription: string
 }

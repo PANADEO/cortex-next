@@ -79,6 +79,12 @@ const service = vi.hoisted(() => {
   }
   return {
     listMyForbiddenPhrases: vi.fn(async () => [] as unknown[]),
+    // Round D — /archive, /archive/[id]. Mockowane tutaj z tego samego
+    // powodu co reszta tej listy: bez tego handler po ominiętej bramce
+    // uderzałby w prawdziwe @cortex/db (brak DATABASE_URL w testach) zamiast
+    // oddać HTTP response, co wywraca test niewłaściwym błędem.
+    listMyArchive: vi.fn(async () => [] as unknown[]),
+    getMyArchiveEntry: vi.fn(async () => undefined as unknown),
     saveArchiveEntry: vi.fn(async () => ({
       id: "archive-1",
       userEmail: "admin@firma.pl",

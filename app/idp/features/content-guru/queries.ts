@@ -2,11 +2,18 @@ import { apiClient } from "@cortex/api"
 import type {
   ClientProfileDto,
   ClientProfileInputDto,
+  ContentArchiveEntryDto,
   ContentGuruConfigDto,
   CreateGenerationJobRequestDto,
   CreateGenerationJobResponseDto,
   GenerateContentRequestDto,
   GenerateContentResponseDto,
+  GenerateKeywordPhraseRequestDto,
+  GenerateKeywordPhraseResponseDto,
+  GenerateMetaDescriptionRequestDto,
+  GenerateMetaDescriptionResponseDto,
+  GenerateTopicsRequestDto,
+  GenerateTopicsResponseDto,
   GenerationJobDto,
   MarketProfileDto,
   MarketProfileInputDto,
@@ -25,6 +32,8 @@ export const queryKeys = {
   clientProfiles: () => [...queryKeys.all, "client-profiles"] as const,
   marketProfiles: () => [...queryKeys.all, "market-profiles"] as const,
   job: (id: string) => [...queryKeys.all, "jobs", id] as const,
+  archive: () => [...queryKeys.all, "archive"] as const,
+  archiveEntry: (id: string) => [...queryKeys.all, "archive", id] as const,
 }
 
 export const endpoints = {
@@ -64,5 +73,19 @@ export const endpoints = {
     create: (body: CreateGenerationJobRequestDto) =>
       apiClient.post<CreateGenerationJobResponseDto>(`${BASE}/jobs`, { jsonBody: body }),
     get: (id: string) => apiClient.get<GenerationJobDto>(`${BASE}/jobs/${id}`),
+  },
+  archive: {
+    list: () => apiClient.get<ContentArchiveEntryDto[]>(`${BASE}/archive`),
+    get: (id: string) => apiClient.get<ContentArchiveEntryDto>(`${BASE}/archive/${id}`),
+  },
+  miniGenerators: {
+    topics: (body: GenerateTopicsRequestDto) =>
+      apiClient.post<GenerateTopicsResponseDto>(`${BASE}/mini-generators/topics`, { jsonBody: body }),
+    keyword: (body: GenerateKeywordPhraseRequestDto) =>
+      apiClient.post<GenerateKeywordPhraseResponseDto>(`${BASE}/mini-generators/keyword`, { jsonBody: body }),
+    metaDescription: (body: GenerateMetaDescriptionRequestDto) =>
+      apiClient.post<GenerateMetaDescriptionResponseDto>(`${BASE}/mini-generators/meta-description`, {
+        jsonBody: body,
+      }),
   },
 }

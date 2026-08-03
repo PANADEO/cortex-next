@@ -4,7 +4,40 @@
 // co tryb "Pojedyncza" (drugi konsument uzasadnia ekstrakcję,
 // architecture_rules.md §3).
 
+import { Badge } from "@cortex/ui"
+import { AlertTriangle } from "lucide-react"
 import { Fragment, type ReactNode } from "react"
+import type { ContentGuruGenerationStatus } from "./types"
+
+/**
+ * Badge statusu generacji (`done`/`done-with-warnings`, D5) — była
+ * duplikowana lokalnie w page.tsx i skopiowana jako `ItemStatusBadge` w
+ * generation-job-card.tsx (Round C). Round D dodaje TRZECIEGO/CZWARTEGO
+ * konsumenta (/content-guru/history i /content-guru/history/[id]) —
+ * ekstrakcja tutaj, obok `renderHighlightedContent()`, żeby paleta amber/
+ * emerald nie rozjeżdżała się między ekranami tego samego modułu.
+ */
+export function ContentStatusBadge({ status }: { status: ContentGuruGenerationStatus }) {
+  if (status === "done-with-warnings") {
+    return (
+      <Badge
+        variant="outline"
+        className="gap-1 border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300"
+      >
+        <AlertTriangle className="h-3 w-3" />
+        Zawiera zakazane frazy
+      </Badge>
+    )
+  }
+  return (
+    <Badge
+      variant="outline"
+      className="border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
+    >
+      Gotowe
+    </Badge>
+  )
+}
 
 /**
  * Podświetla dopasowane zakazane frazy w wygenerowanej treści (`<mark>`,

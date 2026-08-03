@@ -2,7 +2,6 @@
 
 import { toastApiError } from "@cortex/api"
 import {
-  Badge,
   Button,
   Card,
   CardContent,
@@ -22,15 +21,18 @@ import {
   TabsTrigger,
   Textarea,
 } from "@cortex/ui"
-import { AlertTriangle, Sparkles } from "lucide-react"
+import { Sparkles } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { GenerationJobCard } from "@/features/content-guru/components/generation-job-card"
 import { createEmptyTopicRow, TopicTable, type TopicRow } from "@/features/content-guru/components/topic-table"
+import { TopicGeneratorDialog } from "@/features/content-guru/components/topic-generator-dialog"
 import {
   useContentGuruConfig,
   useCreateGenerationJob,
   useGenerateContent,
+  useGenerateKeywordPhrase,
+  useGenerateMetaDescriptionMini,
   useGenerationJob,
   useMyClientProfiles,
   useMyMarketProfiles,
@@ -43,8 +45,9 @@ import type {
   MarketProfileDto,
   TemplateDto,
 } from "@/features/content-guru/types"
-import { renderHighlightedContent } from "@/features/content-guru/utils"
+import { ContentStatusBadge, renderHighlightedContent } from "@/features/content-guru/utils"
 import { MAX_COMBINATIONS } from "@/lib/content-guru/job-limits"
+import { META_DESCRIPTION_MAX_CHARS } from "@/lib/content-guru/mini-generators"
 
 // Referencje stabilne między renderami — inaczej `query.data ?? []` tworzyłby
 // nową tablicę za każdym razem, unieważniając poniższe useMemo (wzorem
@@ -63,28 +66,6 @@ const NO_PROFILE = "__none__"
 
 type GenerationTab = "single" | GenerationJobMode
 
-function StatusBadge({ status }: { status: GenerateContentResponseDto["status"] }) {
-  if (status === "done-with-warnings") {
-    return (
-      <Badge
-        variant="outline"
-        className="gap-1 border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300"
-      >
-        <AlertTriangle className="h-3 w-3" />
-        Zawiera zakazane frazy
-      </Badge>
-    )
-  }
-  return (
-    <Badge
-      variant="outline"
-      className="border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
-    >
-      Gotowe
-    </Badge>
-  )
-}
-
 export default function ContentGuruPage() {
   const configQuery = useContentGuruConfig()
   const templatesQuery = useTemplates()
@@ -92,6 +73,8 @@ export default function ContentGuruPage() {
   const marketProfilesQuery = useMyMarketProfiles()
   const generate = useGenerateContent()
   const createJob = useCreateGenerationJob()
+  const generateKeywordPhrase = useGenerateKeywordPhrase()
+  const generateMetaDescriptionMini = useGenerateMetaDescriptionMini()
 
   const [activeTab, setActiveTab] = useState<GenerationTab>("single")
 
@@ -113,6 +96,16 @@ export default function ContentGuruPage() {
   const [clientProfileId, setClientProfileId] = useState(NO_PROFILE)
   const [marketProfileId, setMarketProfileId] = useState(NO_PROFILE)
   const [result, setResult] = useState<GenerateContentResponseDto | null>(null)
+
+  // Panel "SEO i metadane" (Round D, D8) — WSPÓLNY między wszystkimi trybami
+  // (design doc §4.1: "zostają widoczne niezależnie od wybranego trybu, żeby
+  // przełączanie trybu nie czyściło pracy"). Tylko "Pojedyncza" faktycznie
+  // wysyła te dwie wartości do /generate (patrz komentarz w
+  // handleGenerateSingle) — w "Kilka"/"Pakiet" wartości zostają w UI, ale
+  // /jobs ich nie przyjmuje (Round C zostawił je celowo null per pozycję).
+  const [keywordPhrase, setKeywordPhrase] = useState("")
+  const [metaDescription, setMetaDescription] = useState("")
+  const [topicGeneratorOpen, setTopicGeneratorOpen] = useState(false)
 
   const [activeJobId, setActiveJobId] = useState<string | null>(null)
   const [activeJobMode, setActiveJobMode] = useState<GenerationJobMode | null>(null)
@@ -157,6 +150,12 @@ export default function ContentGuruPage() {
     [topicRows],
   )
 
+  // Źródło tematu dla mini-generatorów frazy/meta (D8): w trybie
+  // "Pojedyncza" pole Temat, w "Kilka"/"Pakiet" (brak pojedynczego pola)
+  // pierwszy aktywny temat z tabeli — pragmatyczny wybór, bo tylko
+  // "Pojedyncza" i tak wysyła wynik dalej (patrz komentarz przy stanie SEO).
+  const seoSourceTopic = activeTab === "single" ? topic : (activeTopics[0] ?? "")
+
   const packageCombinations = activeTopics.length * packageTemplateIds.length
   const packageOverLimit = packageCombinations > MAX_COMBINATIONS
 
@@ -174,6 +173,56 @@ export default function ContentGuruPage() {
     setPackageTemplateIds((current) =>
       current.includes(id) ? current.filter((templateIdInList) => templateIdInList !== id) : [...current, id],
     )
+  }
+
+  // Generator tematów (D8) — single: zastępuje pole Temat pierwszym (jedynym,
+  // bo dialog w trybie !allowMultiple wymusza pojedynczy wybór) zaznaczonym
+  // tematem. batch/pakiet: dokłada każdy zaznaczony temat jako nowy wiersz —
+  // jeśli tabela ma tylko jeden, wciąż pusty wiersz startowy, zastępuje go
+  // zamiast zostawiać pusty wiersz nad wygenerowanymi tematami.
+  function handleInsertGeneratedTopics(insertedTopics: string[]) {
+    if (activeTab === "single") {
+      const [first] = insertedTopics
+      if (first) setTopic(first)
+      return
+    }
+    setTopicRows((current) => {
+      const base =
+        current.length === 1 && current[0] && current[0].topic.trim() === "" ? [] : current
+      const newRows = insertedTopics.map((value) => ({ id: crypto.randomUUID(), topic: value, active: true }))
+      return [...base, ...newRows]
+    })
+  }
+
+  async function handleGenerateKeywordPhrase() {
+    if (!seoSourceTopic.trim() || !model) return
+    try {
+      const response = await generateKeywordPhrase.mutateAsync({
+        topic: seoSourceTopic.trim(),
+        targetAudience: targetAudience.trim(),
+        additionalInfo: additionalInfo.trim(),
+        model,
+      })
+      setKeywordPhrase(response.keywordPhrase)
+    } catch (error) {
+      toastApiError(error, "Nie udało się wygenerować frazy kluczowej")
+    }
+  }
+
+  async function handleGenerateMetaDescription() {
+    if (!seoSourceTopic.trim() || !model) return
+    try {
+      const response = await generateMetaDescriptionMini.mutateAsync({
+        topic: seoSourceTopic.trim(),
+        targetAudience: targetAudience.trim(),
+        additionalInfo: additionalInfo.trim(),
+        model,
+        ...(keywordPhrase.trim() ? { keywordPhrase: keywordPhrase.trim() } : {}),
+      })
+      setMetaDescription(response.metaDescription)
+    } catch (error) {
+      toastApiError(error, "Nie udało się wygenerować meta description")
+    }
   }
 
   async function handleGenerateSingle() {
@@ -196,6 +245,11 @@ export default function ContentGuruPage() {
         // wartością undefined", a DTO deklaruje tylko to pierwsze.
         ...(clientProfileId !== NO_PROFILE ? { clientProfileId } : {}),
         ...(marketProfileId !== NO_PROFILE ? { marketProfileId } : {}),
+        // D8: panel SEO wysyłany tylko w trybie "Pojedyncza" (jedyny tryb,
+        // którego /generate w ogóle przyjmuje te dwa pola — patrz komentarz
+        // przy stanie keywordPhrase/metaDescription wyżej).
+        ...(keywordPhrase.trim() ? { keywordPhrase: keywordPhrase.trim() } : {}),
+        ...(metaDescription.trim() ? { metaDescription: metaDescription.trim() } : {}),
       })
       setResult(response)
       if (response.status === "done-with-warnings") {
@@ -333,17 +387,41 @@ export default function ContentGuruPage() {
                       {topic.length}/{TOPIC_MAX}
                     </span>
                   </div>
-                  <Input
-                    id="content-guru-topic"
-                    value={topic}
-                    maxLength={TOPIC_MAX}
-                    placeholder="Np. otwieramy rekrutację na stanowisko Senior .NET Developer"
-                    onChange={(event) => setTopic(event.target.value)}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="content-guru-topic"
+                      value={topic}
+                      maxLength={TOPIC_MAX}
+                      placeholder="Np. otwieramy rekrutację na stanowisko Senior .NET Developer"
+                      onChange={(event) => setTopic(event.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setTopicGeneratorOpen(true)}
+                      title="Generator tematów"
+                    >
+                      <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                      Generator tematów
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
-                  <Label>Tematy</Label>
+                  <div className="flex items-center justify-between">
+                    <Label>Tematy</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTopicGeneratorOpen(true)}
+                      title="Generator tematów"
+                    >
+                      <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                      Generator tematów
+                    </Button>
+                  </div>
                   <TopicTable rows={topicRows} onChange={setTopicRows} />
                   {activeTab === "package" ? (
                     <p className={packageOverLimit ? "text-xs font-medium text-destructive" : "text-xs text-muted-foreground"}>
@@ -393,6 +471,72 @@ export default function ContentGuruPage() {
                   placeholder="Kontekst, który model powinien uwzględnić"
                   onChange={(event) => setAdditionalInfo(event.target.value)}
                 />
+              </div>
+
+              <div className="flex flex-col gap-3 rounded-md border border-border p-3">
+                <Label className="text-xs text-muted-foreground">
+                  SEO i metadane {activeTab !== "single" ? "(używane w trybie Pojedyncza)" : ""}
+                </Label>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="content-guru-keyword">Fraza kluczowa SEO</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="content-guru-keyword"
+                      value={keywordPhrase}
+                      maxLength={200}
+                      placeholder="Np. automatyzacja procesów finansowych"
+                      onChange={(event) => setKeywordPhrase(event.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleGenerateKeywordPhrase}
+                      disabled={!seoSourceTopic.trim() || !model || generateKeywordPhrase.isPending}
+                      title="Generuj frazę kluczową"
+                      aria-label="Generuj frazę kluczową"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="content-guru-meta">Meta description</Label>
+                    <span
+                      className={
+                        metaDescription.length > META_DESCRIPTION_MAX_CHARS
+                          ? "text-xs font-medium text-destructive"
+                          : "text-xs text-muted-foreground"
+                      }
+                    >
+                      {metaDescription.length}/{META_DESCRIPTION_MAX_CHARS}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Textarea
+                      id="content-guru-meta"
+                      value={metaDescription}
+                      maxLength={META_DESCRIPTION_MAX_CHARS}
+                      rows={2}
+                      placeholder="Krótki opis zachęcający do kliknięcia"
+                      onChange={(event) => setMetaDescription(event.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleGenerateMetaDescription}
+                      disabled={!seoSourceTopic.trim() || !model || generateMetaDescriptionMini.isPending}
+                      title="Generuj meta description"
+                      aria-label="Generuj meta description"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -485,7 +629,7 @@ export default function ContentGuruPage() {
                 ) : (
                   <>
                     <div className="flex items-center justify-between gap-2">
-                      <StatusBadge status={result.status} />
+                      <ContentStatusBadge status={result.status} />
                       <span className="text-xs text-muted-foreground">{result.model}</span>
                     </div>
 
@@ -520,6 +664,14 @@ export default function ContentGuruPage() {
           </Card>
         </div>
       </div>
+
+      <TopicGeneratorDialog
+        open={topicGeneratorOpen}
+        onOpenChange={setTopicGeneratorOpen}
+        model={model}
+        allowMultiple={activeTab !== "single"}
+        onInsert={handleInsertGeneratedTopics}
+      />
     </>
   )
 }
