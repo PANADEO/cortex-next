@@ -63,6 +63,20 @@ const service = vi.hoisted(() => {
     createdAt: new Date(),
     updatedAt: new Date(),
   }
+  // Round C — D4, generation_jobs. `createGenerationJob` NIE musi być tu
+  // mockowane, żeby POST /jobs działało (route.ts wrapuje całość w
+  // try/catch -> 500 na realnym błędzie DB, co i tak nie jest [401,403]),
+  // ale mockujemy oba dla czystości i spójności z resztą tej listy — każda
+  // funkcja serwisowa, którą route może zawołać, ma tu reprezentację.
+  const generationJob = {
+    id: "00000000-0000-0000-0000-000000000004",
+    userEmail: "admin@firma.pl",
+    mode: "batch" as const,
+    status: "queued" as const,
+    items: [] as unknown[],
+    createdAt: new Date(),
+    completedAt: null,
+  }
   return {
     listMyForbiddenPhrases: vi.fn(async () => [] as unknown[]),
     saveArchiveEntry: vi.fn(async () => ({
@@ -99,6 +113,8 @@ const service = vi.hoisted(() => {
     createMarketProfile: vi.fn(async () => marketProfile),
     updateMyMarketProfile: vi.fn(async () => marketProfile),
     deleteMyMarketProfile: vi.fn(async () => true),
+    createGenerationJob: vi.fn(async () => generationJob),
+    getMyGenerationJob: vi.fn(async () => generationJob),
   }
 })
 vi.mock("@cortex/service", async (importOriginal) => ({
@@ -135,14 +151,20 @@ const routeModules = import.meta.glob<Record<string, unknown>>("./**/route.ts")
 
 /** Ciało akceptowane przez każdy handler zapisujący — superset pól ze
  *  WSZYSTKICH schematów tego modułu (generate/templates/client-profiles/
- *  market-profiles/test-generation). Gdyby bramka wypadła, żądanie ma szansę
- *  dojść do 2xx, a nie utknąć wcześniej na 400 z niepowiązanego powodu. */
+ *  market-profiles/test-generation/jobs). Gdyby bramka wypadła, żądanie ma
+ *  szansę dojść do 2xx, a nie utknąć wcześniej na 400 z niepowiązanego
+ *  powodu. `mode: "batch"` + jeden `templateId` w `templateIds` satysfakcjonuje
+ *  ZARÓWNO POST /jobs (batch wymaga dokładnie jednego szablonu), jak i
+ *  wszystkie pozostałe handlery, które po prostu ignorują nieznane klucze. */
 const BODY = {
   contentType: "Post na LinkedIn",
   topic: "Nowości produktowe",
   targetAudience: "Dyrektorzy finansowi",
   additionalInfo: "",
   model: "anthropic/claude-sonnet-4.6",
+  mode: "batch",
+  topics: ["Nowości produktowe"],
+  templateIds: ["00000000-0000-0000-0000-000000000001"],
   name: "Szablon testowy",
   category: "Główne",
   content: "Treść szablonu testowego",
@@ -240,8 +262,8 @@ beforeEach(() => {
 
 describe("bramka /api/content-guru/** — odkrywanie endpointów", () => {
   it("znajduje wszystkie route'y modułu (inaczej reszta testów byłaby pusta)", () => {
-    expect(Object.keys(routeModules).length).toBeGreaterThanOrEqual(9)
-    expect(handlers.length).toBeGreaterThanOrEqual(17)
+    expect(Object.keys(routeModules).length).toBeGreaterThanOrEqual(11)
+    expect(handlers.length).toBeGreaterThanOrEqual(19)
   })
 })
 

@@ -24,6 +24,7 @@
     "db:migrate:document-parser": "drizzle-kit migrate --config drizzle.document-parser.config.ts",
     "db:generate:content-guru": "drizzle-kit generate --config drizzle.content-guru.config.ts",
     "db:migrate:content-guru": "drizzle-kit migrate --config drizzle.content-guru.config.ts",
+    "db:seed:content-guru": "node scripts/seed-content-guru.mjs",
     "db:generate:visual-guru": "drizzle-kit generate --config drizzle.visual-guru.config.ts",
     "db:migrate:visual-guru": "drizzle-kit migrate --config drizzle.visual-guru.config.ts"
   },

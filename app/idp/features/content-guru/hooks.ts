@@ -4,11 +4,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { endpoints, queryKeys } from "./queries"
 import type {
   ClientProfileInputDto,
+  CreateGenerationJobRequestDto,
   GenerateContentRequestDto,
+  GenerationJobDto,
   MarketProfileInputDto,
   TemplateInputDto,
   TestTemplateGenerationRequestDto,
 } from "./types"
+
+const JOB_POLL_INTERVAL_MS = 2000
+
+function isJobInProgress(job: GenerationJobDto | undefined): boolean {
+  return job?.status === "queued" || job?.status === "running"
+}
 
 /** Lista dozwolonych modeli nie zmienia się w trakcie sesji (env-config
  *  instancji) — `staleTime: Infinity`, wzorem `useUserPreferences()`. */
@@ -141,5 +149,31 @@ export function useDeleteMarketProfile() {
   return useMutation({
     mutationFn: (id: string) => endpoints.marketProfiles.remove(id),
     onSuccess: invalidate,
+  })
+}
+
+// ---- generation jobs (Round C, D4 — tryby "Kilka"/"Pakiet") ----
+
+export function useCreateGenerationJob() {
+  return useMutation({ mutationFn: (body: CreateGenerationJobRequestDto) => endpoints.jobs.create(body) })
+}
+
+/**
+ * Polling zgodnie z architecture_rules.md §5: "Polling — tylko z
+ * refetchInterval + enabled. Nie używamy setInterval ręcznie." — wzorem
+ * `useJob()` w document-parser/hooks.ts. Wyłącza się samo, gdy job osiągnie
+ * status końcowy (`done`/`done-with-errors`, D4) — kolejny poll po tym
+ * momencie byłby bez sensu, Postgres już ma kompletny rekord.
+ *
+ * `jobId: null` wyłącza zapytanie całkowicie (`enabled: false`) — ekran
+ * generowania używa tego, dopóki nie ma jeszcze jobId z odpowiedzi
+ * `POST /jobs`.
+ */
+export function useGenerationJob(jobId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.job(jobId ?? ""),
+    queryFn: () => endpoints.jobs.get(jobId as string),
+    enabled: jobId !== null,
+    refetchInterval: (query) => (isJobInProgress(query.state.data) ? JOB_POLL_INTERVAL_MS : false),
   })
 }

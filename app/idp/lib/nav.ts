@@ -3,6 +3,7 @@ import type { FeatureFlagsResponse } from "@cortex/types"
 import type { TileMenuItem, TileMenuSection } from "@cortex/ui"
 import {
   BarChart3,
+  Building2,
   Calculator,
   Database,
   FileDown,
@@ -15,6 +16,7 @@ import {
   Inbox,
   KeyRound,
   LayoutDashboard,
+  LineChart,
   ListChecks,
   Package,
   Receipt,
@@ -345,6 +347,35 @@ export const DOCUMENT_PARSER_NAV: TileMenuSection[] = [
   },
 ]
 
+// Round B (PROJECT/cortex-frontend-content-guru-full-port-projekt.md D1/D8):
+// cztery trasy istnieją dziś (generowanie + szablony + dwa profile) z
+// docelowych sześciu — historia i zakazane frazy dochodzą w kolejnych
+// rundach, dopisywane tutaj dopiero gdy ich page.tsx realnie powstanie
+// (wzorem komentarza przy GEO_SCORE_CALCULATOR_NAV — martwy link w sidebarze
+// zanim ekran istnieje).
+export const CONTENT_GURU_NAV: TileMenuSection[] = [
+  {
+    id: "praca",
+    label: "Praca",
+    items: [
+      { id: "generowanie", label: "Generowanie", icon: Sparkles, href: "/content-guru" },
+      { id: "szablony", label: "Szablony", icon: FileText, href: "/content-guru/templates" },
+      {
+        id: "profile-klienta",
+        label: "Profile klienta",
+        icon: Building2,
+        href: "/content-guru/client-profiles",
+      },
+      {
+        id: "profile-rynku",
+        label: "Profile rynku",
+        icon: LineChart,
+        href: "/content-guru/market-profiles",
+      },
+    ],
+  },
+]
+
 export const INVOICE_SUPERVISOR_NAV: TileMenuSection[] = [
   {
     id: "praca",
@@ -474,6 +505,10 @@ export function useVisualGuruNavSections(): TileMenuSection[] {
 
 export function useDocumentParserNavSections(): TileMenuSection[] {
   return DOCUMENT_PARSER_NAV
+}
+
+export function useContentGuruNavSections(): TileMenuSection[] {
+  return CONTENT_GURU_NAV
 }
 
 export function useAiToolsNavSections(): TileMenuSection[] {

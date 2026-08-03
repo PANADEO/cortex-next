@@ -110,3 +110,45 @@ export interface MarketProfileInputDto {
   needs?: string
   plans?: string
 }
+
+// ---- generation jobs (Round C, D4 — tryby "Kilka"/"Pakiet") ----
+
+export type GenerationJobMode = "batch" | "package"
+export type GenerationJobStatus = "queued" | "running" | "done" | "done-with-errors"
+export type GenerationJobItemStatus = "pending" | "running" | "done" | "done-with-warnings" | "error"
+
+export interface GenerationJobItemDto {
+  templateId: string
+  templateLabel: string
+  topic: string
+  status: GenerationJobItemStatus
+  content?: string
+  archiveId?: string
+  matchedForbiddenPhrases?: string[]
+  errorMessage?: string
+}
+
+export interface GenerationJobDto {
+  id: string
+  mode: GenerationJobMode
+  status: GenerationJobStatus
+  items: GenerationJobItemDto[]
+  createdAt: string
+  completedAt: string | null
+}
+
+export interface CreateGenerationJobRequestDto {
+  mode: GenerationJobMode
+  topics: string[]
+  templateIds: string[]
+  targetAudience: string
+  additionalInfo: string
+  model: string
+  clientProfileId?: string
+  marketProfileId?: string
+}
+
+export interface CreateGenerationJobResponseDto {
+  jobId: string
+  status: GenerationJobStatus
+}

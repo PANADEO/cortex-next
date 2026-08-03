@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardContent,
+  Checkbox,
   EmptyState,
   Input,
   Label,
@@ -20,17 +21,17 @@ import {
   TabsList,
   TabsTrigger,
   Textarea,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
 } from "@cortex/ui"
 import { AlertTriangle, Sparkles } from "lucide-react"
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
+import { GenerationJobCard } from "@/features/content-guru/components/generation-job-card"
+import { createEmptyTopicRow, TopicTable, type TopicRow } from "@/features/content-guru/components/topic-table"
 import {
   useContentGuruConfig,
+  useCreateGenerationJob,
   useGenerateContent,
+  useGenerationJob,
   useMyClientProfiles,
   useMyMarketProfiles,
   useTemplates,
@@ -38,9 +39,12 @@ import {
 import type {
   ClientProfileDto,
   GenerateContentResponseDto,
+  GenerationJobMode,
   MarketProfileDto,
   TemplateDto,
 } from "@/features/content-guru/types"
+import { renderHighlightedContent } from "@/features/content-guru/utils"
+import { MAX_COMBINATIONS } from "@/lib/content-guru/job-limits"
 
 // Referencje stabilne między renderami — inaczej `query.data ?? []` tworzyłby
 // nową tablicę za każdym razem, unieważniając poniższe useMemo (wzorem
@@ -57,36 +61,7 @@ const ADDITIONAL_INFO_MAX = 4000
 // dla "brak wyboru", nigdy wysyłany na serwer (patrz handleGenerate).
 const NO_PROFILE = "__none__"
 
-/**
- * Podświetla dopasowane zakazane frazy w wygenerowanej treści (`<mark>`,
- * case-insensitive) — design doc D5 pkt 2: user MUSI świadomie zobaczyć
- * trafienie, nie dostaje cichego sukcesu. Konwencja wizualna własna tego
- * modułu (GEO Score Calculator buduje swój highlighting równolegle w tej
- * samej sesji, w innych plikach — nie ma stąd czego jeszcze zaimportować),
- * paleta amber spójna z resztą repo (packages/@cortex/ui/src/components/
- * status-badge.tsx: amber = ostrzeżenie).
- */
-function renderHighlightedContent(content: string, matchedPhrases: readonly string[]): ReactNode {
-  if (matchedPhrases.length === 0) return content
-
-  const escaped = matchedPhrases.map((phrase) => phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-  const pattern = new RegExp(`(${escaped.join("|")})`, "gi")
-  const parts = content.split(pattern)
-  const lowerPhrases = matchedPhrases.map((phrase) => phrase.toLowerCase())
-
-  return parts.map((part, index) =>
-    lowerPhrases.includes(part.toLowerCase()) ? (
-      <mark
-        key={index}
-        className="rounded-sm bg-amber-200 px-0.5 text-amber-950 dark:bg-amber-900/60 dark:text-amber-100"
-      >
-        {part}
-      </mark>
-    ) : (
-      <Fragment key={index}>{part}</Fragment>
-    ),
-  )
-}
+type GenerationTab = "single" | GenerationJobMode
 
 function StatusBadge({ status }: { status: GenerateContentResponseDto["status"] }) {
   if (status === "done-with-warnings") {
@@ -116,16 +91,32 @@ export default function ContentGuruPage() {
   const clientProfilesQuery = useMyClientProfiles()
   const marketProfilesQuery = useMyMarketProfiles()
   const generate = useGenerateContent()
+  const createJob = useCreateGenerationJob()
 
+  const [activeTab, setActiveTab] = useState<GenerationTab>("single")
+
+  // Szablon — WSPÓLNY między "Pojedyncza" i "Kilka" (oba potrzebują dokładnie
+  // jednego szablonu, design doc §4.1: przełączanie trybu nie czyści pracy).
   const [templateCategory, setTemplateCategory] = useState("")
   const [templateId, setTemplateId] = useState("")
+  // "Pakiet" — multiselect, niezależny stan (wiele szablonów naraz).
+  const [packageTemplateIds, setPackageTemplateIds] = useState<string[]>([])
+
   const [topic, setTopic] = useState("")
+  // Tabela tematów — WSPÓLNA między "Kilka" i "Pakiet" (design doc §4.1: "ta
+  // sama tabela tematów co batch").
+  const [topicRows, setTopicRows] = useState<TopicRow[]>(() => [createEmptyTopicRow()])
+
   const [targetAudience, setTargetAudience] = useState("")
   const [additionalInfo, setAdditionalInfo] = useState("")
   const [model, setModel] = useState("")
   const [clientProfileId, setClientProfileId] = useState(NO_PROFILE)
   const [marketProfileId, setMarketProfileId] = useState(NO_PROFILE)
   const [result, setResult] = useState<GenerateContentResponseDto | null>(null)
+
+  const [activeJobId, setActiveJobId] = useState<string | null>(null)
+  const [activeJobMode, setActiveJobMode] = useState<GenerationJobMode | null>(null)
+  const jobQuery = useGenerationJob(activeJobId)
 
   const models = useMemo(() => configQuery.data?.models ?? [], [configQuery.data])
   const templates = templatesQuery.data ?? EMPTY_TEMPLATES
@@ -161,10 +152,32 @@ export default function ContentGuruPage() {
     }
   }, [templatesInCategory, templateId])
 
-  const canSubmit = templateId.length > 0 && topic.trim().length > 0 && model.length > 0 && !generate.isPending
+  const activeTopics = useMemo(
+    () => topicRows.filter((row) => row.active && row.topic.trim().length > 0).map((row) => row.topic.trim()),
+    [topicRows],
+  )
 
-  async function handleGenerate() {
-    if (!canSubmit) return
+  const packageCombinations = activeTopics.length * packageTemplateIds.length
+  const packageOverLimit = packageCombinations > MAX_COMBINATIONS
+
+  const canSubmitSingle = templateId.length > 0 && topic.trim().length > 0 && model.length > 0 && !generate.isPending
+  const canSubmitBatch =
+    templateId.length > 0 && activeTopics.length > 0 && model.length > 0 && !createJob.isPending
+  const canSubmitPackage =
+    packageTemplateIds.length > 0 &&
+    activeTopics.length > 0 &&
+    model.length > 0 &&
+    !packageOverLimit &&
+    !createJob.isPending
+
+  function togglePackageTemplate(id: string) {
+    setPackageTemplateIds((current) =>
+      current.includes(id) ? current.filter((templateIdInList) => templateIdInList !== id) : [...current, id],
+    )
+  }
+
+  async function handleGenerateSingle() {
+    if (!canSubmitSingle) return
     const selectedTemplate = templates.find((template) => template.id === templateId)
     try {
       const response = await generate.mutateAsync({
@@ -195,6 +208,32 @@ export default function ContentGuruPage() {
     }
   }
 
+  async function handleSubmitJob(mode: GenerationJobMode) {
+    const templateIds = mode === "batch" ? [templateId] : packageTemplateIds
+    if (mode === "batch" && !canSubmitBatch) return
+    if (mode === "package" && !canSubmitPackage) return
+
+    try {
+      const response = await createJob.mutateAsync({
+        mode,
+        topics: activeTopics,
+        templateIds,
+        targetAudience: targetAudience.trim(),
+        additionalInfo: additionalInfo.trim(),
+        model,
+        ...(clientProfileId !== NO_PROFILE ? { clientProfileId } : {}),
+        ...(marketProfileId !== NO_PROFILE ? { marketProfileId } : {}),
+      })
+      setActiveJobId(response.jobId)
+      setActiveJobMode(mode)
+      toast.success("Generowanie uruchomione — postęp pojawi się poniżej.")
+    } catch (error) {
+      toastApiError(error, "Nie udało się uruchomić generowania")
+    }
+  }
+
+  const showJobCard = activeJobId !== null && activeJobMode === activeTab
+
   return (
     <>
       <PageHeader
@@ -203,79 +242,79 @@ export default function ContentGuruPage() {
       />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
-        <TooltipProvider delayDuration={200}>
-          <Tabs value="single" className="w-full">
-            <TabsList>
-              <TabsTrigger value="single">Pojedyncza</TabsTrigger>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0} className="inline-flex">
-                    <TabsTrigger value="batch" disabled className="gap-2">
-                      Kilka
-                      <Badge variant="secondary" className="text-[10px] font-normal">
-                        Wkrótce
-                      </Badge>
-                    </TabsTrigger>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>Wiele tematów jednym szablonem naraz — w budowie.</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0} className="inline-flex">
-                    <TabsTrigger value="package" disabled className="gap-2">
-                      Pakiet
-                      <Badge variant="secondary" className="text-[10px] font-normal">
-                        Wkrótce
-                      </Badge>
-                    </TabsTrigger>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>Wiele szablonów i tematów naraz — w budowie.</TooltipContent>
-              </Tooltip>
-            </TabsList>
-          </Tabs>
-        </TooltipProvider>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as GenerationTab)} className="w-full">
+          <TabsList>
+            <TabsTrigger value="single">Pojedyncza</TabsTrigger>
+            <TabsTrigger value="batch">Kilka</TabsTrigger>
+            <TabsTrigger value="package">Pakiet</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
           <Card>
             <CardContent className="flex flex-col gap-4 pt-6">
-              <div className="grid grid-cols-2 gap-3">
+              {activeTab === "package" ? (
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="content-guru-template-category">Kategoria szablonu</Label>
+                  <Label>Szablony ({packageTemplateIds.length} wybrane)</Label>
                   {templatesQuery.isPending ? (
-                    <Skeleton className="h-9 w-full" />
+                    <Skeleton className="h-32 w-full" />
                   ) : (
-                    <Select value={templateCategory} onValueChange={setTemplateCategory}>
-                      <SelectTrigger id="content-guru-template-category">
-                        <SelectValue placeholder="Wybierz kategorię" />
+                    <div className="flex max-h-48 flex-col gap-1 overflow-y-auto rounded-md border border-border p-2">
+                      {templates.map((template) => (
+                        <label
+                          key={template.id}
+                          className="flex items-center gap-2 rounded-sm px-1 py-1 text-sm hover:bg-muted/50"
+                        >
+                          <Checkbox
+                            checked={packageTemplateIds.includes(template.id)}
+                            onCheckedChange={() => togglePackageTemplate(template.id)}
+                          />
+                          <span className="truncate">
+                            {template.category} — {template.name}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="content-guru-template-category">Kategoria szablonu</Label>
+                    {templatesQuery.isPending ? (
+                      <Skeleton className="h-9 w-full" />
+                    ) : (
+                      <Select value={templateCategory} onValueChange={setTemplateCategory}>
+                        <SelectTrigger id="content-guru-template-category">
+                          <SelectValue placeholder="Wybierz kategorię" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {templateCategories.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="content-guru-template">Szablon</Label>
+                    <Select value={templateId} onValueChange={setTemplateId} disabled={!templateCategory}>
+                      <SelectTrigger id="content-guru-template">
+                        <SelectValue placeholder="Wybierz szablon" />
                       </SelectTrigger>
                       <SelectContent>
-                        {templateCategories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
+                        {templatesInCategory.map((template) => (
+                          <SelectItem key={template.id} value={template.id}>
+                            {template.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                  )}
+                  </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="content-guru-template">Szablon</Label>
-                  <Select value={templateId} onValueChange={setTemplateId} disabled={!templateCategory}>
-                    <SelectTrigger id="content-guru-template">
-                      <SelectValue placeholder="Wybierz szablon" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {templatesInCategory.map((template) => (
-                        <SelectItem key={template.id} value={template.id}>
-                          {template.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              )}
               {!templatesQuery.isPending && templates.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
                   Brak szablonów — dodaj pierwszy na ekranie{" "}
@@ -286,21 +325,42 @@ export default function ContentGuruPage() {
                 </p>
               ) : null}
 
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="content-guru-topic">Temat</Label>
-                  <span className="text-xs text-muted-foreground">
-                    {topic.length}/{TOPIC_MAX}
-                  </span>
+              {activeTab === "single" ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="content-guru-topic">Temat</Label>
+                    <span className="text-xs text-muted-foreground">
+                      {topic.length}/{TOPIC_MAX}
+                    </span>
+                  </div>
+                  <Input
+                    id="content-guru-topic"
+                    value={topic}
+                    maxLength={TOPIC_MAX}
+                    placeholder="Np. otwieramy rekrutację na stanowisko Senior .NET Developer"
+                    onChange={(event) => setTopic(event.target.value)}
+                  />
                 </div>
-                <Input
-                  id="content-guru-topic"
-                  value={topic}
-                  maxLength={TOPIC_MAX}
-                  placeholder="Np. otwieramy rekrutację na stanowisko Senior .NET Developer"
-                  onChange={(event) => setTopic(event.target.value)}
-                />
-              </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <Label>Tematy</Label>
+                  <TopicTable rows={topicRows} onChange={setTopicRows} />
+                  {activeTab === "package" ? (
+                    <p className={packageOverLimit ? "text-xs font-medium text-destructive" : "text-xs text-muted-foreground"}>
+                      {activeTopics.length} {activeTopics.length === 1 ? "temat" : "tematy"} ×{" "}
+                      {packageTemplateIds.length} {packageTemplateIds.length === 1 ? "szablon" : "szablony"} ={" "}
+                      {packageCombinations} {packageCombinations === 1 ? "treść" : "treści"}
+                      {packageOverLimit
+                        ? ` — przekroczono limit ${MAX_COMBINATIONS} kombinacji. Zmniejsz liczbę tematów lub szablonów.`
+                        : ""}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      {activeTopics.length} {activeTopics.length === 1 ? "aktywny temat" : "aktywnych tematów"}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
@@ -390,48 +450,71 @@ export default function ContentGuruPage() {
                 </div>
               </div>
 
-              <Button type="button" onClick={handleGenerate} disabled={!canSubmit}>
-                <Sparkles className="mr-2 h-4 w-4" />
-                {generate.isPending ? "Generowanie..." : "Generuj"}
-              </Button>
+              {activeTab === "single" ? (
+                <Button type="button" onClick={handleGenerateSingle} disabled={!canSubmitSingle}>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  {generate.isPending ? "Generowanie..." : "Generuj"}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={() => handleSubmitJob(activeTab)}
+                  disabled={activeTab === "batch" ? !canSubmitBatch : !canSubmitPackage}
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  {createJob.isPending ? "Uruchamianie..." : "Generuj"}
+                </Button>
+              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="flex flex-col gap-4 pt-6">
-              {generate.isPending ? (
-                <div className="flex flex-col gap-3">
-                  <Skeleton className="h-5 w-32" />
-                  <Skeleton className="h-40 w-full" />
-                </div>
-              ) : !result ? (
+              {activeTab === "single" ? (
+                generate.isPending ? (
+                  <div className="flex flex-col gap-3">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-40 w-full" />
+                  </div>
+                ) : !result ? (
+                  <EmptyState
+                    icon={Sparkles}
+                    title="Brak wygenerowanej treści"
+                    description="Wybierz szablon i wypełnij temat, następnie kliknij Generuj."
+                  />
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between gap-2">
+                      <StatusBadge status={result.status} />
+                      <span className="text-xs text-muted-foreground">{result.model}</span>
+                    </div>
+
+                    {result.status === "done-with-warnings" ? (
+                      <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                        Treść zawiera frazy z Twojej listy zakazanych fraz mimo automatycznej próby
+                        poprawy — zaznaczone poniżej. Popraw ręcznie przed użyciem.
+                      </div>
+                    ) : null}
+
+                    <div className="whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-4 text-sm leading-relaxed">
+                      {renderHighlightedContent(result.content, result.matchedForbiddenPhrases)}
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">Zapisano w archiwum Content Guru.</p>
+                  </>
+                )
+              ) : showJobCard ? (
+                <GenerationJobCard job={jobQuery.data} mode={activeTab} isLoading={jobQuery.isLoading} />
+              ) : (
                 <EmptyState
                   icon={Sparkles}
-                  title="Brak wygenerowanej treści"
-                  description="Wybierz szablon i wypełnij temat, następnie kliknij Generuj."
+                  title="Brak uruchomionego zadania"
+                  description={
+                    activeTab === "batch"
+                      ? "Wybierz szablon, dodaj tematy i kliknij Generuj."
+                      : "Wybierz szablony, dodaj tematy i kliknij Generuj."
+                  }
                 />
-              ) : (
-                <>
-                  <div className="flex items-center justify-between gap-2">
-                    <StatusBadge status={result.status} />
-                    <span className="text-xs text-muted-foreground">{result.model}</span>
-                  </div>
-
-                  {result.status === "done-with-warnings" ? (
-                    <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-                      Treść zawiera frazy z Twojej listy zakazanych fraz mimo automatycznej próby
-                      poprawy — zaznaczone poniżej. Popraw ręcznie przed użyciem.
-                    </div>
-                  ) : null}
-
-                  <div className="whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-4 text-sm leading-relaxed">
-                    {renderHighlightedContent(result.content, result.matchedForbiddenPhrases)}
-                  </div>
-
-                  <p className="text-xs text-muted-foreground">
-                    Zapisano w archiwum Content Guru.
-                  </p>
-                </>
               )}
             </CardContent>
           </Card>

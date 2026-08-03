@@ -24,7 +24,8 @@ services:
         node packages/@cortex/db/scripts/seed-tile-manifests.mjs &&
         node packages/@cortex/db/scripts/seed-system-config.mjs &&
         node packages/@cortex/db/scripts/seed-ilustromat.mjs &&
-        node packages/@cortex/db/scripts/seed-token-usage.mjs
+        node packages/@cortex/db/scripts/seed-token-usage.mjs &&
+        node packages/@cortex/db/scripts/seed-content-guru.mjs
     logging:
       driver: "json-file"
       options:

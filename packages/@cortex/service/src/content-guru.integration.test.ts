@@ -20,6 +20,7 @@ import {
   closeDb,
   contentArchive,
   forbiddenPhrases,
+  generationJobs,
   getDb,
   marketProfiles,
   permissionsMatrix,
@@ -36,14 +37,17 @@ import {
   addForbiddenPhrase,
   clientProfileInputSchema,
   createClientProfile,
+  createGenerationJob,
   createMarketProfile,
   createTemplate,
   deleteMyClientProfile,
   deleteMyMarketProfile,
   deleteTemplate,
   duplicateTemplate,
+  finishGenerationJob,
   getMyArchiveEntry,
   getMyClientProfile,
+  getMyGenerationJob,
   getMyMarketProfile,
   getTemplate,
   listMyArchive,
@@ -51,9 +55,11 @@ import {
   listMyForbiddenPhrases,
   listMyMarketProfiles,
   listTemplates,
+  markGenerationJobRunning,
   marketProfileInputSchema,
   removeForbiddenPhrase,
   saveArchiveEntry,
+  updateGenerationJobItem,
   updateMyClientProfile,
   updateMyMarketProfile,
   updateTemplate,
@@ -90,6 +96,8 @@ async function cleanup() {
   await db.delete(clientProfiles).where(eq(clientProfiles.userEmail, FOREIGN_OWNER_EMAIL))
   await db.delete(marketProfiles).where(eq(marketProfiles.userEmail, OWNER_EMAIL))
   await db.delete(marketProfiles).where(eq(marketProfiles.userEmail, FOREIGN_OWNER_EMAIL))
+  await db.delete(generationJobs).where(eq(generationJobs.userEmail, OWNER_EMAIL))
+  await db.delete(generationJobs).where(eq(generationJobs.userEmail, FOREIGN_OWNER_EMAIL))
   await db.delete(templates).where(eq(templates.category, TEMPLATE_CATEGORY))
   // Kasuje WYŁĄCZNIE własną rolę/usera (kaskadowo user_roles/permissions_
   // matrix/role_application_scopes) — NIGDY wiersz applications('content-guru')
@@ -523,6 +531,141 @@ describe.skipIf(!hasDatabase)("content-guru service — prawdziwy Postgres", () 
         SCOPE_CODE,
       )
       expect(scoped.allowed).toBe(false)
+    })
+  })
+
+  // Round C — D4. `updateGenerationJobItem` jest TU szczególnie warta testu
+  // na PRAWDZIWYM Postgresie (nie mocku): jej cała racja bytu to atomowość
+  // pod współbieżnymi zapisami na TEN SAM wiersz — coś, czego mock nigdy nie
+  // udowodni, bo nie ma prawdziwej blokady wierszowej.
+  describe("generation_jobs", () => {
+    it("createGenerationJob + getMyGenerationJob: zapisuje WSZYSTKIE pozycje jako 'pending', zwraca WYŁĄCZNIE własny job", async () => {
+      const job = await createGenerationJob(OWNER_EMAIL, "batch", [
+        { templateId: "t1", templateLabel: "Kategoria — Nazwa", topic: "Temat 1" },
+        { templateId: "t1", templateLabel: "Kategoria — Nazwa", topic: "Temat 2" },
+      ])
+
+      const jobItems = job.items as { status: string }[]
+      expect(job.status).toBe("queued")
+      expect(jobItems).toHaveLength(2)
+      expect(jobItems.every((item) => item.status === "pending")).toBe(true)
+
+      const asOwner = await getMyGenerationJob(OWNER_EMAIL, job.id)
+      expect(asOwner?.id).toBe(job.id)
+
+      const asForeign = await getMyGenerationJob(FOREIGN_OWNER_EMAIL, job.id)
+      expect(asForeign).toBeUndefined()
+    })
+
+    it("markGenerationJobRunning przełącza status na 'running'", async () => {
+      const job = await createGenerationJob(OWNER_EMAIL, "batch", [
+        { templateId: "t1", templateLabel: "Kategoria — Nazwa", topic: "Temat" },
+      ])
+
+      await markGenerationJobRunning(OWNER_EMAIL, job.id)
+
+      const reloaded = await getMyGenerationJob(OWNER_EMAIL, job.id)
+      expect(reloaded?.status).toBe("running")
+    })
+
+    it("updateGenerationJobItem: merge patch do JEDNEJ pozycji, zachowuje pozostałe pola i INNE pozycje nietknięte", async () => {
+      const job = await createGenerationJob(OWNER_EMAIL, "batch", [
+        { templateId: "t1", templateLabel: "Kategoria — A", topic: "Temat A" },
+        { templateId: "t1", templateLabel: "Kategoria — B", topic: "Temat B" },
+      ])
+
+      await updateGenerationJobItem(OWNER_EMAIL, job.id, 0, {
+        status: "done",
+        content: "treść wygenerowana",
+        archiveId: "archive-123",
+      })
+
+      const reloaded = await getMyGenerationJob(OWNER_EMAIL, job.id)
+      const items = reloaded!.items as {
+        templateId: string
+        templateLabel: string
+        topic: string
+        status: string
+        content?: string
+        archiveId?: string
+      }[]
+
+      expect(items[0]!.status).toBe("done")
+      expect(items[0]!.content).toBe("treść wygenerowana")
+      expect(items[0]!.archiveId).toBe("archive-123")
+      // Pola nie objęte patchem (templateLabel/topic) MUSZĄ przetrwać merge —
+      // jsonb_set + `||` to shallow merge na obiekt pozycji, nie zastąpienie.
+      expect(items[0]!.templateLabel).toBe("Kategoria — A")
+      expect(items[0]!.topic).toBe("Temat A")
+      // Pozycja 1 (nietknięta) zostaje dokładnie taka, jak przy stworzeniu.
+      expect(items[1]!.status).toBe("pending")
+      expect(items[1]!.topic).toBe("Temat B")
+    })
+
+    it("updateGenerationJobItem: DZIESIĘĆ współbieżnych aktualizacji RÓŻNYCH pozycji tego samego wiersza -> ŻADNA nie ginie (atomowość jsonb_set pod row lock)", async () => {
+      const itemCount = 10
+      const job = await createGenerationJob(
+        OWNER_EMAIL,
+        "package",
+        Array.from({ length: itemCount }, (_, i) => ({
+          templateId: `t${i}`,
+          templateLabel: `Kategoria — Szablon ${i}`,
+          topic: `Temat ${i}`,
+        })),
+      )
+
+      // Odpalone RÓWNOCZEŚNIE (Promise.all, nie sekwencyjnie) — dokładnie
+      // scenariusz, który read-modify-write w JS by zgubił (druga
+      // aktualizacja nadpisałaby efekt pierwszej, gdyby obie czytały items
+      // PRZED zapisem którejkolwiek).
+      await Promise.all(
+        Array.from({ length: itemCount }, (_, i) =>
+          updateGenerationJobItem(OWNER_EMAIL, job.id, i, {
+            status: "done",
+            content: `treść pozycji ${i}`,
+            archiveId: `archive-${i}`,
+          }),
+        ),
+      )
+
+      const reloaded = await getMyGenerationJob(OWNER_EMAIL, job.id)
+      const items = reloaded!.items as { status: string; content?: string; archiveId?: string; topic: string }[]
+
+      expect(items).toHaveLength(itemCount)
+      for (let i = 0; i < itemCount; i++) {
+        expect(items[i]!.status, `pozycja ${i} status`).toBe("done")
+        expect(items[i]!.content, `pozycja ${i} content`).toBe(`treść pozycji ${i}`)
+        expect(items[i]!.archiveId, `pozycja ${i} archiveId`).toBe(`archive-${i}`)
+        // Dowód, że merge trafił we WŁAŚCIWY indeks, nie pomieszał pozycji.
+        expect(items[i]!.topic).toBe(`Temat ${i}`)
+      }
+    })
+
+    it("finishGenerationJob: ustawia status końcowy i completedAt", async () => {
+      const job = await createGenerationJob(OWNER_EMAIL, "batch", [
+        { templateId: "t1", templateLabel: "Kategoria — Nazwa", topic: "Temat" },
+      ])
+      expect(job.completedAt).toBeNull()
+
+      await finishGenerationJob(OWNER_EMAIL, job.id, "done-with-errors")
+
+      const reloaded = await getMyGenerationJob(OWNER_EMAIL, job.id)
+      expect(reloaded?.status).toBe("done-with-errors")
+      expect(reloaded?.completedAt).not.toBeNull()
+    })
+
+    it("updateGenerationJobItem/markGenerationJobRunning/finishGenerationJob na CUDZYM jobie: WHERE userEmail nie dopasowuje, zero efektu", async () => {
+      const foreignJob = await createGenerationJob(FOREIGN_OWNER_EMAIL, "batch", [
+        { templateId: "t1", templateLabel: "Kategoria — Nazwa", topic: "Temat" },
+      ])
+
+      await updateGenerationJobItem(OWNER_EMAIL, foreignJob.id, 0, { status: "done" })
+      await markGenerationJobRunning(OWNER_EMAIL, foreignJob.id)
+      await finishGenerationJob(OWNER_EMAIL, foreignJob.id, "done")
+
+      const stillForeign = await getMyGenerationJob(FOREIGN_OWNER_EMAIL, foreignJob.id)
+      expect(stillForeign?.status).toBe("queued")
+      expect((stillForeign!.items as { status: string }[])[0]!.status).toBe("pending")
     })
   })
 })

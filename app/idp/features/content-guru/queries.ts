@@ -3,8 +3,11 @@ import type {
   ClientProfileDto,
   ClientProfileInputDto,
   ContentGuruConfigDto,
+  CreateGenerationJobRequestDto,
+  CreateGenerationJobResponseDto,
   GenerateContentRequestDto,
   GenerateContentResponseDto,
+  GenerationJobDto,
   MarketProfileDto,
   MarketProfileInputDto,
   TemplateDto,
@@ -21,6 +24,7 @@ export const queryKeys = {
   templates: () => [...queryKeys.all, "templates"] as const,
   clientProfiles: () => [...queryKeys.all, "client-profiles"] as const,
   marketProfiles: () => [...queryKeys.all, "market-profiles"] as const,
+  job: (id: string) => [...queryKeys.all, "jobs", id] as const,
 }
 
 export const endpoints = {
@@ -55,5 +59,10 @@ export const endpoints = {
     update: (id: string, body: MarketProfileInputDto) =>
       apiClient.put<MarketProfileDto>(`${BASE}/market-profiles/${id}`, { jsonBody: body }),
     remove: (id: string) => apiClient.delete<{ deleted: true }>(`${BASE}/market-profiles/${id}`),
+  },
+  jobs: {
+    create: (body: CreateGenerationJobRequestDto) =>
+      apiClient.post<CreateGenerationJobResponseDto>(`${BASE}/jobs`, { jsonBody: body }),
+    get: (id: string) => apiClient.get<GenerationJobDto>(`${BASE}/jobs/${id}`),
   },
 }

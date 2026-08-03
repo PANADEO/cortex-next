@@ -34,6 +34,7 @@ import {
   clientProfiles,
   contentArchive,
   forbiddenPhrases,
+  generationJobs,
   getDb,
   marketProfiles,
   templates,
@@ -41,10 +42,13 @@ import {
   type ContentArchiveRow,
   type ContentArchiveStatus,
   type ForbiddenPhraseRow,
+  type GenerationJobMode,
+  type GenerationJobRow,
+  type GenerationJobStatus,
   type MarketProfileRow,
   type TemplateRow,
 } from "@cortex/db"
-import { and, asc, desc, eq } from "drizzle-orm"
+import { and, asc, desc, eq, sql } from "drizzle-orm"
 import { z } from "zod"
 
 // ---- content_archive ----
@@ -393,4 +397,137 @@ export async function deleteMyMarketProfile(userEmail: string, id: string): Prom
     .where(and(eq(marketProfiles.id, id), eq(marketProfiles.userEmail, userEmail)))
     .returning()
   return deleted.length > 0
+}
+
+// ---- generation_jobs (Round C — design doc D4, batch/pakiet) ----
+//
+// PER-USER, wzorzec identyczny do reszty tego pliku. `items` (jsonb) NIE jest
+// re-walidowany schematem Zod na tym poziomie (code-service nie duplikuje
+// warstwy Zod z route'a) — kontroler (jobs/route.ts) buduje pozycje z już
+// zweryfikowanych szablonów/tematów.
+
+export const GENERATION_JOB_ITEM_STATUSES = [
+  "pending",
+  "running",
+  "done",
+  "done-with-warnings",
+  "error",
+] as const
+export type GenerationJobItemStatus = (typeof GENERATION_JOB_ITEM_STATUSES)[number]
+
+/** Jedna pozycja (temat × szablon) w `generation_jobs.items`. `content`/
+ *  `archiveId`/`matchedForbiddenPhrases`/`errorMessage` są nieobecne dopóki
+ *  pozycja nie osiągnie statusu końcowego — orkiestracja
+ *  (lib/content-guru/run-batch-generation.ts) dopisuje je przez
+ *  `updateGenerationJobItem()` w miarę kończenia się wywołań cortex-proxy. */
+export interface GenerationJobItem {
+  templateId: string
+  templateLabel: string
+  topic: string
+  status: GenerationJobItemStatus
+  content?: string
+  archiveId?: string
+  matchedForbiddenPhrases?: string[]
+  errorMessage?: string
+}
+
+export interface CreateGenerationJobItemInput {
+  templateId: string
+  templateLabel: string
+  topic: string
+}
+
+/** INSERT z WSZYSTKIMI pozycjami na starcie, status `"pending"` każda (D4
+ *  krok 1) — job istnieje w Postgresie PRZED jakąkolwiek generacją, dokładnie
+ *  jak `createQueuedJob()` w document-parser. Zwraca wiersz z wygenerowanym
+ *  `id`, którego route potrzebuje NATYCHMIAST do odpowiedzi `202`. */
+export async function createGenerationJob(
+  userEmail: string,
+  mode: GenerationJobMode,
+  items: readonly CreateGenerationJobItemInput[],
+): Promise<GenerationJobRow> {
+  const initialItems: GenerationJobItem[] = items.map((item) => ({ ...item, status: "pending" }))
+  const [row] = await getDb()
+    .insert(generationJobs)
+    .values({ userEmail, mode, items: initialItems })
+    .returning()
+  if (!row) throw new Error("Nie udało się utworzyć zadania generowania Content Guru")
+  return row
+}
+
+/** `undefined` zarówno dla "nie istnieje" jak i "cudze" (code-service
+ *  "Rekordy per-user" pkt 2) — wołający (GET /jobs/:id) mapuje na 404. */
+export async function getMyGenerationJob(
+  userEmail: string,
+  id: string,
+): Promise<GenerationJobRow | undefined> {
+  const [row] = await getDb()
+    .select()
+    .from(generationJobs)
+    .where(and(eq(generationJobs.id, id), eq(generationJobs.userEmail, userEmail)))
+  return row
+}
+
+/** Przełącza job z `"queued"` na `"running"` — wołane RAZ, na starcie
+ *  orkiestracji, PRZED pierwszym itemem (D4 krok 3). */
+export async function markGenerationJobRunning(userEmail: string, id: string): Promise<void> {
+  await getDb()
+    .update(generationJobs)
+    .set({ status: "running" })
+    .where(and(eq(generationJobs.id, id), eq(generationJobs.userEmail, userEmail)))
+}
+
+/**
+ * Atomowa aktualizacja JEDNEJ pozycji `items[itemIndex]` — merge `patch` do
+ * istniejącego obiektu pozycji (`jsonb_set` + operator `||`), NIE
+ * read-modify-write po stronie aplikacji. To jest krytyczne dla D4: pula
+ * współbieżności kończy kilka pozycji niemal jednocześnie, więc kilka
+ * wywołań tej funkcji dla RÓŻNYCH indeksów tego samego wiersza mogą nadejść w
+ * bliskim odstępie czasu. Dwa współbieżne `UPDATE` na TEN SAM wiersz
+ * serializują się pod blokadą wierszową Postgresa — drugie z nich liczy
+ * `jsonb_set` na podstawie już ZATWIERDZONEJ wartości pierwszego, więc żadna
+ * aktualizacja nie ginie (w przeciwieństwie do "SELECT items, zmień w JS,
+ * UPDATE items", gdzie druga transakcja mogłaby nadpisać efekt pierwszej).
+ *
+ * `itemIndex` pochodzi WYŁĄCZNIE z pozycji w tablicy zbudowanej po stronie
+ * serwera (jobs/route.ts) — nigdy z wejścia użytkownika — więc wstrzyknięcie
+ * przez `sql.raw()` jest tu bezpieczne (zawsze liczba całkowita z pętli, nie
+ * string z requestu).
+ */
+export async function updateGenerationJobItem(
+  userEmail: string,
+  jobId: string,
+  itemIndex: number,
+  patch: Partial<GenerationJobItem>,
+): Promise<void> {
+  await getDb()
+    .update(generationJobs)
+    .set({
+      // `::int` na itemIndex jest OBOWIĄZKOWY: bez jawnego rzutowania
+      // postgres-js wysyła parametr bez podpowiedzi typu, a Postgres w tej
+      // pozycji domyślnie rozwiązuje przeciążenie `jsonb -> text` (klucz
+      // obiektu), NIE `jsonb -> integer` (indeks tablicy) — dla tablicy JSON
+      // to zawsze NULL niezależnie od zawartości, co dalej przez `|| NULL`
+      // zamienia CAŁY wynik jsonb_set w NULL i wywraca NOT NULL na kolumnie
+      // (znalezione empirycznie, integration test przeciw prawdziwemu
+      // Postgresowi — patrz content-guru.integration.test.ts).
+      items: sql`jsonb_set(${generationJobs.items}, ${sql.raw(`'{${itemIndex}}'`)}::text[], (${generationJobs.items}->${itemIndex}::int) || ${JSON.stringify(patch)}::jsonb, false)`,
+    })
+    .where(and(eq(generationJobs.id, jobId), eq(generationJobs.userEmail, userEmail)))
+}
+
+/** Job jako całość osiąga status końcowy dopiero, gdy WSZYSTKIE pozycje mają
+ *  status końcowy (wołane przez orkiestrację PO tym, jak pula współbieżności
+ *  zakończy przetwarzanie każdej pozycji, D4 krok 5) — `"done"` jeśli żadna
+ *  nie zakończyła się błędem, `"done-with-errors"` jeśli ≥1 tak (częściowy
+ *  sukces widoczny, nie ukryty za ogólnym niepowodzeniem). */
+export async function finishGenerationJob(
+  userEmail: string,
+  id: string,
+  status: Extract<GenerationJobStatus, "done" | "done-with-errors">,
+): Promise<void> {
+  await getDb()
+    .update(generationJobs)
+    .set({ status, completedAt: new Date() })
+    .where(and(eq(generationJobs.id, id), eq(generationJobs.userEmail, userEmail)))
 }
