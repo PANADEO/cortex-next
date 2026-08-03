@@ -5,6 +5,7 @@ import { AppGate } from "@/components/shell/app-gate"
 import { VersionLabel } from "@/components/shell/version-label"
 import { Topbar } from "@/components/topbar"
 import {
+  useContentGuruNavSections,
   useCortexConfigNavSections,
   useDocumentParserNavSections,
   useGeoScoreCalculatorNavSections,
@@ -96,6 +97,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const visualGuruNavSections = useVisualGuruNavSections()
   const geoScoreCalculatorNavSections = useGeoScoreCalculatorNavSections()
   const documentParserNavSections = useDocumentParserNavSections()
+  const contentGuruNavSections = useContentGuruNavSections()
   // Every nav hook returns a constant, so this map is stable per render; the
   // hooks stay called unconditionally above (rules of hooks).
   const navByTile: Record<string, typeof idpNavSections> = {
@@ -111,6 +113,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     "visual-guru": visualGuruNavSections,
     "geo-score-calculator": geoScoreCalculatorNavSections,
     "document-parser": documentParserNavSections,
+    "content-guru": contentGuruNavSections,
   }
   const isAiToolPage = tileId === AI_TOOLS_TILE_ID || (tile?.href.startsWith("/ai-tools/") ?? false)
   const navSections = isAiToolPage ? [] : (navByTile[tileId] ?? idpNavSections)

@@ -1,40 +1,51 @@
-// Logika modułu Content Guru (code-service) — CRUD `content_archive` i
-// `forbidden_phrases`, dwie z czterech per-user tabel ze schematu Faza 0
-// (packages/@cortex/db/src/schema/content-guru.ts). Kontrolery w
+// Logika modułu Content Guru (code-service) — CRUD wszystkich pięciu tabel
+// produktowych ze schematu Faza 0 (packages/@cortex/db/src/schema/
+// content-guru.ts): `content_archive`/`forbidden_phrases` (Round A),
+// `templates`/`client_profiles`/`market_profiles` (Round B). Kontrolery w
 // app/idp/app/api/content-guru/** (code-api) tylko walidują wejście i wołają
 // to. Zero surowego SQL poza tym plikiem — dostęp przez Drizzle.
 //
-// PROJECT/cortex-frontend-content-guru-full-port-projekt.md D10 + Faza
-// 1+2 tej rundy: wzorzec .claude/skills/code-service/SKILL.md "Rekordy
-// per-user (userEmail)" cytowany dosłownie, nie reinterpretowany —
+// PROJECT/cortex-frontend-content-guru-full-port-projekt.md D10: wzorzec
+// .claude/skills/code-service/SKILL.md "Rekordy per-user (userEmail)"
+// cytowany dosłownie, nie reinterpretowany — dotyczy CZTERECH per-user tabel
+// (`content_archive`/`forbidden_phrases`/`client_profiles`/`market_profiles`):
 //  1. `userEmail` to filtr WIDOCZNOŚCI wpisany w .where() KAŻDEGO zapytania,
 //     nigdy fetch-wszystko-i-filtruj-w-JS.
-//  2. `getMyArchiveEntry`/`removeForbiddenPhrase` zwracają `undefined`/`false`
-//     zarówno dla "nie istnieje", jak i "cudze" — wołający (route) mapuje
-//     oba na 404, NIGDY 403 (403 zdradzałby, że rekord o tym id w ogóle
-//     istnieje).
+//  2. `getMyArchiveEntry`/`removeForbiddenPhrase`/`getMy{Client,Market}Profile`/
+//     `updateMy{Client,Market}Profile`/`deleteMy{Client,Market}Profile` zwracają
+//     `undefined`/`false` zarówno dla "nie istnieje", jak i "cudze" — wołający
+//     (route) mapuje oba na 404, NIGDY 403 (403 zdradzałby, że rekord o tym id
+//     w ogóle istnieje).
 //  3. `userEmail` to obowiązkowy, pierwszy parametr pozycyjny, pochodzący
 //     WYŁĄCZNIE z access.email uwierzytelnionego przez requireTileAccess() —
 //     nigdy z ciała/query żądania.
 //
-// `templates`/`client_profiles`/`market_profiles` (pozostałe trzy tabele
-// schematu) są POZA zakresem tej rundy — CRUD szablonów i profili to Round B/C
-// (design doc §8, Fazy 3-4). Te dwie tabele tutaj są w zakresie, bo zakazane
-// frazy zasilają walidację generowania (forbidden-phrase-check.ts) już w tej
-// rundzie, mimo że ich WŁASNY ekran zarządzania (/content-guru/forbidden-
-// phrases) jest Round B — stąd CRUD istnieje, ale tylko GET/POST/DELETE, bez
-// PUT/edycji in-place (design doc §4.4: "usuń+dodaj-ponownie jest tańsze niż
-// edytor" dla krótkich fraz).
+// `templates` (D6) jest WSPÓLNYM zasobem, nie per-user — brak filtra
+// userEmail, `createdBy` to tylko ślad audytowy (patrz komentarz przy sekcji
+// "templates" niżej). Mutacje gated przez `manage-templates` scope W ROUTE,
+// nie w tej warstwie (RBAC nie jest sprawą code-service — patrz guard.ts).
+//
+// `forbidden_phrases` CRUD zostaje bez PUT/edycji in-place (design doc §4.4:
+// "usuń+dodaj-ponownie jest tańsze niż edytor" dla krótkich fraz) — bez
+// zmian względem Round A, ekran zarządzania (/content-guru/forbidden-phrases)
+// nadal poza zakresem (osobna runda).
 
 import {
+  clientProfiles,
   contentArchive,
   forbiddenPhrases,
   getDb,
+  marketProfiles,
+  templates,
+  type ClientProfileRow,
   type ContentArchiveRow,
   type ContentArchiveStatus,
   type ForbiddenPhraseRow,
+  type MarketProfileRow,
+  type TemplateRow,
 } from "@cortex/db"
-import { and, desc, eq } from "drizzle-orm"
+import { and, asc, desc, eq } from "drizzle-orm"
+import { z } from "zod"
 
 // ---- content_archive ----
 
@@ -158,6 +169,228 @@ export async function removeForbiddenPhrase(userEmail: string, id: string): Prom
   const deleted = await getDb()
     .delete(forbiddenPhrases)
     .where(and(eq(forbiddenPhrases.id, id), eq(forbiddenPhrases.userEmail, userEmail)))
+    .returning()
+  return deleted.length > 0
+}
+
+// ---- templates (Round B — design doc D6) ----
+//
+// WSPÓLNY zasób między wszystkimi userami kafelka — brak filtra userEmail,
+// dokładnie jak `ilustromat.frameTemplates`. `createdBy` jest tylko śladem
+// audytowym. Mutacje są gated w route'ach przez `manage-templates` scope
+// (app/idp/app/api/content-guru/_lib/guard.ts), nie tutaj — warstwa serwisowa
+// nie zna requestu/RBAC (code-service: to kontroler sprawdza bramkę).
+
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+
+export const templateInputSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  category: z.string().trim().min(1).max(120),
+  content: z.string().trim().min(1).max(20000),
+})
+export type TemplateInput = z.infer<typeof templateInputSchema>
+
+/** Posortowane kategoria->nazwa — dokładnie kolejność, w jakiej ekran
+ *  `/content-guru/templates` (CortexDataGrid) i `Select` kategoria->nazwa na
+ *  ekranie generowania mają je renderować. */
+export function listTemplates(): Promise<TemplateRow[]> {
+  return getDb().select().from(templates).orderBy(asc(templates.category), asc(templates.name))
+}
+
+export async function getTemplate(id: string): Promise<TemplateRow | undefined> {
+  const [row] = await getDb().select().from(templates).where(eq(templates.id, id))
+  return row
+}
+
+export async function createTemplate(
+  input: TemplateInput,
+  createdBy: string,
+): Promise<TemplateRow> {
+  const [row] = await getDb().insert(templates).values({ ...input, createdBy }).returning()
+  if (!row) throw new Error("Nie udało się utworzyć szablonu Content Guru")
+  return row
+}
+
+/** `undefined` dla nieistniejącego id — wołający (route) mapuje na 404. */
+export async function updateTemplate(
+  id: string,
+  input: TemplateInput,
+): Promise<TemplateRow | undefined> {
+  const [row] = await getDb()
+    .update(templates)
+    .set({ ...input, updatedAt: new Date() })
+    .where(eq(templates.id, id))
+    .returning()
+  return row
+}
+
+export async function deleteTemplate(id: string): Promise<boolean> {
+  const deleted = await getDb().delete(templates).where(eq(templates.id, id)).returning()
+  return deleted.length > 0
+}
+
+/** Kopiuje treść+kategorię pod nową nazwą "(kopia)" — wzorem
+ *  `duplicateFrameTemplate()` w ilustromat.ts. Może zderzyć się z
+ *  `uniqueCategoryName` jeśli kopia już istnieje (np. duplikowana dwa razy) —
+ *  to jest zamierzone: wołający (route) mapuje naruszenie unikalności na 409,
+ *  user nadaje nowej kopii inną nazwę. `undefined` dla nieistniejącego
+ *  źródłowego id. */
+export async function duplicateTemplate(
+  id: string,
+  createdBy: string,
+): Promise<TemplateRow | undefined> {
+  const source = await getTemplate(id)
+  if (!source) return undefined
+
+  const [row] = await getDb()
+    .insert(templates)
+    .values({
+      name: `${source.name} (kopia)`,
+      category: source.category,
+      content: source.content,
+      createdBy,
+    })
+    .returning()
+  return row
+}
+
+// ---- client_profiles (Round B — design doc D7) ----
+//
+// PER-USER — code-service "Rekordy per-user" cytowane dosłownie: userEmail
+// pierwszy pozycyjny parametr, filtr w KAŻDYM .where(), undefined zarówno dla
+// "nie istnieje" jak i "cudze" (route mapuje na 404, nigdy 403).
+
+export const clientProfileInputSchema = z.object({
+  profileName: z.string().trim().min(1).max(200),
+  history: optionalText(10000),
+  description: optionalText(10000),
+  products: optionalText(10000),
+  offer: optionalText(10000),
+  useCases: optionalText(10000),
+  experience: optionalText(10000),
+})
+export type ClientProfileInput = z.infer<typeof clientProfileInputSchema>
+
+export function listMyClientProfiles(userEmail: string): Promise<ClientProfileRow[]> {
+  return getDb()
+    .select()
+    .from(clientProfiles)
+    .where(eq(clientProfiles.userEmail, userEmail))
+    .orderBy(desc(clientProfiles.createdAt))
+}
+
+export async function getMyClientProfile(
+  userEmail: string,
+  id: string,
+): Promise<ClientProfileRow | undefined> {
+  const [row] = await getDb()
+    .select()
+    .from(clientProfiles)
+    .where(and(eq(clientProfiles.id, id), eq(clientProfiles.userEmail, userEmail)))
+  return row
+}
+
+export async function createClientProfile(
+  userEmail: string,
+  input: ClientProfileInput,
+): Promise<ClientProfileRow> {
+  const [row] = await getDb()
+    .insert(clientProfiles)
+    .values({ ...input, userEmail })
+    .returning()
+  if (!row) throw new Error("Nie udało się utworzyć profilu klienta")
+  return row
+}
+
+export async function updateMyClientProfile(
+  userEmail: string,
+  id: string,
+  input: ClientProfileInput,
+): Promise<ClientProfileRow | undefined> {
+  const [row] = await getDb()
+    .update(clientProfiles)
+    .set({ ...input, updatedAt: new Date() })
+    .where(and(eq(clientProfiles.id, id), eq(clientProfiles.userEmail, userEmail)))
+    .returning()
+  return row
+}
+
+export async function deleteMyClientProfile(userEmail: string, id: string): Promise<boolean> {
+  const deleted = await getDb()
+    .delete(clientProfiles)
+    .where(and(eq(clientProfiles.id, id), eq(clientProfiles.userEmail, userEmail)))
+    .returning()
+  return deleted.length > 0
+}
+
+// ---- market_profiles (Round B — design doc D7) ----
+// Kształt równoległy do client_profiles powyżej.
+
+export const marketProfileInputSchema = z.object({
+  profileName: z.string().trim().min(1).max(200),
+  description: optionalText(10000),
+  sizeTrends: optionalText(10000),
+  personas: optionalText(10000),
+  problems: optionalText(10000),
+  needs: optionalText(10000),
+  plans: optionalText(10000),
+})
+export type MarketProfileInput = z.infer<typeof marketProfileInputSchema>
+
+export function listMyMarketProfiles(userEmail: string): Promise<MarketProfileRow[]> {
+  return getDb()
+    .select()
+    .from(marketProfiles)
+    .where(eq(marketProfiles.userEmail, userEmail))
+    .orderBy(desc(marketProfiles.createdAt))
+}
+
+export async function getMyMarketProfile(
+  userEmail: string,
+  id: string,
+): Promise<MarketProfileRow | undefined> {
+  const [row] = await getDb()
+    .select()
+    .from(marketProfiles)
+    .where(and(eq(marketProfiles.id, id), eq(marketProfiles.userEmail, userEmail)))
+  return row
+}
+
+export async function createMarketProfile(
+  userEmail: string,
+  input: MarketProfileInput,
+): Promise<MarketProfileRow> {
+  const [row] = await getDb()
+    .insert(marketProfiles)
+    .values({ ...input, userEmail })
+    .returning()
+  if (!row) throw new Error("Nie udało się utworzyć profilu rynku")
+  return row
+}
+
+export async function updateMyMarketProfile(
+  userEmail: string,
+  id: string,
+  input: MarketProfileInput,
+): Promise<MarketProfileRow | undefined> {
+  const [row] = await getDb()
+    .update(marketProfiles)
+    .set({ ...input, updatedAt: new Date() })
+    .where(and(eq(marketProfiles.id, id), eq(marketProfiles.userEmail, userEmail)))
+    .returning()
+  return row
+}
+
+export async function deleteMyMarketProfile(userEmail: string, id: string): Promise<boolean> {
+  const deleted = await getDb()
+    .delete(marketProfiles)
+    .where(and(eq(marketProfiles.id, id), eq(marketProfiles.userEmail, userEmail)))
     .returning()
   return deleted.length > 0
 }

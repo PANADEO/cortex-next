@@ -89,3 +89,14 @@ export const APP_LABEL = "Content Guru"
  *  requireTileAccess(). Ten sam, niezmieniony kod co dzisiejsze AI-Tools-hub
  *  narzędzie (D1 — zachowuje istniejące granty RBAC). */
 export const CONTENT_GURU_APP_CODE = "content-guru"
+
+/** Warstwa GRANULARNA (Round B, design doc D6/D9) — kto może zarządzać
+ *  szablonami (zasobem WSPÓLNYM między userami kafelka). Identyczna nazwa
+ *  kodu co w Ilustromacie (`MANAGE_TEMPLATES_SCOPE` w
+ *  packages/@cortex/service/src/ilustromat.ts) — to NIE jest kolizja,
+ *  `application_scopes` jest per-`application_id`, każdy kafelek ma własną
+ *  przestrzeń nazw scope'ów. Sama dostępność kafelka (`requireTileAccess`)
+ *  wystarcza do UŻYWANIA szablonów w generowaniu; edycja wymaga tego scope'u
+ *  (`requireTileScope`, patrz api/content-guru/_lib/guard.ts). Seedowany w
+ *  packages/@cortex/db/scripts/seed-content-guru.mjs. */
+export const CONTENT_GURU_MANAGE_TEMPLATES_SCOPE = "manage-templates"

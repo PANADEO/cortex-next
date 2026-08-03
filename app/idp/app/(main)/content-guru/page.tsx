@@ -28,13 +28,34 @@ import {
 import { AlertTriangle, Sparkles } from "lucide-react"
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react"
 import { toast } from "sonner"
-import { useContentGuruConfig, useGenerateContent } from "@/features/content-guru/hooks"
-import type { GenerateContentResponseDto } from "@/features/content-guru/types"
+import {
+  useContentGuruConfig,
+  useGenerateContent,
+  useMyClientProfiles,
+  useMyMarketProfiles,
+  useTemplates,
+} from "@/features/content-guru/hooks"
+import type {
+  ClientProfileDto,
+  GenerateContentResponseDto,
+  MarketProfileDto,
+  TemplateDto,
+} from "@/features/content-guru/types"
 
-const CONTENT_TYPE_MAX = 200
+// Referencje stabilne między renderami — inaczej `query.data ?? []` tworzyłby
+// nową tablicę za każdym razem, unieważniając poniższe useMemo (wzorem
+// document-parser/history/page.tsx).
+const EMPTY_TEMPLATES: TemplateDto[] = []
+const EMPTY_CLIENT_PROFILES: ClientProfileDto[] = []
+const EMPTY_MARKET_PROFILES: MarketProfileDto[] = []
+
 const TOPIC_MAX = 500
 const AUDIENCE_MAX = 500
 const ADDITIONAL_INFO_MAX = 4000
+
+// Radix Select nie pozwala na value="" jako pozycję listy — sentinel
+// dla "brak wyboru", nigdy wysyłany na serwer (patrz handleGenerate).
+const NO_PROFILE = "__none__"
 
 /**
  * Podświetla dopasowane zakazane frazy w wygenerowanej treści (`<mark>`,
@@ -91,33 +112,77 @@ function StatusBadge({ status }: { status: GenerateContentResponseDto["status"] 
 
 export default function ContentGuruPage() {
   const configQuery = useContentGuruConfig()
+  const templatesQuery = useTemplates()
+  const clientProfilesQuery = useMyClientProfiles()
+  const marketProfilesQuery = useMyMarketProfiles()
   const generate = useGenerateContent()
 
-  const [contentType, setContentType] = useState("")
+  const [templateCategory, setTemplateCategory] = useState("")
+  const [templateId, setTemplateId] = useState("")
   const [topic, setTopic] = useState("")
   const [targetAudience, setTargetAudience] = useState("")
   const [additionalInfo, setAdditionalInfo] = useState("")
   const [model, setModel] = useState("")
+  const [clientProfileId, setClientProfileId] = useState(NO_PROFILE)
+  const [marketProfileId, setMarketProfileId] = useState(NO_PROFILE)
   const [result, setResult] = useState<GenerateContentResponseDto | null>(null)
 
   const models = useMemo(() => configQuery.data?.models ?? [], [configQuery.data])
+  const templates = templatesQuery.data ?? EMPTY_TEMPLATES
+  const clientProfiles = clientProfilesQuery.data ?? EMPTY_CLIENT_PROFILES
+  const marketProfiles = marketProfilesQuery.data ?? EMPTY_MARKET_PROFILES
+
+  const templateCategories = useMemo(
+    () => Array.from(new Set(templates.map((template) => template.category))).sort(),
+    [templates],
+  )
+  // Select nazwy jest ZALEŻNY od wybranej kategorii (design doc §4.1: "Select
+  // kategoria -> Select nazwa, zależne") — dokładnie ten sam wzorzec co
+  // legacy content_guru.py.
+  const templatesInCategory = useMemo(
+    () => templates.filter((template) => template.category === templateCategory),
+    [templates, templateCategory],
+  )
 
   useEffect(() => {
     if (!model && models.length > 0) setModel(models[0]!)
   }, [models, model])
 
-  const canSubmit =
-    contentType.trim().length > 0 && topic.trim().length > 0 && model.length > 0 && !generate.isPending
+  useEffect(() => {
+    if (!templateCategory && templateCategories.length > 0) setTemplateCategory(templateCategories[0]!)
+  }, [templateCategories, templateCategory])
+
+  // Zmiana kategorii czyści wybraną nazwę, jeśli nie należy już do nowej
+  // kategorii — inaczej Select nazwy mógłby pokazywać wartość spoza swoich
+  // aktualnych opcji.
+  useEffect(() => {
+    if (templateId && !templatesInCategory.some((template) => template.id === templateId)) {
+      setTemplateId("")
+    }
+  }, [templatesInCategory, templateId])
+
+  const canSubmit = templateId.length > 0 && topic.trim().length > 0 && model.length > 0 && !generate.isPending
 
   async function handleGenerate() {
     if (!canSubmit) return
+    const selectedTemplate = templates.find((template) => template.id === templateId)
     try {
       const response = await generate.mutateAsync({
-        contentType: contentType.trim(),
+        // Etykieta kosmetyczna do momentu odpowiedzi serwera — route
+        // NADPISUJE ją autorytatywnie na podstawie realnego templateId
+        // (app/idp/app/api/content-guru/generate/route.ts), więc rozjazd
+        // tutaj nie ma znaczenia.
+        contentType: selectedTemplate ? `${selectedTemplate.category} — ${selectedTemplate.name}` : "",
         topic: topic.trim(),
         targetAudience: targetAudience.trim(),
         additionalInfo: additionalInfo.trim(),
         model,
+        templateId,
+        // Klucze POMIJANE (nie `undefined`) gdy brak wyboru —
+        // exactOptionalPropertyTypes rozróżnia "nieobecny klucz" od "klucz z
+        // wartością undefined", a DTO deklaruje tylko to pierwsze.
+        ...(clientProfileId !== NO_PROFILE ? { clientProfileId } : {}),
+        ...(marketProfileId !== NO_PROFILE ? { marketProfileId } : {}),
       })
       setResult(response)
       if (response.status === "done-with-warnings") {
@@ -175,21 +240,51 @@ export default function ContentGuruPage() {
         <div className="grid gap-6 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
           <Card>
             <CardContent className="flex flex-col gap-4 pt-6">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="content-guru-type">Typ treści</Label>
-                  <span className="text-xs text-muted-foreground">
-                    {contentType.length}/{CONTENT_TYPE_MAX}
-                  </span>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="content-guru-template-category">Kategoria szablonu</Label>
+                  {templatesQuery.isPending ? (
+                    <Skeleton className="h-9 w-full" />
+                  ) : (
+                    <Select value={templateCategory} onValueChange={setTemplateCategory}>
+                      <SelectTrigger id="content-guru-template-category">
+                        <SelectValue placeholder="Wybierz kategorię" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templateCategories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
-                <Input
-                  id="content-guru-type"
-                  value={contentType}
-                  maxLength={CONTENT_TYPE_MAX}
-                  placeholder="Np. post rekrutacyjny na LinkedIn"
-                  onChange={(event) => setContentType(event.target.value)}
-                />
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="content-guru-template">Szablon</Label>
+                  <Select value={templateId} onValueChange={setTemplateId} disabled={!templateCategory}>
+                    <SelectTrigger id="content-guru-template">
+                      <SelectValue placeholder="Wybierz szablon" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templatesInCategory.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+              {!templatesQuery.isPending && templates.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Brak szablonów — dodaj pierwszy na ekranie{" "}
+                  <a href="/content-guru/templates" className="underline underline-offset-2">
+                    Szablony
+                  </a>
+                  .
+                </p>
+              ) : null}
 
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
@@ -260,6 +355,41 @@ export default function ContentGuruPage() {
                 )}
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="content-guru-client-profile">Profil klienta (opcjonalnie)</Label>
+                  <Select value={clientProfileId} onValueChange={setClientProfileId}>
+                    <SelectTrigger id="content-guru-client-profile">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_PROFILE}>Brak profilu</SelectItem>
+                      {clientProfiles.map((profile) => (
+                        <SelectItem key={profile.id} value={profile.id}>
+                          {profile.profileName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="content-guru-market-profile">Profil rynku (opcjonalnie)</Label>
+                  <Select value={marketProfileId} onValueChange={setMarketProfileId}>
+                    <SelectTrigger id="content-guru-market-profile">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_PROFILE}>Brak profilu</SelectItem>
+                      {marketProfiles.map((profile) => (
+                        <SelectItem key={profile.id} value={profile.id}>
+                          {profile.profileName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <Button type="button" onClick={handleGenerate} disabled={!canSubmit}>
                 <Sparkles className="mr-2 h-4 w-4" />
                 {generate.isPending ? "Generowanie..." : "Generuj"}
@@ -278,7 +408,7 @@ export default function ContentGuruPage() {
                 <EmptyState
                   icon={Sparkles}
                   title="Brak wygenerowanej treści"
-                  description="Wypełnij typ treści i temat, następnie kliknij Generuj."
+                  description="Wybierz szablon i wypełnij temat, następnie kliknij Generuj."
                 />
               ) : (
                 <>

@@ -14,6 +14,37 @@ vi.mock("@cortex/service/rbac-store", () => ({
 
 const service = vi.hoisted(() => ({
   listMyForbiddenPhrases: vi.fn(async () => [] as { id: string; userEmail: string; phrase: string; description: string | null; createdAt: Date }[]),
+  getTemplate: vi.fn(async () => undefined as { id: string; category: string; name: string; content: string } | undefined),
+  getMyClientProfile: vi.fn(
+    async () =>
+      undefined as
+        | {
+            id: string
+            profileName: string
+            history: string | null
+            description: string | null
+            products: string | null
+            offer: string | null
+            useCases: string | null
+            experience: string | null
+          }
+        | undefined,
+  ),
+  getMyMarketProfile: vi.fn(
+    async () =>
+      undefined as
+        | {
+            id: string
+            profileName: string
+            description: string | null
+            sizeTrends: string | null
+            personas: string | null
+            problems: string | null
+            needs: string | null
+            plans: string | null
+          }
+        | undefined,
+  ),
   saveArchiveEntry: vi.fn(
     async (
       userEmail: string,
@@ -89,6 +120,12 @@ function makeRequest(body: unknown, email: string | null = EMAIL): Request {
 beforeEach(() => {
   clearTileAccessCache()
   service.listMyForbiddenPhrases.mockClear()
+  service.getTemplate.mockReset()
+  service.getTemplate.mockResolvedValue(undefined)
+  service.getMyClientProfile.mockReset()
+  service.getMyClientProfile.mockResolvedValue(undefined)
+  service.getMyMarketProfile.mockReset()
+  service.getMyMarketProfile.mockResolvedValue(undefined)
   service.saveArchiveEntry.mockClear()
   generateContent.mockReset()
   vi.unstubAllEnvs()
@@ -243,5 +280,157 @@ describe("POST /api/content-guru/generate", () => {
     const response = await POST(makeRequest(VALID_BODY) as never)
 
     expect(response.status).toBe(500)
+  })
+
+  // Round B — D6/D7: wybór szablonu/profilu MUSI realnie zmienić to, co
+  // trafia do promptu (system prompt wołany na cortex-proxy), nie tylko
+  // odkładać się bez efektu. Te testy dowodzą wiązania, nie tylko że route
+  // przyjmuje dodatkowe pola. Schema wymaga UUID dla templateId/{client,market}
+  // ProfileId — literały muszą wyglądać jak realne uuid, inaczej 400 pada na
+  // walidacji Zod, zanim dotrze do warstwy, którą test ma sprawdzić.
+  describe("Round B — wiązanie szablonu/profilu klienta/rynku", () => {
+    const TEMPLATE_ID = "11111111-1111-1111-1111-111111111111"
+    const MISSING_TEMPLATE_ID = "99999999-9999-9999-9999-999999999991"
+    const CLIENT_PROFILE_ID = "22222222-2222-2222-2222-222222222222"
+    const FOREIGN_CLIENT_PROFILE_ID = "99999999-9999-9999-9999-999999999992"
+    const MARKET_PROFILE_ID = "33333333-3333-3333-3333-333333333333"
+
+    it("templateId: treść szablonu trafia do system promptu, a contentType w archiwum to kategoria — nazwa szablonu (nadpisuje wolny tekst z requestu)", async () => {
+      service.listMyForbiddenPhrases.mockResolvedValueOnce([])
+      service.getTemplate.mockResolvedValueOnce({
+        id: TEMPLATE_ID,
+        category: "Rekrutacja",
+        name: "Post na LinkedIn",
+        content: "INSTRUKCJA SZABLONU: pisz krótko, max 3 akapity.",
+      })
+      generateContent.mockResolvedValueOnce({
+        content: "Treść wygenerowana z szablonu.",
+        tokensUsed: 120,
+        model: VALID_BODY.model,
+      })
+
+      const response = await POST(
+        makeRequest({ ...VALID_BODY, contentType: "będzie nadpisane", templateId: TEMPLATE_ID }) as never,
+      )
+      const json = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(service.getTemplate).toHaveBeenCalledWith(TEMPLATE_ID)
+      const promptArgs = generateContent.mock.calls[0]?.[0]
+      expect(promptArgs.systemPrompt).toContain("INSTRUKCJA SZABLONU: pisz krótko, max 3 akapity.")
+      expect(service.saveArchiveEntry).toHaveBeenCalledWith(
+        EMAIL,
+        expect.objectContaining({ contentType: "Rekrutacja — Post na LinkedIn" }),
+      )
+      expect(json.content).toBe("Treść wygenerowana z szablonu.")
+    })
+
+    it("templateId nieznany -> 400, zero wywołania LLM/zapisu archiwum", async () => {
+      service.getTemplate.mockResolvedValueOnce(undefined)
+
+      const response = await POST(
+        makeRequest({ ...VALID_BODY, templateId: MISSING_TEMPLATE_ID }) as never,
+      )
+
+      expect(response.status).toBe(400)
+      expect(generateContent).not.toHaveBeenCalled()
+      expect(service.saveArchiveEntry).not.toHaveBeenCalled()
+    })
+
+    it("clientProfileId: markdown profilu trafia do system promptu i id zapisuje się w archiwum", async () => {
+      service.listMyForbiddenPhrases.mockResolvedValueOnce([])
+      service.getMyClientProfile.mockResolvedValueOnce({
+        id: CLIENT_PROFILE_ID,
+        profileName: "Acme Sp. z o.o.",
+        history: "Firma na rynku od 2010.",
+        description: null,
+        products: null,
+        offer: null,
+        useCases: null,
+        experience: null,
+      })
+      generateContent.mockResolvedValueOnce({
+        content: "Treść z kontekstem klienta.",
+        tokensUsed: 100,
+        model: VALID_BODY.model,
+      })
+
+      const response = await POST(
+        makeRequest({ ...VALID_BODY, clientProfileId: CLIENT_PROFILE_ID }) as never,
+      )
+
+      expect(response.status).toBe(200)
+      expect(service.getMyClientProfile).toHaveBeenCalledWith(EMAIL, CLIENT_PROFILE_ID)
+      const promptArgs = generateContent.mock.calls[0]?.[0]
+      expect(promptArgs.systemPrompt).toContain("Acme Sp. z o.o.")
+      expect(promptArgs.systemPrompt).toContain("Firma na rynku od 2010.")
+      expect(service.saveArchiveEntry).toHaveBeenCalledWith(
+        EMAIL,
+        expect.objectContaining({ clientProfileId: CLIENT_PROFILE_ID }),
+      )
+    })
+
+    it("marketProfileId: markdown profilu rynku trafia do system promptu i id zapisuje się w archiwum", async () => {
+      service.listMyForbiddenPhrases.mockResolvedValueOnce([])
+      service.getMyMarketProfile.mockResolvedValueOnce({
+        id: MARKET_PROFILE_ID,
+        profileName: "Rynek IT B2B",
+        description: null,
+        sizeTrends: "Rośnie o 12% rocznie.",
+        personas: null,
+        problems: null,
+        needs: null,
+        plans: null,
+      })
+      generateContent.mockResolvedValueOnce({
+        content: "Treść z kontekstem rynku.",
+        tokensUsed: 100,
+        model: VALID_BODY.model,
+      })
+
+      const response = await POST(
+        makeRequest({ ...VALID_BODY, marketProfileId: MARKET_PROFILE_ID }) as never,
+      )
+
+      expect(response.status).toBe(200)
+      expect(service.getMyMarketProfile).toHaveBeenCalledWith(EMAIL, MARKET_PROFILE_ID)
+      const promptArgs = generateContent.mock.calls[0]?.[0]
+      expect(promptArgs.systemPrompt).toContain("Rynek IT B2B")
+      expect(promptArgs.systemPrompt).toContain("Rośnie o 12% rocznie.")
+      expect(service.saveArchiveEntry).toHaveBeenCalledWith(
+        EMAIL,
+        expect.objectContaining({ marketProfileId: MARKET_PROFILE_ID }),
+      )
+    })
+
+    it("clientProfileId cudzy/nieznajomy (getMyClientProfile zwraca undefined) -> 400, nigdy 404 (nie zdradza istnienia)", async () => {
+      service.getMyClientProfile.mockResolvedValueOnce(undefined)
+
+      const response = await POST(
+        makeRequest({ ...VALID_BODY, clientProfileId: FOREIGN_CLIENT_PROFILE_ID }) as never,
+      )
+
+      expect(response.status).toBe(400)
+      expect(generateContent).not.toHaveBeenCalled()
+    })
+
+    it("bez templateId/profili: kontrakt Round A bez zmian (kontekst pozostaje null)", async () => {
+      service.listMyForbiddenPhrases.mockResolvedValueOnce([])
+      generateContent.mockResolvedValueOnce({
+        content: "Treść bez kontekstu.",
+        tokensUsed: 80,
+        model: VALID_BODY.model,
+      })
+
+      await POST(makeRequest(VALID_BODY) as never)
+
+      expect(service.getTemplate).not.toHaveBeenCalled()
+      expect(service.getMyClientProfile).not.toHaveBeenCalled()
+      expect(service.getMyMarketProfile).not.toHaveBeenCalled()
+      expect(service.saveArchiveEntry).toHaveBeenCalledWith(
+        EMAIL,
+        expect.objectContaining({ clientProfileId: null, marketProfileId: null }),
+      )
+    })
   })
 })

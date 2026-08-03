@@ -1,10 +1,9 @@
 // POST /api/content-guru/generate — tryb "Pojedyncza", jedyny funkcjonalny
 // tryb tej rundy (design doc §8 Faza 1+2 połączone; "Kilka"/"Pakiet" to Round
 // E/F, generation_jobs jeszcze nieużywane). Kontroler: parse -> auth ->
-// deleguj -> odpowiedz (code-api) — logika promptu w
-// lib/content-guru/prompt-builder.ts, walidacja zakazanych fraz w
-// lib/content-guru/forbidden-phrase-check.ts, wywołanie LLM w
-// lib/content-guru/integration-client.ts, CRUD w @cortex/service/content-guru.ts.
+// deleguj -> odpowiedz (code-api) — rdzeń prompt+model+D5 w
+// lib/content-guru/run-generation.ts (wspólny z templates/test-generation/
+// route.ts, Round B), CRUD w @cortex/service/content-guru.ts.
 //
 // D5: jedna automatyczna eskalowana próba ponowienia, jeśli pierwsza
 // odpowiedź zawiera zakazaną frazę usera. Treść ZAWSZE zapisywana do
@@ -12,30 +11,32 @@
 // "done-with-warnings" jest wyłącznie widocznym ostrzeżeniem, nie blokadą
 // (decyzja Alexa 03.08.2026, design doc §9 p.2, zamknięta).
 //
-// Round B/C/D nie są tu jeszcze wpięte (brak CRUD szablonów/profili/mini-
-// generatorów) — stąd template/clientContext/marketContext/keywordPhrase/
-// metaDescription lecą do prompt-buildera jako `null`, kontrakt funkcji już
-// je przewiduje (patrz prompt-builder.ts).
+// Round B: opcjonalny `templateId`/`clientProfileId`/`marketProfileId` —
+// jeśli podane, wynik faktycznie zmienia to, co trafia do promptu (D6/D7):
+//  - `templateId` -> treść szablonu jako sekcja "Instrukcje szablonu", a
+//    `contentType` zapisany w archiwum jest NADPISYWANY etykietą "kategoria —
+//    nazwa" wybranego szablonu (źródło prawdy jest po stronie serwera, nie
+//    ufamy wolnemu tekstowi z klienta, gdy realny szablon jest wybrany).
+//  - `clientProfileId`/`marketProfileId` -> profil (wyłącznie WŁASNY usera,
+//    code-service "Rekordy per-user") renderowany przez
+//    lib/content-guru/profile-markdown.ts jako sekcja kontekstu, i jego id
+//    zapisywany w content_archive.{client,market}ProfileId (kolumny już
+//    istniały w schemacie Fazy 0).
+// Mini-generatory (keywordPhrase/metaDescription) nadal poza zakresem
+// (Round D) — te dwa parametry promptu zostają `null`.
 
 import { NextResponse, type NextRequest } from "next/server"
 import { z } from "zod"
-import { listMyForbiddenPhrases, saveArchiveEntry } from "@cortex/service"
-import { buildContentGuruPrompt } from "@/lib/content-guru/prompt-builder"
+import { getMyClientProfile, getMyMarketProfile, getTemplate, listMyForbiddenPhrases, saveArchiveEntry } from "@cortex/service"
 import {
-  findMatchedForbiddenPhrases,
-  resolveGenerationStatus,
-} from "@/lib/content-guru/forbidden-phrase-check"
-import { ContentGuruServiceError, generateContent } from "@/lib/content-guru/integration-client"
+  clientProfileToMarkdown,
+  marketProfileToMarkdown,
+} from "@/lib/content-guru/profile-markdown"
+import { ContentGuruServiceError } from "@/lib/content-guru/integration-client"
+import { runContentGeneration } from "@/lib/content-guru/run-generation"
 import { requireContentGuruAccess } from "../_lib/guard"
 
 export const runtime = "nodejs"
-
-// 1:1 z dzisiejszym limitem cienkiego narzędzia AI Tools (registry.ts,
-// content-guru maxTokens: 8000) — nie zmieniany przy porcie.
-const GENERATION_MAX_TOKENS = 8000
-// D3: stała w kodzie, 1:1 z legacy `temperature=0.7` dla generacji treści
-// (mini-generatory, Round D, dostają osobną stałą 0.3 wtedy).
-const GENERATION_TEMPERATURE = 0.7
 
 const requestSchema = z.object({
   contentType: z.string().trim().min(1).max(200),
@@ -43,6 +44,9 @@ const requestSchema = z.object({
   targetAudience: z.string().trim().max(500).optional().default(""),
   additionalInfo: z.string().trim().max(4000).optional().default(""),
   model: z.string().trim().min(1),
+  templateId: z.string().uuid().optional(),
+  clientProfileId: z.string().uuid().optional(),
+  marketProfileId: z.string().uuid().optional(),
 })
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -57,61 +61,82 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       { status: 400 },
     )
   }
-  const { contentType, topic, targetAudience, additionalInfo, model } = parsed.data
+  const { topic, targetAudience, additionalInfo, model } = parsed.data
+  let { contentType } = parsed.data
 
   try {
+    let template: string | null = null
+    if (parsed.data.templateId) {
+      const templateRow = await getTemplate(parsed.data.templateId)
+      if (!templateRow) {
+        return NextResponse.json(
+          { error: "invalid-request", message: "Wybrany szablon nie istnieje." },
+          { status: 400 },
+        )
+      }
+      template = templateRow.content
+      contentType = `${templateRow.category} — ${templateRow.name}`
+    }
+
+    let clientContext: string | null = null
+    let clientProfileId: string | null = null
+    if (parsed.data.clientProfileId) {
+      const profile = await getMyClientProfile(email, parsed.data.clientProfileId)
+      if (!profile) {
+        return NextResponse.json(
+          { error: "invalid-request", message: "Wybrany profil klienta nie istnieje." },
+          { status: 400 },
+        )
+      }
+      clientContext = clientProfileToMarkdown(profile)
+      clientProfileId = profile.id
+    }
+
+    let marketContext: string | null = null
+    let marketProfileId: string | null = null
+    if (parsed.data.marketProfileId) {
+      const profile = await getMyMarketProfile(email, parsed.data.marketProfileId)
+      if (!profile) {
+        return NextResponse.json(
+          { error: "invalid-request", message: "Wybrany profil rynku nie istnieje." },
+          { status: 400 },
+        )
+      }
+      marketContext = marketProfileToMarkdown(profile)
+      marketProfileId = profile.id
+    }
+
     const forbiddenPhraseRows = await listMyForbiddenPhrases(email)
     const forbiddenPhrases = forbiddenPhraseRows.map((row) => row.phrase)
 
-    const buildPrompt = (escalation: { matchedPhrases: readonly string[] } | null = null) =>
-      buildContentGuruPrompt({
-        contentType,
-        topic,
-        targetAudience,
-        additionalInfo,
-        template: null,
-        clientContext: null,
-        marketContext: null,
-        keywordPhrase: null,
-        metaDescription: null,
-        forbiddenPhrases,
-        escalation,
-      })
-
-    const callModel = (prompt: ReturnType<typeof buildPrompt>) =>
-      generateContent({
-        email,
-        model,
-        systemPrompt: prompt.systemPrompt,
-        userPrompt: prompt.userPrompt,
-        maxTokens: GENERATION_MAX_TOKENS,
-        temperature: GENERATION_TEMPERATURE,
-      })
-
-    let generated = await callModel(buildPrompt())
-    let matched = findMatchedForbiddenPhrases(generated.content, forbiddenPhrases)
-
-    // Warstwa 2 (D5): jedna automatyczna, eskalowana próba ponowienia. Treść
-    // z TEJ (drugiej) próby jest tą, którą zapisujemy — niezależnie od tego,
-    // czy nadal zawiera zakazaną frazę.
-    if (matched.length > 0) {
-      generated = await callModel(buildPrompt({ matchedPhrases: matched }))
-      matched = findMatchedForbiddenPhrases(generated.content, forbiddenPhrases)
-    }
-
-    const status = resolveGenerationStatus(matched)
+    const generated = await runContentGeneration({
+      email,
+      model,
+      contentType,
+      topic,
+      targetAudience,
+      additionalInfo,
+      template,
+      clientContext,
+      marketContext,
+      keywordPhrase: null,
+      metaDescription: null,
+      forbiddenPhrases,
+    })
 
     const saved = await saveArchiveEntry(email, {
       contentType,
       topic,
       generatedContent: generated.content,
-      status,
-      matchedForbiddenPhrases: matched,
+      status: generated.status,
+      matchedForbiddenPhrases: generated.matchedForbiddenPhrases,
       targetAudience: targetAudience || null,
       additionalInfo: additionalInfo || null,
       keywordPhrase: null,
       metaDescription: null,
       modelUsed: generated.model,
+      clientProfileId,
+      marketProfileId,
       metadata: { generationMode: "single" },
     })
 
@@ -119,7 +144,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       id: saved.id,
       content: saved.generatedContent,
       status: saved.status,
-      matchedForbiddenPhrases: matched,
+      matchedForbiddenPhrases: generated.matchedForbiddenPhrases,
       model: saved.modelUsed,
       createdAt: saved.createdAt,
     })

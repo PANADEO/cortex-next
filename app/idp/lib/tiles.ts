@@ -1,6 +1,6 @@
 import type { CoworkTileArchetype } from "@cortex/types"
 import type { LucideIcon } from "lucide-react"
-import { BarChart3, CalendarClock, FileScan, FileSpreadsheet, FileText, Gauge, Image, Receipt, ScanText, Settings, ShieldCheck, Users, Video, Wand2, Workflow } from "lucide-react"
+import { BarChart3, CalendarClock, FileScan, FileSpreadsheet, FileText, Gauge, Image, Megaphone, Receipt, ScanText, Settings, ShieldCheck, Users, Video, Wand2, Workflow } from "lucide-react"
 import { AI_TOOLS_TILE_ID, canAccessAiTool, hasAnyAiToolAccess, isAiToolId } from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
@@ -340,6 +340,33 @@ export const TILES: ReadonlyArray<Tile> = [
     iconFg: "text-cyan-700 dark:text-cyan-300",
     categoryFunctional: "misc",
     categoryDepartment: ["operations"],
+    archetype: "dashboard",
+  },
+  {
+    // Round B (PROJECT/cortex-frontend-content-guru-full-port-projekt.md D1):
+    // wpis RĘCZNY, umieszczony PRZED `...AI_TOOL_DEFINITIONS.map(aiToolTile)`
+    // niżej celowo — `id`/`entitlementCode` w AI_TOOL_DEFINITIONS wciąż mają
+    // "content-guru" (usunięcie stamtąd jest ŚWIADOMIE odłożone do atomowego
+    // cutoveru, patrz komentarz w lib/ai-tools/manifests/content-guru.manifest.ts),
+    // więc bez tego wpisu `TILES.find(t => t.id === "content-guru")` w
+    // app/(main)/layout.tsx trafiałby na SYNTETYCZNY wpis z
+    // `aiToolTile()` (href zawsze `/ai-tools/${id}`) — `isAiToolPage` wypadłoby
+    // `true` dla /content-guru/**, chowając sidebar na WSZYSTKICH czterech
+    // trasach kafelka (realny bug znaleziony przy budowie tej rundy, nie
+    // hipotetyczny: Array.prototype.find() zwraca PIERWSZE dopasowanie, więc
+    // ten wpis, będąc wcześniej w tablicy, wygrywa). Nie renderuje duplikatu
+    // karty na hubie — TileGrid czyta z bazy (useHubTiles(), Krok 3 projektu
+    // hub-db-driven), nie z tej stałej; TILES służy dziś wyłącznie do
+    // rozstrzygania sidebar/breadcrumb w app-shellu.
+    id: "content-guru",
+    label: "Content Guru",
+    description: "Generowanie roboczych treści marketingowych, produktowych i rekrutacyjnych",
+    href: "/content-guru",
+    icon: Megaphone,
+    iconBg: "bg-purple-200 dark:bg-purple-900/40",
+    iconFg: "text-purple-700 dark:text-purple-300",
+    categoryFunctional: "content-generation",
+    categoryDepartment: ["marketing"],
     archetype: "dashboard",
   },
   ...AI_TOOL_DEFINITIONS.map(aiToolTile),
