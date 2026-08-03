@@ -21,6 +21,10 @@ description: Postgres + Drizzle w @cortex/db — jedna baza, schema-per-moduł. 
 
 `app/idp/app/api/_lib/ai-tools-history.ts` używa dziś surowego `node:sqlite` (plik per tool w `.data/ai-tools-history/`), nie Drizzle. Decyzja Alexa (29.07.2026): migrować na Postgres — to pierwszy kandydat po uruchomieniu `@cortex/db`, nie zostawiać jako wyjątek.
 
+## Kolumna właściciela rekordu: `userEmail`
+
+Tabela trzymająca rekordy należące do konkretnego użytkownika (historia, archiwum, dowolne "moje dane") dostaje `userEmail: text("user_email").notNull()` — **nie** FK do `system_config.users.id` (tożsamość w RBAC to wszędzie e-mail, nie surogat; FK międzyschematowy złamałby też regułę wyżej "brak bezpośrednich JOIN-ów między schematami modułów"). Nie mylić z `createdBy` (np. `ilustromat.frame_templates.created_by`) — to tylko ślad audytowy na zasobie WSPÓŁDZIELONYM między userami, nie filtr widoczności. Pełny wzorzec — gdzie żyje filtr w zapytaniu, jak dokłada się widok admina bez przebudowy, kształt funkcji listującej, seedowanie e2e dwóch userów — spisany raz w `code-service/SKILL.md`, sekcja "Rekordy per-user (`userEmail`)".
+
 ## Reguły
 
 1. Nigdy bezpośredni SQL w `code-api`/`code-service` — zawsze przez Drizzle w `@cortex/db`.

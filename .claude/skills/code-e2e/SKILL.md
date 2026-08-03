@@ -53,6 +53,8 @@ await usersPage.goto()
 
 `asUser()` (w `fixtures.ts`) ustawia `x-auth-request-email` przez `context().setExtraHTTPHeaders()` — to nagłówek, który na demo-dev wstrzykuje oauth2-proxy, a lokalnie czyta `requireTileAccess()`/`getRequestEmail()`. Dzięki temu **nie restartujesz dev servera żeby zmienić "kim jesteś"** w kolejnym teście — ustawiasz nagłówek per test.
 
+**Moduł z rekordami per-user** (historia, archiwum — patrz `code-service/SKILL.md` "Rekordy per-user"): scenariusz seeduje rekordy właściciela testu ORAZ co najmniej jeden rekord podrzucony pod jawnie innym, wyeksportowanym adresem (wzorem `COWORK_STRANGER_EMAIL`) — test dowodzi izolacji tym, że strona właściciela nigdy nie pokazuje treści z podrzuconego rekordu, bez logowania się jako drugi user.
+
 **⚠️ DESTRUKCYJNE.** `resetSystemConfig()` czyści wszystkie tabele bezwarunkowo. Zweryfikowane na żywo: jeden przebieg testów skasował realnego bootstrap-admina z lokalnej bazy dev. Osobna baza/kontener dla e2e — nigdy ta sama instancja Postgresa co ręcznie odpalony `npm run dev`. Szczegóły: `REFERENCE.md`.
 
 Kiedy `page.route` zamiast bazy: gdy test dotyczy WYŁĄCZNIE frontendu (np. layout, a11y, interakcja UI) i nie chcesz płacić za realne zapytanie. Gdy test ma udowodnić, że dane faktycznie płyną przez `@cortex/db`/RBAC (czyli sens testu E2E nowego modułu) — zawsze przez `db-seed.ts`, mock tylko to, co jest POZA modułem (patrz niżej).
