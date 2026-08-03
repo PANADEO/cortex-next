@@ -16,8 +16,14 @@
 //
 // Faza 2 (Historia, PROJECT/cortex-frontend-geo-score-calculator-port-
 // projekt.md §5): listMyCalculations()/getMyCalculation()/
-// deleteMyCalculation() dochodzą tutaj. ŻADEN zapis do `config` (Faza 3,
-// Ustawienia) nie wchodzi w tej rundzie.
+// deleteMyCalculation() dochodzą tutaj.
+//
+// Faza 3 (Ustawienia, §4.4): updateGeoScoreConfig()/resetGeoScoreConfig()
+// dochodzą na końcu pliku. Konfiguracja jest WSPÓŁDZIELONA (singleton, D5
+// §7 pkt 3 — jeden poziom dostępu, bez osobnego scope'u "manage-settings"),
+// więc w odróżnieniu od `calculations` te dwie funkcje NIE przyjmują
+// `userEmail` jako filtra widoczności — pierwszy parametr `updatedBy` jest
+// wyłącznie śladem audytowym (kto ostatnio zapisał), nigdy warunkiem WHERE.
 
 import { calculations, config, getDb, type CalculationRow, type ConfigRow, type Grade } from "@cortex/db"
 import { and, desc, eq } from "drizzle-orm"
@@ -137,4 +143,126 @@ export async function deleteMyCalculation(userEmail: string, id: string): Promis
     .where(and(eq(calculations.id, id), eq(calculations.userEmail, userEmail)))
     .returning()
   return deleted.length > 0
+}
+
+export interface UpdateGeoScoreConfigInput {
+  weightStatistics: number
+  weightActionVerbs: number
+  weightStructure: number
+  weightObjectivity: number
+  benchmarkStats: number
+  benchmarkVerbs: number
+  benchmarkStructure: number
+  benchmarkObjectivity: number
+  gradeAMin: number
+  gradeBMin: number
+  gradeCMin: number
+  gradeDMin: number
+  actionVerbs: string[]
+  subjectiveWords: string[]
+  falsePositives: string[]
+  bulletPatterns: string[]
+}
+
+/** 1:1 z DEFAULT_* w geo_calc/app/backend/constants.py i z
+ *  packages/@cortex/db/scripts/seed-geo-score-calculator.mjs (Faza 0 —
+ *  wiersz, który realnie siedzi dziś w Postgresie po pierwszym seedzie).
+ *  Duplikacja tych literałów w trzecim miejscu jest ŚWIADOMA, nie przeoczeniem:
+ *  ten sam wzorzec już istnieje między constants.py (Python, źródło) a
+ *  seed-geo-score-calculator.mjs (plain Node script, nie może zaimportować
+ *  TS z `src/`) — dwie kopie już dziś muszą się zgadzać ręcznie. Trzecia
+ *  kopia tutaj nie zwiększa realnego ryzyka dryfu (seed jest jednorazowy,
+ *  idempotentny, uruchamiany raz per środowisko), a integration test
+ *  (geo-score-calculator.integration.test.ts) porównuje efekt
+ *  resetGeoScoreConfig() z wierszem, który realnie wstawił seed. */
+export const GEO_SCORE_CONFIG_DEFAULTS: UpdateGeoScoreConfigInput = {
+  weightStatistics: 0.3,
+  weightActionVerbs: 0.25,
+  weightStructure: 0.2,
+  weightObjectivity: 0.25,
+  benchmarkStats: 4.0,
+  benchmarkVerbs: 0.15,
+  benchmarkStructure: 3.0,
+  benchmarkObjectivity: 0.05,
+  gradeAMin: 90,
+  gradeBMin: 75,
+  gradeCMin: 60,
+  gradeDMin: 40,
+  actionVerbs: [
+    "wdrożył", "uruchomił", "zwiększył", "zmniejszył", "osiągnął",
+    "zrealizował", "wprowadził", "zakończył", "rozpoczął", "podpisał",
+    "ogłosił", "przedstawił", "zaprezentował", "zainwestował", "sfinansował",
+    "opracował", "stworzył", "zbudował", "rozwinął", "ulepszył",
+    "zmodernizował", "zoptymalizował", "przekształcił", "zautomatyzował",
+    "nawiązał", "połączył", "zintegrował", "skonsolidował", "przejął",
+    "wzrósł", "spadł", "przekroczył", "podwoił", "potroił",
+    "zaoszczędził", "wygenerował", "wypracował",
+    "wdraża", "uruchamia", "zwiększa", "realizuje", "wprowadza",
+    "rozwija", "buduje", "inwestuje", "generuje", "osiąga",
+  ],
+  subjectiveWords: [
+    "najlepszy", "najlepsza", "najlepsze", "największy", "największa",
+    "najważniejszy", "najważniejsza", "najpopularniejszy", "najnowocześniejszy",
+    "wyjątkowy", "wyjątkowa", "wyjątkowe", "niesamowity", "niesamowita",
+    "doskonały", "doskonała", "perfekcyjny", "idealny", "idealna",
+    "rewolucyjny", "rewolucyjna", "przełomowy", "przełomowa",
+    "innowacyjny", "innowacyjna", "nowoczesny", "nowoczesna",
+    "niezwykły", "niezwykła", "fantastyczny", "fantastyczna",
+    "cudowny", "cudowna", "wspaniały", "wspaniała",
+    "absolutnie", "całkowicie", "niezwykle", "niesamowicie",
+    "wyjątkowo", "nadzwyczaj", "szczególnie", "bardzo",
+    "lider", "liderka", "czołowy", "czołowa", "wiodący", "wiodąca",
+    "premium", "ekskluzywny", "ekskluzywna", "prestiżowy", "prestiżowa",
+    "unikalny", "unikalna", "jedyny", "jedyna",
+  ],
+  falsePositives: [
+    "rozwiązania", "rozwiązanie", "rozwiązań",
+    "przedmioty", "przedmiot", "przedmiotów",
+    "osiągnięcia", "osiągnięcie", "osiągnięć",
+    "inwestycja", "inwestycji", "inwestycje",
+    "uruchomienie", "uruchomienia",
+    "wdrożenie", "wdrożenia", "wdrożeń",
+    "zwiększenie", "zwiększenia",
+    "zmniejszenie", "zmniejszenia",
+    "wprowadzenie", "wprowadzenia",
+    "zakończenie", "rozpoczęcie",
+    "przedstawienie", "ogłoszenie",
+    "połączenie", "przekształcenie",
+    "ulepszenie", "usprawnienie",
+  ],
+  bulletPatterns: [
+    "^[\\s]*[-•●○◦▪▸►]\\s+",
+    "^[\\s]*\\d+[.\\)]\\s+",
+    "^[\\s]*[a-z][.\\)]\\s+",
+  ],
+}
+
+/** Aktualizuje SINGLETON config (id=true, patrz schemat) — pełne
+ *  nadpisanie, nie patch: wołający (route) zawsze przekazuje komplet pól po
+ *  walidacji Zod. `updatedBy` to WYŁĄCZNIE ślad audytowy (kto ostatnio
+ *  zmienił WSPÓLNĄ konfigurację instancji), nie filtr widoczności — patrz
+ *  nagłówek pliku. Suma wag = 100% NIE jest tu re-walidowana — to
+ *  odpowiedzialność Zod na warstwie code-api (design doc §4.4, ten sam wybór
+ *  co komentarz przy `config` w schema/geo-score-calculator.ts o CHECK w
+ *  Postgresie). */
+export async function updateGeoScoreConfig(
+  updatedBy: string,
+  input: UpdateGeoScoreConfigInput,
+): Promise<ConfigRow> {
+  const [row] = await getDb()
+    .update(config)
+    .set({ ...input, updatedBy, updatedAt: new Date() })
+    .where(eq(config.id, true))
+    .returning()
+  if (!row) throw new GeoScoreConfigMissingError()
+  return row
+}
+
+/** "Przywróć domyślne" (Faza 3, §4.4) — akcja gated przez `AlertDialog` po
+ *  stronie UI, bo nadpisuje konfigurację WSPÓLNĄ dla całej instancji, nie
+ *  coś per-user. Zamierzenie: jedyne źródło prawdy o defaultach żyje tutaj
+ *  (serwer), nie w buncie klienta — klient tylko woła tę akcję po
+ *  potwierdzeniu. */
+export function resetGeoScoreConfig(updatedBy: string): Promise<ConfigRow> {
+  return updateGeoScoreConfig(updatedBy, GEO_SCORE_CONFIG_DEFAULTS)
 }

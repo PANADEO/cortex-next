@@ -85,3 +85,36 @@ export interface GeoScoreCalculationDetailDto {
   configSnapshot: unknown
   createdAt: string
 }
+
+/**
+ * Kontrakt GET/PUT/reset `/api/geo-score-calculator/config` (Faza 3,
+ * Ustawienia, design doc §4.4) — WSPÓLNA, instancyjna konfiguracja, nie
+ * DTO per-user. Wagi są UŁAMKAMI (0-1, jak w bazie i w kontrakcie
+ * POST /analyze), NIE procentami — konwersja na/z procentów dla suwaków
+ * żyje wyłącznie w config-schema.ts (warstwa formularza), żeby ten plik
+ * (kontrakt klient<->BFF) zostawał 1:1 z tym, co faktycznie idzie po sieci.
+ */
+export interface GeoScoreConfigDto {
+  weightStatistics: number
+  weightActionVerbs: number
+  weightStructure: number
+  weightObjectivity: number
+  benchmarkStats: number
+  benchmarkVerbs: number
+  benchmarkStructure: number
+  benchmarkObjectivity: number
+  gradeAMin: number
+  gradeBMin: number
+  gradeCMin: number
+  gradeDMin: number
+  actionVerbs: string[]
+  subjectiveWords: string[]
+  falsePositives: string[]
+  bulletPatterns: string[]
+  updatedAt: string
+  updatedBy: string
+}
+
+/** Ciało PUT — wszystko poza `updatedAt`/`updatedBy` (te dwa serwer ustawia
+ *  sam, z access.email i `new Date()`, nigdy z ciała żądania). */
+export type UpdateGeoScoreConfigRequestDto = Omit<GeoScoreConfigDto, "updatedAt" | "updatedBy">

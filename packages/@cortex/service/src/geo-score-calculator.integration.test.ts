@@ -16,13 +16,18 @@
 import { calculations, closeDb, getDb } from "@cortex/db"
 import { randomUUID } from "node:crypto"
 import { eq } from "drizzle-orm"
-import { afterAll, beforeEach, describe, expect, it } from "vitest"
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest"
 import {
+  GEO_SCORE_CONFIG_DEFAULTS,
   deleteMyCalculation,
+  getGeoScoreConfig,
   getMyCalculation,
   listMyCalculations,
+  resetGeoScoreConfig,
   saveGeoScoreCalculation,
+  updateGeoScoreConfig,
   type SaveCalculationInput,
+  type UpdateGeoScoreConfigInput,
 } from "./geo-score-calculator"
 
 const hasDatabase = Boolean(process.env.DATABASE_URL)
@@ -148,5 +153,93 @@ describe.skipIf(!hasDatabase)("geo-score-calculator service — prawdziwy Postgr
     const rows = await listMyCalculations(OWNER_EMAIL)
     expect(rows).toHaveLength(1)
     expect(rows[0]?.id).toBe(keep.id)
+  })
+})
+
+// Config jest SINGLETONEM WSPÓLNYM dla całej instancji (design doc D5 §7
+// pkt 3 — jeden wiersz, brak per-user scopingu) — w odróżnieniu od bloku
+// wyżej (per-process e-maile, zero kolizji między równoległymi uruchomieniami)
+// każdy test tu MUSI przywrócić dokładnie to, co zastał (`afterEach`), inaczej
+// zostawia instancję w zmutowanym stanie po przebiegu testów.
+describe.skipIf(!hasDatabase)("geo-score-calculator service — config (singleton), prawdziwy Postgres", () => {
+  let originalConfig: UpdateGeoScoreConfigInput
+
+  beforeAll(async () => {
+    const row = await getGeoScoreConfig()
+    originalConfig = {
+      weightStatistics: row.weightStatistics,
+      weightActionVerbs: row.weightActionVerbs,
+      weightStructure: row.weightStructure,
+      weightObjectivity: row.weightObjectivity,
+      benchmarkStats: row.benchmarkStats,
+      benchmarkVerbs: row.benchmarkVerbs,
+      benchmarkStructure: row.benchmarkStructure,
+      benchmarkObjectivity: row.benchmarkObjectivity,
+      gradeAMin: row.gradeAMin,
+      gradeBMin: row.gradeBMin,
+      gradeCMin: row.gradeCMin,
+      gradeDMin: row.gradeDMin,
+      actionVerbs: row.actionVerbs,
+      subjectiveWords: row.subjectiveWords,
+      falsePositives: row.falsePositives,
+      bulletPatterns: row.bulletPatterns,
+    }
+  })
+
+  afterEach(async () => {
+    await updateGeoScoreConfig("itest-restore@e2e.local", originalConfig)
+  })
+
+  it("updateGeoScoreConfig nadpisuje singleton, zapisuje updatedBy, i wynik jest widoczny przy ponownym odczycie", async () => {
+    const updated = await updateGeoScoreConfig("analityk@firma.pl", {
+      ...GEO_SCORE_CONFIG_DEFAULTS,
+      weightStatistics: 0.4,
+      weightActionVerbs: 0.2,
+      weightStructure: 0.2,
+      weightObjectivity: 0.2,
+      actionVerbs: ["przetestował"],
+    })
+
+    expect(updated.weightStatistics).toBe(0.4)
+    expect(updated.updatedBy).toBe("analityk@firma.pl")
+    expect(updated.actionVerbs).toEqual(["przetestował"])
+
+    const reread = await getGeoScoreConfig()
+    expect(reread.weightStatistics).toBe(0.4)
+    expect(reread.actionVerbs).toEqual(["przetestował"])
+  })
+
+  it("resetGeoScoreConfig przywraca DOKŁADNIE GEO_SCORE_CONFIG_DEFAULTS (1:1 z Faza 0 seed) po realnej mutacji", async () => {
+    await updateGeoScoreConfig("analityk@firma.pl", {
+      ...GEO_SCORE_CONFIG_DEFAULTS,
+      weightStatistics: 0.1,
+      weightActionVerbs: 0.1,
+      weightStructure: 0.1,
+      weightObjectivity: 0.7,
+      gradeAMin: 50,
+      actionVerbs: ["zmieniono"],
+      subjectiveWords: ["zmieniono"],
+      bulletPatterns: ["^zmieniono"],
+    })
+
+    const reset = await resetGeoScoreConfig("admin@firma.pl")
+
+    expect(reset.weightStatistics).toBe(GEO_SCORE_CONFIG_DEFAULTS.weightStatistics)
+    expect(reset.weightActionVerbs).toBe(GEO_SCORE_CONFIG_DEFAULTS.weightActionVerbs)
+    expect(reset.weightStructure).toBe(GEO_SCORE_CONFIG_DEFAULTS.weightStructure)
+    expect(reset.weightObjectivity).toBe(GEO_SCORE_CONFIG_DEFAULTS.weightObjectivity)
+    expect(reset.benchmarkStats).toBe(GEO_SCORE_CONFIG_DEFAULTS.benchmarkStats)
+    expect(reset.benchmarkVerbs).toBe(GEO_SCORE_CONFIG_DEFAULTS.benchmarkVerbs)
+    expect(reset.benchmarkStructure).toBe(GEO_SCORE_CONFIG_DEFAULTS.benchmarkStructure)
+    expect(reset.benchmarkObjectivity).toBe(GEO_SCORE_CONFIG_DEFAULTS.benchmarkObjectivity)
+    expect(reset.gradeAMin).toBe(GEO_SCORE_CONFIG_DEFAULTS.gradeAMin)
+    expect(reset.gradeBMin).toBe(GEO_SCORE_CONFIG_DEFAULTS.gradeBMin)
+    expect(reset.gradeCMin).toBe(GEO_SCORE_CONFIG_DEFAULTS.gradeCMin)
+    expect(reset.gradeDMin).toBe(GEO_SCORE_CONFIG_DEFAULTS.gradeDMin)
+    expect(reset.actionVerbs).toEqual(GEO_SCORE_CONFIG_DEFAULTS.actionVerbs)
+    expect(reset.subjectiveWords).toEqual(GEO_SCORE_CONFIG_DEFAULTS.subjectiveWords)
+    expect(reset.falsePositives).toEqual(GEO_SCORE_CONFIG_DEFAULTS.falsePositives)
+    expect(reset.bulletPatterns).toEqual(GEO_SCORE_CONFIG_DEFAULTS.bulletPatterns)
+    expect(reset.updatedBy).toBe("admin@firma.pl")
   })
 })

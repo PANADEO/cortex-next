@@ -67,6 +67,8 @@ const service = vi.hoisted(() => ({
   listMyCalculations: vi.fn(async () => [FIXTURE_CALCULATION]),
   getMyCalculation: vi.fn(async () => FIXTURE_CALCULATION),
   deleteMyCalculation: vi.fn(async () => true),
+  updateGeoScoreConfig: vi.fn(async () => CONFIG_ROW),
+  resetGeoScoreConfig: vi.fn(async () => CONFIG_ROW),
 }))
 
 vi.mock("@cortex/service", async (importOriginal) => {
