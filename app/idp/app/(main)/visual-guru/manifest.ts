@@ -11,12 +11,13 @@ import { defineTile } from "@cortex/tile-sdk"
 // zasobu współdzielonego do zarządzania (brak szablonów/marki jak w
 // Ilustromacie), więc brak osobnego scope'u.
 //
-// FAZA 0 (fundament): tylko ten manifest — zero page.tsx pod tym folderem
-// jeszcze (Faza 1: generator, Faza 2: archiwum). `route` wskazuje na przyszły
-// ekran generatora. Do pierwszej realnej aktywacji ten kod jest widoczny
-// WYŁĄCZNIE jako nieaktywny kandydat w formularzu "Dodaj aplikację" —
-// świadomie, wzorem geo-score-calculator/document-parser (seed-tile-manifests.mjs
-// insertuje is_active=false, activated_at=null na pierwszym deployu).
+// FAZA 1 (generator): `./page.tsx` pod tym folderem to ekran generatora
+// (design doc §6.1). Faza 2 (archiwum, `/visual-guru/history`) nie jest
+// jeszcze zbudowana. `route` wskazuje na ekran generatora. Do pierwszej
+// realnej aktywacji ten kod jest widoczny WYŁĄCZNIE jako nieaktywny kandydat
+// w formularzu "Dodaj aplikację" — świadomie, wzorem
+// geo-score-calculator/document-parser (seed-tile-manifests.mjs insertuje
+// is_active=false, activated_at=null na pierwszym deployu).
 export const visualGuruTile = defineTile({
   id: "visual-guru",
   kind: "native",
