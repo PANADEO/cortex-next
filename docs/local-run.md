@@ -57,20 +57,47 @@ nie luka tego compose. Jako zalogowany administrator:
 
 Po aktywacji kafelek od razu pojawia się na hubie — bez restartu kontenera.
 
-## Generowanie AI (opcjonalnie)
+## Który kafelek czego wymaga
 
-Ekrany wszystkich czterech kafelków ładują się i przechodzą RBAC bez
-dodatkowej konfiguracji. Żeby przyciski „Generuj" faktycznie zwracały wynik
-modelu, `cortex-frontend` musi dogadać się z **cortex-proxy** — osobnym
-serwisem, celowo POZA tym compose (`docs/database.md`). Domyślnie
-`CORTEX_PROXY_URL=http://host.docker.internal:8240`:
+Trzy poziomy: (1) działa od razu z samym `docker compose up`, (2) wymaga
+dodatkowego sekretu/serwisu, który JEST już wpięty w ten compose — tylko
+trzeba go dostarczyć w `.env`, (3) wymaga infrastruktury spoza tego repo,
+nie stawianej przez ten compose w ogóle.
+
+### 1 — Działa od razu, zero dodatkowej konfiguracji
+
+| Kafelek | Dlaczego |
+|---|---|
+| Kalkulator GEO Score | Analiza to spaCy — własny mikroserwis Python (`geo-score-calculator` w tym compose), zero wywołań LLM. Jedyny nowy kafelek z realnym wynikiem "od ręki". |
+| Konfiguracja Systemu / Cortex Config | Czyste CRUD na Postgresie, bez zewnętrznych zależności. |
+| Okna Czasowe | Gada bezpośrednio z publicznym API JustWatch + lokalny plikowy store — potrzebuje tylko dostępu do internetu, nie cortex-proxy. |
+
+### 2 — Działa w pełni po dostarczeniu sekretu/serwisu (już wpięte w ten compose)
+
+| Kafelek | Czego brakuje | Jak dostarczyć |
+|---|---|---|
+| Content Guru, Visual Guru, Ilustromat | `cortex-proxy` (LLM/generowanie obrazów) | `cd ~/REPO/cortex-proxy && docker compose up -d` — domyślny `CORTEX_PROXY_URL=http://host.docker.internal:8240` już na to celuje |
+| AI Tools (LinkedIn Generator, AI Summarizer, Text Highlighter/Transformer/Analyzer, Fakturomat, Generator Prezentacji, Asystent Dnia) | jw. | jw. |
+| Parser Dokumentów | jw. **+** `DOCUMENT_PARSER_VISION_MODEL` (domyślnie puste — legacy placeholder był jawnie nienazwany) | uruchom `cortex-proxy` **i** ustaw w `.env` realny model wizyjny dostępny przez Twój proxy; bez tego upload/konwersja LibreOffice działają, ekstrakcja kończy się czytelnym `DependencyError` |
+| Raportowanie Tokenów | `CORTEX_PROXY_ADMIN_API_KEY` — INNY sekret niż `CORTEX_PROXY_API_KEY` (nagłówek `X-Admin-API-Key`, sprawdzany przeciw `ADMIN_API_KEY` w env Twojego cortex-proxy; pomylenie daje ciche 401) | ustaw w `.env`, wartość z `ADMIN_API_KEY` instancji cortex-proxy, do której celujesz |
+| Cortex Cowork | `ANTHROPIC_API_KEY` — obraz Dockera już buduje i kopiuje `cowork-runner/` (etap `cowork-runner-deps`), `node:22-alpine` sam spełnia wymóg Flue (>=22.19), więc `COWORK_NODE_BIN` niepotrzebny w Dockerze | ustaw `ANTHROPIC_API_KEY=sk-ant-...` w `.env`; bez niego kafelek się otwiera i odpowiada, ale przez deterministyczny router słów kluczowych (fallback w `chat-engine.ts`), nie realnego agenta LLM |
+
+### 3 — NIE zadziała w tym compose — potrzebuje osobnej infrastruktury spoza tego repo
+
+| Kafelek | Czego potrzebuje |
+|---|---|
+| IDP, IDP Basic, Intrastat, Nadzorca Faktur (Invoice Supervisor) | Każdy proxuje do WŁASNEGO, osobnego backendu (`IDP_BACKEND_URL`, `IDP_BASIC_BACKEND_URL`, `INTRASTAT_BACKEND_URL`, `INVOICE_SUPERVISOR_BACKEND_URL` — patrz `.env.example`) — osobne repozytoria, nie stawiane przez ten compose |
+| Store PIT | Brak w kodzie realnej integracji backendowej (żadnych route'ów API) — wygląda na jeszcze niedociągnięty na froncie poza szkieletem UI, nie sprawdzane dogłębnie |
+
+## Uruchomienie cortex-proxy (opcjonalnie)
 
 ```bash
 cd ~/REPO/cortex-proxy && docker compose up -d
 ```
 
-Bez tego wywołania modeli kończą się czytelnym błędem (503/502), reszta
-appki (nawigacja, RBAC, listy, konfiguracja) działa normalnie.
+Bez tego wywołania modeli (kategoria 2 wyżej) kończą się czytelnym błędem
+(503/502), reszta appki (nawigacja, RBAC, listy, konfiguracja) działa
+normalnie.
 
 ## Zatrzymanie / reset
 
