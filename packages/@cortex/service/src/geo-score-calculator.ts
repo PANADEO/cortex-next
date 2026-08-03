@@ -6,18 +6,21 @@
 // — ten plik dotyka WYŁĄCZNIE Drizzle/Postgres, zero fetch().
 //
 // "Rekordy per-user" (code-service/SKILL.md): `userEmail` jest OBOWIĄZKOWYM,
-// pierwszym parametrem pozycyjnym funkcji zapisującej `calculations`,
-// pochodzi WYŁĄCZNIE z `access.email` zwróconego przez requireTileAccess()
-// w kontrolerze — nigdy z ciała żądania.
+// pierwszym parametrem pozycyjnym KAŻDEJ funkcji tego pliku dotykającej
+// `calculations`, pochodzi WYŁĄCZNIE z `access.email` zwróconego przez
+// requireTileAccess() w kontrolerze — nigdy z ciała/query żądania. Filtr
+// jest częścią zapytania (`.where()`), nigdy osobnym krokiem po fetchu —
+// `getMyCalculation`/`deleteMyCalculation` zwracają `undefined`/`false`
+// zarówno dla "nie istnieje", jak i "cudze"; wołający (route) mapuje oba na
+// 404, NIGDY 403 (403 zdradzałby, że rekord o tym id w ogóle istnieje).
 //
-// Faza 1 celowo NIE zawiera listMyCalculations()/getMyCalculation() (Faza 2,
-// ekran Historii) ani żadnego ZAPISU do `config` (Faza 3, Ustawienia) —
-// tylko odczyt configu i zapis pojedynczej kalkulacji, dokładnie to, czego
-// potrzebuje POST /analyze. Patrz PROJECT/cortex-frontend-geo-score-
-// calculator-port-projekt.md §5.
+// Faza 2 (Historia, PROJECT/cortex-frontend-geo-score-calculator-port-
+// projekt.md §5): listMyCalculations()/getMyCalculation()/
+// deleteMyCalculation() dochodzą tutaj. ŻADEN zapis do `config` (Faza 3,
+// Ustawienia) nie wchodzi w tej rundzie.
 
 import { calculations, config, getDb, type CalculationRow, type ConfigRow, type Grade } from "@cortex/db"
-import { eq } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm"
 
 export const GEO_SCORE_CALCULATOR_APP_CODE = "geo-score-calculator"
 
@@ -97,4 +100,41 @@ export async function saveGeoScoreCalculation(
     .returning()
 
   return saved as CalculationRow
+}
+
+/** Lista historii WYŁĄCZNIE właściciela, najnowsze pierwsze. Bez page/sort/
+ *  search — `CortexDataGrid` (ekran /geo-score-calculator/history) filtruje/
+ *  sortuje po stronie przeglądarki nad całą (już przefiltrowaną do usera)
+ *  tablicą, wzorem `listMyJobs()`/`listMyArchive()` (code-service/SKILL.md
+ *  pkt 4). */
+export function listMyCalculations(userEmail: string): Promise<CalculationRow[]> {
+  return getDb()
+    .select()
+    .from(calculations)
+    .where(eq(calculations.userEmail, userEmail))
+    .orderBy(desc(calculations.createdAt))
+}
+
+/** Szczegóły JEDNEJ kalkulacji — właścicielstwo w WHERE, nie sprawdzane po
+ *  fetchu. `undefined` zarówno dla "nie istnieje", jak i "cudze" — route
+ *  mapuje oba na 404, NIGDY 403. */
+export async function getMyCalculation(
+  userEmail: string,
+  id: string,
+): Promise<CalculationRow | undefined> {
+  const [row] = await getDb()
+    .select()
+    .from(calculations)
+    .where(and(eq(calculations.id, id), eq(calculations.userEmail, userEmail)))
+  return row
+}
+
+/** `boolean`, nie rekord — usunięcie cudzej/nieistniejącej kalkulacji zwraca
+ *  `false`, wołający mapuje na 404, nigdy 403 (jak wyżej). */
+export async function deleteMyCalculation(userEmail: string, id: string): Promise<boolean> {
+  const deleted = await getDb()
+    .delete(calculations)
+    .where(and(eq(calculations.id, id), eq(calculations.userEmail, userEmail)))
+    .returning()
+  return deleted.length > 0
 }

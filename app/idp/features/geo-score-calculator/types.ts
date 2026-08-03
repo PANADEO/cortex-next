@@ -49,3 +49,39 @@ export interface AnalyzeGeoScoreResponseDto {
   }
   recommendations: string[]
 }
+
+/**
+ * Wiersz `/api/geo-score-calculator/history` (lista) — DTO trymowana do
+ * kolumn `CortexDataGrid` (data/podgląd/wynik/ocena/słowa). Bez
+ * textContent/result/configSnapshot — te trzy pola bywają duże i są
+ * niepotrzebne na liście, patrz `GeoScoreCalculationDetailDto` niżej.
+ */
+export interface GeoScoreCalculationSummaryDto {
+  id: string
+  textPreview: string
+  wordCount: number
+  totalScore: number
+  grade: GeoScoreGrade
+  createdAt: string
+}
+
+/**
+ * Wiersz `/api/geo-score-calculator/history/:id` (szczegóły) — PEŁNY,
+ * łącznie z `result` (do renderu tym samym `GeoScoreResultView` co Kalkulator)
+ * i `configSnapshot` (audytowalność, design doc §4.3).
+ */
+export interface GeoScoreCalculationDetailDto {
+  id: string
+  textContent: string
+  textPreview: string
+  wordCount: number
+  totalScore: number
+  grade: GeoScoreGrade
+  statsScore: number
+  verbsScore: number
+  structureScore: number
+  objectivityScore: number
+  result: AnalyzeGeoScoreResponseDto
+  configSnapshot: unknown
+  createdAt: string
+}
