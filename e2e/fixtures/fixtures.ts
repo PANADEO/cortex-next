@@ -24,6 +24,12 @@ import { GeoScoreCalculatorPage } from "../poms/geo-score-calculator/calculator-
 import { GeoScoreCalculatorHistoryPage } from "../poms/geo-score-calculator/history-page"
 import { GeoScoreCalculatorHistoryDetailPage } from "../poms/geo-score-calculator/history-detail-page"
 import { GeoScoreCalculatorSettingsPage } from "../poms/geo-score-calculator/settings-page"
+import { ContentGuruGeneratePage } from "../poms/content-guru/generate-page"
+import { ContentGuruTemplatesPage } from "../poms/content-guru/templates-page"
+import { ContentGuruClientProfilesPage } from "../poms/content-guru/client-profiles-page"
+import { ContentGuruMarketProfilesPage } from "../poms/content-guru/market-profiles-page"
+import { ContentGuruHistoryPage } from "../poms/content-guru/history-page"
+import { ContentGuruHistoryDetailPage } from "../poms/content-guru/history-detail-page"
 
 /**
  * Ustawia `x-auth-request-email` na WSZYSTKICH kolejnych żądaniach tej strony
@@ -55,6 +61,12 @@ interface TestFixtures {
   geoScoreCalculatorHistoryPage: GeoScoreCalculatorHistoryPage
   geoScoreCalculatorHistoryDetailPage: GeoScoreCalculatorHistoryDetailPage
   geoScoreCalculatorSettingsPage: GeoScoreCalculatorSettingsPage
+  contentGuruGeneratePage: ContentGuruGeneratePage
+  contentGuruTemplatesPage: ContentGuruTemplatesPage
+  contentGuruClientProfilesPage: ContentGuruClientProfilesPage
+  contentGuruMarketProfilesPage: ContentGuruMarketProfilesPage
+  contentGuruHistoryPage: ContentGuruHistoryPage
+  contentGuruHistoryDetailPage: ContentGuruHistoryDetailPage
 }
 
 interface WorkerFixtures {
@@ -135,6 +147,30 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 
   geoScoreCalculatorSettingsPage: async ({ page }, use) => {
     await use(new GeoScoreCalculatorSettingsPage(page))
+  },
+
+  contentGuruGeneratePage: async ({ page }, use) => {
+    await use(new ContentGuruGeneratePage(page))
+  },
+
+  contentGuruTemplatesPage: async ({ page }, use) => {
+    await use(new ContentGuruTemplatesPage(page))
+  },
+
+  contentGuruClientProfilesPage: async ({ page }, use) => {
+    await use(new ContentGuruClientProfilesPage(page))
+  },
+
+  contentGuruMarketProfilesPage: async ({ page }, use) => {
+    await use(new ContentGuruMarketProfilesPage(page))
+  },
+
+  contentGuruHistoryPage: async ({ page }, use) => {
+    await use(new ContentGuruHistoryPage(page))
+  },
+
+  contentGuruHistoryDetailPage: async ({ page }, use) => {
+    await use(new ContentGuruHistoryDetailPage(page))
   },
 })
 

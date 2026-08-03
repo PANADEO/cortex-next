@@ -27,15 +27,21 @@ import {
   applications,
   applicationScopes,
   calculations as geoScoreCalculations,
+  clientProfiles as contentGuruClientProfiles,
   config as geoScoreConfig,
+  contentArchive as contentGuruArchive,
+  forbiddenPhrases as contentGuruForbiddenPhrases,
   frameTemplates,
+  generationJobs as contentGuruGenerationJobs,
   generations,
   generationVariants,
   jobs,
+  marketProfiles as contentGuruMarketProfiles,
   permissionsMatrix,
   roleApplicationScopes,
   roles,
   templateAssets,
+  templates as contentGuruTemplates,
   userRoles,
   users,
   getDb,
@@ -87,6 +93,12 @@ const GEO_SCORE_CALCULATOR_FOREIGN_EMAIL = "geo-score-calculator-foreign@e2e.loc
 // wynikowy" w bytea; treść bajtów jest bez znaczenia dla żadnej asercji.
 const FIXTURE_PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+const CONTENT_GURU_APP_CODE = "content-guru"
+// Jak DOCUMENT_PARSER_FOREIGN_EMAIL/VISUAL_GURU_FOREIGN_EMAIL wyżej, dla
+// content_archive/client_profiles/market_profiles Content Guru (Round E, PROJECT/
+// cortex-frontend-content-guru-full-port-projekt.md §7, D10) — dowód izolacji
+// per-user bez logowania się jako drugi user.
+const CONTENT_GURU_FOREIGN_EMAIL = "content-guru-foreign@e2e.local"
 
 export type ScenarioName =
   | "empty"
@@ -137,6 +149,23 @@ export type ScenarioName =
   // izolacji per-user (code-service SKILL.md "Rekordy per-user" pkt 5,
   // wzorem document-parser-with-history/visual-guru-with-history).
   | "geo-score-calculator-with-history"
+  // Content Guru (Round E, PROJECT/cortex-frontend-content-guru-full-port-
+  // projekt.md §7): te dwa scenariusze różnią się WYŁĄCZNIE grantem scope'u
+  // `manage-templates` — wzorem ilustromat-user/ilustromat-template-manager
+  // (D6/D9: dostęp do kafelka nie nadaje prawa do zmiany szablonów, zasobu
+  // WSPÓLNEGO). Oba mają jeden wspólny szablon; wariant ze scope'em dostaje
+  // dodatkowo dwa wpisy archiwum — punkt odniesienia "przed" dla testu
+  // "Testuj generację nigdy nie zapisuje do content_archive" (row-count check).
+  | "content-guru-user"
+  | "content-guru-manage-templates"
+  // Content Guru: grant do kafelka + archiwum w dwóch statusach (done/
+  // done-with-warnings, ostatni z realnym trafieniem zakazanej frazy do testu
+  // podświetlania D5) i różnych typach treści (filtr/wyszukiwanie na
+  // /content-guru/history) + po jednym profilu klienta/rynku właściciela
+  // testu, plus po jednym wpisie archiwum/profilu klienta/profilu rynku
+  // podrzuconym pod CONTENT_GURU_FOREIGN_EMAIL — dowód izolacji per-user
+  // (code-service SKILL.md "Rekordy per-user" pkt 5).
+  | "content-guru-with-archive"
 
 export interface ScenarioResult {
   /** Wstrzyknij jako nagłówek `x-auth-request-email` żeby "być" tym userem —
@@ -174,6 +203,16 @@ export async function resetSystemConfig(): Promise<void> {
   // jak reszta tego bloku.
   await db.delete(geoScoreCalculations)
   await db.delete(geoScoreConfig)
+  // Schemat modułu Content Guru — dzieci (content_archive/generation_jobs
+  // referencyjnie luźne, onDelete "set null") przed rodzicami
+  // (client_profiles/market_profiles), templates bez FK więc kolejność
+  // dowolna; jawnie, bez polegania na FK cascade, wzorem reszty tego bloku.
+  await db.delete(contentGuruArchive)
+  await db.delete(contentGuruGenerationJobs)
+  await db.delete(contentGuruForbiddenPhrases)
+  await db.delete(contentGuruClientProfiles)
+  await db.delete(contentGuruMarketProfiles)
+  await db.delete(contentGuruTemplates)
 }
 
 /**
@@ -353,6 +392,15 @@ export async function seedScenario(name: ScenarioName): Promise<ScenarioResult> 
 
     case "geo-score-calculator-with-history":
       return seedGeoScoreCalculatorWithHistory()
+
+    case "content-guru-user":
+      return seedContentGuru({ withManageTemplatesScope: false })
+
+    case "content-guru-manage-templates":
+      return seedContentGuru({ withManageTemplatesScope: true })
+
+    case "content-guru-with-archive":
+      return seedContentGuruWithArchive()
   }
 }
 
@@ -903,6 +951,204 @@ async function seedGeoScoreCalculatorWithHistory(): Promise<ScenarioResult> {
       createdAt: new Date(now),
     }),
   ])
+
+  return { email, applications: [app!] }
+}
+
+/**
+ * Kafelek Content Guru + jeden szablon WSPÓLNY (D6 — bez filtra userEmail).
+ * `withManageTemplatesScope` decyduje o warstwie GRANULARNEJ, wzorem
+ * `seedIlustromat()`: bez niego user ma dostęp do kafelka (generowanie,
+ * własne archiwum/profile), ale nie ma prawa dotknąć szablonów. Wariant ZE
+ * scope'em dostaje dodatkowo dwa wpisy `content_archive` — punkt odniesienia
+ * "przed" dla E2E dowodzącego, że "Testuj generację" (design doc §4.2) nigdy
+ * nie dopisuje trzeciego wpisu (row-count check, Round E).
+ */
+async function seedContentGuru(options: { withManageTemplatesScope: boolean }): Promise<ScenarioResult> {
+  const db = getDb()
+  const email = options.withManageTemplatesScope
+    ? "content-guru-manager@e2e.local"
+    : "content-guru-user@e2e.local"
+
+  const [user] = await db.insert(users).values({ email, fullName: "Content Guru E2E" }).returning()
+  const [role] = await db
+    .insert(roles)
+    .values({ code: `content-guru-e2e-${options.withManageTemplatesScope}`, name: "Rola E2E" })
+    .returning()
+  const [app] = await db
+    .insert(applications)
+    .values({ code: CONTENT_GURU_APP_CODE, name: "Content Guru", kind: "native", route: "/content-guru" })
+    .returning()
+
+  await db.insert(userRoles).values({ userId: user!.id, roleId: role!.id })
+  await db.insert(permissionsMatrix).values({ roleId: role!.id, applicationId: app!.id })
+
+  const [scope] = await db
+    .insert(applicationScopes)
+    .values({ applicationId: app!.id, code: MANAGE_TEMPLATES_SCOPE, name: "Zarządzanie szablonami" })
+    .returning()
+
+  if (options.withManageTemplatesScope) {
+    await db.insert(roleApplicationScopes).values({ roleId: role!.id, applicationScopeId: scope!.id })
+  }
+
+  await db.insert(contentGuruTemplates).values({
+    name: "Post na LinkedIn",
+    category: "Rekrutacja",
+    content: "Napisz angażujący post rekrutacyjny na LinkedIn na podany temat.",
+    createdBy: "e2e-seed@cortex.local",
+  })
+
+  if (options.withManageTemplatesScope) {
+    await db.insert(contentGuruArchive).values([
+      {
+        userEmail: email,
+        contentType: "Rekrutacja — Post na LinkedIn",
+        topic: "Rekrutacja Backend Developera",
+        generatedContent: "Dołącz do zespołu jako Backend Developer.",
+        status: "done",
+        modelUsed: "anthropic/claude-sonnet-4.6",
+      },
+      {
+        userEmail: email,
+        contentType: "Marketing — Newsletter",
+        topic: "Premiera nowej funkcji",
+        generatedContent: "Premiera już wkrótce.",
+        status: "done",
+        modelUsed: "anthropic/claude-sonnet-4.6",
+      },
+    ])
+  }
+
+  return { email, applications: [app!] }
+}
+
+// Fixed UUID-y podrzuconych rekordów CUDZYCH (content-guru-with-archive) —
+// wzorem VISUAL_GURU_FOREIGN_EMAIL fixture'ów w tym pliku: testy nawigują do
+// nich BEZPOŚREDNIO po id (dowód 404, nie 403), więc id musi być znane z
+// góry, nie odczytane z `.returning()`.
+const CONTENT_GURU_FOREIGN_ARCHIVE_ID = "a1000000-0000-0000-0000-000000000001"
+const CONTENT_GURU_FOREIGN_CLIENT_PROFILE_ID = "a1000000-0000-0000-0000-000000000002"
+const CONTENT_GURU_FOREIGN_MARKET_PROFILE_ID = "a1000000-0000-0000-0000-000000000003"
+
+/**
+ * Kafelek Content Guru + archiwum/profile dla właściciela testu: cztery
+ * wpisy `content_archive` (mix `done`/`done-with-warnings` — ostatni z
+ * realnym trafieniem zakazanej frazy w treści, do testu podświetlania D5 —
+ * i mix typów treści dla filtra/wyszukiwania na /content-guru/history), jeden
+ * profil klienta, jeden profil rynku. Plus po jednym wpisie archiwum/profilu
+ * klienta/profilu rynku podrzuconym pod CONTENT_GURU_FOREIGN_EMAIL pod
+ * znanym z góry id — dowód izolacji per-user bez logowania się jako drugi
+ * user (code-service SKILL.md "Rekordy per-user" pkt 5).
+ */
+async function seedContentGuruWithArchive(): Promise<ScenarioResult> {
+  const db = getDb()
+  const email = "content-guru-history-user@e2e.local"
+  const dayMs = 24 * 60 * 60 * 1000
+  const now = Date.now()
+
+  const [user] = await db.insert(users).values({ email, fullName: "Content Guru E2E" }).returning()
+  const [role] = await db
+    .insert(roles)
+    .values({ code: "content-guru-history-e2e", name: "Rola E2E" })
+    .returning()
+  const [app] = await db
+    .insert(applications)
+    .values({ code: CONTENT_GURU_APP_CODE, name: "Content Guru", kind: "native", route: "/content-guru" })
+    .returning()
+
+  await db.insert(userRoles).values({ userId: user!.id, roleId: role!.id })
+  await db.insert(permissionsMatrix).values({ roleId: role!.id, applicationId: app!.id })
+
+  const [clientProfile] = await db
+    .insert(contentGuruClientProfiles)
+    .values({
+      userEmail: email,
+      profileName: "Klient testowy S.A.",
+      description: "Producent oprogramowania B2B dla sektora finansowego.",
+    })
+    .returning()
+
+  const [marketProfile] = await db
+    .insert(contentGuruMarketProfiles)
+    .values({
+      userEmail: email,
+      profileName: "Rynek testowy",
+      description: "Rynek oprogramowania SaaS w Polsce.",
+    })
+    .returning()
+
+  await db.insert(contentGuruArchive).values([
+    {
+      userEmail: email,
+      contentType: "Rekrutacja — Post na LinkedIn",
+      topic: "Rekrutacja Senior .NET Developer",
+      generatedContent: "Szukamy Senior .NET Developera do zespołu produktowego.",
+      status: "done",
+      modelUsed: "anthropic/claude-sonnet-4.6",
+      clientProfileId: clientProfile!.id,
+      createdAt: new Date(now),
+    },
+    {
+      userEmail: email,
+      contentType: "Marketing — Newsletter",
+      topic: "Premiera nowej funkcji",
+      // Zawiera DOSŁOWNIE zakazaną frazę z matchedForbiddenPhrases niżej —
+      // test podświetlania (D5, <mark>) potrzebuje realnego trafienia w
+      // treści, nie tylko metadanej.
+      generatedContent: "Nasz produkt jest najlepszy na rynku i każdy o tym wie.",
+      status: "done-with-warnings",
+      matchedForbiddenPhrases: ["najlepszy na rynku"],
+      modelUsed: "anthropic/claude-sonnet-4.6",
+      marketProfileId: marketProfile!.id,
+      createdAt: new Date(now - dayMs),
+    },
+    {
+      userEmail: email,
+      contentType: "PR — Komunikat prasowy",
+      topic: "Wyniki finansowe Q3",
+      generatedContent: "Spółka podsumowuje trzeci kwartał wzrostem przychodów.",
+      status: "done",
+      modelUsed: "openai/gpt-4o-mini",
+      createdAt: new Date(now - 2 * dayMs),
+    },
+    {
+      userEmail: email,
+      contentType: "Rekrutacja — Post na LinkedIn",
+      topic: "Rekrutacja Backend Developera",
+      generatedContent: "Dołącz do zespołu jako Backend Developer.",
+      status: "done",
+      modelUsed: "anthropic/claude-sonnet-4.6",
+      createdAt: new Date(now - 3 * dayMs),
+    },
+    // Podrzucony rekord CUDZY — test dowodzi, że nigdy nie wychodzi na
+    // liście/w szczegółach właściciela testu.
+    {
+      id: CONTENT_GURU_FOREIGN_ARCHIVE_ID,
+      userEmail: CONTENT_GURU_FOREIGN_EMAIL,
+      contentType: "Marketing — Newsletter",
+      topic: "Cudzy temat niewidoczny dla właściciela testu",
+      generatedContent: "Cudza treść niewidoczna dla właściciela testu.",
+      status: "done",
+      modelUsed: "anthropic/claude-sonnet-4.6",
+      createdAt: new Date(now),
+    },
+  ])
+
+  // Podrzucone profile CUDZE — izolacja per-user dla client/market profiles,
+  // ten sam powód co archiwum wyżej.
+  await db.insert(contentGuruClientProfiles).values({
+    id: CONTENT_GURU_FOREIGN_CLIENT_PROFILE_ID,
+    userEmail: CONTENT_GURU_FOREIGN_EMAIL,
+    profileName: "Cudzy profil klienta",
+    description: "Nie powinien być widoczny dla właściciela testu.",
+  })
+  await db.insert(contentGuruMarketProfiles).values({
+    id: CONTENT_GURU_FOREIGN_MARKET_PROFILE_ID,
+    userEmail: CONTENT_GURU_FOREIGN_EMAIL,
+    profileName: "Cudzy profil rynku",
+    description: "Nie powinien być widoczny dla właściciela testu.",
+  })
 
   return { email, applications: [app!] }
 }
