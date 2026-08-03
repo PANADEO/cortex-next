@@ -86,11 +86,14 @@ export type {
 export {
   VISUAL_GURU_APP_CODE,
   createGeneration,
+  deleteGeneration,
   getMyGeneration,
   listMyGenerations,
+  listMyGenerationsWithFirstVariant,
 } from "./visual-guru"
 export type {
   CreateGenerationInput,
+  GenerationListItem,
   GenerationVariantInput,
   GenerationWithVariants,
 } from "./visual-guru"
@@ -110,11 +113,17 @@ export type {
 } from "./document-parser"
 export {
   GEO_SCORE_CALCULATOR_APP_CODE,
+  GEO_SCORE_CONFIG_DEFAULTS,
   GeoScoreConfigMissingError,
+  deleteMyCalculation,
   getGeoScoreConfig,
+  getMyCalculation,
+  listMyCalculations,
+  resetGeoScoreConfig,
   saveGeoScoreCalculation,
+  updateGeoScoreConfig,
 } from "./geo-score-calculator"
-export type { SaveCalculationInput } from "./geo-score-calculator"
+export type { SaveCalculationInput, UpdateGeoScoreConfigInput } from "./geo-score-calculator"
 export {
   addForbiddenPhrase,
   getMyArchiveEntry,

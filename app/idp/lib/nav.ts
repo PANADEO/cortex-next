@@ -288,18 +288,28 @@ export const CORTEX_CONFIG_NAV: TileMenuSection[] = [
   },
 ]
 
-// Faza 1 (PROJECT/cortex-frontend-geo-score-calculator-port-projekt.md §5):
-// tylko Kalkulator ma fizyczną stronę. Historia (Faza 2) i Ustawienia
-// (Faza 3) dochodzą do tej listy, gdy ich page.tsx faktycznie powstaną —
-// wcześniej byłyby to martwe linki 404 w TileMenu (kafelek jest już
-// zarejestrowany w KNOWN_TILE_SEGMENTS/(main)/layout.tsx, więc ten rejestr
-// realnie się renderuje, nie jest już "nieszkodliwy do czasu aktywacji" jak
-// w Fazie 0).
+// Faza 1+2+3 (PROJECT/cortex-frontend-geo-score-calculator-port-projekt.md
+// §5): Kalkulator (Faza 1), Historia (Faza 2) i Ustawienia (Faza 3) mają
+// fizyczne strony. Sekcja "Konfiguracja" dla Ustawień — wzorem
+// INVOICE_SUPERVISOR_NAV (id "konfiguracja", nie "praca"): RBAC ma jeden
+// poziom dostępu (D5 §7 pkt 3, bez osobnego scope'u "manage-settings"), ale
+// wizualne rozdzielenie "codzienna praca" vs. "wspólna konfiguracja
+// instancji" jest już ustalonym wzorcem UX w tym repo.
 export const GEO_SCORE_CALCULATOR_NAV: TileMenuSection[] = [
   {
     id: "praca",
     label: "Praca",
-    items: [{ id: "kalkulator", label: "Kalkulator", icon: Calculator, href: "/geo-score-calculator" }],
+    items: [
+      { id: "kalkulator", label: "Kalkulator", icon: Calculator, href: "/geo-score-calculator" },
+      { id: "historia", label: "Historia", icon: History, href: "/geo-score-calculator/history" },
+    ],
+  },
+  {
+    id: "konfiguracja",
+    label: "Konfiguracja",
+    items: [
+      { id: "settings", label: "Ustawienia", icon: Settings, href: "/geo-score-calculator/settings" },
+    ],
   },
 ]
 
