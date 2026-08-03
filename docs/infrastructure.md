@@ -32,6 +32,8 @@ Jeśli nowy kafelek potrzebuje backendu w innym języku/runtime niż Node (np. P
 
 **Test, czy coś kwalifikuje się do `services/`:** czy to jest KIEDYKOLWIEK wdrażane niezależnie, na środowisko bez cortex-frontend? Jeśli nie (jak `cowork-runner`) — `services/`. Jeśli tak — zostaje osobnym repo, patrz kategorie 2 i 3.
 
+**Inny runtime niż Node (Python) — od 03.08.2026 ma już zweryfikowany szkielet, nie tylko regułę.** `cowork-runner/` jest precedensem dla `services/` jako takiego, ale to wciąż Node. Dla Pythona (pierwszy taki przypadek w tym repo — GEO Score Calculator i Parser Dokumentów, oba `PROJECT/cortex-frontend-*-port-projekt.md` w Obsidianie) patrz `.claude/skills/code-python-service/SKILL.md` i skopiuj `services/_template-python-service/` — realny, `docker build`+`docker compose up`+`docker run ... pytest`-zweryfikowany wzorzec Dockerfile/compose-wpisu/CI-joba, żeby obu tym serwisom nie trzeba było wynajdywać go osobno.
+
 ### 2. `cortex-proxy` / `chat` — to nie "nasze services", to zewnętrzne zależności platformowe
 
 Zła nazwa wcześniej. `cortex-proxy` i `chat` nie są kandydatami do `services/` w ogóle — to ta sama kategoria co wywołanie zewnętrznego API (OpenRouter, Stripe), nie "nasz kod w innym języku".

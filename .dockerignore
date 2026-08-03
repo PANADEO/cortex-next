@@ -24,3 +24,11 @@ coverage
 !app/idp/features/cortex-cowork/skills/**/*.md
 !demo/skills/**/*.md
 docs
+
+# Python microservices (services/<name>/) each build from their OWN context
+# (docker-compose.yml: `build: context: services/<name>`, a completely
+# separate `docker build` invocation with its own .dockerignore lookup
+# scoped to that subdirectory) — irrelevant to and only bloating the
+# context sent to the daemon for THIS (root) Dockerfile's Next.js image.
+# This line does not affect the services/* builds themselves.
+services

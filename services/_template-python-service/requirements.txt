@@ -1,0 +1,12 @@
+# Runtime + test deps in one file — mirrors the convention already used by
+# PANADEO/cortex-document-parser (streamlit/openai/pytest all in one
+# requirements.txt), not a Node-style split into prod/dev manifests. Kept in
+# one file deliberately: the Dockerfile installs this once and the resulting
+# image can both serve traffic (uvicorn) and run its own test suite
+# (`docker run <image> pytest`) — see the CI job in
+# .github/workflows/docker-build.yml, which relies on pytest being present
+# in the pushed image rather than a separate runner-side install.
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+httpx==0.28.1
+pytest==8.3.4

@@ -50,3 +50,9 @@ review.md
 plan.md
 .fleet-issue-context.md
 .fleet-pm-message
+
+# Python services under services/<name>/ (.claude/skills/code-python-service)
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/

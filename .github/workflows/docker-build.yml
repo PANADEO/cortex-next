@@ -100,3 +100,122 @@ jobs:
             NEXT_PUBLIC_BASE_PATH=${{ env.FORSPED_UAT_BASE_PATH }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Independent second build track for Python services under `services/`
+  # (docs/infrastructure.md "services/ w TYM repo" + .claude/skills/
+  # code-python-service/SKILL.md). Deliberately separate from the `docker`
+  # job above rather than folded into its matrix: the Next.js image and any
+  # given Python service change on unrelated schedules, and a break in one
+  # must never block a release of the other.
+  #
+  # Zero services exist yet with this job wired up (only the underscore-
+  # prefixed services/_template-python-service/, excluded on purpose — see
+  # below) — this job runs, finds nothing to build, and no-ops via
+  # `has-services`. It starts doing real work the moment
+  # services/geo-score-calculator/ or services/document-parser/ land with
+  # their own Dockerfile, with NO EDIT required here.
+  discover-python-services:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.discover.outputs.matrix }}
+      has-services: ${{ steps.discover.outputs.has-services }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: discover
+        name: Find services/*/Dockerfile (skip leading-underscore templates)
+        run: |
+          set -euo pipefail
+          # Depth 2 catches services/<name>/Dockerfile (one container per
+          # service — e.g. the future geo-score-calculator). Depth 3 also
+          # catches services/<name>/<sidecar>/Dockerfile (a service that
+          # needs a second container — e.g. document-parser's `unoserver`
+          # sidecar, matrix-built exactly this way in
+          # PANADEO/cortex-document-parser's own docker-build.yml, referenced
+          # in the Parser Dokumentów design doc §1.2). Anything nested deeper
+          # is out of scope for this simple discovery — extend it if/when
+          # that's actually needed, not speculatively now.
+          entries="[]"
+          while IFS= read -r dockerfile; do
+            rel="${dockerfile#services/}"       # e.g. document-parser/unoserver/Dockerfile
+            top="${rel%%/*}"                    # first path segment: document-parser
+            case "$top" in
+              _*) continue ;;                   # leading underscore = template, not a deployable service
+            esac
+            context="${dockerfile%/Dockerfile}" # services/document-parser/unoserver
+            name="${context#services/}"         # document-parser/unoserver
+            name="${name//\//-}"                # document-parser-unoserver
+            entries=$(jq -n --argjson acc "$entries" --arg name "$name" --arg context "$context" --arg dockerfile "$dockerfile" \
+              '$acc + [{name: $name, context: $context, dockerfile: $dockerfile}]')
+          done < <(find services -mindepth 2 -maxdepth 3 -type f -name Dockerfile 2>/dev/null | sort)
+          matrix="{\"include\":$entries}"
+          count=$(echo "$entries" | jq 'length')
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "has-services=$([ "$count" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+  python-services:
+    needs: discover-python-services
+    if: ${{ needs.discover-python-services.outputs.has-services == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix: ${{ fromJson(needs.discover-python-services.outputs.matrix) }}
+      fail-fast: false
+    name: Build service ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/services/${{ matrix.name }}
+          tags: |
+            type=ref,event=tag
+            type=ref,event=branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      # push:false + load:true builds ONE image and keeps it in the local
+      # daemon instead of publishing it — pytest below then runs inside that
+      # exact image, not a separately-configured runner. Only pushed (final
+      # step) once that real, in-container test run passes. This is the
+      # concrete guard against the failure mode this repo has already hit
+      # twice from unverified runtime assumptions (token-usage
+      # ERR_MODULE_NOT_FOUND; hub-render Krok 1b) — verify inside the
+      # container, not "the Dockerfile looks right".
+      - name: Build image (local only, not pushed yet)
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: false
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+      - name: Run pytest inside the built image
+        run: |
+          set -euo pipefail
+          tag=$(head -n1 <<< "${{ steps.meta.outputs.tags }}")
+          docker run --rm "$tag" pytest
+
+      - name: Push verified image
+        run: |
+          set -euo pipefail
+          while IFS= read -r tag; do
+            [ -n "$tag" ] && docker push "$tag"
+          done <<< "${{ steps.meta.outputs.tags }}"

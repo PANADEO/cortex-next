@@ -133,6 +133,30 @@ services:
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
 
+  # Content-free proof-of-concept, NIE realny backend — dowodzi, że Python
+  # w ogóle daje się zbudować/uruchomić/dosięgnąć w tym compose (patrz
+  # .claude/skills/code-python-service/SKILL.md). Realne serwisy
+  # (geo-score-calculator, document-parser) kopiują ten wzorzec i wchodzą
+  # do `services:` BEZ profilu — startują domyślnie z `docker compose up`,
+  # bo cortex-frontend realnie ich potrzebuje. Ten tutaj zostaje za
+  # profilem, żeby nie budować/uruchamiać balastu przy każdym zwykłym
+  # `docker compose up`: `docker compose --profile python-template up`.
+  template-python-service:
+    profiles: ["python-template"]
+    build:
+      context: services/_template-python-service
+    container_name: cortex-next-template-python-service
+    restart: unless-stopped
+    # BRAK ports: — osiągalny WYŁĄCZNIE przez Docker DNS z innych
+    # kontenerów tej sieci (tu: http://template-python-service:8000),
+    # nigdy z hosta. To jest posturę bezpieczeństwa opisaną w obu design
+    # dokach (GEO Score D3, Parser Dokumentów D6) — zweryfikowana realnym
+    # `curl` z hosta (fail) i z sąsiedniego kontenera (pass), nie założona.
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=50m
+
 # TODO(cortex-next): gdy cortex-proxy ma stać w TYM stacku, nie obok — dociągnąć
 # jego własny compose przez include:, nie kopiować definicji tutaj
 # (.claude/skills/code-compose/SKILL.md). Wymaga sklonowanego repo obok:
