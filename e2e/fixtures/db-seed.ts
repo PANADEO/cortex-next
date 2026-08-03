@@ -27,6 +27,7 @@ import {
   applications,
   applicationScopes,
   frameTemplates,
+  jobs,
   permissionsMatrix,
   roleApplicationScopes,
   roles,
@@ -51,6 +52,11 @@ const COWORK_APP_CODE = "cortex-cowork"
 // (grant platformowy, którego od 30.07.2026 wymaga bootstrapTrusts() nawet
 // w trybie otwartym — patrz app/idp/lib/cortex-governance/bootstrap-trust.ts).
 const COWORK_STRANGER_EMAIL = "obcy@cortex.local"
+const DOCUMENT_PARSER_APP_CODE = "document-parser"
+// Rekord podrzucony pod jawnie innym adresem (code-service SKILL.md
+// "Rekordy per-user" pkt 5, wzorem COWORK_STRANGER_EMAIL) — dowodzi izolacji
+// historii Parser Dokumentów bez logowania się jako drugi user.
+const DOCUMENT_PARSER_FOREIGN_EMAIL = "document-parser-foreign@e2e.local"
 
 export type ScenarioName =
   | "empty"
@@ -79,6 +85,11 @@ export type ScenarioName =
   // dla GET /api/cortex-cowork/projects w tym trybie. Grant dla dokładnie
   // e-maila używanego jako "obcy" w scenariuszach JSON (COWORK_STRANGER_EMAIL).
   | "cowork-open-mode-stranger"
+  // Parser Dokumentów: grant do kafelka + wiersze document_parser.jobs w
+  // czterech stanach (queued/processing/done/error) dla właściciela testu,
+  // plus jeden wiersz podrzucony pod DOCUMENT_PARSER_FOREIGN_EMAIL — dowód
+  // izolacji per-user (Tor A, sekcja 6.3 design docu).
+  | "document-parser-with-history"
 
 export interface ScenarioResult {
   /** Wstrzyknij jako nagłówek `x-auth-request-email` żeby "być" tym userem —
@@ -105,6 +116,8 @@ export async function resetSystemConfig(): Promise<void> {
   // czytelna wprost, bez polegania na definicji FK.
   await db.delete(templateAssets)
   await db.delete(frameTemplates)
+  // Schemat modułu Parser Dokumentów — ten sam powód co Ilustromat wyżej.
+  await db.delete(jobs)
 }
 
 /**
@@ -272,6 +285,9 @@ export async function seedScenario(name: ScenarioName): Promise<ScenarioResult> 
       await db.insert(permissionsMatrix).values({ roleId: role!.id, applicationId: app!.id })
       return { email, applications: [app!] }
     }
+
+    case "document-parser-with-history":
+      return seedDocumentParserWithHistory()
   }
 }
 
@@ -428,6 +444,103 @@ async function seedIlustromat(options: {
       fontSource: "library",
       fontLibraryId: "noto-sans",
       websiteText: "crido.pl",
+    },
+  ])
+
+  return { email, applications: [app!] }
+}
+
+/**
+ * Kafelek Parser Dokumentów + historia w czterech stanach dla właściciela
+ * testu, plus jeden wiersz podrzucony pod inny e-mail (izolacja per-user,
+ * code-service SKILL.md "Rekordy per-user" pkt 5). `backendJobId` na
+ * wierszach queued/processing jest celowo `null`/ustawiony analogicznie do
+ * tego, co realny POST /jobs zostawia w tych stanach — testy Toru A nie
+ * odpytują backendu Pythona (poza zakresem E2E, sekcja 6.3), więc te wiersze
+ * nigdy nie przechodzą dalej w tym scenariuszu.
+ */
+async function seedDocumentParserWithHistory(): Promise<ScenarioResult> {
+  const db = getDb()
+  const email = "document-parser-user@e2e.local"
+
+  const [user] = await db.insert(users).values({ email, fullName: "Parser Dokumentów E2E" }).returning()
+  const [role] = await db
+    .insert(roles)
+    .values({ code: "document-parser-e2e", name: "Rola E2E" })
+    .returning()
+  const [app] = await db
+    .insert(applications)
+    .values({
+      code: DOCUMENT_PARSER_APP_CODE,
+      name: "Parser Dokumentów",
+      kind: "native",
+      route: "/document-parser/upload",
+    })
+    .returning()
+
+  await db.insert(userRoles).values({ userId: user!.id, roleId: role!.id })
+  await db.insert(permissionsMatrix).values({ roleId: role!.id, applicationId: app!.id })
+
+  await db.insert(jobs).values([
+    {
+      id: "job-done-1",
+      backendJobId: "backend-done-1",
+      userEmail: email,
+      status: "done",
+      fileName: "raport-kwartalny.pdf",
+      fileSizeBytes: 245_000,
+      mimeType: "application/pdf",
+      model: "openai/gpt-4o-mini",
+      markdown: "# Raport kwartalny\n\nTreść wyekstrahowana z dokumentu testowego E2E.",
+      pageCount: 3,
+      imageCount: 3,
+      truncated: false,
+      elapsedSeconds: 4.2,
+      completedAt: new Date(),
+    },
+    {
+      id: "job-error-1",
+      backendJobId: "backend-error-1",
+      userEmail: email,
+      status: "error",
+      fileName: "umowa-uszkodzona.docx",
+      fileSizeBytes: 51_200,
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      errorMessage: "unoconvert failed (exit 1): file is corrupted",
+      errorCode: "conversion-failed",
+      completedAt: new Date(),
+    },
+    {
+      id: "job-processing-1",
+      backendJobId: "backend-processing-1",
+      userEmail: email,
+      status: "processing",
+      fileName: "prezentacja.pptx",
+      fileSizeBytes: 1_200_000,
+      mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      startedAt: new Date(),
+    },
+    {
+      id: "job-queued-1",
+      userEmail: email,
+      status: "queued",
+      fileName: "notatka.txt",
+      fileSizeBytes: 512,
+      mimeType: "text/plain",
+    },
+    // Podrzucony rekord CUDZY — test dowodzi, że nigdy nie wychodzi na
+    // liście/w szczegółach właściciela testu.
+    {
+      id: "job-foreign-1",
+      userEmail: DOCUMENT_PARSER_FOREIGN_EMAIL,
+      status: "done",
+      fileName: "cudzy-dokument.pdf",
+      fileSizeBytes: 1_000,
+      mimeType: "application/pdf",
+      markdown: "# Cudza treść",
+      pageCount: 1,
+      imageCount: 1,
+      completedAt: new Date(),
     },
   ])
 

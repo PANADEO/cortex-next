@@ -14,6 +14,9 @@ import { IlustromatTemplatesPage } from "../poms/ilustromat/templates-page"
 import { TokenUsagePage } from "../poms/token-usage/token-usage-page"
 import { ApplicationsPage } from "../poms/system-config/applications-page"
 import { UsersPage } from "../poms/system-config/users-page"
+import { DocumentParserUploadPage } from "../poms/document-parser/upload-page"
+import { DocumentParserHistoryPage } from "../poms/document-parser/history-page"
+import { DocumentParserJobDetailPage } from "../poms/document-parser/job-detail-page"
 
 /**
  * Ustawia `x-auth-request-email` na WSZYSTKICH kolejnych żądaniach tej strony
@@ -35,6 +38,9 @@ interface TestFixtures {
   ilustromatGenerationPage: IlustromatGenerationPage
   ilustromatTemplatesPage: IlustromatTemplatesPage
   tokenUsagePage: TokenUsagePage
+  documentParserUploadPage: DocumentParserUploadPage
+  documentParserHistoryPage: DocumentParserHistoryPage
+  documentParserJobDetailPage: DocumentParserJobDetailPage
 }
 
 interface WorkerFixtures {
@@ -75,6 +81,18 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 
   tokenUsagePage: async ({ page }, use) => {
     await use(new TokenUsagePage(page))
+  },
+
+  documentParserUploadPage: async ({ page }, use) => {
+    await use(new DocumentParserUploadPage(page))
+  },
+
+  documentParserHistoryPage: async ({ page }, use) => {
+    await use(new DocumentParserHistoryPage(page))
+  },
+
+  documentParserJobDetailPage: async ({ page }, use) => {
+    await use(new DocumentParserJobDetailPage(page))
   },
 })
 

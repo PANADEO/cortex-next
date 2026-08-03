@@ -94,3 +94,33 @@ export type {
   GenerationVariantInput,
   GenerationWithVariants,
 } from "./visual-guru"
+export {
+  DOCUMENT_PARSER_APP_CODE,
+  createQueuedJob,
+  getMyJob,
+  listMyJobs,
+  markJobDone,
+  markJobError,
+  markJobProcessing,
+} from "./document-parser"
+export type {
+  CreateQueuedJobInput,
+  MarkJobDoneInput,
+  MarkJobErrorInput,
+} from "./document-parser"
+export {
+  GEO_SCORE_CALCULATOR_APP_CODE,
+  GeoScoreConfigMissingError,
+  getGeoScoreConfig,
+  saveGeoScoreCalculation,
+} from "./geo-score-calculator"
+export type { SaveCalculationInput } from "./geo-score-calculator"
+export {
+  addForbiddenPhrase,
+  getMyArchiveEntry,
+  listMyArchive,
+  listMyForbiddenPhrases,
+  removeForbiddenPhrase,
+  saveArchiveEntry,
+} from "./content-guru"
+export type { AddForbiddenPhraseInput, SaveArchiveEntryInput } from "./content-guru"

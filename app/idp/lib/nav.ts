@@ -288,27 +288,18 @@ export const CORTEX_CONFIG_NAV: TileMenuSection[] = [
   },
 ]
 
-// Faza 0 (fundament) — rejestr sub-nawigacji trzech ekranów zaprojektowanych
-// w PROJECT/cortex-frontend-geo-score-calculator-port-projekt.md §4, przed
-// tym jak którykolwiek z nich fizycznie istnieje jako page.tsx (Faza 1-3).
-// Nieszkodliwe do czasu aktywacji: kafelek jest dziś nieaktywnym kandydatem
-// (packages/@cortex/db/scripts/seed-geo-score-calculator.mjs), więc TileMenu
-// go jeszcze nie renderuje — patrz manifest.ts w tym samym module.
+// Faza 1 (PROJECT/cortex-frontend-geo-score-calculator-port-projekt.md §5):
+// tylko Kalkulator ma fizyczną stronę. Historia (Faza 2) i Ustawienia
+// (Faza 3) dochodzą do tej listy, gdy ich page.tsx faktycznie powstaną —
+// wcześniej byłyby to martwe linki 404 w TileMenu (kafelek jest już
+// zarejestrowany w KNOWN_TILE_SEGMENTS/(main)/layout.tsx, więc ten rejestr
+// realnie się renderuje, nie jest już "nieszkodliwy do czasu aktywacji" jak
+// w Fazie 0).
 export const GEO_SCORE_CALCULATOR_NAV: TileMenuSection[] = [
   {
     id: "praca",
     label: "Praca",
-    items: [
-      { id: "kalkulator", label: "Kalkulator", icon: Calculator, href: "/geo-score-calculator" },
-      { id: "historia", label: "Historia", icon: History, href: "/geo-score-calculator/history" },
-    ],
-  },
-  {
-    id: "konfiguracja",
-    label: "Konfiguracja",
-    items: [
-      { id: "ustawienia", label: "Ustawienia", icon: Settings, href: "/geo-score-calculator/settings" },
-    ],
+    items: [{ id: "kalkulator", label: "Kalkulator", icon: Calculator, href: "/geo-score-calculator" }],
   },
 ]
 
@@ -325,6 +316,21 @@ export const VISUAL_GURU_NAV: TileMenuSection[] = [
     items: [
       { id: "generator", label: "Generator", icon: Sparkles, href: "/visual-guru" },
       { id: "archiwum", label: "Archiwum", icon: History, href: "/visual-guru/history" },
+    ],
+  },
+]
+
+// D1 (design doc, PROJECT/cortex-frontend-parser-dokumentow-port-projekt.md):
+// dwa ekrany nawigowalne — upload jest trasą domyślną kafelka (manifest.ts),
+// szczegóły joba (/document-parser/history/[id]) to drill-down z historii,
+// nie osobna pozycja w sidebarze.
+export const DOCUMENT_PARSER_NAV: TileMenuSection[] = [
+  {
+    id: "praca",
+    label: "Praca",
+    items: [
+      { id: "upload", label: "Wgraj dokument", icon: Upload, href: "/document-parser/upload" },
+      { id: "history", label: "Historia", icon: History, href: "/document-parser/history" },
     ],
   },
 ]
@@ -454,6 +460,10 @@ export function useGeoScoreCalculatorNavSections(): TileMenuSection[] {
 
 export function useVisualGuruNavSections(): TileMenuSection[] {
   return VISUAL_GURU_NAV
+}
+
+export function useDocumentParserNavSections(): TileMenuSection[] {
+  return DOCUMENT_PARSER_NAV
 }
 
 export function useAiToolsNavSections(): TileMenuSection[] {

@@ -138,6 +138,12 @@ services:
       # (Ścieżka B — content multi-part, zero zmian w cortex-proxy). Puste =
       # domyślne z app/idp/lib/visual-guru/config.ts, nie awaria.
       VISUAL_GURU_IMAGE_MODEL: ${VISUAL_GURU_IMAGE_MODEL:-}
+      # Parser Dokumentów — mikroserwis Python w TYM compose (Docker DNS),
+      # patrz app/idp/lib/document-parser/config.ts (Faza 2, BFF woła go
+      # dopiero teraz). Puste = domyślny adres kontenera document-parser-
+      # backend niżej (host:port zgodne z jego Dockerfile EXPOSE 8000), nie
+      # awaria.
+      DOCUMENT_PARSER_BACKEND_URL: ${DOCUMENT_PARSER_BACKEND_URL:-}
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     extra_hosts:

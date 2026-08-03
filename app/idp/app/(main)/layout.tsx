@@ -6,6 +6,8 @@ import { VersionLabel } from "@/components/shell/version-label"
 import { Topbar } from "@/components/topbar"
 import {
   useCortexConfigNavSections,
+  useDocumentParserNavSections,
+  useGeoScoreCalculatorNavSections,
   useIdpBasicNavSections,
   useIdpNavSections,
   useIlustromatNavSections,
@@ -15,6 +17,7 @@ import {
   useTokenUsageNavSections,
   useOknaCzasoweNavSections,
   useStorePitNavSections,
+  useVisualGuruNavSections,
 } from "@/lib/nav"
 import { useSidebarStore } from "@/lib/stores/sidebar-store"
 import { AI_TOOLS_TILE_ID } from "@/lib/ai-tools/app-codes"
@@ -39,6 +42,10 @@ const KNOWN_TILE_SEGMENTS = new Set([
   "invoice-supervisor",
   "token-usage",
   "ilustromat",
+  "visual-guru",
+  "geo-score-calculator",
+  "content-guru",
+  "document-parser",
 ])
 
 function pathToItemId(pathname: string): string {
@@ -86,6 +93,9 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const cortexConfigNavSections = useCortexConfigNavSections()
   const systemConfigNavSections = useSystemConfigNavSections()
   const tokenUsageNavSections = useTokenUsageNavSections()
+  const visualGuruNavSections = useVisualGuruNavSections()
+  const geoScoreCalculatorNavSections = useGeoScoreCalculatorNavSections()
+  const documentParserNavSections = useDocumentParserNavSections()
   // Every nav hook returns a constant, so this map is stable per render; the
   // hooks stay called unconditionally above (rules of hooks).
   const navByTile: Record<string, typeof idpNavSections> = {
@@ -98,6 +108,9 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     intrastat: intrastatNavSections,
     "invoice-supervisor": invoiceSupervisorNavSections,
     ilustromat: ilustromatNavSections,
+    "visual-guru": visualGuruNavSections,
+    "geo-score-calculator": geoScoreCalculatorNavSections,
+    "document-parser": documentParserNavSections,
   }
   const isAiToolPage = tileId === AI_TOOLS_TILE_ID || (tile?.href.startsWith("/ai-tools/") ?? false)
   const navSections = isAiToolPage ? [] : (navByTile[tileId] ?? idpNavSections)

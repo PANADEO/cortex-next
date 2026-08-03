@@ -1,6 +1,6 @@
 import type { CoworkTileArchetype } from "@cortex/types"
 import type { LucideIcon } from "lucide-react"
-import { BarChart3, CalendarClock, FileSpreadsheet, FileText, Gauge, Image, Receipt, ScanText, Settings, ShieldCheck, Users, Video, Wand2, Workflow } from "lucide-react"
+import { BarChart3, CalendarClock, FileScan, FileSpreadsheet, FileText, Gauge, Image, Receipt, ScanText, Settings, ShieldCheck, Users, Video, Wand2, Workflow } from "lucide-react"
 import { AI_TOOLS_TILE_ID, canAccessAiTool, hasAnyAiToolAccess, isAiToolId } from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
@@ -325,6 +325,21 @@ export const TILES: ReadonlyArray<Tile> = [
     iconFg: "text-pink-700 dark:text-pink-300",
     categoryFunctional: "content-generation",
     categoryDepartment: ["marketing"],
+    archetype: "dashboard",
+  },
+  {
+    // Faza 2/3 (PROJECT/cortex-frontend-parser-dokumentow-port-projekt.md):
+    // ekstrakcja dokumentów (PDF/Office/obrazy) do Markdown przez model
+    // wizyjny — patrz manifest.ts w tym samym folderze.
+    id: "document-parser",
+    label: "Parser Dokumentów",
+    description: "Ekstrakcja treści dokumentów (PDF, Office, obrazy) do ustrukturyzowanego Markdown",
+    href: "/document-parser/upload",
+    icon: FileScan,
+    iconBg: "bg-cyan-200 dark:bg-cyan-900/40",
+    iconFg: "text-cyan-700 dark:text-cyan-300",
+    categoryFunctional: "misc",
+    categoryDepartment: ["operations"],
     archetype: "dashboard",
   },
   ...AI_TOOL_DEFINITIONS.map(aiToolTile),
