@@ -5,13 +5,13 @@ import { defineTile } from "@cortex/tile-sdk"
 // requireTileAccess(). Sprawdzony grepem przed nazwaniem — brak kolizji z
 // istniejącymi kafelkami (code-tile "Znane kolizje nazw").
 //
-// route wskazuje na Fazę 3 (3 ekrany FE, D1) — jeszcze nie zbudowaną w tym
-// repo. To zamierzone: seed-tile-manifests.mjs rejestruje ten kod jako
-// NIEAKTYWNEGO kandydata (is_active=false, show_on_hub=false) w "Dodaj
-// aplikację" już teraz (Faza 0/1), zanim strony pod tym route'em istnieją —
-// dokładnie ten sam mechanizm, którym każdy inny natywny kafelek przechodzi
-// przez Krok 1b/3, patrz PROJECT/cortex-frontend-hub-db-driven-projekt.md.
-// Aktywacja (i sama strona) czeka na Fazę 2/3.
+// Route wskazuje na Fazę 3 (3 ekrany FE, D1) — od tej rundy zbudowaną
+// (app/idp/app/(main)/document-parser/{upload,history,history/[id]}). Wciąż
+// zarejestrowany jako NIEAKTYWNY kandydat (is_active=false, show_on_hub=false,
+// seed-tile-manifests.mjs) — dokładnie ten sam mechanizm, którym każdy inny
+// natywny kafelek przechodzi przez Krok 1b/3 (PROJECT/cortex-frontend-hub-
+// db-driven-projekt.md): aktywacja jest świadomym krokiem operatora przez
+// "Dodaj aplikację" (system-config), nie automatycznym skutkiem merge'a kodu.
 export const documentParserTile = defineTile({
   id: "document-parser",
   kind: "native",
