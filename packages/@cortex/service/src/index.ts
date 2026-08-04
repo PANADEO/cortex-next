@@ -8,6 +8,8 @@ export {
 } from "./rbac"
 export type { TileAccessResult } from "./rbac"
 export { loadGrantedApplicationCodes, loadGrantedScopes } from "./rbac-store"
+export { isModuleEnabled, moduleLicensingConfig } from "./module-licensing"
+export type { ModuleLicensingConfig } from "./module-licensing"
 export {
   GROUP_DESCRIPTION as OPENWEBUI_GROUP_DESCRIPTION,
   GROUP_NAME_PREFIX as OPENWEBUI_GROUP_NAME_PREFIX,

@@ -179,6 +179,14 @@ services:
       # routera słów kluczowych (patrz jego JSDoc) — kafelek nie hard-failuje,
       # ale bez tego klucza nie ma realnego agenta LLM.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Licencjonowanie modułów instancji (PROJECT/cortex-frontend-module-
+      # licensing-mvp.md) — lista kodów kandydatów kind=native dozwolonych w
+      # picker'ze "Dodaj aplikację" (comma-separated, ten sam wzorzec co
+      # CONTENT_GURU_MODELS). Puste = bez ograniczeń, wszystkie zarejestrowane
+      # manifesty widoczne — dzisiejsze zachowanie, nie awaria. NIE dotyczy
+      # już aktywowanych modułów (w tym całego rdzenia platformy) — patrz D2/D3
+      # w design docu.
+      ENABLED_MODULES: ${ENABLED_MODULES:-}
       # Synchronizacja Konfiguracja Systemu -> OpenWebUI (PROJECT/cortex-
       # frontend-sync-uprawnien-openwebui-projekt.md). DWA RÓŻNE sekrety niż
       # CORTEX_PROXY_* wyżej — to jest OSOBNA instancja (kontener `chat` w

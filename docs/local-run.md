@@ -99,6 +99,29 @@ Bez tego wywołania modeli (kategoria 2 wyżej) kończą się czytelnym błędem
 (503/502), reszta appki (nawigacja, RBAC, listy, konfiguracja) działa
 normalnie.
 
+## Licencjonowanie modułów (`ENABLED_MODULES`, opcjonalne)
+
+Domyślnie każdy zarejestrowany manifest kafelka (`kind=native`, jeszcze
+nieaktywowany w tej instancji) pojawia się jako kandydat w **Konfiguracja
+Systemu → Aplikacje → Dodaj aplikację**. Ustawiając w `.env` obok
+`docker-compose.yml`:
+
+```bash
+ENABLED_MODULES=content-guru,visual-guru,geo-score-calculator
+```
+
+ograniczasz tę listę wyłącznie do wymienionych kodów — pozostałe kandydaci
+(np. `document-parser`, gdyby nie był na liście) po prostu nie pojawią się w
+SELECT-cie, jakby ich manifest nigdy nie został zarejestrowany. Puste albo
+nieustawione = bez ograniczeń (zachowanie sprzed tej zmiennej).
+
+Nie dotyczy to modułów już aktywowanych w Twojej instancji (w tym całego
+rdzenia platformy — `idp`, `system-config`, `cortex-config`, `ai-tools`...) —
+świadomy zakres pierwszej wersji, patrz `PROJECT/cortex-frontend-module-
+licensing-mvp.md` w Obsidianie. Jeśli po ustawieniu tej zmiennej brakuje Ci
+w picker'ze kafelka, którego się spodziewałeś, sprawdź najpierw, czy jego kod
+faktycznie jest na liście.
+
 ## Zatrzymanie / reset
 
 ```bash

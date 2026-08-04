@@ -19,6 +19,7 @@ import {
 import { isHttpUrl, isInternalRoute, TileKind } from "@cortex/tile-sdk"
 import { and, asc, eq, inArray, isNotNull, isNull, ne, or } from "drizzle-orm"
 import { z } from "zod"
+import { moduleLicensingConfig } from "./module-licensing"
 import {
   emptyGroupMembership,
   getRoleGroupMapping as getOpenwebuiRoleGroupMapping,
@@ -515,12 +516,29 @@ export async function listHubApplications(): Promise<ApplicationRow[]> {
  * `GET /api/system-config/applications` (`requireTileAccess`,
  * `SYSTEM_CONFIG_APP_CODE`) — Ryzyko #1 (hub-render, publiczny endpoint) tej
  * ścieżki nie dotyczy.
+ *
+ * Bramka `ENABLED_MODULES` (PROJECT/cortex-frontend-module-licensing-mvp.md
+ * D2/D3): filtrowanie SERWEROWE, przed zwróceniem listy — nie klienckie, bo
+ * klient trywialnie by je obszedł, a to ma być realne ograniczenie na
+ * poziomie instancji. Bezpieczne dla wierszy już aktywowanych/legacy z
+ * konstrukcji tego zapytania: `activated_at is null` już wyklucza wszystko,
+ * co kiedykolwiek zostało włączone w tej instancji (w tym całą ~24-elementową
+ * legacy listę z Kroku 1 migracji) — filtr niżej dotyka WYŁĄCZNIE świeżo
+ * zarejestrowanych, jeszcze nieaktywowanych kandydatów.
  */
 export async function listUnactivatedNativeApplications(): Promise<ApplicationRow[]> {
+  const { enabledModules } = moduleLicensingConfig()
+
   return getDb()
     .select()
     .from(applications)
-    .where(and(eq(applications.kind, "native"), isNull(applications.activatedAt)))
+    .where(
+      and(
+        eq(applications.kind, "native"),
+        isNull(applications.activatedAt),
+        enabledModules === null ? undefined : inArray(applications.code, enabledModules),
+      ),
+    )
     .orderBy(asc(applications.code))
 }
 

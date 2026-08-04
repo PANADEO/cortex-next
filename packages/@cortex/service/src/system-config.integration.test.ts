@@ -24,7 +24,7 @@ import {
 } from "@cortex/db"
 import { randomUUID } from "node:crypto"
 import { and, eq } from "drizzle-orm"
-import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest"
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { clearTileAccessCache, requireTileAccess, requireTileScope } from "./rbac"
 import {
   SYSTEM_CONFIG_APP_CODE,
@@ -1235,6 +1235,74 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
       await updateApplication(activated!.id, { isActive: false })
       const afterDeactivation = (await listApplications()).map((row) => row.code)
       expect(afterDeactivation).toContain(MANIFEST_CODE)
+    })
+  })
+
+  // Licencjonowanie modułów instancji (ENABLED_MODULES,
+  // PROJECT/cortex-frontend-module-licensing-mvp.md D1/D2/D3). Bramka
+  // WYŁĄCZNIE nad listUnactivatedNativeApplications() — nigdy nad
+  // listApplications()/listHubApplications(), świadomy zakres udokumentowany
+  // w design docu (D2: activated_at is null już wyklucza legacy/rdzeń z tego
+  // zapytania, więc allowlista dotyka wyłącznie świeżych kandydatów; D3:
+  // już aktywowany wiersz spoza listy NIE znika automatycznie z huba).
+  describe("ENABLED_MODULES — allowlista kandydatów w listUnactivatedNativeApplications", () => {
+    const ALLOWED_CODE = `licencja-dozwolony-${SUFFIX}`
+    const BLOCKED_CODE = `licencja-zablokowany-${SUFFIX}`
+
+    beforeEach(async () => {
+      await getDb()
+        .insert(applications)
+        .values([
+          {
+            code: ALLOWED_CODE,
+            name: "Moduł dozwolony przez allowlistę",
+            kind: "native",
+            route: `/${ALLOWED_CODE}`,
+            isActive: false,
+            showOnHub: false,
+            activatedAt: null,
+          },
+          {
+            code: BLOCKED_CODE,
+            name: "Moduł spoza allowlisty",
+            kind: "native",
+            route: `/${BLOCKED_CODE}`,
+            isActive: false,
+            showOnHub: false,
+            activatedAt: null,
+          },
+        ])
+    })
+
+    afterEach(async () => {
+      vi.unstubAllEnvs()
+      await getDb().delete(applications).where(eq(applications.code, ALLOWED_CODE))
+      await getDb().delete(applications).where(eq(applications.code, BLOCKED_CODE))
+    })
+
+    it("ENABLED_MODULES nieustawione -> widoczni obaj kandydaci (bez ograniczeń, dzisiejsze zachowanie)", async () => {
+      const codes = (await listUnactivatedNativeApplications()).map((row) => row.code)
+      expect(codes).toContain(ALLOWED_CODE)
+      expect(codes).toContain(BLOCKED_CODE)
+    })
+
+    it("ENABLED_MODULES ustawione -> widoczny wyłącznie kod na liście", async () => {
+      vi.stubEnv("ENABLED_MODULES", ALLOWED_CODE)
+
+      const codes = (await listUnactivatedNativeApplications()).map((row) => row.code)
+      expect(codes).toContain(ALLOWED_CODE)
+      expect(codes).not.toContain(BLOCKED_CODE)
+    })
+
+    it("wiersz spoza listy, ale JUŻ AKTYWOWANY, nie jest już kandydatem niezależnie od allowlisty — i nie znika z listApplications() (D3: poza zakresem tej bramki)", async () => {
+      await activateApplication(BLOCKED_CODE)
+      vi.stubEnv("ENABLED_MODULES", ALLOWED_CODE)
+
+      const candidates = (await listUnactivatedNativeApplications()).map((row) => row.code)
+      expect(candidates).not.toContain(BLOCKED_CODE)
+
+      const allApplications = (await listApplications()).map((row) => row.code)
+      expect(allApplications).toContain(BLOCKED_CODE)
     })
   })
 })
