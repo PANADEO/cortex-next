@@ -3,6 +3,10 @@
 import { useModuleVersion } from "@cortex/api"
 import { TILES } from "@/lib/tiles"
 
+// Inlined at build time (Next.js NEXT_PUBLIC_ vars are compiled into the
+// bundle, not read at runtime). In prod, Dockerfile/GHA set it from
+// github.ref_name (tag) or the commit sha — see Dockerfile `ENV
+// NEXT_PUBLIC_SHELL_VERSION=$VERSION`. Unset locally = "dev", not an error.
 export const SHELL_VERSION = process.env.NEXT_PUBLIC_SHELL_VERSION ?? "dev"
 
 export function stripLeadingV(s: string): string {

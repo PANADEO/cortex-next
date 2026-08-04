@@ -5,6 +5,11 @@
 // fail-closed to dokładnie ten mechanizm, przez który "zapomniana"
 // konfiguracja daje inne uprawnienia niż pokazuje UI).
 //
+// CORTEX_ADMIN_API_BASE_URL / CORTEX_ADMIN_API_KEY / CORTEX_APP_CODE zostały
+// USUNIĘTE (30.07.2026) razem z tym HTTP-fallbackiem. Ustawienie ich dziś nie
+// ma żadnego efektu — nie przywracaj ich "na wszelki wypadek". CORTEX_APP_CODE
+// był martwy już wcześniej.
+//
 // SECURITY: handler ufa nagłówkowi `x-auth-request-email`. MUSI stać za
 // oauth2-proxy / Caddy `forward_auth`, które usuwają wartość podaną przez
 // klienta i wstrzykują uwierzytelniony adres. Wystawienie tej trasy wprost do

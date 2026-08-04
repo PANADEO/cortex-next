@@ -271,8 +271,10 @@ export const handlers = [
   // Aktywny TYLKO gdy podpięty realny backend IDP: NEXT_PUBLIC_USE_REAL_IDP=true
   // + IDP_BACKEND_URL w .env.local. Bez flagi → pełen mock (frontend standalone),
   // tak jak opisuje docs/backend-integration.md (tryb "Pełny mock" = default dev).
-  // Muszą być PRZED dynamicznymi handlerami typu /packages/:id,
-  // inaczej mock by je łapał w dev mode z włączonym NEXT_PUBLIC_API_MOCKING.
+  // Kluczowe dla integracji invoice-supervisor (jego endpointy nie mają MSW
+  // mocków w ogóle). Muszą być PRZED dynamicznymi handlerami typu
+  // /packages/:id, inaczej mock by je łapał w dev mode z włączonym
+  // NEXT_PUBLIC_API_MOCKING.
   ...(process.env.NEXT_PUBLIC_USE_REAL_IDP === "true"
     ? [
         // User

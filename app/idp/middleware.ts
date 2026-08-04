@@ -1,6 +1,17 @@
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
+// Backend URL env vars below (IDP_BACKEND_URL, IDP_BASIC_BACKEND_URL,
+// INTRASTAT_BACKEND_URL, INVOICE_SUPERVISOR_BACKEND_URL) are an optional
+// carve-out to point rewrites at a local backend instead of the Docker DNS
+// name used in prod — see docs/backend-integration.md. Read server-side ONLY
+// (not NEXT_PUBLIC_), so a value here never reaches the browser; used
+// exclusively inside this middleware's rewrite functions below.
+//
+// NEXT_PUBLIC_BASE_PATH (see normalizeBasePath below) is a separate,
+// optional path prefix for subpath deployments (e.g. Forsped UAT). Empty =
+// root deploy, the default for existing environments.
+
 const STATIC_IDP_PATHS = new Set([
   "/user/me",
   "/user/preferences",
