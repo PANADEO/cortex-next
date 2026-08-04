@@ -28,8 +28,8 @@ export async function PUT(request: NextRequest, context: RouteContext): Promise<
   if (invalidId) return invalidId
 
   try {
-    await setUserRoles(id, parsed.data.roleIds)
-    return NextResponse.json({ ok: true })
+    const openwebuiSync = await setUserRoles(id, parsed.data.roleIds)
+    return NextResponse.json({ ok: true, openwebuiSync })
   } catch (error) {
     if (error instanceof UnknownUserError) {
       return NextResponse.json({ error: "unknown-user" }, { status: 404 })

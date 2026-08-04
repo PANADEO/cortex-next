@@ -122,3 +122,40 @@ export interface ApplicationScopeGrant {
   scopeId: string
   roleIds: string[]
 }
+
+// ── Synchronizacja rola -> grupa OpenWebUI ──────────────────────
+// (PROJECT/cortex-frontend-sync-uprawnien-openwebui-projekt.md, Wariant A —
+// decyzja Alexa 31.07.2026: klucz mapowania to ROLA, nie aplikacja.)
+
+export interface OpenwebuiSyncResult {
+  status: "ok" | "skipped" | "failed"
+  message?: string
+}
+
+export interface OpenwebuiGroupMapping {
+  groupId: string
+  groupName: string
+  lastSyncedAt: string | null
+  lastSyncError: string | null
+}
+
+export interface OpenwebuiGroupSummary {
+  id: string
+  name: string
+}
+
+/** Podgląd BEZ zapisu (R2) — co zrobiłoby najbliższe "Synchronizuj teraz". */
+export type OpenwebuiRoleGroupPreview =
+  | { status: "ok"; groupName: string; targetCount: number; toAdd: number; toRemove: number }
+  | { status: "skipped" }
+  | { status: "failed"; message?: string }
+
+export interface OpenwebuiRoleGroupState {
+  mapping: OpenwebuiGroupMapping | null
+  /** `false` = OPENWEBUI_URL/OPENWEBUI_ADMIN_TOKEN nieustawione w tej instancji. */
+  configured: boolean
+  availableGroups: OpenwebuiGroupSummary[] | null
+  preview?: OpenwebuiRoleGroupPreview
+}
+
+export type AttachOpenwebuiGroupInput = { action: "create" } | { action: "existing"; groupId: string }

@@ -659,7 +659,7 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
 
         const updated = await updateUser(userId, { isActive: false })
 
-        expect(updated?.isActive).toBe(false)
+        expect(updated?.user.isActive).toBe(false)
       })
 
       it("reaktywacja przechodzi ZAWSZE, nawet z modułu już nieosiągalnego", async () => {
@@ -670,14 +670,14 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
 
         const reactivated = await updateUser(userId, { isActive: true })
 
-        expect(reactivated?.isActive).toBe(true)
+        expect(reactivated?.user.isActive).toBe(true)
       })
 
       it("edycja samego fullName nie dotyka niezmiennika", async () => {
         const updated = await updateUser(userId, { fullName: "Jan Kowalski" })
 
-        expect(updated?.fullName).toBe("Jan Kowalski")
-        expect(updated?.isActive).toBe(true)
+        expect(updated?.user.fullName).toBe("Jan Kowalski")
+        expect(updated?.user.isActive).toBe(true)
       })
     })
 
@@ -699,7 +699,7 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
           .insert(permissionsMatrix)
           .values({ roleId: emptyRoleId, applicationId: systemConfigId })
 
-        const removed = await deleteRole(roleId)
+        const { removed } = await deleteRole(roleId)
         expect(removed).toBe(true)
 
         const [row] = await db.select().from(roles).where(eq(roles.id, roleId))

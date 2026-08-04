@@ -44,6 +44,7 @@ const service = vi.hoisted(() => {
     code: "przykladowy-zakres",
     name: "Przykładowy zakres",
   }
+  const skippedSync = { status: "skipped" as const }
   return {
     listUsers: vi.fn(async () => []),
     listRoles: vi.fn(async () => []),
@@ -52,18 +53,28 @@ const service = vi.hoisted(() => {
     createApplication: vi.fn(async () => application),
     updateApplication: vi.fn(async () => application),
     deleteApplication: vi.fn(async () => true),
-    setUserRoles: vi.fn(async () => undefined),
+    setUserRoles: vi.fn(async () => skippedSync),
     setApplicationRoles: vi.fn(async () => undefined),
     setRoleApplications: vi.fn(async () => undefined),
     createUser: vi.fn(async () => user),
-    updateUser: vi.fn(async () => user),
+    updateUser: vi.fn(async () => ({ user, openwebuiSync: skippedSync })),
     createRole: vi.fn(async () => role),
     updateRole: vi.fn(async () => role),
-    deleteRole: vi.fn(async () => true),
+    deleteRole: vi.fn(async () => ({ removed: true, openwebuiSync: skippedSync })),
     listApplicationScopes: vi.fn(async () => [scope]),
     renameApplicationScope: vi.fn(async () => scope),
     listApplicationScopeGrants: vi.fn(async () => []),
     setApplicationScopeRoles: vi.fn(async () => undefined),
+    // Sekcja "Grupa OpenWebUI" (roles/[id]/openwebui-group) — droga do OWUI
+    // idzie zawsze przez te nazwy, więc odmowa bez ANI JEDNEGO wywołania
+    // (expectNoServiceCall) pokrywa też tę ścieżkę.
+    getOpenwebuiRoleGroupMapping: vi.fn(async () => null),
+    openwebuiConfig: vi.fn(() => null),
+    listOpenwebuiGroups: vi.fn(async () => []),
+    previewRoleGroupSync: vi.fn(async () => skippedSync),
+    attachRoleGroup: vi.fn(async () => ({ error: "not-configured" }) as const),
+    detachRoleGroup: vi.fn(async () => false),
+    reconcileRoleGroup: vi.fn(async () => skippedSync),
   }
 })
 

@@ -195,7 +195,39 @@ export const roleApplicationScopes = systemConfig.table(
   }),
 )
 
+/**
+ * Mapowanie rola -> grupa OpenWebUI (PROJECT/cortex-frontend-sync-uprawnien-
+ * openwebui-projekt.md, D1 Wariant A — decyzja Alexa 31.07.2026: grupy
+ * OpenWebUI lustrzanie odwzorowują ROLE, nie aplikacje). Osobna tabela, nie
+ * kolumna w `roles` — mapowanie jest opcjonalne i rzadkie (1-3 wiersze z
+ * wielu ról), a doklejenie stanu integracji (`last_sync_error`) do katalogu
+ * ról zmieszałoby RBAC z księgowością pushowania do cudzego serwisu (D1).
+ *
+ * `roleId` jest PK: jedna rola = jedna grupa (jedna instancja OpenWebUI —
+ * multi-instancyjność świadomie POZA zakresem, D5/pytanie otwarte 4).
+ * `groupId` to UUID nadany PRZEZ OpenWebUI — jedyny stabilny klucz
+ * dopasowania (D1: NIE nazwa, żeby nie powtórzyć błędu cortex-admina, gdzie
+ * zmiana nazwy roli osierocała grupę razem z jej `access_control`).
+ * `ON DELETE CASCADE` sprząta mapowanie automatycznie przy usunięciu roli —
+ * grupa w OpenWebUI NIE jest wtedy kasowana (D7), tylko opróżniana z
+ * członków w warstwie serwisowej PRZED usunięciem wiersza roli.
+ */
+export const openwebuiGroupMappings = systemConfig.table("openwebui_group_mappings", {
+  roleId: uuid("role_id")
+    .primaryKey()
+    .references(() => roles.id, { onDelete: "cascade" }),
+  groupId: text("group_id").notNull(),
+  // Kopia dla czytelności w UI — NIGDY klucz dopasowania (patrz `groupId`).
+  groupName: text("group_name").notNull(),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  // NULL = ostatnie uzgodnienie się powiodło (albo jeszcze się nie odbyło).
+  lastSyncError: text("last_sync_error"),
+  createdAt,
+  updatedAt,
+})
+
 export type UserRow = typeof users.$inferSelect
 export type RoleRow = typeof roles.$inferSelect
 export type ApplicationRow = typeof applications.$inferSelect
 export type ApplicationScopeRow = typeof applicationScopes.$inferSelect
+export type OpenwebuiGroupMappingRow = typeof openwebuiGroupMappings.$inferSelect

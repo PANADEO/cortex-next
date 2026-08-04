@@ -9,6 +9,29 @@ export {
 export type { TileAccessResult } from "./rbac"
 export { loadGrantedApplicationCodes, loadGrantedScopes } from "./rbac-store"
 export {
+  GROUP_DESCRIPTION as OPENWEBUI_GROUP_DESCRIPTION,
+  GROUP_NAME_PREFIX as OPENWEBUI_GROUP_NAME_PREFIX,
+  attachRoleGroup,
+  detachRoleGroup,
+  emptyGroupMembership,
+  getRoleGroupMapping as getOpenwebuiRoleGroupMapping,
+  groupNameForRoleCode,
+  listOpenwebuiGroups,
+  openwebuiConfig,
+  previewRoleGroupSync,
+  reconcileAllMappedGroups,
+  reconcileRoleGroup,
+  reconcileRoleGroups,
+} from "./openwebui-sync"
+export type {
+  AttachRoleGroupError,
+  AttachRoleGroupInput,
+  OpenwebuiSyncResult,
+  RoleGroupSyncPreview,
+} from "./openwebui-sync"
+export { OpenwebuiClientError } from "./openwebui-client"
+export type { OpenwebuiClientFailure, OpenwebuiConfig, OpenwebuiGroupSummary } from "./openwebui-client"
+export {
   ILUSTROMAT_APP_CODE,
   MANAGE_TEMPLATES_SCOPE,
   MissingTemplateAssetError,

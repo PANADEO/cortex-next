@@ -5,6 +5,7 @@ import { endpoints, queryKeys } from "./queries"
 import type {
   ApplicationInput,
   ApplicationPatch,
+  AttachOpenwebuiGroupInput,
   RoleInput,
   RolePatch,
   UserInput,
@@ -81,6 +82,44 @@ export function useDeleteRole() {
   return useMutation({
     mutationFn: (id: string) => endpoints.roles.remove(id),
     onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.roles() }),
+  })
+}
+
+/** Stan sekcji "Grupa OpenWebUI" — mapowanie, podgląd bez zapisu, grupy do
+ *  wyboru przy podpinaniu. `undefined` (nie pusty string) dopóki dialog
+ *  edycji roli jest zamknięty — `enabled` steruje, kiedy w ogóle odpytywać. */
+export function useRoleOpenwebuiGroup(roleId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.roleOpenwebuiGroup(roleId ?? ""),
+    queryFn: () => endpoints.roles.getOpenwebuiGroup(roleId as string),
+    enabled: Boolean(roleId),
+  })
+}
+
+export function useAttachRoleOpenwebuiGroup() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: AttachOpenwebuiGroupInput }) =>
+      endpoints.roles.attachOpenwebuiGroup(id, body),
+    onSuccess: (_data, { id }) => client.invalidateQueries({ queryKey: queryKeys.roleOpenwebuiGroup(id) }),
+  })
+}
+
+export function useDetachRoleOpenwebuiGroup() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => endpoints.roles.detachOpenwebuiGroup(id),
+    onSuccess: (_data, id) => client.invalidateQueries({ queryKey: queryKeys.roleOpenwebuiGroup(id) }),
+  })
+}
+
+/** "Synchronizuj teraz" dla TEJ jednej roli — odpowiednik przycisku z
+ *  cortex-adminowego panelu (D3, jedyny element tamtego UI wart zachowania). */
+export function useSyncRoleOpenwebuiGroup() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => endpoints.roles.syncOpenwebuiGroup(id),
+    onSuccess: (_data, id) => client.invalidateQueries({ queryKey: queryKeys.roleOpenwebuiGroup(id) }),
   })
 }
 

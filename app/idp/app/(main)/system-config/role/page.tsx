@@ -1,14 +1,20 @@
 "use client"
 
 import {
+  useAttachRoleOpenwebuiGroup,
   useCreateRole,
   useDeleteRole,
+  useDetachRoleOpenwebuiGroup,
+  useRoleOpenwebuiGroup,
   useRoles,
+  useSyncRoleOpenwebuiGroup,
   useUpdateRole,
 } from "@/features/system-config/hooks"
 import type { RoleSummary } from "@/features/system-config/types"
 import { toastApiError } from "@cortex/api"
 import {
+  Alert,
+  AlertDescription,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -17,8 +23,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertTitle,
   Badge,
   Button,
+  Combobox,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -30,7 +38,7 @@ import {
   LoadingState,
   PageHeader,
 } from "@cortex/ui"
-import { KeyRound, Pencil, Plus, Trash2 } from "lucide-react"
+import { KeyRound, Link2, Pencil, Plus, RefreshCw, Trash2, Unlink } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -236,6 +244,15 @@ export default function RolePage() {
                 placeholder="opcjonalnie"
               />
             </div>
+
+            {/* Tylko przy edycji istniejącej roli — świeżo tworzona nie ma
+                jeszcze `id`, po którym mapowanie się zapisuje. */}
+            {!isCreating && dialog?.role ? (
+              <div className="grid gap-1.5">
+                <Label>Grupa OpenWebUI</Label>
+                <OpenwebuiGroupSection role={dialog.role} />
+              </div>
+            ) : null}
           </div>
 
           <DialogFooter>
@@ -267,5 +284,173 @@ export default function RolePage() {
         </AlertDialogContent>
       </AlertDialog>
     </>
+  )
+}
+
+/**
+ * Sekcja "Grupa OpenWebUI" (PROJECT/cortex-frontend-sync-uprawnien-openwebui-
+ * projekt.md, D8 zaadaptowane pod Wariant A). Trzy stany: nieskonfigurowane
+ * (funkcja wyłączona instancyjnie), skonfigurowane-bez-mapowania (podepnij),
+ * zmapowane (status + "Synchronizuj teraz"/"Odepnij").
+ */
+function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
+  const { data, isLoading } = useRoleOpenwebuiGroup(role.id)
+  const attach = useAttachRoleOpenwebuiGroup()
+  const detach = useDetachRoleOpenwebuiGroup()
+  const sync = useSyncRoleOpenwebuiGroup()
+
+  const [selectedGroupName, setSelectedGroupName] = useState("")
+  const [confirmGroup, setConfirmGroup] = useState<{ id: string; name: string } | null>(null)
+
+  async function handleCreate() {
+    try {
+      await attach.mutateAsync({ id: role.id, body: { action: "create" } })
+      toast.success(`Utworzono grupę OpenWebUI dla roli ${role.name}`)
+    } catch (error) {
+      toastApiError(error, "Nie udało się utworzyć grupy OpenWebUI")
+    }
+  }
+
+  async function handleAttachExisting() {
+    if (!confirmGroup) return
+    try {
+      await attach.mutateAsync({ id: role.id, body: { action: "existing", groupId: confirmGroup.id } })
+      toast.success(`Podpięto grupę „${confirmGroup.name}” do roli ${role.name}`)
+      setSelectedGroupName("")
+    } catch (error) {
+      toastApiError(error, "Nie udało się podpiąć grupy OpenWebUI")
+    } finally {
+      setConfirmGroup(null)
+    }
+  }
+
+  async function handleDetach() {
+    try {
+      await detach.mutateAsync(role.id)
+      toast.success("Odpięto grupę OpenWebUI od roli — jej członkostwo w OpenWebUI zostaje nietknięte")
+    } catch (error) {
+      toastApiError(error, "Nie udało się odpiąć grupy OpenWebUI")
+    }
+  }
+
+  async function handleSync() {
+    try {
+      const result = await sync.mutateAsync(role.id)
+      if (result.openwebuiSync.status === "failed") {
+        toast.error(`Synchronizacja nie powiodła się: ${result.openwebuiSync.message ?? "nieznany błąd"}`)
+      } else {
+        toast.success("Zsynchronizowano grupę OpenWebUI")
+      }
+    } catch (error) {
+      toastApiError(error, "Nie udało się zsynchronizować grupy OpenWebUI")
+    }
+  }
+
+  if (isLoading) {
+    return <p className="text-xs text-muted-foreground">Wczytywanie stanu grupy OpenWebUI…</p>
+  }
+
+  if (!data || !data.configured) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        Synchronizacja z OpenWebUI nie jest skonfigurowana w tej instancji (OPENWEBUI_URL/
+        OPENWEBUI_ADMIN_TOKEN).
+      </p>
+    )
+  }
+
+  if (!data.mapping) {
+    const groupOptions = data.availableGroups ?? []
+    return (
+      <div className="grid gap-2 rounded-md border border-dashed border-border p-3">
+        <p className="text-xs text-muted-foreground">Rola nie jest podpięta do żadnej grupy OpenWebUI.</p>
+
+        <Button size="sm" variant="outline" onClick={handleCreate} disabled={attach.isPending}>
+          <Link2 className="mr-1.5 h-3.5 w-3.5" />
+          Utwórz grupę „cortex:{role.code}”
+        </Button>
+
+        {groupOptions.length > 0 ? (
+          <div className="flex gap-2">
+            <Combobox
+              value={selectedGroupName}
+              onChange={setSelectedGroupName}
+              options={groupOptions.map((group) => group.name)}
+              placeholder="Podepnij istniejącą grupę"
+              className="flex-1"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!selectedGroupName || attach.isPending}
+              onClick={() => {
+                const match = groupOptions.find((group) => group.name === selectedGroupName)
+                if (match) setConfirmGroup(match)
+              }}
+            >
+              Podepnij
+            </Button>
+          </div>
+        ) : null}
+
+        <AlertDialog open={confirmGroup !== null} onOpenChange={(open) => !open && setConfirmGroup(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Podpiąć istniejącą grupę „{confirmGroup?.name}”?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Członkostwo tej grupy zostanie przy najbliższej synchronizacji NADPISANE zgodnie ze
+                składem tej roli. Jeśli grupa gatuje dostęp do innego asystenta w OpenWebUI (przez
+                access_control), jego dostępność dla użytkowników może się nieoczekiwanie zmienić.
+                Upewnij się, że to właściwa grupa.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Anuluj</AlertDialogCancel>
+              <AlertDialogAction onClick={handleAttachExisting}>Podepnij</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    )
+  }
+
+  const { mapping, preview } = data
+
+  return (
+    <div className="grid gap-2 rounded-md border border-border p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-xs">{mapping.groupName}</span>
+        <Badge variant={mapping.lastSyncError ? "destructive" : "outline"}>
+          {mapping.lastSyncedAt
+            ? `Zsynchronizowano ${new Date(mapping.lastSyncedAt).toLocaleString("pl-PL")}`
+            : "Jeszcze nie zsynchronizowano"}
+        </Badge>
+      </div>
+
+      {mapping.lastSyncError ? (
+        <Alert variant="destructive">
+          <AlertTitle>Ostatnia synchronizacja nie powiodła się</AlertTitle>
+          <AlertDescription>{mapping.lastSyncError}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {preview?.status === "ok" ? (
+        <p className="text-xs text-muted-foreground">
+          Przy najbliższej synchronizacji: dodanych {preview.toAdd}, usuniętych {preview.toRemove} (cel:{" "}
+          {preview.targetCount} aktywnych użytkowników z kontem w OpenWebUI).
+        </p>
+      ) : null}
+
+      <div className="flex gap-2">
+        <Button size="sm" variant="outline" onClick={handleSync} disabled={sync.isPending}>
+          <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+          Synchronizuj teraz
+        </Button>
+        <Button size="sm" variant="ghost" onClick={handleDetach} disabled={detach.isPending}>
+          <Unlink className="mr-1.5 h-3.5 w-3.5" />
+          Odepnij
+        </Button>
+      </div>
+    </div>
   )
 }

@@ -5,6 +5,10 @@ import type {
   ApplicationPatch,
   ApplicationScope,
   ApplicationScopeGrant,
+  AttachOpenwebuiGroupInput,
+  OpenwebuiGroupMapping,
+  OpenwebuiRoleGroupState,
+  OpenwebuiSyncResult,
   RoleInput,
   RolePatch,
   RoleRecord,
@@ -27,6 +31,7 @@ export const queryKeys = {
   applicationScopeGrants: (id: string) => [...queryKeys.applications(), id, "scope-grants"] as const,
   unactivatedNativeApplications: () =>
     [...queryKeys.applications(), "unactivated-native"] as const,
+  roleOpenwebuiGroup: (id: string) => [...queryKeys.roles(), id, "openwebui-group"] as const,
 }
 
 export const endpoints = {
@@ -44,6 +49,20 @@ export const endpoints = {
     update: (id: string, body: RolePatch) =>
       apiClient.patch<RoleRecord>(`${BASE}/roles/${id}`, { jsonBody: body }),
     remove: (id: string) => apiClient.delete<{ ok: true }>(`${BASE}/roles/${id}`),
+    // Sekcja "Grupa OpenWebUI" (D8 zaadaptowane pod Wariant A — mapowanie po
+    // roli, nie po aplikacji).
+    getOpenwebuiGroup: (id: string) =>
+      apiClient.get<OpenwebuiRoleGroupState>(`${BASE}/roles/${id}/openwebui-group`),
+    attachOpenwebuiGroup: (id: string, body: AttachOpenwebuiGroupInput) =>
+      apiClient.put<{ mapping: OpenwebuiGroupMapping }>(`${BASE}/roles/${id}/openwebui-group`, {
+        jsonBody: body,
+      }),
+    detachOpenwebuiGroup: (id: string) =>
+      apiClient.put<{ ok: true; detached: boolean }>(`${BASE}/roles/${id}/openwebui-group`, {
+        jsonBody: { action: "detach" },
+      }),
+    syncOpenwebuiGroup: (id: string) =>
+      apiClient.post<{ openwebuiSync: OpenwebuiSyncResult }>(`${BASE}/roles/${id}/openwebui-group`, {}),
   },
   applications: {
     list: () => apiClient.get<Application[]>(`${BASE}/applications`),

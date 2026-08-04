@@ -22,6 +22,13 @@
       "when": 1785671878570,
       "tag": "0002_plain_arachne",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785833171933,
+      "tag": "0003_nervous_stingray",
+      "breakpoints": true
     }
   ]
 }

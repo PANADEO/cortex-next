@@ -45,9 +45,9 @@ export async function DELETE(request: NextRequest, context: RouteContext): Promi
   if (invalidId) return invalidId
 
   try {
-    const removed = await deleteRole(id)
+    const { removed, openwebuiSync } = await deleteRole(id)
     if (!removed) return NextResponse.json({ error: "unknown-role" }, { status: 404 })
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true, openwebuiSync })
   } catch (error) {
     return toErrorResponse(error)
   }

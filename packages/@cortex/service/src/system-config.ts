@@ -19,6 +19,12 @@ import {
 import { isHttpUrl, isInternalRoute, TileKind } from "@cortex/tile-sdk"
 import { and, asc, eq, inArray, isNotNull, isNull, ne, or } from "drizzle-orm"
 import { z } from "zod"
+import {
+  emptyGroupMembership,
+  getRoleGroupMapping as getOpenwebuiRoleGroupMapping,
+  reconcileRoleGroups,
+  type OpenwebuiSyncResult,
+} from "./openwebui-sync"
 import { clearTileAccessCache, normalizeEmail } from "./rbac"
 
 export const ADMIN_ROLE_CODE = "admin"
@@ -264,16 +270,28 @@ export async function createUser(input: UserInput): Promise<UserRow> {
  * system-config rzuca SelfLockoutError, PRZED zapisem. Reaktywacja nigdy nie
  * pogarsza sytuacji, więc przechodzi przez ten sam tor i zawsze się udaje.
  */
-export async function updateUser(id: string, patch: UserPatch): Promise<UserRow | null> {
+export async function updateUser(
+  id: string,
+  patch: UserPatch,
+): Promise<{ user: UserRow; openwebuiSync: OpenwebuiSyncResult } | null> {
   const db = getDb()
+  let activeChanged = false
+  let roleIdsHeld: string[] = []
 
   const updated = await db.transaction(async (tx) => {
     const [existing] = await tx.select().from(users).where(eq(users.id, id))
     if (!existing) return null
 
     const nextIsActive = patch.isActive ?? existing.isActive
-    if (nextIsActive !== existing.isActive) {
+    activeChanged = nextIsActive !== existing.isActive
+    if (activeChanged) {
       await assertModuleStaysReachable(tx, { direction: "user-active", userId: id, isActive: nextIsActive })
+      // OpenWebUI (Wariant A): isActive gasi/przywraca WSZYSTKIE grupy ról
+      // tego użytkownika naraz — zbiór ról zebrany TU, wewnątrz transakcji,
+      // razem z resztą jej odczytów.
+      roleIdsHeld = (
+        await tx.select({ roleId: userRoles.roleId }).from(userRoles).where(eq(userRoles.userId, id))
+      ).map((row) => row.roleId)
     }
 
     const [row] = await tx
@@ -289,8 +307,16 @@ export async function updateUser(id: string, patch: UserPatch): Promise<UserRow 
     return (row as UserRow) ?? null
   })
 
-  if (updated) clearTileAccessCache()
-  return updated
+  if (!updated) return null
+  clearTileAccessCache()
+
+  // Reszta pól (fullName) jest czysto opisowa i nie rusza członkostwa — patrz
+  // updateRole niżej dla ten sam rozstrzygnięcie na roli.
+  const openwebuiSync = activeChanged
+    ? await reconcileRoleGroups(roleIdsHeld)
+    : ({ status: "skipped" } satisfies OpenwebuiSyncResult)
+
+  return { user: updated, openwebuiSync }
 }
 
 export async function listRoles(): Promise<RoleSummary[]> {
@@ -361,8 +387,13 @@ export async function updateRole(id: string, patch: RolePatch): Promise<RoleRow 
  * nie 409 self-lockout. Patrz test w system-config.integration.test.ts,
  * który wprost sprawdza tę kolejność.
  */
-export async function deleteRole(id: string): Promise<boolean> {
+export async function deleteRole(id: string): Promise<{ removed: boolean; openwebuiSync: OpenwebuiSyncResult }> {
   const db = getDb()
+
+  // Złapane PRZED transakcją — best-effort, w duchu D3 ("wyścigi... nie warto
+  // tu blokad"). `ON DELETE CASCADE` skasuje wiersz mapowania RAZEM z rolą,
+  // więc groupId trzeba znać, zanim to się stanie.
+  const mapping = await getOpenwebuiRoleGroupMapping(id).catch(() => null)
 
   const removed = await db.transaction(async (tx) => {
     const [existing] = await tx.select().from(roles).where(eq(roles.id, id))
@@ -380,17 +411,26 @@ export async function deleteRole(id: string): Promise<boolean> {
     return deleted.length > 0
   })
 
-  if (removed) clearTileAccessCache()
-  return removed
+  if (!removed) return { removed: false, openwebuiSync: { status: "skipped" } }
+  clearTileAccessCache()
+
+  // D7: "przed usunięciem: opróżnij grupę, potem DELETE kasuje mapowanie
+  // kaskadą. Grupy w OpenWebUI NIE usuwamy." Wiersz mapowania już nie istnieje
+  // w naszej bazie (kaskada powyżej) — opróżnianie idzie po groupId złapanym
+  // przed transakcją, bez odczytu/zapisu nieistniejącego już wiersza.
+  const openwebuiSync = mapping ? await emptyGroupMembership(mapping.groupId) : { status: "skipped" as const }
+
+  return { removed: true, openwebuiSync }
 }
 
 /**
  * Ustawia komplet ról użytkownika (zastępuje, nie dokłada).
  * W transakcji — inaczej nieudany insert zostawiłby użytkownika bez ról.
  */
-export async function setUserRoles(userId: string, roleIds: string[]): Promise<void> {
+export async function setUserRoles(userId: string, roleIds: string[]): Promise<OpenwebuiSyncResult> {
   const db = getDb()
   const wanted = unique(roleIds)
+  let previousRoleIds: string[] = []
 
   await db.transaction(async (tx) => {
     const [user] = await tx.select({ id: users.id }).from(users).where(eq(users.id, userId))
@@ -399,6 +439,10 @@ export async function setUserRoles(userId: string, roleIds: string[]): Promise<v
     await assertRolesExist(tx, wanted)
     await assertModuleStaysReachable(tx, { direction: "user-roles", userId, roleIds: wanted })
 
+    previousRoleIds = (
+      await tx.select({ roleId: userRoles.roleId }).from(userRoles).where(eq(userRoles.userId, userId))
+    ).map((row) => row.roleId)
+
     await tx.delete(userRoles).where(eq(userRoles.userId, userId))
     if (wanted.length > 0) {
       await tx.insert(userRoles).values(wanted.map((roleId) => ({ userId, roleId })))
@@ -406,6 +450,12 @@ export async function setUserRoles(userId: string, roleIds: string[]): Promise<v
   })
 
   clearTileAccessCache()
+
+  // OpenWebUI (Wariant A, D1/D3): uzgadniamy WYŁĄCZNIE role, których
+  // członkostwo TEGO użytkownika mogło się zmienić — suma poprzedniego i
+  // nowego zestawu (rola dodana ALBO odebrana). Awaitowane z budżetem czasu
+  // wewnątrz reconcileRoleGroups(), nigdy nie rzuca — patrz openwebui-sync.ts.
+  return reconcileRoleGroups([...previousRoleIds, ...wanted])
 }
 
 /**

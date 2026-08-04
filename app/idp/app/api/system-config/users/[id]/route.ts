@@ -31,7 +31,7 @@ export async function PATCH(request: NextRequest, context: RouteContext): Promis
   try {
     const updated = await updateUser(id, parsed.data)
     if (!updated) return NextResponse.json({ error: "unknown-user" }, { status: 404 })
-    return NextResponse.json(updated)
+    return NextResponse.json({ ...updated.user, openwebuiSync: updated.openwebuiSync })
   } catch (error) {
     return toErrorResponse(error)
   }

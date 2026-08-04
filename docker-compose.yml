@@ -179,6 +179,17 @@ services:
       # routera słów kluczowych (patrz jego JSDoc) — kafelek nie hard-failuje,
       # ale bez tego klucza nie ma realnego agenta LLM.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Synchronizacja Konfiguracja Systemu -> OpenWebUI (PROJECT/cortex-
+      # frontend-sync-uprawnien-openwebui-projekt.md). DWA RÓŻNE sekrety niż
+      # CORTEX_PROXY_* wyżej — to jest OSOBNA instancja (kontener `chat` w
+      # ~/REPO/chat, sieć run_default), nie cortex-proxy. `http://chat` działa
+      # WYŁĄCZNIE gdy ten kontener dzieli sieć z `chat` — patrz W3 w design
+      # docu (poza zakresem tego compose, Ścieżka E: Caddy/oauth2-proxy/chat
+      # są tu celowo pominięte). Puste = funkcja WYŁĄCZONA (status "skipped"
+      # na każdej mutacji ról/userów), reszta aplikacji działa normalnie.
+      OPENWEBUI_URL: ${OPENWEBUI_URL:-}
+      # Token administratora OpenWebUI — server-side ONLY, nigdy NEXT_PUBLIC_.
+      OPENWEBUI_ADMIN_TOKEN: ${OPENWEBUI_ADMIN_TOKEN:-}
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     extra_hosts:
