@@ -17,6 +17,10 @@ description: Konwencje UI w cortex-frontend — tylko @cortex/ui + @cortex/style
 
 `st.subheader`-style hierarchia nieaktualna tu (to reguła ze świata Streamlit) — w Next.js: jeden spójny wzorzec nagłówka strony na kafelek, patrz istniejące `*Form` w `ai-tool-workspace.tsx` jako referencja układu (label + opis + pola + wynik).
 
+## Rozrastające się strony szczegółów: taby, nie kolejna sekcja pod spodem
+
+Strona szczegółów/konfiguracji, która z czasem dokłada kolejne niezależne sekcje (własne pola + własny zapis każda), robi się przeciążona poznawczo jako jeden długi scroll. Gdy liczba takich sekcji przekroczy dwie-trzy, dziel na taby (`Tabs`/`TabsList`/`TabsTrigger`/`TabsContent` z `@cortex/ui`, stan aktywnego taba to zwykły `useState` komponentu — bez synchronizacji z URL, chyba że konkretny przypadek naprawdę wymaga deep-linku) zamiast dokładać kolejną sekcję pod spód. Precedens: `system-config/applications/[code]/page.tsx` — Podstawowe dane / Uprawnienia / Zakresy to dokładnie te same sekcje (i te same, osobne zapisy każdej z nich), które wcześniej stały jedna pod drugą na jednym ekranie, tu tylko pogrupowane w taby.
+
 ## Dark mode
 
 Jeden asset, jeden mechanizm: `<Image className="dark:invert dark:hue-rotate-180" />` dla logo. Nie dodawać osobnych assetów per motyw bez wyraźnej potrzeby.

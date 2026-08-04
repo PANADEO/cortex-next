@@ -48,6 +48,10 @@ import {
   SelectValue,
   Skeleton,
   Switch,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from "@cortex/ui"
 import type { ColumnDef } from "@tanstack/react-table"
 import { ArrowLeft, LayoutDashboard, ShieldAlert, Trash2 } from "lucide-react"
@@ -220,6 +224,13 @@ export default function ApplicationDetailPage() {
   // jawna lista co lista Aplikacje, `resolveApplicationIcon`), więc przejście
   // placeholder -> prawdziwy picker nie skacze wizualnie.
   const [isIconPickerActive, setIsIconPickerActive] = useState(false)
+  // Sekcje strony (D-taby, wydzielone z jednego długiego scrolla — Podstawowe
+  // dane/Uprawnienia/Zakresy miały już wcześniej osobne zapisy per sekcja,
+  // taby tylko grupują to, co i tak było niezależne). Zwykły stan komponentu,
+  // nie URL param — tak samo jak istniejący precedens w tym repo (patrz
+  // `tab`/`activeTab` w `idp/rules/[id]/page.tsx` i `content-guru/page.tsx`,
+  // żaden z nich nie synchronizuje wyboru taba z query stringiem).
+  const [tab, setTab] = useState("basics")
 
   // Wiersz, którego uprawnieniem chroniony jest ten moduł — tę samą regułę
   // egzekwuje serwer (SelfLockoutError), UI tylko ją tłumaczy.
@@ -490,341 +501,340 @@ export default function ApplicationDetailPage() {
           </Alert>
         ) : null}
 
-        <section className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-sm font-semibold tracking-tight">Podstawowe dane</h2>
+        <Tabs value={tab} onValueChange={setTab} className="flex flex-1 flex-col gap-4">
+          <TabsList className="self-start">
+            <TabsTrigger value="basics">Podstawowe dane</TabsTrigger>
+            <TabsTrigger value="permissions">Uprawnienia</TabsTrigger>
+            <TabsTrigger value="scopes">Zakresy</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="basics" className="flex flex-col gap-4">
             <p className="text-xs text-muted-foreground">
               Opis aplikacji w rejestrze instancji.
             </p>
-          </div>
 
-          <div className="grid gap-4 rounded-lg border border-border p-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="code">Kod uprawnienia</Label>
-                <Input id="code" value={code} disabled />
-                <span className="text-xs text-muted-foreground">
-                  Kodu nie da się zmienić po utworzeniu aplikacji.
-                </span>
-              </div>
-
-              <div className="grid gap-1.5">
-                <Label htmlFor="name">Nazwa</Label>
-                <Input
-                  id="name"
-                  value={form.name}
-                  onChange={(event) => update("name", event.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-1.5">
-              <Label htmlFor="description">Opis</Label>
-              <Input
-                id="description"
-                value={form.description}
-                onChange={(event) => update("description", event.target.value)}
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="icon">Ikona</Label>
-                {isIconPickerActive ? (
-                  <IconPicker
-                    id="icon"
-                    value={form.icon}
-                    onChange={(value) => update("icon", value)}
-                    autoOpen
-                  />
-                ) : (
-                  <IconPickerPlaceholder
-                    id="icon"
-                    value={form.icon}
-                    onActivate={() => setIsIconPickerActive(true)}
-                  />
-                )}
-              </div>
-
-              <div className="grid gap-1.5">
-                <Label htmlFor="category">Kategoria</Label>
-                <Combobox
-                  id="category"
-                  value={form.category}
-                  onChange={(value) => update("category", value)}
-                  options={existingCategories}
-                  placeholder="np. Administracja"
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-1.5">
-              <Label id="color-label">Kolor</Label>
-              <div className="flex flex-wrap gap-2" role="group" aria-labelledby="color-label">
-                {TILE_COLOR_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    aria-pressed={form.color === option.value}
-                    aria-label={option.label}
-                    title={option.label}
-                    onClick={() => update("color", option.value)}
-                    className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-full transition-all",
-                      option.iconBg,
-                      form.color === option.value
-                        ? "ring-2 ring-cortex ring-offset-2 ring-offset-background"
-                        : "opacity-70 hover:opacity-100",
-                    )}
-                  >
-                    <span className={cn("h-3 w-3 rounded-full", option.iconFg)} aria-hidden="true" />
-                  </button>
-                ))}
-              </div>
-              <span className="text-xs text-muted-foreground">
-                Kolor ikony kafelka na hubie. Bez wyboru kafelek dostaje neutralny kolor domyślny.
-              </span>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="categoryFunctional">Kategoria funkcjonalna (zakładka „Funkcje”)</Label>
-                <Select
-                  value={form.categoryFunctional}
-                  onValueChange={(value) => update("categoryFunctional", value)}
-                >
-                  <SelectTrigger id="categoryFunctional">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NO_FUNCTIONAL_CATEGORY}>Brak</SelectItem>
-                    {FUNCTIONAL_CATEGORIES.map((option) => (
-                      <SelectItem key={option.id} value={option.id}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-1.5">
-                <Label id="department-label">Kategoria działu (zakładka „Działy”)</Label>
-                <div className="flex flex-col gap-2 rounded-md border border-border p-3">
-                  {DEPARTMENT_CATEGORIES.map((option) => (
-                    <div key={option.id} className="flex items-center gap-2">
-                      <Checkbox
-                        id={`department-${option.id}`}
-                        checked={form.categoryDepartment.includes(option.id)}
-                        onCheckedChange={(checked) => toggleDepartment(option.id, checked === true)}
-                      />
-                      <Label htmlFor={`department-${option.id}`} className="cursor-pointer font-normal">
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-1.5">
-              <Label htmlFor="kind">Typ aplikacji</Label>
-              <Select
-                value={form.kind}
-                disabled={isSelfManaged || isNativeLocked}
-                onValueChange={(value) => update("kind", value as TileKind)}
-              >
-                <SelectTrigger id="kind">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TileKindSchema.options.map((kind) => (
-                    <SelectItem key={kind} value={kind}>
-                      {KIND_LABELS[kind]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {isNativeLocked && !isSelfManaged ? (
-                <span className="text-xs text-muted-foreground">
-                  Kafelek natywny — typ i ścieżka są ustalane wyłącznie przez aktywację
-                  zarejestrowanego manifestu, nie da się ich tu zmienić.
-                </span>
-              ) : null}
-            </div>
-
-            {form.kind === "native" ? (
-              <div className="grid gap-1.5">
-                <Label htmlFor="route">Ścieżka w aplikacji</Label>
-                <Input
-                  id="route"
-                  value={form.route}
-                  disabled={isSelfManaged || isNativeLocked}
-                  onChange={(event) => update("route", event.target.value)}
-                  placeholder="/raportowanie-tokenow"
-                />
-                <span className="text-xs text-muted-foreground">
-                  Ścieżka wewnątrz tej aplikacji, zaczynająca się od pojedynczego ukośnika.
-                </span>
-              </div>
-            ) : (
-              <>
+            <div className="grid gap-4 rounded-lg border border-border p-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-1.5">
-                  <Label htmlFor="url">Adres zewnętrzny</Label>
-                  <Input
-                    id="url"
-                    value={form.url}
-                    disabled={isSelfManaged}
-                    onChange={(event) => update("url", event.target.value)}
-                    placeholder="https://chat.example.com"
-                  />
+                  <Label htmlFor="code">Kod uprawnienia</Label>
+                  <Input id="code" value={code} disabled />
                   <span className="text-xs text-muted-foreground">
-                    Dozwolone wyłącznie adresy http:// i https://.
+                    Kodu nie da się zmienić po utworzeniu aplikacji.
                   </span>
                 </div>
 
                 <div className="grid gap-1.5">
-                  <Label htmlFor="target">Otwieranie</Label>
+                  <Label htmlFor="name">Nazwa</Label>
+                  <Input
+                    id="name"
+                    value={form.name}
+                    onChange={(event) => update("name", event.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="description">Opis</Label>
+                <Input
+                  id="description"
+                  value={form.description}
+                  onChange={(event) => update("description", event.target.value)}
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="icon">Ikona</Label>
+                  {isIconPickerActive ? (
+                    <IconPicker
+                      id="icon"
+                      value={form.icon}
+                      onChange={(value) => update("icon", value)}
+                      autoOpen
+                    />
+                  ) : (
+                    <IconPickerPlaceholder
+                      id="icon"
+                      value={form.icon}
+                      onActivate={() => setIsIconPickerActive(true)}
+                    />
+                  )}
+                </div>
+
+                <div className="grid gap-1.5">
+                  <Label htmlFor="category">Kategoria</Label>
+                  <Combobox
+                    id="category"
+                    value={form.category}
+                    onChange={(value) => update("category", value)}
+                    options={existingCategories}
+                    placeholder="np. Administracja"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label id="color-label">Kolor</Label>
+                <div className="flex flex-wrap gap-2" role="group" aria-labelledby="color-label">
+                  {TILE_COLOR_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={form.color === option.value}
+                      aria-label={option.label}
+                      title={option.label}
+                      onClick={() => update("color", option.value)}
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-full transition-all",
+                        option.iconBg,
+                        form.color === option.value
+                          ? "ring-2 ring-cortex ring-offset-2 ring-offset-background"
+                          : "opacity-70 hover:opacity-100",
+                      )}
+                    >
+                      <span className={cn("h-3 w-3 rounded-full", option.iconFg)} aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  Kolor ikony kafelka na hubie. Bez wyboru kafelek dostaje neutralny kolor domyślny.
+                </span>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="categoryFunctional">Kategoria funkcjonalna (zakładka „Funkcje”)</Label>
                   <Select
-                    value={form.target}
-                    onValueChange={(value) => update("target", value as FormState["target"])}
+                    value={form.categoryFunctional}
+                    onValueChange={(value) => update("categoryFunctional", value)}
                   >
-                    <SelectTrigger id="target">
+                    <SelectTrigger id="categoryFunctional">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NO_TARGET}>Domyślne</SelectItem>
-                      <SelectItem value="_self">To samo okno</SelectItem>
-                      <SelectItem value="_blank">Nowa karta</SelectItem>
+                      <SelectItem value={NO_FUNCTIONAL_CATEGORY}>Brak</SelectItem>
+                      {FUNCTIONAL_CATEGORIES.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-              </>
-            )}
 
-            <div className="flex items-center gap-2">
-              <Switch
-                id="isActive"
-                checked={form.isActive}
-                disabled={isSelfManaged}
-                onCheckedChange={(checked) => update("isActive", checked)}
-              />
-              <Label htmlFor="isActive">Aplikacja aktywna</Label>
+                <div className="grid gap-1.5">
+                  <Label id="department-label">Kategoria działu (zakładka „Działy”)</Label>
+                  <div className="flex flex-col gap-2 rounded-md border border-border p-3">
+                    {DEPARTMENT_CATEGORIES.map((option) => (
+                      <div key={option.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`department-${option.id}`}
+                          checked={form.categoryDepartment.includes(option.id)}
+                          onCheckedChange={(checked) => toggleDepartment(option.id, checked === true)}
+                        />
+                        <Label htmlFor={`department-${option.id}`} className="cursor-pointer font-normal">
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="kind">Typ aplikacji</Label>
+                <Select
+                  value={form.kind}
+                  disabled={isSelfManaged || isNativeLocked}
+                  onValueChange={(value) => update("kind", value as TileKind)}
+                >
+                  <SelectTrigger id="kind">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TileKindSchema.options.map((kind) => (
+                      <SelectItem key={kind} value={kind}>
+                        {KIND_LABELS[kind]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {isNativeLocked && !isSelfManaged ? (
+                  <span className="text-xs text-muted-foreground">
+                    Kafelek natywny — typ i ścieżka są ustalane wyłącznie przez aktywację
+                    zarejestrowanego manifestu, nie da się ich tu zmienić.
+                  </span>
+                ) : null}
+              </div>
+
+              {form.kind === "native" ? (
+                <div className="grid gap-1.5">
+                  <Label htmlFor="route">Ścieżka w aplikacji</Label>
+                  <Input
+                    id="route"
+                    value={form.route}
+                    disabled={isSelfManaged || isNativeLocked}
+                    onChange={(event) => update("route", event.target.value)}
+                    placeholder="/raportowanie-tokenow"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    Ścieżka wewnątrz tej aplikacji, zaczynająca się od pojedynczego ukośnika.
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="url">Adres zewnętrzny</Label>
+                    <Input
+                      id="url"
+                      value={form.url}
+                      disabled={isSelfManaged}
+                      onChange={(event) => update("url", event.target.value)}
+                      placeholder="https://chat.example.com"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      Dozwolone wyłącznie adresy http:// i https://.
+                    </span>
+                  </div>
+
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="target">Otwieranie</Label>
+                    <Select
+                      value={form.target}
+                      onValueChange={(value) => update("target", value as FormState["target"])}
+                    >
+                      <SelectTrigger id="target">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NO_TARGET}>Domyślne</SelectItem>
+                        <SelectItem value="_self">To samo okno</SelectItem>
+                        <SelectItem value="_blank">Nowa karta</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="isActive"
+                  checked={form.isActive}
+                  disabled={isSelfManaged}
+                  onCheckedChange={(checked) => update("isActive", checked)}
+                />
+                <Label htmlFor="isActive">Aplikacja aktywna</Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="showOnHub"
+                  checked={form.showOnHub}
+                  onCheckedChange={handleShowOnHubChange}
+                />
+                <Label htmlFor="showOnHub">Widoczna na stronie głównej (hub)</Label>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                Osobny przełącznik od „Aplikacja aktywna” (D1): „aktywna” decyduje o uprawnieniu, ten
+                przełącznik wyłącznie o tym, czy kafelek renderuje się na hubie. Wyłączenie nie odbiera
+                nikomu dostępu — tylko chowa kartę.
+              </span>
+
+              {/* Kolejność nie jest już edytowalna tutaj — patrz tryb zmiany
+                  kolejności na liście Aplikacje (strzałki góra/dół). Trzymanie
+                  tej samej wartości w dwóch miejscach naraz (surowy input tutaj
+                  + reorder na liście) tylko rozjeżdżałoby oczekiwania: który z
+                  nich wygrywa, jeśli ktoś edytuje oba niemal jednocześnie. */}
+
+              <div className="flex justify-end">
+                <Button onClick={handleSaveDetails} disabled={updateApplication.isPending}>
+                  Zapisz dane
+                </Button>
+              </div>
             </div>
+          </TabsContent>
 
-            <div className="flex items-center gap-2">
-              <Switch
-                id="showOnHub"
-                checked={form.showOnHub}
-                onCheckedChange={handleShowOnHubChange}
-              />
-              <Label htmlFor="showOnHub">Widoczna na stronie głównej (hub)</Label>
-            </div>
-            <span className="text-xs text-muted-foreground">
-              Osobny przełącznik od „Aplikacja aktywna” (D1): „aktywna” decyduje o uprawnieniu, ten
-              przełącznik wyłącznie o tym, czy kafelek renderuje się na hubie. Wyłączenie nie odbiera
-              nikomu dostępu — tylko chowa kartę.
-            </span>
-
-            {/* Kolejność nie jest już edytowalna tutaj — patrz tryb zmiany
-                kolejności na liście Aplikacje (strzałki góra/dół). Trzymanie
-                tej samej wartości w dwóch miejscach naraz (surowy input tutaj
-                + reorder na liście) tylko rozjeżdżałoby oczekiwania: który z
-                nich wygrywa, jeśli ktoś edytuje oba niemal jednocześnie. */}
-
-            <div className="flex justify-end">
-              <Button onClick={handleSaveDetails} disabled={updateApplication.isPending}>
-                Zapisz dane
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        <section className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-sm font-semibold tracking-tight">Uprawnienia</h2>
+          <TabsContent value="permissions" className="flex flex-col gap-4">
             <p className="text-xs text-muted-foreground">
               Role, które mają dostęp do tej aplikacji. Uprawnienia nadaje się rolom, nie
               użytkownikom.
             </p>
-          </div>
 
-          <div className="grid gap-4 rounded-lg border border-border p-4">
-            {rolesQuery.isLoading || applicationRolesQuery.isLoading ? (
-              <LoadingState label="Wczytywanie uprawnień…" />
-            ) : roles.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Nie zdefiniowano jeszcze żadnej roli, więc nie ma komu nadać dostępu.
-              </p>
-            ) : (
-              <>
-                <div className="flex flex-col gap-3">
-                  {roles.map((role: RoleSummary) => (
-                    <div key={role.id} className="flex items-start gap-2">
-                      <Checkbox
-                        id={`role-${role.id}`}
-                        checked={grantedRoleIds.includes(role.id)}
-                        onCheckedChange={(checked) => toggleRole(role.id, checked === true)}
-                      />
-                      <div className="grid gap-0.5">
-                        <Label htmlFor={`role-${role.id}`} className="cursor-pointer">
-                          {role.name}
-                        </Label>
-                        <span className="text-xs text-muted-foreground">
-                          {role.description ?? role.code}
-                        </span>
+            <div className="grid gap-4 rounded-lg border border-border p-4">
+              {rolesQuery.isLoading || applicationRolesQuery.isLoading ? (
+                <LoadingState label="Wczytywanie uprawnień…" />
+              ) : roles.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nie zdefiniowano jeszcze żadnej roli, więc nie ma komu nadać dostępu.
+                </p>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-3">
+                    {roles.map((role: RoleSummary) => (
+                      <div key={role.id} className="flex items-start gap-2">
+                        <Checkbox
+                          id={`role-${role.id}`}
+                          checked={grantedRoleIds.includes(role.id)}
+                          onCheckedChange={(checked) => toggleRole(role.id, checked === true)}
+                        />
+                        <div className="grid gap-0.5">
+                          <Label htmlFor={`role-${role.id}`} className="cursor-pointer">
+                            {role.name}
+                          </Label>
+                          <span className="text-xs text-muted-foreground">
+                            {role.description ?? role.code}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
 
-                <div className="flex justify-end">
-                  <Button onClick={handleSavePermissions} disabled={setApplicationRoles.isPending}>
-                    Zapisz uprawnienia
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        </section>
+                  <div className="flex justify-end">
+                    <Button onClick={handleSavePermissions} disabled={setApplicationRoles.isPending}>
+                      Zapisz uprawnienia
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </TabsContent>
 
-        <section className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-sm font-semibold tracking-tight">Zakresy</h2>
+          <TabsContent value="scopes" className="flex flex-col gap-4">
             <p className="text-xs text-muted-foreground">
               Granularne uprawnienia w środku tej aplikacji — konkretne akcje, nie sam dostęp do
               kafelka.
             </p>
-          </div>
 
-          <div className="grid gap-4 rounded-lg border border-border p-4">
-            {applicationScopesQuery.isLoading ||
-            applicationScopeGrantsQuery.isLoading ||
-            rolesQuery.isLoading ? (
-              <LoadingState label="Wczytywanie zakresów…" />
-            ) : scopes.length === 0 ? (
-              // D8/D9: świadoma, centralna decyzja tego modułu — katalog zakresów
-              // powstaje w kodzie modułu (seed), nie tutaj. Zero create/delete.
-              <p className="text-sm text-muted-foreground">
-                Ta aplikacja nie definiuje żadnych zakresów granularnych. Zakresy powstają w
-                kodzie modułu (razem z sekcją, którą chronią) — nie da się ich dodać z tego
-                panelu.
-              </p>
-            ) : roles.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Nie zdefiniowano jeszcze żadnej roli, więc nie ma komu nadać zakresu.
-              </p>
-            ) : (
-              <>
-                <DataTable columns={scopeColumns} data={roles} getRowId={(role) => role.id} bordered />
-                <div className="flex justify-end">
-                  <Button onClick={handleSaveScopes} disabled={isSavingScopes}>
-                    Zapisz zakresy
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        </section>
+            <div className="grid gap-4 rounded-lg border border-border p-4">
+              {applicationScopesQuery.isLoading ||
+              applicationScopeGrantsQuery.isLoading ||
+              rolesQuery.isLoading ? (
+                <LoadingState label="Wczytywanie zakresów…" />
+              ) : scopes.length === 0 ? (
+                // D8/D9: świadoma, centralna decyzja tego modułu — katalog zakresów
+                // powstaje w kodzie modułu (seed), nie tutaj. Zero create/delete.
+                <p className="text-sm text-muted-foreground">
+                  Ta aplikacja nie definiuje żadnych zakresów granularnych. Zakresy powstają w
+                  kodzie modułu (razem z sekcją, którą chronią) — nie da się ich dodać z tego
+                  panelu.
+                </p>
+              ) : roles.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nie zdefiniowano jeszcze żadnej roli, więc nie ma komu nadać zakresu.
+                </p>
+              ) : (
+                <>
+                  <DataTable columns={scopeColumns} data={roles} getRowId={(role) => role.id} bordered />
+                  <div className="flex justify-end">
+                    <Button onClick={handleSaveScopes} disabled={isSavingScopes}>
+                      Zapisz zakresy
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
