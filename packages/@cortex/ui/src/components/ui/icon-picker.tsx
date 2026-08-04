@@ -18,6 +18,13 @@ export interface IconPickerProps {
   id?: string
   disabled?: boolean
   className?: string
+  /** Otwiera popover od razu przy montowaniu. Konsument, który montuje ten
+   *  komponent dopiero w reakcji na pierwsze kliknięcie/focus placeholdera
+   *  (bundle-split, D4/D5 — patrz system-config/applications/[code]/page.tsx),
+   *  inaczej wymagałby DRUGIEGO kliknięcia: pierwsze tylko podmienia
+   *  placeholder na ten komponent, więc żaden `PopoverTrigger` jeszcze go nie
+   *  odebrał. Z `autoOpen` ten sam gest robi jedno i drugie. */
+  autoOpen?: boolean
 }
 
 // `lucide-react` eksportuje trzy aliasy per ikona (np. `ChevronRight`,
@@ -66,8 +73,12 @@ const ROW_HEIGHT = 44
  * design doc D4/D5). Popover + pole filtra + wirtualizowana siatka
  * (`@tanstack/react-virtual`), bez `cmdk` (nie jest zależnością repo).
  */
-export function IconPicker({ value, onChange, id, disabled, className }: IconPickerProps) {
-  const [open, setOpen] = React.useState(false)
+export function IconPicker({ value, onChange, id, disabled, className, autoOpen }: IconPickerProps) {
+  // Wartość początkowa czytana raz, na pierwszym renderze — dokładnie tyle
+  // potrzeba: ten komponent montuje się raz na czas życia strony (gate
+  // `isIconPickerActive` w wołającym nie wraca do false), więc `autoOpen`
+  // nie ma się do czego "przełączyć" później.
+  const [open, setOpen] = React.useState(autoOpen ?? false)
   const [query, setQuery] = React.useState("")
 
   const selected = value ? ICON_BY_NAME.get(value) : undefined

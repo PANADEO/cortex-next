@@ -102,12 +102,17 @@ async function main() {
     // token-usage mają WŁASNE seedy właśnie dlatego, patrz komentarz wyżej —
     // bez tego dopełnienia tu kafelek renderowałby się na hubie (Krok 3)
     // z neutralnym kolorem zamiast fioletowego i bez zakładki kategorii,
-    // mimo że statyczny TILES miał obie wartości od zawsze).
+    // mimo że statyczny TILES miał obie wartości od zawsze). `description`
+    // dołączona tym samym mechanizmem (bug zgłoszony po demo: karta na hubie
+    // renderowała się bez opisu — system_config.applications.description jest
+    // realną, nullable kolumną, którą tile-card.tsx renderuje bezwarunkowo;
+    // ten UPDATE nigdy jej nie ustawiał).
     await tx`
       update system_config.applications
       set is_active = true, show_on_hub = true, activated_at = now(),
           color = 'violet', category_functional = 'content-generation',
-          category_department = array['marketing']
+          category_department = array['marketing'],
+          description = 'Generuje brandowane grafiki do postów LinkedIn z szablonów marki'
       where id = ${applicationId} and activated_at is null
     `
 

@@ -64,12 +64,17 @@ async function main() {
     // WŁASNY seed właśnie dlatego, patrz komentarz wyżej — bez tego
     // dopełnienia kafelek renderowałby się na hubie (Krok 3) z neutralnym
     // kolorem zamiast błękitnego i bez zakładki kategorii, mimo że statyczny
-    // TILES miał obie wartości od zawsze).
+    // TILES miał obie wartości od zawsze). `description` dołączona tym samym
+    // mechanizmem (bug zgłoszony po demo: karta na hubie renderowała się bez
+    // opisu — system_config.applications.description jest realną, nullable
+    // kolumną, którą tile-card.tsx renderuje bezwarunkowo; ten UPDATE nigdy
+    // jej nie ustawiał).
     await tx`
       update system_config.applications
       set is_active = true, show_on_hub = true, activated_at = now(),
           color = 'sky', category_functional = 'admin-system',
-          category_department = array['it']
+          category_department = array['it'],
+          description = 'Zużycie tokenów AI według użytkowników, modeli i narzędzi'
       where id = ${applicationId} and activated_at is null
     `
 

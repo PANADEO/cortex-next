@@ -67,7 +67,15 @@ import { systemConfigTile } from "../../manifest"
  *  komponent renderował się bezwarunkowo w formularzu, chunk ładowałby się
  *  praktycznie od razu po wejściu na stronę szczegółów aplikacji, wbrew
  *  zamierzeniu D4/D5. Dlatego poniżej montujemy go warunkowo, dopiero po
- *  pierwszym kliknięciu/focusie placeholdera (patrz `isIconPickerActive`). */
+ *  pierwszym kliknięciu placeholdera (patrz `isIconPickerActive`).
+ *
+ *  Ten sam klik, który montuje `IconPicker`, nie ląduje na jego WŁASNYM
+ *  `PopoverTrigger` — placeholder w tym momencie znika, prawdziwy komponent
+ *  dopiero się pojawia, więc bez dodatkowego kroku user musiałby kliknąć
+ *  DRUGI raz, żeby popover faktycznie się otworzył (zgłoszony bug — jedno
+ *  kliknięcie zamiast otwierać wybór ikony, tylko "aktywowało" pole).
+ *  `autoOpen` na `IconPicker` niżej zamyka tę lukę: ten sam klik od razu
+ *  otwiera popover po zamontowaniu, więc user nie widzi dwuetapowości. */
 const IconPicker = dynamic(
   () => import("@cortex/ui/components/ui/icon-picker").then((mod) => mod.IconPicker),
   { ssr: false, loading: () => <Skeleton className="h-9 w-full rounded-md" /> },
@@ -94,7 +102,6 @@ function IconPickerPlaceholder({
       variant="outline"
       className="w-full justify-start gap-2 font-normal"
       onClick={onActivate}
-      onFocus={onActivate}
     >
       <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
       <span className="truncate">{value || "Wybierz ikonę"}</span>
@@ -524,7 +531,12 @@ export default function ApplicationDetailPage() {
               <div className="grid gap-1.5">
                 <Label htmlFor="icon">Ikona</Label>
                 {isIconPickerActive ? (
-                  <IconPicker id="icon" value={form.icon} onChange={(value) => update("icon", value)} />
+                  <IconPicker
+                    id="icon"
+                    value={form.icon}
+                    onChange={(value) => update("icon", value)}
+                    autoOpen
+                  />
                 ) : (
                   <IconPickerPlaceholder
                     id="icon"
