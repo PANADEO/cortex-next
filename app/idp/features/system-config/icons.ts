@@ -2,11 +2,14 @@ import {
   BarChart3,
   Bot,
   CalendarClock,
+  FileScan,
   FileSpreadsheet,
   FileText,
+  Gauge,
   Highlighter,
   Image,
   LayoutDashboard,
+  Megaphone,
   MessageSquareText,
   Presentation,
   Receipt,
@@ -39,16 +42,27 @@ import dynamic from "next/dynamic"
 // `lib/tiles.ts`/`ai-tools/registry.ts` — rośnie tylko wtedy, gdy faktycznie
 // dochodzi nowa ikona w jednym z tych miejsc. Renderuje się SYNCHRONICZNIE,
 // zero opóźnienia — to jest hot path każdego renderu huba.
+// `FileScan`/`Gauge` doszły 05.08.2026 przy domykaniu luki "moduł z manifestu
+// nie dostaje ikony" (to samo, co 254b704 zrobił dla `description`):
+// `document-parser` i `geo-score-calculator` mają je jako `icon:` w
+// `lib/tiles.ts` od zawsze, a od tej poprawki także jako `applications.icon`
+// w bazie. Bez wpisu tutaj obie spadałyby na `resolveDynamicIcon` niżej —
+// czyli `loading: () => null`, pusty slot na hubie do czasu dociągnięcia
+// chunku katalogu. `Image`/`BarChart3` (ilustromat/token-usage, te same
+// poprawki w ich seedach) już tu były.
 // NIE zamieniać z powrotem na `import * as Icons` — to dokładnie ta zmiana,
 // która wprowadziła regresję.
 const ICONS: Record<string, LucideIcon> = {
   BarChart3,
   Bot,
   CalendarClock,
+  FileScan,
   FileSpreadsheet,
   FileText,
+  Gauge,
   Highlighter,
   Image,
+  Megaphone,
   MessageSquareText,
   Presentation,
   Receipt,

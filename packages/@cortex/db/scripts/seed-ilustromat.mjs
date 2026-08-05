@@ -106,13 +106,25 @@ async function main() {
     // dołączona tym samym mechanizmem (bug zgłoszony po demo: karta na hubie
     // renderowała się bez opisu — system_config.applications.description jest
     // realną, nullable kolumną, którą tile-card.tsx renderuje bezwarunkowo;
-    // ten UPDATE nigdy jej nie ustawiał).
+    // ten UPDATE nigdy jej nie ustawiał). `icon` dołączona tym samym
+    // mechanizmem i z tego samego powodu (kolejna odsłona tej samej luki:
+    // seed-tile-manifests.mjs świadomie zostawia icon=null jako "dane admina,
+    // nie strukturę", manifest nazwy ikony nie niesie, więc bez tej linii
+    // wiersz zostawał z icon=null — pusta "Wybierz ikonę" w formularzu
+    // Aplikacje i generyczny LayoutDashboard zamiast własnego glifu na hubie).
+    // Nazwa 1:1 z app/idp/lib/tiles.ts (wpis `ilustromat`, `icon: Image`) —
+    // ta sama zasada co color/category niżej, rejestr w bazie i statyczny
+    // TILES mają mówić to samo. Każda nazwa ustawiana tutaj musi być też na
+    // statycznej liście `ICONS` w app/idp/features/system-config/icons.ts,
+    // inaczej renderuje się przez leniwy fallback (pusty slot do czasu
+    // dociągnięcia chunku) zamiast synchronicznie.
     await tx`
       update system_config.applications
       set is_active = true, show_on_hub = true, activated_at = now(),
           color = 'violet', category_functional = 'content-generation',
           category_department = array['marketing'],
-          description = 'Generuje brandowane grafiki do postów LinkedIn z szablonów marki'
+          description = 'Generuje brandowane grafiki do postów LinkedIn z szablonów marki',
+          icon = 'Image'
       where id = ${applicationId} and activated_at is null
     `
 
