@@ -1,5 +1,6 @@
 import {
   SYSTEM_CONFIG_APP_CODE,
+  ModuleNotLicensedError,
   NativeApplicationImmutableError,
   NativeCreationNotAllowedError,
   SelfLockoutError,
@@ -64,6 +65,19 @@ export function toErrorResponse(error: unknown): NextResponse {
     return NextResponse.json(
       { error: "native-requires-activation", message: error.message },
       { status: 400 },
+    )
+  }
+
+  // 403, nie 400/404/409: żądanie jest poprawne, moduł istnieje w rejestrze i
+  // admin ma pełny grant do tego panelu — odmawia INSTANCJA, bo nie ma licencji
+  // na ten moduł. To ta sama klasa odpowiedzi co odmowa bramki wyżej
+  // (denyUnlessAllowed): "wiem, o co prosisz, i nie autoryzuję". 409 zostaje
+  // zarezerwowane dla konfliktów ze STANEM danych (self-lockout, rola
+  // systemowa, niezmienny wiersz native), a licencja stanem danych nie jest.
+  if (error instanceof ModuleNotLicensedError) {
+    return NextResponse.json(
+      { error: "module-not-licensed", message: error.message },
+      { status: 403 },
     )
   }
 

@@ -56,6 +56,7 @@ export type { FrameTemplateInput, TemplateAssetInput } from "./ilustromat"
 export {
   ADMIN_ROLE_CODE,
   SYSTEM_CONFIG_APP_CODE,
+  ModuleNotLicensedError,
   NativeApplicationImmutableError,
   NativeCreationNotAllowedError,
   SelfLockoutError,

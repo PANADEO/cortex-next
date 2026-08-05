@@ -19,7 +19,7 @@ import {
 import { isHttpUrl, isInternalRoute, TileKind } from "@cortex/tile-sdk"
 import { and, asc, eq, inArray, isNotNull, isNull, ne, or } from "drizzle-orm"
 import { z } from "zod"
-import { moduleLicensingConfig } from "./module-licensing"
+import { isModuleEnabled, moduleLicensingConfig } from "./module-licensing"
 import {
   emptyGroupMembership,
   getRoleGroupMapping as getOpenwebuiRoleGroupMapping,
@@ -560,8 +560,22 @@ export async function listUnactivatedNativeApplications(): Promise<ApplicationRo
  * NIE ZMIENIONY — no-op, nie błąd, nie podwójna aktywacja. `null` wraca
  * WYŁĄCZNIE gdy kod w ogóle nie istnieje w rejestrze (pomyłka wywołania, nie
  * wyścig).
+ *
+ * Bramka `ENABLED_MODULES` (D9, PROJECT/cortex-frontend-licencjonowanie-
+ * projekt.md) domyka ścieżkę MUTACJI: filtr w
+ * listUnactivatedNativeApplications() chronił wyłącznie ODCZYT listy, a wiersz
+ * kandydata istnieje w bazie niezależnie od allowlisty (wstawia go
+ * seed-tile-manifests.mjs przy każdym deployu), więc `POST .../activate` z
+ * kodem spoza allowlisty aktywował moduł mimo bramki. Sprawdzenie stoi PRZED
+ * `getDb()` i jest czystym predykatem na env: odmowa nie wykonuje ANI JEDNEGO
+ * zapytania, więc nie może zmienić `is_active`/`show_on_hub`/`activated_at`
+ * żadnego wiersza (D4 — licencja nigdy nie zapisuje do danych instancji).
+ * Nieustawione/puste `ENABLED_MODULES` => isModuleEnabled() zawsze `true` =>
+ * zachowanie bez zmian.
  */
 export async function activateApplication(code: string): Promise<ApplicationRow | null> {
+  if (!isModuleEnabled(code)) throw new ModuleNotLicensedError(code)
+
   const db = getDb()
 
   const [activated] = await db
@@ -907,6 +921,22 @@ export class NativeApplicationImmutableError extends Error {
   constructor(message: string) {
     super(message)
     this.name = "NativeApplicationImmutableError"
+  }
+}
+
+/** Próba aktywacji kodu spoza `ENABLED_MODULES` (D9,
+ *  PROJECT/cortex-frontend-licencjonowanie-projekt.md) — patrz
+ *  activateApplication. Osobna klasa, nie `null`: wywołujący musi odróżnić
+ *  "instancja nie ma licencji na ten moduł" (kod istnieje, żądanie poprawne,
+ *  odmowa autoryzacji -> 403) od "takiego kodu nie ma w rejestrze" (-> 404). */
+export class ModuleNotLicensedError extends Error {
+  constructor(code: string) {
+    super(
+      `Moduł "${code}" nie jest objęty licencją tej instancji — nie ma go na liście ` +
+        "ENABLED_MODULES, więc nie można go aktywować. Skontaktuj się z dostawcą " +
+        "platformy, żeby rozszerzyć zakres licencji.",
+    )
+    this.name = "ModuleNotLicensedError"
   }
 }
 

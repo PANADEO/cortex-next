@@ -28,6 +28,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vites
 import { clearTileAccessCache, requireTileAccess, requireTileScope } from "./rbac"
 import {
   SYSTEM_CONFIG_APP_CODE,
+  ModuleNotLicensedError,
   NativeApplicationImmutableError,
   NativeCreationNotAllowedError,
   SelfLockoutError,
@@ -1249,7 +1250,7 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
   // w design docu (D2: activated_at is null już wyklucza legacy/rdzeń z tego
   // zapytania, więc allowlista dotyka wyłącznie świeżych kandydatów; D3:
   // już aktywowany wiersz spoza listy NIE znika automatycznie z huba).
-  describe("ENABLED_MODULES — allowlista kandydatów w listUnactivatedNativeApplications", () => {
+  describe("ENABLED_MODULES — allowlista kandydatów w listUnactivatedNativeApplications i bramka aktywacji", () => {
     const ALLOWED_CODE = `licencja-dozwolony-${SUFFIX}`
     const BLOCKED_CODE = `licencja-zablokowany-${SUFFIX}`
 
@@ -1307,6 +1308,102 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
 
       const allApplications = (await listApplications()).map((row) => row.code)
       expect(allApplications).toContain(BLOCKED_CODE)
+    })
+
+    async function rowOf(code: string) {
+      const [row] = await getDb().select().from(applications).where(eq(applications.code, code))
+      return row!
+    }
+
+    // SEDNO D9 (PROJECT/cortex-frontend-licencjonowanie-projekt.md §1.1):
+    // filtr listy chronił WYŁĄCZNIE odczyt. Wiersz kandydata istnieje w bazie
+    // niezależnie od allowlisty (wstawia go seed-tile-manifests.mjs), więc
+    // activateApplication() na tym samym kodzie, który picker poprawnie ukrywa,
+    // aktywował moduł spoza licencji. Ten test padał przed fixem: zwracał
+    // isActive=true i ustawiony activated_at.
+    it("SEDNO: activateApplication odrzuca kod spoza allowlisty — ten sam kod, którego picker nie pokazuje", async () => {
+      vi.stubEnv("ENABLED_MODULES", ALLOWED_CODE)
+
+      const candidates = (await listUnactivatedNativeApplications()).map((row) => row.code)
+      expect(candidates).not.toContain(BLOCKED_CODE)
+
+      await expect(activateApplication(BLOCKED_CODE)).rejects.toBeInstanceOf(ModuleNotLicensedError)
+    })
+
+    // D4 — "licencja NIGDY nie zapisuje do danych instancji". Porównanie CAŁEGO
+    // wiersza, nie samej wartości zwrotnej: gdyby bramka stanęła po UPDATE
+    // zamiast przed nim, wartość zwrotna i tak byłaby wyjątkiem, a dane
+    // instancji już zmienione (is_active/show_on_hub/activated_at/updated_at).
+    it("odmowa nie dotyka wiersza w bazie — ani jednego pola", async () => {
+      const before = await rowOf(BLOCKED_CODE)
+      vi.stubEnv("ENABLED_MODULES", ALLOWED_CODE)
+
+      await expect(activateApplication(BLOCKED_CODE)).rejects.toThrow(/nie jest objęty licencją/)
+
+      expect(await rowOf(BLOCKED_CODE)).toEqual(before)
+    })
+
+    it("kod NA allowliście aktywuje się normalnie (bramka nie blokuje zalicencjonowanych)", async () => {
+      vi.stubEnv("ENABLED_MODULES", `jakis-inny-modul, ${ALLOWED_CODE} ,i-jeszcze-inny`)
+
+      const activated = await activateApplication(ALLOWED_CODE)
+
+      expect(activated?.isActive).toBe(true)
+      expect(activated?.showOnHub).toBe(true)
+      expect(activated?.activatedAt).not.toBeNull()
+      expect((await rowOf(ALLOWED_CODE)).activatedAt).not.toBeNull()
+    })
+
+    // Centralna obietnica MVP: instancja, która NIE opt-inuje, nie widzi żadnej
+    // różnicy. Ten sam kod, który przy ustawionej allowliście dostaje odmowę,
+    // przy nieustawionej aktywuje się dokładnie jak dotąd.
+    it("ENABLED_MODULES nieustawione -> aktywacja działa jak dotąd (backward compatible)", async () => {
+      const activated = await activateApplication(BLOCKED_CODE)
+
+      expect(activated?.isActive).toBe(true)
+      expect(activated?.showOnHub).toBe(true)
+      expect(activated?.activatedAt).not.toBeNull()
+    })
+
+    it("ENABLED_MODULES puste/same przecinki -> traktowane jak nieustawione", async () => {
+      vi.stubEnv("ENABLED_MODULES", " , , ")
+
+      const activated = await activateApplication(BLOCKED_CODE)
+
+      expect(activated?.isActive).toBe(true)
+      expect(activated?.activatedAt).not.toBeNull()
+    })
+
+    // D3/D4: bramka jest WYŁĄCZNIE o przyszłej aktywacji. Wiersz, który został
+    // aktywowany, zanim kod wypadł z allowlisty, zostaje aktywny — odmowa na
+    // powtórnym (i tak no-opowym) wywołaniu niczego mu nie cofa.
+    it("odmowa na JUŻ AKTYWOWANYM wierszu nie cofa aktywacji", async () => {
+      await activateApplication(BLOCKED_CODE)
+      const afterActivation = await rowOf(BLOCKED_CODE)
+      expect(afterActivation.isActive).toBe(true)
+
+      vi.stubEnv("ENABLED_MODULES", ALLOWED_CODE)
+      await expect(activateApplication(BLOCKED_CODE)).rejects.toBeInstanceOf(ModuleNotLicensedError)
+
+      expect(await rowOf(BLOCKED_CODE)).toEqual(afterActivation)
+    })
+
+    // Dowód do punktu "bramka nie może odciąć admina od panelu": aktywacja
+    // dotyka WYŁĄCZNIE wierszy z activated_at IS NULL, a `system-config` (jak
+    // cały rdzeń) ma tę datę ustawioną przez seed-system-config.mjs
+    // (`activated_at = now()` na INSERCIE, coalesce na UPDATE). Nie jest więc
+    // kandydatem do aktywacji w ogóle — nie ma operacji, którą ta bramka
+    // mogłaby mu odmówić, i żaden osobny assertModuleStaysReachable nie jest tu
+    // potrzebny.
+    it("rdzeń (system-config) nie jest kandydatem do aktywacji, więc bramka nie ma jak go odciąć", async () => {
+      vi.stubEnv("ENABLED_MODULES", ALLOWED_CODE)
+
+      const candidates = (await listUnactivatedNativeApplications()).map((row) => row.code)
+      expect(candidates).not.toContain(SYSTEM_CONFIG_APP_CODE)
+
+      const core = await rowOf(SYSTEM_CONFIG_APP_CODE)
+      expect(core.activatedAt).not.toBeNull()
+      expect(core.isActive).toBe(true)
     })
   })
 })

@@ -19,10 +19,24 @@ export function setForbiddenHandler(handler: ForbiddenHandler | null): void {
   forbiddenHandler = handler
 }
 
+// `forbiddenHandler` traktuje KAŻDE 403 jako "ten użytkownik stracił dostęp":
+// unieważnia user() + authorizedApps() i pokazuje toast "Brak uprawnień".
+// Ścieżki niżej zwracają 403 z innego powodu niż tożsamość wołającego, więc
+// ta reakcja byłaby dla nich fałszywa.
+//
+// `/applications/activate` doszło 05.08.2026 wraz z bramką licencyjną: to
+// JEDYNE tu 403, które nie mówi nic o użytkowniku — mówi, że MODUŁ nie jest w
+// `ENABLED_MODULES`. Bez tego wpisu admin przy próbie aktywacji
+// niezalicencjonowanego modułu dostawał dwa toasty naraz: najpierw mylące
+// "Brak uprawnień", potem właściwy komunikat o licencji. Gorzej niż kosmetyka
+// — wymuszony refetch authorizedApps() może się nie udać, a wtedy
+// `app-gate.tsx` renderuje pełnoekranowy <AccessDeniedScreen> i wyrzuca
+// admina z panelu za czynność, do której ma pełne prawo.
 const FORBIDDEN_HANDLER_EXEMPT_PATHS: ReadonlySet<string> = new Set([
   "/user/me",
   "/api/ai-tools/history",
   "/api/me/access",
+  "/api/system-config/applications/activate",
   "/config/feature-flags",
   "/config/feature-flags/test-imap",
   "/config/feature-flags/test-smtp",
