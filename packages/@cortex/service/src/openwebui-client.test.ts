@@ -1,9 +1,16 @@
-// Kontrakt żądań OpenWebUI, zweryfikowany wprost w
-// ~/REPO/cortex-admin/openwebui.openapi.json (GroupForm, GroupUpdateForm,
-// GroupResponse, UserIdsForm) — patrz nagłówek openwebui-client.ts. Test
-// SZCZEGÓLNIE pilnuje D4: `updateGroupMeta` nigdy nie wysyła `user_ids`
-// (GroupUpdateForm je dopuszcza, ale przekazanie go NADPISUJE całe
-// członkostwo grupy — dokładnie ten bug, którego ten adapter ma nie odtworzyć).
+// Kontrakt żądań OpenWebUI. Ładunki odpowiedzi w tym pliku są PRZEKLEJONE
+// Z ŻYWEJ INSTANCJI 0.11.0 (curl na kontener `chat`), nie wymyślone z
+// openapi.json cortex-admina — poprzednia wersja tego testu karmiła mocka
+// polem `user_ids` na `GET /id/{id}`, którego ta wersja OpenWebUI tam NIE
+// ZWRACA, więc suite świecił na zielono, kiedy produkcja nie usuwała nikogo
+// z żadnej grupy. Mock, który sam sobie wymyśla kształt odpowiedzi, testuje
+// wyłącznie własną wyobraźnię.
+//
+// Test SZCZEGÓLNIE pilnuje dwóch rzeczy:
+//  - D4: `updateGroupMeta` nigdy nie wysyła `user_ids` (przekazanie go
+//    NADPISUJE całe członkostwo grupy);
+//  - braku CICHEGO DEFAULTU na odczycie członkostwa — odpowiedź bez
+//    czytelnego `user_ids` musi być awarią, nie pustym zbiorem.
 
 import { afterEach, describe, expect, it, vi } from "vitest"
 import {
@@ -75,16 +82,68 @@ describe("createGroup — POST /api/v1/groups/create", () => {
   })
 })
 
-describe("getGroup — GET /api/v1/groups/id/{id}, BEZ łańcucha fallbacków cortex-admina", () => {
-  it("zwraca user_ids z GroupResponse", async () => {
-    const fetchMock = stubFetch(
-      jsonResponse({ id: "g1", name: "cortex:hr", description: "d", user_ids: ["u1", "u2"] }),
-    )
+describe("getGroup — GET /api/v1/groups/id/{id}/export", () => {
+  /** Dosłowna odpowiedź `GET /api/v1/groups/id/{id}/export` z OpenWebUI 0.11.0
+   *  (GroupExportResponse = GroupResponse + user_ids). */
+  const EXPORT_0_11_0 = {
+    id: "a9238499-84e0-44ba-ab1e-a39fe7532423",
+    user_id: "4ebbb9f4-51ee-4b11-9f43-2ce3f17706a1",
+    name: "cortex:konsultanci",
+    description: "Zarządzane przez Konfigurację Systemu Cortex360 — nie edytuj członkostwa ręcznie.",
+    data: { config: { share: "members" } },
+    meta: null,
+    permissions: {},
+    created_at: 1785946167,
+    updated_at: 1785946719,
+    member_count: 2,
+    user_ids: ["08e6e696-1a7d-411d-b64c-95b99d4884a7", "0ae032ce-234c-4731-84f2-314b212a1c8e"],
+  }
 
-    const group = await getGroup(CONFIG, "g1")
+  /** Dosłowna odpowiedź `GET /api/v1/groups/id/{id}` z tej samej instancji —
+   *  ta sama grupa, `member_count` ZAMIAST `user_ids`. To jest ładunek, który
+   *  poprzednia implementacja czytała jako "grupa nie ma nikogo". */
+  const GROUP_RESPONSE_0_11_0 = { ...EXPORT_0_11_0, user_ids: undefined }
 
-    expect(readCall(fetchMock)[0]).toBe("http://chat.internal/api/v1/groups/id/g1")
-    expect(group).toEqual({ id: "g1", name: "cortex:hr", description: "d", userIds: ["u1", "u2"] })
+  it("czyta członkostwo z /export — bo GroupResponse na 0.11.0 już go nie niesie", async () => {
+    const fetchMock = stubFetch(jsonResponse(EXPORT_0_11_0))
+
+    const group = await getGroup(CONFIG, EXPORT_0_11_0.id)
+
+    expect(readCall(fetchMock)[0]).toBe(`http://chat.internal/api/v1/groups/id/${EXPORT_0_11_0.id}/export`)
+    expect(group).toEqual({
+      id: EXPORT_0_11_0.id,
+      name: "cortex:konsultanci",
+      description: EXPORT_0_11_0.description,
+      userIds: EXPORT_0_11_0.user_ids,
+    })
+  })
+
+  it("grupa bez członków -> user_ids: [] (obecne i puste to CO INNEGO niż nieobecne)", async () => {
+    stubFetch(jsonResponse({ ...EXPORT_0_11_0, member_count: 0, user_ids: [] }))
+
+    await expect(getGroup(CONFIG, EXPORT_0_11_0.id)).resolves.toMatchObject({ userIds: [] })
+  })
+
+  // ── Regresja bugu: cichy default zamieniał zmianę schematu w cichą awarię
+  //    autoryzacji. Odczytu członkostwa NIE WOLNO domyślać.
+  it("odpowiedź BEZ user_ids (kształt GroupResponse 0.11.0) -> 'malformed-response', NIGDY []", async () => {
+    stubFetch(jsonResponse(GROUP_RESPONSE_0_11_0))
+
+    const error = await getGroup(CONFIG, EXPORT_0_11_0.id).catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(OpenwebuiClientError)
+    expect((error as OpenwebuiClientError).failure).toBe("malformed-response")
+    // Sedno: NIE dostajemy grupy z pustym członkostwem, z której reconciler
+    // wyliczyłby "nie ma kogo usuwać".
+    expect(error).not.toMatchObject({ userIds: [] })
+  })
+
+  it("user_ids o złym typie (null / nie-tablica / element nie-string) -> awaria, nie filtrowanie", async () => {
+    for (const broken of [null, "u1,u2", { 0: "u1" }, ["u1", 42]]) {
+      stubFetch(jsonResponse({ ...EXPORT_0_11_0, user_ids: broken }))
+
+      await expect(getGroup(CONFIG, EXPORT_0_11_0.id)).rejects.toMatchObject({ failure: "malformed-response" })
+    }
   })
 
   it("404 -> null, NIE wyjątek (grupa skasowana ręcznie w OpenWebUI)", async () => {
@@ -93,6 +152,16 @@ describe("getGroup — GET /api/v1/groups/id/{id}, BEZ łańcucha fallbacków co
     const group = await getGroup(CONFIG, "nieznana-grupa")
 
     expect(group).toBeNull()
+  })
+
+  it("401 (tak 0.11.0 sygnalizuje BRAK grupy) -> awaria, nie null i nie puste członkostwo", async () => {
+    // Upstream rzuca na nieistniejącą grupę HTTP_401_UNAUTHORIZED z detalem
+    // NOT_FOUND, więc gałąź 404 -> null jest na tej wersji nieosiągalna.
+    // Świadomie NIE zgadujemy "skasowana" z 401: uznanie realnie złego tokenu
+    // za "grupy nie ma" zamieniłoby emptyGroupMembership() w cichy no-op.
+    stubFetch(jsonResponse({ detail: "We could not find what you're looking for :/" }, 401))
+
+    await expect(getGroup(CONFIG, "nieznana-grupa")).rejects.toMatchObject({ failure: "unauthorized" })
   })
 })
 

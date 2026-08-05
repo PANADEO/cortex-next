@@ -7,8 +7,18 @@
 //
 // Zakres — SZEŚĆ wywołań (siedem, licząc listAllUserEmailIds), nie czternaście
 // jak w cortex-admin: ten adapter NIE zakłada, nie aktualizuje ani nie kasuje
-// kont użytkowników (D6) i nie zna `/export`/`POST users` — te dwie ścieżki z
-// cortex-admin NIE ISTNIEJĄ w API OpenWebUI (§1.1 dokumentu projektowego).
+// kont użytkowników (D6).
+//
+// KOREKTA §1.1 dokumentu projektowego (zweryfikowana na żywo na OpenWebUI
+// 0.11.0): teza "`/export` i `POST /id/{id}/users` NIE ISTNIEJĄ w API
+// OpenWebUI" jest ODWRÓCONA. Obie ścieżki istnieją i na 0.11.0 są JEDYNYM
+// sposobem odczytania członkostwa grupy — łańcuch fallbacków cortex-admina
+// nie kompensował własnej pomyłki, tylko realną zmianę schematu. 0.11.0
+// przeniosło członkostwo z kolumny JSON `user_ids` do tabeli łączącej
+// `group_member`; `GroupResponse` niesie dziś `member_count`, NIE `user_ids`.
+// Skutkiem czytania nieistniejącego pola był cichy błąd autoryzacji: odczyt
+// zwracał [], więc `toRemove` był ZAWSZE pusty i odebranie roli nigdy nikogo
+// nie wypychało z grupy, przy zielonym toaście i `last_sync_error` = NULL.
 //
 // Sekret WYŁĄCZNIE jawnym argumentem (OpenwebuiConfig), nigdy czytany z
 // process.env tutaj — wzorem fetchProxyUsage() w cortex-proxy-client.ts.
@@ -132,8 +142,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
 }
 
-function asStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []
+/**
+ * Lista id — BEZ cichego defaultu. Pole nieobecne albo o innym kształcie to
+ * "NIE UDAŁO SIĘ ODCZYTAĆ członkostwa", a nie "grupa nie ma nikogo": te dwa
+ * zdania różnią się tym, że drugie każe reconcilerowi policzyć różnicę wobec
+ * fałszywej przesłanki i uznać, że nie ma kogo usuwać. Dokładnie ta zamiana
+ * (`?? []`) zamieniła zmianę schematu w OpenWebUI 0.11.0 w cichą awarię
+ * autoryzacji — patrz nagłówek pliku. Element nie-string też jest awarią, nie
+ * powodem do odfiltrowania: mieszana tablica znaczy, że kontrakt się zmienił.
+ */
+function requireStringArray(value: unknown, what: string): string[] {
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
+    throw new OpenwebuiClientError("malformed-response", `OpenWebUI nie zwrócił ${what}`)
+  }
+  return value as string[]
 }
 
 /** `GET /api/v1/groups/` — lista wszystkich grup (przy podpinaniu istniejącej). */
@@ -166,14 +188,37 @@ export async function createGroup(
   return { id: data.id, name: data.name }
 }
 
-/** `GET /api/v1/groups/id/{id}` — GroupResponse.user_ids, BEZ łańcucha
- *  fallbacków `/export`/`POST users` z cortex-admina (te ścieżki nie istnieją
- *  w API OpenWebUI — §1.1 dokumentu projektowego). `null` gdy grupa nie
- *  istnieje (usunięta ręcznie w OpenWebUI) — wołający traktuje to jak brak
- *  danych do uzgodnienia, nie jak awarię sieci. */
+/**
+ * `GET /api/v1/groups/id/{id}/export` — GroupExportResponse, czyli
+ * GroupResponse POSZERZONY o `user_ids`. To JEDYNE źródło członkostwa, jakiego
+ * używa ten adapter: żadnego łańcucha fallbacków z cortex-admina, ale też
+ * żadnego `GET /id/{id}`, które na 0.11.0 niesie już tylko `member_count`.
+ *
+ * Dlaczego `/export`, a nie `POST /id/{id}/users` (druga działająca ścieżka):
+ *  - GET, czasownik bezpieczny — odczyt stanu nie ma prawa jechać POST-em;
+ *  - zwraca WPROST id (`user_ids`), waluta reconcilera, bez kroku mapowania i
+ *    bez ściągania PII (tamten zwraca pełne UserInfoResponse: e-mail, imię,
+ *    bio) tylko po to, żeby wyłuskać `.id`;
+ *  - dla NIEISTNIEJĄCEJ grupy `POST /id/{id}/users` zwraca `200 []`, więc
+ *    grupa skasowana jest w nim NIEODRÓŻNIALNA od pustej — to znowu ten sam
+ *    cichy default, który naprawiamy. `/export` w tym wypadku odpowiada
+ *    błędem (zweryfikowane na żywo na 0.11.0);
+ *  - `user_ids` to sedno kontraktu `/export` (eksport bez członkostwa byłby
+ *    zepsutym eksportem), więc jest to ścieżka najmniej podatna na powtórkę
+ *    dzisiejszej wpadki przy kolejnym bumpie obrazu `main`.
+ *
+ * `null` gdy grupa nie istnieje (usunięta ręcznie w OpenWebUI) — wołający
+ * traktuje to jak brak danych do uzgodnienia, nie jak awarię sieci.
+ * UWAGA: na 0.11.0 ta gałąź jest nieosiągalna, bo upstream na brak grupy
+ * odpowiada 401 (`get_group_by_id`/`export_group_by_id` rzucają
+ * HTTP_401_UNAUTHORIZED z detalem NOT_FOUND), co ląduje w `unauthorized`.
+ * Świadomie NIE zgadujemy "skasowana" z 401: pomyłka w tę stronę zamieniłaby
+ * realnie zły token w cichy no-op `emptyGroupMembership()`, czyli dokładnie tę
+ * klasę błędu, którą ten commit likwiduje. Głośno i mylnie > cicho i błędnie.
+ */
 export async function getGroup(config: OpenwebuiConfig, groupId: string): Promise<OpenwebuiGroup | null> {
   try {
-    const data = await request(config, "GET", `/api/v1/groups/id/${encodeURIComponent(groupId)}`)
+    const data = await request(config, "GET", `/api/v1/groups/id/${encodeURIComponent(groupId)}/export`)
     if (!isRecord(data) || typeof data.id !== "string" || typeof data.name !== "string") {
       throw new OpenwebuiClientError("malformed-response", "OpenWebUI nie zwrócił poprawnej grupy")
     }
@@ -181,7 +226,7 @@ export async function getGroup(config: OpenwebuiConfig, groupId: string): Promis
       id: data.id,
       name: data.name,
       description: typeof data.description === "string" ? data.description : "",
-      userIds: asStringArray(data.user_ids),
+      userIds: requireStringArray(data.user_ids, `członkostwa grupy ${data.id} (pole user_ids)`),
     }
   } catch (error) {
     if (error instanceof OpenwebuiClientError && error.failure === "not-found") return null
@@ -196,6 +241,11 @@ export async function getGroup(config: OpenwebuiConfig, groupId: string): Promis
  * NADPISUJE całe członkostwo grupy. Ta funkcja celowo nie przyjmuje go jako
  * parametru, żeby ta pomyłka była niemożliwa do popełnienia z tego adaptera,
  * nie tylko "niezalecana".
+ *
+ * Na 0.11.0 `GroupUpdateForm` = `GroupForm` i pola `user_ids` już NIE ma —
+ * czyli akurat ta pułapka na tej wersji nie wypala. Sygnatura zostaje ciasna
+ * mimo to: wersja upstreamu jest ruchoma (obraz `main`), a to pole raz już
+ * z tego formularza zniknęło, więc może i wrócić.
  */
 export async function updateGroupMeta(
   config: OpenwebuiConfig,

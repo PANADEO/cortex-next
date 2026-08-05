@@ -1,0 +1,67 @@
+# Override OPT-IN: wpina `cortex-frontend` w sieć `run_default`, żeby
+# `OPENWEBUI_URL=http://chat` (Docker DNS) faktycznie się rozwiązywał.
+# Rozwiązuje W3 z PROJECT/cortex-frontend-sync-uprawnien-openwebui-projekt.md.
+#
+# NIE dokłada tu usługi OpenWebUI i robi to świadomie. `chat` żyje w OSOBNYM
+# repo (~/REPO/chat) razem ze swoimi patchami i brandingiem — dokładnie tak,
+# jak nagłówek docker-compose.yml deklaruje zakres tego pliku ("Caddy,
+# oauth2-proxy, Keycloak i chat/OpenWebUI są POZA zakresem") i jak
+# docs/infrastructure.md:43 uzasadnia ("to nie nasz kod w ogóle, tylko
+# config+patche na cudzy projekt open source"). Skopiowanie tu drugiej,
+# rozjeżdżającej się definicji `chat` złamałoby obie te reguły naraz.
+#
+# Ten plik NIE startuje przy zwykłym `docker compose up` — trzeba go podać
+# jawnie, więc instancje bez OpenWebUI nie płacą za tę funkcję niczym
+# (zgodnie z D5: puste OPENWEBUI_* = status "skipped").
+#
+# ── Uruchomienie lokalne (kompletne, od zera) ──────────────────────────────
+#
+#   1. Sieć współdzielona (na dropletcie już istnieje, lokalnie trzeba raz):
+#        docker network create run_default
+#
+#   2. OpenWebUI z jego własnego repo (bez `tika` — niepotrzebna do uprawnień):
+#        cp ~/REPO/chat/.env.example ~/REPO/chat/.env   # i uzupełnij
+#        cd ~/REPO/chat && docker compose up -d --no-deps chat
+#
+#   3. Bootstrap admina — PIERWSZE konto w OpenWebUI dostaje rolę `admin`.
+#      `chat` nie publikuje portu na hoście, więc do onboardingu potrzeba
+#      drogi z hosta (jednorazowy, wyrzucalny forwarder):
+#        docker run -d --name chat-portfwd --network run_default -p 3080:80 \
+#          alpine/socat tcp-listen:80,fork,reuseaddr tcp-connect:chat:80
+#      Potem http://localhost:3080 → "Sign up" (albo POST /api/v1/auths/signup).
+#
+#   4. Klucz API. ENABLE_API_KEYS jest w OpenWebUI domyślnie **False**
+#      (zweryfikowane na żywo, 0.11.0: config.py `os.getenv('ENABLE_API_KEYS',
+#      'False')`) — bez włączenia POST /api/v1/auths/api_key zwraca 403
+#      "API key creation is not allowed in the environment". Włącz TRWALE
+#      w ~/REPO/chat/docker-compose.yml (`ENABLE_API_KEYS=true`) — ustawienie
+#      go tylko przez Ustawienia Admina/POST /api/v1/auths/admin/config działa
+#      od ręki bez restartu, ale jest stanem w bazie OpenWebUI, więc nie
+#      przetrwa `docker compose down -v`.
+#      Klucz: Ustawienia → Konto → API keys, albo POST /api/v1/auths/api_key.
+#
+#   5. `.env` obok tego pliku:
+#        OPENWEBUI_URL=http://chat
+#        OPENWEBUI_ADMIN_TOKEN=sk-...
+#      NIE JWT z /api/v1/auths/signin — ten wygasa (JWT_EXPIRES_IN, domyślnie
+#      "4w"), klucz `sk-` nie wygasa.
+#
+#   6. Start:
+#        docker compose -f docker-compose.yml -f docker-compose.openwebui-local.yml up -d
+#
+# Na dropletcie cortex-next NIC Z TEGO NIE JEST POTRZEBNE: tam
+# docker-compose.cortex-next.yml już wpina cały stack w `run_default`,
+# w której stoi `chat`. Potrzebne jest wyłącznie `.env` z kroku 5.
+
+services:
+  cortex-frontend:
+    networks:
+      # `default` musi zostać wymieniony jawnie — podanie `networks:` na
+      # usłudze ZASTĘPUJE domyślne przypisanie, a bez niego kontener straciłby
+      # dostęp do `postgres` z docker-compose.yml.
+      - default
+      - run_default
+
+networks:
+  run_default:
+    external: true
