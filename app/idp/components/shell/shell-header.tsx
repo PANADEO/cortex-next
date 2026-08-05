@@ -1,6 +1,6 @@
 "use client"
 
-import { useMe, useSetUserPreferences } from "@cortex/api"
+import { useSetUserPreferences, useShellUser } from "@cortex/api"
 import { SkinToggle, type SkinOption, ThemeToggle, UserMenu } from "@cortex/ui"
 import Image from "next/image"
 import { SKINS, type SkinId, useSkinStore } from "@/lib/stores/skin-store"
@@ -24,7 +24,7 @@ export function ShellHeader() {
   const skin = useSkinStore((s) => s.skin)
   const setSkin = useSkinStore((s) => s.setSkin)
   const persistPreferences = useSetUserPreferences()
-  const me = useMe()
+  const shellUser = useShellUser()
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur">
@@ -50,7 +50,7 @@ export function ShellHeader() {
               persistPreferences.mutate({ theme_mode: next })
             }}
           />
-          <UserMenu user={me.data ?? null} />
+          <UserMenu user={shellUser} />
         </div>
       </div>
     </header>

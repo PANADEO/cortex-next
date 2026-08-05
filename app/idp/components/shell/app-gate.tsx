@@ -44,16 +44,23 @@ export function AppGate({ children, tileId }: AppGateProps) {
   if (authorized.isLoading) return null
 
   // Na /user/me CZEKAMY WYŁĄCZNIE dla kafelka idp. To nie jest mikrooptymalizacja:
-  // nieobecny backend IDP nie zawsze kończy się błędem — potrafi nie odpowiadać
-  // w ogóle (rewrite middleware na host, którego nie ma). Wtedy `me.isPending`
-  // zostaje `true` bezterminowo, a wspólne oczekiwanie renderowało pustą stronę
-  // na KAŻDYM kafelku i na hubie. Zweryfikowane na żywo — awaria widoczna
-  // dopiero na realnym środowisku, testy z mockiem zawsze rozstrzygały useMe().
+  // wspólne oczekiwanie renderowało pustą stronę na KAŻDYM kafelku i na hubie,
+  // gdy backendu IDP nie ma w środowisku. Na cortex-next middleware przepisuje
+  // /user/me na nieistniejący host `idp-app`, więc `getaddrinfo ENOTFOUND` wraca
+  // SZYBKO → 500 → query kończy się BŁĘDEM (potwierdzone dwoma przebiegami e2e).
+  // Warunek stoi mimo to na `isPending`, bo drugi tryb awarii — host odpowiada
+  // na TCP, ale nie na HTTP — zostawia query w `pending` bezterminowo i wtedy
+  // oczekiwanie nie kończy się nigdy. Kod jest poprawny w obu.
   if (tileId === IDP_TILE_ID && me.isPending) return null
 
-  // Tożsamość na ekran odmowy: /user/me bywa niedostępne, a /api/me/access
-  // i tak zwraca e-mail, którym się przedstawiliśmy.
-  const email = me.data?.email ?? authorized.email
+  // Tożsamość na ekran odmowy — z WŁASNEGO źródła w pierwszej kolejności.
+  // /api/me/access zwraca ten sam uwierzytelniony e-mail z nagłówka
+  // oauth2-proxy, co /api/me/identity, i tak czy owak jest tu wołane, więc
+  // bramka nie potrzebuje trzeciego żądania. /user/me tylko podpiera — bramka
+  // potrafi dojść tutaj z `authorized.isError`, a wtedy własnego e-maila nie
+  // ma. Kierunek jak w useShellUser(): zewnętrzny backend nigdy nie wyprzedza
+  // własnego źródła.
+  const email = authorized.email ?? me.data?.email ?? null
 
   if (tileId === IDP_TILE_ID) {
     if (me.isError) return <AccessDeniedScreen reason="error" />
@@ -96,7 +103,7 @@ export function HubGate({ children }: { children: ReactNode }) {
     return <AccessDeniedScreen reason="error" />
   }
   if (authorized.allowed === false) {
-    return <AccessDeniedScreen email={me.data?.email ?? authorized.email} reason="denied" />
+    return <AccessDeniedScreen email={authorized.email ?? me.data?.email ?? null} reason="denied" />
   }
 
   return <>{children}</>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useCoworkSessionStore } from "@/lib/stores/cortex-cowork-session-store"
-import { useMe } from "@cortex/api"
+import { useShellUser } from "@cortex/api"
 import { DEFAULT_COWORK_PROJECT_ID } from "@cortex/types"
 import { Button, Textarea } from "@cortex/ui"
 import { cn } from "@cortex/utils"
@@ -207,7 +207,7 @@ export function CoworkShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()
-  const me = useMe()
+  const shellUser = useShellUser()
   const { projects } = useCoworkProjectTiles()
 
   const onChat = pathname.startsWith("/cortex-cowork/chat")
@@ -216,7 +216,10 @@ export function CoworkShell({ children }: { children: ReactNode }) {
     : null
   const { create } = useCoworkSessionActions(activeProjectId ?? DEFAULT_COWORK_PROJECT_ID)
 
-  const email = me.data?.email ?? ""
+  // Tożsamość z powłoki (/api/me/identity), NIE z /user/me: Cowork jest trasą
+  // tego samego monolitu, więc stoi też tam, gdzie backendu IDP nie ma —
+  // wcześniej cała stopka sidebara po prostu tam znikała.
+  const email = shellUser?.email ?? ""
 
   return (
     <div className="dark flex h-screen overflow-hidden bg-background text-foreground [color-scheme:dark]">

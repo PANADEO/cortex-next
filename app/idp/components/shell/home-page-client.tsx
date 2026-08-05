@@ -34,9 +34,11 @@ function HomeContent({ tileHrefOverrides }: HomePageClientProps) {
   const me = useMe()
   const authorized = useAuthorizedApps()
 
-  // Hub NIE czeka na /user/me. Backend IDP bywa nieobecny i wtedy to żądanie
-  // potrafi wisieć bez rozstrzygnięcia (nie: kończyć się błędem) — oczekiwanie
-  // na nie zostawiało pustą stronę zamiast huba.
+  // Hub NIE czeka na /user/me. Bez backendu IDP to żądanie nie przynosi nic
+  // użytecznego: na cortex-next rewrite leci na nieistniejący host `idp-app`,
+  // więc `getaddrinfo ENOTFOUND` → 500 (szybki błąd), a host odpowiadający na
+  // TCP, ale nie na HTTP, zostawiłby je wiszące bez końca. W obu trybach
+  // oczekiwanie na nie zostawiało pustą stronę zamiast huba.
   if (authorized.isLoading) return null
 
   // "Czy ktokolwiek jest zalogowany" i "co mu wolno" to dwa różne pytania.

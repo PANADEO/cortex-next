@@ -8,6 +8,7 @@ export {
 } from "./rbac"
 export type { TileAccessResult } from "./rbac"
 export { loadGrantedApplicationCodes, loadGrantedScopes } from "./rbac-store"
+export { getUserDisplayName } from "./identity"
 export { isModuleEnabled, moduleLicensingConfig } from "./module-licensing"
 export type { ModuleLicensingConfig } from "./module-licensing"
 export {

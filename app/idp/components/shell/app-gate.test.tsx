@@ -67,6 +67,25 @@ function idpBackendDown(apps: string[], email = "u@x.com"): void {
   authorizedMock = { allowed: apps.length > 0, apps, email, isLoading: false, isError: false }
 }
 
+/** Oba źródła znają tożsamość, ale RÓŻNĄ. Na demo-dev to nie teoria: nieaktualny
+ *  wiersz w bazie IDP, użytkownik z dwoma adresami, inna wielkość liter. Jedyny
+ *  układ, w którym widać KIERUNEK pierwszeństwa — signedIn() i idpBackendDown()
+ *  dają oba adresy identyczne albo tylko jeden z nich. */
+function mismatchedIdentity(apps: string[]): void {
+  meMock = {
+    isPending: false,
+    isError: false,
+    data: { email: "stary-idp@firma.pl", has_access: true },
+  }
+  authorizedMock = {
+    allowed: apps.length > 0,
+    apps,
+    email: "wlasny@firma.pl",
+    isLoading: false,
+    isError: false,
+  }
+}
+
 function renderGate(tileId: string | null, children: ReactNode = <Child />) {
   return render(<AppGate tileId={tileId}>{children}</AppGate>)
 }
@@ -187,6 +206,21 @@ describe("AppGate — has_access dotyczy WYŁĄCZNIE kafelka idp (D7)", () => {
   })
 })
 
+describe("Ekran odmowy — CZYJ e-mail pokazujemy", () => {
+  it("SEDNO: bierze adres z własnego /api/me/access, nie z /user/me", () => {
+    // Regresja, którą to zamyka: powrót do `me.data?.email ?? authorized.email`
+    // w app-gate.tsx — jedna linia, którą łatwo cofnąć przy rozwiązywaniu
+    // konfliktu merge'a, a wszystkie pozostałe testy zostają zielone. Skutek na
+    // środowisku z nieaktualnym wierszem w bazie IDP: ekran odmowy pokazuje
+    // użytkownikowi CUDZY adres i każe mu z nim iść do administratora.
+    mismatchedIdentity([])
+    renderGate("intrastat")
+    expectDenied()
+    expect(screen.getByText("wlasny@firma.pl")).not.toBeNull()
+    expect(screen.queryByText("stary-idp@firma.pl")).toBeNull()
+  })
+})
+
 describe("AppGate — AI Tools", () => {
   it("wpuszcza narzędzie przez grant zbiorczy ai-tools", () => {
     signedIn(["ai-tools"])
@@ -263,6 +297,15 @@ describe("HubGate — hub nie jest kafelkiem", () => {
     renderHub()
     expectDenied()
     expect(screen.getByText("u@x.com")).not.toBeNull()
+  })
+
+  it("też bierze adres z /api/me/access, nie z /user/me", () => {
+    // HubGate ma własną kopię tego wyrażenia — musi mieć własny dowód.
+    mismatchedIdentity([])
+    renderHub()
+    expectDenied()
+    expect(screen.getByText("wlasny@firma.pl")).not.toBeNull()
+    expect(screen.queryByText("stary-idp@firma.pl")).toBeNull()
   })
 
   it("IGNORUJE has_access — hub to nie kafelek idp", () => {

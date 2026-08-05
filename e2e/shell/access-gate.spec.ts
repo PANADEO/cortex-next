@@ -310,6 +310,32 @@ test.describe("Bramka powłoki bez backendu IDP (D7)", () => {
 
     await expect(page.getByText("Ilustromat", { exact: true })).toBeVisible()
   })
+
+  // Tożsamość w menu użytkownika — drugi objaw tej samej przyczyny co bramka.
+  // Powłoka brała "kim jestem" z /user/me, więc bez backendu IDP menu pokazywało
+  // "—" mimo poprawnie uwierzytelnionego żądania. Asercja idzie REALNĄ ścieżką:
+  // e-mail z nagłówka (asUser), nazwa z zaseedowanego system_config.users,
+  // prawdziwe /api/me/identity, a /user/me — jak w całym tym bloku — celowo
+  // NIEZAŚLEPIONE. Zaślepka na /user/me utrzymałaby ten test zielonym również
+  // wtedy, gdyby powłoka wróciła do pytania backendu IDP o tożsamość.
+  test("menu użytkownika pokazuje tożsamość, a nie '—', mimo martwego /user/me", async ({
+    page,
+    seed,
+  }) => {
+    const { email } = await seed("ilustromat-user")
+    await asUser(page, email)
+    await mockIdpConfig(page)
+
+    await page.goto("/")
+    await settle(page)
+
+    await page.getByRole("button", { name: "User menu" }).click()
+
+    const menu = page.getByRole("menu")
+    await expect(menu.getByText("Ilustromat E2E", { exact: true })).toBeVisible()
+    await expect(menu.getByText(email, { exact: true })).toBeVisible()
+    await expect(menu.getByText("—", { exact: true })).toHaveCount(0)
+  })
 })
 
 test.describe("Zimny start — pusta baza i odzyskiwanie przez seed (D4/R2)", () => {

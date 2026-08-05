@@ -1,6 +1,6 @@
 "use client"
 
-import { useMe, useSetUserPreferences } from "@cortex/api"
+import { useSetUserPreferences, useShellUser } from "@cortex/api"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -53,7 +53,7 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
   const skin = useSkinStore((s) => s.skin)
   const setSkin = useSkinStore((s) => s.setSkin)
   const persistPreferences = useSetUserPreferences()
-  const me = useMe()
+  const shellUser = useShellUser()
   const [paletteOpen, setPaletteOpen] = useState(false)
 
   const trail = useResolvedBreadcrumbs(pathname)
@@ -148,7 +148,7 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
               persistPreferences.mutate({ theme_mode: next })
             }}
           />
-          <UserMenu user={me.data ?? null} />
+          <UserMenu user={shellUser} />
         </div>
       </TooltipProvider>
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />

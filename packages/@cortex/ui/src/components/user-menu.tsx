@@ -39,7 +39,12 @@ export function UserMenu({ user }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full p-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full p-0"
+          aria-label="User menu"
+        >
           <Avatar className="h-7 w-7">
             <AvatarFallback className="bg-muted text-[10px] font-semibold">
               {initials(user?.name ?? null, user?.email ?? null)}

@@ -22,6 +22,12 @@ Zmiana fizycznej nazwy folderu jest rozważana jako sprzątanie Fazy 2+, NIE ter
 
 Kafelek importuje WYŁĄCZNIE `@cortex/*` — zero sięgania w wewnętrzności innego kafelka. Dziś egzekwowane przez konwencję (skille); `eslint-plugin-boundaries` w CI to krok Fazy 2, jeszcze niewpięty.
 
+**Powłoka nigdy nie zależy od backendu pojedynczego modułu**: tożsamość bierze z WŁASNYCH tras — `/api/me/identity` w menu użytkownika (`useShellUser()` w `@cortex/api`) i `/api/me/access` na ekranie odmowy w `AppGate` (ta trasa i tak rozstrzyga tam o dostępie, więc bramka nie dokłada trzeciego żądania; obie zwracają ten sam e-mail z nagłówka oauth2-proxy).
+
+Reguła mówi o ZALEŻNOŚCI, nie o wywołaniu. `/user/me` — i analogiczne endpointy backendów modułów — powłoce wolno wołać na każdej trasie (i tak robi: `useShellUser()` w `@cortex/api`, obie bramki w `app-gate.tsx`, hub w `home-page-client.tsx`), ale wyłącznie po **opcjonalne wzbogacenie** (`scopes` → badge „IDP admin") albo jako **rozstrzygnięty fallback** (niżej). Sprawdzian: gdy ta odpowiedź nigdy nie przyjdzie, powłoka ma wyrenderować się normalnie, tylko uboższa. Czekanie na nią albo bramkowanie nią powłoki to złamanie reguły — jedynym wyjątkiem jest `has_access` dla kafelka `idp` w `AppGate`, bo tam bramkujemy ekran samego modułu.
+
+Jedyny dopuszczalny udział `/user/me` w tożsamości powłoki to **fallback po rozstrzygnięciu** własnego źródła: gdy własna trasa zwróciła błąd albo pustkę, wolno pokazać e-mail z modułu zamiast "—" (nieregresyjność na demo-dev). Nigdy PRZED rozstrzygnięciem — fallback w stanie `pending` to wyścig, w którym powłoka miga cudzą tożsamością, zanim podmieni ją na własną.
+
 ## Referencyjna implementacja
 
 `app/idp/lib/ai-tools/*` + `app/idp/components/ai-tools/ai-tool-workspace.tsx` + `app/idp/app/api/ai-tools/generate/route.ts` — pierwszy realny, przetestowany przykład tego wzorca (choć jeszcze przed pełnym rozbiciem na `code-integration`, patrz `code-api/SKILL.md` "znany dług").

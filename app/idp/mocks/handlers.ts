@@ -359,6 +359,16 @@ export const handlers = [
     return HttpResponse.json({ email, has_access, scopes: mockScopesFromEnv() })
   }),
 
+  // Własny endpoint tożsamości — mockowany razem z /api/me/access, bo w trybie
+  // pełnego mocka nie ma ani backendu IDP, ani Postgresa. `name: null` odwzorowuje
+  // najczęstszy realny stan: użytkownik bez uzupełnionego full_name.
+  http.get("/api/me/identity", () =>
+    HttpResponse.json({
+      email: process.env.NEXT_PUBLIC_DEV_USER_EMAIL ?? "dev@cortex.local",
+      name: null,
+    }),
+  ),
+
   http.get("/api/me/access", ({ request }) => {
     const email = process.env.NEXT_PUBLIC_DEV_USER_EMAIL ?? "dev@cortex.local"
     const url = new URL(request.url)
