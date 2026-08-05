@@ -32,10 +32,15 @@ export function runProcess(
     if (signal?.aborted) return reject(new Error("aborted"))
     const limit = options.outputLimit ?? DEFAULT_OUTPUT_LIMIT
 
-    const child = spawn(command, args, {
-      stdio: [options.stdin !== undefined ? "pipe" : "ignore", "pipe", "pipe"],
-      ...(options.env ? { env: options.env as NodeJS.ProcessEnv } : {}),
-    })
+    // Two literal stdio tuples rather than one computed array: `spawn`'s
+    // overloads key off the tuple's exact shape, and that is what tells
+    // TypeScript stdout/stderr are real streams here instead of
+    // `Readable | null`. Only stdin varies, and it stays optional-chained.
+    const base = options.env ? { env: options.env as NodeJS.ProcessEnv } : {}
+    const child =
+      options.stdin !== undefined
+        ? spawn(command, args, { ...base, stdio: ["pipe", "pipe", "pipe"] })
+        : spawn(command, args, { ...base, stdio: ["ignore", "pipe", "pipe"] })
 
     let stdout = ""
     let stderr = ""

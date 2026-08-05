@@ -1,12 +1,35 @@
 "use client"
 
 import { useAuthorizedApps, useMe } from "@cortex/api"
+import { LoadingState } from "@cortex/ui"
 import type { ReactNode } from "react"
 import { canAccessTile } from "@/lib/tiles"
 import { AccessDeniedScreen } from "./access-denied-screen"
 
 /** Jedyny kafelek, o którym cokolwiek mówi `has_access` z /user/me. */
 const IDP_TILE_ID = "idp"
+
+/**
+ * Stan oczekiwania bramki. NIE `null`.
+ *
+ * `return null` gasiło CAŁĄ stronę na czas ładowania: <AppGate> stoi wyżej niż
+ * powłoka (sidebar, topbar) na każdym callsite, więc każdy `(main)` mrugał
+ * bielą, dopóki useAuthorizedApps() był w locie. Efekt uboczny, przez który to
+ * wyszło: <AiToolGate> montuje się NIŻEJ, więc jego własny <LoadingState> nie
+ * pokazywał się nigdy — zanim bramka przepuściła dzieci, query było już
+ * rozwiązane ze wspólnego cache'u TanStack Query.
+ *
+ * Wyśrodkowany spinner na pełną wysokość, bez szkieletu chrome'u: ta bramka
+ * opakowuje TRZY różne powłoki (generyczny AppShell, własną powłokę Coworka i
+ * layout idp), więc nie ma jednego układu, który mogłaby wiernie udawać.
+ * `min-h-screen` trzyma tę wysokość, którą za chwilę zajmie powłoka, więc
+ * podmiana treści nie przesuwa strony.
+ *
+ * Etykieta ta sama co w <AiToolGate> — to ten sam komunikat dla użytkownika.
+ */
+function GatePending() {
+  return <LoadingState className="min-h-screen" label="Sprawdzanie dostępu…" />
+}
 
 interface AppGateProps {
   children: ReactNode
@@ -41,7 +64,7 @@ export function AppGate({ children, tileId }: AppGateProps) {
   const me = useMe()
   const authorized = useAuthorizedApps()
 
-  if (authorized.isLoading) return null
+  if (authorized.isLoading) return <GatePending />
 
   // Na /user/me CZEKAMY WYŁĄCZNIE dla kafelka idp. To nie jest mikrooptymalizacja:
   // wspólne oczekiwanie renderowało pustą stronę na KAŻDYM kafelku i na hubie,
@@ -51,7 +74,7 @@ export function AppGate({ children, tileId }: AppGateProps) {
   // Warunek stoi mimo to na `isPending`, bo drugi tryb awarii — host odpowiada
   // na TCP, ale nie na HTTP — zostawia query w `pending` bezterminowo i wtedy
   // oczekiwanie nie kończy się nigdy. Kod jest poprawny w obu.
-  if (tileId === IDP_TILE_ID && me.isPending) return null
+  if (tileId === IDP_TILE_ID && me.isPending) return <GatePending />
 
   // Tożsamość na ekran odmowy — z WŁASNEGO źródła w pierwszej kolejności.
   // /api/me/access zwraca ten sam uwierzytelniony e-mail z nagłówka
@@ -97,7 +120,7 @@ export function HubGate({ children }: { children: ReactNode }) {
   const me = useMe()
   const authorized = useAuthorizedApps()
 
-  if (authorized.isLoading) return null
+  if (authorized.isLoading) return <GatePending />
 
   if (authorized.isError || authorized.allowed === null) {
     return <AccessDeniedScreen reason="error" />

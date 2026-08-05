@@ -1,0 +1,34 @@
+// Standalone typecheck for the Flue runner. This project is NOT part of the
+// pnpm workspace (pnpm-workspace.yaml lists only packages/@cortex/*) and is not
+// covered by the root tsconfig, whose `include` is an allow-list that never
+// names this directory — so `pnpm typecheck` at the root still checks exactly
+// what it checked before. Run it from here: `npm run typecheck`.
+//
+// `tsc` itself resolves from the repo root's node_modules/.bin (npm puts every
+// ancestor .bin on PATH). TypeScript is deliberately not a dependency of this
+// package: the Docker build runs `npm ci` against this package's own lockfile,
+// so an unlocked devDependency would break that stage, and the runtime image
+// has no business carrying a compiler.
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    // Node 22 (see the engines note in package.json), so no DOM lib.
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "types": ["node"],
+
+    // Real Node ESM resolution, not the app's bundler mode: `flue run` executes
+    // these files through Node's native type stripping, which is also why the
+    // relative imports carry explicit `.ts` extensions.
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+
+    // Match the root tsconfig's strictness, not tsconfig.base.json's — the base
+    // omits both of these, and app/packages code is checked with them on.
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true
+  },
+  "include": ["src", "flue.config.ts"]
+}

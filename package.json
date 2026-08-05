@@ -13,6 +13,7 @@
     "build": "npm run assets && next build app/idp",
     "start": "next start app/idp",
     "typecheck": "tsc --noEmit",
+    "typecheck:runner": "cd cowork-runner && npm run typecheck",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "tile-manifests": "node scripts/generate-tile-manifests.mjs",

@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Standalone Flue runtime for the Cortex Cowork tile. The Next.js app spawns `flue run cowork-turn` per chat turn (see app/idp/features/cortex-cowork/server/chat-engine.ts). Install with: npm install --ignore-scripts (sharp, a @flue/cli dep, tries a source build otherwise; its prebuilt binary resolves via sharp's own platform-matched optionalDependencies, e.g. @img/sharp-darwin-arm64 on Mac, @img/sharp-linuxmusl-x64 on Alpine/Docker). Requires node >= 22.19 (see COWORK_NODE_BIN in the app's .env.local).",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
   "dependencies": {
     "@flue/cli": "1.0.0-beta.9",
     "@flue/runtime": "1.0.0-beta.9",

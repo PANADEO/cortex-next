@@ -120,10 +120,11 @@ function readAllowedPaths(): string[] {
 function selectSandbox(): SandboxFactory {
   const sandboxDir = process.env[ENV.sandboxDir]
   if (process.env[ENV.sandboxMode] === "docker" && sandboxDir) {
+    const image = process.env[ENV.sandboxImage]
     return dockerSandbox({
       sandboxDir,
       allowedPaths: readAllowedPaths(),
-      ...(process.env[ENV.sandboxImage] ? { image: process.env[ENV.sandboxImage] } : {}),
+      ...(image ? { image } : {}),
     })
   }
   return local()

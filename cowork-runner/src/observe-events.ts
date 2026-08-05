@@ -57,22 +57,23 @@ function thinkingKey(observation: { turnId?: string; contentIndex?: number }): s
 }
 
 observe((observation) => {
-  const obs = observation as Record<string, unknown> & { type: string }
-  switch (obs.type) {
+  switch (observation.type) {
     case "thinking_start": {
-      thinkingBuffers.set(thinkingKey(obs as { turnId?: string; contentIndex?: number }), "")
+      thinkingBuffers.set(thinkingKey(observation), "")
       emit({ kind: "thinking_start" })
       return
     }
     case "thinking_delta": {
-      const key = thinkingKey(obs as { turnId?: string; contentIndex?: number })
-      const delta = typeof obs.delta === "string" ? obs.delta : stringify(obs.delta)
-      thinkingBuffers.set(key, (thinkingBuffers.get(key) ?? "") + delta)
+      const key = thinkingKey(observation)
+      thinkingBuffers.set(key, (thinkingBuffers.get(key) ?? "") + observation.delta)
       return
     }
     case "thinking_end": {
-      const key = thinkingKey(obs as { turnId?: string; contentIndex?: number })
-      const text = thinkingBuffers.get(key) ?? ""
+      const key = thinkingKey(observation)
+      // `content` carries the whole block; the buffer is the incremental copy
+      // and wins when we saw the deltas. Falling back to `content` also covers
+      // subscribing mid-block, where no buffer exists.
+      const text = thinkingBuffers.get(key) ?? observation.content
       thinkingBuffers.delete(key)
       if (text.trim()) emit({ kind: "thinking", text: truncate(text) })
       return
@@ -80,28 +81,29 @@ observe((observation) => {
     case "tool_start": {
       emit({
         kind: "tool_start",
-        tool: typeof obs.toolName === "string" ? obs.toolName : "tool",
-        detail: truncate(stringify(obs.args)),
+        tool: observation.toolName,
+        detail: truncate(stringify(observation.args)),
       })
       return
     }
     case "tool": {
       emit({
         kind: "tool_end",
-        tool: typeof obs.toolName === "string" ? obs.toolName : "tool",
-        detail: truncate(stringify(obs.result)),
-        ...(obs.isError === true ? { isError: true } : {}),
+        tool: observation.toolName,
+        detail: truncate(stringify(observation.result)),
+        ...(observation.isError ? { isError: true } : {}),
       })
       return
     }
     case "text_delta": {
-      const delta = typeof obs.delta === "string" ? obs.delta : ""
-      if (delta) emit({ kind: "assistant", text: delta })
+      // The payload field is `text`, NOT `delta` (that one exists only on
+      // thinking_delta). Reading `delta` here silently emitted nothing.
+      if (observation.text) emit({ kind: "assistant", text: observation.text })
       return
     }
     case "run_start":
     case "agent_start":
-      emit({ kind: "lifecycle", text: obs.type })
+      emit({ kind: "lifecycle", text: observation.type })
       return
     default:
       return

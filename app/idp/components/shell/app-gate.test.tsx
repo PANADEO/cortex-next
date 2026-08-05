@@ -104,19 +104,84 @@ function expectAllowed(): void {
   expect(screen.getByTestId("child").textContent).toBe("child-content")
 }
 
+/**
+ * Bramka CZEKA na rozstrzygnięcie autoryzacji.
+ *
+ * Poprzednia wersja tych testów sprawdzała `container.firstChild === null`,
+ * czyli "nie renderuje się DOSŁOWNIE nic". To wiązało właściwą gwarancję
+ * (dzieci nie wyciekają przed autoryzacją) z detalem implementacyjnym
+ * (`return null`) — a to ten detal był błędem: każda strona `(main)` mrugała
+ * bielą, bo <AppGate> stoi nad całą powłoką.
+ *
+ * Gwarancja jest tu asertowana WPROST, nie ubocznie, i w trzech punktach:
+ *   1. dzieci NIE są w drzewie (to samo, co chronił stary warunek),
+ *   2. nie pokazujemy przedwcześnie odmowy — bramka nie może fail-closed'ować
+ *      na danych, których jeszcze nie ma (stary warunek pilnował tego tylko
+ *      przypadkiem, przy okazji "nic nie ma"),
+ *   3. użytkownik widzi, że coś trwa — czego stary warunek WYKLUCZAŁ.
+ */
+function expectPending(): void {
+  expect(screen.queryByTestId("child")).toBeNull()
+  expect(screen.queryByRole("heading", { name: "Brak dostępu" })).toBeNull()
+  // `AccessDeniedScreen` ma DWA tytuły zależne od `reason` (access-denied-screen.tsx):
+  // "Brak dostępu" dla `denied` i "Brak uprawnień" dla `error`. Punkt 2. wyżej
+  // wykluczał tylko pierwszy, a `AppGate` fail-closed'uje na `reason="error"`
+  // CZĘŚCIEJ niż na `"denied"` — więc asercja pokrywała mniej niż połowę
+  // przypadków, które sama deklaruje. Wyszło z mutation testu (review 05.08.2026):
+  // wariant "spinner + AccessDeniedScreen reason=error" jako jedyny z dziesięciu
+  // przechodził cały plik na zielono.
+  expect(screen.queryByRole("heading", { name: "Brak uprawnień" })).toBeNull()
+  expect(screen.getByText("Sprawdzanie dostępu…")).not.toBeNull()
+}
+
 describe("AppGate — stany ładowania", () => {
-  it("nic nie renderuje, dopóki oba sygnały się ładują", () => {
-    const { container } = renderGate("idp")
-    expect(container.firstChild).toBeNull()
+  it("pokazuje stan ładowania i NIE wpuszcza dzieci, dopóki oba sygnały się ładują", () => {
+    renderGate("idp")
+    expectPending()
   })
 
-  it("nic nie renderuje, dopóki ładuje się samo /api/me/access", () => {
+  it("pokazuje stan ładowania, dopóki ładuje się samo /api/me/access", () => {
     meMock = { isPending: false, isError: false, data: { email: "u@x.com", has_access: true } }
     authorizedMock = { allowed: null, apps: [], email: null, isLoading: true, isError: false }
 
-    const { container } = renderGate("idp")
+    renderGate("idp")
 
-    expect(container.firstChild).toBeNull()
+    expectPending()
+  })
+
+  it("czeka też na samo /user/me — kafelek idp, granty już są", () => {
+    // Trzecie miejsce, które zwracało `null`. Dotyczy WYŁĄCZNIE kafelka idp
+    // (patrz D7), ale mrugało bielą tak samo jak dwa pozostałe.
+    meMock = { isPending: true, isError: false }
+    authorizedMock = {
+      allowed: true,
+      apps: ["idp"],
+      email: "u@x.com",
+      isLoading: false,
+      isError: false,
+    }
+
+    renderGate("idp")
+
+    expectPending()
+  })
+
+  it("NIE czeka na /user/me na innym kafelku — tam ma się renderować treść", () => {
+    // Kontrola dla powyższego: gdyby oczekiwanie na /user/me rozlało się poza
+    // idp, każdy inny kafelek utknąłby na spinnerze w środowisku bez backendu
+    // IDP (a takie jest cortex-next).
+    meMock = { isPending: true, isError: false }
+    authorizedMock = {
+      allowed: true,
+      apps: ["intrastat"],
+      email: "u@x.com",
+      isLoading: false,
+      isError: false,
+    }
+
+    renderGate("intrastat")
+
+    expectAllowed()
   })
 })
 
@@ -329,8 +394,8 @@ describe("HubGate — hub nie jest kafelkiem", () => {
     expectError()
   })
 
-  it("nic nie renderuje w trakcie ładowania", () => {
-    const { container } = renderHub()
-    expect(container.firstChild).toBeNull()
+  it("pokazuje stan ładowania i NIE wpuszcza dzieci w trakcie ładowania", () => {
+    renderHub()
+    expectPending()
   })
 })
