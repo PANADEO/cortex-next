@@ -138,6 +138,39 @@ describe("getGroup — GET /api/v1/groups/id/{id}/export", () => {
     expect(error).not.toMatchObject({ userIds: [] })
   })
 
+  // ── Domknięcie tej samej dziury z drugiej strony: upstream deklaruje
+  //    `user_ids: list[str] = []`, więc SAMA obecność pola niczego nie dowodzi
+  //    — pusty default wygląda identycznie jak pusta grupa. `member_count` to
+  //    drugi, niezależny odczyt tego samego członkostwa (osobne zapytanie do
+  //    `group_member`), więc rozjazd znaczy "odczyt jest nieprawdziwy".
+  it("user_ids: [] przy member_count > 0 -> awaria — dokładnie tak wygląda pydantic'owy default", async () => {
+    // Ładunek, który wyprodukowałby handler /export, gdyby przestał podawać
+    // user_ids= jawnie: FastAPI wstawia [] z definicji GroupExportResponse.
+    stubFetch(jsonResponse({ ...EXPORT_0_11_0, member_count: 2, user_ids: [] }))
+
+    const error = await getGroup(CONFIG, EXPORT_0_11_0.id).catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(OpenwebuiClientError)
+    expect((error as OpenwebuiClientError).failure).toBe("malformed-response")
+    // Sedno: reconciler NIE dostaje grupy, z której wyliczyłby "nie ma kogo
+    // usunąć" — czyli bug z 1ab131b nie wraca po cichu.
+    expect(error).not.toMatchObject({ userIds: [] })
+  })
+
+  it("member_count niezgodny z liczbą user_ids (obcięty odczyt) -> awaria", async () => {
+    stubFetch(jsonResponse({ ...EXPORT_0_11_0, member_count: 5 }))
+
+    await expect(getGroup(CONFIG, EXPORT_0_11_0.id)).rejects.toMatchObject({ failure: "malformed-response" })
+  })
+
+  it("brak member_count (albo nie-liczba) -> awaria: znika jedyna kontrola krzyżowa odczytu", async () => {
+    for (const broken of [undefined, null, "2", 1.5, [2]]) {
+      stubFetch(jsonResponse({ ...EXPORT_0_11_0, member_count: broken }))
+
+      await expect(getGroup(CONFIG, EXPORT_0_11_0.id)).rejects.toMatchObject({ failure: "malformed-response" })
+    }
+  })
+
   it("user_ids o złym typie (null / nie-tablica / element nie-string) -> awaria, nie filtrowanie", async () => {
     for (const broken of [null, "u1,u2", { 0: "u1" }, ["u1", 42]]) {
       stubFetch(jsonResponse({ ...EXPORT_0_11_0, user_ids: broken }))

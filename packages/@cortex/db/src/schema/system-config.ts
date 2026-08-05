@@ -222,6 +222,14 @@ export const roleApplicationScopes = systemConfig.table(
  * `groupId` to UUID nadany PRZEZ OpenWebUI — jedyny stabilny klucz
  * dopasowania (D1: NIE nazwa, żeby nie powtórzyć błędu cortex-admina, gdzie
  * zmiana nazwy roli osierocała grupę razem z jej `access_control`).
+ * `groupId` jest UNIQUE, czyli relacja jest dwustronnie 1:1 — Wariant A mówi
+ * "jedna rola = jedna grupa", ale sam PK na `roleId` pilnował tylko jednej
+ * strony. Dwie role wskazujące TĘ SAMĄ grupę wyliczają dwa różne zbiory
+ * docelowe z tej samej żywej grupy, więc każde uzgodnienie wyrzuca członków
+ * drugiej roli: dostęp znika i wraca zależnie od KOLEJNOŚCI synchronizacji,
+ * a `last_sync_error` zostaje NULL. Ograniczenie w BAZIE, nie tylko sprawdzenie
+ * w kodzie: sprawdź-potem-wstaw to TOCTOU — dwa równoległe podpięcia tej samej
+ * grupy przechodzą oba sprawdzenia, zanim którekolwiek zapisze wiersz.
  * `ON DELETE CASCADE` sprząta mapowanie automatycznie przy usunięciu roli —
  * grupa w OpenWebUI NIE jest wtedy kasowana (D7), tylko opróżniana z
  * członków w warstwie serwisowej PRZED usunięciem wiersza roli.
@@ -230,7 +238,7 @@ export const openwebuiGroupMappings = systemConfig.table("openwebui_group_mappin
   roleId: uuid("role_id")
     .primaryKey()
     .references(() => roles.id, { onDelete: "cascade" }),
-  groupId: text("group_id").notNull(),
+  groupId: text("group_id").notNull().unique(),
   // Kopia dla czytelności w UI — NIGDY klucz dopasowania (patrz `groupId`).
   groupName: text("group_name").notNull(),
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),

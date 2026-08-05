@@ -3,6 +3,7 @@ import {
   ModuleNotLicensedError,
   NativeApplicationImmutableError,
   NativeCreationNotAllowedError,
+  OpenwebuiGroupAlreadyMappedError,
   SelfLockoutError,
   SystemRoleProtectedError,
   requireTileAccess,
@@ -78,6 +79,17 @@ export function toErrorResponse(error: unknown): NextResponse {
     return NextResponse.json(
       { error: "module-not-licensed", message: error.message },
       { status: 403 },
+    )
+  }
+
+  // 409 jak SelfLockoutError: żądanie jest poprawne, tylko kłóci się ze STANEM
+  // danych (tę grupę trzyma już inna rola). Osobno od `duplicate-code` niżej,
+  // bo TU umiemy nazwać kolidującą rolę — samo naruszenie UNIQUE(group_id)
+  // wpadłoby tam i wróciło bez tej informacji.
+  if (error instanceof OpenwebuiGroupAlreadyMappedError) {
+    return NextResponse.json(
+      { error: "openwebui-group-already-mapped", message: error.message },
+      { status: 409 },
     )
   }
 

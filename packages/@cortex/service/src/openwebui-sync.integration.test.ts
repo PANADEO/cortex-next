@@ -38,12 +38,14 @@ class FakeOpenwebuiClientError extends Error {
 vi.mock("./openwebui-client", () => ({ ...clientMock, OpenwebuiClientError: FakeOpenwebuiClientError }))
 
 const { deleteRole, setUserRoles, updateUser } = await import("./system-config")
-const { attachRoleGroup, detachRoleGroup, getRoleGroupMapping, reconcileRoleGroup } = await import("./openwebui-sync")
+const { OpenwebuiGroupAlreadyMappedError, attachRoleGroup, detachRoleGroup, getRoleGroupMapping, reconcileRoleGroup } =
+  await import("./openwebui-sync")
 
 const hasDatabase = Boolean(process.env.DATABASE_URL)
 
 const SUFFIX = `owui-itest-${process.pid}-${randomUUID().slice(0, 8)}`
 const ROLE_CODE = `rola-${SUFFIX}`
+const SECOND_ROLE_CODE = `rola2-${SUFFIX}`
 const EMAIL = `czlonek-${SUFFIX}@firma.pl`
 const INACTIVE_EMAIL = `nieaktywny-${SUFFIX}@firma.pl`
 const NO_ACCOUNT_EMAIL = `brak-konta-owui-${SUFFIX}@firma.pl`
@@ -60,7 +62,9 @@ async function cleanup(): Promise<void> {
   for (const email of [EMAIL, INACTIVE_EMAIL, NO_ACCOUNT_EMAIL]) {
     await db.delete(users).where(eq(users.email, email))
   }
-  await db.delete(roles).where(eq(roles.code, ROLE_CODE))
+  for (const code of [ROLE_CODE, SECOND_ROLE_CODE]) {
+    await db.delete(roles).where(eq(roles.code, code))
+  }
 }
 
 function stubConfig(): void {
@@ -117,6 +121,73 @@ describe.skipIf(!hasDatabase)("uzgodnienie rola -> grupa OpenWebUI — prawdziwy
       .insert(openwebuiGroupMappings)
       .values({ roleId, groupId: GROUP_ID, groupName: `cortex:${ROLE_CODE}` })
   }
+
+  async function createSecondRole(): Promise<string> {
+    const [role] = await getDb().insert(roles).values({ code: SECOND_ROLE_CODE, name: "Druga rola OWUI" }).returning()
+    return role!.id
+  }
+
+  // ── Migotająca eksmisja ma być NIEMOŻLIWA DO STWORZENIA, nie "obsłużona".
+  //    Dwie role wpięte w jedną grupę wyliczają z niej dwa różne zbiory
+  //    docelowe, więc każde uzgodnienie wyrzuca członków tej drugiej — dostęp
+  //    znika i wraca zależnie od kolejności synchronizacji, przy
+  //    `last_sync_error` = NULL. Testy niżej pokazują, że stanu, z którego to
+  //    wynika, nie da się zapisać ŻADNĄ z dwóch dróg do tej tabeli.
+  describe("jedna grupa = najwyżej jedna rola", () => {
+    it("BAZA odrzuca drugie mapowanie tej samej grupy — z pominięciem CAŁEJ warstwy serwisowej", async () => {
+      await mapRole()
+      const secondRoleId = await createSecondRole()
+
+      // Celowo prosto do Drizzle, nie przez attachRoleGroup: dowodzimy, że
+      // gwarancją jest UNIQUE(group_id), a nie sprawdzenie w kodzie, które
+      // jako sprawdź-potem-wstaw i tak nie wytrzymałoby dwóch równoległych
+      // podpięć.
+      const error = await getDb()
+        .insert(openwebuiGroupMappings)
+        .values({ roleId: secondRoleId, groupId: GROUP_ID, groupName: `cortex:${SECOND_ROLE_CODE}` })
+        .catch((caught: unknown) => caught)
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error).toMatchObject({ code: "23505" })
+
+      // I tu jest sedno: po odrzuceniu tabela dalej ma DOKŁADNIE JEDNO
+      // mapowanie tej grupy, więc reconcileAllMappedGroups() nie ma jak
+      // pushnąć do niej dwóch różnych zbiorów docelowych.
+      const rows = await getDb()
+        .select()
+        .from(openwebuiGroupMappings)
+        .where(eq(openwebuiGroupMappings.groupId, GROUP_ID))
+      expect(rows).toHaveLength(1)
+      expect(rows[0]!.roleId).toBe(roleId)
+    })
+
+    it("attachRoleGroup odmawia 'po ludzku', nazywając kolidującą rolę i nie dotykając OpenWebUI", async () => {
+      await mapRole()
+      const secondRoleId = await createSecondRole()
+
+      const error = await attachRoleGroup({
+        roleId: secondRoleId,
+        action: { kind: "existing", groupId: GROUP_ID },
+      }).catch((caught: unknown) => caught)
+
+      expect(error).toBeInstanceOf(OpenwebuiGroupAlreadyMappedError)
+      expect((error as Error).message).toContain(ROLE_CODE)
+      expect(clientMock.getGroup).not.toHaveBeenCalled()
+      expect(await getRoleGroupMapping(secondRoleId)).toBeNull()
+    })
+
+    it("odpięcie pierwszej roli zwalnia grupę — ograniczenie blokuje WSPÓŁdzielenie, nie przeniesienie", async () => {
+      await mapRole()
+      const secondRoleId = await createSecondRole()
+      await detachRoleGroup(roleId)
+      clientMock.getGroup.mockResolvedValue({ id: GROUP_ID, name: `cortex:${ROLE_CODE}`, description: "", userIds: [] })
+
+      const result = await attachRoleGroup({ roleId: secondRoleId, action: { kind: "existing", groupId: GROUP_ID } })
+
+      expect("mapping" in result).toBe(true)
+      expect((await getRoleGroupMapping(secondRoleId))?.groupId).toBe(GROUP_ID)
+    })
+  })
 
   describe("reconcileRoleGroup — zbiór docelowy z żywej bazy", () => {
     it("dodaje AKTYWNEGO członka roli, POMIJA nieaktywnego — bez ANI JEDNEGO wywołania groups/update z user_ids", async () => {

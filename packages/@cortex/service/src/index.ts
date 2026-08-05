@@ -14,6 +14,7 @@ export type { ModuleLicensingConfig } from "./module-licensing"
 export {
   GROUP_DESCRIPTION as OPENWEBUI_GROUP_DESCRIPTION,
   GROUP_NAME_PREFIX as OPENWEBUI_GROUP_NAME_PREFIX,
+  OpenwebuiGroupAlreadyMappedError,
   attachRoleGroup,
   detachRoleGroup,
   emptyGroupMembership,

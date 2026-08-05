@@ -279,6 +279,29 @@ function errorMessage(error: unknown): string {
 
 export type AttachRoleGroupError = "not-configured" | "unknown-role" | "group-not-found"
 
+/**
+ * Próba podpięcia grupy OpenWebUI, która stoi już za INNĄ rolą. Klasa wyjątku,
+ * nie kolejny wariant `AttachRoleGroupError`, bo w odróżnieniu od tamtych
+ * niesie DANE (kod kolidującej roli) — tak samo jak SelfLockoutError /
+ * ModuleNotLicensedError, które też muszą powiedzieć adminowi CO konkretnie
+ * blokuje, a nie tylko że coś blokuje. Bramka modułu mapuje ją na 409
+ * (konflikt ze stanem danych, dokładnie ta klasa co SelfLockoutError).
+ */
+export class OpenwebuiGroupAlreadyMappedError extends Error {
+  readonly conflictingRoleCode: string
+
+  constructor(conflictingRoleCode: string) {
+    super(
+      `Ta grupa OpenWebUI jest już podpięta pod rolę "${conflictingRoleCode}". Jedna grupa może ` +
+        "stać za najwyżej jedną rolą — inaczej obie role wyliczają dla niej różne członkostwo i " +
+        "przy każdej synchronizacji wyrzucają nawzajem swoich użytkowników. Odepnij grupę od " +
+        `roli "${conflictingRoleCode}" albo wybierz inną grupę.`,
+    )
+    this.name = "OpenwebuiGroupAlreadyMappedError"
+    this.conflictingRoleCode = conflictingRoleCode
+  }
+}
+
 export interface AttachRoleGroupInput {
   roleId: string
   /** `{kind: "create"}` — nowa grupa `cortex:<code roli>`.
@@ -300,9 +323,27 @@ export async function attachRoleGroup(
 
   let groupId: string
   if (input.action.kind === "create") {
+    // Świeżo utworzona grupa dostaje NOWY identyfikator od OpenWebUI, więc
+    // kolizja jest tu niemożliwa — sprawdzanie po utworzeniu tylko zostawiałoby
+    // osieroconą grupę w OpenWebUI przy odmowie.
     const created = await client.createGroup(config, groupName, GROUP_DESCRIPTION)
     groupId = created.id
   } else {
+    // GWARANCJĄ jest UNIQUE(group_id) w bazie (migracja 0004) — to ono, i tylko
+    // ono, sprawia, że dwóch ról nie da się wpiąć w jedną grupę; sprawdzenie
+    // niżej samo w sobie jest wyścigiem sprawdź-potem-wstaw. Jest tu WYŁĄCZNIE
+    // dla ergonomii: nagie naruszenie ograniczenia wraca z bramki jako
+    // ogólne 409 "duplicate-code", które adminowi nie mówi nic o tym, KTÓRA
+    // rola trzyma tę grupę. Jeśli ten `if` kiedyś zniknie, niezmiennik zostaje
+    // — zepsuje się tylko komunikat.
+    const owner = await store.findGroupMappingOwner(input.action.groupId)
+    // Ponowne podpięcie TEJ SAMEJ grupy pod TĘ SAMĄ rolę to odświeżenie
+    // mapowania (upsert po roleId), nie konflikt — inaczej admin nie mógłby
+    // powtórzyć operacji, która nic nie zmienia.
+    if (owner && owner.roleId !== input.roleId) {
+      throw new OpenwebuiGroupAlreadyMappedError(owner.roleCode)
+    }
+
     const existing = await client.getGroup(config, input.action.groupId)
     if (!existing) return { error: "group-not-found" }
     groupId = existing.id

@@ -26,6 +26,25 @@ export function getRoleGroupMapping(roleId: string): Promise<OpenwebuiGroupMappi
     .then((rows) => rows[0] ?? null)
 }
 
+/**
+ * Która ROLA trzyma dziś mapowanie tej grupy. Istnieje wyłącznie po to, żeby
+ * odmowa podpięcia mogła nazwać kolidującą rolę po kodzie — samo
+ * niedopuszczenie duplikatu załatwia UNIQUE(group_id) w bazie (patrz
+ * attachRoleGroup). Stąd join do `roles`: bez kodu roli komunikat brzmiałby
+ * "grupa jest już zajęta", co nie mówi adminowi, gdzie ma kliknąć.
+ */
+export async function findGroupMappingOwner(
+  groupId: string,
+): Promise<{ roleId: string; roleCode: string } | null> {
+  const [row] = await getDb()
+    .select({ roleId: openwebuiGroupMappings.roleId, roleCode: roles.code })
+    .from(openwebuiGroupMappings)
+    .innerJoin(roles, eq(roles.id, openwebuiGroupMappings.roleId))
+    .where(eq(openwebuiGroupMappings.groupId, groupId))
+
+  return row ?? null
+}
+
 export async function listMappedRoleIds(): Promise<string[]> {
   const rows = await getDb().select({ roleId: openwebuiGroupMappings.roleId }).from(openwebuiGroupMappings)
   return rows.map((row) => row.roleId)

@@ -28,6 +28,7 @@ class FakeOpenwebuiClientError extends Error {
 const storeMock = vi.hoisted(() => ({
   getRole: vi.fn(),
   getRoleGroupMapping: vi.fn(),
+  findGroupMappingOwner: vi.fn(),
   listMappedRoleIds: vi.fn(),
   loadActiveRoleMemberEmails: vi.fn(),
   listRoleIdsForUser: vi.fn(),
@@ -40,6 +41,7 @@ vi.mock("./openwebui-client", () => ({ ...clientMock, OpenwebuiClientError: Fake
 vi.mock("./openwebui-sync-store", () => storeMock)
 
 const {
+  OpenwebuiGroupAlreadyMappedError,
   attachRoleGroup,
   detachRoleGroup,
   groupNameForRoleCode,
@@ -61,6 +63,7 @@ beforeEach(() => {
   vi.stubEnv("OPENWEBUI_ADMIN_TOKEN", "sekret")
 
   storeMock.recordSyncResult.mockResolvedValue(undefined)
+  storeMock.findGroupMappingOwner.mockResolvedValue(null)
   clientMock.getGroup.mockResolvedValue({ id: GROUP_ID, name: "cortex:hr", description: "", userIds: [] })
   clientMock.listAllUserEmailIds.mockResolvedValue(new Map())
   clientMock.updateGroupMeta.mockResolvedValue(undefined)
@@ -305,6 +308,48 @@ describe("attachRoleGroup — podpięcie jest RĘCZNE i nie pushuje członkostwa
 
     expect(result).toEqual({ error: "group-not-found" })
     expect(storeMock.upsertRoleGroupMapping).not.toHaveBeenCalled()
+  })
+
+  // ── Jedna grupa = najwyżej jedna rola. GWARANCJĄ jest UNIQUE(group_id)
+  //    (dowód na żywym Postgresie: openwebui-sync.integration.test.ts) — te
+  //    testy pilnują wyłącznie KOMUNIKATU, czyli tego, po co pre-check istnieje.
+  it("kind:existing na grupie trzymanej przez INNĄ rolę -> wyjątek nazywający tamtą rolę, ZERO wywołań HTTP", async () => {
+    storeMock.getRole.mockResolvedValue({ id: ROLE_ID, code: "hr" })
+    storeMock.findGroupMappingOwner.mockResolvedValue({ roleId: "role-2", roleCode: "konsultanci" })
+
+    const error = await attachRoleGroup({ roleId: ROLE_ID, action: { kind: "existing", groupId: GROUP_ID } }).catch(
+      (caught: unknown) => caught,
+    )
+
+    expect(error).toBeInstanceOf(OpenwebuiGroupAlreadyMappedError)
+    expect((error as InstanceType<typeof OpenwebuiGroupAlreadyMappedError>).conflictingRoleCode).toBe("konsultanci")
+    // Sedno komunikatu: admin ma wiedzieć, KTÓRĄ rolę odpiąć.
+    expect((error as Error).message).toContain("konsultanci")
+    expect(storeMock.upsertRoleGroupMapping).not.toHaveBeenCalled()
+    // Odmowa PRZED dotknięciem OpenWebUI — sprawdzenie jest darmowe, żądanie nie.
+    expect(clientMock.getGroup).not.toHaveBeenCalled()
+  })
+
+  it("ponowne podpięcie TEJ SAMEJ grupy pod TĘ SAMĄ rolę to odświeżenie, nie konflikt", async () => {
+    storeMock.getRole.mockResolvedValue({ id: ROLE_ID, code: "hr" })
+    storeMock.findGroupMappingOwner.mockResolvedValue({ roleId: ROLE_ID, roleCode: "hr" })
+    clientMock.getGroup.mockResolvedValue({ id: GROUP_ID, name: "cortex:hr", description: "", userIds: [] })
+    storeMock.upsertRoleGroupMapping.mockResolvedValue(MAPPING)
+
+    const result = await attachRoleGroup({ roleId: ROLE_ID, action: { kind: "existing", groupId: GROUP_ID } })
+
+    expect("mapping" in result).toBe(true)
+    expect(storeMock.upsertRoleGroupMapping).toHaveBeenCalledWith(ROLE_ID, GROUP_ID, "cortex:hr")
+  })
+
+  it("kind:create w ogóle nie pyta o właściciela — świeże id nie ma z czym kolidować", async () => {
+    storeMock.getRole.mockResolvedValue({ id: ROLE_ID, code: "hr" })
+    clientMock.createGroup.mockResolvedValue({ id: "nowa-grupa", name: "cortex:hr" })
+    storeMock.upsertRoleGroupMapping.mockResolvedValue({ ...MAPPING, groupId: "nowa-grupa" })
+
+    await attachRoleGroup({ roleId: ROLE_ID, action: { kind: "create" } })
+
+    expect(storeMock.findGroupMappingOwner).not.toHaveBeenCalled()
   })
 })
 

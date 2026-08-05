@@ -158,6 +158,45 @@ function requireStringArray(value: unknown, what: string): string[] {
   return value as string[]
 }
 
+/**
+ * Domknięcie tej samej dziury z drugiej strony. `requireStringArray` łapie
+ * BRAK `user_ids` — ale upstream deklaruje je jako
+ * `class GroupExportResponse(GroupResponse): user_ids: list[str] = []`
+ * (zweryfikowane w źródle na kontenerze `chat`, 0.11.0), czyli z domyślną
+ * PUSTĄ LISTĄ. Gdyby handler `/export` przestał kiedyś podawać to pole jawnie,
+ * FastAPI wyserializuje `[]`, `requireStringArray` przyjmie je bez mrugnięcia
+ * i wróci dokładnie ten błąd, który commit 1ab131b właśnie naprawił: reconciler
+ * uzna, że nie ma kogo usunąć, i przestanie odbierać dostęp. Cicho.
+ *
+ * `member_count` z tej samej odpowiedzi jest kontrolą krzyżową, bo liczy się
+ * OSOBNYM zapytaniem do tej samej tabeli `group_member`
+ * (`select count(user_id) ... where group_id = ?` vs `select user_id ... where
+ * group_id = ?` — Groups.get_group_member_count_by_id / get_group_user_ids_by_id).
+ * Jedno pole nie umie zniknąć "w parze" z drugim; zweryfikowane na żywo:
+ * po każdym add/remove oba szły w parze z liczbą wierszy w `group_member`.
+ *
+ * Brak `member_count` też jest awarią, choć jego domyślną wartością jest `None`
+ * (a nie mylące `0`): to jedyny strażnik, jaki tu został, więc jego zniknięcie
+ * musi być głośne — inaczej następna zmiana schematu znowu przejdzie po cichu.
+ * Świadomie przyjęty koszt: równoległa zmiana członkostwa MIĘDZY tymi dwoma
+ * zapytaniami da rozjazd i uzgodnienie padnie z `last_sync_error`. Padnięcie
+ * jest odtwarzalne przy następnym uzgodnieniu, ciche odebranie dostępu nie.
+ */
+function requireMemberCountAgrees(value: unknown, userIds: string[], groupId: string): void {
+  if (typeof value !== "number" || !Number.isInteger(value)) {
+    throw new OpenwebuiClientError(
+      "malformed-response",
+      `OpenWebUI nie zwrócił member_count grupy ${groupId} — bez niego nie da się sprawdzić, czy user_ids to prawdziwe członkostwo, czy pusty default`,
+    )
+  }
+  if (value !== userIds.length) {
+    throw new OpenwebuiClientError(
+      "malformed-response",
+      `OpenWebUI zwrócił niespójne członkostwo grupy ${groupId}: member_count=${value}, a user_ids ma ${userIds.length} pozycji`,
+    )
+  }
+}
+
 /** `GET /api/v1/groups/` — lista wszystkich grup (przy podpinaniu istniejącej). */
 export async function listGroups(config: OpenwebuiConfig): Promise<OpenwebuiGroupSummary[]> {
   const data = await request(config, "GET", "/api/v1/groups/")
@@ -205,7 +244,11 @@ export async function createGroup(
  *    błędem (zweryfikowane na żywo na 0.11.0);
  *  - `user_ids` to sedno kontraktu `/export` (eksport bez członkostwa byłby
  *    zepsutym eksportem), więc jest to ścieżka najmniej podatna na powtórkę
- *    dzisiejszej wpadki przy kolejnym bumpie obrazu `main`.
+ *    dzisiejszej wpadki przy kolejnym bumpie obrazu `main`;
+ *  - ta sama odpowiedź niesie `member_count`, czyli DRUGI, niezależny odczyt
+ *    tego samego członkostwa — patrz requireMemberCountAgrees(). "Najmniej
+ *    podatna" to nie to samo co "odporna", więc odczyt jest kontrolowany
+ *    krzyżowo, a nie brany na słowo.
  *
  * `null` gdy grupa nie istnieje (usunięta ręcznie w OpenWebUI) — wołający
  * traktuje to jak brak danych do uzgodnienia, nie jak awarię sieci.
@@ -222,11 +265,14 @@ export async function getGroup(config: OpenwebuiConfig, groupId: string): Promis
     if (!isRecord(data) || typeof data.id !== "string" || typeof data.name !== "string") {
       throw new OpenwebuiClientError("malformed-response", "OpenWebUI nie zwrócił poprawnej grupy")
     }
+    const userIds = requireStringArray(data.user_ids, `członkostwa grupy ${data.id} (pole user_ids)`)
+    requireMemberCountAgrees(data.member_count, userIds, data.id)
+
     return {
       id: data.id,
       name: data.name,
       description: typeof data.description === "string" ? data.description : "",
-      userIds: requireStringArray(data.user_ids, `członkostwa grupy ${data.id} (pole user_ids)`),
+      userIds,
     }
   } catch (error) {
     if (error instanceof OpenwebuiClientError && error.failure === "not-found") return null

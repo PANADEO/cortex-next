@@ -28,7 +28,7 @@ vi.mock("@cortex/service", async (importOriginal) => {
   }
 })
 
-const { OpenwebuiClientError, clearTileAccessCache } = await import("@cortex/service")
+const { OpenwebuiClientError, OpenwebuiGroupAlreadyMappedError, clearTileAccessCache } = await import("@cortex/service")
 const { GET, PUT, POST } = await import("./route")
 
 const ROLE_ID = "9f1d3c62-1f4a-4a6b-9f3c-2b7d5e8a1c40"
@@ -176,6 +176,17 @@ describe("PUT — podepnij/odepnij", () => {
     )
 
     expect(response.status).toBe(404)
+  })
+
+  it("grupa trzymana przez inną rolę -> 409 z komunikatem nazywającym tamtą rolę, NIE 500", async () => {
+    attachRoleGroup.mockRejectedValue(new OpenwebuiGroupAlreadyMappedError("konsultanci"))
+
+    const response = await PUT(makeRequest("PUT", { action: "existing", groupId: "g9" }) as never, contextFor(ROLE_ID))
+
+    expect(response.status).toBe(409)
+    const body = (await response.json()) as { error: string; message: string }
+    expect(body.error).toBe("openwebui-group-already-mapped")
+    expect(body.message).toContain("konsultanci")
   })
 
   it("awaria HTTP OpenWebUI (OpenwebuiClientError) -> 502, bez rzucenia dalej", async () => {
