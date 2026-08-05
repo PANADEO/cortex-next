@@ -48,7 +48,7 @@ function project(overrides: Partial<CoworkProjectConfig> = {}): CoworkProjectCon
     enabled: true,
     archetype: "task-chat",
     allowedRoleIds: ["analyst"],
-    model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
+    model: { provider: "openai-compatible", modelId: "claude-sonnet-4-5" },
     composition: {
       skills: { branches: [], leaves: [] },
       connectors: { branches: [], leaves: [] },

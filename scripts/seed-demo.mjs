@@ -152,20 +152,6 @@ if (!config.roles.some((role) => role.id === "analyst")) {
   config.roles.push({ id: "analyst", name: "Analyst", description: "Domyślna rola dostępu" })
 }
 
-// CORTEX_PROXY_URL is a bare host (e.g. "http://cortex-proxy", no path) -
-// the convention every consumer in this org uses (ilustromat's own
-// .env.example) and how demo/bin/web-search.py/generate-image.py already
-// read it (they append /v1/chat/completions themselves). Flue's
-// registerProvider() wants baseUrl to already include /v1 (its own doc's
-// example: "https://api.anthropic.com/v1"), so this is the one place that
-// appends it. Deliberate 2-line twin of cortexProxyModelBaseUrl() in
-// packages/@cortex/types (which the app's seed + config form use): this is a
-// plain .mjs script with no TS build in front of it, so it cannot import the
-// shared helper. Keep the two in sync.
-function cortexProxyBaseUrlWithV1() {
-  return `${process.env.CORTEX_PROXY_URL ?? "http://cortex-proxy"}/v1`
-}
-
 function demoProject(overrides) {
   return {
     enabled: true,
@@ -173,13 +159,14 @@ function demoProject(overrides) {
     allowedRoleIds: ["analyst"],
     // Routed through cortex-proxy (OpenRouter) instead of a direct
     // ANTHROPIC_API_KEY - same model, centralized cost/usage tracking.
-    // baseUrl triggers modelConfigForRunner()'s X-User-ID header injection
-    // (see chat-engine.ts); apiKeyRef stays unset, cortex-proxy doesn't
-    // validate the client's key. modelId uses OpenRouter's dot-notation
-    // slug, not Anthropic's native hyphenated one.
+    // NO baseUrl: the endpoint is environment state, not project state, and
+    // modelConfigForRunner() (chat-engine.ts) injects it per turn from
+    // CORTEX_PROXY_URL - so a file seeded here works unchanged on the local
+    // stack and on the droplet. apiKeyRef stays unset too, cortex-proxy
+    // doesn't validate the client's key. modelId uses OpenRouter's
+    // dot-notation slug, not Anthropic's native hyphenated one.
     model: {
       provider: "openai-compatible",
-      baseUrl: cortexProxyBaseUrlWithV1(),
       modelId: "anthropic/claude-opus-4.8",
     },
     sandbox: { mode: "local", allowedPaths: [] },

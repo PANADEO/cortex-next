@@ -1,10 +1,13 @@
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import path from "node:path"
 import type {
   CoworkConnectorConfig,
   CoworkGovernanceConfig,
   CoworkProjectConfig,
 } from "@cortex/types"
 import { grantMatches, secretPathGranted } from "@cortex/types"
-import { describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   grantedConnectors,
   isBootstrapAdminMode,
@@ -21,7 +24,7 @@ function project(overrides: Partial<CoworkProjectConfig> = {}): CoworkProjectCon
     enabled: true,
     archetype: "task-chat",
     allowedRoleIds: ["analyst"],
-    model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
+    model: { provider: "openai-compatible", modelId: "claude-sonnet-4-5" },
     composition: {
       skills: { branches: ["wspolne"], leaves: [] },
       connectors: { branches: [], leaves: [] },
@@ -221,5 +224,153 @@ describe("rolesForUser", () => {
   it("resolves assigned role objects", () => {
     const cfg = config({ userAssignments: { "u@x.pl": ["analyst"] } })
     expect(rolesForUser(cfg, "u@x.pl").map((r) => r.id)).toEqual(["analyst"])
+  })
+})
+
+// --- v2 -> v3 migration -------------------------------------------------------
+//
+// This migration is a DATA REPAIR, and the only proof it works is a real file
+// on disk: readGovernanceConfig() never merges the seed into an existing
+// document, so a deployed governance.json that still says
+// provider:"anthropic" is not fixed by any default in the code. It is also
+// the one piece of this module that must keep reading a shape the type system
+// no longer admits (LegacyModelConfig in store.ts), which is exactly the kind
+// of thing that compiles fine while quietly doing nothing.
+//
+// COWORK_DATA_DIR is read at module load, so every case stubs it and
+// re-imports the module. Never point this at app/idp/.data.
+describe("readGovernanceConfig v2 -> v3 migration", () => {
+  let dataDir: string
+
+  beforeEach(() => {
+    vi.resetModules()
+    vi.unstubAllEnvs()
+    dataDir = mkdtempSync(path.join(tmpdir(), "cortex-governance-migration-"))
+    vi.stubEnv("COWORK_DATA_DIR", dataDir)
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    rmSync(dataDir, { force: true, recursive: true })
+  })
+
+  /** Writes a v2 document with one project and returns what lands on disk after a read. */
+  async function migrate(model: Record<string, unknown>): Promise<{
+    returned: CoworkGovernanceConfig
+    onDisk: CoworkGovernanceConfig
+  }> {
+    const file = path.join(dataDir, "governance.json")
+    writeFileSync(
+      file,
+      JSON.stringify({
+        version: 2,
+        departments: ["wspolne"],
+        skillSources: [],
+        connectors: [],
+        roles: [{ id: "analyst", name: "Analyst" }],
+        userAssignments: {},
+        adminEmails: [],
+        projects: [{ ...project({ id: "legacy" }), model }],
+      }),
+    )
+    const { readGovernanceConfig } = await import("./store")
+    const returned = await readGovernanceConfig()
+    return { returned, onDisk: JSON.parse(readFileSync(file, "utf8")) as CoworkGovernanceConfig }
+  }
+
+  it("repairs a keyless anthropic project and persists the repair", async () => {
+    const { returned, onDisk } = await migrate({
+      provider: "anthropic",
+      modelId: "claude-sonnet-4-5",
+    })
+
+    // The native slug has to travel with the provider - cortex-proxy fronts
+    // OpenRouter, which does not know "claude-sonnet-4-5".
+    expect(returned.projects[0]?.model).toEqual({
+      provider: "openai-compatible",
+      modelId: "anthropic/claude-sonnet-4.6",
+    })
+    // Repaired IN THE FILE, not just in the returned object: otherwise every
+    // request would re-migrate and the deployed document would stay broken.
+    expect(onDisk.version).toBe(3)
+    expect(onDisk.projects[0]?.model).toEqual({
+      provider: "openai-compatible",
+      modelId: "anthropic/claude-sonnet-4.6",
+    })
+  })
+
+  it("leaves no empty apiKeyRef behind when repairing", async () => {
+    const { onDisk } = await migrate({
+      provider: "anthropic",
+      modelId: "claude-sonnet-4-5",
+      apiKeyRef: "   ",
+    })
+
+    // A whitespace ref carried over would read to the next person as a
+    // deliberate credential-store configuration.
+    expect(onDisk.projects[0]?.model).not.toHaveProperty("apiKeyRef")
+  })
+
+  it("repairs an anthropic project that HAS an apiKeyRef, keeping the ref", async () => {
+    const { onDisk } = await migrate({
+      provider: "anthropic",
+      modelId: "claude-sonnet-4-5",
+      apiKeyRef: "wspolne/llm/anthropic",
+    })
+
+    // Native Anthropic stopped being a supported path on 05.08.2026, so this
+    // is no longer "someone's deliberate choice to leave alone" - left as-is
+    // it would reach cortex-proxy with a native model id and land in the
+    // keyword fallback. The credential ref survives: it is a credential-store
+    // path, not an environment address.
+    expect(onDisk.projects[0]?.model).toEqual({
+      provider: "openai-compatible",
+      modelId: "anthropic/claude-sonnet-4.6",
+      apiKeyRef: "wspolne/llm/anthropic",
+    })
+  })
+
+  it("strips a frozen baseUrl from an already-openai-compatible project", async () => {
+    const { onDisk } = await migrate({
+      provider: "openai-compatible",
+      modelId: "anthropic/claude-opus-4.8",
+      baseUrl: "http://localhost:8240/v1",
+    })
+
+    // One deployment's address, written once and never refreshed. The server
+    // now injects it per turn from CORTEX_PROXY_URL, so keeping it in the
+    // file would only mislead. modelId is NOT reset here - this project was
+    // never on the removed provider.
+    expect(onDisk.projects[0]?.model).toEqual({
+      provider: "openai-compatible",
+      modelId: "anthropic/claude-opus-4.8",
+    })
+  })
+
+  it("does not crash on a project row with no model at all", async () => {
+    const file = path.join(dataDir, "governance.json")
+    const { model: _dropped, ...withoutModel } = project({ id: "broken" })
+    void _dropped
+    writeFileSync(
+      file,
+      JSON.stringify({
+        version: 2,
+        departments: ["wspolne"],
+        skillSources: [],
+        connectors: [],
+        roles: [],
+        userAssignments: {},
+        adminEmails: [],
+        projects: [withoutModel],
+      }),
+    )
+    const { readGovernanceConfig } = await import("./store")
+
+    // readGovernanceConfig() sits on the request path of EVERY governance
+    // route; a TypeError here would take the whole instance down with no
+    // self-repair path. One odd row passes through untouched instead.
+    const returned = await readGovernanceConfig()
+    expect(returned.version).toBe(3)
+    expect(returned.projects[0]?.id).toBe("broken")
   })
 })

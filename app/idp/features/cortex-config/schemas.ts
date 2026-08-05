@@ -5,7 +5,6 @@ import type {
   CoworkSkillSource,
 } from "@cortex/types"
 import {
-  cortexProxyModelBaseUrl,
   COWORK_DEPARTMENT_PATTERN,
   COWORK_SLUG_PATTERN,
   DEFAULT_COWORK_MODEL_ID,
@@ -51,42 +50,41 @@ export const briefFormSchema = z.object({
   hint: z.string().optional(),
 })
 
-export const projectFormSchema = z
-  .object({
-    id: z.string().regex(COWORK_SLUG_PATTERN, SLUG_MESSAGE),
-    name: z.string().min(1, "Nazwa jest wymagana"),
-    description: z.string().min(1, "Opis jest wymagany"),
-    icon: z.string().optional(),
-    enabled: z.boolean(),
-    allowedRoleIds: z.array(z.string()),
-    provider: z.enum(["anthropic", "openai-compatible"]),
-    modelId: z.string().min(1, "Model jest wymagany"),
-    baseUrl: z.string().optional(),
-    apiKeyRef: z.string().optional(),
-    department: z
-      .string()
-      .regex(COWORK_DEPARTMENT_PATTERN, DEPT_MESSAGE)
-      .or(z.literal(""))
-      .optional(),
-    systemPrompt: z.string().optional(),
-    briefs: z.array(briefFormSchema),
-    sandboxMode: z.enum(["local", "docker"]),
-    /** One path per line in the textarea. */
-    sandboxPaths: z.string(),
-    // Composition grants per kind: department branches + specific leaves.
-    skillBranches: z.array(z.string()),
-    skillLeaves: z.array(z.string()),
-    connectorBranches: z.array(z.string()),
-    connectorLeaves: z.array(z.string()),
-    secretBranches: z.array(z.string()),
-    secretLeaves: z.array(z.string()),
-    exportDir: z.string().optional(),
-    exportDisplayPath: z.string().optional(),
-  })
-  .refine(
-    (values) => values.provider !== "openai-compatible" || Boolean(values.baseUrl?.trim()),
-    { path: ["baseUrl"], message: "Base URL jest wymagany dla openai-compatible" },
-  )
+// Neither `provider` nor `baseUrl` is a form field any more. `provider` has
+// exactly one legal value (see CoworkModelProvider - everything routes through
+// cortex-proxy), and a one-option dropdown is a decision the admin cannot make;
+// `projectFormValuesToInput` writes the literal instead. `baseUrl` is
+// environment state the browser cannot even read (CORTEX_PROXY_URL is
+// server-side) - the server injects it per turn in `modelConfigForRunner()`.
+export const projectFormSchema = z.object({
+  id: z.string().regex(COWORK_SLUG_PATTERN, SLUG_MESSAGE),
+  name: z.string().min(1, "Nazwa jest wymagana"),
+  description: z.string().min(1, "Opis jest wymagany"),
+  icon: z.string().optional(),
+  enabled: z.boolean(),
+  allowedRoleIds: z.array(z.string()),
+  modelId: z.string().min(1, "Model jest wymagany"),
+  apiKeyRef: z.string().optional(),
+  department: z
+    .string()
+    .regex(COWORK_DEPARTMENT_PATTERN, DEPT_MESSAGE)
+    .or(z.literal(""))
+    .optional(),
+  systemPrompt: z.string().optional(),
+  briefs: z.array(briefFormSchema),
+  sandboxMode: z.enum(["local", "docker"]),
+  /** One path per line in the textarea. */
+  sandboxPaths: z.string(),
+  // Composition grants per kind: department branches + specific leaves.
+  skillBranches: z.array(z.string()),
+  skillLeaves: z.array(z.string()),
+  connectorBranches: z.array(z.string()),
+  connectorLeaves: z.array(z.string()),
+  secretBranches: z.array(z.string()),
+  secretLeaves: z.array(z.string()),
+  exportDir: z.string().optional(),
+  exportDisplayPath: z.string().optional(),
+})
 
 export type ProjectFormValues = z.infer<typeof projectFormSchema>
 
@@ -97,13 +95,7 @@ export const EMPTY_PROJECT_FORM_VALUES: ProjectFormValues = {
   icon: "",
   enabled: true,
   allowedRoleIds: [],
-  // Same cortex-proxy routing the store seeds (lib/cortex-governance/store.ts)
-  // and seed-demo.mjs uses. No CORTEX_PROXY_URL here - this default is rendered
-  // in the browser, which cannot read it; the helper's fallback is the org's
-  // Docker-DNS convention and the admin edits the field if their proxy differs.
-  provider: "openai-compatible",
   modelId: DEFAULT_COWORK_MODEL_ID,
-  baseUrl: cortexProxyModelBaseUrl(),
   apiKeyRef: "",
   department: "",
   systemPrompt: "",
@@ -129,9 +121,7 @@ export function projectToFormValues(project: CoworkProjectConfig): ProjectFormVa
     icon: project.icon ?? "",
     enabled: project.enabled,
     allowedRoleIds: project.allowedRoleIds,
-    provider: project.model.provider,
     modelId: project.model.modelId,
-    baseUrl: project.model.baseUrl ?? "",
     apiKeyRef: project.model.apiKeyRef ?? "",
     department: project.department ?? "",
     systemPrompt: project.systemPrompt ?? "",
@@ -170,9 +160,8 @@ export function projectFormValuesToInput(values: ProjectFormValues): ProjectInpu
     archetype: "task-chat",
     allowedRoleIds: values.allowedRoleIds,
     model: {
-      provider: values.provider,
+      provider: "openai-compatible",
       modelId: values.modelId,
-      ...(values.baseUrl?.trim() ? { baseUrl: values.baseUrl.trim() } : {}),
       ...(values.apiKeyRef?.trim() ? { apiKeyRef: values.apiKeyRef.trim() } : {}),
     },
     ...(values.department?.trim() ? { department: values.department.trim() } : {}),

@@ -17,8 +17,18 @@
  * the cowork-runner receives only the resolved per-turn slice it needs.
  */
 
-/** Wire protocol families the model provider layer supports. */
-export type CoworkModelProvider = "anthropic" | "openai-compatible"
+/**
+ * Wire protocol families the model provider layer supports. One arm on
+ * purpose: every project goes through cortex-proxy (Alex, 05.08.2026 -
+ * "wszystko powinno iść przez cortex-proxy"), and cortex-proxy speaks
+ * OpenAI-completions. The native "anthropic" arm was removed the same day -
+ * it was the only path that needed a provider key of its own, and the
+ * keyless variant of it degraded silently into the keyword router. The field
+ * stays as a field (rather than collapsing into nothing) because it names the
+ * wire protocol the runner registers, and cowork-runner reads this config as
+ * raw JSON out of an env var across a process boundary.
+ */
+export type CoworkModelProvider = "openai-compatible"
 
 /** Seeded first project; also the fallback for pre-governance session metadata. */
 export const DEFAULT_COWORK_PROJECT_ID = "cortex-cowork"
@@ -35,39 +45,50 @@ export const COWORK_DEPARTMENT_PATTERN = /^[a-z0-9][a-z0-9-]*(\/[a-z0-9][a-z0-9-
 /**
  * Per-project model configuration. `apiKeyRef` is a credential-store path
  * ("dept/key/subkey"); the raw secret never lives in project config nor
- * reaches the browser. `baseUrl` unset = provider's default endpoint. An
- * OpenAI-compatible entry pointed at cortex-proxy is how proxy registration
- * plugs in later without new code paths.
+ * reaches the browser.
  *
- * `headers` is NOT part of the persisted/UI-editable shape (no admin form
- * writes it) - it exists here only so `modelConfigForRunner()`'s resolved
- * per-turn config (chat-engine.ts, which injects a dynamic `X-User-ID`) is
- * expressible without an `as` cast. Never persisted by the project store.
+ * `baseUrl` and `headers` are NOT part of the persisted/UI-editable shape (no
+ * admin form writes them) - they exist here only so `modelConfigForRunner()`'s
+ * resolved per-turn config (chat-engine.ts) is expressible without an `as`
+ * cast. The server fills both in per turn: `baseUrl` from `CORTEX_PROXY_URL`,
+ * `headers` with the dynamic `X-User-ID`.
+ *
+ * `baseUrl` used to be persisted and admin-editable, and that was a bug
+ * factory: an endpoint is a property of the ENVIRONMENT, not of the project,
+ * so every write froze one deployment's address into a document that outlives
+ * it (the browser rendering the "new project" form cannot read
+ * CORTEX_PROXY_URL at all, so its prefilled default was wrong for every stack
+ * except the droplet). Now the value is read fresh from env on each turn and
+ * a redeploy behind a different proxy address just works.
  */
 export interface CoworkModelConfig {
   provider: CoworkModelProvider
   modelId: string
-  baseUrl?: string
   apiKeyRef?: string
+  /** Resolved per turn from CORTEX_PROXY_URL - never persisted. */
+  baseUrl?: string
+  /** Resolved per turn (X-User-ID cost attribution) - never persisted. */
   headers?: Record<string, string>
 }
 
 /**
- * Base URL a fresh project's model config points at: cortex-proxy, never a
- * direct provider endpoint. There is no env-var fallback anywhere in this
- * path - `apiKeyRef` stays unset on purpose, because cortex-proxy does not
- * validate the client's key, and a set `baseUrl` is what makes
- * `modelConfigForRunner()` inject the `X-User-ID` cost-attribution header
- * (see chat-engine.ts). scripts/seed-demo.mjs makes the same decision for the
- * demo projects and carries the same reasoning.
+ * The endpoint EVERY Cowork turn is sent to: cortex-proxy, never a direct
+ * provider endpoint. Server-side only, resolved per turn by
+ * `modelConfigForRunner()` (chat-engine.ts) - projects do not store an
+ * endpoint. `apiKeyRef` stays unset on purpose too, because cortex-proxy does
+ * not validate the client's key.
  *
  * CORTEX_PROXY_URL is a bare host ("http://cortex-proxy", no path) - the
- * convention every other consumer in this org uses. Flue's registerProvider()
+ * convention every other consumer in this org uses (ai-tools, ilustromat,
+ * visual-guru, content-guru all read the same var). Flue's registerProvider()
  * wants a baseUrl that ALREADY includes /v1 (its own doc's example:
  * "https://api.anthropic.com/v1"), so this is the one place that appends it.
- * The argument is optional because only the server can read CORTEX_PROXY_URL;
- * the browser bundle (the "new project" form default) gets the Docker-DNS
- * convention and the admin edits it if their proxy lives elsewhere.
+ *
+ * The argument is optional and unset falls back to the org's Docker-DNS
+ * convention, which is what the frontend container gets on the run_default
+ * network. Running the app OUTSIDE Docker (`pnpm dev` on the host) means
+ * setting CORTEX_PROXY_URL=http://localhost:8240 - same requirement every
+ * other proxy-backed tile in this repo already has.
  */
 export function cortexProxyModelBaseUrl(proxyUrl?: string): string {
   return `${proxyUrl?.trim() || "http://cortex-proxy"}/v1`

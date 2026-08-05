@@ -16,9 +16,7 @@ function baseValues(overrides: Partial<ProjectFormValues> = {}): ProjectFormValu
     icon: "bot",
     enabled: true,
     allowedRoleIds: ["analyst"],
-    provider: "anthropic",
     modelId: "claude-sonnet-4-5",
-    baseUrl: "",
     apiKeyRef: "",
     department: "",
     systemPrompt: "",
@@ -43,10 +41,21 @@ describe("projectFormValuesToInput", () => {
     expect(input.sandbox.allowedPaths).toEqual(["/a", "/b:ro"])
   })
 
-  it("omits apiKeyRef and baseUrl when empty", () => {
+  it("omits apiKeyRef when empty", () => {
     const input = projectFormValuesToInput(baseValues())
     expect(input.model.apiKeyRef).toBeUndefined()
-    expect(input.model.baseUrl).toBeUndefined()
+  })
+
+  // The form has no provider control and no baseUrl control any more (see the
+  // note above projectFormSchema): the only legal provider is written here as
+  // a literal, and the endpoint is injected server-side per turn. A form that
+  // could still emit a baseUrl would re-open the bug this replaced - one
+  // deployment's proxy address frozen into a portable document.
+  it("writes the single supported provider and never an endpoint", () => {
+    const input = projectFormValuesToInput(baseValues())
+    expect(input.model.provider).toBe("openai-compatible")
+    expect(input.model).not.toHaveProperty("baseUrl")
+    expect(input.model).not.toHaveProperty("headers")
   })
 
   it("maps grant arrays into the composition", () => {
@@ -85,7 +94,7 @@ describe("projectToFormValues round-trip", () => {
       enabled: true,
       archetype: "task-chat",
       allowedRoleIds: ["analyst"],
-      model: { provider: "openai-compatible", modelId: "gpt-4", baseUrl: "https://x/v1" },
+      model: { provider: "openai-compatible", modelId: "gpt-4" },
       systemPrompt: "hi",
       composition: {
         skills: { branches: ["wspolne"], leaves: [] },
@@ -98,7 +107,7 @@ describe("projectToFormValues round-trip", () => {
       updatedAt: "",
     }
     const values = projectToFormValues(project)
-    expect(values.provider).toBe("openai-compatible")
+    expect(values.modelId).toBe("gpt-4")
     expect(values.sandboxMode).toBe("docker")
     expect(values.skillBranches).toEqual(["wspolne"])
     expect(values.connectorLeaves).toEqual(["jira"])

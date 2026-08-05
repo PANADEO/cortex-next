@@ -53,7 +53,10 @@ function ProjectCard({
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex flex-wrap gap-1.5 text-xs">
-          <Badge variant="secondary">{project.model.provider}</Badge>
+          {/* Bez badge'a z `provider`: od 05.08.2026 ma jedną możliwą wartość
+              ("openai-compatible" — wszystko idzie przez cortex-proxy), więc
+              pokazywał adminowi nazwę protokołu, na którą i tak nie ma wpływu,
+              identyczną w każdym wierszu. */}
           <Badge variant="secondary">{project.model.modelId}</Badge>
           {project.allowedRoleIds.map((roleId) => (
             <Badge key={roleId} variant="outline">

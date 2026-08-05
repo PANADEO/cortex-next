@@ -80,7 +80,7 @@ function projectInput(composition: CoworkProjectComposition): ProjectInput {
     enabled: true,
     archetype: "task-chat",
     allowedRoleIds: [],
-    model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
+    model: { provider: "openai-compatible", modelId: "claude-sonnet-4-5" },
     composition,
     sandbox: { mode: "local", allowedPaths: [] },
   }

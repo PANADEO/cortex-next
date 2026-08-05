@@ -13,10 +13,21 @@ import { ENV, readJsonEnv } from "./env.ts"
 /**
  * Resolved model config as serialized by the app's chat-engine (its
  * `modelConfigForRunner`). Mirrors - but is NOT - @cortex/types'
- * CoworkModelConfig: refs are already resolved to values here.
+ * CoworkModelConfig: refs are already resolved to values here, and this runner
+ * is a standalone project that cannot import the app's types, so the shape has
+ * to be restated on this side of the env-var contract. Keep the two in sync:
+ * the native "anthropic" arm was dropped from BOTH on 05.08.2026, when every
+ * project moved behind cortex-proxy.
+ *
+ * `provider` is declared but deliberately NOT read here - configureModel()
+ * hardcodes the OpenAI-completions transport, since that is now the only one.
+ * It stays on the wire because the APP side still needs it: isModelConfig()
+ * (app/api/cortex-config/projects/validation.ts) uses it to reject a write
+ * trying to persist the removed "anthropic" value. Dropping it from this
+ * interface would only hide what the app actually sends.
  */
 export interface ResolvedModelConfig {
-  provider: "anthropic" | "openai-compatible"
+  provider: "openai-compatible"
   modelId: string
   baseUrl?: string
   /** Resolved secret value (the app resolves credential refs before spawn). */
@@ -82,22 +93,12 @@ export function readModelConfigFromEnv(): ResolvedModelConfig | undefined {
 export function configureModel(config: ResolvedModelConfig | undefined): string {
   if (!config) return DEFAULT_MODEL
 
-  if (config.provider === "anthropic") {
-    // Catalog provider: only re-register when transport actually deviates,
-    // so catalog metadata (cost, context window) stays untouched by default.
-    if (config.baseUrl || config.apiKey || config.headers) {
-      registerProvider("anthropic", {
-        ...(config.baseUrl ? { baseUrl: config.baseUrl } : {}),
-        ...(config.apiKey ? { apiKey: config.apiKey } : {}),
-        ...(config.headers ? { headers: config.headers } : {}),
-      })
-    }
-    return `anthropic/${config.modelId}`
-  }
-
+  // The app always sets baseUrl now (modelConfigForRunner injects
+  // CORTEX_PROXY_URL per turn), so this only catches a hand-written
+  // COWORK_MODEL_CONFIG in standalone `flue run` use.
   if (!config.baseUrl) {
     console.error(
-      "[cowork-runner] openai-compatible model config requires baseUrl - falling back to default model",
+      "[cowork-runner] model config requires baseUrl (cortex-proxy endpoint) - falling back to default model",
     )
     return DEFAULT_MODEL
   }

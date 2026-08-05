@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto"
 import { readdir, stat } from "node:fs/promises"
 import path from "node:path"
 import type { CoworkConnectorConfig, CoworkModelConfig, CoworkProjectConfig } from "@cortex/types"
-import { composeAgentsPrompt } from "@cortex/types"
+import { composeAgentsPrompt, cortexProxyModelBaseUrl } from "@cortex/types"
 import type {
   AgentActivityStep,
   ChatMessage,
@@ -48,7 +48,7 @@ interface RunnerResult {
  * run we diff that directory and register whatever files the model produced.
  *
  * Requirements (dev): `npm install --ignore-scripts` inside cowork-runner, a
- * reachable cortex-proxy (the project's model config points at it - see
+ * reachable cortex-proxy at CORTEX_PROXY_URL (every turn is routed to it - see
  * modelConfigForRunner below), and COWORK_NODE_BIN pointing at a node >= 22.19
  * binary when the app itself runs on an older node (Flue's pi-ai dependency
  * needs 22.19+). NO provider API key is involved: cortex-proxy does not
@@ -135,6 +135,26 @@ export async function streamChatTurn(
       if (!retryable) break
     }
   }
+  // Podpowiedź do najczęstszej przyczyny poza Dockerem, bo ze stacku Flue
+  // ("Connection error") nie da się jej odczytać. Od 05.08.2026 endpoint nie
+  // jest zapisywany w projekcie, tylko wstrzykiwany per turę z env, więc na
+  // hoście (`pnpm dev`) brak tej zmiennej zamienia agenta w router słów
+  // kluczowych. Każdy inny kafelek korzystający z proxy zwraca wtedy 502/503 z
+  // nazwą zmiennej; ten degraduje się miękko (świadomie — czat ma nie paść).
+  //
+  // CELOWO "możliwa przyczyna", nie stwierdzenie: nieustawiona zmienna daje
+  // `http://cortex-proxy/v1` (cortexProxyModelBaseUrl), co W KONTENERZE na
+  // sieci run_default jest adresem POPRAWNYM. Tam brak zmiennej jest normą, a
+  // degradacja ma wtedy inną przyczynę (brak runnera, node < 22.19, crash
+  // Flue) — twierdzenie wprost byłoby w tym środowisku po prostu nieprawdziwe.
+  if (!process.env.CORTEX_PROXY_URL?.trim()) {
+    console.warn(
+      "[cortex-cowork] tura poszła w awaryjny router słów kluczowych. Możliwa przyczyna: " +
+        "CORTEX_PROXY_URL nie jest ustawiony, więc endpoint modelu to domyślne " +
+        "http://cortex-proxy/v1 — poprawne w kontenerze na sieci run_default, ale nieosiągalne " +
+        "przy uruchomieniu na hoście (patrz .env.example).",
+    )
+  }
   return runKeywordFallback(session, userContent)
 }
 
@@ -173,21 +193,29 @@ function toActivityStep(raw: string): AgentActivityStep | null {
  * resolved app-side against a preloaded document (one file read covers the
  * model key and every connector this turn).
  *
- * When the project routes through a gateway (`baseUrl` set - cortex-proxy or
- * any other OpenAI-compatible endpoint), we also inject `X-User-ID`: cortex-
- * proxy hard-requires this header (400 without it) and uses its value as the
- * per-user cost/token attribution key for its `/usage` analytics - the same
- * identifier every other cortex-proxy client in the org sends (see
- * `buildCortexHeaders` in app/api/ai-tools/generate/route.ts). That is the
- * DEFAULT and the only path this deployment provisions: cortex-proxy does not
- * validate the client's key, so `apiKeyRef` stays unset on those projects and
- * no provider key exists in the app env.
+ * THE ENDPOINT IS INJECTED HERE, not read from the project. Every project
+ * routes through cortex-proxy (Alex, 05.08.2026 - "wszystko powinno iść przez
+ * cortex-proxy"), and a proxy address belongs to the ENVIRONMENT, not to a
+ * project: reading `CORTEX_PROXY_URL` fresh on each turn is what makes a
+ * project document portable between the local stack
+ * (http://host.docker.internal:8240), a host-run dev server
+ * (http://localhost:8240) and the droplet (http://cortex-proxy, Docker DNS on
+ * run_default). It also removes the failure this replaced - the browser
+ * rendering the "new project" form cannot read CORTEX_PROXY_URL, so the
+ * prefilled default was the Docker-DNS name everywhere, which silently did
+ * not resolve outside the droplet: the turn failed inside Flue and
+ * `streamChatTurn` swallowed it into the keyword router, leaving the tile
+ * answering with a fake agent.
  *
- * A project MAY still select native Anthropic (no baseUrl), but then its
- * `apiKeyRef` has to resolve against the credential store - nothing sets a
- * provider env var for the runner to fall back on, so an unset ref there means
- * the run fails and the turn degrades to the keyword fallback.
- * Exported for direct unit testing.
+ * `X-User-ID` rides along unconditionally for the same reason: cortex-proxy
+ * hard-requires it (400 without it) and uses its value as the per-user
+ * cost/token attribution key for its `/usage` analytics - the same identifier
+ * every other cortex-proxy client in the org sends (see `buildCortexHeaders`
+ * in app/api/ai-tools/generate/route.ts).
+ *
+ * `apiKeyRef` stays project-level and usually unset: it is a credential-store
+ * path (environment-independent), and cortex-proxy does not validate the
+ * client's key anyway. Exported for direct unit testing.
  */
 export function modelConfigForRunner(
   project: CoworkProjectConfig,
@@ -198,11 +226,9 @@ export function modelConfigForRunner(
   return {
     provider: project.model.provider,
     modelId: project.model.modelId,
-    ...(project.model.baseUrl ? { baseUrl: project.model.baseUrl } : {}),
+    baseUrl: cortexProxyModelBaseUrl(process.env.CORTEX_PROXY_URL),
     ...(apiKey ? { apiKey } : {}),
-    ...(project.model.baseUrl
-      ? { headers: { "X-User-ID": userEmail ?? project.id } }
-      : {}),
+    headers: { "X-User-ID": userEmail ?? project.id },
   }
 }
 

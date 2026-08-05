@@ -10,7 +10,7 @@ function validBody(overrides: Record<string, unknown> = {}): Record<string, unkn
     enabled: true,
     archetype: "task-chat",
     allowedRoleIds: ["analyst"],
-    model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
+    model: { provider: "openai-compatible", modelId: "claude-sonnet-4-5" },
     composition: {
       skills: { branches: ["wspolne"], leaves: [] },
       connectors: { branches: [], leaves: [] },
@@ -37,20 +37,43 @@ describe("parseProjectBody", () => {
     expect("error" in parsed).toBe(true)
   })
 
-  it("requires baseUrl for openai-compatible providers", () => {
-    const parsed = parseProjectBody(
+  it("accepts a model without an endpoint - the server injects it per turn", () => {
+    const value = expectValid(
       validBody({ model: { provider: "openai-compatible", modelId: "gpt-4" } }),
+    )
+    expect(value.model).toEqual({ provider: "openai-compatible", modelId: "gpt-4" })
+  })
+
+  // The native Anthropic arm was removed on 05.08.2026 (everything goes
+  // through cortex-proxy). An old admin client or a hand-rolled curl must not
+  // be able to write it back into the store.
+  it('rejects the removed "anthropic" provider', () => {
+    const parsed = parseProjectBody(
+      validBody({ model: { provider: "anthropic", modelId: "claude-sonnet-4-5" } }),
     )
     expect("error" in parsed).toBe(true)
   })
 
-  it("accepts openai-compatible with baseUrl", () => {
+  // baseUrl/headers are resolved per turn from the server environment. Letting
+  // a body persist them is exactly how one deployment's proxy address used to
+  // get frozen into a document that outlives it.
+  it("drops a client-supplied baseUrl and headers instead of persisting them", () => {
     const value = expectValid(
       validBody({
-        model: { provider: "openai-compatible", modelId: "gpt-4", baseUrl: "https://x/v1" },
+        model: {
+          provider: "openai-compatible",
+          modelId: "gpt-4",
+          baseUrl: "http://someones-laptop:8240/v1",
+          headers: { "X-User-ID": "spoofed@example.com" },
+          apiKeyRef: "  wspolne/llm/proxy  ",
+        },
       }),
     )
-    expect(value.model.baseUrl).toBe("https://x/v1")
+    expect(value.model).toEqual({
+      provider: "openai-compatible",
+      modelId: "gpt-4",
+      apiKeyRef: "wspolne/llm/proxy",
+    })
   })
 
   it("rejects an unknown sandbox mode", () => {

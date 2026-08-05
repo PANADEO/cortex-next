@@ -56,7 +56,7 @@ const BACK_HREF = "/cortex-config/projects"
 const TABS = [
   { value: "podstawy", label: "Podstawy", fields: ["id", "name", "description", "icon", "enabled"] },
   { value: "dostep", label: "Dostęp", fields: ["allowedRoleIds"] },
-  { value: "model", label: "Model", fields: ["provider", "modelId", "baseUrl", "apiKeyRef"] },
+  { value: "model", label: "Model", fields: ["modelId", "apiKeyRef"] },
   {
     value: "klocki",
     label: "Klocki",
@@ -149,7 +149,6 @@ export function ProjectEditor({
     resolver: zodResolver(projectFormSchema),
     defaultValues: project ? projectToFormValues(project) : EMPTY_PROJECT_FORM_VALUES,
   })
-  const provider = form.watch("provider")
   const errors = form.formState.errors
   const briefs = useFieldArray({ control: form.control, name: "briefs" })
 
@@ -291,31 +290,13 @@ export function ProjectEditor({
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Model językowy</CardTitle>
                 <CardDescription>
-                  Wszystkie wywołania idą przez jeden provider layer - gotowe pod cortex-proxy.
+                  Każda tura idzie przez cortex-proxy - adres bramki bierze serwer ze swojego
+                  środowiska (CORTEX_PROXY_URL), więc projekt przenosi się między instancjami bez
+                  edycji. Tu wybierasz tylko model.
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <Label>Provider</Label>
-                  <Controller
-                    control={form.control}
-                    name="provider"
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="anthropic">Anthropic</SelectItem>
-                          <SelectItem value="openai-compatible">
-                            OpenAI-compatible (gateway / cortex-proxy)
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
-                <div>
+                <div className="sm:col-span-2">
                   <Label htmlFor="project-model">Model</Label>
                   <Input
                     id="project-model"
@@ -325,18 +306,6 @@ export function ProjectEditor({
                   />
                   <FieldError message={errors.modelId?.message} />
                 </div>
-                {provider === "openai-compatible" ? (
-                  <div className="sm:col-span-2">
-                    <Label htmlFor="project-base-url">Base URL</Label>
-                    <Input
-                      id="project-base-url"
-                      className="mt-1"
-                      placeholder="https://cortex-proxy.example.com/v1"
-                      {...form.register("baseUrl")}
-                    />
-                    <FieldError message={errors.baseUrl?.message} />
-                  </div>
-                ) : null}
                 <div className="sm:col-span-2">
                   <Label htmlFor="project-api-key-ref">
                     Klucz API (referencja z sekretów, np. wspolne/llm/cortex-proxy)
@@ -344,7 +313,7 @@ export function ProjectEditor({
                   <Input
                     id="project-api-key-ref"
                     className="mt-1"
-                    placeholder="puste = klucz z env serwera"
+                    placeholder="puste = cortex-proxy nie weryfikuje klucza klienta"
                     {...form.register("apiKeyRef")}
                   />
                 </div>

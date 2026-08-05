@@ -66,7 +66,7 @@ function closedConfig(): CoworkGovernanceConfig {
         enabled: true,
         archetype: "task-chat",
         allowedRoleIds: ["analyst"],
-        model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
+        model: { provider: "openai-compatible", modelId: "claude-sonnet-4-5" },
         composition: {
           skills: { branches: [], leaves: [] },
           connectors: { branches: [], leaves: [] },
@@ -110,7 +110,7 @@ const MUTATION_BODY = {
   enabled: true,
   archetype: "task-chat",
   allowedRoleIds: ["analyst"],
-  model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
+  model: { provider: "openai-compatible", modelId: "claude-sonnet-4-5" },
   composition: {
     skills: { branches: [], leaves: [] },
     connectors: { branches: [], leaves: [] },

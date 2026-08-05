@@ -23,10 +23,26 @@ export function isStringArray(value: unknown): value is string[] {
 function isModelConfig(value: unknown): value is CoworkModelConfig {
   if (typeof value !== "object" || value === null) return false
   const model = value as CoworkModelConfig
-  if (model.provider !== "anthropic" && model.provider !== "openai-compatible") return false
+  if (model.provider !== "openai-compatible") return false
   if (typeof model.modelId !== "string" || model.modelId.length === 0) return false
-  if (model.provider === "openai-compatible" && !model.baseUrl) return false
   return true
+}
+
+/**
+ * Keeps only what belongs to the PROJECT. `baseUrl` and `headers` are resolved
+ * per turn from the server environment (modelConfigForRunner in
+ * chat-engine.ts), so a body carrying them - an old admin client, a hand-rolled
+ * curl - must not be able to freeze one deployment's address into the stored
+ * document. Dropped silently rather than rejected: they are not an error on
+ * the caller's part, just fields this layer no longer owns.
+ */
+function persistedModelConfig(model: CoworkModelConfig): CoworkModelConfig {
+  const apiKeyRef = model.apiKeyRef?.trim()
+  return {
+    provider: model.provider,
+    modelId: model.modelId,
+    ...(apiKeyRef ? { apiKeyRef } : {}),
+  }
 }
 
 function isGrant(value: unknown): value is CoworkResourceGrant {
@@ -77,7 +93,7 @@ export function parseProjectBody(body: unknown): ParsedProject {
   if (input.archetype !== "task-chat") return { error: 'archetype must be "task-chat"' }
   if (!isStringArray(input.allowedRoleIds)) return { error: "allowedRoleIds must be a string array" }
   if (!isModelConfig(input.model)) {
-    return { error: "model needs provider (anthropic | openai-compatible), modelId, and baseUrl for openai-compatible" }
+    return { error: 'model needs provider ("openai-compatible") and modelId' }
   }
   if (!isComposition(input.composition)) {
     return { error: "composition needs skills/connectors/secrets grants (branches[] + leaves[])" }
@@ -115,7 +131,7 @@ export function parseProjectBody(body: unknown): ParsedProject {
       enabled: input.enabled,
       archetype: "task-chat",
       allowedRoleIds: input.allowedRoleIds,
-      model: input.model,
+      model: persistedModelConfig(input.model),
       ...(input.department ? { department: input.department } : {}),
       ...(input.systemPrompt ? { systemPrompt: input.systemPrompt } : {}),
       ...(input.briefs && input.briefs.length > 0 ? { briefs: input.briefs } : {}),
