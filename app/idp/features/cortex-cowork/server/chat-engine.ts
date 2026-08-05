@@ -47,14 +47,17 @@ interface RunnerResult {
  * to write deliverables under this session's artifacts/ directory; after the
  * run we diff that directory and register whatever files the model produced.
  *
- * Requirements (dev): `npm install --ignore-scripts` inside cowork-runner,
- * ANTHROPIC_API_KEY in the app env, and COWORK_NODE_BIN pointing at a
- * node >= 22.19 binary when the app itself runs on an older node (Flue's
- * pi-ai dependency needs 22.19+). Both env vars live in .env.local.
+ * Requirements (dev): `npm install --ignore-scripts` inside cowork-runner, a
+ * reachable cortex-proxy (the project's model config points at it - see
+ * modelConfigForRunner below), and COWORK_NODE_BIN pointing at a node >= 22.19
+ * binary when the app itself runs on an older node (Flue's pi-ai dependency
+ * needs 22.19+). NO provider API key is involved: cortex-proxy does not
+ * validate the client's key, so there is nothing to put in the app env.
  *
- * If the runner is missing or the run fails, we degrade to a deterministic
- * keyword router over the same skill implementations so the chat never
- * hard-fails.
+ * If the runner is MISSING or the RUN FAILS - a crashed process, a timeout, an
+ * unreachable model endpoint - we degrade to a deterministic keyword router
+ * over the same skill implementations so the chat never hard-fails. The
+ * fallback is not keyed to any credential being absent.
  */
 
 // Document-heavy tiles (multi-tool turns over big source files) legitimately
@@ -168,17 +171,22 @@ function toActivityStep(raw: string): AgentActivityStep | null {
 /**
  * Builds the model config slice passed to the runner. Credential refs are
  * resolved app-side against a preloaded document (one file read covers the
- * model key and every connector this turn); an unset or unresolvable ref
- * falls through to the provider's own env-var lookup (ANTHROPIC_API_KEY et
- * al.) inside the runner process.
+ * model key and every connector this turn).
  *
  * When the project routes through a gateway (`baseUrl` set - cortex-proxy or
  * any other OpenAI-compatible endpoint), we also inject `X-User-ID`: cortex-
  * proxy hard-requires this header (400 without it) and uses its value as the
  * per-user cost/token attribution key for its `/usage` analytics - the same
  * identifier every other cortex-proxy client in the org sends (see
- * `buildCortexHeaders` in app/api/ai-tools/generate/route.ts). Native
- * Anthropic (no baseUrl) gets no extra header - zero behavior change there.
+ * `buildCortexHeaders` in app/api/ai-tools/generate/route.ts). That is the
+ * DEFAULT and the only path this deployment provisions: cortex-proxy does not
+ * validate the client's key, so `apiKeyRef` stays unset on those projects and
+ * no provider key exists in the app env.
+ *
+ * A project MAY still select native Anthropic (no baseUrl), but then its
+ * `apiKeyRef` has to resolve against the credential store - nothing sets a
+ * provider env var for the runner to fall back on, so an unset ref there means
+ * the run fails and the turn degrades to the keyword fallback.
  * Exported for direct unit testing.
  */
 export function modelConfigForRunner(

@@ -64,7 +64,7 @@ afterEach(() => {
 
 function config(overrides: Partial<CoworkGovernanceConfig> = {}): CoworkGovernanceConfig {
   return {
-    version: 2,
+    version: 3,
     departments: ["wspolne"],
     skillSources: [],
     connectors: [],

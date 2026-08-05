@@ -48,7 +48,7 @@ function connector(overrides: Partial<CoworkConnectorConfig> = {}): CoworkConnec
 
 function config(overrides: Partial<CoworkGovernanceConfig> = {}): CoworkGovernanceConfig {
   return {
-    version: 2,
+    version: 3,
     departments: ["wspolne", "finanse", "finanse/kontroling"],
     skillSources: [],
     connectors: [],

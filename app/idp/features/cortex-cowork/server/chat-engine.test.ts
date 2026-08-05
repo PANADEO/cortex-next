@@ -141,7 +141,7 @@ describe("runFlueTurn spawn env (via runChatTurn)", () => {
     const { createSandboxSession } = await import("./sandbox-store")
     const proj = project({ id: "proj-cli" })
     const cfg: CoworkGovernanceConfig = {
-      version: 2,
+      version: 3,
       departments: ["wspolne"],
       skillSources: [],
       connectors: [],
@@ -167,7 +167,7 @@ describe("runFlueTurn spawn env (via runChatTurn)", () => {
     const { createSandboxSession } = await import("./sandbox-store")
     const proj = project({ id: "proj-cli-anon" })
     const cfg: CoworkGovernanceConfig = {
-      version: 2,
+      version: 3,
       departments: ["wspolne"],
       skillSources: [],
       connectors: [],

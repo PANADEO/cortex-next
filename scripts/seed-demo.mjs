@@ -57,7 +57,7 @@ function upsertById(list, entry) {
 // Matches seedConfig() in app/idp/lib/cortex-governance/store.ts (fresh install).
 function freshConfig() {
   return {
-    version: 2,
+    version: 3,
     departments: ["wspolne"],
     skillSources: [
       {
@@ -76,9 +76,9 @@ function freshConfig() {
 }
 
 const config = readJson(governancePath, null) ?? freshConfig()
-if (config.version !== 2) {
+if (config.version !== 3) {
   console.error(
-    `governance.json is version ${config.version}, expected 2 - open the app once so the store migrates, then re-run.`,
+    `governance.json is version ${config.version}, expected 3 - open the app once so readGovernanceConfig() migrates it, then re-run.`,
   )
   process.exit(1)
 }
@@ -158,7 +158,10 @@ if (!config.roles.some((role) => role.id === "analyst")) {
 // read it (they append /v1/chat/completions themselves). Flue's
 // registerProvider() wants baseUrl to already include /v1 (its own doc's
 // example: "https://api.anthropic.com/v1"), so this is the one place that
-// appends it.
+// appends it. Deliberate 2-line twin of cortexProxyModelBaseUrl() in
+// packages/@cortex/types (which the app's seed + config form use): this is a
+// plain .mjs script with no TS build in front of it, so it cannot import the
+// shared helper. Keep the two in sync.
 function cortexProxyBaseUrlWithV1() {
   return `${process.env.CORTEX_PROXY_URL ?? "http://cortex-proxy"}/v1`
 }

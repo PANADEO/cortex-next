@@ -320,7 +320,7 @@ export function ProjectEditor({
                   <Input
                     id="project-model"
                     className="mt-1"
-                    placeholder="np. claude-sonnet-4-5"
+                    placeholder="np. anthropic/claude-sonnet-4.6"
                     {...form.register("modelId")}
                   />
                   <FieldError message={errors.modelId?.message} />

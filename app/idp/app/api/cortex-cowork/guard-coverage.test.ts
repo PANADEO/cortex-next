@@ -81,7 +81,7 @@ const PROJECTS = [
  *  isOpenMode() jest false i filtr ról faktycznie działa. */
 function closedConfig(): CoworkGovernanceConfig {
   return {
-    version: 2,
+    version: 3,
     departments: ["wspolne"],
     skillSources: [],
     connectors: [],

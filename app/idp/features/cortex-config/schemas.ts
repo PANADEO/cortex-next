@@ -4,7 +4,12 @@ import type {
   CoworkProjectConfig,
   CoworkSkillSource,
 } from "@cortex/types"
-import { COWORK_DEPARTMENT_PATTERN, COWORK_SLUG_PATTERN } from "@cortex/types"
+import {
+  cortexProxyModelBaseUrl,
+  COWORK_DEPARTMENT_PATTERN,
+  COWORK_SLUG_PATTERN,
+  DEFAULT_COWORK_MODEL_ID,
+} from "@cortex/types"
 import { z } from "zod"
 import type { ProjectInput } from "./queries"
 
@@ -92,9 +97,13 @@ export const EMPTY_PROJECT_FORM_VALUES: ProjectFormValues = {
   icon: "",
   enabled: true,
   allowedRoleIds: [],
-  provider: "anthropic",
-  modelId: "claude-sonnet-4-5",
-  baseUrl: "",
+  // Same cortex-proxy routing the store seeds (lib/cortex-governance/store.ts)
+  // and seed-demo.mjs uses. No CORTEX_PROXY_URL here - this default is rendered
+  // in the browser, which cannot read it; the helper's fallback is the org's
+  // Docker-DNS convention and the admin edits the field if their proxy differs.
+  provider: "openai-compatible",
+  modelId: DEFAULT_COWORK_MODEL_ID,
+  baseUrl: cortexProxyModelBaseUrl(),
   apiKeyRef: "",
   department: "",
   systemPrompt: "",

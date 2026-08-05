@@ -168,17 +168,12 @@ services:
       # backend niżej (host:port zgodne z jego Dockerfile EXPOSE 8000), nie
       # awaria.
       DOCUMENT_PARSER_BACKEND_URL: ${DOCUMENT_PARSER_BACKEND_URL:-}
-      # Cortex Cowork — jedyny brakujący element, żeby ten kafelek działał w
-      # pełni w tym compose: obraz Dockera JUŻ buduje i kopiuje cowork-runner/
-      # (osobny etap `cowork-runner-deps`, patrz Dockerfile) z poprawnymi
-      # ścieżkami (COWORK_RUNNER_DIR itd. ustawione na stałe w obrazie), a
-      # node:22-alpine (v22.23.1) sam spełnia wymóg >=22.19 dla Flue —
-      # COWORK_NODE_BIN niepotrzebny w Dockerze. Jedyne czego brakuje to
-      # sekret: prawdziwy klucz Anthropic, którego obraz nie może zawierać.
-      # Puste = chat-engine.ts po cichu degraduje się do deterministycznego
-      # routera słów kluczowych (patrz jego JSDoc) — kafelek nie hard-failuje,
-      # ale bez tego klucza nie ma realnego agenta LLM.
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Cortex Cowork NIE ma tu własnej zmiennej i nie potrzebuje klucza
+      # providera: model jest per-projekt (Cortex Config -> governance.json) i
+      # domyślnie celuje w CORTEX_PROXY_URL wyżej. Obraz Dockera sam buduje i
+      # kopiuje cowork-runner/ (etap `cowork-runner-deps`, patrz Dockerfile) z
+      # ustawionymi na stałe ścieżkami, a node:22-alpine spełnia wymóg >=22.19
+      # dla Flue — COWORK_NODE_BIN też jest tu niepotrzebny.
       # Licencjonowanie modułów instancji (PROJECT/cortex-frontend-module-
       # licensing-mvp.md) — lista kodów kandydatów kind=native dozwolonych w
       # picker'ze "Dodaj aplikację" (comma-separated, ten sam wzorzec co

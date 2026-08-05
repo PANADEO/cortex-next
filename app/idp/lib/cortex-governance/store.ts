@@ -7,6 +7,8 @@ import type {
   CoworkRole,
 } from "@cortex/types"
 import {
+  cortexProxyModelBaseUrl,
+  DEFAULT_COWORK_MODEL_ID,
   DEFAULT_COWORK_PROJECT_ID,
   DEFAULT_DEPARTMENT,
   emptyComposition,
@@ -40,7 +42,7 @@ function nowIso(): string {
 function seedConfig(): CoworkGovernanceConfig {
   const createdAt = nowIso()
   return {
-    version: 2,
+    version: 3,
     departments: [DEFAULT_DEPARTMENT],
     skillSources: [
       {
@@ -63,7 +65,13 @@ function seedConfig(): CoworkGovernanceConfig {
         enabled: true,
         archetype: "task-chat",
         allowedRoleIds: ["analyst"],
-        model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
+        // Routed through cortex-proxy, no provider key anywhere - see
+        // cortexProxyModelBaseUrl() for why apiKeyRef stays unset.
+        model: {
+          provider: "openai-compatible",
+          baseUrl: cortexProxyModelBaseUrl(process.env.CORTEX_PROXY_URL),
+          modelId: DEFAULT_COWORK_MODEL_ID,
+        },
         composition: {
           skills: { branches: [DEFAULT_DEPARTMENT], leaves: [] },
           connectors: { branches: [], leaves: [] },
@@ -91,13 +99,16 @@ interface LegacyConfig {
   projects?: LegacyProjectConfig[]
 }
 
+/** Shape between the two migrations: v2's structure, pre-v3 model repair. */
+type V2Config = Omit<CoworkGovernanceConfig, "version"> & { version: 2 }
+
 /**
  * v1 stored skills as flat groups + role->group entitlement and connectors
  * inline per project. v2 is a departmental catalog + project composition.
  * Migration: everything lands in the default department, each project grants
  * that department's skills and keeps its (now catalog-promoted) connectors.
  */
-function migrateV1(legacy: LegacyConfig): CoworkGovernanceConfig {
+function migrateV1(legacy: LegacyConfig): V2Config {
   const connectors: CoworkConnectorConfig[] = []
   const projects: CoworkProjectConfig[] = (legacy.projects ?? []).map((project) => {
     const inline = project.connectors ?? []
@@ -141,6 +152,52 @@ function migrateV1(legacy: LegacyConfig): CoworkGovernanceConfig {
   }
 }
 
+// --- v2 -> v3 migration -------------------------------------------------------
+
+/**
+ * Do 05.08.2026 domyślny projekt siedział na `provider: "anthropic"` BEZ
+ * `baseUrl` i BEZ `apiKeyRef`, licząc na to, że Flue znajdzie sobie klucz w
+ * `ANTHROPIC_API_KEY` w env. Ta zmienna została usunięta (decyzja Alexa:
+ * wszystko idzie przez cortex-proxy), więc taka konfiguracja NIE MA już
+ * skąd wziąć klucza — a to nie kończy się czytelnym błędem, tylko cichym
+ * zjazdem do deterministycznego routera słów kluczowych w `streamChatTurn`
+ * (kafelek dalej odpowiada, tylko udawanym agentem). Stąd naprawa danych,
+ * nie tylko zmiana domyślki w kodzie: istniejące pliki nie są mergowane z
+ * seedem (patrz `readGovernanceConfig` niżej), więc bez tego każdy
+ * wcześniej zaseedowany deploy po prostu by się popsuł.
+ *
+ * WARUNKOWA i tylko dlatego bezpieczna: rusza wyłącznie projekty bez
+ * `apiKeyRef`. Projekt świadomie wskazany na natywne Anthropic MUSI mieć
+ * `apiKeyRef` (credential store) — inaczej nigdy nie działał — więc ten
+ * filtr z definicji dotyka tylko konfiguracji już zepsutych, nie cudzych
+ * świadomych wyborów.
+ */
+function migrateV2(config: V2Config): CoworkGovernanceConfig {
+  const baseUrl = cortexProxyModelBaseUrl(process.env.CORTEX_PROXY_URL)
+
+  return {
+    ...config,
+    version: 3,
+    projects: config.projects.map((project) => {
+      // `model?.` — brak tego pola to teoretycznie niemożliwy kształt (typ v1
+      // wymagał go), ale rzucony tu TypeError wywróciłby readGovernanceConfig(),
+      // które siedzi na ścieżce żądania KAŻDEJ trasy governance: instancja bez
+      // ścieżki samonaprawy. Taniej przepuścić dziwny wiersz bez zmian.
+      if (project.model?.provider !== "anthropic" || project.model.apiKeyRef?.trim()) return project
+
+      // apiKeyRef celowo NIE jest przenoszony: trafiamy tu wyłącznie gdy był
+      // pusty/whitespace, a przeniesienie go zostawiłoby w pliku śmieć, który
+      // przyszłemu czytelnikowi wygląda jak świadoma konfiguracja z kluczem.
+      const { apiKeyRef: _dropped, ...model } = project.model
+      void _dropped
+      return {
+        ...project,
+        model: { ...model, provider: "openai-compatible" as const, baseUrl, modelId: DEFAULT_COWORK_MODEL_ID },
+      }
+    }),
+  }
+}
+
 // --- persistence --------------------------------------------------------------
 
 export async function readGovernanceConfig(): Promise<CoworkGovernanceConfig> {
@@ -153,8 +210,15 @@ export async function readGovernanceConfig(): Promise<CoworkGovernanceConfig> {
     await writeJsonAtomic(CONFIG_FILE, raw)
     return raw as CoworkGovernanceConfig
   }
-  if ((raw as LegacyConfig).version === 1) {
-    const migrated = migrateV1(raw as LegacyConfig)
+  // Łańcuchowo: v1 przechodzi przez OBIE migracje, v2 tylko przez drugą.
+  const version = (raw as { version?: number }).version
+  if (version === 1) {
+    const migrated = migrateV2(migrateV1(raw as LegacyConfig))
+    await writeJsonAtomic(CONFIG_FILE, migrated)
+    return migrated
+  }
+  if (version === 2) {
+    const migrated = migrateV2(raw as unknown as V2Config)
     await writeJsonAtomic(CONFIG_FILE, migrated)
     return migrated
   }

@@ -65,7 +65,7 @@ function project(overrides: Partial<CoworkProjectConfig> = {}): CoworkProjectCon
 /** Non-bootstrap config: a real admin + a role scoped to proj-a only. */
 function closedConfig(): CoworkGovernanceConfig {
   return {
-    version: 2,
+    version: 3,
     departments: ["wspolne"],
     skillSources: [],
     connectors: [],
@@ -100,7 +100,7 @@ async function loadHandler() {
  * proj-b - proves the GET gate scopes per-project, not "any role at all". */
 function closedConfigTwoProjects(): CoworkGovernanceConfig {
   return {
-    version: 2,
+    version: 3,
     departments: ["wspolne"],
     skillSources: [],
     connectors: [],
@@ -158,7 +158,7 @@ describe("POST /api/cortex-cowork/sessions", () => {
 
   it("bootstrap/open mode: creates a session for any authenticated user unchanged", async () => {
     await writeConfig({
-      version: 2,
+      version: 3,
       departments: ["wspolne"],
       skillSources: [],
       connectors: [],
@@ -180,7 +180,7 @@ describe("POST /api/cortex-cowork/sessions", () => {
   // billable agent session in a sandbox.
   it("bootstrap/open mode: denies a caller who holds no cortex-cowork grant (403)", async () => {
     await writeConfig({
-      version: 2,
+      version: 3,
       departments: ["wspolne"],
       skillSources: [],
       connectors: [],
@@ -210,7 +210,7 @@ describe("POST /api/cortex-cowork/sessions", () => {
 
   it("bootstrap/open mode: denies a session request with no email header (401)", async () => {
     await writeConfig({
-      version: 2,
+      version: 3,
       departments: ["wspolne"],
       skillSources: [],
       connectors: [],
@@ -267,7 +267,7 @@ describe("GET /api/cortex-cowork/sessions", () => {
 
   it("bootstrap/open mode: any authenticated user lists sessions unchanged", async () => {
     await writeConfig({
-      version: 2,
+      version: 3,
       departments: ["wspolne"],
       skillSources: [],
       connectors: [],
@@ -286,7 +286,7 @@ describe("GET /api/cortex-cowork/sessions", () => {
 
   it("bootstrap/open mode: denies listing to a caller without the grant (403)", async () => {
     await writeConfig({
-      version: 2,
+      version: 3,
       departments: ["wspolne"],
       skillSources: [],
       connectors: [],

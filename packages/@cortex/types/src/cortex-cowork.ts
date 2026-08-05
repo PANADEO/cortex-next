@@ -52,6 +52,35 @@ export interface CoworkModelConfig {
   headers?: Record<string, string>
 }
 
+/**
+ * Base URL a fresh project's model config points at: cortex-proxy, never a
+ * direct provider endpoint. There is no env-var fallback anywhere in this
+ * path - `apiKeyRef` stays unset on purpose, because cortex-proxy does not
+ * validate the client's key, and a set `baseUrl` is what makes
+ * `modelConfigForRunner()` inject the `X-User-ID` cost-attribution header
+ * (see chat-engine.ts). scripts/seed-demo.mjs makes the same decision for the
+ * demo projects and carries the same reasoning.
+ *
+ * CORTEX_PROXY_URL is a bare host ("http://cortex-proxy", no path) - the
+ * convention every other consumer in this org uses. Flue's registerProvider()
+ * wants a baseUrl that ALREADY includes /v1 (its own doc's example:
+ * "https://api.anthropic.com/v1"), so this is the one place that appends it.
+ * The argument is optional because only the server can read CORTEX_PROXY_URL;
+ * the browser bundle (the "new project" form default) gets the Docker-DNS
+ * convention and the admin edits it if their proxy lives elsewhere.
+ */
+export function cortexProxyModelBaseUrl(proxyUrl?: string): string {
+  return `${proxyUrl?.trim() || "http://cortex-proxy"}/v1`
+}
+
+/**
+ * Default model for a fresh project. OpenRouter's dot-notation slug (what
+ * cortex-proxy forwards), not Anthropic's native hyphenated id - and the same
+ * model the rest of the app defaults to (LLM_DEFAULT_MODEL in
+ * app/api/ai-tools/generate/route.ts).
+ */
+export const DEFAULT_COWORK_MODEL_ID = "anthropic/claude-sonnet-4.6"
+
 export type CoworkSandboxMode = "local" | "docker"
 
 /**
@@ -226,7 +255,7 @@ export interface CoworkAgentsInstructions {
 
 /** Root document persisted by the cortex-config store. */
 export interface CoworkGovernanceConfig {
-  version: 2
+  version: 3
   /** Department tree as an explicit path list (resources may add implicit ones). */
   departments: string[]
   /** Hierarchical AGENTS.md layers (absent on configs written before it existed). */

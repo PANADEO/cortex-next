@@ -121,7 +121,7 @@ export type CoworkScenario = "open-mode" | "roles-assigned"
 
 function coworkConfig(scenario: CoworkScenario): CoworkGovernanceConfig {
   const base: CoworkGovernanceConfig = {
-    version: 2,
+    version: 3,
     departments: ["wspolne"],
     skillSources: [],
     connectors: [],
