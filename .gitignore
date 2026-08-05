@@ -4,8 +4,17 @@ node_modules
 .data
 .playwright-mcp
 dist
+# Sekrety. `.env` jest realnie używany: docker-compose.image.yml wciąga go
+# przez `env_file`, więc na serwerach ten plik ISTNIEJE i trzyma prawdziwe
+# tokeny. Do 05.08.2026 wzorce niżej pokrywały wyłącznie `*.local`, więc samo
+# `.env` było śledzone — jedno `git add -A` wystarczyło, żeby wpisać sekret do
+# historii. `.env.example` (szablon, bez wartości) zostaje śledzony jawnym
+# wyjątkiem niżej.
+.env
+!.env.example
 .env.local
 .env*.local
+app/idp/.env
 app/idp/.env.local
 app/idp/.env*.local
 .DS_Store
