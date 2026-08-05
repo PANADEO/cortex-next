@@ -29,7 +29,6 @@ const FIXTURE_TILE = {
   name: "Raportowanie Tokenów",
   description: null,
   icon: "BarChart3",
-  category: "Narzędzia",
   kind: "native",
   route: "/token-usage",
   url: null,

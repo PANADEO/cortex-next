@@ -315,7 +315,6 @@ export default function ApplicationsPage() {
                   <th className="px-4 py-2" />
                   <th className="px-4 py-2 font-medium">Kod</th>
                   <th className="px-4 py-2 font-medium">Nazwa</th>
-                  <th className="px-4 py-2 font-medium">Kategoria</th>
                   <th className="px-4 py-2 font-medium">Typ</th>
                   <th className="px-4 py-2 font-medium">Status</th>
                   <th className="px-4 py-2" />
@@ -332,9 +331,6 @@ export default function ApplicationsPage() {
                       </td>
                       <td className="px-4 py-2 font-mono text-xs">{application.code}</td>
                       <td className="px-4 py-2 font-medium">{application.name}</td>
-                      <td className="px-4 py-2 text-muted-foreground">
-                        {application.category ?? "-"}
-                      </td>
                       <td className="px-4 py-2">
                         <Badge variant="outline">{KIND_SHORT_LABELS[application.kind]}</Badge>
                       </td>

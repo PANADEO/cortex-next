@@ -62,7 +62,6 @@ export interface Application {
   name: string
   description: string | null
   icon: string | null
-  category: string | null
   kind: TileKind
   route: string | null
   url: string | null
@@ -73,6 +72,8 @@ export interface Application {
   showOnHub: boolean
   color: string | null
   categoryFunctional: string | null
+  /** W UI: po prostu "Kategoria" (zakładka „Działy” na hubie) — nazwa pola
+   *  została jak w bazie, patrz komentarz przy kolumnie w @cortex/db. */
   categoryDepartment: string[] | null
   // NULL = zarejestrowany manifestem, nigdy nie aktywowany w tej instancji.
   activatedAt: string | null
@@ -85,7 +86,6 @@ export interface ApplicationInput {
   name: string
   description?: string | null
   icon?: string | null
-  category?: string | null
   kind: TileKind
   route?: string | null
   url?: string | null

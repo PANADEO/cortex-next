@@ -773,6 +773,9 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
           name: "Czat zewnętrzny",
           description: "Opis do zachowania",
           icon: "MessageSquare",
+          // Wycofana kolumna (05.08.2026) — wstawiana tu wprost przez drizzle,
+          // żeby test niżej pilnował, że PATCH jej NIE kasuje. Żadna ścieżka
+          // zapisu aplikacji już jej nie ustawia; legacy wartości mają przeżyć.
           category: "Narzędzia",
           kind: "external-link",
           url: "https://chat.example.com",
@@ -790,6 +793,7 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
       expect(updated?.target).toBe("_blank")
       expect(updated?.description).toBe("Opis do zachowania")
       expect(updated?.icon).toBe("MessageSquare")
+      // Wycofana, ale wciąż w bazie — PATCH nie ma prawa jej wyzerować.
       expect(updated?.category).toBe("Narzędzia")
       expect(updated?.sortOrder).toBe(100)
       expect(updated?.url).toBe("https://chat.example.com")

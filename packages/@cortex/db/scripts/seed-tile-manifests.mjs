@@ -16,12 +16,12 @@
 // `on conflict (code) do update` obejmuje WYŁĄCZNIE kolumny strukturalne
 // (kind, route, url, target, updated_at) — fakt kodu, ma prawo wygrywać przy
 // każdym deployu, nawet na już aktywowanym wierszu (D10-rewizja d, otwarte
-// pytanie g). NIGDY name/icon/category/is_active/sort_order — to dane
+// pytanie g). NIGDY name/icon/is_active/sort_order — to dane
 // instancji/admina, muszą przeżyć deploy.
 //
 // Na INSERCIE (nowy code, pierwszy deploy z tym manifestem): name = label,
 // is_active = false, show_on_hub = false, activated_at = null,
-// icon/category/category_functional/category_department = null. Wiersz
+// icon/category_functional/category_department = null. Wiersz
 // istnieje, ale jest nieaktywny — "kod zarejestrowany, instancja jeszcze nie
 // aktywowała" (Krok 3/5, poza zakresem TEGO skryptu).
 //
@@ -77,7 +77,7 @@ async function main() {
           ${manifest.route ?? null}, ${manifest.url ?? null}, ${manifest.target ?? null},
           false, false, null
         )
-        -- Częściowy upsert: WYŁĄCZNIE kolumny strukturalne. name/icon/category/
+        -- Częściowy upsert: WYŁĄCZNIE kolumny strukturalne. name/icon/
         -- is_active/show_on_hub/category_functional/category_department/
         -- sort_order NIE są tu — zmiany zrobione w UI (Krok 3+) i stan
         -- aktywacji (Krok 1b punkt d, poza zakresem tego skryptu) przeżywają

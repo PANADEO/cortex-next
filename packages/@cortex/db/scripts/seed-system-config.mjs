@@ -6,7 +6,7 @@
 // Model: DEKLARACJA STANU DOCELOWEGO, nie jednorazowy bootstrap.
 //
 //   REJESTR APLIKACJI — seed zakłada brakujące wiersze w `applications`.
-//   Dla name/description/icon/category/kind/route/url/target/sort_order
+//   Dla name/description/icon/kind/route/url/target/sort_order
 //   działa `on conflict do nothing`, więc zmiany zrobione w UI PRZEŻYWAJĄ
 //   deploy. To jest jedyne źródło prawdy o tym, jakie kody uprawnień w ogóle
 //   istnieją w tej instancji: powłoka (`/api/me/access`) czyta wyłącznie tę
@@ -31,10 +31,10 @@
 //   świeżej bazie trafia w konflikt na niemal każdym kodzie, zanim
 //   kiedykolwiek zdążył wstawić własny wiersz. Bez wyjątku taki wiersz
 //   zostawałby TRWALE z placeholderem z seed-tile-manifests.mjs
-//   (is_active=false, name=label manifestu, icon/category=null) — częściowy
+//   (is_active=false, name=label manifestu, icon=null) — częściowy
 //   upsert nigdy więcej by go nie dotknął. Dlatego: gdy istniejący wiersz ma
 //   `activated_at is null`, upsert DODATKOWO backfilluje
-//   name/description/icon/category/kind/route/url/target/sort_order/
+//   name/description/icon/kind/route/url/target/sort_order/
 //   is_active do wartości z APPLICATIONS, tak jak przy świeżym INSERCIE — ten
 //   sam guard (`activated_at is null`) co w seed-ilustromat.mjs/
 //   seed-token-usage.mjs, tu wyrażony przez CASE WHEN w SET zamiast osobnego
@@ -114,7 +114,6 @@ const APPLICATIONS = [
     name: "IDP",
     description: "Procesowanie i ekstrakcja danych z dokumentów handlowych",
     icon: "ScanText",
-    category: "Dokumenty",
     kind: "native",
     route: "/idp/dashboard",
     color: "rose",
@@ -126,7 +125,6 @@ const APPLICATIONS = [
     name: "IDP Basic",
     description: "Uproszczone procesowanie dokumentów w osobnym pipeline",
     icon: "FileText",
-    category: "Dokumenty",
     kind: "native",
     route: "/idp-basic/dashboard",
     color: "sky",
@@ -138,7 +136,6 @@ const APPLICATIONS = [
     name: "Store-Pit Re-Rating",
     description: "Przeliczanie faktur przewoźnika na rozliczenia per klient",
     icon: "Workflow",
-    category: "Finanse",
     kind: "native",
     route: "/store-pit/dashboard",
     color: "cyan",
@@ -150,7 +147,6 @@ const APPLICATIONS = [
     name: "Store-Pit Client Zone",
     description: "Widok klienta — jego przesyłki i kwota do rozliczenia",
     icon: "Users",
-    category: "Finanse",
     kind: "native",
     route: "/store-pit/clients",
     color: "indigo",
@@ -162,7 +158,6 @@ const APPLICATIONS = [
     name: "Okna czasowe",
     description: "Śledzenie dostępności filmów na Rakuten TV PL",
     icon: "CalendarClock",
-    category: "Badania",
     kind: "native",
     route: "/okna-czasowe/dashboard",
     color: "amber",
@@ -174,7 +169,6 @@ const APPLICATIONS = [
     name: "Cortex Config",
     description: "Governance platformy — projekty agentowe, role i grupy skilli",
     icon: "ShieldCheck",
-    category: "Administracja",
     kind: "native",
     route: "/cortex-config/projects",
     color: "emerald",
@@ -186,7 +180,6 @@ const APPLICATIONS = [
     name: "Cortex Cowork",
     description: "Przestrzeń pracy z agentami — sesje, artefakty i skille",
     icon: "Bot",
-    category: "Agenci",
     kind: "native",
     route: "/cortex-cowork",
     showOnHub: false,
@@ -196,7 +189,6 @@ const APPLICATIONS = [
     name: "Intrastat",
     description: "Przygotowanie importowych Exceli WNT/WDT z faktur",
     icon: "FileSpreadsheet",
-    category: "Dokumenty",
     kind: "native",
     route: "/intrastat/dashboard",
     color: "emerald",
@@ -208,7 +200,6 @@ const APPLICATIONS = [
     name: "Nadzorca Faktur",
     description: "Nadzoruje terminy faktur i generuje AI przypomnienia płatnicze",
     icon: "Receipt",
-    category: "Finanse",
     kind: "native",
     route: "/invoice-supervisor/inbox",
     color: "orange",
@@ -220,7 +211,6 @@ const APPLICATIONS = [
     name: "Nagrywanie Spotkań",
     description: "Asystent spotkań — nagrywanie, transkrypcja i wskazówki AI na żywo",
     icon: "Video",
-    category: "Agenci",
     kind: "external-link",
     url: "https://chat.megu.me",
     target: "_blank",
@@ -233,7 +223,6 @@ const APPLICATIONS = [
     name: "Konfiguracja Systemu",
     description: "Użytkownicy, role, uprawnienia i aplikacje instancji",
     icon: "Settings",
-    category: "Administracja",
     kind: "native",
     route: "/system-config",
     color: "slate",
@@ -245,7 +234,6 @@ const APPLICATIONS = [
     name: "AI Tools",
     description: "Grant zbiorczy — dostęp do wszystkich narzędzi AI naraz",
     icon: "Sparkles",
-    category: "AI Tools",
     kind: "native",
     route: "/ai-tools",
     showOnHub: false,
@@ -255,7 +243,6 @@ const APPLICATIONS = [
     name: "Podświetlacz tekstu",
     description: "Zaznacza kluczowe fragmenty w tekście",
     icon: "Highlighter",
-    category: "AI Tools",
     kind: "native",
     route: "/ai-tools/text-highlighter",
     color: "blue",
@@ -267,7 +254,6 @@ const APPLICATIONS = [
     name: "Transformator tekstu",
     description: "Przekształca tekst według wybranego stylu",
     icon: "Wand2",
-    category: "AI Tools",
     kind: "native",
     route: "/ai-tools/text-transformer",
     color: "blue",
@@ -279,7 +265,6 @@ const APPLICATIONS = [
     name: "Analizator tekstu",
     description: "Analiza treści, tonu i struktury tekstu",
     icon: "TextCursorInput",
-    category: "AI Tools",
     kind: "native",
     route: "/ai-tools/text-analyzer",
     color: "blue",
@@ -291,7 +276,6 @@ const APPLICATIONS = [
     name: "Sumaryzator",
     description: "Skraca długie teksty do streszczenia",
     icon: "FileText",
-    category: "AI Tools",
     kind: "native",
     route: "/ai-tools/ai-summarizer",
     color: "blue",
@@ -303,7 +287,6 @@ const APPLICATIONS = [
     name: "Kreator treści",
     description: "Generuje treści marketingowe i redakcyjne",
     icon: "Sparkles",
-    category: "AI Tools",
     kind: "native",
     // Faza 0 (PROJECT/cortex-frontend-content-guru-full-port-projekt.md D1):
     // route zmieniony z "/ai-tools/content-guru" na docelowy "/content-guru",
@@ -330,7 +313,6 @@ const APPLICATIONS = [
     name: "Generator LinkedIn",
     description: "Tworzy posty na LinkedIn",
     icon: "MessageSquareText",
-    category: "AI Tools",
     kind: "native",
     route: "/ai-tools/linkedin-generator",
     color: "violet",
@@ -342,7 +324,6 @@ const APPLICATIONS = [
     name: "Generator prezentacji",
     description: "Buduje szkielet prezentacji z opisu",
     icon: "Presentation",
-    category: "AI Tools",
     kind: "native",
     route: "/ai-tools/presentation-generator",
     color: "violet",
@@ -354,7 +335,6 @@ const APPLICATIONS = [
     name: "Analizator faktur",
     description: "Wyciąga dane z faktur i je podsumowuje",
     icon: "ReceiptText",
-    category: "AI Tools",
     kind: "native",
     route: "/ai-tools/fakturomat",
     color: "amber",
@@ -366,7 +346,6 @@ const APPLICATIONS = [
     name: "Chatbot AI",
     description: "Asystent ogólnego przeznaczenia",
     icon: "Bot",
-    category: "AI Tools",
     kind: "native",
     route: "/ai-tools/ai-daily-assistant",
     color: "indigo",
@@ -378,7 +357,6 @@ const APPLICATIONS = [
     name: "Intrastat — edycja kodów CN",
     description: "Uprawnienie: edycja słownika kodów CN wewnątrz kafelka Intrastat",
     icon: "FileSpreadsheet",
-    category: "Uprawnienia",
     kind: "native",
     route: "/intrastat/resources",
     showOnHub: false,
@@ -388,7 +366,6 @@ const APPLICATIONS = [
     name: "Intrastat — edycja konfiguracji",
     description: "Uprawnienie: edycja ustawień wewnątrz kafelka Intrastat",
     icon: "FileSpreadsheet",
-    category: "Uprawnienia",
     kind: "native",
     route: "/intrastat/settings",
     showOnHub: false,
@@ -418,19 +395,23 @@ async function main() {
     let inserted = 0
     for (const [index, application] of APPLICATIONS.entries()) {
       const [row] = await tx`
+        -- Kolumna "category" (wolny tekst) NIE JEST tu wymieniana świadomie —
+        -- wycofana 05.08.2026, patrz komentarz przy schemacie w
+        -- src/schema/system-config.ts. Zostaje w bazie z legacy wartościami,
+        -- ale żadna ścieżka zapisu (seed ani UI) jej już nie dotyka.
         insert into system_config.applications
-          (code, name, description, icon, category, kind, route, url, target, sort_order,
+          (code, name, description, icon, kind, route, url, target, sort_order,
            show_on_hub, color, category_functional, category_department, activated_at)
         values (
           ${application.code}, ${application.name}, ${application.description},
-          ${application.icon}, ${application.category}, ${application.kind},
+          ${application.icon}, ${application.kind},
           ${application.route ?? null}, ${application.url ?? null},
           ${application.target ?? null}, ${index * 10},
           ${application.showOnHub ?? true}, ${application.color ?? null},
           ${application.categoryFunctional ?? null}, ${application.categoryDepartment ?? null},
           now()
         )
-        -- Częściowy upsert: name/description/icon/category/kind/route/url/target/
+        -- Częściowy upsert: name/description/icon/kind/route/url/target/
         -- sort_order/is_active NIE są bezwarunkowo nadpisywane (zostają "on
         -- conflict do nothing" w duchu), więc zmiany zrobione w UI na tych
         -- polach przeżywają deploy jak dotychczas — Z WYJĄTKIEM niżej.
@@ -442,7 +423,7 @@ async function main() {
         -- WYJĄTEK (patrz komentarz na górze pliku): gdy istniejący wiersz ma
         -- activated_at is null — nigdy nie miał prawdziwych danych, np.
         -- pre-utworzony przez seed-tile-manifests.mjs jako nieaktywny kandydat
-        -- — CASE WHEN niżej backfillują TEŻ name/description/icon/category/
+        -- — CASE WHEN niżej backfillują TEŻ name/description/icon/
         -- kind/route/url/target/sort_order/is_active z APPLICATIONS, jak przy
         -- świeżym INSERCIE. Bezpieczne mimo że activated_at jest ustawiane w
         -- TYM SAMYM SET: Postgres liczy wszystkie wyrażenia jednego
@@ -458,8 +439,6 @@ async function main() {
             then excluded.description else system_config.applications.description end,
           icon = case when system_config.applications.activated_at is null
             then excluded.icon else system_config.applications.icon end,
-          category = case when system_config.applications.activated_at is null
-            then excluded.category else system_config.applications.category end,
           kind = case when system_config.applications.activated_at is null
             then excluded.kind else system_config.applications.kind end,
           route = case when system_config.applications.activated_at is null

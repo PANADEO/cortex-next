@@ -34,13 +34,15 @@ import {
   AlertTitle,
   Button,
   Checkbox,
-  Combobox,
   DataTable,
   EmptyState,
   Input,
   Label,
   LoadingState,
   PageHeader,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Select,
   SelectContent,
   SelectItem,
@@ -54,7 +56,7 @@ import {
   TabsTrigger,
 } from "@cortex/ui"
 import type { ColumnDef } from "@tanstack/react-table"
-import { ArrowLeft, LayoutDashboard, ShieldAlert, Trash2 } from "lucide-react"
+import { ArrowLeft, ChevronDown, LayoutDashboard, ShieldAlert, Trash2 } from "lucide-react"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import { useParams, useRouter } from "next/navigation"
@@ -113,6 +115,76 @@ function IconPickerPlaceholder({
   )
 }
 
+/** Wielowartościowy wybór z ZAMKNIĘTEJ listy, złożony z prymitywów, które repo
+ *  już ma (Popover + Checkbox + Button) — biblioteka nie ma multi-selecta, a
+ *  jedno pole na jednym ekranie nie uzasadnia nowego prymitywu w `@cortex/ui`.
+ *  Wygląda i otwiera się jak `Select` obok, ale świadomie NIE MA pola tekstowego:
+ *  wartość spoza listy nie może powstać z tego formularza. */
+function ClosedListMultiSelect({
+  id,
+  labelledBy,
+  value,
+  options,
+  placeholder,
+  onChange,
+}: {
+  id: string
+  labelledBy: string
+  value: string[]
+  options: ReadonlyArray<{ id: string; label: string }>
+  placeholder: string
+  onChange: (next: string[]) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const summary = options
+    .filter((option) => value.includes(option.id))
+    .map((option) => option.label)
+    .join(", ")
+
+  function toggle(optionId: string, checked: boolean) {
+    onChange(
+      checked ? [...new Set([...value, optionId])] : value.filter((existing) => existing !== optionId),
+    )
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          aria-labelledby={`${labelledBy} ${id}`}
+          className="w-full justify-between font-normal"
+        >
+          <span className={cn("truncate", !summary && "text-muted-foreground")}>
+            {summary || placeholder}
+          </span>
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" aria-hidden="true" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-2" align="start">
+        <div className="flex flex-col gap-1">
+          {options.map((option) => (
+            <div key={option.id} className="flex items-center gap-2 px-1 py-1">
+              <Checkbox
+                id={`${id}-${option.id}`}
+                checked={value.includes(option.id)}
+                onCheckedChange={(checked) => toggle(option.id, checked === true)}
+              />
+              <Label htmlFor={`${id}-${option.id}`} className="cursor-pointer font-normal">
+                {option.label}
+              </Label>
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 /** Radix Select nie przyjmuje pustej wartości, a `target`/`categoryFunctional`
  *  w bazie bywają NULL — stąd wartownik zamiast "". */
 const NO_TARGET = "default"
@@ -122,7 +194,6 @@ interface FormState {
   name: string
   description: string
   icon: string
-  category: string
   kind: TileKind
   route: string
   url: string
@@ -132,6 +203,8 @@ interface FormState {
   showOnHub: boolean
   color: string
   categoryFunctional: typeof NO_FUNCTIONAL_CATEGORY | string
+  /** Pole „Kategoria” w UI — kolumna nazywa się `category_department`,
+   *  patrz komentarz przy schemacie w @cortex/db. */
   categoryDepartment: string[]
 }
 
@@ -140,7 +213,6 @@ function toFormState(application: Application): FormState {
     name: application.name,
     description: application.description ?? "",
     icon: application.icon ?? "",
-    category: application.category ?? "",
     kind: application.kind,
     route: application.route ?? "",
     url: application.url ?? "",
@@ -165,7 +237,6 @@ function toInput(code: string, form: FormState): ApplicationInput {
     name: form.name.trim(),
     description: form.description.trim() || null,
     icon: form.icon.trim() || null,
-    category: form.category.trim() || null,
     kind: form.kind,
     route: isNative ? form.route.trim() : null,
     url: isNative ? null : form.url.trim(),
@@ -185,15 +256,6 @@ export default function ApplicationDetailPage() {
 
   const applicationsQuery = useApplications()
   const application = applicationsQuery.data?.find((item) => item.code === code)
-
-  // Katalog podpowiedzi dla comboboksa Kategorii — zero nowego endpointu,
-  // wartości już są w pamięci przeglądarki na tym ekranie (design doc D6).
-  const existingCategories = useMemo(() => {
-    const values = (applicationsQuery.data ?? [])
-      .map((item) => item.category)
-      .filter((category): category is string => Boolean(category))
-    return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b))
-  }, [applicationsQuery.data])
 
   const rolesQuery = useRoles()
   const applicationRolesQuery = useApplicationRoles(application?.id)
@@ -340,16 +402,6 @@ export default function ApplicationDetailPage() {
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => (current ? { ...current, [key]: value } : current))
-  }
-
-  function toggleDepartment(id: string, checked: boolean) {
-    setForm((current) => {
-      if (!current) return current
-      const next = checked
-        ? [...new Set([...current.categoryDepartment, id])]
-        : current.categoryDepartment.filter((existingId) => existingId !== id)
-      return { ...current, categoryDepartment: next }
-    })
   }
 
   // D1/D5 (Krok 3): wyłączenie show_on_hub na kafelku, który TERAZ jest
@@ -542,35 +594,22 @@ export default function ApplicationDetailPage() {
                 />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="icon">Ikona</Label>
-                  {isIconPickerActive ? (
-                    <IconPicker
-                      id="icon"
-                      value={form.icon}
-                      onChange={(value) => update("icon", value)}
-                      autoOpen
-                    />
-                  ) : (
-                    <IconPickerPlaceholder
-                      id="icon"
-                      value={form.icon}
-                      onActivate={() => setIsIconPickerActive(true)}
-                    />
-                  )}
-                </div>
-
-                <div className="grid gap-1.5">
-                  <Label htmlFor="category">Kategoria</Label>
-                  <Combobox
-                    id="category"
-                    value={form.category}
-                    onChange={(value) => update("category", value)}
-                    options={existingCategories}
-                    placeholder="np. Administracja"
+              <div className="grid gap-1.5">
+                <Label htmlFor="icon">Ikona</Label>
+                {isIconPickerActive ? (
+                  <IconPicker
+                    id="icon"
+                    value={form.icon}
+                    onChange={(value) => update("icon", value)}
+                    autoOpen
                   />
-                </div>
+                ) : (
+                  <IconPickerPlaceholder
+                    id="icon"
+                    value={form.icon}
+                    onActivate={() => setIsIconPickerActive(true)}
+                  />
+                )}
               </div>
 
               <div className="grid gap-1.5">
@@ -601,9 +640,30 @@ export default function ApplicationDetailPage() {
                 </span>
               </div>
 
+              {/* Dokładnie DWA pola kategorii, oba z zamkniętej listy — decyzja
+                  Alexa 05.08.2026. Wolnotekstowa "Kategoria" (kolumna
+                  `category`) zniknęła stąd całkowicie: była wyłącznie etykietą
+                  panelu administracyjnego, hub nigdy jej nie czytał. */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-1.5">
-                  <Label htmlFor="categoryFunctional">Kategoria funkcjonalna (zakładka „Funkcje”)</Label>
+                  <Label id="categoryDepartment-label" htmlFor="categoryDepartment">
+                    Kategoria
+                  </Label>
+                  <ClosedListMultiSelect
+                    id="categoryDepartment"
+                    labelledBy="categoryDepartment-label"
+                    value={form.categoryDepartment}
+                    options={DEPARTMENT_CATEGORIES}
+                    placeholder="Brak"
+                    onChange={(next) => update("categoryDepartment", next)}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    Można wybrać kilka. Decyduje o zakładce „Działy” na hubie.
+                  </span>
+                </div>
+
+                <div className="grid gap-1.5">
+                  <Label htmlFor="categoryFunctional">Kategoria funkcjonalna</Label>
                   <Select
                     value={form.categoryFunctional}
                     onValueChange={(value) => update("categoryFunctional", value)}
@@ -620,24 +680,9 @@ export default function ApplicationDetailPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div className="grid gap-1.5">
-                  <Label id="department-label">Kategoria działu (zakładka „Działy”)</Label>
-                  <div className="flex flex-col gap-2 rounded-md border border-border p-3">
-                    {DEPARTMENT_CATEGORIES.map((option) => (
-                      <div key={option.id} className="flex items-center gap-2">
-                        <Checkbox
-                          id={`department-${option.id}`}
-                          checked={form.categoryDepartment.includes(option.id)}
-                          onCheckedChange={(checked) => toggleDepartment(option.id, checked === true)}
-                        />
-                        <Label htmlFor={`department-${option.id}`} className="cursor-pointer font-normal">
-                          {option.label}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    Jedna wartość. Decyduje o zakładce „Funkcje” na hubie.
+                  </span>
                 </div>
               </div>
 

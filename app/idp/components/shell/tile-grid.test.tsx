@@ -33,7 +33,6 @@ function hubRow(partial: { code: string; name: string } & Partial<HubTile>) {
     id: partial.code,
     description: null,
     icon: null,
-    category: null,
     kind: "native" as const,
     route: `/${partial.code}`,
     url: null,

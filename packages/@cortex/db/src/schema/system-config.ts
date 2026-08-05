@@ -86,6 +86,15 @@ export const applications = systemConfig.table(
     description: text("description"),
     // Nazwa ikony lucide-react, nie ścieżka do pliku.
     icon: text("icon"),
+    // WYCOFANA (05.08.2026, decyzja Alexa). Wolny tekst, który istniał
+    // wyłącznie jako etykieta na liście admina Aplikacje — hub nigdy jej nie
+    // czytał (patrz hubApplicationToTile, typ Tile nie ma takiego pola).
+    // Formularz, schemat Zod serwisu i seedy już jej NIE zapisują; kolumna
+    // zostaje w bazie, bo jest wypełniona na ~24 wierszach legacy, a DROP
+    // COLUMN jest nieodwracalny i niczego nie kupuje. Do sprzątnięcia osobną
+    // migracją, gdy nikt już nie będzie potrzebował tych wartości.
+    // Nie usuwać z tego schematu przed migracją — drizzle-kit wygenerowałby
+    // wtedy DROP COLUMN przy najbliższym `generate`.
     category: text("category"),
     kind: text("kind").notNull().default("native"),
     // native -> route (ścieżka w tym appie); external-link/iframe -> url.
@@ -105,8 +114,13 @@ export const applications = systemConfig.table(
     // Mapowanie token -> klasy żyje w kodzie (resolveTileColor, poza
     // zakresem tej migracji).
     color: text("color"),
-    // Oś "Funkcje" na hubie — osobna od `category` (wolny tekst admina).
+    // Oś "Funkcje" na hubie. W UI: "Kategoria funkcjonalna".
     categoryFunctional: text("category_functional"),
+    // Oś "Działy" na hubie. UWAGA — w UI ta kolumna nazywa się po prostu
+    // "Kategoria" (decyzja Alexa 05.08.2026: jedna kategoria produktowa,
+    // zamknięta lista, wielowartościowa). Nazwa kolumny została jak była,
+    // bo rename wypełnionej kolumny to migracja + seedy + testy za zero
+    // korzyści widocznej dla użytkownika.
     categoryDepartment: text("category_department").array(),
     // NULL = wiersz zarejestrowany w kodzie, nigdy nie aktywowany w tej
     // instancji. Nie-NULL = był aktywowany co najmniej raz — automatyczny

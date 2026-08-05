@@ -56,7 +56,11 @@ const applicationFieldsSchema = z.object({
   name: z.string().min(1).max(120),
   description: z.string().max(500).nullish(),
   icon: z.string().max(64).nullish(),
-  category: z.string().max(64).nullish(),
+  // `category` (wolny tekst) świadomie NIE JEST tu polem — wycofana 05.08.2026,
+  // patrz komentarz przy kolumnie w @cortex/db. Kolumna została w bazie, ale
+  // żadna ścieżka zapisu jej już nie dotyka: Zod odrzuca ją milcząco (obiekt
+  // nie-strict), więc stary klient wysyłający to pole nie dostaje błędu, tylko
+  // nic nie nadpisuje.
   kind: TileKind,
   route: z.string().max(200).nullish(),
   url: z.string().url().max(500).nullish(),
@@ -64,9 +68,8 @@ const applicationFieldsSchema = z.object({
   isActive: z.boolean().optional(),
   sortOrder: z.number().int().min(0).max(10_000).optional(),
   // Hub-render (Krok 1/3, PROJECT/cortex-frontend-hub-db-driven-projekt.md
-  // D1/D2/D3). Wolny tekst jak `category` — zestaw dozwolonych wartości
-  // (5 funkcji, 5 działów) egzekwuje formularz (select/multi-select), nie ten
-  // schemat; ten sam poziom rygoru co dzisiejszy `category`, celowo, żeby nie
+  // D1/D2/D3). Zestaw dozwolonych wartości (5 funkcji, 5 kategorii) egzekwuje
+  // formularz (select/multi-select), nie ten schemat — celowo, żeby nie
   // dublować enuma zdefiniowanego po stronie klienta (app/idp/lib/tiles.ts).
   showOnHub: z.boolean().optional(),
   color: z.string().max(32).nullish(),
@@ -601,7 +604,7 @@ export async function createApplication(input: ApplicationInput): Promise<Applic
  * PATCH z prawdziwą semantyką częściową: pola nieobecne w `patch` zostają takie,
  * jakie są w bazie. Wcześniej ta funkcja przyjmowała komplet i nadpisywała
  * pominięte pola domyślnymi wartościami — każda edycja z formularza po cichu
- * kasowała `target`, `description`, `icon`, `category` i zerowała `sortOrder`.
+ * kasowała `target`, `description`, `icon` i zerowała `sortOrder`.
  *
  * Reguły międzypolowe sprawdzamy na SCALONYM wierszu (rzuca ZodError → 400).
  */
@@ -1224,7 +1227,6 @@ function mergeApplicationInput(existing: ApplicationRow, patch: ApplicationPatch
     name: patch.name ?? existing.name,
     description: "description" in patch ? patch.description : existing.description,
     icon: "icon" in patch ? patch.icon : existing.icon,
-    category: "category" in patch ? patch.category : existing.category,
     kind,
     route: "route" in patch ? patch.route : kindChanged ? null : existing.route,
     url: "url" in patch ? patch.url : kindChanged ? null : existing.url,
@@ -1245,7 +1247,6 @@ function toApplicationValues(input: ApplicationInput) {
     name: input.name,
     description: input.description ?? null,
     icon: input.icon ?? null,
-    category: input.category ?? null,
     kind: input.kind,
     route: isNative ? (input.route ?? null) : null,
     url: isNative ? null : (input.url ?? null),

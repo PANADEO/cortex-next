@@ -16,7 +16,6 @@ export interface HubTile {
   name: string
   description: string | null
   icon: string | null
-  category: string | null
   kind: TileKind
   route: string | null
   url: string | null
