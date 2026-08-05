@@ -1,0 +1,81 @@
+# Override dla dropletu cortex-next. Robi dwie rzeczy.
+#
+# 1. Wpina stack w współdzieloną sieć `run_default` (żyją tam Caddy/oauth2-proxy,
+#    cortex-proxy i chat) zamiast izolowanej sieci per-projekt, którą
+#    docker-compose.yml tworzy domyślnie. Bez tego Caddy nie dosięgnie
+#    `cortex-frontend`, a aplikacja nie dosięgnie `cortex-proxy` ani `chat`.
+#
+# 2. Kasuje wszystkie sekcje `build:` (`!reset null`) i przypina gotowe obrazy
+#    po nazwie. Obrazy budowane są na maszynie deweloperskiej pod linux/amd64
+#    i wysyłane przez scripts/ship-images-cortex-next.sh (docker save → rsync →
+#    docker load) — serwer ich NIE buduje.
+#
+#    Dlaczego strukturalnie, a nie „pamiętajmy nie pisać --build": build na tym
+#    dropletcie raz już wyczerpał pamięć i położył całego hosta razem z sshd
+#    (03.08.2026). Skoro nie ma `build:`, nie ma czego zepsuć pomyłką — a przy
+#    okazji katalog na serwerze nie musi w ogóle zawierać źródeł. Wystarczą oba
+#    pliki compose i `.env`; nic w tym stacku nie montuje plików z hosta
+#    (zweryfikowane: zero bind mountów, wyłącznie wolumeny nazwane i tmpfs).
+#
+# NIE używać lokalnie — `run_default` nie istnieje na maszynie deweloperskiej,
+# a lokalnie chcemy budować ze źródeł. Lokalnie zostaje samo docker-compose.yml,
+# dokładnie jak opisuje docs/local-run.md.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.cortex-next.yml up -d
+#
+# Nazwy obrazów są wpisane wprost, a nie wyprowadzane z nazwy katalogu projektu,
+# żeby nie zależały od tego, gdzie katalog leży. UWAGA: nazwa katalogu wciąż
+# decyduje o prefiksie wolumenów (`cortex-frontend-experiment_cortex_postgres_data`),
+# więc jego przemianowanie odetnie stack od istniejącej bazy.
+
+services:
+  migrate:
+    build: !reset null
+    image: cortex-frontend-experiment-migrate:latest
+
+  cortex-frontend:
+    build: !reset null
+    image: cortex-frontend-experiment-cortex-frontend:latest
+    # DEV_USER_EMAIL musi ZNIKNĄĆ, nie być puste. getRequestEmail()
+    # (packages/@cortex/service/src/rbac.ts) używa go jako tożsamości, gdy nie ma
+    # nagłówka `x-auth-request-email` — a bramka jest bramkowana samą OBECNOŚCIĄ
+    # tej zmiennej, świadomie nie przez NODE_ENV (webpack zamraża NODE_ENV w
+    # bundlu, więc warunek na nim nigdy nie działał w obrazie).
+    #
+    # Ustawienie `DEV_USER_EMAIL=` w `.env` NIE WYSTARCZA i jest pułapką:
+    # docker-compose.yml ma `${DEV_USER_EMAIL:-${ADMIN_EMAIL:-dev@cortex.local}}`,
+    # a operator `:-` podstawia wartość domyślną także dla zmiennej PUSTEJ, nie
+    # tylko nieustawionej. Puste `DEV_USER_EMAIL=` przelatuje więc do ADMIN_EMAIL
+    # i każde żądanie bez nagłówka staje się żądaniem administratora.
+    # Zweryfikowane na żywo 05.08.2026: `/api/me/identity` bez nagłówka zwracało
+    # 200 z kontem admina.
+    environment:
+      DEV_USER_EMAIL: !reset null
+    # Bez publikacji portu na hoście. Caddy stoi w tej samej sieci `run_default`
+    # i woła `cortex-frontend` po Docker DNS — port na hoście był wyłącznie
+    # drogą DOOKOŁA oauth2-proxy, osiągalną dla całej sieci ZeroTier.
+    ports: !reset []
+
+  geo-score-calculator:
+    build: !reset null
+    image: cortex-frontend-experiment-geo-score-calculator:latest
+
+  document-parser-backend:
+    build: !reset null
+    image: cortex-frontend-experiment-document-parser-backend:latest
+
+  document-parser-unoserver:
+    build: !reset null
+    image: cortex-frontend-experiment-document-parser-unoserver:latest
+
+  # Za profilem `python-template`, więc i tak nie startuje — ale `build:` musi
+  # zniknąć także tutaj, inaczej Compose przy rozwiązywaniu konfiguracji trzyma
+  # odwołanie do katalogu źródeł, którego na serwerze nie ma.
+  template-python-service:
+    build: !reset null
+    image: cortex-frontend-experiment-template-python-service:latest
+
+networks:
+  default:
+    name: run_default
+    external: true
