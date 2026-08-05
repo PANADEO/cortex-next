@@ -389,6 +389,7 @@ export const handlers = [
             "okna-czasowe",
             "cortex-config",
             "system-config",
+            "ilustromat",
           ]
         : [],
       email,

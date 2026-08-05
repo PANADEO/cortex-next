@@ -60,6 +60,20 @@ export interface GenerateResponseDto {
   variants: GeneratedVariantDto[]
 }
 
+export type AssistFieldDto = "title" | "subtitle" | "idea"
+export type AssistModeDto = "polish" | "rephrase" | "propose"
+
+export interface AssistRequestDto {
+  field: AssistFieldDto
+  mode: AssistModeDto
+  /** Wymagany dla "polish"/"rephrase" — trybu "propose" nie ma na czym oprzeć. */
+  text?: string
+  /** Wymagany dla "propose": z tytułu powstaje podtytuł, z obu — pomysł. */
+  context?: { title?: string; subtitle?: string }
+  /** Wersje już pokazane userowi; bez nich kolejne kliknięcie zwraca to samo. */
+  avoid?: string[]
+}
+
 export interface ComposeRequestDto {
   templateId: string
   formatKey: string

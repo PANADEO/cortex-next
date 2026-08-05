@@ -84,36 +84,114 @@ export function buildImagePromptMessages(input: ImagePromptInput): ChatMessage[]
   return messages
 }
 
-const ENHANCE_SYSTEM_PROMPT: Record<"title" | "subtitle", (maxChars: number) => string> = {
-  title: (maxChars) =>
-    "Jesteś redaktorem treści LinkedIn dla firmy doradczej (podatki, prawo, " +
-    "biznes). Popraw poniższy TYTUŁ posta: spraw, żeby brzmiał chwytliwie i " +
-    "profesjonalnie, zachowaj sens i język polski, nie wydłużaj bez potrzeby. " +
-    "Zwróć WYŁĄCZNIE poprawiony tytuł — bez cudzysłowów, bez komentarza, " +
-    `maksymalnie ${maxChars} znaków.`,
-  subtitle: (maxChars) =>
-    "Jesteś redaktorem treści LinkedIn dla firmy doradczej (podatki, prawo, " +
-    "biznes). Popraw poniższy PODTYTUŁ/HASŁO posta: spraw, żeby brzmiał " +
-    "chwytliwie i profesjonalnie, zachowaj sens i język polski, nie wydłużaj " +
-    "bez potrzeby. Zwróć WYŁĄCZNIE poprawiony podtytuł — bez cudzysłowów, " +
-    `bez komentarza, maksymalnie ${maxChars} znaków.`,
+export type AssistField = "title" | "subtitle" | "idea"
+/** "Dopracuj" (polish) i "Inna wersja" (rephrase) pracują na tekście usera,
+ *  "Podpowiedz" (propose) pisze treść od zera z kontekstu innych pól. */
+export type AssistMode = "polish" | "rephrase" | "propose"
+
+export interface AssistInput {
+  field: AssistField
+  mode: AssistMode
+  maxChars: number
+  // `| undefined` jawnie: repo ma exactOptionalPropertyTypes, a te pola są
+  // przekazywane wprost z rozpakowanego wyniku zod.
+  text?: string | undefined
+  context?: { title?: string | undefined; subtitle?: string | undefined } | undefined
+  avoid?: readonly string[] | undefined
 }
 
-/** "Popraw (AI)" — wołane wyłącznie na jawne kliknięcie, nigdy automatycznie
- *  w tle, żeby nie podmieniać cicho tego, co user napisał. */
-export function buildEnhanceMessages(options: {
-  text: string
-  field: "title" | "subtitle"
-  maxChars: number
-}): ChatMessage[] {
+const ROLE = "Jesteś redaktorem treści LinkedIn dla firmy doradczej (podatki, prawo, biznes)."
+
+const INSTRUCTION: Partial<Record<`${AssistField}:${AssistMode}`, string>> = {
+  "title:polish":
+    "Popraw poniższy TYTUŁ posta: ma brzmieć chwytliwie i profesjonalnie. " +
+    "NIE zmieniaj sensu ani tematu — popraw wyłącznie sformułowanie i nie " +
+    "wydłużaj bez potrzeby.",
+  "title:rephrase":
+    "Napisz INNĄ wersję poniższego TYTUŁU posta: ten sam sens i ten sam temat, " +
+    "ale wyraźnie inne sformułowanie i inne ujęcie. To ma być realna " +
+    "alternatywa do wyboru, nie kosmetyczna korekta.",
+  "subtitle:polish":
+    "Popraw poniższy PODTYTUŁ/HASŁO posta: ma brzmieć chwytliwie i " +
+    "profesjonalnie. NIE zmieniaj sensu — popraw wyłącznie sformułowanie.",
+  "subtitle:rephrase":
+    "Napisz INNĄ wersję poniższego PODTYTUŁU/HASŁA posta: ten sam sens, " +
+    "wyraźnie inne sformułowanie i inne ujęcie.",
+  "subtitle:propose":
+    "Na podstawie tytułu posta napisz PODTYTUŁ/HASŁO: jedno krótkie zdanie, " +
+    "które rozwija albo zaostrza tytuł. Nie powtarzaj tytułu innymi słowami.",
+  // Opis trafia potem do buildImagePromptMessages jako "pomysł użytkownika",
+  // więc musi zostać po polsku i trzymać te same zakazy co SYSTEM_PROMPT —
+  // inaczej model obrazkowy dostanie polecenie wpisania napisu w kadr.
+  "idea:propose":
+    "Na podstawie tytułu i podtytułu posta zaproponuj JEDEN pomysł na " +
+    "ilustrację: konkretną scenę lub metaforę wizualną, opisaną w jednym " +
+    "zdaniu. Bez abstrakcji w rodzaju sukces czy rozwój. W opisie nie może " +
+    "wystąpić żaden tekst, napis, logo ani rozpoznawalna twarz.",
+}
+
+const OUTPUT_LABEL: Record<AssistField, string> = {
+  title: "tytuł",
+  subtitle: "podtytuł",
+  idea: "opis pomysłu na ilustrację",
+}
+
+/** Model przy tym samym wejściu wraca do tej samej metafory nawet przy wysokiej
+ *  temperaturze, więc "kolejne kliknięcie = nowa propozycja" nie bierze się z
+ *  samego losu — odrzucone wersje muszą trafić do promptu wprost. */
+export const AVOID_LIMIT = 5
+
+export const ASSIST_TEMPERATURE: Record<AssistMode, number> = {
+  polish: 0.5,
+  rephrase: 0.85,
+  propose: 0.9,
+}
+
+export function isSupportedAssist(field: AssistField, mode: AssistMode): boolean {
+  return INSTRUCTION[`${field}:${mode}`] !== undefined
+}
+
+function assistSystemPrompt({ field, mode, maxChars }: AssistInput): string {
   return [
-    { role: "system", content: ENHANCE_SYSTEM_PROMPT[options.field](options.maxChars) },
-    { role: "user", content: options.text.trim() },
+    ROLE,
+    INSTRUCTION[`${field}:${mode}`],
+    `Zwróć WYŁĄCZNIE ${OUTPUT_LABEL[field]} po polsku — bez cudzysłowów, bez ` +
+      `komentarza, bez etykiet, maksymalnie ${maxChars} znaków.`,
+  ].join("\n\n")
+}
+
+function assistUserPrompt({ field, mode, text, context, avoid }: AssistInput): string {
+  const parts: string[] =
+    mode === "propose"
+      ? [
+          `Tytuł: ${context?.title?.trim() ?? ""}`,
+          ...(field === "idea"
+            ? [`Podtytuł/hasło: ${context?.subtitle?.trim() || "(brak)"}`]
+            : []),
+        ]
+      : [text?.trim() ?? ""]
+
+  const rejected = (avoid ?? []).filter((item) => item.trim()).slice(-AVOID_LIMIT)
+  if (rejected.length > 0) {
+    parts.push(
+      "\nTe wersje już pokazano użytkownikowi i ich nie wybrał — zaproponuj coś " +
+        `istotnie innego, nie parafrazuj ich:\n${rejected.map((item) => `- ${item}`).join("\n")}`,
+    )
+  }
+  return parts.join("\n")
+}
+
+/** Asysta tekstowa formularza — wołana wyłącznie na jawne kliknięcie, nigdy
+ *  automatycznie w tle, żeby nie podmieniać cicho tego, co user napisał. */
+export function buildAssistMessages(input: AssistInput): ChatMessage[] {
+  return [
+    { role: "system", content: assistSystemPrompt(input) },
+    { role: "user", content: assistUserPrompt(input) },
   ]
 }
 
 /** Model bywa rozmowny mimo instrukcji — obcinamy cudzysłowy i limit znaków
  *  po stronie serwera, nie ufając samej treści promptu. */
-export function normalizeEnhancedText(content: string, maxChars: number): string {
+export function normalizeAssistedText(content: string, maxChars: number): string {
   return content.trim().replace(/^["']+|["']+$/g, "").trim().slice(0, maxChars)
 }

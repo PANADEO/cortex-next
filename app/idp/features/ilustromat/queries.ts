@@ -1,5 +1,6 @@
 import { apiClient } from "@cortex/api"
 import type {
+  AssistRequestDto,
   ComposeRequestDto,
   FrameTemplateDto,
   FrameTemplateInputDto,
@@ -54,6 +55,6 @@ export const endpoints = {
   /** Rekompozycja bez AI — zwraca gotowy PNG. */
   compose: (body: ComposeRequestDto) =>
     apiClient.post<Blob>(`${BASE}/compose`, { jsonBody: body, parse: "blob" }),
-  enhance: (field: "title" | "subtitle", text: string) =>
-    apiClient.post<{ text: string }>(`${BASE}/enhance`, { jsonBody: { field, text } }),
+  assist: (body: AssistRequestDto) =>
+    apiClient.post<{ text: string }>(`${BASE}/enhance`, { jsonBody: body }),
 }

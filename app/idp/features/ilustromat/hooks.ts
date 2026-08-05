@@ -2,7 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { endpoints, queryKeys } from "./queries"
-import type { ComposeRequestDto, FrameTemplateInputDto, GenerateRequestDto } from "./types"
+import type {
+  AssistRequestDto,
+  ComposeRequestDto,
+  FrameTemplateInputDto,
+  GenerateRequestDto,
+} from "./types"
 
 export function useFrameTemplates(activeOnly = false) {
   return useQuery({
@@ -68,11 +73,10 @@ export function useCompose() {
   return useMutation({ mutationFn: (body: ComposeRequestDto) => endpoints.compose(body) })
 }
 
-export function useEnhanceText() {
-  return useMutation({
-    mutationFn: ({ field, text }: { field: "title" | "subtitle"; text: string }) =>
-      endpoints.enhance(field, text),
-  })
+/** "Dopracuj" / "Inna wersja" / "Podpowiedz" — jedno wywołanie na jawne
+ *  kliknięcie, nigdy w tle. */
+export function useAssistText() {
+  return useMutation({ mutationFn: (body: AssistRequestDto) => endpoints.assist(body) })
 }
 
 export function useTemplatePreview() {

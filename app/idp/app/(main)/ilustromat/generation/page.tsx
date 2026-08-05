@@ -1,7 +1,12 @@
 "use client"
 
-import { useCompose, useEnhanceText, useFrameTemplates, useGenerate } from "@/features/ilustromat/hooks"
-import type { GeneratedVariantDto, SessionHistoryEntry } from "@/features/ilustromat/types"
+import { useAssistText, useCompose, useFrameTemplates, useGenerate } from "@/features/ilustromat/hooks"
+import type {
+  AssistFieldDto,
+  AssistModeDto,
+  GeneratedVariantDto,
+  SessionHistoryEntry,
+} from "@/features/ilustromat/types"
 import { toPngDataUrl, useObjectUrl } from "@/features/ilustromat/use-object-url"
 import {
   DEFAULT_FORMAT,
@@ -33,7 +38,17 @@ import {
   Skeleton,
   Textarea,
 } from "@cortex/ui"
-import { Download, History, Image as ImageIcon, Sparkles, Wand2 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
+import {
+  Download,
+  History,
+  Image as ImageIcon,
+  Lightbulb,
+  Shuffle,
+  Sparkles,
+  Undo2,
+  Wand2,
+} from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 
@@ -41,15 +56,84 @@ import { toast } from "sonner"
  *  poza ścieżką każdego pojedynczego naciśnięcia klawisza. */
 const RECOMPOSE_DEBOUNCE_MS = 400
 
+/** Per pole: jeden krok wstecz dla "Cofnij" i wersje już pokazane userowi.
+ *  Te drugie lecą do modelu jako "nie proponuj tego znowu" — bez nich kolejne
+ *  kliknięcie "Inna wersja" wraca do tego samego sformułowania. */
+interface FieldAssist {
+  undo: string | null
+  seen: string[]
+}
+type AssistState = Record<AssistFieldDto, FieldAssist>
+
+const EMPTY_ASSIST_STATE: AssistState = {
+  title: { undo: null, seen: [] },
+  subtitle: { undo: null, seen: [] },
+  idea: { undo: null, seen: [] },
+}
+
+const ASSIST_HELP: Record<AssistModeDto, string> = {
+  polish: "Poprawia sformułowanie, nie zmienia sensu ani tematu.",
+  rephrase:
+    "Ten sam sens, inne ujęcie. Każde kolejne kliknięcie proponuje coś innego niż wersje pokazane wcześniej.",
+  propose: "Wymyśla treść na podstawie tytułu. Każde kolejne kliknięcie daje nową propozycję.",
+}
+
+function AssistButton({
+  label,
+  icon: Icon,
+  help,
+  disabled,
+  pending,
+  onClick,
+}: {
+  label: string
+  icon: LucideIcon
+  help: string
+  disabled: boolean
+  pending: boolean
+  onClick: () => void
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      title={help}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      <Icon className="mr-2 h-4 w-4" />
+      {pending ? "Chwileczkę…" : label}
+    </Button>
+  )
+}
+
+function UndoButton({ disabled, onClick }: { disabled: boolean; onClick: () => void }) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      title="Przywraca tekst sprzed ostatniej zmiany AI."
+      disabled={disabled}
+      onClick={onClick}
+    >
+      <Undo2 className="mr-2 h-4 w-4" />
+      Cofnij
+    </Button>
+  )
+}
+
 export default function GenerationPage() {
   const templatesQuery = useFrameTemplates(true)
   const generate = useGenerate()
   const compose = useCompose()
-  const enhance = useEnhanceText()
+  const assist = useAssistText()
 
   const [title, setTitle] = useState("")
   const [subtitle, setSubtitle] = useState("")
   const [idea, setIdea] = useState("")
+  const [assistState, setAssistState] = useState<AssistState>(EMPTY_ASSIST_STATE)
   const [styleKey, setStyleKey] = useState(DEFAULT_STYLE.key)
   const [formatKey, setFormatKey] = useState(DEFAULT_FORMAT.key)
   const [templateId, setTemplateId] = useState<string>("")
@@ -153,26 +237,65 @@ export default function GenerationPage() {
     }
   }
 
-  async function handleEnhance(field: "title" | "subtitle") {
-    const text = field === "title" ? title : subtitle
-    if (!text.trim()) {
-      toast.error("Najpierw wpisz tekst do poprawy")
+  const fieldValue: Record<AssistFieldDto, string> = { title, subtitle, idea }
+  const setFieldValue: Record<AssistFieldDto, (value: string) => void> = {
+    title: setTitle,
+    subtitle: setSubtitle,
+    idea: setIdea,
+  }
+
+  async function runAssist(field: AssistFieldDto, mode: AssistModeDto) {
+    const current = fieldValue[field]
+    if (mode === "propose" ? !title.trim() : !current.trim()) {
+      toast.error(mode === "propose" ? "Najpierw wpisz tytuł posta" : "Najpierw wpisz tekst")
       return
     }
+    // "Dopracuj" ma dać tę samą, najlepszą wersję za każdym razem, więc listy
+    // odrzuconych nie dostaje — inaczej drugie kliknięcie musiałoby na siłę
+    // uciekać od poprawnego wyniku pierwszego.
+    const avoid = mode === "polish" ? [] : assistState[field].seen
+
     try {
-      const { text: improved } = await enhance.mutateAsync({ field, text })
-      if (field === "title") setTitle(improved)
-      else setSubtitle(improved)
-      toast.success("Tekst poprawiony")
+      const { text } = await assist.mutateAsync({
+        field,
+        mode,
+        text: current,
+        context: { title, subtitle },
+        avoid,
+      })
+      setFieldValue[field](text)
+      setAssistState((state) => ({
+        ...state,
+        [field]: {
+          undo: current,
+          // Zarówno tekst zastępowany, jak i nowy trafiają do "już widzianych":
+          // kolejne kliknięcie ma uciec od obu, nie zawrócić do punktu wyjścia.
+          seen: [...new Set([...avoid, current, text].filter((item) => item.trim()))],
+        },
+      }))
     } catch (error) {
-      toastApiError(error, "Nie udało się poprawić tekstu")
+      toastApiError(error, "Nie udało się przygotować tekstu")
     }
+  }
+
+  function undoAssist(field: AssistFieldDto) {
+    const previous = assistState[field].undo
+    if (previous === null) return
+    setFieldValue[field](previous)
+    setAssistState((state) => ({ ...state, [field]: { ...state[field], undo: null } }))
+  }
+
+  function isAssistPending(field: AssistFieldDto, mode: AssistModeDto): boolean {
+    return assist.isPending && assist.variables?.field === field && assist.variables?.mode === mode
   }
 
   function restore(entry: SessionHistoryEntry) {
     setTitle(entry.title)
     setSubtitle(entry.subtitle)
     setIdea(entry.idea)
+    // Undo i lista odrzuconych dotyczyły poprzedniego tekstu — po przywróceniu
+    // wpisu z historii cofanie "do czegoś sprzed" nie ma już sensu.
+    setAssistState(EMPTY_ASSIST_STATE)
     setStyleKey(entry.styleKey)
     setFormatKey(entry.formatKey)
     setResult(entry)
@@ -214,17 +337,27 @@ export default function GenerationPage() {
                   placeholder="Zmiany w cenach transferowych 2027"
                   onChange={(event) => setTitle(event.target.value)}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="self-start"
-                  disabled={enhance.isPending}
-                  onClick={() => handleEnhance("title")}
-                >
-                  <Wand2 className="mr-2 h-4 w-4" />
-                  Popraw (AI)
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <AssistButton
+                    label="Dopracuj"
+                    icon={Wand2}
+                    help={ASSIST_HELP.polish}
+                    disabled={!title.trim() || assist.isPending}
+                    pending={isAssistPending("title", "polish")}
+                    onClick={() => runAssist("title", "polish")}
+                  />
+                  <AssistButton
+                    label="Inna wersja"
+                    icon={Shuffle}
+                    help={ASSIST_HELP.rephrase}
+                    disabled={!title.trim() || assist.isPending}
+                    pending={isAssistPending("title", "rephrase")}
+                    onClick={() => runAssist("title", "rephrase")}
+                  />
+                  {assistState.title.undo !== null ? (
+                    <UndoButton disabled={assist.isPending} onClick={() => undoAssist("title")} />
+                  ) : null}
+                </div>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -241,17 +374,42 @@ export default function GenerationPage() {
                   placeholder="Co musisz wiedzieć zanim przepisy wejdą w życie"
                   onChange={(event) => setSubtitle(event.target.value)}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="self-start"
-                  disabled={enhance.isPending}
-                  onClick={() => handleEnhance("subtitle")}
-                >
-                  <Wand2 className="mr-2 h-4 w-4" />
-                  Popraw (AI)
-                </Button>
+                {/* Podtytuł jest opcjonalny i najczęściej startuje pusty — wtedy
+                    jedyna sensowna akcja to napisanie go od zera z tytułu. */}
+                <div className="flex flex-wrap gap-2">
+                  {subtitle.trim() ? (
+                    <>
+                      <AssistButton
+                        label="Dopracuj"
+                        icon={Wand2}
+                        help={ASSIST_HELP.polish}
+                        disabled={assist.isPending}
+                        pending={isAssistPending("subtitle", "polish")}
+                        onClick={() => runAssist("subtitle", "polish")}
+                      />
+                      <AssistButton
+                        label="Inna wersja"
+                        icon={Shuffle}
+                        help={ASSIST_HELP.rephrase}
+                        disabled={assist.isPending}
+                        pending={isAssistPending("subtitle", "rephrase")}
+                        onClick={() => runAssist("subtitle", "rephrase")}
+                      />
+                    </>
+                  ) : (
+                    <AssistButton
+                      label="Podpowiedz"
+                      icon={Lightbulb}
+                      help="Proponuje hasło na podstawie tytułu posta."
+                      disabled={!title.trim() || assist.isPending}
+                      pending={isAssistPending("subtitle", "propose")}
+                      onClick={() => runAssist("subtitle", "propose")}
+                    />
+                  )}
+                  {assistState.subtitle.undo !== null ? (
+                    <UndoButton disabled={assist.isPending} onClick={() => undoAssist("subtitle")} />
+                  ) : null}
+                </div>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -263,6 +421,19 @@ export default function GenerationPage() {
                   placeholder="Np. most łączący dwa brzegi jako metafora porozumienia"
                   onChange={(event) => setIdea(event.target.value)}
                 />
+                <div className="flex flex-wrap gap-2">
+                  <AssistButton
+                    label="Podpowiedz"
+                    icon={Lightbulb}
+                    help="Wymyśla pomysł na ilustrację z tytułu i podtytułu. Każde kolejne kliknięcie daje nowy pomysł."
+                    disabled={!title.trim() || assist.isPending}
+                    pending={isAssistPending("idea", "propose")}
+                    onClick={() => runAssist("idea", "propose")}
+                  />
+                  {assistState.idea.undo !== null ? (
+                    <UndoButton disabled={assist.isPending} onClick={() => undoAssist("idea")} />
+                  ) : null}
+                </div>
               </div>
 
               <div className="flex flex-col gap-2">

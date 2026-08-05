@@ -50,6 +50,9 @@ export const SCOPES = {
   generation: "ilustromat-generation",
   promptBuilder: "ilustromat-prompt-builder",
   textEnhance: "ilustromat-text-enhance",
+  /** "Podpowiedz" to pisanie treści od zera, inny wzorzec kosztowy niż
+   *  poprawianie istniejącego tekstu — warto go widzieć w raportach osobno. */
+  textSuggest: "ilustromat-text-suggest",
 } as const
 
 export const SOURCE_APP = "Cortex360 Ilustromat"

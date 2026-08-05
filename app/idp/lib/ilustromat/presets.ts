@@ -92,6 +92,10 @@ export const DEFAULT_FORMAT = SQUARE_FORMAT
 
 export const TITLE_MAX_CHARS = 140
 export const SUBTITLE_MAX_CHARS = 200
+/** Pomysł na ilustrację nie trafia na kafelek (idzie do prompt buildera jako
+ *  wskazówka), więc limit jest tylko kagańcem dla "Podpowiedz" — samo pole
+ *  przyjmuje dowolną długość, tak jak dotąd. */
+export const IDEA_MAX_CHARS = 300
 
 export const MIN_VARIANTS = 2
 export const MAX_VARIANTS = 4
