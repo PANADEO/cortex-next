@@ -88,6 +88,7 @@ nie stawianej przez ten compose w ogóle.
 |---|---|
 | IDP, IDP Basic, Intrastat, Nadzorca Faktur (Invoice Supervisor) | Każdy proxuje do WŁASNEGO, osobnego backendu (`IDP_BACKEND_URL`, `IDP_BASIC_BACKEND_URL`, `INTRASTAT_BACKEND_URL`, `INVOICE_SUPERVISOR_BACKEND_URL` — patrz `.env.example`) — osobne repozytoria, nie stawiane przez ten compose |
 | Store PIT | Brak w kodzie realnej integracji backendowej (żadnych route'ów API) — wygląda na jeszcze niedociągnięty na froncie poza szkieletem UI, nie sprawdzane dogłębnie |
+| Konfiguracja Systemu — **tylko** synchronizacja uprawnień do OpenWebUI | Sam kafelek działa w pełni bez niczego (kategoria 1). Wyłącznie mapowanie ról na grupy OpenWebUI wymaga instancji `chat` z osobnego repo — patrz sekcja niżej. Puste `OPENWEBUI_*` = sync wyłączona ze statusem "skipped", reszta modułu bez zmian |
 
 ## Uruchomienie cortex-proxy (opcjonalnie)
 
@@ -98,6 +99,40 @@ cd ~/REPO/cortex-proxy && docker compose up -d
 Bez tego wywołania modeli (kategoria 2 wyżej) kończą się czytelnym błędem
 (503/502), reszta appki (nawigacja, RBAC, listy, konfiguracja) działa
 normalnie.
+
+## Synchronizacja uprawnień do OpenWebUI (opcjonalnie)
+
+Domyślny `docker compose up` **nie** stawia OpenWebUI i nie wpina się w jego
+sieć — `chat` żyje w osobnym repo (`~/REPO/chat`) razem ze swoimi patchami
+i brandingiem. Żeby przetestować mapowanie ról na grupy OpenWebUI, dołóż
+override:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.openwebui-local.yml up -d
+```
+
+**Pełny runbook od zera — sieć `run_default`, bootstrap pierwszego admina,
+wygenerowanie klucza `sk-` — jest w komentarzu na górze
+`docker-compose.openwebui-local.yml`**, a nie tutaj. Świadomie w jednym
+miejscu: to instrukcja do cudzego projektu open source, która rozjedzie się
+z rzeczywistością przy każdym jego wydaniu, więc druga kopia tutaj byłaby
+drugą rzeczą do utrzymywania.
+
+Dwa punkty, na których najłatwiej się wyłożyć, warte wypisania z góry:
+
+- **`ENABLE_API_KEYS` jest w OpenWebUI domyślnie `False`** (zweryfikowane na
+  0.11.0). Bez włączenia `POST /api/v1/auths/api_key` zwraca 403, więc nie da
+  się w ogóle uzyskać tokenu. Włączać trwale w `~/REPO/chat/docker-compose.yml`
+  — ustawienie z panelu admina działa od ręki, ale jest stanem w bazie
+  OpenWebUI i nie przeżyje `docker compose down -v`.
+- **`OPENWEBUI_ADMIN_TOKEN` to klucz `sk-`, nie JWT z `/auths/signin`.** JWT
+  wygasa (`JWT_EXPIRES_IN`, domyślnie 4 tygodnie) i sync zacznie wtedy zwracać
+  "OpenWebUI odrzucił token administracyjny" bez żadnej innej zmiany po naszej
+  stronie.
+
+Kierunek synchronizacji jest jednostronny: `system_config` → OpenWebUI. Ręczna
+zmiana członkostwa w UI OpenWebUI zostanie cofnięta przy najbliższym
+uzgodnieniu — to jest zamierzone, nie błąd.
 
 ## Licencjonowanie modułów (`ENABLED_MODULES`, opcjonalne)
 
