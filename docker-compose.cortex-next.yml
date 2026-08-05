@@ -42,13 +42,16 @@ services:
     # tej zmiennej, świadomie nie przez NODE_ENV (webpack zamraża NODE_ENV w
     # bundlu, więc warunek na nim nigdy nie działał w obrazie).
     #
-    # Ustawienie `DEV_USER_EMAIL=` w `.env` NIE WYSTARCZA i jest pułapką:
-    # docker-compose.yml ma `${DEV_USER_EMAIL:-${ADMIN_EMAIL:-dev@cortex.local}}`,
-    # a operator `:-` podstawia wartość domyślną także dla zmiennej PUSTEJ, nie
-    # tylko nieustawionej. Puste `DEV_USER_EMAIL=` przelatuje więc do ADMIN_EMAIL
-    # i każde żądanie bez nagłówka staje się żądaniem administratora.
-    # Zweryfikowane na żywo 05.08.2026: `/api/me/identity` bez nagłówka zwracało
-    # 200 z kontem admina.
+    # Historycznie `DEV_USER_EMAIL=` w `.env` NIE WYSTARCZAŁO i było pułapką:
+    # docker-compose.yml miał `${DEV_USER_EMAIL:-...}`, a operator `:-`
+    # podstawia domyślkę także dla zmiennej PUSTEJ, więc puste
+    # `DEV_USER_EMAIL=` przelatywało do ADMIN_EMAIL i każde żądanie bez
+    # nagłówka stawało się żądaniem administratora. Zweryfikowane na żywo
+    # 05.08.2026: `/api/me/identity` bez nagłówka zwracało 200 z kontem admina.
+    # Baza używa dziś `${DEV_USER_EMAIL-...}` (bez dwukropka), więc pusta
+    # wartość już działa — ale `!reset null` zostaje, bo usuwa zmienną
+    # CAŁKOWICIE zamiast polegać na tym, że ktoś nie odwróci tej subtelnej
+    # różnicy jednym znakiem.
     environment:
       DEV_USER_EMAIL: !reset null
     # Bez publikacji portu na hoście. Caddy stoi w tej samej sieci `run_default`

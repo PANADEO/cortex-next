@@ -144,7 +144,13 @@ services:
       # (docker-compose.image.yml + .env z Ansible/Semaphore) NIGDY nie
       # definiuje tej zmiennej — patrz uzasadnienie bezpieczeństwa przy
       # getRequestEmail() w rbac.ts.
-      DEV_USER_EMAIL: ${DEV_USER_EMAIL:-${ADMIN_EMAIL:-dev@cortex.local}}
+      # `-` zamiast `:-` CELOWO: bez dwukropka wartość domyślna podstawia się
+      # tylko dla zmiennej NIEUSTAWIONEJ, nie dla pustej. Dzięki temu świadome
+      # `DEV_USER_EMAIL=` w `.env` faktycznie WYŁĄCZA fallback tożsamości,
+      # zamiast po cichu przelecieć do ADMIN_EMAIL i zrobić z każdego żądania
+      # bez nagłówka żądanie administratora (realnie zdarzyło się na cortex-next
+      # 05.08.2026). Brak wpisu w `.env` działa jak dotąd — patrz docs/local-run.md.
+      DEV_USER_EMAIL: ${DEV_USER_EMAIL-${ADMIN_EMAIL:-dev@cortex.local}}
       # Ilustromat — modele konfigurowalne per instancja klienta. Puste =
       # domyślne z app/idp/lib/ilustromat/config.ts, nie awaria.
       ILUSTROMAT_TEXT_MODEL: ${ILUSTROMAT_TEXT_MODEL:-}
