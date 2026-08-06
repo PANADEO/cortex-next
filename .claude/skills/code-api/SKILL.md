@@ -1,6 +1,6 @@
 ---
 name: code-api
-description: Wzorzec BFF route (Next.js API route handler) w cortex-frontend — kontroler HTTP, cienki, deleguje do code-service i code-integration. Użyj przy pisaniu/review dowolnego pliku app/api/**/route.ts.
+description: Wzorzec BFF route (Next.js API route handler) w cortex-frontend — kontroler HTTP, cienki, deleguje do code-service i code-integration. Użyj przy pisaniu/review dowolnego pliku app/api/**/route.ts. NIE dla logiki biznesowej/RBAC (→ code-service) ani dla wywołań serwisów spoza repo (→ code-integration).
 ---
 
 # code-api

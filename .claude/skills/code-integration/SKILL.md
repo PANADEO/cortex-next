@@ -1,6 +1,6 @@
 ---
 name: code-integration
-description: Wywołania NA ZEWNĄTRZ modułu — cortex-proxy, przyszłe zewnętrzne serwisy Python/FastAPI. Użyj gdy trzeba wywołać LLM albo dowolny serwis spoza tego repo.
+description: Wywołania NA ZEWNĄTRZ modułu — cortex-proxy, przyszłe zewnętrzne serwisy Python/FastAPI. Użyj gdy trzeba wywołać LLM albo dowolny serwis spoza tego repo. NIE dla logiki współdzielonej między kafelkami wewnątrz monolitu (→ code-service, import zamiast HTTP) ani dla samego route'a (→ code-api).
 ---
 
 # code-integration

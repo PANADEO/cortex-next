@@ -1,6 +1,6 @@
 ---
 name: code-service
-description: Wewnętrzna warstwa serwisowa (logika biznesowa, RBAC/walidacja) w @cortex/service, importowana przez inne moduły — NIE przez HTTP. Użyj gdy trzeba sprawdzić uprawnienia, dodać regułę biznesową współdzieloną między kafelkami, albo pytasz "gdzie żyje logika X".
+description: Wewnętrzna warstwa serwisowa (logika biznesowa, RBAC/walidacja) w @cortex/service, importowana przez inne moduły — NIE przez HTTP. Użyj gdy trzeba sprawdzić uprawnienia, dodać regułę biznesową współdzieloną między kafelkami, albo pytasz "gdzie żyje logika X". NIE dla route handlerów app/api/**/route.ts (→ code-api) ani dla wywołań serwisów spoza repo (→ code-integration).
 ---
 
 # code-service
