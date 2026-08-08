@@ -11,15 +11,17 @@ import {
   type TileHrefOverrides,
 } from "@/lib/tiles"
 import { useAuthorizedApps, useHubTiles } from "@cortex/api"
-import { Button, EmptyState, LoadingState } from "@cortex/ui"
-import { Search } from "lucide-react"
 import { useDeferredValue, useMemo, useState } from "react"
-import { CategoryTabs, type CategoryTab } from "./category-tabs"
-import { HeroSearch, type HeroView } from "./hero-search"
+import type { CategoryTab } from "../category-tabs"
+import type { HeroView } from "../hero-search"
 import { hubApplicationsToTiles } from "./hub-tile"
-import { TileCard } from "./tile-card"
+import type { ActiveCategory, HubModel } from "./types"
 
-type ActiveCategory = "all" | "favorites" | string
+// Warstwa 0 huba: dane, dostęp i stan filtrów. ZERO JSX — plik jest `.ts`, nie
+// `.tsx`, więc kompilator pilnuje tego za nas. Wszystko poniżej mieszkało do
+// tej pory w `tile-grid.tsx` razem z markupem; rozdzielenie jest warunkiem
+// koniecznym przełączalnych layoutów (D4), bo inaczej każdy kolejny layout
+// kopiuje logikę dostępu i od pierwszego dnia dryfuje.
 
 function matchesSearch(tile: Tile, query: string): boolean {
   if (!query) return true
@@ -43,11 +45,7 @@ function tileBelongsTo(view: HeroView, tile: Tile, categoryId: string): boolean 
   return tile.categoryDepartment.includes(categoryId as Tile["categoryDepartment"][number])
 }
 
-interface TileGridProps {
-  tileHrefOverrides?: TileHrefOverrides | undefined
-}
-
-export function TileGrid({ tileHrefOverrides }: TileGridProps = {}) {
+export function useHubModel(tileHrefOverrides?: TileHrefOverrides | undefined): HubModel {
   const [searchQuery, setSearchQuery] = useState("")
   const deferredQuery = useDeferredValue(searchQuery)
   const [view, setView] = useState<HeroView>("functional")
@@ -82,6 +80,9 @@ export function TileGrid({ tileHrefOverrides }: TileGridProps = {}) {
   // <AppGate tileId={COWORK_APP_CODE}>: bez tego user bez grantu widział na
   // hubie kafelki, które trasa i tak odmawia. Filtrowanie PER PROJEKT zostaje
   // po stronie governance — to osobna warstwa.
+  //
+  // To jest ta granica governance, o którą chodzi w D4: żyje tu, w warstwie 0,
+  // i żaden layout nie ma jej u siebie powtarzać ani obchodzić.
   const authorizedTiles = useMemo(
     () => [
       ...tiles.filter((tile) => canAccessTile(authorized.apps, tile.id)),
@@ -151,67 +152,24 @@ export function TileGrid({ tileHrefOverrides }: TileGridProps = {}) {
   // === 0 podczas ładowania), nieodróżnialne od realnego braku wyników
   // wyszukiwania. `authorized`/HubGate już przepuściły tego usera (patrz
   // app-gate.tsx) — to tylko chwilowy stan sieci, nie decyzja o dostępie.
-  if (hub.isLoading) {
-    return <LoadingState label="Wczytywanie aplikacji…" />
-  }
+  const state = hub.isLoading ? "loading" : hub.isError ? "error" : "ready"
 
-  if (hub.isError) {
-    return (
-      <EmptyState
-        icon={Search}
-        title="Nie udało się wczytać aplikacji"
-        description="Spróbuj odświeżyć stronę. Jeśli problem się powtarza, sprawdź połączenie z bazą danych."
-      />
-    )
+  return {
+    tiles: visibleTiles,
+    categories: visibleCategories,
+    favorites,
+    counts: {
+      authorized: authorizedTiles.length,
+      matching: searchedTiles.length,
+      categories: visibleCategories.length,
+      favorites: favoritesCount,
+    },
+    search: { value: searchQuery, set: setSearchQuery },
+    view: { value: view, set: handleViewChange },
+    activeCategory: { value: activeCategory, set: setActiveCategory },
+    categoryTagFor,
+    toggleFavorite,
+    clearFilters: handleClearFilters,
+    state,
   }
-
-  return (
-    <>
-      <HeroSearch
-        value={searchQuery}
-        onChange={setSearchQuery}
-        view={view}
-        onViewChange={handleViewChange}
-        tileCount={authorizedTiles.length}
-        categoryCount={visibleCategories.length}
-      />
-      <div className="ch-workspace">
-        <CategoryTabs
-          totalCount={searchedTiles.length}
-          favoritesCount={favoritesCount}
-          categories={visibleCategories}
-          activeId={activeCategory}
-          onSelect={setActiveCategory}
-        />
-        {visibleTiles.length === 0 ? (
-          <section className="ch-panel">
-            <EmptyState
-              icon={Search}
-              title="Nie znaleziono aplikacji"
-              description="Spróbuj zmienić zapytanie lub wyczyścić filtry."
-              className="ch-empty"
-              action={
-                <Button variant="outline" size="sm" onClick={handleClearFilters}>
-                  Wyczyść filtry
-                </Button>
-              }
-            />
-          </section>
-        ) : (
-          <section className="ch-panel ch-grid grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {visibleTiles.map((tile, index) => (
-              <TileCard
-                key={tile.id}
-                tile={tile}
-                isFavorite={favorites.includes(tile.id)}
-                onToggleFavorite={toggleFavorite}
-                categoryTag={categoryTagFor(tile)}
-                index={index}
-              />
-            ))}
-          </section>
-        )}
-      </div>
-    </>
-  )
 }

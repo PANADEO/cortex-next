@@ -12,7 +12,9 @@ export interface CategoryTab {
 interface CategoryTabsProps {
   totalCount: number
   favoritesCount: number
-  categories: CategoryTab[]
+  // `readonly`, bo lista przychodzi z HubModel, który celowo oddaje kolekcje
+  // tylko do odczytu — komponent i tak jej nie modyfikuje.
+  categories: readonly CategoryTab[]
   activeId: string
   onSelect: (id: string) => void
 }

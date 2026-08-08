@@ -1,4 +1,5 @@
-// POM dla huba Cortex360 — strona `/` (app/idp/app/(shell)/page.tsx -> TileGrid).
+// POM dla huba Cortex360 — strona `/` (app/idp/app/(shell)/page.tsx ->
+// AuthedHome -> layout z hub/registry.ts).
 //
 // Nie dziedziczy z BasePage: hub żyje w grupie `(shell)`, bez AppShell/TileMenu,
 // więc jedyna rzecz, którą BasePage daje (nawigacja sidebara), tu nie istnieje.
