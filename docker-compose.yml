@@ -81,6 +81,19 @@ services:
       # zalogowany "dev@cortex.local" to dokładnie ten adres, któremu ten
       # skrypt seeduje rolę admin -> wszystkie aplikacje.
       ADMIN_EMAIL: ${ADMIN_EMAIL:-dev@cortex.local}
+      # Te dwie muszą być TUTAJ, nie tylko w usłudze cortex-frontend niżej:
+      # od K3 seed-system-config.mjs sam aktywuje moduły z BOOTSTRAP_MODULES i
+      # sam przepuszcza je przez ENABLED_MODULES. Gdyby dotarła tu tylko
+      # pierwsza, bramka licencyjna byłaby po stronie seeda fail-open i
+      # zmienna wygody realnie poszerzałaby licencję instancji.
+      #
+      # Obie CELOWO puste domyślnie, w przeciwieństwie do ADMIN_EMAIL wyżej:
+      # wariant A mówi, że świeża instancja aktywuje sam rdzeń, a domyślna
+      # lista kodów tutaj byłaby dokładnie tym ręcznie utrzymywanym rejestrem,
+      # który K3 usunął z seeda. Kto chce klikalny komplet kafelków od razu,
+      # wpisuje BOOTSTRAP_MODULES w `.env` — patrz docs/local-run.md.
+      ENABLED_MODULES: ${ENABLED_MODULES:-}
+      BOOTSTRAP_MODULES: ${BOOTSTRAP_MODULES:-}
     command:
       - sh
       - -c

@@ -12,6 +12,13 @@
 //
 // code-config: config WYŁĄCZNIE tej jednej funkcji (bramka licencyjna), nie
 // dopisywany do żadnego modułowego config.ts ani odwrotnie.
+//
+// ISTNIEJE DRUGA IMPLEMENTACJA `isModuleEnabled()`: packages/@cortex/db/
+// scripts/module-licensing.mjs, wykonywana przez seed (BOOTSTRAP_MODULES musi
+// przechodzić przez tę samą bramkę, a seedy są czystym .mjs bez toolchainu TS
+// — uzasadnienie w nagłówku tamtego pliku). Zmiana SEMANTYKI tutaj — zwłaszcza
+// kierunku fail-open/fail-closed przy pustej liście — musi trafić tam też.
+// Pilnuje tego module-licensing.parity.test.mjs obok tamtej kopii.
 
 import { z } from "zod"
 

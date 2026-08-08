@@ -5,44 +5,122 @@
 //
 // Model: DEKLARACJA STANU DOCELOWEGO, nie jednorazowy bootstrap.
 //
-//   REJESTR APLIKACJI — seed zakłada brakujące wiersze w `applications`.
-//   Dla name/description/icon/kind/route/url/target/sort_order
-//   działa `on conflict do nothing`, więc zmiany zrobione w UI PRZEŻYWAJĄ
-//   deploy. To jest jedyne źródło prawdy o tym, jakie kody uprawnień w ogóle
-//   istnieją w tej instancji: powłoka (`/api/me/access`) czyta wyłącznie tę
-//   tabelę, nie żadną allowlistę w kodzie.
+// TEN PLIK NIE JEST JUŻ REJESTREM APLIKACJI. Ręcznie utrzymywana lista
+// APPLICATIONS (23 kody, ~290 linii) zniknęła w K3 — jedynym źródłem faktów o
+// kafelku jest manifest (@cortex/tile-sdk defineTile()), a wiersze zakłada
+// seed-tile-manifests.mjs, wcześniej w łańcuchu migrate. Zostają trzy rzeczy i
+// żadna z nich nie opisuje kafelka; wszystkie opisują STAN TEJ INSTANCJI:
 //
-//   PIĘĆ KOLUMN HUB-RENDERU (show_on_hub/color/category_functional/
-//   category_department/activated_at, Krok 1 —
-//   PROJECT/cortex-frontend-hub-db-driven-projekt.md) mają WŁASNY, częściowy
-//   upsert: `on conflict do update` ograniczony wyłącznie do tych pięciu
-//   kolumn (activated_at przez coalesce — nigdy nie cofa raz ustawionej
-//   daty). Reszta kolumn wiersza zostaje nietknięta. Zero konsumenta czyta te
-//   pola jeszcze (hub nadal renderuje z tiles.ts) — dopóki UI do ich edycji
-//   nie istnieje (Krok 3), to rozróżnienie jest teoretyczne; kiedy powstanie,
-//   ten upsert trzeba będzie zrewidować pod tym samym kątem co resztę pól.
+//   (1) aktywacja rdzenia (`system-config`) — bezwarunkowa,
+//   (2) BOOTSTRAP_MODULES — wygodowa aktywacja przy pierwszym uruchomieniu,
+//   (3) ADMIN_EMAIL — konto administratora, rola, granty.
 //
-//   WYJĄTEK — WIERSZ BEZ HISTORII AKTYWACJI (`activated_at is null`):
-//   częściowy upsert wyżej zakłada, że konflikt oznacza wiersz z prawdziwymi
-//   danymi. Odkąd seed-tile-manifests.mjs wyprzedza ten skrypt w łańcuchu
-//   migrate (docker-compose*.yml) i pre-tworzy wiersz dla KAŻDEGO kodu z
-//   manifestem — czyli dziś także dla większości kodów z APPLICATIONS niżej,
-//   nie tylko ilustromat/token-usage — pierwsze uruchomienie TEGO skryptu na
-//   świeżej bazie trafia w konflikt na niemal każdym kodzie, zanim
-//   kiedykolwiek zdążył wstawić własny wiersz. Bez wyjątku taki wiersz
-//   zostawałby TRWALE z placeholderem z seed-tile-manifests.mjs
-//   (is_active=false, name=label manifestu, icon=null) — częściowy
-//   upsert nigdy więcej by go nie dotknął. Dlatego: gdy istniejący wiersz ma
-//   `activated_at is null`, upsert DODATKOWO backfilluje
-//   name/description/icon/kind/route/url/target/sort_order/
-//   is_active do wartości z APPLICATIONS, tak jak przy świeżym INSERCIE — ten
-//   sam guard (`activated_at is null`) co w seed-ilustromat.mjs/
-//   seed-token-usage.mjs, tu wyrażony przez CASE WHEN w SET zamiast osobnego
-//   UPDATE (patrz komentarz przy zapytaniu niżej po co). Wiersz z
-//   jakąkolwiek historią aktywacji — zmigrowany w Kroku 1 z activated_at
-//   ustawionym, albo już zbackfillowany tą gałęzią w poprzednim uruchomieniu
-//   — zostaje odtąd całkowicie poza zasięgiem tego wyjątku: admin-edits na
-//   tych polach przez UI nadal przeżywają deploy.
+// CO NAPRAWIŁO USUNIĘCIE LISTY. Oba defekty były żywe, nie teoretyczne:
+//   B1 — pięć kolumn hub-renderu (show_on_hub/color/category_functional/
+//        category_department/activated_at) stało w `on conflict do update`
+//        BEZWARUNKOWO, więc kategoria zmieniona przez admina w UI wracała do
+//        wartości z listy przy KAŻDYM deployu (odtworzone na żywo:
+//        analytics/{marketing} -> misc/{operations}).
+//   B3 — INSERT listy wstawiał `activated_at = now()` razem z domyślnym
+//        `is_active = true`, więc świeża baza dostawała aktywny kafelek na
+//        hubie także dla kodu, którego moduł wykluczono z buildu.
+//
+// `meeting-guru` ZNIKA RAZEM Z LISTĄ (D3): to kafelek `external-link`, czyli
+// dane instancji zakładane z UI admina, a nie fakt kodu w tym repo (manifest
+// byłby dowodem czegoś, czego tu nie ma). Świeża instancja nie dostaje już
+// tego wiersza — link dodaje człowiek przez Konfiguracja Systemu -> Aplikacje
+// -> Dodaj aplikację. Na instancjach istniejących wiersz zostaje nietknięty:
+// ten seed jest addytywny i nigdy niczego nie usuwa.
+//
+// ─── (1) AKTYWACJA RDZENIA ───────────────────────────────────────────────
+//
+// seed-tile-manifests.mjs rejestruje KAŻDY kafelek jako nieaktywnego
+// kandydata (`is_active=false, activated_at=null`) — to jest zamierzone,
+// manifest zgłasza kandydata, nie włącza modułu. Jedynym miejscem, które
+// cokolwiek aktywowało, był INSERT usuniętej listy. Bez zastępnika świeża
+// baza kończyłaby z ZEREM aktywnych modułów, w tym `system-config` — a
+// powłoka jest fail-closed i czyta `is_active`, więc administrator nie miałby
+// dostępu do panelu administracyjnego, czyli do jedynego miejsca, z którego
+// dałoby się cokolwiek włączyć. Zero ścieżki wyjścia z UI.
+//
+// To jest Ryzyko #1 z projektu licencjonowania i ta sama klasa błędu
+// wystąpiła już raz w tym repo (Krok 1b hub-db-driven: na genuinnie pustej
+// bazie `system-config` i 21 innych kafelków zostawało trwale
+// `is_active=false`). Wariant A (decyzja Alexa, 07.08.2026): świeża instancja
+// aktywuje z TEGO pliku wyłącznie rdzeń, resztę admin włącza świadomie.
+//
+// UWAGA — "wyłącznie rdzeń" NIE jest prawdą o całym łańcuchu migrate. Świeża
+// instancja kończy z TRZEMA aktywnymi kafelkami: `system-config` stąd oraz
+// `ilustromat` i `token-usage`, które AKTYWUJĄ SIĘ SAME w swoich seedach
+// (seed-ilustromat.mjs / seed-token-usage.mjs, `update ... where activated_at
+// is null` — ten sam wzorzec, biegną po tym skrypcie).
+//
+// FOLLOW-UP K3, nie ciekawostka: to jest dokładnie ta sama ręcznie
+// utrzymywana lista aktywacji startowej, którą ten krok usuwa — tylko
+// rozsypana po dwóch plikach zamiast stać w jednej tablicy. Każdy nowy moduł,
+// który skopiuje ten wzorzec do własnego seeda, po cichu dokłada czwarty
+// kafelek do "świeżej instalacji" i nikt tego nie zauważy, bo nie ma miejsca,
+// w którym ta lista jest widoczna naraz. Docelowo o starcie modułu ma
+// decydować BOOTSTRAP_MODULES (albo `licensing: "core"` z L1), a seedy
+// modułowe mają wyłącznie grantować i wypełniać własne tabele. Nie robimy
+// tego tutaj: to osobna zmiana ZACHOWANIA produktu i osobne review.
+//
+// RDZEŃ NIE PRZECHODZI przez ENABLED_MODULES i nigdy nie może. Bramka
+// licencyjna odpowiada na "co ta instancja ma prawo mieć" i z założenia nie
+// dotyczy modułów aktywowanych ani rdzenia platformy (module-licensing.ts,
+// docs/local-run.md). Przepuszczenie rdzenia przez nią znaczyłoby, że
+// `ENABLED_MODULES=content-guru` w konfiguracji deployu odcina administratora
+// od panelu na świeżej instancji — czyli odtwarza Ryzyko #1, tylko przez
+// pominięcie jednego kodu zamiast przez brak mechanizmu.
+//
+// Nieosiągalny rdzeń PRZERYWA seed i jest to JEDYNE miejsce w tym pliku,
+// które przerywa. Powód jest odwrotny niż przy BOOTSTRAP_MODULES niżej: tam
+// zatrzymanie łańcucha zostawiłoby instancję bez administratora, tu
+// zatrzymanie łańcucha jest jedyną rzeczą, która GŁOŚNO powie, że instancja i
+// tak by go nie miała. Lepiej, żeby `docker compose up` stanął na `migrate`
+// (cortex-frontend czeka na `service_completed_successfully` i wtedy nie
+// wstanie), niż żeby wstała instancja bez wyjścia z UI.
+//
+// ─── (2) BOOTSTRAP_MODULES ───────────────────────────────────────────────
+//
+// Lista kodów (comma-separated, ten sam wzorzec co ENABLED_MODULES) do
+// włączenia przy PIERWSZYM uruchomieniu. Powód istnienia jest czysto
+// praktyczny i tak został zgłoszony: wariant A w czystej postaci znaczy
+// dwadzieścia kilka ręcznych kliknięć na każde nowe środowisko, a środowiska
+// stawia się często.
+//
+// Trzy ograniczenia, wszystkie nośne:
+//
+//   * PRZECIĘCIE Z LICENCJĄ, nigdy suma — każdy kod przechodzi przez
+//     isModuleEnabled() (module-licensing.mjs), dokładnie tak jak
+//     activateApplication() w serwisie. Inaczej zmienna wygody byłaby
+//     obejściem licencji na jeden wpis w `.env`, czyli odtworzeniem dziury
+//     zamkniętej commitem `00f9a7c`.
+//   * WYŁĄCZNIE wiersz z `activated_at is null` — ten sam guard co
+//     activateApplication() i seed-ilustromat.mjs. Admin, który świadomie
+//     WYŁĄCZYŁ moduł, nie dostaje go z powrotem przy najbliższym deployu.
+//     Dokładnie ten błąd popełnia blok ADMIN_EMAIL niżej przy grantach i jest
+//     to udokumentowana, świadomie przyjęta konsekwencja — tutaj jej NIE
+//     POWTARZAMY.
+//   * KOD NIELICENCJONOWANY ALBO NIEZNANY = pominięty z czytelnym logiem, nie
+//     błąd. Seedy w `docker-compose*.yml` są spięte przez `&&`, więc rzucenie
+//     na literówce w konfiguracji deployu zatrzymałoby łańcuch przed blokiem
+//     administratora i zostawiło instancję bez konta admina.
+//
+// Zmienna zachowuje się jak `activateApplication()` z pickera, a nie jak
+// deklaracja stanu docelowego — stąd `BOOTSTRAP_`, a nie `ACTIVE_`.
+//
+// Rozważone i odrzucone: (a) wartość `*` ("włącz wszystko, na co jest
+// licencja") — wyglądałaby wygodnie, ale zmienna zostaje w konfiguracji
+// deployu na stałe, więc znaczyłaby, że KAŻDY nowy moduł dodany w kolejnej
+// wersji włącza się sam na istniejącej instancji przy najbliższym deployu; to
+// już nie bootstrap, tylko zniesienie wariantu A. (b) eksport/import
+// konfiguracji instancji z UI — mocniejsze, bo klonuje całe ustawienie
+// klienta (kategorie, kolejność, kolory), ale to osobny byt z własnym
+// formatem, wersjonowaniem i walidacją; zostaje na moment, w którym pojawi
+// się potrzeba klonowania, a nie samego bootstrapu.
+//
+// ─── (3) ADMIN_EMAIL ─────────────────────────────────────────────────────
 //
 //   ADMIN_EMAIL USTAWIONE — przy KAŻDYM uruchomieniu seed zapewnia, że ten
 //   DOKŁADNIE jeden adres ma: aktywne konto w `users` (zakłada je, jeśli nie
@@ -52,8 +130,8 @@
 //   adres.
 //
 //   ADMIN_EMAIL NIEUSTAWIONE — seed nie wykonuje tego bloku w ogóle. Nie
-//   zakłada konta, nie nadaje roli, niczego nie sprawdza. Rejestr aplikacji
-//   powstaje mimo to (jest potrzebny niezależnie od tego, kto jest adminem).
+//   zakłada konta, nie nadaje roli, niczego nie sprawdza. Rdzeń i tak zostaje
+//   aktywowany (jest potrzebny niezależnie od tego, kto jest adminem).
 //
 // Reaktywacja jest ZAMIERZONA, nie backdoorem: nie ma tu ukrytej heurystyki,
 // jest jawna deklaracja "ten adres ma zawsze być administratorem", widoczna
@@ -79,298 +157,22 @@
 //
 // Czysty .mjs (bez kompilacji TS) — ma działać jako krok deployu jednym
 // `node`, bez toolchainu build.
+//
+// KOLEJNOŚĆ W ŁAŃCUCHU MIGRATE: ten skrypt wymaga, żeby seed-tile-manifests.mjs
+// biegł PRZED nim (docker-compose*.yml, strażnik seed-chain-parity.test.ts) —
+// od K3 nie tylko po to, żeby granty admina objęły zarejestrowane kody, ale
+// dlatego, że bez tamtego skryptu nie istnieje wiersz rdzenia, który ten
+// aktywuje.
 
 import postgres from "postgres"
+import { bootstrapActivationPlan } from "./module-licensing.mjs"
 
 const ADMIN_ROLE_CODE = "admin"
 
-// Rejestr aplikacji instancji. `route`/`url` są CELOWO identyczne z `href`
-// odpowiadającego wpisu w app/idp/lib/tiles.ts — rejestr i kod mają wskazywać
-// dokładnie to samo miejsce (ten sam zabieg co przy `system-config`).
-//
-// Cztery wiersze NIE są kafelkami, tylko uprawnieniami (stąd showOnHub: false
-// niżej): `ai-tools` i `cortex-cowork` (granty zbiorcze — kod sam nigdy nie
-// renderuje własnej karty, tylko bramkuje rodzinę kafelków renderowaną gdzie
-// indziej) oraz `intrastat-cn-editor` / `intrastat-config-editor`
-// (odblokowują przyciski edycji WEWNĄTRZ kafelka Intrastat; realną
-// egzekucją zajmuje się zewnętrzny backend FastAPI). Mają `route`, bo schemat
-// wymaga go dla kind='native' — wskazuje ekran, którego dotyczą.
-//
-// `color`/`categoryFunctional`/`categoryDepartment` są 1:1 z
-// app/idp/lib/tiles.ts (`iconBg` -> nazwa rodziny koloru Tailwind) i
-// AI_TOOL_TILE_STYLE dla narzędzi AI. Dla czterech wierszy-uprawnień wyżej
-// nie ma odpowiednika w tiles.ts (nic tam nie renderują) — zostają `null`,
-// zgodnie ze schematem (D2/D3, PROJECT/cortex-frontend-hub-db-driven-projekt.md).
-//
-// `ilustromat`/`token-usage` NIE są tutaj świadomie: mają własne manifesty
-// (@cortex/tile-sdk defineTile()) i ich wiersz applications powstaje przez
-// seed-tile-manifests.mjs (wcześniej w łańcuchu migrate) — ich własne seedy
-// (scripts/seed-ilustromat.mjs, scripts/seed-token-usage.mjs) już tylko go
-// odczytują i grantują, nie insertują (PROJECT/cortex-frontend-hub-db-driven-projekt.md
-// D10-rewizja c, otwarte pytanie f).
-const APPLICATIONS = [
-  {
-    code: "idp",
-    name: "IDP",
-    description: "Procesowanie i ekstrakcja danych z dokumentów handlowych",
-    icon: "ScanText",
-    kind: "native",
-    route: "/idp/dashboard",
-    color: "rose",
-    categoryFunctional: "misc",
-    categoryDepartment: ["operations"],
-  },
-  {
-    code: "idp-basic",
-    name: "IDP Basic",
-    description: "Uproszczone procesowanie dokumentów w osobnym pipeline",
-    icon: "FileText",
-    kind: "native",
-    route: "/idp-basic/dashboard",
-    color: "sky",
-    categoryFunctional: "misc",
-    categoryDepartment: ["operations"],
-  },
-  {
-    code: "sp-console",
-    name: "Store-Pit Re-Rating",
-    description: "Przeliczanie faktur przewoźnika na rozliczenia per klient",
-    icon: "Workflow",
-    kind: "native",
-    route: "/store-pit/dashboard",
-    color: "cyan",
-    categoryFunctional: "agents",
-    categoryDepartment: ["finance", "operations"],
-  },
-  {
-    code: "sp-client",
-    name: "Store-Pit Client Zone",
-    description: "Widok klienta — jego przesyłki i kwota do rozliczenia",
-    icon: "Users",
-    kind: "native",
-    route: "/store-pit/clients",
-    color: "indigo",
-    categoryFunctional: "misc",
-    categoryDepartment: ["finance"],
-  },
-  {
-    code: "okna-czasowe",
-    name: "Okna czasowe",
-    description: "Śledzenie dostępności filmów na Rakuten TV PL",
-    icon: "CalendarClock",
-    kind: "native",
-    route: "/okna-czasowe/dashboard",
-    color: "amber",
-    categoryFunctional: "research",
-    categoryDepartment: ["marketing"],
-  },
-  {
-    code: "cortex-config",
-    name: "Cortex Config",
-    description: "Governance platformy — projekty agentowe, role i grupy skilli",
-    icon: "ShieldCheck",
-    kind: "native",
-    route: "/cortex-config/projects",
-    color: "emerald",
-    categoryFunctional: "admin-system",
-    categoryDepartment: ["it"],
-  },
-  {
-    code: "cortex-cowork",
-    name: "Cortex Cowork",
-    description: "Przestrzeń pracy z agentami — sesje, artefakty i skille",
-    icon: "Bot",
-    kind: "native",
-    route: "/cortex-cowork",
-    showOnHub: false,
-  },
-  {
-    code: "intrastat",
-    name: "Intrastat",
-    description: "Przygotowanie importowych Exceli WNT/WDT z faktur",
-    icon: "FileSpreadsheet",
-    kind: "native",
-    route: "/intrastat/dashboard",
-    color: "emerald",
-    categoryFunctional: "misc",
-    categoryDepartment: ["operations", "finance"],
-  },
-  {
-    code: "invoice-supervisor",
-    name: "Nadzorca Faktur",
-    description: "Nadzoruje terminy faktur i generuje AI przypomnienia płatnicze",
-    icon: "Receipt",
-    kind: "native",
-    route: "/invoice-supervisor/inbox",
-    color: "orange",
-    categoryFunctional: "misc",
-    categoryDepartment: ["finance", "operations"],
-  },
-  {
-    code: "meeting-guru",
-    name: "Nagrywanie Spotkań",
-    description: "Asystent spotkań — nagrywanie, transkrypcja i wskazówki AI na żywo",
-    icon: "Video",
-    kind: "external-link",
-    url: "https://chat.megu.me",
-    target: "_blank",
-    color: "teal",
-    categoryFunctional: "agents",
-    categoryDepartment: ["operations"],
-  },
-  {
-    code: "system-config",
-    name: "Konfiguracja Systemu",
-    description: "Użytkownicy, role, uprawnienia i aplikacje instancji",
-    icon: "Settings",
-    kind: "native",
-    route: "/system-config",
-    color: "slate",
-    categoryFunctional: "admin-system",
-    categoryDepartment: ["it"],
-  },
-  {
-    code: "ai-tools",
-    name: "AI Tools",
-    description: "Grant zbiorczy — dostęp do wszystkich narzędzi AI naraz",
-    icon: "Sparkles",
-    kind: "native",
-    route: "/ai-tools",
-    showOnHub: false,
-  },
-  {
-    code: "text-highlighter",
-    name: "Podświetlacz tekstu",
-    description: "Zaznacza kluczowe fragmenty w tekście",
-    icon: "Highlighter",
-    kind: "native",
-    route: "/ai-tools/text-highlighter",
-    color: "blue",
-    categoryFunctional: "content-generation",
-    categoryDepartment: ["marketing", "operations", "it"],
-  },
-  {
-    code: "text-transformer",
-    name: "Transformator tekstu",
-    description: "Przekształca tekst według wybranego stylu",
-    icon: "Wand2",
-    kind: "native",
-    route: "/ai-tools/text-transformer",
-    color: "blue",
-    categoryFunctional: "content-generation",
-    categoryDepartment: ["marketing", "operations", "it"],
-  },
-  {
-    code: "text-analyzer",
-    name: "Analizator tekstu",
-    description: "Analiza treści, tonu i struktury tekstu",
-    icon: "TextCursorInput",
-    kind: "native",
-    route: "/ai-tools/text-analyzer",
-    color: "blue",
-    categoryFunctional: "content-generation",
-    categoryDepartment: ["marketing", "operations", "it"],
-  },
-  {
-    code: "ai-summarizer",
-    name: "Sumaryzator",
-    description: "Skraca długie teksty do streszczenia",
-    icon: "FileText",
-    kind: "native",
-    route: "/ai-tools/ai-summarizer",
-    color: "blue",
-    categoryFunctional: "content-generation",
-    categoryDepartment: ["marketing", "operations", "it"],
-  },
-  {
-    code: "content-guru",
-    name: "Kreator treści",
-    description: "Generuje treści marketingowe i redakcyjne",
-    icon: "Sparkles",
-    kind: "native",
-    // Faza 0 (PROJECT/cortex-frontend-content-guru-full-port-projekt.md D1):
-    // route zmieniony z "/ai-tools/content-guru" na docelowy "/content-guru",
-    // spójnie z content-guru.manifest.ts. Na już aktywowanym wierszu (jak na
-    // każdej realnej instancji) TA linia i tak nie decyduje o finalnej
-    // wartości — `route` tego kodu jest strukturalnym polem manifestu i
-    // seed-tile-manifests.mjs (uruchamiany PRZED tym skryptem w łańcuchu
-    // migrate) nadpisuje je bezwarunkowo, na każdym deployu, patrz komentarz
-    // przy `on conflict` tamtego skryptu — to WYSTARCZYŁO, żeby zaktualizować
-    // już aktywowany wiersz (zweryfikowane empirycznie 03.08.2026, żaden
-    // ręczny UPDATE nie był potrzebny, w przeciwieństwie do rename
-    // presentation-generator, gdzie zmieniał się `code`, nie tylko `route`).
-    // Ta wartość tutaj ma znaczenie wyłącznie na ŚWIEŻEJ bazie
-    // (activated_at IS NULL) — tam wygrywa, bo częściowy upsert niżej
-    // backfilluje route razem z resztą kolumn. Aktualizowana dla spójności
-    // obu źródeł.
-    route: "/content-guru",
-    color: "violet",
-    categoryFunctional: "content-generation",
-    categoryDepartment: ["marketing", "hr", "operations"],
-  },
-  {
-    code: "linkedin-generator",
-    name: "Generator LinkedIn",
-    description: "Tworzy posty na LinkedIn",
-    icon: "MessageSquareText",
-    kind: "native",
-    route: "/ai-tools/linkedin-generator",
-    color: "violet",
-    categoryFunctional: "content-generation",
-    categoryDepartment: ["marketing", "hr", "operations"],
-  },
-  {
-    code: "presentation-generator",
-    name: "Generator prezentacji",
-    description: "Buduje szkielet prezentacji z opisu",
-    icon: "Presentation",
-    kind: "native",
-    route: "/ai-tools/presentation-generator",
-    color: "violet",
-    categoryFunctional: "content-generation",
-    categoryDepartment: ["marketing", "hr", "operations"],
-  },
-  {
-    code: "fakturomat",
-    name: "Analizator faktur",
-    description: "Wyciąga dane z faktur i je podsumowuje",
-    icon: "ReceiptText",
-    kind: "native",
-    route: "/ai-tools/fakturomat",
-    color: "amber",
-    categoryFunctional: "misc",
-    categoryDepartment: ["finance", "operations"],
-  },
-  {
-    code: "ai-daily-assistant",
-    name: "Chatbot AI",
-    description: "Asystent ogólnego przeznaczenia",
-    icon: "Bot",
-    kind: "native",
-    route: "/ai-tools/ai-daily-assistant",
-    color: "indigo",
-    categoryFunctional: "agents",
-    categoryDepartment: ["operations", "it"],
-  },
-  {
-    code: "intrastat-cn-editor",
-    name: "Intrastat — edycja kodów CN",
-    description: "Uprawnienie: edycja słownika kodów CN wewnątrz kafelka Intrastat",
-    icon: "FileSpreadsheet",
-    kind: "native",
-    route: "/intrastat/resources",
-    showOnHub: false,
-  },
-  {
-    code: "intrastat-config-editor",
-    name: "Intrastat — edycja konfiguracji",
-    description: "Uprawnienie: edycja ustawień wewnątrz kafelka Intrastat",
-    icon: "FileSpreadsheet",
-    kind: "native",
-    route: "/intrastat/settings",
-    showOnHub: false,
-  },
-]
+/** Kod modułu administracyjnego. Ten sam, po którym pyta bramka powłoki i
+ *  którego `assertKeepsModuleReachable()` w @cortex/service broni przed
+ *  dezaktywacją z UI — jedyny kod wymieniony w tym pliku z nazwy. */
+const SYSTEM_CONFIG_APP_CODE = "system-config"
 
 const databaseUrl = process.env.DATABASE_URL
 if (!databaseUrl) {
@@ -382,6 +184,22 @@ const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase()
 
 const sql = postgres(databaseUrl, { max: 1 })
 
+/** Włącza kandydata BEZ historii aktywacji. Warunki są 1:1 z
+ *  activateApplication() (@cortex/service): `kind='native'` (wiersz
+ *  `external-link`/`iframe` to dane instancji, nie kandydat z manifestu) oraz
+ *  `activated_at is null` (decyzja admina o wyłączeniu modułu ma przeżyć
+ *  deploy). Zwraca liczbę realnie włączonych wierszy — zero znaczy "warunki
+ *  nie zaszły", nigdy "błąd". */
+async function activateCandidate(tx, code) {
+  const rows = await tx`
+    update system_config.applications
+    set is_active = true, activated_at = now(), updated_at = now()
+    where code = ${code} and kind = 'native' and activated_at is null
+    returning code
+  `
+  return rows.length
+}
+
 async function main() {
   await sql.begin(async (tx) => {
     const [role] = await tx`
@@ -392,77 +210,134 @@ async function main() {
     `
     console.log(`[seed] rola ${ADMIN_ROLE_CODE}: ok`)
 
-    let inserted = 0
-    for (const [index, application] of APPLICATIONS.entries()) {
-      const [row] = await tx`
-        -- Kolumna "category" (wolny tekst) NIE JEST tu wymieniana świadomie —
-        -- wycofana 05.08.2026, patrz komentarz przy schemacie w
-        -- src/schema/system-config.ts. Zostaje w bazie z legacy wartościami,
-        -- ale żadna ścieżka zapisu (seed ani UI) jej już nie dotyka.
-        insert into system_config.applications
-          (code, name, description, icon, kind, route, url, target, sort_order,
-           show_on_hub, color, category_functional, category_department, activated_at)
-        values (
-          ${application.code}, ${application.name}, ${application.description},
-          ${application.icon}, ${application.kind},
-          ${application.route ?? null}, ${application.url ?? null},
-          ${application.target ?? null}, ${index * 10},
-          ${application.showOnHub ?? true}, ${application.color ?? null},
-          ${application.categoryFunctional ?? null}, ${application.categoryDepartment ?? null},
-          now()
-        )
-        -- Częściowy upsert: name/description/icon/kind/route/url/target/
-        -- sort_order/is_active NIE są bezwarunkowo nadpisywane (zostają "on
-        -- conflict do nothing" w duchu), więc zmiany zrobione w UI na tych
-        -- polach przeżywają deploy jak dotychczas — Z WYJĄTKIEM niżej.
-        -- Backfillujemy bezwarunkowo WYŁĄCZNIE pięć kolumn hub-renderu (Krok 1,
-        -- PROJECT/cortex-frontend-hub-db-driven-projekt.md) — activated_at przez
-        -- coalesce, żeby drugi i kolejne uruchomienia NIE nadpisywały już
-        -- ustawionej daty pierwszej aktywacji świeżym now().
-        --
-        -- WYJĄTEK (patrz komentarz na górze pliku): gdy istniejący wiersz ma
-        -- activated_at is null — nigdy nie miał prawdziwych danych, np.
-        -- pre-utworzony przez seed-tile-manifests.mjs jako nieaktywny kandydat
-        -- — CASE WHEN niżej backfillują TEŻ name/description/icon/
-        -- kind/route/url/target/sort_order/is_active z APPLICATIONS, jak przy
-        -- świeżym INSERCIE. Bezpieczne mimo że activated_at jest ustawiane w
-        -- TYM SAMYM SET: Postgres liczy wszystkie wyrażenia jednego
-        -- UPDATE/ON CONFLICT DO UPDATE SET względem wiersza SPRZED tej
-        -- operacji (jak OLD w triggerze), nie sekwencyjnie — odwołanie do
-        -- system_config.applications.activated_at w każdym CASE WHEN niżej
-        -- zawsze widzi wartość PRZED tym zapytaniem, więc dotyczy wyłącznie
-        -- wierszy bez żadnej historii aktywacji.
-        on conflict (code) do update set
-          name = case when system_config.applications.activated_at is null
-            then excluded.name else system_config.applications.name end,
-          description = case when system_config.applications.activated_at is null
-            then excluded.description else system_config.applications.description end,
-          icon = case when system_config.applications.activated_at is null
-            then excluded.icon else system_config.applications.icon end,
-          kind = case when system_config.applications.activated_at is null
-            then excluded.kind else system_config.applications.kind end,
-          route = case when system_config.applications.activated_at is null
-            then excluded.route else system_config.applications.route end,
-          url = case when system_config.applications.activated_at is null
-            then excluded.url else system_config.applications.url end,
-          target = case when system_config.applications.activated_at is null
-            then excluded.target else system_config.applications.target end,
-          sort_order = case when system_config.applications.activated_at is null
-            then excluded.sort_order else system_config.applications.sort_order end,
-          is_active = case when system_config.applications.activated_at is null
-            then true else system_config.applications.is_active end,
-          show_on_hub = excluded.show_on_hub,
-          color = excluded.color,
-          category_functional = excluded.category_functional,
-          category_department = excluded.category_department,
-          activated_at = coalesce(system_config.applications.activated_at, excluded.activated_at)
-        returning id, (xmax = 0) as inserted
-      `
-      if (row?.inserted) inserted += 1
+    // (1) Rdzeń. Poza BOOTSTRAP_MODULES i poza ENABLED_MODULES — patrz nagłówek.
+    //
+    // Czytamy STAN przed aktywacją, zamiast wnioskować z liczby zmienionych
+    // wierszy: "UPDATE nie ruszył nic" znaczy zarówno "wiersz jest już
+    // aktywowany" (norma na każdym kolejnym deployu), jak i "wiersza nie ma w
+    // ogóle" (seed-tile-manifests.mjs nie biegł albo manifest wypadł z
+    // barrela). Te dwa stany dzieli wszystko, więc muszą się różnić w logu.
+    const [core] = await tx`
+      select kind, is_active, activated_at
+      from system_config.applications
+      where code = ${SYSTEM_CONFIG_APP_CODE}
+    `
+    if (!core) {
+      throw new Error(
+        `Brak wiersza ${SYSTEM_CONFIG_APP_CODE} w system_config.applications — ` +
+          "instancja nie miałaby dostępu do panelu administracyjnego, czyli do jedynego " +
+          "miejsca, z którego dałoby się to naprawić. Sprawdź, czy seed-tile-manifests.mjs " +
+          "biegł PRZED tym skryptem i czy manifest tego kafelka jest w barrelu " +
+          "app/idp/lib/tile-manifests.ts.",
+      )
     }
+    if (core.activated_at === null) {
+      // Ta sama dwuznaczność "UPDATE zmienił zero wierszy", o którą chodzi w
+      // komentarzu wyżej, tylko po stronie ZAPISU: activateCandidate() wymaga
+      // też `kind='native'`, więc wiersz rdzenia o innym typie przeszedłby
+      // tędy bez żadnej zmiany, a w logu zostałoby "aktywowany" i exit 0.
+      // Cichy sukces w JEDYNYM bloku tego pliku, którego zadaniem jest być
+      // głośnym — dlatego wynik jest sprawdzany, nie porzucany.
+      if ((await activateCandidate(tx, SYSTEM_CONFIG_APP_CODE)) === 0) {
+        throw new Error(
+          `Wiersz ${SYSTEM_CONFIG_APP_CODE} nigdy nie był aktywowany, ale nie da się go włączyć: ` +
+            `nie jest kind='native' (jest '${core.kind}'). Instancja nie miałaby dostępu do panelu ` +
+            "administracyjnego. Normalnie pilnuje tego seed-tile-manifests.mjs, który resynchronizuje " +
+            "kind z manifestu przy każdym deployu — sprawdź, czy biegł PRZED tym skryptem.",
+        )
+      }
+      console.log(`[seed] rdzeń ${SYSTEM_CONFIG_APP_CODE}: aktywowany (świeża instancja)`)
+    } else if (core.is_active) {
+      console.log(`[seed] rdzeń ${SYSTEM_CONFIG_APP_CODE}: aktywny, zostawiam`)
+    } else {
+      // Historia aktywacji jest, ale moduł jest wyłączony. UI tego nie
+      // pozwala (assertKeepsModuleReachable w @cortex/service), więc taki stan
+      // powstaje wyłącznie ręcznym SQL-em — i ten seed świadomie go NIE
+      // naprawia, bo cofanie decyzji o wyłączeniu modułu jest dokładnie tym,
+      // czego bootstrap ma nie robić. Zostaje głośne zatrzymanie deployu.
+      throw new Error(
+        `Wiersz ${SYSTEM_CONFIG_APP_CODE} ma is_active=false przy ustawionym activated_at — ` +
+          "instancja nie miałaby dostępu do panelu administracyjnego, a ten seed świadomie nie " +
+          "cofa wyłączenia modułu. Wymagana ręczna naprawa w bazie " +
+          "(update system_config.applications set is_active = true where code = 'system-config').",
+      )
+    }
+
+    // (2) BOOTSTRAP_MODULES. Przecięcie z ENABLED_MODULES policzone poza tym
+    // plikiem, żeby dało się je przetestować bez bazy — module-licensing.mjs.
+    const { activate, refused } = bootstrapActivationPlan()
+
+    // Literówka bywa jednocześnie "spoza licencji" (bo nie ma jej w
+    // ENABLED_MODULES) i "spoza rejestru". Bez tego zapytania gałąź o
+    // literówce byłaby nieosiągalna dokładnie w konfiguracji, w której jest
+    // najbardziej potrzebna — przy ustawionej liście licencyjnej.
+    const unknown = new Set()
+    for (const code of refused) {
+      const [row] = await tx`
+        select 1 as found from system_config.applications where code = ${code}
+      `
+      if (!row) unknown.add(code)
+      console.warn(
+        row
+          ? `[seed] bootstrap: ${code} POMINIĘTY — kod spoza ENABLED_MODULES. ` +
+              "BOOTSTRAP_MODULES nie poszerza licencji tej instancji."
+          : `[seed] bootstrap: ${code} POMINIĘTY — nie ma takiego kodu ANI w rejestrze, ` +
+              "ANI w ENABLED_MODULES (literówka w konfiguracji deployu?).",
+      )
+    }
+
+    let bootstrapped = 0
+    let skipped = 0
+    for (const code of activate) {
+      // Rdzeń na liście bootstrapowej nie jest błędem, tylko wpisem zbędnym —
+      // został aktywowany kilkanaście linii wyżej, bezwarunkowo. Bez tej
+      // gałęzi wpadłby w komunikat o "decyzji administratora o wyłączeniu
+      // modułu", której nikt nie podjął: activated_at ustawił ten sam seed
+      // przed chwilą.
+      if (code === SYSTEM_CONFIG_APP_CODE) {
+        skipped += 1
+        console.warn(
+          `[seed] bootstrap: ${code} POMINIĘTY — rdzeń aktywuje się bezwarunkowo, ` +
+            "poza BOOTSTRAP_MODULES. Wpis na tej liście niczego nie zmienia.",
+        )
+        continue
+      }
+
+      if ((await activateCandidate(tx, code)) > 0) {
+        bootstrapped += 1
+        continue
+      }
+
+      skipped += 1
+      const [existing] = await tx`
+        select kind, activated_at from system_config.applications where code = ${code}
+      `
+      if (!existing) {
+        console.warn(
+          `[seed] bootstrap: ${code} POMINIĘTY — nie ma takiego kodu w rejestrze ` +
+            "(literówka w konfiguracji deployu albo moduł wykluczony z tego buildu).",
+        )
+      } else if (existing.activated_at) {
+        console.warn(
+          `[seed] bootstrap: ${code} POMINIĘTY — moduł ma już historię aktywacji. ` +
+            "Bootstrap nigdy nie cofa decyzji administratora o wyłączeniu modułu.",
+        )
+      } else {
+        console.warn(
+          `[seed] bootstrap: ${code} POMINIĘTY — wiersz nie jest kind='native' ` +
+            `(jest '${existing.kind}'). Bootstrap dotyczy wyłącznie kafelków z manifestu.`,
+        )
+      }
+    }
+
+    // Kontener `migrate` kończy pracę i gaśnie, więc ten log jest JEDYNYM
+    // kanałem zwrotnym o tym, co zmienna zrobiła. Dlatego wszystkie cztery
+    // liczby, nie tylko sukcesy: "aktywowano 3" bez "pominięto 24" czyta się
+    // jak potwierdzenie, że reszta listy była pusta.
     console.log(
-      `[seed] rejestr aplikacji: ${APPLICATIONS.length} kodów, dopisano ${inserted} nowych ` +
-        `(pozostałe: backfill show_on_hub/color/category_functional/category_department/activated_at)`,
+      `[seed] bootstrap: ${activate.length + refused.length} kodów w BOOTSTRAP_MODULES — ` +
+        `aktywowano ${bootstrapped}, pominięto ${skipped} (bez zmian), ` +
+        `odmówiono ${refused.length} (poza licencją, w tym ${unknown.size} spoza rejestru)`,
     )
 
     if (!adminEmail) {
@@ -485,8 +360,10 @@ async function main() {
     `
     console.log(`[seed] rola ${ADMIN_ROLE_CODE} -> ${adminEmail}: ok`)
 
-    // Celowo "wszystkie wiersze w applications", nie "wszystkie wiersze z tego
-    // pliku": administrator instancji ma widzieć również aplikacje dodane
+    // Celowo "wszystkie wiersze w applications", nie "wszystkie wiersze
+    // aktywne": administrator ma mieć grant także do kodów zarejestrowanych z
+    // manifestu i jeszcze nieaktywowanych — inaczej po aktywacji z pickera
+    // musiałby sobie dograć własny dostęp. Obejmuje też aplikacje dodane
     // ręcznie przez UI i te zarejestrowane przez seedy innych modułów
     // (np. ilustromat), niezależnie od kolejności uruchamiania seedów.
     const granted = await tx`

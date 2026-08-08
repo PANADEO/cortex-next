@@ -88,11 +88,12 @@ test.describe("Bramka powłoki — macierz per kod aplikacji", () => {
     // macierz niżej przebiegłaby pustą pętlą i została zielona.
     expect(registry.length).toBeGreaterThanOrEqual(20)
     const codes = registry.map((application) => application.code)
-    // Cztery kody, które stara allowlista w kodzie gubiła — po migracji do
-    // rejestru w bazie problem znika strukturalnie, nie przez czujność.
-    expect(codes).toEqual(
-      expect.arrayContaining(["sp-console", "sp-client", "okna-czasowe", "meeting-guru"]),
-    )
+    // Kody, które stara allowlista w kodzie gubiła — po migracji do rejestru w
+    // bazie problem znika strukturalnie, nie przez czujność. `meeting-guru`
+    // wypadł z tej listy razem z APPLICATIONS w K3 (D3): to `external-link`,
+    // czyli dane instancji zakładane z UI admina, więc żaden seed go już nie
+    // tworzy i nie ma go czym tu sprawdzać.
+    expect(codes).toEqual(expect.arrayContaining(["sp-console", "sp-client", "okna-czasowe"]))
     expect(codes).toContain("ilustromat")
   })
 
@@ -358,7 +359,11 @@ test.describe("Zimny start — pusta baza i odzyskiwanie przez seed (D4/R2)", ()
     await page.goto("/")
     expect(await gateOutcome(page)).toBe("denied")
 
-    // 2. Ścieżka naprawy: ten sam seed, który odpala deploy.
+    // 2. Ścieżka naprawy: ten sam seed, który odpala deploy. BEZ
+    //    BOOTSTRAP_MODULES — czyli dokładnie tak, jak wstaje instancja, której
+    //    nikt nie skonfigurował. Po K3 nie ma już listy APPLICATIONS, która
+    //    aktywowałaby cokolwiek "przy okazji": jedyne, co włącza rdzeń, to
+    //    bezwarunkowa aktywacja w seed-system-config.mjs.
     runRegistrySeed({ adminEmail })
 
     // 3. Ten sam użytkownik odzyskuje dostęp — ale NIE natychmiast: uprawnienia
@@ -378,5 +383,56 @@ test.describe("Zimny start — pusta baza i odzyskiwanie przez seed (D4/R2)", ()
       .toBe("allowed")
 
     await expect(page.getByText("Konfiguracja Systemu", { exact: true })).toBeVisible()
+
+    // Druga połowa wariantu A, do K3 nieprawdziwa i dlatego nigdy tu nie
+    // zapisana: kafelek, którego nikt nie aktywował, ma NIE BYĆ na hubie. Bez
+    // tej asercji powrót do hurtowej aktywacji (choćby przez wskrzeszenie
+    // listy kodów w seedzie) przeszedłby tu niezauważony — administrator
+    // miałby dostęp, czyli headline tego testu byłby zielony.
+    //
+    // Asercja jest na DWÓCH konkretnych kodach, a nie na "pusty hub poza
+    // rdzeniem": ten seed zostawia aktywne także `ilustromat` i `token-usage`,
+    // które włączają się same w swoich seedach (zaszłość, follow-up K3 opisany
+    // w nagłówku seed-system-config.mjs). Asercja "tylko rdzeń" byłaby więc
+    // po prostu nieprawdziwa i musiałaby nieść listę wyjątków.
+    await expect(page.getByText("IDP", { exact: true })).toBeHidden()
+    await expect(page.getByText("Intrastat", { exact: true })).toBeHidden()
+  })
+
+  // Druga strona tej samej decyzji: wariant A bez zmiennej bootstrapowej
+  // znaczyłby 26 kliknięć na każde nowe środowisko. Ten test jest jedynym
+  // miejscem, które dowodzi, że zmienna realnie DOCHODZI ze środowiska do
+  // seeda i kończy się kafelkiem na hubie — reszta (przecięcie z licencją,
+  // guard activated_at) jest sprawdzana bez bazy w
+  // packages/@cortex/db/scripts/module-licensing.parity.test.mjs.
+  test("BOOTSTRAP_MODULES włącza wskazane moduły przy pierwszym uruchomieniu", async ({ page }) => {
+    const adminEmail = "admin-bootstrap@matrix.e2e.local"
+    await resetSystemConfig()
+    await asUser(page, adminEmail)
+    await mockIdpConfig(page)
+    await page.route("**/user/me", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ email: adminEmail, has_access: true }),
+      })
+    })
+
+    runRegistrySeed({ adminEmail, bootstrapModules: ["intrastat"] })
+
+    await expect
+      .poll(
+        async () => {
+          await page.goto("/")
+          return gateOutcome(page)
+        },
+        { timeout: 60_000, intervals: [5_000] },
+      )
+      .toBe("allowed")
+
+    await expect(page.getByText("Intrastat", { exact: true })).toBeVisible()
+    // Kod NIEWYMIENIONY na liście zostaje kandydatem — inaczej ten test
+    // przechodziłby także dla seeda aktywującego wszystko jak leci.
+    await expect(page.getByText("IDP", { exact: true })).toBeHidden()
   })
 })

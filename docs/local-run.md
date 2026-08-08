@@ -43,19 +43,29 @@ pod własnym adresem, ustaw `ADMIN_EMAIL=ty@twojadomena.pl` w `.env` obok
 `docker-compose.yml` — `DEV_USER_EMAIL` podąży za nią automatycznie, o ile
 sam jej nie nadpiszesz.
 
-### Cztery kafelki z tej sesji
+### Świeża baza startuje z trzema kafelkami
 
-**Kreator treści (Content Guru)** jest aktywny od razu.
-
-**Kalkulator GEO Score**, **Parser Dokumentów** i **Visual Guru** rejestrują
-się w bazie jako kandydaci, ale ZOSTAJĄ nieaktywne do jednorazowej ręcznej
-aktywacji — to świadomy mechanizm rejestru kafelków (`docs/tile-registry.md`),
-nie luka tego compose. Jako zalogowany administrator:
+Na pustym Postgresie aktywne są **Konfiguracja Systemu** (rdzeń, włączany
+bezwarunkowo przez `seed-system-config.mjs`) oraz **Ilustromat** i
+**Raportowanie Tokenów** — te dwa aktywują się same we własnych seedach
+(`seed-ilustromat.mjs`, `seed-token-usage.mjs`; historyczny wzorzec sprzed
+konsolidacji rejestrów, do uporządkowania osobno). Wszystkie pozostałe kafelki
+rejestrują się w bazie jako kandydaci (`is_active=false`) i czekają na świadomą
+aktywację — to mechanizm rejestru kafelków (`docs/tile-registry.md`), nie luka
+tego compose. Jako zalogowany administrator:
 
 1. Wejdź w **Konfiguracja Systemu → Aplikacje**.
-2. Przy każdym z trzech kafelków kliknij **„Dodaj aplikację"**.
+2. Przy każdym kafelku, którego chcesz użyć, kliknij **„Dodaj aplikację"**.
 
 Po aktywacji kafelek od razu pojawia się na hubie — bez restartu kontenera.
+
+Żeby nie klikać tego przy każdym `docker compose down -v`, wpisz listę kodów do
+`.env` obok `docker-compose.yml` (patrz `BOOTSTRAP_MODULES` niżej) — krok
+`migrate` włączy je sam przy pierwszym uruchomieniu.
+
+Kafelek dodany ręcznie z UI (typ **link zewnętrzny**, np. „Nagrywanie Spotkań"
+→ `chat.megu.me`) jest danymi Twojej instancji, nie faktem kodu — żaden seed go
+nie zakłada i żaden nie odtworzy go po `docker compose down -v`.
 
 ## Który kafelek czego wymaga
 
@@ -157,6 +167,37 @@ licensing-mvp.md` w Obsidianie. Jeśli po ustawieniu tej zmiennej brakuje Ci
 w picker'ze kafelka, którego się spodziewałeś, sprawdź najpierw, czy jego kod
 faktycznie jest na liście.
 
+## Moduły włączane na starcie (`BOOTSTRAP_MODULES`, opcjonalne)
+
+Świeża baza aktywuje sama tylko rdzeń (`system-config`) plus `ilustromat` i
+`token-usage` — patrz wyżej. Żeby nowe środowisko wstało od razu z kompletem
+potrzebnych kafelków, wypisz ich kody w `.env` obok `docker-compose.yml`:
+
+```bash
+BOOTSTRAP_MODULES=idp,intrastat,content-guru
+```
+
+Krok `migrate` włączy je przy pierwszym uruchomieniu, dokładnie tak, jakby ktoś
+kliknął „Dodaj aplikację" dla każdego z nich. Trzy rzeczy, które ta zmienna
+robi INACZEJ, niż się zwykle zakłada:
+
+- **Nie poszerza licencji.** Kod spoza `ENABLED_MODULES` zostaje pominięty z
+  logiem w `docker compose logs migrate`, nie aktywowany. `ENABLED_MODULES`
+  mówi, co ta instancja ma *prawo* mieć; `BOOTSTRAP_MODULES` tylko, co włączyć
+  od razu.
+- **Nie cofa decyzji administratora.** Działa wyłącznie na module, który nigdy
+  nie był w tej instancji aktywowany. Moduł wyłączony świadomie z UI zostaje
+  wyłączony, choćby jego kod stał na tej liście przy każdym deployu.
+- **Nie przerywa deployu.** Literówka albo kod nieznany w tym buildzie to
+  ostrzeżenie w logu, nie błąd — inaczej jedna pomyłka w konfiguracji
+  zatrzymywałaby cały łańcuch `migrate` i zostawiała instancję bez
+  administratora.
+
+`system-config` nie musi być na tej liście (i nie powinien) — rdzeń aktywuje się
+bezwarunkowo, poza obiema zmiennymi. `ilustromat` i `token-usage` też nie: te
+dwa włączają własne seedy, co jest zaszłością do usunięcia, a nie regułą, na
+której warto się opierać.
+
 ## Zatrzymanie / reset
 
 ```bash
@@ -170,9 +211,11 @@ docker compose down -v       # + kasuje wolumen Postgresa — następny `up` sta
 `FRONTEND_PORT=3001` i/lub `POSTGRES_PORT=5433`.
 
 **Zalogowany jako `dev@cortex.local`, ale kafelek pokazuje brak dostępu** —
-sprawdź, czy to jeden z trzech kafelków wymagających ręcznej aktywacji (patrz
-wyżej). Dla pozostałych: `docker compose down -v && docker compose up` daje
-czysty start z pełnym grantem.
+najpewniej nie jest jeszcze aktywowany w tej instancji: świeża baza włącza
+tylko trzy kafelki (patrz wyżej). Aktywuj go w **Konfiguracja Systemu →
+Aplikacje** albo wpisz jego kod do
+`BOOTSTRAP_MODULES` (patrz wyżej). Grant do wszystkiego to osobna sprawa i masz
+go z `ADMIN_EMAIL` niezależnie od aktywacji.
 
 **`docker compose up` wisi na `migrate`** — `docker compose logs migrate`;
 najczęstsza przyczyna to Postgres, który jeszcze nie zdążył przejść
