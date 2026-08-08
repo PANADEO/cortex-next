@@ -16,14 +16,25 @@
 // `on conflict (code) do update` obejmuje WYŁĄCZNIE kolumny strukturalne
 // (kind, route, url, target, updated_at) — fakt kodu, ma prawo wygrywać przy
 // każdym deployu, nawet na już aktywowanym wierszu (D10-rewizja d, otwarte
-// pytanie g). NIGDY name/icon/is_active/sort_order — to dane
+// pytanie g). NIGDY name/description/icon/color/category_functional/
+// category_department/is_active/show_on_hub/sort_order — to dane
 // instancji/admina, muszą przeżyć deploy.
 //
 // Na INSERCIE (nowy code, pierwszy deploy z tym manifestem): name = label,
-// is_active = false, show_on_hub = false, activated_at = null,
-// icon/category_functional/category_department = null. Wiersz
-// istnieje, ale jest nieaktywny — "kod zarejestrowany, instancja jeszcze nie
-// aktywowała" (Krok 3/5, poza zakresem TEGO skryptu).
+// is_active = false, show_on_hub = false, activated_at = null, a
+// description/icon/color/category_functional/category_department/sort_order
+// z manifestu, jeśli go tam ktoś podał (K1 z PROJECT/cortex-frontend/ARTIFACTS/
+// licencjonowanie/cortex-frontend-konsolidacja-rejestrow-kafelka-projekt.md,
+// D2/D5 — wcześniej te kolumny zawsze zostawały NULL/0 i kafelek manifest-only
+// lądował na hubie bez ikony, bez opisu i na pozycji zerowej). Wiersz istnieje,
+// ale jest nieaktywny — "kod zarejestrowany, instancja jeszcze nie aktywowała"
+// (Krok 3/5, poza zakresem TEGO skryptu).
+//
+// Te sześć pól to WYŁĄCZNIE wartość początkowa, dokładnie na tej samej zasadzie
+// co `name` — właścicielem w runtime jest admin edytujący je w UI Aplikacje.
+// NIE dopisywać ich do `do update set` niżej: to jest ten sam błąd, który
+// popełnia dziś seed-system-config.mjs (color/category_* bezwarunkowo w
+// UPDATE), przez który kategoria ustawiona w UI wraca przy każdym deployu.
 //
 // KOLEJNOŚĆ W ŁAŃCUCHU MIGRATE: musi wyprzedzać seed-system-config.mjs — blok
 // grantowania admina w tamtym skrypcie ("wszystkie wiersze w applications")
@@ -71,19 +82,29 @@ async function main() {
     for (const manifest of manifests) {
       const [row] = await tx`
         insert into system_config.applications
-          (code, name, kind, route, url, target, is_active, show_on_hub, activated_at)
+          (code, name, kind, route, url, target, is_active, show_on_hub, activated_at,
+           description, icon, color, category_functional, category_department, sort_order)
         values (
           ${manifest.entitlementCode}, ${manifest.label}, ${manifest.kind},
           ${manifest.route ?? null}, ${manifest.url ?? null}, ${manifest.target ?? null},
-          false, false, null
+          false, false, null,
+          ${manifest.description ?? null}, ${manifest.icon ?? null}, ${manifest.color ?? null},
+          ${manifest.categoryFunctional ?? null}, ${manifest.categoryDepartment ?? null},
+          -- sort_order jest NOT NULL DEFAULT 0, więc tu leci 0, a nie null:
+          -- manifest bez tego pola ma dać dokładnie to, co dała by domyślna
+          -- wartość kolumny.
+          ${manifest.sortOrder ?? 0}
         )
-        -- Częściowy upsert: WYŁĄCZNIE kolumny strukturalne. name/icon/
-        -- is_active/show_on_hub/category_functional/category_department/
-        -- sort_order NIE są tu — zmiany zrobione w UI (Krok 3+) i stan
-        -- aktywacji (Krok 1b punkt d, poza zakresem tego skryptu) przeżywają
-        -- deploy. is_active/show_on_hub=false WYŁĄCZNIE na INSERCIE (nowy
-        -- code) — na UPDATE (kod już istnieje) te dwie kolumny NIE są w SET,
-        -- więc już aktywowany/wyłączony przez admina wiersz zostaje bez zmian.
+        -- Częściowy upsert: WYŁĄCZNIE kolumny strukturalne. name/description/
+        -- icon/color/is_active/show_on_hub/category_functional/
+        -- category_department/sort_order NIE są tu — zmiany zrobione w UI
+        -- (Krok 3+) i stan aktywacji (Krok 1b punkt d, poza zakresem tego
+        -- skryptu) przeżywają deploy. Pola prezentacyjne z manifestu są więc
+        -- wartością POCZĄTKOWĄ wiersza, nie deklaracją stanu docelowego —
+        -- patrz nagłówek pliku. is_active/show_on_hub=false WYŁĄCZNIE na
+        -- INSERCIE (nowy code) — na UPDATE (kod już istnieje) te dwie kolumny
+        -- NIE są w SET, więc już aktywowany/wyłączony przez admina wiersz
+        -- zostaje bez zmian.
         on conflict (code) do update set
           kind = excluded.kind,
           route = excluded.route,
