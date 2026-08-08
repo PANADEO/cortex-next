@@ -17,7 +17,7 @@ import {
   type UserRow,
 } from "@cortex/db"
 import { isHttpUrl, isInternalRoute, TileKind } from "@cortex/tile-sdk"
-import { and, asc, eq, inArray, isNotNull, isNull, ne, or } from "drizzle-orm"
+import { and, asc, eq, inArray, isNotNull, isNull, max, ne, or } from "drizzle-orm"
 import { z } from "zod"
 import { isModuleEnabled, moduleLicensingConfig } from "./module-licensing"
 import {
@@ -47,6 +47,27 @@ export interface UserWithRoles {
   roles: RoleSummary[]
 }
 
+/** Górna granica `sort_order` — JEDNA liczba dla schematu wejścia i dla
+ *  wyliczania pozycji nowego wiersza (nextSortOrder). Rozjazd tych dwóch
+ *  byłby cichy: kolumna to zwykły `integer`, więc wartość spoza zakresu
+ *  przeszłaby INSERT-em, a odbiłaby się dopiero od `applicationInputSchema`
+ *  w updateApplication — i to WYŁĄCZNIE przy PATCH-u, który sam nie niesie
+ *  `sortOrder` (mergeApplicationInput woli `patch.sortOrder` od wartości z
+ *  bazy). Czyli 400 dostawałby formularz edycji (nazwa, opis, ikona,
+ *  kategorie), a tryb "Zmień kolejność" — wysyłający samo `{ sortOrder }` —
+ *  przechodziłby i taki wiersz wręcz LECZYŁ. Promień rażenia mniejszy niż
+ *  "nieedytowalny", ale defekt realny, a granica kosztuje jedną stałą. */
+const MAX_SORT_ORDER = 10_000
+
+/** Odstęp między kolejnymi pozycjami. Bliźniak `SORT_ORDER_STEP` z
+ *  app/idp/app/(main)/system-config/applications/page.tsx (tryb zmiany
+ *  kolejności przenumerowuje listę na `(index + 1) * 10`). Zduplikowany
+ *  świadomie, nie zaimportowany: tamten plik jest komponentem klienckim, a
+ *  import z @cortex/service wciągnąłby drizzle i sterownik bazy do bundla.
+ *  Obie liczby (ta i MAX_SORT_ORDER wyżej) trzyma razem strażnik parzystości
+ *  system-config.sort-order-parity.test.ts — komentarz nie jest egzekucją. */
+const SORT_ORDER_STEP = 10
+
 const applicationFieldsSchema = z.object({
   code: z
     .string()
@@ -66,7 +87,7 @@ const applicationFieldsSchema = z.object({
   url: z.string().url().max(500).nullish(),
   target: z.enum(["_self", "_blank"]).nullish(),
   isActive: z.boolean().optional(),
-  sortOrder: z.number().int().min(0).max(10_000).optional(),
+  sortOrder: z.number().int().min(0).max(MAX_SORT_ORDER).optional(),
   // Hub-render (Krok 1/3, PROJECT/cortex-frontend-hub-db-driven-projekt.md
   // D1/D2/D3). Zestaw dozwolonych wartości (5 funkcji, 5 kategorii) egzekwuje
   // formularz (select/multi-select), nie ten schemat — celowo, żeby nie
@@ -618,15 +639,37 @@ export async function activateApplication(code: string): Promise<ApplicationRow 
  * (D6-rewizja/D10-rewizja d). To jest egzekwowanie w SERWISIE, nie tylko w
  * UI: samo ukrycie pola `route` w formularzu niczego by nie gwarantowało dla
  * żądania wysłanego z pominięciem przeglądarki.
+ *
+ * Pozycja nowego wiersza to KONIEC listy (nextSortOrder), a nie `0` (K4/D5,
+ * PROJECT/cortex-frontend/ARTIFACTS/licencjonowanie/cortex-frontend-
+ * konsolidacja-rejestrow-kafelka-projekt.md). Jawny `sortOrder` z wejścia
+ * wygrywa — pole jest częścią kontraktu zapisu, więc "koniec listy" znaczy
+ * wyłącznie "nie podano żadnej pozycji".
+ *
+ * Bez blokady i bez transakcji: dwa równoległe POST-y odczytają to samo
+ * maksimum i dostaną tę samą wartość. To REMIS, nie kolizja — oba wiersze i
+ * tak lądują za wszystkim, co istniało wcześniej, a między sobą rozstrzyga je
+ * drugi klucz sortowania (`asc(code)` w listApplications/listHubApplications),
+ * więc lista zostaje deterministyczna i admin ma czym to poprawić (tryb zmiany
+ * kolejności). Odrzucone: `for update`/SERIALIZABLE — serializowałyby
+ * zakładanie aplikacji (ręczna czynność, kilka razy w roku) dla kosmetyki.
+ * Odrzucone też wepchnięcie `max()` do podzapytania w INSERT-cie: w READ
+ * COMMITTED druga transakcja i tak nie widzi niezacommitowanego wiersza
+ * pierwszej, więc jeden statement remisu NIE USUWA — zmierzone przy review:
+ * 39/40 remisów wobec 40/40 przy dwóch instrukcjach. Okno zwęża się
+ * marginalnie, nie znika, a płaci się za to SQL-em w `values()`.
  */
 export async function createApplication(input: ApplicationInput): Promise<ApplicationRow> {
   if (input.kind === "native") {
     throw new NativeCreationNotAllowedError()
   }
 
-  const [created] = await getDb()
+  const db = getDb()
+  const [highest] = await db.select({ value: max(applications.sortOrder) }).from(applications)
+
+  const [created] = await db
     .insert(applications)
-    .values(toApplicationValues(input))
+    .values(toApplicationValues(input, nextSortOrder(highest?.value ?? null)))
     .returning()
 
   return created as ApplicationRow
@@ -655,7 +698,7 @@ export async function updateApplication(
 
   const [updated] = await db
     .update(applications)
-    .set({ ...toApplicationValues(merged), updatedAt: new Date() })
+    .set({ ...toApplicationValues(merged, existing.sortOrder), updatedAt: new Date() })
     .where(eq(applications.id, id))
     .returning()
 
@@ -995,7 +1038,9 @@ function assertKeepsModuleReachable(existing: ApplicationRow, input: Application
   // `external-link`/`iframe` albo ścieżki na obcy adres zamienia wejście do
   // administracji w przekierowanie poza aplikację (finding 8 zastosowany do
   // kafelka samej administracji), więc te pola też są niezmienne.
-  const next = toApplicationValues(input)
+  // `existing.sortOrder` jako fallback: ta funkcja patrzy wyłącznie na
+  // kind/route/url, więc pozycja ma tu być no-opem, a nie nową wartością.
+  const next = toApplicationValues(input, existing.sortOrder)
   if (next.kind !== existing.kind || next.route !== existing.route || next.url !== existing.url) {
     throw new SelfLockoutError(
       "Nie można zmienić typu ani adresu aplikacji Konfiguracja Systemu — ten wiersz opisuje sam moduł administracyjny, a podmiana go na adres zewnętrzny wyprowadzałaby administratorów poza tę aplikację.",
@@ -1035,7 +1080,8 @@ function assertKeepsModuleReachable(existing: ApplicationRow, input: Application
  * tego, jaki był `existing.kind` PRZED edycją.
  */
 function assertNativeApplicationImmutable(existing: ApplicationRow, input: ApplicationInput): void {
-  const next = toApplicationValues(input)
+  // Jak wyżej — porównywane są code/kind/route, pozycja jest tu bez znaczenia.
+  const next = toApplicationValues(input, existing.sortOrder)
 
   if (existing.kind !== "native") {
     if (next.kind === "native") {
@@ -1288,7 +1334,39 @@ function mergeApplicationInput(existing: ApplicationRow, patch: ApplicationPatch
   }
 }
 
-function toApplicationValues(input: ApplicationInput) {
+/**
+ * Reguła "nowy wiersz ląduje na końcu" wyrażona na samej liczbie — `highest`
+ * to `max(sort_order)` z CAŁEJ tabeli.
+ *
+ * Maksimum liczone globalnie, a nie po wierszach huba (`is_active` +
+ * `show_on_hub`): zawężenie stawiałoby nową aplikację PRZED zarejestrowanym,
+ * ale jeszcze nieaktywowanym kandydatem `native`, który jutro zostanie
+ * włączony i wskoczyłby nad wiersz założony wcześniej. Kolumna jest jedna i
+ * wspólna dla wszystkich list (listApplications, listHubApplications), więc i
+ * punkt odniesienia ma być jeden.
+ *
+ * Pusta tabela (`max()` po zerze wierszy to NULL, nie 0) -> `0`: pierwszy
+ * wiersz nie ma za czym lądować. Funkcja jest wydzielona z zapytania właśnie
+ * po to, żeby ten przypadek dało się udowodnić testem — bazy integracyjnej nie
+ * da się opróżnić, bo dzieli ją seed i równoległe suity.
+ *
+ * Przy suficie funkcja SATURUJE: po osiągnięciu MAX_SORT_ORDER każde kolejne
+ * utworzenie remisuje na tej samej wartości. Akceptowalne dokładnie z tego
+ * powodu, co remis dwóch równoległych POST-ów (patrz createApplication) —
+ * wiersz nadal jest na końcu, remis rozstrzyga `asc(code)`, a admin ma czym to
+ * ułożyć. Odrzucone: przenumerowanie całej tabeli przy INSERCIE, żeby zrobić
+ * miejsce — przepisywałoby układ ustawiony ręcznie przez admina, czyli łamało
+ * regułę, dla której obrony ta funkcja w ogóle powstała.
+ */
+export function nextSortOrder(highest: number | null): number {
+  if (highest === null) return 0
+  return Math.min(highest + SORT_ORDER_STEP, MAX_SORT_ORDER)
+}
+
+/** `fallbackSortOrder` — pozycja, gdy wołający nie podał własnej: przy
+ *  tworzeniu koniec listy, przy PATCH-u dotychczasowa pozycja wiersza.
+ *  Wcześniej było tu na sztywno `0`, czyli POCZĄTEK huba (K4/D5). */
+function toApplicationValues(input: ApplicationInput, fallbackSortOrder: number) {
   const isNative = input.kind === "native"
   return {
     code: input.code,
@@ -1300,7 +1378,7 @@ function toApplicationValues(input: ApplicationInput) {
     url: isNative ? null : (input.url ?? null),
     target: input.target ?? null,
     isActive: input.isActive ?? true,
-    sortOrder: input.sortOrder ?? 0,
+    sortOrder: input.sortOrder ?? fallbackSortOrder,
     showOnHub: input.showOnHub ?? true,
     color: input.color ?? null,
     categoryFunctional: input.categoryFunctional ?? null,

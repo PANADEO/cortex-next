@@ -23,7 +23,7 @@ import {
   users,
 } from "@cortex/db"
 import { randomUUID } from "node:crypto"
-import { and, eq } from "drizzle-orm"
+import { and, eq, inArray, max } from "drizzle-orm"
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { clearTileAccessCache, requireTileAccess, requireTileScope } from "./rbac"
 import {
@@ -1488,6 +1488,101 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
       const core = await rowOf(SYSTEM_CONFIG_APP_CODE)
       expect(core.activatedAt).not.toBeNull()
       expect(core.isActive).toBe(true)
+    })
+  })
+
+  // K4/D5 (PROJECT/cortex-frontend/ARTIFACTS/licencjonowanie/cortex-frontend-
+  // konsolidacja-rejestrow-kafelka-projekt.md). Formularz "Dodaj aplikację" nie
+  // ma pola kolejności, więc `input.sortOrder` z panelu jest ZAWSZE undefined —
+  // przy `?? 0` każdy nowy link zewnętrzny lądował na pozycji 0, czyli PRZED
+  // wszystkimi kafelkami huba (`orderBy asc(sortOrder), asc(code)`).
+  //
+  // Przypadku PUSTEJ tabeli tu nie ma i mieć nie może: ta baza jest dzielona z
+  // seedem i równoległymi suitami, więc nigdy nie jest pusta. Dowodzi go test
+  // jednostkowy nextSortOrder(null) w system-config.schema.test.ts.
+  describe("K4/D5 — nowa aplikacja z panelu ląduje na końcu listy", () => {
+    const FIRST_CODE = `koniec-listy-a-${SUFFIX}`
+    const SECOND_CODE = `koniec-listy-b-${SUFFIX}`
+    const EXPLICIT_CODE = `koniec-listy-jawny-${SUFFIX}`
+    const NEW_CODES = [FIRST_CODE, SECOND_CODE, EXPLICIT_CODE]
+
+    afterEach(async () => {
+      await getDb().delete(applications).where(inArray(applications.code, NEW_CODES))
+    })
+
+    /** Dokładnie to, co wysyła formularz dla kafelka nienatywnego: BEZ pola
+     *  kolejności (chyba że test sprawdza właśnie jawną wartość). */
+    function externalInput(code: string, sortOrder?: number) {
+      return {
+        code,
+        name: `Link zewnętrzny ${code}`,
+        kind: "external-link" as const,
+        url: `https://example.com/${code}`,
+        ...(sortOrder === undefined ? {} : { sortOrder }),
+      }
+    }
+
+    /** Maksimum po CAŁEJ tabeli, nie po liście admina — nowy wiersz ma być za
+     *  wszystkim, także za zarejestrowanym, jeszcze nieaktywowanym kandydatem
+     *  native, którego listApplications() nie pokazuje. */
+    async function highestSortOrder(): Promise<number | null> {
+      const [row] = await getDb().select({ value: max(applications.sortOrder) }).from(applications)
+      return row?.value ?? null
+    }
+
+    it("SEDNO: nowy wiersz dostaje max(sort_order) + 10, nie 0 — ląduje ZA każdym istniejącym", async () => {
+      const highestBefore = await highestSortOrder()
+      expect(highestBefore).not.toBeNull()
+
+      const created = await createApplication(externalInput(FIRST_CODE))
+
+      expect(created.sortOrder).toBe(highestBefore! + 10)
+
+      const all = await getDb()
+        .select({ code: applications.code, sortOrder: applications.sortOrder })
+        .from(applications)
+      const others = all.filter((row) => row.code !== FIRST_CODE)
+      expect(Math.max(...others.map((row) => row.sortOrder))).toBeLessThan(created.sortOrder)
+    })
+
+    it("druga aplikacja ląduje za pierwszą — kolejne wpisy nie zbijają się na jednej pozycji", async () => {
+      const first = await createApplication(externalInput(FIRST_CODE))
+      const second = await createApplication(externalInput(SECOND_CODE))
+
+      expect(second.sortOrder).toBe(first.sortOrder + 10)
+    })
+
+    // `sortOrder` jest polem kontraktu zapisu (applicationFieldsSchema), więc
+    // "koniec listy" znaczy WYŁĄCZNIE "wołający nie podał pozycji". Wartość
+    // celowo dużo niższa od maksimum — gdyby reguła nadpisywała jawne wejście,
+    // wiersz i tak wylądowałby na końcu i test by to zobaczył.
+    it("jawny sortOrder wygrywa nad regułą końca listy", async () => {
+      const created = await createApplication(externalInput(EXPLICIT_CODE, 7))
+
+      expect(created.sortOrder).toBe(7)
+    })
+
+    // Dowód na tym, co realnie renderuje hub (listHubApplications), a nie na
+    // samej wartości kolumny — bo defekt był widoczny właśnie w kolejności kart.
+    it("hub renderuje nowy kafelek NA KOŃCU, za wszystkim, co już na nim było", async () => {
+      const before = (await listHubApplications()).map((row) => row.code)
+      expect(before.length).toBeGreaterThan(0)
+
+      await createApplication(externalInput(FIRST_CODE))
+
+      const after = (await listHubApplications()).map((row) => row.code)
+      const position = after.indexOf(FIRST_CODE)
+      expect(position).toBeGreaterThanOrEqual(0)
+
+      // Porównanie do wierszy Z MIGAWKI sprzed utworzenia, a nie do całej listy
+      // po: równoległe suity integracyjne dokładają i kasują własne kafelki na
+      // tej samej bazie, więc asercja "ostatni indeks" byłaby losowa. Wiersz
+      // zniknięty w międzyczasie jest pomijany, nie zgadywany.
+      for (const code of before) {
+        const earlier = after.indexOf(code)
+        if (earlier === -1) continue
+        expect(earlier).toBeLessThan(position)
+      }
     })
   })
 })
