@@ -23,12 +23,9 @@ export function AppShell({
   return (
     <div className={cn("flex h-screen overflow-hidden bg-background", className)}>
       {sidebar ? (
-        // No width transition on purpose: animating a layout property thrashes
-        // layout on every frame. Collapse is a binary, infrequent state change
-        // — it swaps instantly instead.
         <aside
           className={cn(
-            "ch-aside hidden shrink-0 md:flex md:flex-col",
+            "hidden shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:flex md:flex-col",
             sidebarCollapsed ? "w-sidebar-icon" : "w-sidebar",
           )}
           data-collapsed={sidebarCollapsed || undefined}
@@ -38,7 +35,7 @@ export function AppShell({
       ) : null}
       <div className="flex min-w-0 flex-1 flex-col">
         {topbar ? (
-          <header className="ch-topbar flex h-header shrink-0 items-center gap-3 px-4">
+          <header className="flex h-header shrink-0 items-center gap-3 border-b border-border bg-background px-4">
             {topbar}
           </header>
         ) : null}

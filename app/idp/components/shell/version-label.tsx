@@ -34,7 +34,7 @@ export function VersionLabel({ tileId }: VersionLabelProps) {
   }
 
   return (
-    <p className="ch-version px-2">
+    <p className="px-2 text-[10px] text-muted-foreground">
       {fePart} · {modulePart}
     </p>
   )

@@ -122,11 +122,11 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
         <button
           type="button"
           onClick={() => setPaletteOpen(true)}
-          className="ch-top-search hidden h-8 w-64 items-center gap-2 px-3 text-left text-xs lg:flex"
+          className="hidden h-8 w-64 items-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-left text-xs text-muted-foreground transition-colors hover:bg-muted lg:flex"
         >
           <Search className="h-3.5 w-3.5" />
           <span className="flex-1">Search or jump...</span>
-          <kbd className="ch-top-kbd">
+          <kbd className="rounded border border-border bg-background px-1 py-0.5 font-mono text-[10px]">
             ⌘K
           </kbd>
         </button>

@@ -43,7 +43,7 @@ export function TileMenu({
       {brand || brandIcon ? (
         <div
           className={cn(
-            "ch-side-brand flex h-header items-center",
+            "flex h-header items-center",
             collapsed ? "justify-center px-0" : "px-5",
           )}
         >
@@ -55,7 +55,7 @@ export function TileMenu({
         {sections.map((section) => (
           <div key={section.id} className="mb-5 last:mb-0">
             {section.label && !collapsed ? (
-              <p className="ch-side-label mb-2 px-2">
+              <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {section.label}
               </p>
             ) : null}
@@ -71,8 +71,11 @@ export function TileMenu({
                       aria-current={isActive ? "page" : undefined}
                       title={collapsed ? item.label : undefined}
                       className={cn(
-                        "ch-side-link group flex h-8 items-center text-sm",
+                        "group flex h-8 items-center rounded-md text-sm transition-colors",
                         collapsed ? "justify-center px-0" : "gap-2.5 px-2",
+                        isActive
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                          : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                         item.disabled && "pointer-events-none opacity-50",
                       )}
                     >
@@ -83,7 +86,7 @@ export function TileMenu({
                           {item.badge != null ? (
                             <Badge
                               variant="secondary"
-                              className="ml-auto h-5 min-w-5 justify-center px-1.5 text-[11px]"
+                              className="ml-auto h-5 min-w-5 justify-center px-1.5 text-[10px]"
                             >
                               {item.badge}
                             </Badge>
@@ -100,7 +103,7 @@ export function TileMenu({
       </nav>
 
       {footerSlot && !collapsed ? (
-        <div className="ch-side-foot p-3">{footerSlot}</div>
+        <div className="border-t border-sidebar-border p-3">{footerSlot}</div>
       ) : null}
     </div>
   )

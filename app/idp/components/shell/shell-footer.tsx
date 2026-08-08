@@ -44,9 +44,14 @@ function useDiagnostics(): Diagnostics | null {
 
 export function ShellFooter() {
   const diag = useDiagnostics()
+  // Stylowanie tokenami, NIE klasą zakresowaną do `.cortex-home` (D5: powłoka
+  // zostaje na warstwie 1). Ta stopka renderuje się w DWÓCH miejscach — pod
+  // hubem i w `landing-hero.tsx`, gdzie `.cortex-home` nie istnieje — więc
+  // stylowanie zakresowane do jednego wyglądu znaczyłoby stopkę bez ramki i tła
+  // na ekranie logowania.
   return (
-    <footer className="ch-shellfoot">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-1 px-6 py-3">
+    <footer className="border-t border-border bg-card/60 backdrop-blur">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-1 px-6 py-3 text-[11px] text-muted-foreground">
         <div>Cortex360 © {new Date().getFullYear()}</div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
           <span>Wersja: {APP_VERSION}</span>
