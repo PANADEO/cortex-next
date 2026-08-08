@@ -1,0 +1,87 @@
+-- K1b, migracja danych — dopisana ręcznie (drizzle-kit nie generuje UPDATE-ów,
+-- tak samo jak DELETE-a w 0004). Zero zmian schematu.
+--
+-- PROJECT/cortex-frontend/ARTIFACTS/licencjonowanie/
+-- cortex-frontend-konsolidacja-rejestrow-kafelka-projekt.md §4.
+--
+-- CO NAPRAWIA. Do K1b seed-tile-manifests.mjs wstawiał KAŻDY zarejestrowany
+-- manifest z zaszytym `show_on_hub = false`, a activateApplication() podnosiła
+-- tę kolumnę na `true` bezwarunkowo przy aktywacji. K1b odwraca oba końce:
+-- kolumnę ustala REJESTRACJA (z manifestowego `entitlementOnly`), a aktywacja
+-- jej nie tyka. Wiersze zarejestrowane PRZED K1b i do dziś nieaktywowane
+-- zostają więc z `show_on_hub = false` mimo że są prawdziwymi kafelkami —
+-- admin aktywuje taki moduł i kafelek NIE POJAWIA SIĘ na hubie. Objaw jest
+-- cichy: aktywacja kończy się sukcesem, wiersz wygląda poprawnie na liście
+-- Aplikacje, brakuje wyłącznie karty.
+--
+-- Zbiór jest realny, nie teoretyczny: na instancjach wdrożeniowych to
+-- `document-parser`, `geo-score-calculator` i `visual-guru` — trzy działające
+-- kafelki czekające na aktywację. Dlatego migracja jedzie razem z K1b, a nie
+-- z K3: zagrożenie zaczyna się w dniu wdrożenia K1b, a K1b i K3 to osobne
+-- deploye.
+--
+-- DLACZEGO MIGRACJA, A NIE WARUNEK W SEEDZIE. Rozważony `show_on_hub` w
+-- `on conflict do update set` pod guardem `activated_at is null` — wzorzec
+-- przyjęty i poprawny w tym repo (CASE WHEN w seed-system-config.mjs,
+-- `where ... and activated_at is null` w seed-ilustromat.mjs i
+-- seed-token-usage.mjs; defektem B1 jest tam linia BEZWARUNKOWA, nie ta).
+-- Odrzucony nie jako niebezpieczny, tylko jako niewłaściwe narzędzie: seed
+-- jest pętlą uzgadniającą i biegnie przy KAŻDYM deployu, więc wyjątek w nim
+-- zostaje na zawsze i trzeba go czytać przy każdej kolejnej zmianie. To jest
+-- naprawa stanu zastanego, która ma się SKOŃCZYĆ — a przy okazji nie osłabia
+-- strażnika seed-tile-manifests-insert-only.test.ts, który dziś czyta prosto:
+-- w `do update set` nie ma ANI JEDNEJ kolumny należącej do admina.
+--
+-- WYKLUCZENIE CZTERECH KODÓW. To one nie są kafelkami, tylko uprawnieniami.
+-- Czym ta lista jest naprawdę — zmierzone, nie założone:
+--
+--   * na instancji W PEŁNI zaseedowanej NIE ROBI NIC. Te cztery mają tam
+--     `activated_at IS NOT NULL` (seed-system-config.mjs ustawia tę datę przez
+--     coalesce), więc odsiewa je już sam predykat `activated_at IS NULL` —
+--     z listą i bez listy UPDATE łapie dokładnie te same 3 wiersze;
+--   * na instancji CZĘŚCIOWO zaseedowanej (seed-tile-manifests.mjs przeszedł,
+--     seed-system-config.mjs nie — przerwany deploy, baza e2e, instancja w
+--     trakcie migracji) ratuje wszystkie cztery: bez niej UPDATE łapie 7
+--     wierszy zamiast 3 i wystawia na hub dokładnie te karty, przed którymi
+--     broni K1b.
+--
+-- Czyli: nie jest to zabezpieczenie codzienne, tylko warunek poprawności w
+-- stanie pośrednim — a stan pośredni jest tu realny, bo cały ten projekt
+-- polega na przestawianiu łańcucha seedów. Lista zostaje.
+--
+-- Wypisana wprost i zamrożona na dzień K1b, bo migracja jest faktem
+-- historycznym, nie konfiguracją: nie wolno jej czytać z manifestów, bo te
+-- zmieniają się dalej (K2), a ten UPDATE ma opisywać bazę z chwili, w której
+-- jest stosowany.
+--
+-- A CO Z UPRAWNIENIEM DODANYM PO K1b (K2 to faza żywej edycji manifestów)?
+-- Jego kodu w liście wyżej z definicji nie ma. Chroni je nie lista, tylko
+-- KOLEJNOŚĆ W ŁAŃCUCHU DEPLOYU: migrate.mjs biegnie PRZED
+-- seed-tile-manifests.mjs, a rejestr wypełnia wyłącznie ten drugi. W chwili
+-- tego UPDATE-u wiersza nowego manifestu więc jeszcze nie ma — powstanie
+-- chwilę później, już z `show_on_hub = false` z `entitlementOnly`. Żeby
+-- wiersz istniał WCZEŚNIEJ, musiałby go założyć któryś poprzedni deploy — a
+-- każdy deploy niosący ten manifest niesie też tę migrację i stosuje ją w tym
+-- samym przebiegu, przed seedem.
+--
+-- Granica jest więc ostra i warto ją znać: gdyby seed-tile-manifests.mjs
+-- poszedł PRZED migrate.mjs na bazie, która nigdy nie widziała 0005, nowe
+-- uprawnienie dostałoby tu `true`. Zmierzone, nie założone — obie ścieżki
+-- odtworzone na żywej bazie. Łańcuch deployu takiej kolejności nie dopuszcza
+-- (pilnuje tego seed-chain-parity.test.ts: migrate.mjs przed wszystkimi
+-- seedami w obu plikach compose), a migracja jest jednorazowa, więc okno
+-- zamyka się po pierwszym poprawnym deployu.
+--
+-- Jedno miejsce w repo robi to jednak dziś inaczej i NIE jest to ręczna
+-- pomyłka: e2e/fixtures/db-seed.ts (`runRegistrySeed`, wołane z
+-- e2e/shell/hub-activation.spec.ts i access-gate.spec.ts) odpala łańcuch
+-- seedów BEZ migrate.mjs — migracji nie uruchamia w suicie e2e nic. Dziś jest
+-- to nieszkodliwe, bo wszystkie cztery uprawnienia istniejące w tej chwili są
+-- na liście wykluczeń wyżej. Stanie się żywe w K2, gdy dojdzie piąty kod z
+-- `entitlementOnly`. Ten plik ma zresztą własny, szerszy rozjazd z łańcuchami
+-- compose (brakujące seedy) — osobne zadanie, poza zakresem K1b.
+UPDATE "system_config"."applications"
+   SET "show_on_hub" = true
+ WHERE "kind" = 'native'
+   AND "activated_at" IS NULL
+   AND "code" NOT IN ('ai-tools', 'cortex-cowork', 'intrastat-cn-editor', 'intrastat-config-editor');

@@ -43,6 +43,7 @@ import {
   listApplicationScopeGrants,
   listApplicationScopes,
   listApplications,
+  listHubApplications,
   listUnactivatedNativeApplications,
   renameApplicationScope,
   setApplicationRoles,
@@ -1020,10 +1021,16 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
     // (vitest uruchamia pliki integracyjne równolegle) — ten wiersz istnieje
     // wyłącznie w obrębie tego testu, więc żaden wyścig go nie dotyczy.
     const CONTROL_CODE = `manifest-control-${SUFFIX}`
+    // K1b: wiersz-uprawnienie, czyli odpowiednik ai-tools/cortex-cowork/obu
+    // edytorów Intrastatu. Różni się od kafelka WYŁĄCZNIE tym, co
+    // seed-tile-manifests.mjs wstawił mu w `show_on_hub` na podstawie
+    // manifestowego `entitlementOnly` — dla aktywacji jest nieodróżnialny.
+    const ENTITLEMENT_CODE = `manifest-uprawnienie-${SUFFIX}`
 
     afterEach(async () => {
       await getDb().delete(applications).where(eq(applications.code, MANIFEST_CODE))
       await getDb().delete(applications).where(eq(applications.code, CONTROL_CODE))
+      await getDb().delete(applications).where(eq(applications.code, ENTITLEMENT_CODE))
     })
 
     it("createApplication odrzuca kind=native (POST zostaje wyłącznie dla external-link/iframe)", async () => {
@@ -1071,6 +1078,11 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
       expect(codes).not.toContain(EXTERNAL_APP_CODE)
     })
 
+    // `showOnHub: true` w fixturze to NIE kosmetyka — tak od K1b wygląda
+    // wiersz prawdziwego kafelka zaraz po rejestracji (seed-tile-manifests.mjs
+    // wstawia `show_on_hub` z manifestowego `entitlementOnly`, a `is_active`
+    // zostawia na `false`). Przed K1b fixture stawiał `false`, bo seed też
+    // stawiał `false` dla każdego, a aktywacja podnosiła kolumnę bezwarunkowo.
     it("activateApplication aktywuje wiersz i jest bezpieczna na wyścig — drugie wywołanie to no-op, nie błąd", async () => {
       await getDb()
         .insert(applications)
@@ -1080,13 +1092,16 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
           kind: "native",
           route: MANIFEST_ROUTE,
           isActive: false,
-          showOnHub: false,
+          showOnHub: true,
           activatedAt: null,
         })
 
+      // Bez asercji na showOnHub — od K1b aktywacja do tej kolumny NIE PISZE,
+      // więc sprawdzanie jej tutaj mierzyłoby wyłącznie fixture. Właścicielem
+      // tej asercji jest test "SEDNO" niżej, który porównuje kafelek z
+      // uprawnieniem.
       const first = await activateApplication(MANIFEST_CODE)
       expect(first?.isActive).toBe(true)
-      expect(first?.showOnHub).toBe(true)
       expect(first?.activatedAt).not.toBeNull()
 
       const activatedCandidates = await listUnactivatedNativeApplications()
@@ -1100,6 +1115,66 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
 
     it("activateApplication zwraca null dla nieistniejącego kodu (pomyłka wywołania, nie wyścig)", async () => {
       expect(await activateApplication(`nie-istnieje-${SUFFIX}`)).toBeNull()
+    })
+
+    // SEDNO K1b. Przed zmianą activateApplication() ustawiała
+    // `showOnHub: true` bezwarunkowo dla każdego wiersza native, więc te dwa
+    // przypadki kończyły się identycznie — a cztery kody w rejestrze nie są
+    // kafelkami, tylko uprawnieniami. Do K3 trzyma je poza hubem
+    // `show_on_hub = excluded.show_on_hub` w seed-system-config.mjs, czyli
+    // linia, którą K3 usuwa jako defekt; potem nie zostałoby nic i pierwszy
+    // admin przechodzący przez picker "Dodaj aplikację" wystawiłby cztery
+    // karty prowadzące do ekranów, które kafelkami nie są.
+    //
+    // Oba wiersze przechodzą przez tę samą funkcję, w tym samym teście,
+    // różniąc się wyłącznie tym, co seed wstawił im na INSERCIE — bo dokładnie
+    // to jest teraz jedyną różnicą, jaką aktywacja ma respektować.
+    it("SEDNO: aktywacja uprawnienia nie wystawia go na hub, aktywacja kafelka zostawia go widocznym", async () => {
+      await getDb()
+        .insert(applications)
+        .values([
+          {
+            code: MANIFEST_CODE,
+            name: "Prawdziwy kafelek",
+            kind: "native",
+            route: MANIFEST_ROUTE,
+            isActive: false,
+            // manifest bez entitlementOnly -> seed wstawia true
+            showOnHub: true,
+            activatedAt: null,
+          },
+          {
+            code: ENTITLEMENT_CODE,
+            name: "Sam grant, bez własnej karty",
+            kind: "native",
+            route: `/${ENTITLEMENT_CODE}`,
+            isActive: false,
+            // manifest z entitlementOnly: true -> seed wstawia false
+            showOnHub: false,
+            activatedAt: null,
+          },
+        ])
+
+      const tile = await activateApplication(MANIFEST_CODE)
+      const entitlement = await activateApplication(ENTITLEMENT_CODE)
+
+      // Aktywacja MUSI zadziałać dla obu — uprawnienie bez `is_active` nadal
+      // grantuje (requireTileAccess patrzy wyłącznie na granty), ale wiersz
+      // nieaktywny nie pojawia się na liście admina, więc "aktywuj, tylko nie
+      // pokazuj" jest jedynym poprawnym wynikiem.
+      expect(tile?.isActive).toBe(true)
+      expect(entitlement?.isActive).toBe(true)
+      expect(tile?.activatedAt).not.toBeNull()
+      expect(entitlement?.activatedAt).not.toBeNull()
+
+      expect(tile?.showOnHub).toBe(true)
+      expect(entitlement?.showOnHub).toBe(false)
+
+      // Nie sama wartość zwrotna: hub renderuje z listHubApplications()
+      // (is_active AND show_on_hub), więc dowodem jest wiersz w bazie.
+      const hubCodes = (await listHubApplications()).map((row) => row.code)
+      expect(hubCodes).toContain(MANIFEST_CODE)
+      expect(hubCodes).not.toContain(ENTITLEMENT_CODE)
     })
 
     it("updateApplication odrzuca zmianę route/code/kind na już aktywowanym wierszu native", async () => {
@@ -1254,6 +1329,15 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
     const ALLOWED_CODE = `licencja-dozwolony-${SUFFIX}`
     const BLOCKED_CODE = `licencja-zablokowany-${SUFFIX}`
 
+    // `showOnHub: true` — oba wiersze to zwykłe kafelki, więc od K1b tak
+    // właśnie zostawia je rejestracja (seed-tile-manifests.mjs bierze tę
+    // kolumnę z manifestowego `entitlementOnly`, a nie ze stałej).
+    //
+    // Testy w tym bloku NIE asertują na showOnHub, choć przed K1b asertowały:
+    // aktywacja do tej kolumny nie pisze, więc taka asercja mierzyłaby już
+    // tylko fixture. Ta suita odpowiada za bramkę ENABLED_MODULES; za
+    // "uprawnienie nie ląduje na hubie, kafelek ląduje" odpowiada test SEDNO
+    // w bloku D6-rewizja/D10-rewizja d wyżej.
     beforeEach(async () => {
       await getDb()
         .insert(applications)
@@ -1264,7 +1348,7 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
             kind: "native",
             route: `/${ALLOWED_CODE}`,
             isActive: false,
-            showOnHub: false,
+            showOnHub: true,
             activatedAt: null,
           },
           {
@@ -1273,7 +1357,7 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
             kind: "native",
             route: `/${BLOCKED_CODE}`,
             isActive: false,
-            showOnHub: false,
+            showOnHub: true,
             activatedAt: null,
           },
         ])
@@ -1348,8 +1432,8 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
 
       const activated = await activateApplication(ALLOWED_CODE)
 
+      // showOnHub celowo poza asercjami — patrz komentarz przy beforeEach.
       expect(activated?.isActive).toBe(true)
-      expect(activated?.showOnHub).toBe(true)
       expect(activated?.activatedAt).not.toBeNull()
       expect((await rowOf(ALLOWED_CODE)).activatedAt).not.toBeNull()
     })
@@ -1360,8 +1444,8 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
     it("ENABLED_MODULES nieustawione -> aktywacja działa jak dotąd (backward compatible)", async () => {
       const activated = await activateApplication(BLOCKED_CODE)
 
+      // showOnHub celowo poza asercjami — patrz komentarz przy beforeEach.
       expect(activated?.isActive).toBe(true)
-      expect(activated?.showOnHub).toBe(true)
       expect(activated?.activatedAt).not.toBeNull()
     })
 

@@ -46,7 +46,14 @@ async function seedUnactivatedNativeCandidate(): Promise<void> {
       kind: "native",
       route: UNACTIVATED_ROUTE,
       isActive: false,
-      showOnHub: false,
+      // `showOnHub: true` odwzorowuje to, co od K1b wstawia
+      // seed-tile-manifests.mjs prawdziwemu kafelkowi (kolumna bierze się z
+      // manifestowego `entitlementOnly`, wcześniej było tu zaszyte `false`
+      // dla wszystkich). Wiersz i tak jest niewidoczny na hubie, bo
+      // listHubApplications() wymaga `is_active AND show_on_hub` — i to
+      // sprawdza pierwszy krok testu niżej. Po K1b activateApplication() tej
+      // kolumny NIE podnosi: o niej rozstrzyga rejestracja, nie aktywacja.
+      showOnHub: true,
       activatedAt: null,
       sortOrder: 999,
     })

@@ -21,20 +21,53 @@
 // instancji/admina, muszą przeżyć deploy.
 //
 // Na INSERCIE (nowy code, pierwszy deploy z tym manifestem): name = label,
-// is_active = false, show_on_hub = false, activated_at = null, a
-// description/icon/color/category_functional/category_department/sort_order
-// z manifestu, jeśli go tam ktoś podał (K1 z PROJECT/cortex-frontend/ARTIFACTS/
-// licencjonowanie/cortex-frontend-konsolidacja-rejestrow-kafelka-projekt.md,
-// D2/D5 — wcześniej te kolumny zawsze zostawały NULL/0 i kafelek manifest-only
-// lądował na hubie bez ikony, bez opisu i na pozycji zerowej). Wiersz istnieje,
-// ale jest nieaktywny — "kod zarejestrowany, instancja jeszcze nie aktywowała"
+// is_active = false, activated_at = null, a description/icon/color/
+// category_functional/category_department/sort_order z manifestu, jeśli go tam
+// ktoś podał (K1 z PROJECT/cortex-frontend/ARTIFACTS/licencjonowanie/
+// cortex-frontend-konsolidacja-rejestrow-kafelka-projekt.md, D2/D5 — wcześniej
+// te kolumny zawsze zostawały NULL/0 i kafelek manifest-only lądował na hubie
+// bez ikony, bez opisu i na pozycji zerowej). Wiersz istnieje, ale jest
+// nieaktywny — "kod zarejestrowany, instancja jeszcze nie aktywowała"
 // (Krok 3/5, poza zakresem TEGO skryptu).
 //
-// Te sześć pól to WYŁĄCZNIE wartość początkowa, dokładnie na tej samej zasadzie
-// co `name` — właścicielem w runtime jest admin edytujący je w UI Aplikacje.
-// NIE dopisywać ich do `do update set` niżej: to jest ten sam błąd, który
-// popełnia dziś seed-system-config.mjs (color/category_* bezwarunkowo w
-// UPDATE), przez który kategoria ustawiona w UI wraca przy każdym deployu.
+// `show_on_hub` na INSERCIE bierze się z manifestowego `entitlementOnly`
+// (K1b): `false` dla czterech kodów, które nie są kafelkami, tylko
+// uprawnieniami (`ai-tools`, `cortex-cowork`, oba edytory Intrastatu),
+// `true` dla wszystkich pozostałych. Wcześniej było tu zaszyte `false` dla
+// każdego, a activateApplication() ustawiała `true` bezwarunkowo — po K3
+// (usunięciu APPLICATIONS, gdzie `show_on_hub = excluded.show_on_hub` trzyma
+// dziś te cztery poza hubem) pierwsza aktywacja z pickera wystawiłaby je na
+// hub jako cztery karty prowadzące do ekranów, które kafelkami nie są.
+// `is_active` zostaje `false` dla wszystkich — o tym decyduje aktywacja.
+//
+// Te siedem pól to WYŁĄCZNIE wartość początkowa, dokładnie na tej samej
+// zasadzie co `name` — właścicielem w runtime jest admin edytujący je w UI
+// Aplikacje. NIE dopisywać ich do `do update set` niżej: to jest ten sam błąd,
+// który popełnia dziś seed-system-config.mjs (show_on_hub/color/category_*
+// bezwarunkowo w UPDATE), przez który kategoria ustawiona w UI wraca przy
+// każdym deployu.
+//
+// Rozważone i odrzucone: `show_on_hub` w `do update set` pod guardem
+// `activated_at is null`. Chodziło o wiersze zarejestrowane PRZED K1b i do
+// dziś nieaktywowane — one jedne mają `show_on_hub = false` mimo że są
+// prawdziwymi kafelkami, więc po aktywacji nie pokażą się na hubie.
+//
+// UWAGA, żeby nie zacytować tego kiedyś jako precedensu: guard
+// `activated_at is null` NIE jest tą konstrukcją, która zgniła w
+// seed-system-config.mjs. Zgniła tam linia BEZWARUNKOWA
+// (`show_on_hub = excluded.show_on_hub`, tak samo color/category_*); kolumny
+// pod `case when activated_at is null` zachowują się w tamtym pliku
+// poprawnie, a seed-ilustromat.mjs i seed-token-usage.mjs używają
+// `where ... and activated_at is null` jako przyjętego, działającego wzorca.
+//
+// Powód odrzucenia jest inny: to nie jest reguła uzgadniania, tylko naprawa
+// stanu zastanego, która ma się SKOŃCZYĆ. Seed biegnie przy każdym deployu,
+// więc wyjątek wpisany tutaj zostaje na zawsze i trzeba go czytać przy każdej
+// kolejnej zmianie tego zapytania; przy okazji zaciemniłby strażnika
+// seed-tile-manifests-insert-only.test.ts, który dziś czyta prosto — w
+// `do update set` nie ma ANI JEDNEJ kolumny należącej do admina. Backfill
+// jedzie więc jednorazową migracją danych, razem z K1b:
+// drizzle/system-config/0005_bitter_shadowcat.sql.
 //
 // KOLEJNOŚĆ W ŁAŃCUCHU MIGRATE: musi wyprzedzać seed-system-config.mjs — blok
 // grantowania admina w tamtym skrypcie ("wszystkie wiersze w applications")
@@ -87,7 +120,13 @@ async function main() {
         values (
           ${manifest.entitlementCode}, ${manifest.label}, ${manifest.kind},
           ${manifest.route ?? null}, ${manifest.url ?? null}, ${manifest.target ?? null},
-          false, false, null,
+          -- is_active, show_on_hub, activated_at. Jawne porównanie z true, a
+          -- nie negacja: kierunkiem domyślnym jest "to jest kafelek", więc
+          -- cokolwiek innego niż dokładnie true (pole pominięte, ręcznie
+          -- zepsuty JSON) ma wystawić kartę, nie ukryć ją po cichu.
+          -- UWAGA: bez odwrotnych apostrofów w tych komentarzach — całe
+          -- zapytanie jest template literalem JS (patrz scripts-parse.test.ts).
+          false, ${manifest.entitlementOnly !== true}, null,
           ${manifest.description ?? null}, ${manifest.icon ?? null}, ${manifest.color ?? null},
           ${manifest.categoryFunctional ?? null}, ${manifest.categoryDepartment ?? null},
           -- sort_order jest NOT NULL DEFAULT 0, więc tu leci 0, a nie null:
@@ -101,10 +140,10 @@ async function main() {
         -- (Krok 3+) i stan aktywacji (Krok 1b punkt d, poza zakresem tego
         -- skryptu) przeżywają deploy. Pola prezentacyjne z manifestu są więc
         -- wartością POCZĄTKOWĄ wiersza, nie deklaracją stanu docelowego —
-        -- patrz nagłówek pliku. is_active/show_on_hub=false WYŁĄCZNIE na
-        -- INSERCIE (nowy code) — na UPDATE (kod już istnieje) te dwie kolumny
-        -- NIE są w SET, więc już aktywowany/wyłączony przez admina wiersz
-        -- zostaje bez zmian.
+        -- patrz nagłówek pliku. is_active=false i show_on_hub z manifestu
+        -- WYŁĄCZNIE na INSERCIE (nowy code) — na UPDATE (kod już istnieje) te
+        -- dwie kolumny NIE są w SET, więc już aktywowany/wyłączony przez
+        -- admina wiersz zostaje bez zmian.
         on conflict (code) do update set
           kind = excluded.kind,
           route = excluded.route,

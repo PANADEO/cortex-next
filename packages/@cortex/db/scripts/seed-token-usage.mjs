@@ -54,10 +54,18 @@ async function main() {
     // activated_at = now()"). Jeśli to pierwszy deploy z manifestem na tej
     // instancji, seed-tile-manifests.mjs (wcześniej w łańcuchu) właśnie
     // stworzył ten wiersz jako NIEAKTYWNEGO kandydata (is_active=false,
-    // show_on_hub=false, activated_at=null — słuszny domyślny stan dla
-    // NOWYCH modułów, ale nie dla tego, który już działa). Cofamy to tutaj.
-    // Guard na activated_at IS NULL: nie cofa świadomej dezaktywacji admina
-    // po pierwszej aktywacji.
+    // activated_at=null — słuszny domyślny stan dla NOWYCH modułów, ale nie
+    // dla tego, który już działa). Cofamy to tutaj. Guard na
+    // activated_at IS NULL: nie cofa świadomej dezaktywacji admina po
+    // pierwszej aktywacji.
+    //
+    // `show_on_hub` nie należy już do tego zestawu (K1b): od tamtej zmiany
+    // wstawia je seed-tile-manifests.mjs z manifestowego `entitlementOnly`,
+    // czyli dla Raportowania Tokenów od razu `true`. Ustawienie go niżej na
+    // `true` jest od K1b powtórzeniem tej samej wartości, nie cofaniem stanu
+    // kandydata — zostaje, bo na bazach zarejestrowanych PRZED K1b kolumna
+    // wciąż stoi na `false` (tę klasę wierszy domyka migracja
+    // 0005_bitter_shadowcat.sql).
     //
     // color/category_functional/category_department 1:1 z app/idp/lib/tiles.ts
     // (Krok 1 dotknął tylko kodów z seed-system-config.mjs — token-usage ma

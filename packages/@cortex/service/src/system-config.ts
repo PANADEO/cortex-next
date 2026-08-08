@@ -572,6 +572,24 @@ export async function listUnactivatedNativeApplications(): Promise<ApplicationRo
  * żadnego wiersza (D4 — licencja nigdy nie zapisuje do danych instancji).
  * Nieustawione/puste `ENABLED_MODULES` => isModuleEnabled() zawsze `true` =>
  * zachowanie bez zmian.
+ *
+ * `show_on_hub` NIE JEST tu ustawiane (K1b, PROJECT/cortex-frontend/ARTIFACTS/
+ * licencjonowanie/cortex-frontend-konsolidacja-rejestrow-kafelka-projekt.md
+ * §4). Wcześniej leciało `showOnHub: true` bezwarunkowo, a cztery kody w
+ * rejestrze nie są kafelkami, tylko uprawnieniami (`ai-tools`,
+ * `cortex-cowork`, `intrastat-cn-editor`, `intrastat-config-editor` — grant
+ * zbiorczy albo flaga odblokowująca przycisk WEWNĄTRZ innego kafelka). Trzyma
+ * je dziś poza hubem wyłącznie `show_on_hub = excluded.show_on_hub` w
+ * seed-system-config.mjs, czyli linia, którą K3 usuwa jako defekt — po niej
+ * pierwsza aktywacja z pickera "Dodaj aplikację" wystawiłaby na hub cztery
+ * karty prowadzące do ekranów, które kafelkami nie są.
+ *
+ * O tej kolumnie rozstrzyga więc REJESTRACJA, nie aktywacja:
+ * seed-tile-manifests.mjs wstawia ją na INSERCIE z manifestowego
+ * `entitlementOnly`. Aktywacja odpowiada wyłącznie na pytanie "czy ta
+ * instancja włącza ten moduł" (`is_active` + `activated_at`) — czy moduł ma
+ * własną kartę na hubie, jest faktem o kodzie i nie zależy od tego, kto i
+ * kiedy kliknął "Dodaj aplikację".
  */
 export async function activateApplication(code: string): Promise<ApplicationRow | null> {
   if (!isModuleEnabled(code)) throw new ModuleNotLicensedError(code)
@@ -580,7 +598,7 @@ export async function activateApplication(code: string): Promise<ApplicationRow 
 
   const [activated] = await db
     .update(applications)
-    .set({ isActive: true, showOnHub: true, activatedAt: new Date(), updatedAt: new Date() })
+    .set({ isActive: true, activatedAt: new Date(), updatedAt: new Date() })
     .where(and(eq(applications.code, code), eq(applications.kind, "native"), isNull(applications.activatedAt)))
     .returning()
 

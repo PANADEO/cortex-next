@@ -50,6 +50,14 @@ const statement = (source.match(/insert into system_config\.applications[\s\S]*?
 /** Lista kolumn INSERT-a. */
 const insertColumns = statement.match(/applications\s*\(([^)]*)\)/i)?.[1] ?? ""
 
+/** Wszystko przed `on conflict`, czyli lista kolumn RAZEM z wartościami. Dla
+ *  sześciu pól prezentacyjnych wystarczała sama nazwa kolumny w INSERCIE, bo
+ *  kolumna była tam WYŁĄCZNIE po to, żeby wziąć wartość z manifestu. Siódme
+ *  pole (`entitlementOnly`, K1b) nie ma własnej kolumny — steruje `show_on_hub`,
+ *  które w INSERCIE stało już wcześniej z zaszytym `false`. Nazwa kolumny nie
+ *  odróżnia więc stanu przed od stanu po; odróżnia to dopiero wartość. */
+const valuesClause = statement.split(/on conflict/i)[0] ?? ""
+
 /** Ciało `do update set`. */
 const updateClause = statement.match(/do update set([\s\S]*)$/i)?.[1] ?? ""
 
@@ -59,6 +67,7 @@ describe("seed-tile-manifests.mjs — pola prezentacyjne wyłącznie na INSERCIE
   // gdyby ktoś usunął te kolumny z INSERT-a zamiast z UPDATE-u.
   it("regexy w ogóle coś złapały", () => {
     expect(insertColumns).toContain("code")
+    expect(valuesClause).toContain("manifest.entitlementCode")
     expect(updateClause).toContain("kind = excluded.kind")
   })
 
@@ -73,8 +82,27 @@ describe("seed-tile-manifests.mjs — pola prezentacyjne wyłącznie na INSERCIE
     expect(insertColumns).toContain(column)
   })
 
+  // Siódme pole (K1b). Osobna asercja, bo `show_on_hub` stało w INSERCIE już
+  // przed K1b — z zaszytym `false` dla KAŻDEGO kafelka. Sprawdzenie nazwy
+  // kolumny przeszłoby więc także na wersji sprzed zmiany; dowodem jest
+  // dopiero to, że wartość bierze się z manifestu.
+  it("INSERT bierze show_on_hub z manifestowego entitlementOnly, nie z zaszytej stałej", () => {
+    expect(insertColumns).toContain("show_on_hub")
+    expect(valuesClause).toContain("manifest.entitlementOnly")
+  })
+
   it.each(ADMIN_OWNED_COLUMNS)("%s NIE JEST w do update set — edycja admina przeżywa deploy", (column) => {
     expect(updateClause).not.toMatch(new RegExp(`\\b${column}\\s*=`))
+  })
+
+  // Świadoma nadmiarowość, nie luka: wstrzyknięcie
+  // `show_on_hub = ${manifest.entitlementOnly !== true}` do `do update set`
+  // łapią już DWIE asercje wyżej (show_on_hub w ADMIN_OWNED_COLUMNS i
+  // dokładna lista przypisań) — sprawdzone uruchomieniem. Ta jedna nazywa
+  // wprost, czego dotyczy naruszenie, żeby raport z pnpm test wskazywał
+  // siódme pole, a nie tylko kolumnę, przez którą ono działa.
+  it("entitlementOnly nie przecieka do do update set", () => {
+    expect(updateClause).not.toContain("entitlementOnly")
   })
 
   it("do update set obejmuje wyłącznie kolumny strukturalne + updated_at", () => {

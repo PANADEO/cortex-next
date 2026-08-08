@@ -44,11 +44,36 @@ describe("pola prezentacyjne — komplet przechodzi przez parse i NIE jest ucina
   })
 
   it("klucz spoza schematu ZNIKA — to jest ta pułapka, przed którą bronią testy wyżej", () => {
-    // `showOnHub` to prawdziwa kolumna w applications, świadomie NIEobecna w
-    // manifeście — czyli dokładnie ten przypadek, na którym ktoś się nadzieje:
-    // dopisze pole do manifestu, build przejdzie, a kolumna zostanie pusta.
+    // ODWRÓCENIE DECYZJI K1, zapisane wprost. K1 twierdził tu, że `show_on_hub`
+    // jest kolumną "świadomie NIEobecną w manifeście", czyli że manifest nie ma
+    // o niej nic do powiedzenia. To przestało być prawdą w K1b: manifest
+    // ROZSTRZYGA jej wartość początkową — przez `entitlementOnly` (testy niżej),
+    // bo cztery kody w rejestrze nie są kafelkami, tylko uprawnieniami, a po K3
+    // nic innego nie trzymałoby ich poza hubem.
+    //
+    // Sam klucz `showOnHub` w manifeście dalej jednak NIE ISTNIEJE i ta asercja
+    // zostaje — celowo, w nowej roli. K1b wybrał nazwę semantyczną ("czym ten
+    // kod jest"), a nie nazwę kolumny ("jak się renderuje"), więc `showOnHub`
+    // wpisane do manifestu wygląda teraz na pole, które MUSI działać, skoro
+    // manifest tę kolumnę ustawia.
+    //
+    // Zasięg pułapki jest jednak węższy, niż mówił komentarz K1 — zmierzone,
+    // nie założone. W realnym manifeście (`defineTile({ ... })`, literał
+    // obiektu) nadmiarowy klucz łapie TYPECHECK: TS2353 "Object literal may
+    // only specify known properties". Dotyczy to także literału ZAWIERAJĄCEGO
+    // spread — `defineTile({ ...base, showOnHub: false })` też nie kompiluje.
+    // Czyli `pnpm typecheck` pada i nikt tego nie wdroży.
+    //
+    // Zod ucina po cichu wyłącznie tam, gdzie kontrola literału nie ma czego
+    // sprawdzać: przy rzutowaniu (jak `as unknown as TileManifest` niżej) i
+    // gdy obiekt powstaje NAJPIERW w zmiennej, a dopiero potem trafia do
+    // defineTile(). Obie formy zweryfikowane na tym repo. Test pilnuje więc
+    // tej cichej połowy; głośną trzyma kompilator.
     const withUnknownField = { ...NATIVE, showOnHub: false } as unknown as TileManifest
     expect(defineTile(withUnknownField)).not.toHaveProperty("showOnHub")
+    // Kontrola pozytywna do powyższego: pole, które NAPRAWDĘ wyraża tę samą
+    // intencję, przechodzi przez parse i zostaje w wyniku.
+    expect(defineTile({ ...NATIVE, entitlementOnly: true })).toHaveProperty("entitlementOnly", true)
   })
 
   it("manifest bez nich nadal jest poprawny (opcjonalne, kolumny są nullable)", () => {
@@ -58,6 +83,36 @@ describe("pola prezentacyjne — komplet przechodzi przez parse i NIE jest ucina
   it("kafelek nienatywny też może je mieć — hub renderuje kartę niezależnie od kind", () => {
     expect(defineTile({ ...EXTERNAL, ...PRESENTATION })).toMatchObject(PRESENTATION)
   })
+})
+
+// K1b. Siódme pole, ale NIE prezentacyjne: mówi, czym wiersz JEST (uprawnienie,
+// nie kafelek), a nie jak wygląda. Tryb awarii jest asymetryczny i dlatego
+// domyślna odpowiedź musi brzmieć "to jest kafelek": pole zapomniane przy
+// uprawnieniu daje jedną nadmiarową kartę na hubie (widoczne, admin schowa),
+// pole domyślnie ukrywające dałoby zniknięcie prawdziwego kafelka (ciche).
+describe("entitlementOnly — wiersz-uprawnienie zamiast kafelka", () => {
+  it("przechodzi przez parse i NIE jest ucinany", () => {
+    expect(defineTile({ ...NATIVE, entitlementOnly: true })).toMatchObject({ entitlementOnly: true })
+  })
+
+  it("pominięcie pola znaczy 'to jest kafelek' — klucza nie ma w wyniku, nie ma też false", () => {
+    // Ma znaczenie dla seeda: `manifest.entitlementOnly !== true` musi dać
+    // `show_on_hub = true` dla WSZYSTKICH 23 manifestów bez tego pola.
+    expect(defineTile(NATIVE)).not.toHaveProperty("entitlementOnly")
+  })
+
+  it("odrzuca `false` — to byłby drugi sposób zapisania tego samego co pominięcie", () => {
+    // Ta sama zasada, co przy pustej tablicy w categoryDepartment i pustym
+    // stringu w description (K1): jedna intencja, jeden zapis.
+    expect(TileManifestSchema.safeParse({ ...NATIVE, entitlementOnly: false }).success).toBe(false)
+  })
+
+  it.each([["truthy string", "true"], ["jedynka", 1], ["null", null]])(
+    "odrzuca %s — kolumna jest booleanem, a cicha koercja ukryłaby kafelek",
+    (_opis, entitlementOnly) => {
+      expect(TileManifestSchema.safeParse({ ...NATIVE, entitlementOnly }).success).toBe(false)
+    },
+  )
 })
 
 describe("color — wyłącznie token z palety", () => {

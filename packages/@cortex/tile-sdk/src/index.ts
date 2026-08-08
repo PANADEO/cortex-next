@@ -94,6 +94,40 @@ export const TileManifestSchema = z
       .regex(/^[a-z0-9-]+$/, "entitlementCode może zawierać tylko małe litery, cyfry i myślnik"),
     url: z.string().url().optional(),
     route: z.string().optional(),
+    // Czym ten kod JEST, a nie jak się renderuje (K1b — §4 "Ryzyka" w tym
+    // samym dokumencie co niżej i §5 "Dwie rzeczy do przeniesienia uważnie" w
+    // towarzyszącym mu ...-implementacja.md). Cztery
+    // kody w rejestrze nie są kafelkami, tylko uprawnieniami: `ai-tools` i
+    // `cortex-cowork` (granty zbiorcze — kod sam nigdy nie renderuje własnej
+    // karty, bramkuje rodzinę kafelków renderowaną gdzie indziej) oraz
+    // `intrastat-cn-editor`/`intrastat-config-editor` (odblokowują przyciski
+    // edycji WEWNĄTRZ kafelka Intrastat; realną egzekucją zajmuje się
+    // zewnętrzny backend FastAPI).
+    //
+    // Dziś trzyma je poza hubem WYŁĄCZNIE `show_on_hub = excluded.show_on_hub`
+    // w seed-system-config.mjs — czyli ta sama linia, którą K3 usuwa JAKO
+    // DEFEKT (tą samą drogą wraca kategoria ustawiona przez admina). Po K3 nie
+    // zostałoby nic, co mówi "to jest uprawnienie, nie kafelek", a
+    // activateApplication() ustawiała dotąd `show_on_hub = true` bezwarunkowo
+    // dla każdego wiersza `native` — więc pierwszy admin przechodzący przez
+    // picker "Dodaj aplikację" na świeżej instancji (a przejść przez niego
+    // MUSI, dla każdego prawdziwego kafelka) dostawałby cztery karty
+    // prowadzące do ekranów, które kafelkami nie są.
+    //
+    // Nazwa celowo semantyczna, nie `showOnHub`: kolumna `show_on_hub` jest
+    // KONSEKWENCJĄ tego faktu i w runtime należy do admina (może pokazać albo
+    // schować dowolny kafelek), a sam fakt jest własnością kodu i nie zmienia
+    // się nigdy. Manifest niosący wprost `showOnHub` sugerowałby czytelnikowi,
+    // że seed synchronizuje tę kolumnę przy każdym deployu — czyli dokładnie
+    // ten defekt, dla którego naprawy powstał ten projekt.
+    //
+    // `z.literal(true)`, nie `z.boolean()`: `entitlementOnly: false` znaczyłoby
+    // to samo co pominięcie pola, a K1 odrzucił już dwa takie redundantne
+    // zapisy (pusta tablica w `categoryDepartment`, pusty string w
+    // `description`). Domyślną odpowiedzią jest "to jest kafelek": pole
+    // zapomniane nie ma prawa ukryć prawdziwego kafelka, może najwyżej
+    // wystawić uprawnienie — pomyłka widoczna, nie cicha.
+    entitlementOnly: z.literal(true).optional(),
     // Wartości POCZĄTKOWE prezentacji (K1 z PROJECT/cortex-frontend/ARTIFACTS/
     // licencjonowanie/cortex-frontend-konsolidacja-rejestrow-kafelka-projekt.md,
     // D2). Manifest odpowiada na pytanie "skąd bierze się wartość początkowa",
