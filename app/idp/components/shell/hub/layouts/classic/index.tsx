@@ -8,10 +8,15 @@ import { TileCard } from "../../../tile-card"
 import type { HubLayoutProps } from "../../types"
 
 /**
- * Layout `classic` — markup huba w kształcie 1:1 z tym, co do tej pory
- * renderował `tile-grid.tsx`. Cała różnica względem tamtego pliku to źródło
- * danych: przychodzą propsem z `useHubModel()`, zamiast być liczone na
- * miejscu.
+ * Layout `classic` — hub sprzed redesignu Cezarego, markup 1:1 z `return (...)`
+ * z `tile-grid.tsx` na `b7ba35e`. Cała różnica względem tamtego pliku to źródło
+ * danych: przychodzą propsem z `useHubModel()`, zamiast być liczone na miejscu.
+ *
+ * To NIE jest layout do zastąpienia — D2 przyjmuje dwa layouty huba w
+ * utrzymaniu na stałe, a `classic` jest tym, który zostaje domyślny dla
+ * instancji bez presetu Domino. E0 podmienił go w miejscu (cherry-pick
+ * `19e1dd2` zamiast dołożenia wariantu); tutaj wraca, a markup Domino stoi
+ * obok jako `layouts/masthead/`.
  *
  * Reguła dla WSZYSTKICH plików pod `layouts/`: żadnego importu z
  * `@cortex/api` ani z `@/lib/tiles` poza typem — dane i dostęp liczy
@@ -26,46 +31,37 @@ export function ClassicHub({ model }: HubLayoutProps) {
         onChange={model.search.set}
         view={model.view.value}
         onViewChange={model.view.set}
-        tileCount={model.counts.authorized}
-        categoryCount={model.counts.categories}
       />
-      <div className="ch-workspace">
-        <CategoryTabs
-          totalCount={model.counts.matching}
-          favoritesCount={model.counts.favorites}
-          categories={model.categories}
-          activeId={model.activeCategory.value}
-          onSelect={model.activeCategory.set}
+      <CategoryTabs
+        totalCount={model.counts.matching}
+        favoritesCount={model.counts.favorites}
+        categories={model.categories}
+        activeId={model.activeCategory.value}
+        onSelect={model.activeCategory.set}
+      />
+      {model.tiles.length === 0 ? (
+        <EmptyState
+          icon={Search}
+          title="Nie znaleziono aplikacji"
+          description="Spróbuj zmienić zapytanie lub wyczyścić filtry."
+          action={
+            <Button variant="outline" size="sm" onClick={model.clearFilters}>
+              Wyczyść filtry
+            </Button>
+          }
         />
-        {model.tiles.length === 0 ? (
-          <section className="ch-panel">
-            <EmptyState
-              icon={Search}
-              title="Nie znaleziono aplikacji"
-              description="Spróbuj zmienić zapytanie lub wyczyścić filtry."
-              className="ch-empty"
-              action={
-                <Button variant="outline" size="sm" onClick={model.clearFilters}>
-                  Wyczyść filtry
-                </Button>
-              }
+      ) : (
+        <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {model.tiles.map((tile) => (
+            <TileCard
+              key={tile.id}
+              tile={tile}
+              isFavorite={model.favorites.includes(tile.id)}
+              onToggleFavorite={model.toggleFavorite}
             />
-          </section>
-        ) : (
-          <section className="ch-panel ch-grid grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {model.tiles.map((tile, index) => (
-              <TileCard
-                key={tile.id}
-                tile={tile}
-                isFavorite={model.favorites.includes(tile.id)}
-                onToggleFavorite={model.toggleFavorite}
-                categoryTag={model.categoryTagFor(tile)}
-                index={index}
-              />
-            ))}
-          </section>
-        )}
-      </div>
+          ))}
+        </section>
+      )}
     </>
   )
 }

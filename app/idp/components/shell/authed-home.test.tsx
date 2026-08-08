@@ -282,16 +282,12 @@ describe("AuthedHome — hub", () => {
     )
   })
 
-  // Hub pokazuje DWIE różne liczby kafelków naraz: masthead liczy cały katalog,
-  // do którego user ma grant, a zakładka "Wszystkie" — to, co przeszło przez
-  // szukajkę (HubCounts.authorized vs HubCounts.matching, hub/types.ts).
-  //
-  // Scenariusz MUSI mieć niepustą szukajkę zawężającą wynik. Przy pustej obie
-  // liczby są z definicji równe, więc test bez wpisanego zapytania przechodzi
-  // także wtedy, gdy layout poda je sobie nawzajem zamienione miejscami —
-  // czyli nie pilnuje niczego. Zamiana `counts.authorized` z `counts.matching`
-  // w layoucie ma ten test wywalić i to jest jego jedyne zadanie.
-  it("masthead liczy katalog z grantem, a zakładka wynik szukania — to dwie różne liczby", async () => {
+  // Licznik zakładki liczy wynik szukania, nie cały katalog z grantem — to są
+  // dwie różne liczby (HubCounts.matching vs HubCounts.authorized) i zgadzają
+  // się tylko przy pustej szukajce, więc scenariusz MUSI mieć zapytanie
+  // zawężające. Drugą z nich renderuje wyłącznie `masthead`, i tam też siedzi
+  // test, który pilnuje, że layout nie poda ich sobie zamienionych miejscami.
+  it("zakładka Wszystkie liczy wynik szukania, nie cały katalog z grantem", async () => {
     authorizedMock = {
       allowed: true,
       apps: ["ai-tools"],
@@ -311,15 +307,26 @@ describe("AuthedHome — hub", () => {
         "Wszystkie 1",
       )
     })
-    expect(meterText()).toBe("Narzędzia: 3 · Kategorie: 0")
+  })
+
+  // Strażnik defektu E0: cherry-pick `19e1dd2` PODMIENIŁ markup huba zamiast
+  // dołożyć drugi layout, więc `classic` przez jeden etap renderował DOM
+  // Domino — klasy `ch-*`, które na tej gałęzi nie mają ani jednej reguły
+  // (`globals.css` jest bajt w bajt równy stanowi bazowemu), czyli hub bez
+  // ramek, pól ikon i odstępów. Domyślny layout ma nie mieć u siebie ANI
+  // JEDNEJ takiej klasy; markup Domino żyje pod `layouts/masthead/`.
+  it("domyślny layout renderuje hub sprzed redesignu — zero klas `ch-*`", () => {
+    const { container } = render(<AuthedHome />)
+
+    // `classList`, nie `className`: na elementach SVG (ikony lucide) to drugie
+    // jest `SVGAnimatedString`, nie stringiem, i sito wywala się na `.split`.
+    const domino = [...container.querySelectorAll("[class]")].filter((el) =>
+      [...el.classList].some((token) => token.startsWith("ch-")),
+    )
+
+    expect(domino).toHaveLength(0)
+    // Licznik z mastheadu jest osobną asercją, bo jest tekstem, nie klasą —
+    // przeszedłby przez sito wyżej niezauważony.
+    expect(screen.queryByText(/^Narzędzia: /)).toBeNull()
   })
 })
-
-/** Tekst licznika w mastheadzie. Zakotwiczony regex, bo `getByText` dopasowuje
- *  po `textContent` — bez kotwic trafiałby też w każdego przodka tego spana. */
-function meterText(): string {
-  const meter = screen.getByText((_content, element) =>
-    /^Narzędzia: \d+ · Kategorie: \d+$/.test(element?.textContent ?? ""),
-  )
-  return meter.textContent ?? ""
-}

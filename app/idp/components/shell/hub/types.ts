@@ -2,6 +2,17 @@ import type { Tile } from "@/lib/tiles"
 import type { CategoryTab } from "../category-tabs"
 import type { HeroView } from "../hero-search"
 
+/**
+ * Re-eksport, żeby layout brał kontrakt STĄD, a nie z pliku drugiego layoutu.
+ * Oba typy definiują dziś komponenty `classic` (`hero-search.tsx`,
+ * `category-tabs.tsx`), ale opisują pola `HubModel`, więc należą do kontraktu,
+ * nie do widoku. Bez tego `masthead` importuje z `../../../hero-search`, czyli
+ * przeniesienie plików `classic` — a E4 je przenosi, do wariantów CVA — jest
+ * zmianą dotykającą OBU layoutów. Dokładnie ten koszt wykładniczy, przed
+ * którym D2 stawia D3 i D4.
+ */
+export type { CategoryTab, HeroView }
+
 /** `"all" | "favorites"` to zakładki syntetyczne, reszta to id kategorii z
  *  aktywnego przekroju (`FUNCTIONAL_CATEGORIES` albo `DEPARTMENT_CATEGORIES`). */
 export type ActiveCategory = "all" | "favorites" | string
