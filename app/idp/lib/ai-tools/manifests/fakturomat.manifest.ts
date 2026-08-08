@@ -10,4 +10,10 @@ export const fakturomatTile = defineTile({
   label: "Analizator faktur",
   entitlementCode: "fakturomat",
   route: "/ai-tools/fakturomat",
+  description: "Wyciąga dane z faktur i je podsumowuje",
+  icon: "ReceiptText",
+  color: "amber",
+  categoryFunctional: "misc",
+  categoryDepartment: ["finance", "operations"],
+  sortOrder: 190,
 })

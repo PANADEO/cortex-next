@@ -16,4 +16,7 @@ export const intrastatConfigEditorTile = defineTile({
   entitlementCode: "intrastat-config-editor",
   route: "/intrastat/settings",
   entitlementOnly: true,
+  description: "Uprawnienie: edycja ustawień wewnątrz kafelka Intrastat",
+  icon: "FileSpreadsheet",
+  sortOrder: 220,
 })

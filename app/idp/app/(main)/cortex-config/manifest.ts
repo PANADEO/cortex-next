@@ -11,4 +11,10 @@ export const cortexConfigTile = defineTile({
   label: "Cortex Config",
   entitlementCode: "cortex-config",
   route: "/cortex-config/projects",
+  description: "Governance platformy — projekty agentowe, role i grupy skilli",
+  icon: "ShieldCheck",
+  color: "emerald",
+  categoryFunctional: "admin-system",
+  categoryDepartment: ["it"],
+  sortOrder: 50,
 })

@@ -17,4 +17,7 @@ export const aiToolsTile = defineTile({
   entitlementCode: "ai-tools",
   route: "/ai-tools",
   entitlementOnly: true,
+  description: "Grant zbiorczy — dostęp do wszystkich narzędzi AI naraz",
+  icon: "Sparkles",
+  sortOrder: 110,
 })

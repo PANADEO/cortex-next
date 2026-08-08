@@ -14,4 +14,7 @@ export const cortexCoworkTile = defineTile({
   entitlementCode: "cortex-cowork",
   route: "/cortex-cowork",
   entitlementOnly: true,
+  description: "Przestrzeń pracy z agentami — sesje, artefakty i skille",
+  icon: "Bot",
+  sortOrder: 60,
 })

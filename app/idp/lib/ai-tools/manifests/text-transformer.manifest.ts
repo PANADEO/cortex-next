@@ -10,4 +10,10 @@ export const textTransformerTile = defineTile({
   label: "Transformator tekstu",
   entitlementCode: "text-transformer",
   route: "/ai-tools/text-transformer",
+  description: "Przekształca tekst według wybranego stylu",
+  icon: "Wand2",
+  color: "blue",
+  categoryFunctional: "content-generation",
+  categoryDepartment: ["marketing", "operations", "it"],
+  sortOrder: 130,
 })

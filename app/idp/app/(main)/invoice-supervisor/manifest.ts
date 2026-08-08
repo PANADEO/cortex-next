@@ -11,4 +11,10 @@ export const invoiceSupervisorTile = defineTile({
   label: "Nadzorca Faktur",
   entitlementCode: "invoice-supervisor",
   route: "/invoice-supervisor/inbox",
+  description: "Nadzoruje terminy faktur i generuje AI przypomnienia płatnicze",
+  icon: "Receipt",
+  color: "orange",
+  categoryFunctional: "misc",
+  categoryDepartment: ["finance", "operations"],
+  sortOrder: 80,
 })

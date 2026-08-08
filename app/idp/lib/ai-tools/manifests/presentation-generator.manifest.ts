@@ -14,4 +14,10 @@ export const presentationGeneratorTile = defineTile({
   label: "Generator prezentacji",
   entitlementCode: "presentation-generator",
   route: "/ai-tools/presentation-generator",
+  description: "Buduje szkielet prezentacji z opisu",
+  icon: "Presentation",
+  color: "violet",
+  categoryFunctional: "content-generation",
+  categoryDepartment: ["marketing", "hr", "operations"],
+  sortOrder: 180,
 })

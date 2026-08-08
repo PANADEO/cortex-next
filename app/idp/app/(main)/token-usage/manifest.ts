@@ -11,10 +11,21 @@ import { defineTile } from "@cortex/tile-sdk"
 //
 // Warstwy granularnej (application_scopes) świadomie NIE ma: cały ekran ma
 // jeden poziom dostępu, tak samo jak dziś w cortex-admin.
+//
+// K2: wartości prezentacyjne niżej odczytane 08.08.2026 z bazy `cortex`, nie
+// przeniesione z APPLICATIONS — tego kodu tam nigdy nie było. Drugie źródło
+// w repo (UPDATE w packages/@cortex/db/scripts/seed-token-usage.mjs) zostaje
+// z dokładnie tego samego powodu co przy Ilustromacie — patrz komentarz w
+// app/idp/app/(main)/ilustromat/manifest.ts, ten sam przypadek.
 export const tokenUsageTile = defineTile({
   id: "token-usage",
   kind: "native",
   label: "Raportowanie Tokenów",
   entitlementCode: "token-usage",
   route: "/token-usage",
+  description: "Zużycie tokenów AI według użytkowników, modeli i narzędzi",
+  icon: "BarChart3",
+  color: "sky",
+  categoryFunctional: "admin-system",
+  categoryDepartment: ["it"],
 })

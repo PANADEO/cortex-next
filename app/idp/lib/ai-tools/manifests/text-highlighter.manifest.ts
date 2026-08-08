@@ -12,4 +12,10 @@ export const textHighlighterTile = defineTile({
   label: "Podświetlacz tekstu",
   entitlementCode: "text-highlighter",
   route: "/ai-tools/text-highlighter",
+  description: "Zaznacza kluczowe fragmenty w tekście",
+  icon: "Highlighter",
+  color: "blue",
+  categoryFunctional: "content-generation",
+  categoryDepartment: ["marketing", "operations", "it"],
+  sortOrder: 120,
 })

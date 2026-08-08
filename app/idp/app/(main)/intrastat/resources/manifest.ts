@@ -15,4 +15,7 @@ export const intrastatCnEditorTile = defineTile({
   entitlementCode: "intrastat-cn-editor",
   route: "/intrastat/resources",
   entitlementOnly: true,
+  description: "Uprawnienie: edycja słownika kodów CN wewnątrz kafelka Intrastat",
+  icon: "FileSpreadsheet",
+  sortOrder: 210,
 })
