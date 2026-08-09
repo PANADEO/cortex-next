@@ -29,15 +29,18 @@ interface AuthedHomeProps {
  * komponentach, które renderują się wyłącznie pod tym presetem.
  *
  * TO JEST ROZSTRZYGNIĘCIE FOUC, które §5e kazało podjąć w E4, a nie po nim.
- * Klasa skinu i `data-preset` lądują na `<html>` dopiero w efekcie
- * `theme-provider.tsx` (zmierzone: pierwsze malowanie ~22 ms, klasa ~408 ms),
- * więc każda reguła UKŁADU zakresowana `[data-preset="domino"]` znaczyłaby
- * hub malujący się przez ~0,4 s zupełnie nieostylowany, a potem przeskakujący.
- * Zakresowania nie ma i to nie jest obejście, tylko usunięcie zbędnego
- * warunku: o tym, że renderuje się `masthead` z chicletami, rozstrzyga JUŻ
- * preset — w Reakcie, wyżej w tym pliku. Powtórzenie tego samego warunku w
- * CSS-ie nie dokłada żadnej informacji, a kosztuje pełne mignięcie układu.
- * Zostaje mignięcie samych KOLORÓW (tokeny), i to jest cena przyjęta świadomie.
+ * Ani jedna reguła UKŁADU nie jest zakresowana `[data-preset="domino"]` — i nie
+ * jest to obejście, tylko usunięcie zbędnego warunku: o tym, że renderuje się
+ * `masthead` z chicletami, rozstrzyga JUŻ preset, w Reakcie, wyżej w tym pliku.
+ * Powtórzenie tego samego warunku w CSS-ie nie dokłada żadnej informacji,
+ * a kosztowałoby pełne mignięcie układu.
+ *
+ * Po E5 preset INSTANCJI przychodzi z serwera w pierwszych bajtach dokumentu,
+ * więc dla odwiedzającego bez własnego wyboru nie miga nic. Mignięcie zostaje
+ * tam, gdzie wybór jest LOKALNY albo nadpisuje instancję: wtedy przez ~70 ms
+ * (~1,2 s przy procesorze ×20) widać paletę z serwera, zanim efekt ją zdejmie.
+ * Cena przyjęta świadomie — dotyczy KOLORÓW, kroju i grubości krawędzi, nigdy
+ * układu, bo ten jest rozstrzygnięty przed pierwszym renderem.
  *
  * Odrzucony blokujący skrypt w nagłówku: patrz `theme-provider.tsx`.
  */

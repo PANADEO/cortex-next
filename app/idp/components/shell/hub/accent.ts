@@ -26,10 +26,12 @@ export type Accent = 1 | 2 | 3
  * wypełnieniem, więc kafelek bez koloru byłby dziurą w siatce, nie
  * neutralnością.
  *
- * OSTRZEŻENIE OPERACYJNE (§5a, defekt B1): kategoria ustawiona przez admina
- * wraca dziś do wartości z seeda przy każdym wdrożeniu, więc kafelek potrafi
- * zmienić akcent po deployu bez żadnej zmiany tutaj. Przyczyna siedzi w
- * `seed-system-config.mjs`, nie w tym pliku.
+ * Historycznie (defekt B1) kategoria ustawiona przez admina wracała do wartości
+ * z seeda przy każdym wdrożeniu, więc kafelek zmieniał akcent po deployu bez
+ * żadnej zmiany tutaj. NAPRAWIONE w K3 (`df5d171`) usunięciem statycznej listy
+ * `APPLICATIONS` — to ona nadpisywała pięć kolumn hub-renderu bezwarunkowo.
+ * Zostawiam wzmiankę, bo to jedyny sposób, w jaki ten plik może dać wynik
+ * wyglądający na losowy, i warto wiedzieć, gdzie NIE szukać.
  */
 export function accentFor(category: TileCategoryFunctional | null): Accent {
   if (!category) return 1

@@ -42,10 +42,12 @@
 //
 // Te siedem pól to WYŁĄCZNIE wartość początkowa, dokładnie na tej samej
 // zasadzie co `name` — właścicielem w runtime jest admin edytujący je w UI
-// Aplikacje. NIE dopisywać ich do `do update set` niżej: to jest ten sam błąd,
-// który popełnia dziś seed-system-config.mjs (show_on_hub/color/category_*
-// bezwarunkowo w UPDATE), przez który kategoria ustawiona w UI wraca przy
-// każdym deployu.
+// Aplikacje. NIE dopisywać ich do `do update set` niżej: to jest dokładnie ten
+// błąd, który seed-system-config.mjs popełniał do K3 (`show_on_hub`, `color`
+// i `category_*` bezwarunkowo w UPDATE), przez który kategoria ustawiona w UI
+// wracała przy każdym deployu. Lista, która go niosła, zniknęła w `df5d171` —
+// i właśnie dlatego ten zakaz jest tu nadal aktualny: to ostatnie miejsce,
+// w którym tę pomyłkę dałoby się jeszcze popełnić.
 //
 // Rozważone i odrzucone: `show_on_hub` w `do update set` pod guardem
 // `activated_at is null`. Chodziło o wiersze zarejestrowane PRZED K1b i do

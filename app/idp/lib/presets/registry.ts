@@ -177,7 +177,8 @@ export function storedToPresetChoice(preset: PresetId | null): PresetChoiceId {
  * w tabelach martwe identyfikatory.
  */
 export interface PresetSources {
-  /** Domyślny preset instancji. E5: `system-config`. Dziś zawsze brak. */
+  /** Domyślny preset instancji — czytany z `system_config.instance_settings`
+   *  po stronie serwera i wstrzykiwany przez `InstancePresetProvider` (E5). */
   instance?: string | null | undefined
   /** Wybór użytkownika. Dziś: store lokalny. E5: `user_preferences`. */
   user?: string | null | undefined

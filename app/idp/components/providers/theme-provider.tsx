@@ -23,9 +23,14 @@ function applyMode(mode: "light" | "dark") {
  * zdejmować poprzednią klasę, inaczej dwa skiny siedzą na `<html>` naraz i
  * wygrywa ten, który stoi później w `globals.css`.
  *
- * ROZSTRZYGNIĘCIE FOUC (E4). Zarówno klasa skinu, jak i `data-preset` lądują na
- * `<html>` dopiero w efekcie poniżej, bo `app/idp/app/layout.tsx` nie ma
- * blokującego skryptu w nagłówku: pierwsze malowanie ~22 ms, klasa ~408 ms.
+ * ROZSTRZYGNIĘCIE FOUC (E4, zaktualizowane po E5). Preset INSTANCJI ląduje na
+ * `<html>` po stronie serwera — `app/idp/app/layout.tsx` czyta go z bazy i emituje
+ * w pierwszych bajtach dokumentu, więc odwiedzający bez własnego wyboru dostaje
+ * właściwy wygląd od razu. Efekt poniżej obsługuje wyłącznie wybór LOKALNY
+ * i przełączanie w locie; tam pierwsze malowanie wyprzedza klasę o ~70 ms
+ * (~1,2 s przy procesorze ×20). Poniższe rozumowanie powstało, gdy OBIE ścieżki
+ * były asynchroniczne, i pozostaje w mocy — dotyczy tego, czego w CSS-ie NIE
+ * warunkujemy.
  * E3 ostrzegał, że jeśli reguły UKŁADU Domina zawisną na `[data-preset]`, to
  * przez te ~0,4 s hub maluje się całkiem nieostylowany. E4 nie zawiesił na nim
  * ani jednej reguły — nie przez ostrożność, tylko dlatego, że taki warunek nic
