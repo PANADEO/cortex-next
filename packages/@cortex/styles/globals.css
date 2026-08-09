@@ -49,6 +49,19 @@
     --chart-4: 44 100% 50%;
     --chart-5: 36 100% 50%;
 
+    /* Kolor treści LEŻĄCEJ NA wypełnieniu akcentu — dla trzech akcentów, które
+       wariant `chiclet` bierze z hasha kategorii (D6). Osobne tokeny, a nie
+       `--foreground`/`--background`, bo u Cezarego te dwie wartości są STAŁE
+       między motywami (`--ch-on-accent`/`--ch-on-deep`): kwadrat ikony zostaje
+       amberowy także w ciemnym, więc glif na nim musi zostać atramentowy.
+       Wpięcie ich w parę tło/pierwszy plan dałoby w ciemnym kremowy glif na
+       amberze — 1,8:1. Tu, w `:root`, to wyłącznie wartości domyślne: bez nich
+       `hsl(var(--chart-1-foreground))` jest deklaracją nieprawidłową dla
+       każdego skinu, który ich nie poda. */
+    --chart-1-foreground: 0 0% 98%;
+    --chart-2-foreground: 0 0% 98%;
+    --chart-3-foreground: 0 0% 98%;
+
     --radius: 0.625rem;
     --radius-xs: 0.25rem;
     --radius-sm: 0.375rem;
@@ -220,23 +233,93 @@
     --sidebar-ring: 24 100% 58%;
   }
 
-  /* Domino — WYŁĄCZNIE wartości, ani jednej reguły układu (D3/D8). Reguły
-     strukturalne tego wyglądu (`.ch-mast`, `.ch-tile`, `.ch-tab`, …) należą do
-     E4 i nie powstają tutaj: skin, który zaczyna układać elementy, przestaje
-     być wymienny. Nadpisywane są tylko te tokeny, które Domino faktycznie
-     przestawia — reszta dziedziczy z `:root`, bo `.skin-domino` siada na tym
-     samym elemencie co `:root` i wygrywa kolejnością, nie specyficznością
-     (dokładnie jak `.skin-customs` wyżej). */
+  /* Domino — WYŁĄCZNIE wartości, ani jednej reguły układu (D3/D8), i po E4
+     wiadomo, że to nie jest samoograniczenie: cała struktura tego wyglądu
+     (`.ch-mast`, `.ch-tile`, `.ch-tab` i ~60 reguł siostrzanych u Cezarego)
+     zmieściła się w wariantach CVA i narzędziach Tailwinda, więc arkusz nie
+     dostał ani jednej ręcznie napisanej reguły. Nadpisywane są tokeny, które
+     Domino faktycznie przestawia — reszta dziedziczy z `:root`, bo
+     `.skin-domino` siada na tym samym elemencie co `:root` i wygrywa
+     kolejnością, nie specyficznością (dokładnie jak `.skin-customs` wyżej). */
   .skin-domino {
-    --background: 43 32% 93%; /* papier  #f5f0e4 */
-    --card: 44 50% 95%; /* kafelek #fbf7eb */
-    --foreground: 40 19% 13%; /* atrament #28241d */
-    --muted-foreground: 38 14% 38%;
-    --border: 40 19% 13%; /* ramka = atrament → „twarde krawędzie” */
+    /* KOMPLET PALETY, nie garść (E4). E2 nadpisywał 8 z 30 tokenów, więc
+       `--input`, `--ring` i wszystkie `--sidebar-*` spadały na neutralne —
+       a że `--border-width` grubieje globalnie, efektem były PODWOJONE BLADE
+       krawędzie na kremowej stronie: pogrubienie wzmacniało niedopasowanie,
+       które przy 1 px byłoby ledwie widoczne. Brakujące 22 są niżej.
 
+       ZASADA, KTÓRA RZĄDZI TYM BLOKIEM I BLOKIEM `.dark` NIŻEJ: `.skin-domino`
+       i `.dark` mają RÓWNĄ swoistość, a ten stoi później, więc każdy token
+       ustawiony tutaj i nieustawiony w `.skin-domino.dark` wygrywa jasną
+       wartością NA CIEMNYM TLE. To nie jest hipoteza — dokładnie tak E2
+       znalazł `--muted-foreground` przy 2,99:1. Każda pozycja stąd ma więc
+       albo odpowiednik w bloku ciemnym, albo komentarz, dlaczego jest stała.
+
+       ŚWIADOMIE NIEOBJĘTE: osiem tokenów statusowych (`--destructive`,
+       `--success`, `--warning`, `--info` z parami `-foreground`). Czerwień
+       błędu i zieleń sukcesu są sygnałem, nie wystrojem; trzykolorowa
+       dyscyplina Domina (D6) nie ma prawa ich przemalować. Że ich tu nie ma,
+       jest zresztą warunkiem poprawności w ciemnym — nieustawione, biorą
+       wartość z `.dark`, czyli tę właściwą dla tła. */
+    --background: 43 32% 93%; /* papier      #f5f0e4 */
+    --foreground: 40 19% 13%; /* atrament    #28241d */
+    --card: 44 50% 95%; /* kafelek     #fbf7eb */
+    --card-foreground: 40 19% 13%;
+    --popover: 44 50% 95%;
+    --popover-foreground: 40 19% 13%;
+
+    /* Teal jest u Cezarego kolorem AKCJI (aktywny przełącznik przekroju) i
+       cienkiego typu akcentowego (ikona szukajki, mono-tag kategorii) — czyli
+       dokładnie rolą `--primary`. W ciemnym rozjaśnia się do `--ch-teal-tag`,
+       więc cienki typ zostaje czytelny; wypełnienia płaskie biorą stały
+       `--chart-2`. To jest powód, dla którego teal ma tu DWA tokeny. */
+    --primary: 177 56% 28%; /* teal        #1f6e6b */
+    --primary-foreground: 43 32% 93%;
+
+    /* Papier głębszy (`--ch-paper-deep` #ede6d3) — tło zakładki, klawisza ⌘K
+       i paska bocznego. W `:root` `--secondary`, `--muted` i `--accent` mają
+       jedną wartość; tu zachowana jest ta sama relacja, żeby komponenty
+       shadcn nie zaczęły się pod Dominem rozjeżdżać między sobą. */
+    --secondary: 44 42% 88%;
+    --secondary-foreground: 40 19% 13%;
+    --muted: 44 42% 88%;
+    --muted-foreground: 38 14% 38%;
+    --accent: 44 42% 88%;
+    --accent-foreground: 40 19% 13%;
+
+    --border: 40 19% 13%; /* ramka = atrament → „twarde krawędzie” */
+    /* `--input` osobno od `--border`, choć wartość ta sama: to on odpowiadał
+       za blade podwojone krawędzie pól formularzy (§5d). */
+    --input: 40 19% 13%;
+    /* Amber jest u Cezarego kolorem FOKUSU — `outline: 2px solid var(--ch-amber)`
+       na kafelku i `box-shadow: 3px 3px 0 var(--ch-amber)` na szukajce. Token
+       przenosi to na wszystkie komponenty naraz, także te, których Domino nigdy
+       nie widziało. Stały między motywami, jak u Cezarego. */
+    --ring: 41 67% 55%;
+
+    --sidebar: 44 42% 88%;
+    --sidebar-foreground: 38 14% 38%;
+    --sidebar-primary: 177 56% 28%;
+    --sidebar-primary-foreground: 43 32% 93%;
+    --sidebar-accent: 44 50% 95%;
+    --sidebar-accent-foreground: 40 19% 13%;
+    --sidebar-border: 40 19% 13%;
+    --sidebar-ring: 41 67% 55%;
+
+    /* Trzy akcenty i ich pary kontrastowe. Wartości `-foreground` są STAŁE
+       między motywami, bo wypełnienie też jest stałe (patrz `:root`). */
     --chart-1: 41 67% 55%; /* amber     → akcent 1 */
+    --chart-1-foreground: 40 19% 13%; /* atrament na amberze — 6,9:1 */
     --chart-2: 177 56% 28%; /* teal      → akcent 2 */
+    --chart-2-foreground: 43 32% 93%; /* papier na tealu    — 5,3:1 */
     --chart-3: 17 54% 47%; /* terrakota → akcent 3 */
+    --chart-3-foreground: 43 32% 93%; /* papier na terrakocie — 4,0:1 */
+    /* Czwarty i piąty nie mają odpowiednika u Cezarego — Domino ma trzy
+       akcenty z decyzji (D6). Ale `--chart-4/5` konsumują wykresy poza hubem,
+       a bazowe żółć i pomarańcz na kremie są jaskrawe i wypadają z palety.
+       Umbra i szarość paynesa: dwa kolejne tusze drukarskie, nie nowe akcenty. */
+    --chart-4: 28 30% 38%;
+    --chart-5: 205 22% 42%;
 
     --radius-sm: 2px;
     --radius-md: 2px;
@@ -253,17 +336,50 @@
     --tile-min-height: 11.125rem;
   }
 
+  /* Odpowiednik ciemny MUSI wymieniać każdy token z bloku wyżej, którego
+     wartość zależy od tła — patrz zasada opisana tam. Nie ma tu więc
+     `--ring`, `--sidebar-ring`, `--chart-1..3` ani ich par `-foreground`:
+     amber fokusu i trzy wypełnienia akcentów są u Cezarego stałe między
+     motywami (`--ch-amber`, `--ch-on-accent`, `--ch-on-deep`), i to jest
+     pominięcie zamierzone, nie przeoczone. */
   .skin-domino.dark {
     --background: 45 15% 10%;
-    --card: 42 21% 12%;
     --foreground: 44 40% 87%;
-    --border: 44 20% 70%;
+    --card: 42 21% 12%;
+    --card-foreground: 44 40% 87%;
+    --popover: 42 21% 12%;
+    --popover-foreground: 44 40% 87%;
+
+    /* `--ch-teal-tag` w ciemnym: #6fb3ae. Teal 28% na tle 10% dawałby
+       cienki typ akcentowy na granicy niewidoczności. */
+    --primary: 176 31% 57%;
+    --primary-foreground: 45 15% 10%;
+
+    --secondary: 40 14% 12%; /* papier głębszy #24211b */
+    --secondary-foreground: 44 40% 87%;
+    --muted: 40 14% 12%;
     /* Brak tej linii w projekcie to błąd, nie pominięcie: `.dark` i
        `.skin-domino` mają równą swoistość, a `.skin-domino` stoi później, więc
        bez niej pod Domino w ciemnym wygrywa JASNA wartość `38 14% 38%` —
        zmierzone 2,99:1 na tle i 2,79:1 na karcie, poniżej AA. `58%` daje
        6,02:1 i 5,63:1, trzymając odcień Domino. */
     --muted-foreground: 38 14% 58%;
+    --accent: 40 14% 12%;
+    --accent-foreground: 44 40% 87%;
+
+    --border: 44 20% 70%;
+    --input: 44 20% 70%;
+
+    --sidebar: 40 14% 12%;
+    --sidebar-foreground: 38 14% 58%;
+    --sidebar-primary: 176 31% 57%;
+    --sidebar-primary-foreground: 45 15% 10%;
+    --sidebar-accent: 42 21% 12%;
+    --sidebar-accent-foreground: 44 40% 87%;
+    --sidebar-border: 44 20% 70%;
+
+    --chart-4: 28 26% 62%;
+    --chart-5: 205 20% 62%;
   }
 
   * {

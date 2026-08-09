@@ -12,10 +12,8 @@ import {
 } from "@/lib/tiles"
 import { useAuthorizedApps, useHubTiles } from "@cortex/api"
 import { useDeferredValue, useMemo, useState } from "react"
-import type { CategoryTab } from "../category-tabs"
-import type { HeroView } from "../hero-search"
 import { hubApplicationsToTiles } from "./hub-tile"
-import type { ActiveCategory, HubModel } from "./types"
+import type { ActiveCategory, CategoryTab, HeroView, HubModel } from "./types"
 
 // Warstwa 0 huba: dane, dostęp i stan filtrów. ZERO JSX — plik jest `.ts`, nie
 // `.tsx`, więc kompilator pilnuje tego za nas. Wszystko poniżej mieszkało do

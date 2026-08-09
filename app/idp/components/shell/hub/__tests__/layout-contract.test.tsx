@@ -4,6 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MessagesSquare } from "lucide-react"
 import { afterEach, describe, expect, it, vi } from "vitest"
+import { PRESETS, type PresetVariants } from "@/lib/presets/registry"
 import type { Tile } from "@/lib/tiles"
 import { HUB_LAYOUTS } from "../registry"
 import type { HubModel } from "../types"
@@ -17,6 +18,28 @@ import type { HubModel } from "../types"
 // mockowania `@cortex/api`, Postgresa i store'ów. To nie jest wygoda testu:
 // to obserwowalny skutek rozdzielenia warstw z D4 i jedyny powód, dla którego
 // ten zestaw da się trzymać przy N layoutach.
+//
+// OD E4 BRAMKA JEST ILOCZYNEM: layout × wiązka wariantów. Wariant przychodzi z
+// presetu, a nie z layoutu (patrz `HubLayoutProps`), więc każda para jest
+// osiągalna — wystarczy preset, który je zestawi. Zestaw sprawdzający wyłącznie
+// „parę naturalną" (`classic`+`card`, `masthead`+`chiclet`) przepuściłby
+// wariant, który gubi gwiazdkę ulubionych albo licznik, dopóki nikt nie złożyłby
+// tej kombinacji — czyli dokładnie wtedy, gdy D3 obiecuje, że warstwy są
+// niezależne.
+
+/** Wiązki obecne w rejestrze presetów, odsiane do UNIKALNYCH: `neutral` i
+ *  `customs` mają tę samą, więc bez odsiania te same testy biegłyby dwa razy. */
+const VARIANT_BUNDLES: ReadonlyArray<readonly [string, PresetVariants]> = [
+  ...new Map(
+    Object.values(PRESETS).map(
+      (preset) => [`${preset.variants.tabs}+${preset.variants.tile}`, preset.variants] as const,
+    ),
+  ),
+]
+
+const CASES = Object.entries(HUB_LAYOUTS).flatMap(([id, Layout]) =>
+  VARIANT_BUNDLES.map(([bundle, variants]) => [`${id} × ${bundle}`, Layout, variants] as const),
+)
 
 function tile(id: string, label: string): Tile {
   return {
@@ -63,7 +86,7 @@ function makeModel(spies: Spies, overrides: Partial<HubModel> = {}): HubModel {
 
 afterEach(cleanup)
 
-describe.each(Object.entries(HUB_LAYOUTS))("kontrakt layoutu huba: %s", (_id, Layout) => {
+describe.each(CASES)("kontrakt layoutu huba: %s", (_name, Layout, variants) => {
   const spies = (): Spies => ({
     onSelect: vi.fn(),
     toggleFavorite: vi.fn(),
@@ -72,7 +95,7 @@ describe.each(Object.entries(HUB_LAYOUTS))("kontrakt layoutu huba: %s", (_id, La
 
   it("renderuje wyłącznie kafelki z modelu", () => {
     const s = spies()
-    render(<Layout model={makeModel(s)} />)
+    render(<Layout model={makeModel(s)} variants={variants} />)
 
     const links = screen.getAllByRole("link")
     expect(links.map((l) => l.getAttribute("href"))).toEqual(["/alfa", "/beta"])
@@ -83,7 +106,7 @@ describe.each(Object.entries(HUB_LAYOUTS))("kontrakt layoutu huba: %s", (_id, La
 
   it("pokazuje stan pusty z akcją czyszczenia filtrów", async () => {
     const s = spies()
-    render(<Layout model={makeModel(s, { tiles: [] })} />)
+    render(<Layout model={makeModel(s, { tiles: [] })} variants={variants} />)
 
     expect(screen.getByText("Nie znaleziono aplikacji")).toBeInTheDocument()
     await userEvent.click(screen.getByRole("button", { name: "Wyczyść filtry" }))
@@ -92,7 +115,7 @@ describe.each(Object.entries(HUB_LAYOUTS))("kontrakt layoutu huba: %s", (_id, La
 
   it("każdy tab kategorii jest osiągalny z klawiatury i woła onSelect", async () => {
     const s = spies()
-    render(<Layout model={makeModel(s)} />)
+    render(<Layout model={makeModel(s)} variants={variants} />)
 
     // Enter na sfokusowanym przycisku, nie `click()` — tab zrobiony na <div>
     // z `onClick` przeszedłby test klikany i wywalił się dopiero u użytkownika
@@ -108,7 +131,7 @@ describe.each(Object.entries(HUB_LAYOUTS))("kontrakt layoutu huba: %s", (_id, La
 
   it("gwiazdka ulubionych ma aria-pressed i nie nawiguje", async () => {
     const s = spies()
-    render(<Layout model={makeModel(s)} />)
+    render(<Layout model={makeModel(s)} variants={variants} />)
 
     const star = screen.getByRole("button", { name: "Usuń Alfa z ulubionych" })
     expect(star).toHaveAttribute("aria-pressed", "true")

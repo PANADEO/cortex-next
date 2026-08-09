@@ -9,21 +9,21 @@ import type { HubLayoutId } from "@/components/shell/hub/registry"
  */
 export type PresetId = "neutral" | "customs" | "domino"
 
-/** Zakładki kategorii — podkreślenie (dziś) albo teczki wtapiające się w
- *  krawędź panelu (Domino). Konsument: CVA w E4. */
+/** Zakładki kategorii — podkreślenie albo teczki wtapiające się w krawędź
+ *  panelu (Domino). Konsument: `hub/category-tabs.tsx`. */
 export type TabsVariant = "underline" | "folder"
 
-/** Kafelek — karta z paletą admina (dziś) albo chiclet z akcentem z hasha
- *  kategorii (Domino, D6). Konsument: CVA w E4. */
+/** Kafelek — karta z paletą admina albo chiclet z akcentem z hasha kategorii
+ *  (Domino, D6). Konsument: `hub/tile-card.tsx`. */
 export type TileVariant = "card" | "chiclet"
 
 /**
- * Warianty są UNIAMI LITERAŁOWYMI, nie `string`, i to jest warunek konieczny
- * dla E4: `cva({ variants: { tile: { card: …, chiclet: … } } })` typuje się
- * po kluczach obiektu wariantów, więc `preset.variants.tile` musi być
- * przypisywalne do `VariantProps<typeof tileCard>["variant"]`. Przy `string`
- * E4 musiałby rzutować przy każdym użyciu albo trzymać drugą listę literałów
- * obok tej — czyli dokładnie ten rozjazd, którego preset ma nie dopuścić.
+ * Warianty są UNIAMI LITERAŁOWYMI, nie `string`, i E4 potwierdził, po co:
+ * `cva({ variants: { variant: { card: …, chiclet: … } } })` typuje się po
+ * kluczach tabeli wariantów, więc `preset.variants.tile` wchodzi tam wprost,
+ * bez rzutowania i bez drugiej listy literałów obok tej. Wartość jedzie z
+ * presetu do komponentu przez `HubLayoutProps.variants` — layout jej nie
+ * interpretuje, tylko podaje dalej.
  */
 export interface PresetVariants {
   tabs: TabsVariant
@@ -94,24 +94,16 @@ export const PRESETS: Readonly<Record<PresetId, Preset>> = {
 }
 
 /**
- * Preset wybierany, gdy nikt nie wybrał innego — i JEDYNY sposób, w jaki
- * `domino` jest dziś osiągalne. To jest świadomie stan przejściowy: §6 stawia
- * w E3 „SkinToggle → PresetToggle", ale dwa zmierzone fakty sprawiają, że
- * Domino wybieralne z UI byłoby dziś regresją, a nie funkcją.
+ * Preset dla instancji, która nie ustawiła własnego, i dla użytkownika, który
+ * nie wybrał. Zostaje `neutral` również po wypuszczeniu przełącznika w E4:
+ * Domino jest teraz kompletne i wybieralne, ale zmiana wartości domyślnej
+ * przemalowałaby aplikację każdemu, kto niczego nie wybrał — a to jest decyzja
+ * właściciela instancji, czyli treść E5, nie skutek uboczny tego etapu.
  *
- * 1. `masthead` NIE MA CSS. Cherry-pick E0 wziął sześć plików `.tsx` i zero
- *    arkusza, więc `.ch-mast`, `.ch-tile`, `.ch-tab` i ~60 reguł siostrzanych
- *    nie istnieją na tej gałęzi (§5c). Preset `domino` renderowałby hub bez
- *    obramowań, pól ikon i chromu zakładek.
- * 2. Domino na `classic` jest widocznie w połowie nałożone. Skin nadpisuje
- *    `--radius-sm/md/lg`, a klasyczny kafelek stoi na `rounded-xl`; do tego
- *    `--border-width` grubieje globalnie, a nadpisanych jest 8 z 30 tokenów
- *    palety, więc `--input`, `--ring` i wszystkie `--sidebar-*` dają
- *    podwojone blade ramki na kremowej stronie (§5d).
- *
- * Dlatego przełącznika NIE MA i nie należy go „dokończyć" osobno: E4 dopisuje
- * CSS Domino i wypuszcza przełącznik jednym ruchem. Do tego czasu mechanizm
- * jest kompletny i sprawdzalny przez podmianę tej jednej stałej.
+ * Oba powody, dla których E3 nie wypuścił przełącznika, są zamknięte:
+ * `masthead` ma pełne stylowanie (tokeny + warianty CVA, zero klas `ch-*`), a
+ * paleta Domino nadpisuje komplet tokenów, więc `--input`, `--ring` i
+ * `--sidebar-*` nie spadają już na neutralne blade krawędzie.
  */
 export const DEFAULT_PRESET: PresetId = "neutral"
 

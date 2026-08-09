@@ -4,12 +4,10 @@ import type { HubTile } from "@cortex/api"
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-// Layout `masthead` jest do E4 nieosiągalny w aplikacji (layout bierze się z
-// `hubLayout` domyślnego presetu, a ten wskazuje `classic`, i nie ma
-// przełącznika, który wskazałby inny), więc bez tego pliku jego DOM nie byłby renderowany
-// NIGDZIE — a zaparkowany kod, którego nic nie uruchamia, gnije po cichu.
-// Test montuje go bezpośrednio na prawdziwym `useHubModel()`, bo pilnowane
-// niżej liczniki są własnością pary model+layout, nie samego markupu.
+// Layout `masthead` jest od E4 osiągalny z przełącznika (preset `domino`), ale
+// NIE jest domyślny, więc `authed-home.test.tsx` go nie dotyka. Test montuje go
+// bezpośrednio na prawdziwym `useHubModel()`, bo pilnowane niżej liczniki są
+// własnością pary model+layout, nie samego markupu.
 
 let authorizedMock = {
   allowed: true,
@@ -63,9 +61,13 @@ import { HUB_LAYOUTS } from "../../registry"
 import { useHubModel } from "../../use-hub-model"
 import { MastheadHub } from "./index"
 
-/** Layout na żywym modelu — bez `AuthedHome`, który do E3 zna tylko `classic`. */
+/** Layout na żywym modelu — bez `AuthedHome`, który renderuje layout presetu
+ *  domyślnego, czyli `classic`. Warianty brane z presetu `domino`, a nie
+ *  wpisane tu literałem: to jest jedyna wiązka, z jaką ten layout realnie się
+ *  spotyka, i gdyby ktoś ją w rejestrze zmienił, test ma mierzyć zmianę, a nie
+ *  własną kopię sprzed niej. */
 function Harness() {
-  return <MastheadHub model={useHubModel()} />
+  return <MastheadHub model={useHubModel()} variants={PRESETS.domino.variants} />
 }
 
 afterEach(() => {
@@ -85,13 +87,13 @@ describe("layout huba: masthead", () => {
   // trzeci layout w E3/E5 albo posortowanie rejestru wywaliłyby test, który o
   // kolejności nie ma nic do powiedzenia. Pytanie brzmi "czy masthead jest
   // zarejestrowany i czy nadal nie jest domyślny", i tylko to jest tu badane.
-  it("jest w rejestrze, ale nieosiągalny — domyślnym layoutem zostaje `classic`", () => {
+  it("jest w rejestrze i wskazuje go Domino, ale domyślnym layoutem zostaje `classic`", () => {
     expect(new Set(Object.keys(HUB_LAYOUTS))).toContain("masthead")
-    // Po E3 domyślny layout nie jest już własną stałą, tylko polem presetu
-    // domyślnego — i to jest jedyne miejsce, gdzie „masthead nieosiągalny"
-    // da się jeszcze sprawdzić, bo przełącznika presetów nie ma. Ten `expect`
-    // ma zapalić się na czerwono w E4, kiedy Domino stanie się domyślne albo
-    // wybieralne, i to jest jego zadanie: wymusić świadomą zmianę tego pliku.
+    expect(PRESETS.domino.hubLayout).toBe("masthead")
+    // E4 wypuszcza przełącznik, ale NIE zmienia wartości domyślnej: instancja,
+    // która niczego nie wybrała, ma po wdrożeniu wyglądać tak samo jak przed.
+    // Zmiana tej linii to decyzja właściciela instancji (E5), nie skutek
+    // uboczny dołożenia wyglądu.
     expect(PRESETS[DEFAULT_PRESET].hubLayout).toBe("classic")
   })
 
@@ -119,22 +121,51 @@ describe("layout huba: masthead", () => {
     expect(meterText()).toBe("Narzędzia: 3 · Kategorie: 0")
   })
 
-  // Strażnik wierności parkowania: to są cztery rzeczy, których `classic` nie
-  // ma i mieć nie będzie, a które E4 ma zastać, nie odtwarzać z `git show`.
+  // Cztery rzeczy, które `classic` pod wariantem `card` renderuje inaczej albo
+  // wcale, a które składają się na chiclet: akcent z hasha kategorii, kaskada
+  // wejścia, mikroetykieta i krawędź panelu, w którą wtapiają się zakładki.
   //
-  // `--ch-delay` jest tu asertowany ŚWIADOMIE jako martwy token: jego jedyna
-  // reguła (`19e1dd2:…globals.css:1035`) nie została przeniesiona, jak reszta
-  // ~60 reguł Domino. Test pilnuje, że zaparkowane zostaje zaparkowane —
-  // gdyby ktoś usunął go jako "nieużywany", E4 straciłby informację, że
-  // kafelki wchodzą kaskadą.
-  it("renderuje chiclet Cezarego — akcent z kategorii, opóźnienie stagger i mono-tag", () => {
+  // Kafelki fixture'u mają `categoryFunctional: null` i to jest tu WARUNEK
+  // TESTU, nie skutek uboczny: dokładnie tak wygląda `document-parser` i
+  // `visual-guru` na standardowej instancji (§5b), a wersja `accentFor`
+  // z `main` wołała `.length` na tej wartości. Akcent 1 znaczy więc „przeszło
+  // przez ścieżkę pustej kategorii", a nie „hash przypadkiem trafił w 1".
+  it("renderuje chiclet — akcent, kaskada, mikroetykieta, krawędź panelu", () => {
     const { container } = render(<Harness />)
 
-    const chiclet = screen.getAllByRole("link")[0]
-    expect(chiclet).toHaveClass("ch-tile", "ch-acc-amber")
-    expect(chiclet?.getAttribute("style")).toContain("--ch-delay: 0ms")
-    expect(container.querySelector(".ch-tile-tag")).not.toBeNull()
-    expect(container.querySelector(".ch-panel")).not.toBeNull()
+    const chiclets = screen.getAllByRole("link")
+    expect(chiclets[0]).toHaveClass("min-h-tile", "animate-tile-in")
+    expect(container.querySelector(".bg-chart-1")).not.toBeNull()
+
+    // Kaskada: 28 ms na pozycję. Drugi kafelek dowodzi, że opóźnienie zależy od
+    // indeksu — samo zero na pierwszym przeszłoby też przy braku kaskady.
+    expect(chiclets[0]?.getAttribute("style")).toContain("animation-delay: 0ms")
+    expect(chiclets[1]?.getAttribute("style")).toContain("animation-delay: 28ms")
+
+    // `prefers-reduced-motion` obsługuje wariant Tailwinda na tym samym
+    // elemencie, nie osobna reguła w arkuszu — bez nazwy animacji opóźnienie
+    // inline nie ma czego opóźniać.
+    expect(chiclets[0]).toHaveClass("motion-reduce:animate-none")
+
+    // Mikroetykieta kategorii jest pusta dla kafelka bez kategorii, więc badany
+    // jest WĘZEŁ, nie tekst — obecność samego tekstu nie odróżniłaby chicletu
+    // od karty.
+    expect(container.querySelector(".tracking-label")).not.toBeNull()
+    expect(container.querySelector("section.border-t-token")).not.toBeNull()
+  })
+
+  // Design Cezarego jechał na ~60 regułach `.ch-*` zakresowanych `.cortex-home`.
+  // E4 rozłożył je na tokeny i warianty CVA — a to znaczy, że ani jedna z tych
+  // nazw nie ma prawa zostać. Klasa `ch-*`, która przetrwała, jest martwa:
+  // arkusz nie ma dla niej reguły i nigdy nie będzie miał.
+  it("nie zostaje ani jedna klasa `ch-*` — nie ma dla nich reguł w arkuszu", () => {
+    const { container } = render(<Harness />)
+
+    const leftovers = [...container.querySelectorAll("[class]")].filter((el) =>
+      [...el.classList].some((token) => token.startsWith("ch-")),
+    )
+
+    expect(leftovers.map((el) => el.className)).toEqual([])
   })
 })
 

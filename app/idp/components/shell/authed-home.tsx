@@ -21,22 +21,25 @@ interface AuthedHomeProps {
  * dane są, więc nowy layout nie ma jak zapomnieć o obu ekranach ani pokazać
  * "Nie znaleziono aplikacji" w trakcie ładowania katalogu.
  *
- * Bez klas zakresujących `.cortex-home`/`.ch-scope`, które przyszły tu z E0.
- * U Cezarego `.cortex-home` jest PRZODKIEM ZAKRESUJĄCYM całego designu Domino
- * — 60 wystąpień w selektorach `19e1dd2:libs/@cortex/styles/globals.css`,
- * łącznie z blokiem `prefers-reduced-motion` — a `.ch-scope` nie występuje
- * tam nigdy samodzielnie, wyłącznie jako `.cortex-home .ch-scope`.
+ * Bez klas zakresujących `.cortex-home`/`.ch-scope`, które przyszły tu z E0 —
+ * i po E4 wiadomo już, że nie wrócą w żadnej postaci. U Cezarego `.cortex-home`
+ * był PRZODKIEM ZAKRESUJĄCYM całego designu Domino (60 wystąpień w selektorach
+ * `19e1dd2:libs/@cortex/styles/globals.css`); tutaj żadna reguła Domina nie
+ * potrzebuje przodka, bo nie ma reguł Domina — jest tabela wariantów w
+ * komponentach, które renderują się wyłącznie pod tym presetem.
  *
- * Zdjęcie ich jest tu bezczynne Z KONSTRUKCJI, nie dlatego, że coś je
- * zastępuje: cherry-pick E0 (`7e841e6`) wziął SZEŚĆ plików `.tsx` i ani jednej
- * linii CSS, więc `globals.css` na tej gałęzi jest bajt w bajt równy
- * `b7ba35e` i ma ZERO wystąpień `cortex-home`, `ch-scope` i `--ch-`. Te dwa
- * selektory nie mają na czym zadziałać.
+ * TO JEST ROZSTRZYGNIĘCIE FOUC, które §5e kazało podjąć w E4, a nie po nim.
+ * Klasa skinu i `data-preset` lądują na `<html>` dopiero w efekcie
+ * `theme-provider.tsx` (zmierzone: pierwsze malowanie ~22 ms, klasa ~408 ms),
+ * więc każda reguła UKŁADU zakresowana `[data-preset="domino"]` znaczyłaby
+ * hub malujący się przez ~0,4 s zupełnie nieostylowany, a potem przeskakujący.
+ * Zakresowania nie ma i to nie jest obejście, tylko usunięcie zbędnego
+ * warunku: o tym, że renderuje się `masthead` z chicletami, rozstrzyga JUŻ
+ * preset — w Reakcie, wyżej w tym pliku. Powtórzenie tego samego warunku w
+ * CSS-ie nie dokłada żadnej informacji, a kosztuje pełne mignięcie układu.
+ * Zostaje mignięcie samych KOLORÓW (tokeny), i to jest cena przyjęta świadomie.
  *
- * Powód, dla którego nie zostają mimo to: siedzą NAD layoutem, więc pod
- * `classic` dokładałyby klasy do markupu, który ich nie używa, a warunkowanie
- * ich layoutem znaczyłoby host znający identyfikatory layoutów — dokładnie tę
- * wiedzę, którą rejestr ma z niego zdejmować (D3).
+ * Odrzucony blokujący skrypt w nagłówku: patrz `theme-provider.tsx`.
  */
 export function AuthedHome({ tileHrefOverrides }: AuthedHomeProps) {
   const model = useHubModel(tileHrefOverrides)
@@ -67,7 +70,7 @@ export function AuthedHome({ tileHrefOverrides }: AuthedHomeProps) {
               description="Spróbuj odświeżyć stronę. Jeśli problem się powtarza, sprawdź połączenie z bazą danych."
             />
           ) : (
-            <Hub model={model} />
+            <Hub model={model} variants={preset.variants} />
           )}
         </div>
       </main>

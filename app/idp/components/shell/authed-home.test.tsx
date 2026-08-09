@@ -311,22 +311,20 @@ describe("AuthedHome — hub", () => {
 
   // Strażnik defektu E0: cherry-pick `19e1dd2` PODMIENIŁ markup huba zamiast
   // dołożyć drugi layout, więc `classic` przez jeden etap renderował DOM
-  // Domino — klasy `ch-*`, które na tej gałęzi nie mają ani jednej reguły
-  // (`globals.css` jest bajt w bajt równy stanowi bazowemu), czyli hub bez
-  // ramek, pól ikon i odstępów. Domyślny layout ma nie mieć u siebie ANI
-  // JEDNEJ takiej klasy; markup Domino żyje pod `layouts/masthead/`.
-  it("domyślny layout renderuje hub sprzed redesignu — zero klas `ch-*`", () => {
+  // Domino. Po E4 pytanie brzmi inaczej i szerzej, bo wygląd nie jest już
+  // przypięty do layoutu: instancja bez wybranego presetu ma dostać hub
+  // sprzed redesignu W CAŁOŚCI — ten layout ORAZ te warianty.
+  it("bez wybranego presetu hub jest ten sprzed redesignu — layout i warianty", () => {
     const { container } = render(<AuthedHome />)
 
-    // `classList`, nie `className`: na elementach SVG (ikony lucide) to drugie
-    // jest `SVGAnimatedString`, nie stringiem, i sito wywala się na `.split`.
-    const domino = [...container.querySelectorAll("[class]")].filter((el) =>
-      [...el.classList].some((token) => token.startsWith("ch-")),
-    )
-
-    expect(domino).toHaveLength(0)
-    // Licznik z mastheadu jest osobną asercją, bo jest tekstem, nie klasą —
-    // przeszedłby przez sito wyżej niezauważony.
+    // Licznik „Narzędzia: N" renderuje wyłącznie `masthead` — to jest
+    // rozstrzygnięcie o layoucie (warstwa 3).
     expect(screen.queryByText(/^Narzędzia: /)).toBeNull()
+
+    // A to o wariancie (warstwa 2): kafelek karty ma wysokość wpisaną wprost,
+    // chiclet bierze ją z tokena. Bez tej asercji preset ze zmienionym samym
+    // wariantem przeszedłby test „domyślny layout" bez mrugnięcia.
+    expect(container.querySelector(".min-h-\\[184px\\]")).not.toBeNull()
+    expect(container.querySelector(".min-h-tile")).toBeNull()
   })
 })

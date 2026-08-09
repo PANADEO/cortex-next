@@ -2,44 +2,33 @@
 
 import { Button, EmptyState } from "@cortex/ui"
 import { Search } from "lucide-react"
+import { CategoryTabs } from "../../category-tabs"
+import { TileCard } from "../../tile-card"
 import type { HubLayoutProps } from "../../types"
 import { Masthead } from "./masthead"
-import { TileChiclet } from "./tile-chiclet"
-import { WorkspaceTabs } from "./workspace-tabs"
 
 /**
- * Layout `masthead` — redesign huba Cezarego (`19e1dd2`), zaparkowany co do
- * elementu. NIEOSIĄGALNY do E4: wskazuje go preset `domino`, ale presetu nie
- * da się wybrać — nie ma przełącznika, i to celowo (patrz `DEFAULT_PRESET`).
+ * Layout `masthead` — redesign huba Cezarego (`19e1dd2`), od E4 osiągalny:
+ * wskazuje go preset `domino`, a przełącznik presetów jest w nagłówku.
  *
- * Dlaczego stoi tu już teraz, skoro nikt go nie renderuje: E0 wniósł ten DOM
- * PODMIENIAJĄC hub zamiast dokładając wariant, więc jedyna alternatywa dla
- * zaparkowania go było skasowanie i odtwarzanie w E4 z `git show`. E4 ma go
- * dopracować (warianty CVA, `accent.ts`, wyjście z klas `ch-*` na tokeny), nie
- * rekonstruować.
+ * DO E3 BYŁO TO CIAŁO BEZ SKÓRY. Cherry-pick E0 wziął sześć plików `.tsx` i ani
+ * jednej linii CSS, więc ~60 reguł ubierających ten DOM (`.ch-mast`, `.ch-tile`,
+ * `.ch-tab`, `.ch-search`, `.ch-fav`, `.ch-empty`, `.ch-acc-*`, stagger i blok
+ * `prefers-reduced-motion`) nie istniało na tej gałęzi. E4 wrócił po nie do
+ * źródła i ROZŁOŻYŁ je na warstwy z D3 zamiast przepisać jeden do jednego:
+ * kolor i metryki są tokenami `.skin-domino` (E2 + 22 tokeny dołożone tutaj),
+ * struktura jest wariantami CVA w `hub/tile-card.tsx` i `hub/category-tabs.tsx`,
+ * klatki kaskady są w `tailwind.config.ts`. Klas `ch-*` nie ma już ani jednej i
+ * nie ma też ani jednej reguły CSS napisanej ręcznie — to jest miara tego, jak
+ * dokładnie warstwy pokryły oryginał.
  *
- * TO JEST CIAŁO BEZ SKÓRY i trzeba to nazwać wprost: cherry-pick E0
- * (`7e841e6`) wziął sześć plików `.tsx` i ani jednej linii CSS, więc z
- * designu Domino przeniesiony jest WYŁĄCZNIE ten DOM. Około sześćdziesięciu
- * reguł, które go ubierają — `.ch-mast`, `.ch-tile`, `.ch-tab`, `.ch-search`,
- * `.ch-fav`, `.ch-empty`, `.ch-acc-*`, tokeny `--ch-*` w `:root`/`.dark` oraz
- * blok `prefers-reduced-motion` — nie istnieje na tej gałęzi w ogóle i NIE
- * powstanie w E2: skin to wyłącznie wartości, ani jednej reguły układu
- * (D3/D8). E4 musi po nie wrócić do `19e1dd2:libs/@cortex/styles/globals.css`
- * i przełożyć je na warianty CVA plus tokeny — nie ma tu czego „dopolerować".
- *
- * Dlatego ten layout renderuje się nieostylowany i takie jest oczekiwanie.
- * Zawinięcia `.cortex-home`/`.ch-scope`, którymi Cezary zakresował tamte
- * reguły, zostały zdjęte z `authed-home.tsx` — uzasadnienie tam, przy
- * miejscu, z którego zniknęły.
- *
- * Trzy komponenty obok (`Masthead`, `WorkspaceTabs`, `TileChiclet`) to
- * odpowiedniki `HeroSearch`/`CategoryTabs`/`TileCard` z `classic`. Są layoutu,
- * nie wspólne, bo ich DOM nie pokrywa się ani jednym elementem — wspólny
- * komponent musiałby brać sumę propsów obu layoutów i rozgałęziać się w
- * środku, czyli być wariantem CVA przed czasem. To jest robota E4.
+ * Ten plik został przez to layoutem w ścisłym sensie: SAMĄ KOMPOZYCJĄ. Zakładki
+ * i kafelki są wspólne z `classic` i różnią się wariantem; własny zostaje tylko
+ * `Masthead`, bo tam DOM naprawdę jest inny (tytuł i szukajka w jednym rzędzie
+ * zamiast wycentrowanych pod sobą) — czyli dokładnie ta przesłanka, dla której
+ * D3 dopuszcza warstwę 3.
  */
-export function MastheadHub({ model }: HubLayoutProps) {
+export function MastheadHub({ model, variants }: HubLayoutProps) {
   return (
     <>
       <Masthead
@@ -50,43 +39,54 @@ export function MastheadHub({ model }: HubLayoutProps) {
         tileCount={model.counts.authorized}
         categoryCount={model.counts.categories}
       />
-      <div className="ch-workspace">
-        <WorkspaceTabs
-          totalCount={model.counts.matching}
-          favoritesCount={model.counts.favorites}
-          categories={model.categories}
-          activeId={model.activeCategory.value}
-          onSelect={model.activeCategory.set}
-        />
+      <CategoryTabs
+        totalCount={model.counts.matching}
+        favoritesCount={model.counts.favorites}
+        categories={model.categories}
+        activeId={model.activeCategory.value}
+        onSelect={model.activeCategory.set}
+        variant={variants.tabs}
+      />
+      {/* Panel: górna krawędź, w którą wtapia się pasek zakładek (te mają
+          ujemny margines dolny równy grubości ramki). Jedna sekcja dla obu
+          stanów, bo krawędź należy do panelu, nie do siatki. */}
+      <section className="border-t-token border-border pt-[22px]">
         {model.tiles.length === 0 ? (
-          <section className="ch-panel">
-            <EmptyState
-              icon={Search}
-              title="Nie znaleziono aplikacji"
-              description="Spróbuj zmienić zapytanie lub wyczyścić filtry."
-              className="ch-empty"
-              action={
-                <Button variant="outline" size="sm" onClick={model.clearFilters}>
-                  Wyczyść filtry
-                </Button>
-              }
-            />
-          </section>
+          /* Bez `className` przemalowującego `EmptyState` od środka. U Cezarego
+             sześć reguł `.ch-empty` sięgało w jego strukturę selektorami
+             `> div:first-child`, `p:first-of-type` i `button` — czyli dokładnie
+             ten wzorzec, przez który `app-shell` i `tile-menu` renderowały się
+             bez tła poza `.cortex-chrome` (§1). Same tokeny dają tu ramkę
+             kreskowaną atramentem, promień 2 px i przycisk w papierze; ginie
+             amberowy kwadrat ikony i mono-wersaliki tytułu. To jest świadoma
+             strata: odzyskanie ich należy do wariantu NA `EmptyState`, nie do
+             selektora zgadującego jego wnętrze. */
+          <EmptyState
+            icon={Search}
+            title="Nie znaleziono aplikacji"
+            description="Spróbuj zmienić zapytanie lub wyczyścić filtry."
+            action={
+              <Button variant="outline" size="sm" onClick={model.clearFilters}>
+                Wyczyść filtry
+              </Button>
+            }
+          />
         ) : (
-          <section className="ch-panel ch-grid grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {model.tiles.map((tile, index) => (
-              <TileChiclet
+              <TileCard
                 key={tile.id}
                 tile={tile}
                 isFavorite={model.favorites.includes(tile.id)}
                 onToggleFavorite={model.toggleFavorite}
-                categoryTag={model.categoryTagFor(tile)}
+                variant={variants.tile}
                 index={index}
+                categoryTag={model.categoryTagFor(tile)}
               />
             ))}
-          </section>
+          </div>
         )}
-      </div>
+      </section>
     </>
   )
 }

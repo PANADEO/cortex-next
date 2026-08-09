@@ -92,10 +92,16 @@ const config: Config = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Pary `-foreground` tylko dla trzech pierwszych: to one są
+        // WYPEŁNIENIAMI pod treścią w wariancie `chiclet` (D6), czwarty i piąty
+        // służą wykresom, gdzie nic na nich nie leży.
         chart: {
           1: "hsl(var(--chart-1))",
+          "1-foreground": "hsl(var(--chart-1-foreground))",
           2: "hsl(var(--chart-2))",
+          "2-foreground": "hsl(var(--chart-2-foreground))",
           3: "hsl(var(--chart-3))",
+          "3-foreground": "hsl(var(--chart-3-foreground))",
           4: "hsl(var(--chart-4))",
           5: "hsl(var(--chart-5))",
         },
@@ -169,11 +175,34 @@ const config: Config = {
           "0%, 100%": { opacity: "0.35" },
           "50%": { opacity: "1" },
         },
+        // Wejście kafelka w wariancie `chiclet` (u Cezarego `ch-tile-in`).
+        // Klatki są w configu, a nie w `globals.css`, bo to jedyna forma, w
+        // której `@keyframes` NIE trafia do arkusza, dopóki `animate-tile-in`
+        // nie pojawi się w źródłach — reguła dopisana ręcznie wisiałaby w
+        // bundlu każdego presetu, także tych, które kaskady nie mają.
+        // Kaskadę robi `animation-delay` wstawiany stylem inline (indeks
+        // kafelka), a `motion-reduce:animate-none` ją kasuje: bez nazwy
+        // animacji opóźnienie nie ma czego opóźniać, więc styl inline nie musi
+        // być nadpisywany.
+        "tile-in": {
+          from: { opacity: "0", transform: "translateY(4px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         shimmer: "shimmer 2.4s linear infinite",
         "glyph-draw": "glyph-draw 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite",
         "soft-pulse": "soft-pulse 1.6s ease-in-out infinite",
+        // `backwards`, nie `both` jak w oryginale Cezarego — i to jest POPRAWKA
+        // DEFEKTU, nie różnica smaku. `both` trzyma klatkę końcową w nieskończoność
+        // po zakończeniu animacji, a właściwości animowane biją w kaskadzie
+        // deklaracje autora, więc `transform: translateY(0)` z klatki `to` na
+        // zawsze wygrywał z `:hover`: kafelek nie dawał się podnieść, mimo że
+        // cień offsetowy się pojawiał. Zmierzone (`matrix(1,0,0,1,0,0)` przy
+        // najechaniu). `backwards` wypełnia wyłącznie okres OPÓŹNIENIA — czyli
+        // dokładnie to, czego potrzebuje kaskada — i oddaje `transform` z
+        // powrotem, kiedy animacja się skończy.
+        "tile-in": "tile-in 0.32s ease-out backwards",
       },
       transitionDuration: {
         DEFAULT: "150ms",

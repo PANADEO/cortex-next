@@ -2,10 +2,10 @@
 
 import { Button, EmptyState } from "@cortex/ui"
 import { Search } from "lucide-react"
-import { CategoryTabs } from "../../../category-tabs"
-import { HeroSearch } from "../../../hero-search"
-import { TileCard } from "../../../tile-card"
+import { CategoryTabs } from "../../category-tabs"
+import { TileCard } from "../../tile-card"
 import type { HubLayoutProps } from "../../types"
+import { HeroSearch } from "./hero-search"
 
 /**
  * Layout `classic` — hub sprzed redesignu Cezarego, markup 1:1 z `return (...)`
@@ -22,8 +22,13 @@ import type { HubLayoutProps } from "../../types"
  * `@cortex/api` ani z `@/lib/tiles` poza typem — dane i dostęp liczy
  * wyłącznie warstwa 0. Pilnuje tego `no-restricted-imports` w `.eslintrc.cjs`,
  * nie sama dobra wola.
+ *
+ * `variants` idą PROSTO Z PROPSÓW do komponentów warstwy 2, bez sprawdzania,
+ * co w nich jest. Layout nie ma prawa wiedzieć, że `classic` „jest od kart":
+ * gdyby zaszył `variant="card"`, preset łączący ten układ z chicletami stałby
+ * się niewyrażalny, a `PresetVariants` — martwą daną.
  */
-export function ClassicHub({ model }: HubLayoutProps) {
+export function ClassicHub({ model, variants }: HubLayoutProps) {
   return (
     <>
       <HeroSearch
@@ -38,6 +43,7 @@ export function ClassicHub({ model }: HubLayoutProps) {
         categories={model.categories}
         activeId={model.activeCategory.value}
         onSelect={model.activeCategory.set}
+        variant={variants.tabs}
       />
       {model.tiles.length === 0 ? (
         <EmptyState
@@ -52,12 +58,15 @@ export function ClassicHub({ model }: HubLayoutProps) {
         />
       ) : (
         <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {model.tiles.map((tile) => (
+          {model.tiles.map((tile, index) => (
             <TileCard
               key={tile.id}
               tile={tile}
               isFavorite={model.favorites.includes(tile.id)}
               onToggleFavorite={model.toggleFavorite}
+              variant={variants.tile}
+              index={index}
+              categoryTag={model.categoryTagFor(tile)}
             />
           ))}
         </section>

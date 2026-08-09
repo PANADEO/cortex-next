@@ -16,9 +16,8 @@ import type { HubLayoutProps } from "./types"
  * Oba wpisy zostają na stałe — to jest konsekwencja D2 przyjęta świadomie,
  * nie stan przejściowy: `classic` dla instancji bez presetu Domino,
  * `masthead` dla niego. Który z nich się renderuje, rozstrzyga `hubLayout`
- * aktywnego presetu (`lib/presets/registry.ts`) — a że przełącznika presetów
- * jeszcze nie ma, `masthead` jest osiągalny wyłącznie przez podmianę
- * `DEFAULT_PRESET`. Powód, dla którego nie ma, stoi przy tamtej stałej.
+ * aktywnego presetu (`lib/presets/registry.ts`), wybieranego od E4 z
+ * przełącznika w nagłówku.
  *
  * `satisfies` zamiast adnotacji typu: zachowuje wąski typ kluczy, więc
  * `HubLayoutId` to realna unia identyfikatorów, a nie `string`.

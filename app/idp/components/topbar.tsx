@@ -9,6 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
   Button,
+  SkinToggle,
   ThemeToggle,
   Tooltip,
   TooltipContent,
@@ -21,6 +22,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Fragment, useEffect, useState } from "react"
 import { useResolvedBreadcrumbs } from "../lib/breadcrumbs"
+import { usePresetStore } from "../lib/presets/preset-store"
+import { PRESET_CHOICES, presetChoiceToStored, storedToPresetChoice } from "../lib/presets/registry"
 import { useSidebarStore } from "../lib/stores/sidebar-store"
 import { useThemeStore } from "../lib/stores/theme-store"
 import { CommandPalette } from "./command-palette"
@@ -35,6 +38,9 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
   const toggle = useSidebarStore((s) => s.toggle)
   const themeMode = useThemeStore((s) => s.mode)
   const setThemeMode = useThemeStore((s) => s.setMode)
+  // Wybór ze store'a, nie rozwiązany preset — uzasadnienie w `shell-header.tsx`.
+  const storedPreset = usePresetStore((s) => s.preset)
+  const setPreset = usePresetStore((s) => s.setPreset)
   const persistPreferences = useSetUserPreferences()
   const shellUser = useShellUser()
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -123,13 +129,13 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
             </TooltipTrigger>
             <TooltipContent side="bottom">Notifications</TooltipContent>
           </Tooltip>
-          {/* Przełącznika wyglądu tu NIE MA i to jest decyzja, nie niedoróbka
-              — powód przy `DEFAULT_PRESET` w `lib/presets/registry.ts`.
-              Skrót: preset `domino` renderowałby dziś hub bez ani jednej
-              reguły CSS. `SkinToggle` z `@cortex/ui` zostaje nietknięty, bo
-              jego props (`id`/`label`/`description`/`swatch`) to dokładnie
-              kształt `Preset` — E4 podłącza go do `PRESETS` i to jest cała
-              zmiana po stronie tego pliku. */}
+          {/* Drugie miejsce renderu jednego store'u — ten sam wzorzec, którym
+              chodzi już `ThemeToggle`. Uzasadnienie propsów w `shell-header.tsx`. */}
+          <SkinToggle
+            skin={storedToPresetChoice(storedPreset)}
+            options={PRESET_CHOICES}
+            onSkinChange={(choice) => setPreset(presetChoiceToStored(choice))}
+          />
           <ThemeToggle
             mode={themeMode}
             onModeChange={(next) => {

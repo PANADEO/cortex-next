@@ -23,23 +23,32 @@ function applyMode(mode: "light" | "dark") {
  * zdejmować poprzednią klasę, inaczej dwa skiny siedzą na `<html>` naraz i
  * wygrywa ten, który stoi później w `globals.css`.
  *
- * `data-preset` jest tu z wyprzedzeniem dla E4: warianty `folder`/`chiclet`
- * robi CVA w TSX, ale reguły sięgające wyżej niż pojedynczy komponent (u
- * Cezarego cały blok pod `.cortex-home`, ze staggerem `--ch-delay` i
- * `prefers-reduced-motion`) potrzebują przodka do zakresowania. Klasa skinu
- * się do tego nie nadaje, bo opisuje PALETĘ, nie wiązkę — dwa presety mogą
- * dzielić skin i różnić się layoutem. Atrybut jest dziś martwy z wyboru:
- * żaden selektor w `globals.css` go nie czyta.
+ * ROZSTRZYGNIĘCIE FOUC (E4). Zarówno klasa skinu, jak i `data-preset` lądują na
+ * `<html>` dopiero w efekcie poniżej, bo `app/idp/app/layout.tsx` nie ma
+ * blokującego skryptu w nagłówku: pierwsze malowanie ~22 ms, klasa ~408 ms.
+ * E3 ostrzegał, że jeśli reguły UKŁADU Domina zawisną na `[data-preset]`, to
+ * przez te ~0,4 s hub maluje się całkiem nieostylowany. E4 nie zawiesił na nim
+ * ani jednej reguły — nie przez ostrożność, tylko dlatego, że taki warunek nic
+ * nie wnosi: wybór layoutu i wariantów robi już preset w Reakcie
+ * (`authed-home.tsx`), a klasy Domina jadą na komponentach, które pod innym
+ * presetem po prostu się nie renderują. Warunek w CSS-ie byłby powtórzeniem
+ * decyzji już podjętej, opłaconym pełnym mignięciem układu.
  *
- * OSTRZEŻENIE DLA E4, jeśli zechce pod ten atrybut zakresować reguły układu.
- * Zarówno klasa, jak i `data-preset` lądują na `<html>` dopiero w efekcie
- * poniżej, bo `app/idp/app/layout.tsx` nie ma blokującego skryptu w nagłówku.
- * Zmierzone na tej gałęzi: pierwsze malowanie ~22 ms, klasa skinu ~408 ms
- * (bazowo 14 / 362 — stan zastany, E3 go nie dokłada). Dla samych kolorów to
- * mignięcie do przeżycia. Ale gdyby ~60 reguł układu Domino wisiało na
- * `[data-preset="domino"]`, przez te ~0,4 s hub malowałby się CAŁKIEM
- * nieostylowany i dopiero potem przeskakiwał. Pytanie o blokujący skrypt
- * należy rozstrzygnąć WEWNĄTRZ E4, razem z decyzją o zakresowaniu — nie po.
+ * Odrzucony BLOKUJĄCY SKRYPT W NAGŁÓWKU. Usunąłby też mignięcie kolorów, ale
+ * musiałby przed startem Reacta odtworzyć w gołym JS-ie całą ścieżkę
+ * rozstrzygania presetu: nazwę klucza `localStorage`, kopertę `persist`
+ * zustanda, migrację z wersji 0 i pierwszeństwo źródeł z `resolvePresetId()`.
+ * To druga, nietypowana kopia rzeczy, która ma jedno źródło prawdy — a E5
+ * dokłada preset INSTANCJI z bazy, którego skrypt czytający wyłącznie
+ * `localStorage` nie ma jak zobaczyć, więc byłby błędny w dniu, w którym E5
+ * wejdzie. Właściwym rozwiązaniem kolorów jest ciastko czytane na serwerze i
+ * `data-preset` renderowane w HTML-u — to jednak zmiana w warstwie
+ * dostarczania, należy do E5 razem z resztą źródeł presetu.
+ *
+ * Sam atrybut zostaje mimo braku konsumenta w CSS: jest jedynym zewnętrznym
+ * świadectwem, który preset jest aktywny (klasa skinu tego nie mówi — dwa
+ * presety mogą dzielić skin i różnić się layoutem), i czyta go aparatura
+ * pomiarowa oraz devtools.
  */
 function applyPreset(id: PresetId) {
   const root = document.documentElement

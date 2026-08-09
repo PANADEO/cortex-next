@@ -1,13 +1,21 @@
 "use client"
 
 import { useSetUserPreferences, useShellUser } from "@cortex/api"
-import { ThemeToggle, UserMenu } from "@cortex/ui"
+import { SkinToggle, ThemeToggle, UserMenu } from "@cortex/ui"
 import Image from "next/image"
+import { usePresetStore } from "@/lib/presets/preset-store"
+import { PRESET_CHOICES, presetChoiceToStored, storedToPresetChoice } from "@/lib/presets/registry"
 import { useThemeStore } from "@/lib/stores/theme-store"
 
 export function ShellHeader() {
   const themeMode = useThemeStore((s) => s.mode)
   const setThemeMode = useThemeStore((s) => s.setMode)
+  // WYBÓR ze store'a, nie rozwiązany preset z `usePreset()`. Rozwiązany nigdy
+  // nie jest pusty (spada na `DEFAULT_PRESET`), więc przełącznik pokazywałby
+  // „Neutral" komuś, kto nie wybrał niczego — i pozycja „domyślny instancji"
+  // byłaby nieosiągalna do zaznaczenia mimo że jest na liście.
+  const storedPreset = usePresetStore((s) => s.preset)
+  const setPreset = usePresetStore((s) => s.setPreset)
   const persistPreferences = useSetUserPreferences()
   const shellUser = useShellUser()
 
@@ -27,8 +35,17 @@ export function ShellHeader() {
         </div>
         <div className="flex-1" />
         <div className="flex items-center gap-1">
-          {/* Bez przełącznika wyglądu do E4 — uzasadnienie przy
-              `DEFAULT_PRESET` w `lib/presets/registry.ts`. */}
+          {/* `SkinToggle` bez adaptera: jego props to `SkinOption<T extends
+              string>[]`, a `PRESET_CHOICES` jest strukturalnie właśnie tym —
+              E3 zbudował sentinel jako NAPIS dokładnie po to. Para mapperów
+              zamienia go na `null` w store i z powrotem, więc pierwsze
+              kliknięcie nie zabetonowuje wyboru i preset instancji z E5 ma jak
+              wygrać. */}
+          <SkinToggle
+            skin={storedToPresetChoice(storedPreset)}
+            options={PRESET_CHOICES}
+            onSkinChange={(choice) => setPreset(presetChoiceToStored(choice))}
+          />
           <ThemeToggle
             mode={themeMode}
             onModeChange={(next) => {

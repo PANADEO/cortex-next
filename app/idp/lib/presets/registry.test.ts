@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 import tailwind from "../../../../tailwind.config"
 import { HUB_LAYOUTS } from "@/components/shell/hub/registry"
-import { migrateLegacySkin } from "./preset-store"
+import { migrateLegacySkin, usePresetStore } from "./preset-store"
 import {
   DEFAULT_PRESET,
   INSTANCE_DEFAULT_ID,
@@ -111,6 +111,38 @@ describe("pozycja „domyślny instancji” w przełączniku", () => {
       INSTANCE_DEFAULT_ID,
       ...Object.keys(PRESETS),
     ])
+  })
+
+  /**
+   * Pełna pętla przez STORE, nie przez same mappery — bo dokładnie tak wpięty
+   * jest przełącznik w `shell-header.tsx` i `topbar.tsx`:
+   * `setPreset(presetChoiceToStored(id))` przy kliknięciu,
+   * `storedToPresetChoice(store.preset)` przy renderze. Mappery przetestowane
+   * osobno przechodzą także wtedy, gdy store nie umie przyjąć `null` — a to
+   * była właśnie luka z E3, przez którą pierwsze kliknięcie byłoby drzwiami
+   * w jedną stronę. Pętla obejmuje pozycję „dziedzicz” PO wybraniu presetu,
+   * więc bada powrót, a nie stan początkowy.
+   */
+  it("każdy wybór z przełącznika wraca ze store'a jako ten sam wybór", () => {
+    for (const choice of [...PRESET_CHOICES, ...PRESET_CHOICES]) {
+      usePresetStore.getState().setPreset(presetChoiceToStored(choice.id))
+      expect(storedToPresetChoice(usePresetStore.getState().preset)).toBe(choice.id)
+    }
+  })
+
+  it("powrót na „dziedzicz” czyści wybór do `null`, a nie do presetu domyślnego", () => {
+    usePresetStore.getState().setPreset("domino")
+    expect(usePresetStore.getState().preset).toBe("domino")
+
+    usePresetStore.getState().setPreset(presetChoiceToStored(INSTANCE_DEFAULT_ID))
+
+    // `null`, nie `"neutral"`: gdyby czyszczenie zapisywało preset domyślny,
+    // wartość instancji z E5 przegrywałaby z „wyborem” użytkownika, którego
+    // nigdy nie dokonał.
+    expect(usePresetStore.getState().preset).toBeNull()
+    expect(resolvePresetId({ instance: "domino", user: usePresetStore.getState().preset })).toBe(
+      "domino",
+    )
   })
 })
 
