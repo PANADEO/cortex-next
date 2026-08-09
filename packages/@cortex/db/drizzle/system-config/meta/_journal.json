@@ -43,6 +43,13 @@
       "when": 1786176677300,
       "tag": "0005_bitter_shadowcat",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786298472125,
+      "tag": "0006_damp_pride",
+      "breakpoints": true
     }
   ]
 }

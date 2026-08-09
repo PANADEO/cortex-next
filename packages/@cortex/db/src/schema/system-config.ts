@@ -248,8 +248,61 @@ export const openwebuiGroupMappings = systemConfig.table("openwebui_group_mappin
   updatedAt,
 })
 
+/**
+ * Ustawienia całej instancji — DOKŁADNIE JEDEN WIERSZ, po kolumnie na
+ * ustawienie. Pierwsze i na razie jedyne: domyślny preset wyglądu
+ * (PROJECT/cortex-frontend/ARTIFACTS/cortex-frontend-presety-wygladu-projekt.md
+ * §5e, noga instancji).
+ *
+ * ODRZUCONA TABELA KLUCZ-WARTOŚĆ (`settings(key, value)`), bo to nie jest
+ * kwestia gustu — te dwa kształty różnią się w trzech konkretnych miejscach:
+ *
+ *  1. „NIEUSTAWIONE" to tu stan LEGALNY, nie brak danych. W kolumnie
+ *     nullowalnej ma dokładnie jedną reprezentację. W tabeli klucz-wartość ma
+ *     trzy (brak wiersza, wiersz z NULL-em, wiersz z pustym napisem), o
+ *     których rozstrzyga każdy piszący z osobna — a odczyt musi zgadywać.
+ *  2. Zbiór ustawień jest ZAMKNIĘTY i produktowy, nie rozszerzalny przez
+ *     użytkownika. Kolumny wypisują go w schemacie; klucze żyłyby wyłącznie w
+ *     kodzie, więc nic nie powstrzymuje dwóch funkcji przed użyciem
+ *     `appearance_preset` i `appearance.preset` obok siebie.
+ *  3. Typ. `$inferSelect` daje serwisowi wiersz z polami; `Record<string,
+ *     string>` kazałby każdemu konsumentowi zawężać wartość u siebie.
+ *
+ * Jedyne, co kupuje klucz-wartość, to „bez migracji na nowe ustawienie" —
+ * a migracje są w tym repo tanie i pilnowane testem parzystości
+ * (scripts/migrations-journal-parity.test.ts). Zła wymiana.
+ *
+ * SINGLETON PILNOWANY W BAZIE, nie w kodzie: `id boolean` z CHECK-iem na
+ * prawdę dopuszcza co najwyżej jeden wiersz (drugi łamie klucz główny).
+ * Bez tego „ustawienie instancji" jest wieloznaczne przy pierwszym `insert`
+ * bez `on conflict`, a odczyt z `limit 1` wybiera arbitralnie — cicho.
+ *
+ * BEZ CHECK-a NA WARTOŚĆ `appearance_preset`, i to też jest decyzja. Lista
+ * presetów żyje w rejestrze aplikacji (`app/idp/lib/presets/registry.ts`),
+ * więc ograniczenie w bazie oznaczałoby migrację przy każdym nowym presecie i
+ * zabetonowanie kodu w schemacie. Preset skasowany z rejestru zostawia tu
+ * martwy identyfikator — świadomie: `resolvePresetId()` traktuje nieznaną
+ * wartość jak brak wyboru (pola `PresetSources` są typu `string` dokładnie z
+ * tego powodu), więc instancja spada na wartość domyślną zamiast się wywrócić.
+ */
+export const instanceSettings = systemConfig.table(
+  "instance_settings",
+  {
+    id: boolean("id").primaryKey().default(true),
+    // NULL = instancja nie narzuca wyglądu; wygrywa wybór użytkownika, a po
+    // nim DEFAULT_PRESET. To jest stan domyślny każdej świeżej instancji.
+    appearancePreset: text("appearance_preset"),
+    createdAt,
+    updatedAt,
+  },
+  (table) => ({
+    singleton: check("instance_settings_singleton", sql`${table.id}`),
+  }),
+)
+
 export type UserRow = typeof users.$inferSelect
 export type RoleRow = typeof roles.$inferSelect
 export type ApplicationRow = typeof applications.$inferSelect
 export type ApplicationScopeRow = typeof applicationScopes.$inferSelect
 export type OpenwebuiGroupMappingRow = typeof openwebuiGroupMappings.$inferSelect
+export type InstanceSettingsRow = typeof instanceSettings.$inferSelect

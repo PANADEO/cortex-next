@@ -19,6 +19,7 @@ import {
   LineChart,
   ListChecks,
   Package,
+  Palette,
   Receipt,
   ScrollText,
   Settings,
@@ -190,6 +191,7 @@ export const SYSTEM_CONFIG_NAV: TileMenuSection[] = [
         icon: LayoutDashboard,
         href: "/system-config/applications",
       },
+      { id: "appearance", label: "Wygląd", icon: Palette, href: "/system-config/appearance" },
     ],
   },
 ]

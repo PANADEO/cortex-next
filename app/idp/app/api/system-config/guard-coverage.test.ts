@@ -65,6 +65,11 @@ const service = vi.hoisted(() => {
     renameApplicationScope: vi.fn(async () => scope),
     listApplicationScopeGrants: vi.fn(async () => []),
     setApplicationScopeRoles: vi.fn(async () => undefined),
+    // Sekcja „Wygląd" (appearance). Bez podmiany kontrola pozytywna sięgnęłaby
+    // do prawdziwej bazy — przechodziłaby, bo 500 też nie jest 401/403, ale z
+    // niewłaściwego powodu i z zależnością od DATABASE_URL w unit teście.
+    getInstanceAppearance: vi.fn(async () => ({ preset: null })),
+    setInstanceAppearance: vi.fn(async () => ({ preset: null })),
     // Sekcja "Grupa OpenWebUI" (roles/[id]/openwebui-group) — droga do OWUI
     // idzie zawsze przez te nazwy, więc odmowa bez ANI JEDNEGO wywołania
     // (expectNoServiceCall) pokrywa też tę ścieżkę.

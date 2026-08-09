@@ -6,6 +6,7 @@ import {
   applicationScopes,
   applications,
   getDb,
+  instanceSettings,
   permissionsMatrix,
   roleApplicationScopes,
   roles,
@@ -913,6 +914,72 @@ export async function setApplicationScopeRoles(
   })
 
   clearTileAccessCache()
+}
+
+/**
+ * Wygląd ustawiony dla całej instancji. `preset === null` znaczy „instancja
+ * nie narzuca niczego" i jest STANEM POPRAWNYM, nie błędem ani brakiem
+ * konfiguracji — każda świeża instancja tak właśnie wygląda.
+ */
+export interface InstanceAppearance {
+  preset: string | null
+}
+
+/**
+ * Walidacja kształtu, nie przynależności do rejestru presetów. Rejestr
+ * (`app/idp/lib/presets/registry.ts`) jest w warstwie aplikacji, a ten pakiet
+ * nie ma prawa jej znać; poza tym twarda lista tutaj oznaczałaby, że dodanie
+ * presetu wymaga wdrożenia backendu. Wartość spoza rejestru rozstrzyga się w
+ * `resolvePresetId()` jak brak wyboru, więc najgorszy skutek błędnego zapisu
+ * to instancja na wartości domyślnej — nie awaria.
+ *
+ * Ten sam kształt co `applications.code` (małe litery, cyfry, myślnik): to
+ * jest identyfikator w URL-o-podobnym sensie, nie wolny tekst.
+ */
+export const instanceAppearanceInputSchema = z.object({
+  preset: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-z0-9-]+$/, "Identyfikator presetu może zawierać tylko małe litery, cyfry i myślnik")
+    .nullable(),
+})
+
+export type InstanceAppearanceInput = z.infer<typeof instanceAppearanceInputSchema>
+
+/** Brak wiersza = instancja nigdy nic nie ustawiła. Nie zakładamy go leniwie
+ *  przy odczycie: ta funkcja stoi na ścieżce KAŻDEGO renderu strony (patrz
+ *  app/idp/app/layout.tsx), więc musi być czystym odczytem. */
+export async function getInstanceAppearance(): Promise<InstanceAppearance> {
+  const [row] = await getDb()
+    .select({ preset: instanceSettings.appearancePreset })
+    .from(instanceSettings)
+    .limit(1)
+  return { preset: row?.preset ?? null }
+}
+
+/**
+ * `onConflictDoUpdate` na kluczu głównym singletona — jedno zapytanie zamiast
+ * „sprawdź, potem wstaw albo zaktualizuj". Tamten wariant to TOCTOU: dwa
+ * równoległe zapisy przechodzą oba sprawdzenia i drugi INSERT łamie klucz.
+ *
+ * `set` wymienia WYŁĄCZNIE tę jedną kolumnę (plus znacznik czasu). Gdy dojdą
+ * kolejne ustawienia instancji, zapis jednego nie może kasować pozostałych —
+ * to jest cena wspólnego wiersza i trzeba ją płacić przy każdym setterze.
+ */
+export async function setInstanceAppearance(
+  input: InstanceAppearanceInput,
+): Promise<InstanceAppearance> {
+  const { preset } = instanceAppearanceInputSchema.parse(input)
+  const [row] = await getDb()
+    .insert(instanceSettings)
+    .values({ id: true, appearancePreset: preset })
+    .onConflictDoUpdate({
+      target: instanceSettings.id,
+      set: { appearancePreset: preset, updatedAt: new Date() },
+    })
+    .returning({ preset: instanceSettings.appearancePreset })
+  return { preset: row?.preset ?? null }
 }
 
 export class UnknownUserError extends Error {

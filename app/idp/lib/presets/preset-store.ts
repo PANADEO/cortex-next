@@ -2,6 +2,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { useInstancePreset } from "./instance-preset"
 import { PRESETS, type Preset, type PresetId, isPresetId, resolvePresetId } from "./registry"
 
 /**
@@ -106,19 +107,34 @@ export const usePresetStore = create<PresetState>()(
  * Aktywny preset. Jedyne wejście dla widoków — nikt poza tym plikiem nie
  * składa kolejności źródeł.
  *
- * SZEW DLA E5. Dziś jedynym źródłem jest wybór użytkownika ze store'a
- * lokalnego. E5 dokłada dwa i ani jedno nie zmienia kształtu tej funkcji:
- * - preset INSTANCJI podstawia się pod `instance` (zapytanie do
- *   `system-config`, tam gdzie dziś stoi `null`),
- * - preset UŻYTKOWNIKA z serwera wchodzi tą samą drogą, którą chodzi już
- *   `theme_mode`: jednorazowe zasianie store'a z `useUserPreferences()` w
- *   `theme-provider.tsx` (blok `seededRef`) plus zapis przez
- *   `useSetUserPreferences()` przy zmianie. Store zostaje wartością żywą,
- *   więc `usePreset()` nie musi wiedzieć, skąd się wzięła.
- * Walidację obu robi już `resolvePresetId()` — patrz komentarz przy
- * `PresetSources`.
+ * OBA ŹRÓDŁA SĄ SYNCHRONICZNE I TO JEST WŁASNOŚĆ, NIE PRZYPADEK. Wybór
+ * użytkownika czyta `persist` zustanda z `localStorage` przy tworzeniu store'a,
+ * preset instancji przychodzi propsem z renderu serwerowego (patrz
+ * `instance-preset.tsx`). Ani jedno nie jest zapytaniem, więc ta funkcja zwraca
+ * ostateczną odpowiedź już w pierwszym renderze — a hub, który i tak czeka na
+ * katalog z sieci, nie ma jak pokazać najpierw jednego layoutu, a potem
+ * drugiego. Podmiana któregokolwiek ze źródeł na `useQuery` łamie tę własność
+ * i wprowadza wyścig sieciowy o UKŁAD STRONY.
+ *
+ * SZEW DLA NOGI PER-UŻYTKOWNIK (`user_preferences` w `idp-app`, poza tym repo).
+ * Właściwy kształt to TA SAMA DROGA, którą przychodzi preset instancji: odczyt
+ * po stronie serwera w `app/idp/app/layout.tsx` (tożsamość jest w nagłówku od
+ * oauth2-proxy, więc `headers()` wystarcza, żeby zapytać o preferencje w
+ * imieniu zalogowanego) i drugi props przez tego samego dostawcę, obok
+ * `instancePreset`. Wtedy oba źródła zostają synchroniczne i własność wyżej
+ * przeżywa.
+ *
+ * ODRZUCONE: „zasiej store z `useUserPreferences()` w `theme-provider.tsx`, tak
+ * jak `theme_mode`". To jest ścieżka, którą sam ten plik polecał do E5, i jest
+ * błędna — `theme_mode` steruje wyłącznie klasą `.dark`, więc spóźnione
+ * zasianie kosztuje mignięcie KOLORU. Ten store karmi `hubLayout`, więc
+ * spóźnione zasianie kosztuje PEŁNY PRZESKOK UKŁADU, i to dokładnie dla
+ * populacji, dla której noga per-user w ogóle powstaje: użytkownika, którego
+ * zdalny wybór różni się od presetu instancji. Analogia do `theme_mode` jest
+ * więc fałszywa w tym jednym miejscu, w którym miała być argumentem.
  */
 export function usePreset(): Preset {
   const user = usePresetStore((state) => state.preset)
-  return PRESETS[resolvePresetId({ instance: null, user })]
+  const instance = useInstancePreset()
+  return PRESETS[resolvePresetId({ instance, user })]
 }

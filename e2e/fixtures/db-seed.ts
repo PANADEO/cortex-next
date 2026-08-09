@@ -35,6 +35,7 @@ import {
   generationJobs as contentGuruGenerationJobs,
   generations,
   generationVariants,
+  instanceSettings,
   jobs,
   marketProfiles as contentGuruMarketProfiles,
   permissionsMatrix,
@@ -187,6 +188,10 @@ export async function resetSystemConfig(): Promise<void> {
   await db.delete(applications)
   await db.delete(roles)
   await db.delete(users)
+  // Ustawienia instancji (E5) — bez tego preset wyglądu ustawiony przez jeden
+  // scenariusz przemalowałby (i przełożył na inny layout huba) każdy następny.
+  // Tabela nie ma FK w żadną stronę, więc miejsce w kolejności jest dowolne.
+  await db.delete(instanceSettings)
   // Schemat modułu Ilustromat. Czyszczony razem z system_config, bo scenariusz
   // ma dawać JEDEN deterministyczny stan całej bazy, nie tylko jednego
   // schematu. template_assets ma FK cascade, ale kasujemy jawnie — kolejność

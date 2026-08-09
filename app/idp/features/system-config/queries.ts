@@ -6,6 +6,7 @@ import type {
   ApplicationScope,
   ApplicationScopeGrant,
   AttachOpenwebuiGroupInput,
+  InstanceAppearance,
   OpenwebuiGroupMapping,
   OpenwebuiRoleGroupState,
   OpenwebuiSyncResult,
@@ -32,6 +33,7 @@ export const queryKeys = {
   unactivatedNativeApplications: () =>
     [...queryKeys.applications(), "unactivated-native"] as const,
   roleOpenwebuiGroup: (id: string) => [...queryKeys.roles(), id, "openwebui-group"] as const,
+  appearance: () => [...queryKeys.all, "appearance"] as const,
 }
 
 export const endpoints = {
@@ -96,5 +98,13 @@ export const endpoints = {
     // manifestu, nie POST/create (ten zostaje wyłącznie dla external-link/iframe).
     activate: (code: string) =>
       apiClient.post<Application>(`${BASE}/applications/activate`, { jsonBody: { code } }),
+  },
+  // Wygląd instancji (E5). Tylko panel administratora tędy chodzi — zwykły
+  // użytkownik dostaje preset instancji wyrenderowany w HTML-u, bez zapytania
+  // (patrz app/idp/lib/presets/instance-preset.tsx).
+  appearance: {
+    get: () => apiClient.get<InstanceAppearance>(`${BASE}/appearance`),
+    set: (preset: string | null) =>
+      apiClient.put<InstanceAppearance>(`${BASE}/appearance`, { jsonBody: { preset } }),
   },
 }
