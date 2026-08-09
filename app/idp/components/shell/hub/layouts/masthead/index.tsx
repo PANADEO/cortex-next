@@ -9,8 +9,8 @@ import { WorkspaceTabs } from "./workspace-tabs"
 
 /**
  * Layout `masthead` — redesign huba Cezarego (`19e1dd2`), zaparkowany co do
- * elementu. NIEOSIĄGALNY do E3: `DEFAULT_HUB_LAYOUT` wskazuje `classic`, a
- * presetu, który mógłby wskazać ten, jeszcze nie ma.
+ * elementu. NIEOSIĄGALNY do E4: wskazuje go preset `domino`, ale presetu nie
+ * da się wybrać — nie ma przełącznika, i to celowo (patrz `DEFAULT_PRESET`).
  *
  * Dlaczego stoi tu już teraz, skoro nikt go nie renderuje: E0 wniósł ten DOM
  * PODMIENIAJĄC hub zamiast dokładając wariant, więc jedyna alternatywa dla

@@ -1,28 +1,13 @@
 "use client"
 
 import { useSetUserPreferences, useShellUser } from "@cortex/api"
-import { SkinToggle, type SkinOption, ThemeToggle, UserMenu } from "@cortex/ui"
+import { ThemeToggle, UserMenu } from "@cortex/ui"
 import Image from "next/image"
-import { SKINS, type SkinId, useSkinStore } from "@/lib/stores/skin-store"
 import { useThemeStore } from "@/lib/stores/theme-store"
-
-const SKIN_SWATCHES: Record<SkinId, readonly [string, string, string]> = {
-  default: ["#0a0a0a", "#f5f5f5", "#a3a3a3"],
-  customs: ["#f97316", "#15803d", "#fbbf24"],
-}
-
-const SKIN_OPTIONS: readonly SkinOption<SkinId>[] = SKINS.map((s) => ({
-  id: s.id,
-  label: s.label,
-  description: s.description,
-  swatch: SKIN_SWATCHES[s.id],
-}))
 
 export function ShellHeader() {
   const themeMode = useThemeStore((s) => s.mode)
   const setThemeMode = useThemeStore((s) => s.setMode)
-  const skin = useSkinStore((s) => s.skin)
-  const setSkin = useSkinStore((s) => s.setSkin)
   const persistPreferences = useSetUserPreferences()
   const shellUser = useShellUser()
 
@@ -42,7 +27,8 @@ export function ShellHeader() {
         </div>
         <div className="flex-1" />
         <div className="flex items-center gap-1">
-          <SkinToggle skin={skin} options={SKIN_OPTIONS} onSkinChange={setSkin} />
+          {/* Bez przełącznika wyglądu do E4 — uzasadnienie przy
+              `DEFAULT_PRESET` w `lib/presets/registry.ts`. */}
           <ThemeToggle
             mode={themeMode}
             onModeChange={(next) => {

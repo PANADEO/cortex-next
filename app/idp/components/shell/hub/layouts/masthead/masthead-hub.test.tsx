@@ -4,8 +4,9 @@ import type { HubTile } from "@cortex/api"
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-// Layout `masthead` jest do E3 nieosiągalny w aplikacji (`DEFAULT_HUB_LAYOUT`
-// wskazuje `classic`), więc bez tego pliku jego DOM nie byłby renderowany
+// Layout `masthead` jest do E4 nieosiągalny w aplikacji (layout bierze się z
+// `hubLayout` domyślnego presetu, a ten wskazuje `classic`, i nie ma
+// przełącznika, który wskazałby inny), więc bez tego pliku jego DOM nie byłby renderowany
 // NIGDZIE — a zaparkowany kod, którego nic nie uruchamia, gnije po cichu.
 // Test montuje go bezpośrednio na prawdziwym `useHubModel()`, bo pilnowane
 // niżej liczniki są własnością pary model+layout, nie samego markupu.
@@ -57,7 +58,8 @@ vi.mock("@/features/cortex-cowork", () => ({
   useCoworkProjectTiles: () => ({ tiles: [], projects: [], isLoading: false }),
 }))
 
-import { DEFAULT_HUB_LAYOUT, HUB_LAYOUTS } from "../../registry"
+import { DEFAULT_PRESET, PRESETS } from "@/lib/presets/registry"
+import { HUB_LAYOUTS } from "../../registry"
 import { useHubModel } from "../../use-hub-model"
 import { MastheadHub } from "./index"
 
@@ -85,7 +87,12 @@ describe("layout huba: masthead", () => {
   // zarejestrowany i czy nadal nie jest domyślny", i tylko to jest tu badane.
   it("jest w rejestrze, ale nieosiągalny — domyślnym layoutem zostaje `classic`", () => {
     expect(new Set(Object.keys(HUB_LAYOUTS))).toContain("masthead")
-    expect(DEFAULT_HUB_LAYOUT).toBe("classic")
+    // Po E3 domyślny layout nie jest już własną stałą, tylko polem presetu
+    // domyślnego — i to jest jedyne miejsce, gdzie „masthead nieosiągalny"
+    // da się jeszcze sprawdzić, bo przełącznika presetów nie ma. Ten `expect`
+    // ma zapalić się na czerwono w E4, kiedy Domino stanie się domyślne albo
+    // wybieralne, i to jest jego zadanie: wymusić świadomą zmianę tego pliku.
+    expect(PRESETS[DEFAULT_PRESET].hubLayout).toBe("classic")
   })
 
   // Hub pokazuje DWIE różne liczby kafelków naraz: masthead liczy cały katalog,

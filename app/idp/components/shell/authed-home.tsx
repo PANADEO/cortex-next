@@ -1,10 +1,11 @@
 "use client"
 
+import { usePreset } from "@/lib/presets/preset-store"
 import type { TileHrefOverrides } from "@/lib/tiles"
 import { EmptyState, LoadingState } from "@cortex/ui"
 import { Search } from "lucide-react"
 import { DotGrid } from "./dot-grid"
-import { DEFAULT_HUB_LAYOUT, HUB_LAYOUTS } from "./hub/registry"
+import { HUB_LAYOUTS } from "./hub/registry"
 import { useHubModel } from "./hub/use-hub-model"
 import { ShellFooter } from "./shell-footer"
 import { ShellHeader } from "./shell-header"
@@ -39,9 +40,17 @@ interface AuthedHomeProps {
  */
 export function AuthedHome({ tileHrefOverrides }: AuthedHomeProps) {
   const model = useHubModel(tileHrefOverrides)
-  // E3 podmieni tę stałą na `hubLayout` z aktywnego presetu; kształt odczytu
-  // (klucz -> komponent z rejestru) jest już docelowy.
-  const Hub = HUB_LAYOUTS[DEFAULT_HUB_LAYOUT]
+  const preset = usePreset()
+  // Jedyne miejsce, w którym preset spotyka layout. Bez `if` po
+  // identyfikatorze presetu: host nie zna ani nazw layoutów, ani nazw
+  // presetów — dostaje klucz i sięga po komponent (D3, warstwa 3).
+  //
+  // Rozjazd hydratacji jest tu wykluczony konstrukcją, nie szczęściem:
+  // `persist` zustanda czyta `localStorage` synchronicznie, więc serwer i
+  // klient mogą się różnić presetem — ale ta gałąź renderuje się wyłącznie
+  // przy `state === "ready"`, a katalog przychodzi z zapytania, którego na
+  // serwerze nie ma. Pierwszy render po obu stronach to `LoadingState`.
+  const Hub = HUB_LAYOUTS[preset.hubLayout]
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background text-foreground">

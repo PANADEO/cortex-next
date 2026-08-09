@@ -9,14 +9,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
   Button,
-  SkinToggle,
   ThemeToggle,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
   UserMenu,
-  type SkinOption,
 } from "@cortex/ui"
 import { Bell, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react"
 import Link from "next/link"
@@ -24,21 +22,8 @@ import { usePathname } from "next/navigation"
 import { Fragment, useEffect, useState } from "react"
 import { useResolvedBreadcrumbs } from "../lib/breadcrumbs"
 import { useSidebarStore } from "../lib/stores/sidebar-store"
-import { SKINS, useSkinStore, type SkinId } from "../lib/stores/skin-store"
 import { useThemeStore } from "../lib/stores/theme-store"
 import { CommandPalette } from "./command-palette"
-
-const SKIN_SWATCHES: Record<SkinId, readonly [string, string, string]> = {
-  default: ["#0a0a0a", "#f5f5f5", "#a3a3a3"],
-  customs: ["#f97316", "#15803d", "#fbbf24"],
-}
-
-const SKIN_OPTIONS: readonly SkinOption<SkinId>[] = SKINS.map((s) => ({
-  id: s.id,
-  label: s.label,
-  description: s.description,
-  swatch: SKIN_SWATCHES[s.id],
-}))
 
 interface TopbarProps {
   showSidebarToggle?: boolean
@@ -50,8 +35,6 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
   const toggle = useSidebarStore((s) => s.toggle)
   const themeMode = useThemeStore((s) => s.mode)
   const setThemeMode = useThemeStore((s) => s.setMode)
-  const skin = useSkinStore((s) => s.skin)
-  const setSkin = useSkinStore((s) => s.setSkin)
   const persistPreferences = useSetUserPreferences()
   const shellUser = useShellUser()
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -140,7 +123,13 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
             </TooltipTrigger>
             <TooltipContent side="bottom">Notifications</TooltipContent>
           </Tooltip>
-          <SkinToggle skin={skin} options={SKIN_OPTIONS} onSkinChange={setSkin} />
+          {/* Przełącznika wyglądu tu NIE MA i to jest decyzja, nie niedoróbka
+              — powód przy `DEFAULT_PRESET` w `lib/presets/registry.ts`.
+              Skrót: preset `domino` renderowałby dziś hub bez ani jednej
+              reguły CSS. `SkinToggle` z `@cortex/ui` zostaje nietknięty, bo
+              jego props (`id`/`label`/`description`/`swatch`) to dokładnie
+              kształt `Preset` — E4 podłącza go do `PRESETS` i to jest cała
+              zmiana po stronie tego pliku. */}
           <ThemeToggle
             mode={themeMode}
             onModeChange={(next) => {

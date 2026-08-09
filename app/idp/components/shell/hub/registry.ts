@@ -15,8 +15,10 @@ import type { HubLayoutProps } from "./types"
  *
  * Oba wpisy zostają na stałe — to jest konsekwencja D2 przyjęta świadomie,
  * nie stan przejściowy: `classic` dla instancji bez presetu Domino,
- * `masthead` dla niego. `masthead` jest dziś osiągalny wyłącznie przez zmianę
- * `DEFAULT_HUB_LAYOUT` niżej; wyboru z UI dostarcza E3.
+ * `masthead` dla niego. Który z nich się renderuje, rozstrzyga `hubLayout`
+ * aktywnego presetu (`lib/presets/registry.ts`) — a że przełącznika presetów
+ * jeszcze nie ma, `masthead` jest osiągalny wyłącznie przez podmianę
+ * `DEFAULT_PRESET`. Powód, dla którego nie ma, stoi przy tamtej stałej.
  *
  * `satisfies` zamiast adnotacji typu: zachowuje wąski typ kluczy, więc
  * `HubLayoutId` to realna unia identyfikatorów, a nie `string`.
@@ -27,6 +29,3 @@ export const HUB_LAYOUTS = {
 } satisfies Record<string, ComponentType<HubLayoutProps>>
 
 export type HubLayoutId = keyof typeof HUB_LAYOUTS
-
-/** Do czasu presetów (E3) wybór layoutu jest stały — ale już w jednym miejscu. */
-export const DEFAULT_HUB_LAYOUT: HubLayoutId = "classic"
