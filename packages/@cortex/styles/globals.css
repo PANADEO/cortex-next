@@ -60,6 +60,33 @@
     --sidebar-width: 15rem;
     --sidebar-width-icon: 3rem;
     --header-height: 3.5rem;
+
+    /* Warstwa 1 (D3): to, co dotąd było wpisane na sztywno w
+       `tailwind.config.ts` albo w klasy komponentów. Wartości domyślne są
+       DOKŁADNIE dzisiejsze — same tokeny nie mają prawa przesunąć piksela. */
+    /* Jedyny z tych siedmiu, który realnie rusza układ: zmierzone pod Domino
+       (2px) nagłówek rośnie 57→58 px, siatka zjeżdża o 8 px, dokument o 9 px.
+       Podmiana kroju NIE rusza nic — sprawdzone po `document.fonts.ready`. */
+    --border-width: 1px;
+    --shadow-card: 0 1px 3px 0 hsl(0 0% 0% / 0.1);
+    /* Sam krój, bez fallbacków — stos generyczny dokłada `tailwind.config.ts`.
+       DOSŁOWNIE `Inter`, a nie `var(--font-inter)` z projektu: `next/font`
+       rozwija tę zmienną w `'Inter', 'Inter Fallback'`, czyli DOKŁADA przed
+       stos generyczny swój krój zastępczy o dopasowanych metrykach. Rodzina
+       `Inter` z `@font-face` jest ta sama w obu wariantach, więc nic by się nie
+       zepsuło od razu — ale zmieniłby się fallback KAŻDEGO elementu w
+       aplikacji, a to decyzja o typografii, nie skutek uboczny tokenizacji.
+       Domyślne `--font-mono` to pierwsza pozycja stosu mono Tailwinda — patrz
+       `slice(1)` w configu. */
+    --font-sans: Inter;
+    --font-mono: ui-monospace;
+    /* Jedyny token bez ścieżki użycia: Tailwind nie ma skali `textTransform`,
+       więc nie powstanie z tego żadne `uppercase-label`. Konsument dopisuje
+       E4 — albo `[text-transform:var(--label-transform)]`, albo klasa
+       komponentu. Nie szukaj narzędzia, którego nikt nie wygenerował. */
+    --label-transform: none;
+    --label-tracking: 0;
+    --tile-min-height: 11.5rem;
   }
 
   .dark {
@@ -191,6 +218,52 @@
     --sidebar-accent-foreground: 40 40% 94%;
     --sidebar-border: 142 40% 18%;
     --sidebar-ring: 24 100% 58%;
+  }
+
+  /* Domino — WYŁĄCZNIE wartości, ani jednej reguły układu (D3/D8). Reguły
+     strukturalne tego wyglądu (`.ch-mast`, `.ch-tile`, `.ch-tab`, …) należą do
+     E4 i nie powstają tutaj: skin, który zaczyna układać elementy, przestaje
+     być wymienny. Nadpisywane są tylko te tokeny, które Domino faktycznie
+     przestawia — reszta dziedziczy z `:root`, bo `.skin-domino` siada na tym
+     samym elemencie co `:root` i wygrywa kolejnością, nie specyficznością
+     (dokładnie jak `.skin-customs` wyżej). */
+  .skin-domino {
+    --background: 43 32% 93%; /* papier  #f5f0e4 */
+    --card: 44 50% 95%; /* kafelek #fbf7eb */
+    --foreground: 40 19% 13%; /* atrament #28241d */
+    --muted-foreground: 38 14% 38%;
+    --border: 40 19% 13%; /* ramka = atrament → „twarde krawędzie” */
+
+    --chart-1: 41 67% 55%; /* amber     → akcent 1 */
+    --chart-2: 177 56% 28%; /* teal      → akcent 2 */
+    --chart-3: 17 54% 47%; /* terrakota → akcent 3 */
+
+    --radius-sm: 2px;
+    --radius-md: 2px;
+    --radius-lg: 2px;
+    --border-width: 2px;
+    --shadow-card: 2px 2px 0 hsl(var(--foreground)); /* offset, nie rozmycie */
+    /* IBM Plex rejestrowany jest w `app/idp/app/layout.tsx`, nie tutaj —
+       `next/font` generuje nazwę zmiennej w czasie builda, więc skin ładowany
+       runtime'owo nie ma jak jej dołożyć. */
+    --font-sans: var(--font-ibm-plex-sans);
+    --font-mono: var(--font-ibm-plex-mono);
+    --label-transform: uppercase;
+    --label-tracking: 0.14em;
+    --tile-min-height: 11.125rem;
+  }
+
+  .skin-domino.dark {
+    --background: 45 15% 10%;
+    --card: 42 21% 12%;
+    --foreground: 44 40% 87%;
+    --border: 44 20% 70%;
+    /* Brak tej linii w projekcie to błąd, nie pominięcie: `.dark` i
+       `.skin-domino` mają równą swoistość, a `.skin-domino` stoi później, więc
+       bez niej pod Domino w ciemnym wygrywa JASNA wartość `38 14% 38%` —
+       zmierzone 2,99:1 na tle i 2,79:1 na karcie, poniżej AA. `58%` daje
+       6,02:1 i 5,63:1, trzymając odcień Domino. */
+    --muted-foreground: 38 14% 58%;
   }
 
   * {

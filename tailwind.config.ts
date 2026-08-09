@@ -6,11 +6,29 @@ const config: Config = {
   darkMode: ["class"],
   content: [
     "./app/**/*.{ts,tsx,mdx}",
-    "./packages/@cortex/**/*.{ts,tsx,mdx}",
+    // `*/src/**`, nie `**`: szeroki wzorzec wchodził w
+    // `packages/@cortex/*/node_modules` (dowiązania workspace'u pnpm) i
+    // generował narzędzia zależne od stanu instalacji, a nie od kodu — stąd
+    // ostrzeżenie Tailwinda w logu builda. Poza `src/` nie ma w tych pakietach
+    // ani jednego pliku z `className`/`cva` (configi drizzle i testy skryptów).
+    "./packages/@cortex/*/src/**/*.{ts,tsx,mdx}",
     "./.ladle/**/*.{ts,tsx}",
   ],
   // Skin classes applied via classList at runtime — keep them in the bundle.
-  safelist: ["skin-customs"],
+  // DOPISZ TU KAŻDY NOWY `.skin-*`. Pominięcie nie objawia się brakiem skinu,
+  // tylko skinem DZIAŁAJĄCYM WYŁĄCZNIE W CIEMNYM: purge warstwy `base` wycina
+  // `.skin-x`, ale zostawia `.skin-x.dark`, bo token `dark` występuje w
+  // źródłach. Objaw nie wskazuje na safelistę i diagnozuje się go od zera.
+  //
+  // Kuszący `{ pattern: /^skin-/ }` NIE DZIAŁA i jest gorszy niż brak wpisu:
+  // wzorce rozwijają się po WYGENEROWANYCH narzędziach, a `.skin-*` to surowy
+  // CSS z `globals.css`, więc Tailwind ostrzega „doesn't match any Tailwind CSS
+  // classes" i wycina oba skiny naraz — sprawdzone. Odrzucone też wciągnięcie
+  // `globals.css` do `content`: skiny przeżywają, ale skaner tokenizuje treść i
+  // komentarze tego pliku, produkując narzędzia-widma (`.antialiased`,
+  // `.[text-transform:var(--label-transform)]`) — czyli ten sam problem, który
+  // zawężenie globu wyżej właśnie usuwa.
+  safelist: ["skin-customs", "skin-domino"],
   theme: {
     container: {
       center: true,
@@ -96,18 +114,40 @@ const config: Config = {
         xl: "var(--radius-xl)",
         "2xl": "var(--radius-2xl)",
       },
+      // Tokenem jest wyłącznie PIERWSZA pozycja stosu, fallbacki zostają
+      // literałami — inaczej skin, który podmienia krój, kasowałby też stos
+      // zapasowy. Stąd `slice(1)` przy mono: domyślny stos zaczyna się od
+      // `ui-monospace`, więc token dublowałby tę pozycję. Wariant z projektu
+      // (`--font-mono: ui-monospace, monospace` przed pełnym stosem) jest gorszy
+      // niż kosmetyczny duplikat: `monospace` to rodzina GENERYCZNA, zawsze
+      // rozwiązywalna, więc ucina łańcuch i zabija SFMono-Regular, Menlo,
+      // Consolas i Liberation Mono, które nigdy nie dostają szansy.
       fontFamily: {
-        sans: ["Inter", ...fontFamily.sans],
-        mono: [...fontFamily.mono],
+        sans: ["var(--font-sans)", ...fontFamily.sans],
+        mono: ["var(--font-mono)", ...fontFamily.mono.slice(1)],
       },
       fontSize: {
         sm: ["0.813rem", { lineHeight: "1.143" }],
+      },
+      // DEFAULT tokenizuje samo `border`, więc każdy istniejący komponent staje
+      // się skin-aware bez dotykania go; `token` jest jawnym wariantem dla
+      // miejsc, które mają deklarować tę zależność wprost (app-shell, tile-menu).
+      borderWidth: {
+        DEFAULT: "var(--border-width)",
+        token: "var(--border-width)",
+      },
+      boxShadow: {
+        card: "var(--shadow-card)",
       },
       letterSpacing: {
         tighter: "-0.05em",
         tight: "-0.025em",
         normal: "0",
         wide: "0.025em",
+        label: "var(--label-tracking)",
+      },
+      minHeight: {
+        tile: "var(--tile-min-height)",
       },
       transitionTimingFunction: {
         "in-out": "cubic-bezier(0.4, 0, 0.2, 1)",
