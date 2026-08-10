@@ -45,11 +45,11 @@ set -euo pipefail
 REMOTE_HOST="cortex-next"
 # Nazwa katalogu na serwerze (względem $HOME) — ta sama, którą stawia
 # sync-cortex-next.sh. Jest jednocześnie nazwą projektu Compose, a więc
-# prefiksem nazw obrazów. Jeśli katalog na serwerze się zmieni, ta zmienna MUSI
-# pójść za nim — inaczej Compose nie rozpozna wgranych obrazów i zacznie budować
-# u siebie, czyli wróci dokładnie ten OOM, przed którym ten skrypt chroni.
+# prefiksem nazw obrazów, i MUSI być równa `IMAGE_PREFIX` w `.env` tamtej
+# instancji (patrz docker-compose.server.yml). Rozjazd = Compose nie rozpozna
+# wgranych obrazów i zacznie budować u siebie, czyli wróci dokładnie ten OOM,
+# przed którym ten skrypt chroni.
 REMOTE_DIR="cortex-frontend-experiment"
-PROJECT="$REMOTE_DIR"
 PLATFORM="linux/amd64"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -72,7 +72,12 @@ context_for() {
 
 usage() {
   cat <<EOF
-Użycie: $(basename "$0") [--prune] [all | <usługa> ...]
+Użycie: $(basename "$0") [--host <alias-ssh>] [--dir <katalog>] [--prune] [all | <usługa> ...]
+
+  --host    instancja docelowa (domyślnie: $REMOTE_HOST)
+  --dir     katalog na serwerze = nazwa projektu Compose = prefiks nazw obrazów
+            (domyślnie: $REMOTE_DIR). MUSI się zgadzać z IMAGE_PREFIX w .env
+            tamtej instancji.
 
   Bez argumentów albo z "all" — buduje i wysyła wszystkie cztery obrazy.
   Podanie usług ogranicza robotę do nich (na co dzień zmienia się sam
@@ -95,21 +100,27 @@ EOF
 
 PRUNE=0
 SELECTED=""
-for arg in "$@"; do
-  case "$arg" in
+while [ $# -gt 0 ]; do
+  case "$1" in
     -h|--help) usage; exit 0 ;;
+    --host)    REMOTE_HOST="$2"; shift ;;
+    --dir)     REMOTE_DIR="$2";  shift ;;
     --prune)   PRUNE=1 ;;
     all)       SELECTED="$ALL_SERVICES" ;;
-    -*)        echo "Nieznana opcja: $arg" >&2; usage >&2; exit 2 ;;
+    -*)        echo "Nieznana opcja: $1" >&2; usage >&2; exit 2 ;;
     *)
-      if ! context_for "$arg" >/dev/null 2>&1; then
-        echo "Nieznana usługa: $arg" >&2; usage >&2; exit 2
+      if ! context_for "$1" >/dev/null 2>&1; then
+        echo "Nieznana usługa: $1" >&2; usage >&2; exit 2
       fi
-      SELECTED="$SELECTED $arg"
+      SELECTED="$SELECTED $1"
       ;;
   esac
+  shift
 done
 [ -n "$SELECTED" ] || SELECTED="$ALL_SERVICES"
+
+# Po sparsowaniu argumentów, bo --dir może je zmienić.
+PROJECT="$REMOTE_DIR"
 
 # Ten sam ciąg, który CI wstrzykuje jako VERSION -> NEXT_PUBLIC_SHELL_VERSION,
 # żeby na wdrożonym środowisku dało się powiedzieć, z którego commita jest

@@ -1,0 +1,125 @@
+# Override dla KAŻDEJ instancji serwerowej (cortex-next, demo-next, kolejne).
+# Jeden plik zamiast pliku per host — dwa rozjeżdżające się pliki compose
+# wywołały w tym repo już dwie awarie (martwy kafelek token-usage, martwy
+# geo-score), więc duplikat tego override'u byłby proszeniem się o trzecią.
+#
+# Różnicę między instancjami niesie WYŁĄCZNIE `.env` na serwerze:
+#
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.server.yml
+#   IMAGE_PREFIX=<nazwa katalogu wdrożenia>
+#
+# `IMAGE_PREFIX` musi być równy nazwie katalogu na serwerze, bo tak Compose
+# nazywa obrazy budowane z `docker-compose.yml` (`<projekt>-<usługa>:latest`,
+# projekt = nazwa katalogu) i tak taguje je scripts/ship-images-cortex-next.sh.
+# Rozjazd = Compose nie znajdzie wgranego obrazu.
+#
+# Co ten plik robi i dlaczego:
+#
+# 1. Sieć `run_default` zamiast izolowanej sieci per-projekt — tam żyją Caddy,
+#    oauth2-proxy, cortex-proxy i chat. Bez tego Caddy nie dosięgnie
+#    `cortex-frontend`, a aplikacja nie dosięgnie bramki LLM.
+#
+# 2. Kasuje wszystkie `build:` i przypina gotowe obrazy. Obrazy budowane są na
+#    maszynie deweloperskiej pod linux/amd64 i wysyłane tarballem
+#    (scripts/ship-images-cortex-next.sh). Serwer NIE buduje — build na
+#    dropletcie raz już wyczerpał pamięć i położył hosta razem z sshd
+#    (03.08.2026). Skoro nie ma `build:`, nie ma czego zepsuć pomyłką, a katalog
+#    na serwerze nie musi zawierać źródeł: wystarczą oba pliki compose i `.env`
+#    (zweryfikowane — zero bind mountów, wyłącznie wolumeny nazwane i tmpfs).
+#
+# 3. Zdejmuje publikację portów hosta z `cortex-frontend` i `postgres`:
+#    - port 3000 był drogą DOOKOŁA oauth2-proxy, a aplikacja ufa nagłówkowi
+#      `X-Auth-Request-Email`, więc każdy mógł przedstawić się jako dowolny
+#      użytkownik;
+#    - port 5432 wystawiał cały `system_config` (użytkownicy, role, granty) z
+#      domyślnymi `cortex/cortex`. Zweryfikowane 07.08.2026: `nc -z
+#      172.30.100.90 5432` łączyło się z każdego węzła ZeroTier.
+#    Lokalny `ufw` żadnego z nich NIE zasłania — Docker wpina reguły w łańcuch
+#    DOCKER przed regułami ufw. Na instancji z publicznym IP oba byłyby wystawione
+#    do internetu. Dostęp administracyjny zostaje przez `docker exec`, po SSH.
+#
+# 4. Usuwa `DEV_USER_EMAIL` — musi ZNIKNĄĆ, nie być puste. `getRequestEmail()`
+#    (packages/@cortex/service/src/rbac.ts) używa jej jako tożsamości przy braku
+#    nagłówka `x-auth-request-email`, a fallback jest bramkowany samą OBECNOŚCIĄ
+#    zmiennej — świadomie nie przez NODE_ENV, bo webpack zamraża NODE_ENV w
+#    bundlu. Zweryfikowane na żywo 05.08.2026 na cortex-next: `/api/me/identity`
+#    bez nagłówka zwracało 200 z kontem administratora.
+#
+# NIE używać lokalnie — `run_default` nie istnieje na maszynie deweloperskiej,
+# a lokalnie chcemy budować ze źródeł. Lokalnie zostaje samo docker-compose.yml,
+# dokładnie jak opisuje docs/local-run.md.
+#
+# UWAGA: nazwa katalogu na serwerze decyduje też o prefiksie wolumenów
+# (`<projekt>_cortex_postgres_data`), więc jego przemianowanie odetnie stack od
+# istniejącej bazy — nawet jeśli `IMAGE_PREFIX` pójdzie za nim.
+
+services:
+  postgres:
+    ports: !reset []
+    # Nazwa niezależna od instancji — docker-compose.yml ma na sztywno
+    # `cortex-next-postgres`, co na demo-next albo u klienta jest mylące.
+    # Wolumen jest prefiksowany nazwą PROJEKTU (katalogu), nie kontenera, więc
+    # przemianowanie nie odcina istniejących danych.
+    container_name: ${IMAGE_PREFIX:?ustaw IMAGE_PREFIX w .env}-postgres
+    environment:
+      # BEZ domyślki, w przeciwieństwie do docker-compose.yml (tam `cortex`
+      # jest świadomie wygodne lokalnie). `run_default` jest siecią WSPÓŁDZIELONĄ
+      # — stoją w niej Caddy, oauth2-proxy, cortex-proxy, chat, a na innych
+      # instancjach także idp. Zdjęcie `ports:` chroni przed hostem i ZeroTierem,
+      # ale NIE przed sąsiednim kontenerem; hasło jest tam jedyną granicą, więc
+      # nie może pochodzić z pliku w gicie.
+      #
+      # `:?` a nie `?`, bo puste hasło jest GORSZE niż brak: obraz postgres
+      # odmawia wtedy startu, dopóki ktoś nie doda POSTGRES_HOST_AUTH_METHOD=trust
+      # — czyli bazy przyjmującej dowolne hasło.
+      #
+      # UWAGA na znaki: hasło trafia do DATABASE_URL, które `postgres.js` parsuje
+      # jako URL. `openssl rand -base64` produkuje `/` i `+`, co rozjeżdża parsowanie
+      # (host i użytkownik wychodzą z połowy hasła, a błąd mówi o DNS, nie o haśle).
+      # Generuj URL-safe: `openssl rand -hex 32`.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?ustaw POSTGRES_PASSWORD w .env — generuj `openssl rand -hex 32` (URL-safe)}
+
+  migrate:
+    build: !reset null
+    image: ${IMAGE_PREFIX:?ustaw IMAGE_PREFIX w .env — musi być równy nazwie katalogu wdrożenia}-migrate:latest
+    environment:
+      # Host = NAZWA KONTENERA, nie nazwa usługi. Compose rejestruje na sieci
+      # alias równy nazwie usługi (`postgres`) i nie da się tego wyciszyć — a na
+      # `run_default` idp/docker-compose.image.yml ma WŁASNĄ usługę o tej samej
+      # nazwie. Goły `@postgres:5432` daje wtedy round-robin DNS między dwiema
+      # różnymi bazami. Nazwy kontenerów są unikalne, więc rozwiązują się
+      # deterministycznie. Ten sam wybieg stosuje idp (`POSTGRES_HOST=idp_postgres…`).
+      DATABASE_URL: postgres://${POSTGRES_USER:-cortex}:${POSTGRES_PASSWORD:?ustaw POSTGRES_PASSWORD w .env}@${IMAGE_PREFIX}-postgres:5432/${POSTGRES_DB:-cortex}
+
+  cortex-frontend:
+    build: !reset null
+    image: ${IMAGE_PREFIX:?ustaw IMAGE_PREFIX w .env — musi być równy nazwie katalogu wdrożenia}-cortex-frontend:latest
+    environment:
+      DEV_USER_EMAIL: !reset null
+      # Patrz komentarz przy tej samej zmiennej w usłudze `migrate`.
+      DATABASE_URL: postgres://${POSTGRES_USER:-cortex}:${POSTGRES_PASSWORD:?ustaw POSTGRES_PASSWORD w .env}@${IMAGE_PREFIX}-postgres:5432/${POSTGRES_DB:-cortex}
+    ports: !reset []
+
+  geo-score-calculator:
+    build: !reset null
+    image: ${IMAGE_PREFIX:?ustaw IMAGE_PREFIX w .env — musi być równy nazwie katalogu wdrożenia}-geo-score-calculator:latest
+
+  document-parser-backend:
+    build: !reset null
+    image: ${IMAGE_PREFIX:?ustaw IMAGE_PREFIX w .env — musi być równy nazwie katalogu wdrożenia}-document-parser-backend:latest
+
+  document-parser-unoserver:
+    build: !reset null
+    image: ${IMAGE_PREFIX:?ustaw IMAGE_PREFIX w .env — musi być równy nazwie katalogu wdrożenia}-document-parser-unoserver:latest
+
+  # Za profilem `python-template`, więc i tak nie startuje — ale `build:` musi
+  # zniknąć także tutaj, inaczej Compose przy rozwiązywaniu konfiguracji trzyma
+  # odwołanie do katalogu źródeł, którego na serwerze nie ma.
+  template-python-service:
+    build: !reset null
+    image: ${IMAGE_PREFIX:?ustaw IMAGE_PREFIX w .env — musi być równy nazwie katalogu wdrożenia}-template-python-service:latest
+
+networks:
+  default:
+    name: run_default
+    external: true

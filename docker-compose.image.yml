@@ -1,4 +1,62 @@
 services:
+  # Baza TEGO stacku. Do 07.08.2026 nie było jej tutaj wcale: DATABASE_URL
+  # występował wyłącznie w komentarzu, a plik zakładał bazę „gdzieś obok" —
+  # której nic nie stawia (zero wzmianek o postgresie w devops/playbooks/).
+  # Po otagowaniu `cortex-next` skutkowałoby to `migrate` przerywanym z
+  # „DATABASE_URL nie jest ustawione" i aplikacją, która w ogóle nie wstaje
+  # przez depends_on: service_completed_successfully.
+  #
+  # BRAK `ports:` — CELOWO, w przeciwieństwie do docker-compose.yml, który
+  # publikuje ${POSTGRES_PORT:-5432}:5432 dla wygody lokalnego klienta SQL.
+  # Tu leży cały system_config: użytkownicy, role, granty, rejestr kafelków.
+  # Zweryfikowane 07.08.2026 na cortex-next: opublikowany port był osiągalny
+  # (`nc`) z każdego węzła ZeroTier, a lokalny `ufw` tego NIE zasłania — Docker
+  # wpina reguły w łańcuch DOCKER przed regułami ufw. Dostęp administracyjny
+  # idzie przez `docker exec cortex-frontend-postgres<TAG> psql -U cortex`.
+  postgres:
+    image: postgres:16-alpine
+    # ${ENVIRONMENT_TAG} dokładnie tak samo jak w obu usługach niżej: na jednym
+    # hoście stoją równolegle instancja produkcyjna i UAT (devops:
+    # deploy-cortex-frontend.yml vs deploy-cortex-frontend-uat.yml, które
+    # wstawia ENVIRONMENT_TAG=UAT do .env). Bez tagu obie wskazywałyby jeden
+    # kontener i JEDNĄ bazę. Nazwa jest też unikalna w skali hosta:
+    # `cortex-postgres` należy do stacku cortex-admin, `idp_postgres<TAG>` do
+    # stacku idp, a `cortex-next-postgres` do docker-compose.yml.
+    container_name: cortex-frontend-postgres${ENVIRONMENT_TAG}
+    restart: unless-stopped
+    environment:
+      # BEZ wartości domyślnej, w przeciwieństwie do docker-compose.yml, gdzie
+      # `cortex/cortex` jest jawnie opisane jako WYŁĄCZNIE lokalne. Ten plik
+      # jedzie na instancje klienckie, a sieć `run_default` jest współdzielona
+      # (Caddy, oauth2-proxy, cortex-proxy, chat, idp...) — brak `ports:` chroni
+      # przed hostem i siecią ZeroTier, ale NIE przed sąsiednim kontenerem.
+      # Hasło jest tam jedyną granicą, więc nie może pochodzić z pliku w gicie.
+      #
+      # `:?` a nie `?`: puste POSTGRES_PASSWORD jest GORSZE niż nieustawione —
+      # obraz postgres odmawia wtedy startu, dopóki ktoś nie doda
+      # POSTGRES_HOST_AUTH_METHOD=trust, czyli bazy przyjmującej dowolne hasło.
+      # Compose przerywa z tym komunikatem, zanim cokolwiek wstanie.
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?ustaw POSTGRES_PASSWORD w .env — docker-compose.image.yml nie ma domyslnego hasla}"
+      # Nazwa użytkownika i bazy to nie sekrety. Domyślki są te same co w
+      # docker-compose.yml i trzymają DATABASE_URL niżej deterministycznym.
+      POSTGRES_USER: ${POSTGRES_USER:-cortex}
+      POSTGRES_DB: ${POSTGRES_DB:-cortex}
+    volumes:
+      - cortex_frontend_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cortex} -d ${POSTGRES_DB:-cortex}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+
   # Krok wdrożeniowy uruchamiany PRZED aplikacją i kończący się (patrz
   # docker-compose.yml, ta sama usługa z komentarzem "dlaczego"). Powłoka czyta
   # uprawnienia z Postgresa i jest fail-closed, więc deploy na bazę bez migracji
@@ -14,8 +72,31 @@ services:
     image: ghcr.io/panadeo/cortex-frontend:${IMAGE_TAG:-latest}
     container_name: cortex-frontend-migrate${ENVIRONMENT_TAG}
     restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
     env_file:
       - .env
+    environment:
+      # `environment:` WYGRYWA z `env_file:` wyżej, więc wpisanie tu gotowego
+      # adresu odcięłoby możliwość nadpisania go z .env. Stąd interpolacja:
+      # Compose czyta .env środowiska także po to, żeby rozwinąć ${...} (tak
+      # samo działa IMAGE_TAG i ENVIRONMENT_TAG), więc DATABASE_URL w .env
+      # nadal wygrywa, a domyślka celuje w usługę `postgres` wyżej.
+      #
+      # `:-` a nie `-` (odwrotnie niż DEV_USER_EMAIL w docker-compose.yml):
+      # tam puste `DEV_USER_EMAIL=` to świadomy WYŁĄCZNIK fallbacku tożsamości,
+      # więc domyślka nie może się dla niego podstawiać. Tutaj pusty adres bazy
+      # nie znaczy nic — nie ma trybu „bez bazy", powłoka jest fail-closed —
+      # i dawałby dokładnie ten błąd, który ta usługa ma usunąć. Puste = tak
+      # samo jak nieustawione: baza z tego stacku.
+      #
+      # Host to NAZWA KONTENERA, nie alias usługi `postgres`. Sieć run_default
+      # jest współdzielona, a idp/docker-compose.image.yml ma na niej własną
+      # usługę o nazwie `postgres` — bare `postgres:5432` byłoby tam nazwą
+      # dwuznaczną (round-robin DNS między dwiema różnymi bazami). Dokładnie
+      # dlatego idp adresuje swoją przez `idp_postgres${ENVIRONMENT_TAG}`.
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-cortex}:${POSTGRES_PASSWORD}@cortex-frontend-postgres${ENVIRONMENT_TAG}:5432/${POSTGRES_DB:-cortex}}
     command:
       - sh
       - -c
@@ -40,11 +121,17 @@ services:
     container_name: cortex-frontend${ENVIRONMENT_TAG}
     restart: unless-stopped
     depends_on:
+      postgres:
+        condition: service_healthy
       migrate:
         condition: service_completed_successfully
     env_file:
       - .env
     environment:
+      # Ta sama wartość i to samo uzasadnienie co przy usłudze `migrate` wyżej
+      # (precedencja environment/env_file, `:-`, adresowanie po nazwie
+      # kontenera). Musi być IDENTYCZNA — migracje i aplikacja czytają jedną bazę.
+      - DATABASE_URL=${DATABASE_URL:-postgres://${POSTGRES_USER:-cortex}:${POSTGRES_PASSWORD}@cortex-frontend-postgres${ENVIRONMENT_TAG}:5432/${POSTGRES_DB:-cortex}}
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
       - PORT=80
@@ -78,3 +165,14 @@ volumes:
   cortex_frontend_ai_tools_history:
   cortex_frontend_cowork_data:
   cortex_frontend_okna_czasowe_data:
+  # Jedyny wolumen z jawnym `name:`. Pozostałe rozdziela dziś WYŁĄCZNIE prefiks
+  # nazwy projektu, czyli nazwa katalogu wdrożenia (/home/itsg/cortex-frontend
+  # vs /home/itsg/cortex-frontend-uat) — ta sama ukryta zależność, przed którą
+  # ostrzega nagłówek docker-compose.cortex-next.yml. Dla katalogu z bazą cena
+  # pomyłki jest inna niż dla historii AI Tools: podpięcie pustego wolumenu
+  # znaczy `migrate` na czystej bazie i utratę kont, ról i grantów. Dlatego
+  # nazwa jest parametryzowana tym samym ${ENVIRONMENT_TAG} co kontenery —
+  # a jeśli ktoś ten tag zgubi, kolizja container_name zatrzyma deploy
+  # GŁOŚNO, zanim dwie instancje zdążą współdzielić jedną bazę.
+  cortex_frontend_postgres_data:
+    name: cortex-frontend-postgres-data${ENVIRONMENT_TAG}
