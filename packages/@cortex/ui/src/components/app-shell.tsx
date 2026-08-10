@@ -1,7 +1,23 @@
 "use client"
 
 import { cn } from "@cortex/utils"
+import { cva } from "class-variance-authority"
 import type { ReactNode } from "react"
+
+/**
+ * Kształt powłoki. Unia literałowa, nie `string` — ta sama konstrukcja co
+ * `variant` w `hub/tile-card.tsx`. Pakiet celowo NIE importuje typu z
+ * `lib/presets/registry.ts`: kierunek zależności jest odwrotny, aplikacja
+ * zależy od pakietu prymitywów, nie na odwrót.
+ *
+ * PARZYSTOŚCI Z `ShellVariant` PILNUJE `pnpm typecheck`, NIE TEST. Sprawdzone
+ * mutacją w obie strony: poszerzenie unii po którejkolwiek stronie daje błędy
+ * `tsc` (tu — w tabelach CVA w tym pakiecie; po stronie aplikacji — w
+ * `layout.tsx`, `topbar.tsx`, `version-label.tsx`), a `vitest` przechodzi na
+ * zielono. Wcześniejsza wersja tego komentarza wskazywała test i była
+ * nieprawdziwa.
+ */
+export type AppShellVariant = "plain" | "ruled"
 
 interface AppShellProps {
   sidebar?: ReactNode
@@ -10,23 +26,65 @@ interface AppShellProps {
   className?: string
   mainClassName?: string
   sidebarCollapsed?: boolean
+  /** Domyślnie `plain` — czyli wygląd sprzed wprowadzenia wariantów. Domyślna
+   *  wartość jest tu zabezpieczeniem, nie wygodą: konsument, który nie wie o
+   *  presetach, ma dostać dokładnie to, co dostawał wcześniej. */
+  variant?: AppShellVariant
 }
 
 /**
- * Tło, ramki i kolory idą TOKENAMI (`bg-sidebar`, `border-sidebar-border`,
- * `border-border`) i tak zostaje — E2 tego nie tknie.
+ * PODZIAŁ WARSTW, PRECYZYJNIE: warstwa 1 jest właścicielem WARTOŚCI, warstwa 2
+ * wybiera ROLĘ SEMANTYCZNĄ i kształt.
  *
- * Wariant z gałęzi Domino (`ef85991`) wymieniał je na klasy `ch-*` czytające
- * `--ch-*` z `:root`, działające wyłącznie pod scope'em `.cortex-chrome`.
- * Odrzucone i wycofane z dwóch powodów. Po pierwsze, `@cortex/ui` jest pakietem
- * współdzielonym: komponent wyrenderowany poza tym jednym scope'em traci tło i
- * ramki, więc koszt płaci każdy przyszły konsument, nie tylko autor skinu. Po
- * drugie — i to jest właściwy argument — powłoka zostaje na warstwie 1 (D5,
- * PROJECT/cortex-frontend/ARTIFACTS/cortex-frontend-presety-wygladu-projekt.md):
- * dowodem jest to, że `ef85991` nie zmienił DOM-u ani o jeden element, więc
- * cały chrome wyraża się samymi wartościami tokenów. Skin przemalowuje go,
- * nadpisując `--sidebar`/`--border` w bloku `.skin-*`, i nie potrzebuje ani
- * jednej własnej reguły układu ani drugiego zestawu klas.
+ * W tym pliku wariant zmienia wyłącznie grubość linii — `bg-sidebar`,
+ * `border-sidebar-border` i `border-border` siedzą w bazie i nie zależą od
+ * niego, bo skin przemalowuje je sam (`.skin-domino` ustawia `--border` na
+ * atrament).
+ *
+ * Ale sformułowanie „wariant zmienia WYŁĄCZNIE grubość" byłoby regułą
+ * fałszywą dla reszty powłoki i tak było tu napisane: `tile-menu.tsx`,
+ * `topbar.tsx` i `version-label.tsx` podmieniają pod `ruled` także TOKEN
+ * (`bg-muted/40` → `bg-sidebar-accent`, `text-muted-foreground` →
+ * `text-sidebar-foreground`). To jest legalne i jest sednem podziału: wariant
+ * mówi, KTÓRĄ rolę element gra, a skin — jak ta rola wygląda. Nielegalne
+ * byłoby dopiero wpisanie w tabelę wariantu wartości koloru zamiast tokena.
+ */
+const shell = {
+  aside: cva(
+    "hidden shrink-0 border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:flex md:flex-col",
+    {
+      variants: {
+        variant: { plain: "border-r", ruled: "border-r-2" },
+      },
+      defaultVariants: { variant: "plain" },
+    },
+  ),
+  header: cva("flex h-header shrink-0 items-center gap-3 border-border bg-background px-4", {
+    variants: {
+      variant: { plain: "border-b", ruled: "border-b-2" },
+    },
+    defaultVariants: { variant: "plain" },
+  }),
+}
+
+/**
+ * Kolory powłoki idą TOKENAMI (`bg-sidebar`, `border-sidebar-border`,
+ * `border-border`) i tak zostaje — skin przemalowuje je, nadpisując wartości w
+ * bloku `.skin-*`, bez dotykania tego pliku.
+ *
+ * Wariant z gałęzi Domino (`ef85991`) wymieniał te klasy na `ch-*`, czytające
+ * `--ch-*` i działające wyłącznie pod scope'em `.cortex-chrome`. Odrzucone i
+ * wycofane: `@cortex/ui` jest pakietem współdzielonym, więc komponent
+ * wyrenderowany poza tym scope'em tracił tło i ramki — koszt płacił każdy
+ * przyszły konsument, nie tylko autor skinu. Co gorsza, ręczna klasa kodowała
+ * JEDEN wygląd, więc drugi preset nie miał jak istnieć obok niej.
+ *
+ * KOREKTA WCZEŚNIEJSZEGO ZAPISU. Ten nagłówek twierdził dotąd, że powłoka
+ * zostaje w całości na warstwie 1, a dowodem miało być to, że `ef85991` nie
+ * zmienił DOM-u ani o jeden element. Wniosek był za szeroki: tamten commit
+ * zmieniał także grubość krawędzi, krój i wersaliki etykiet oraz twardy cień
+ * przy hoverze — decyzje o KSZTAŁCIE, których żadna wartość tokena nie
+ * wyrazi. Kolory rzeczywiście zostały na warstwie 1; kształt dostał wariant.
  */
 export function AppShell({
   sidebar,
@@ -35,13 +93,14 @@ export function AppShell({
   className,
   mainClassName,
   sidebarCollapsed = false,
+  variant = "plain",
 }: AppShellProps) {
   return (
     <div className={cn("flex h-screen overflow-hidden bg-background", className)}>
       {sidebar ? (
         <aside
           className={cn(
-            "hidden shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:flex md:flex-col",
+            shell.aside({ variant }),
             sidebarCollapsed ? "w-sidebar-icon" : "w-sidebar",
           )}
           data-collapsed={sidebarCollapsed || undefined}
@@ -50,11 +109,7 @@ export function AppShell({
         </aside>
       ) : null}
       <div className="flex min-w-0 flex-1 flex-col">
-        {topbar ? (
-          <header className="flex h-header shrink-0 items-center gap-3 border-b border-border bg-background px-4">
-            {topbar}
-          </header>
-        ) : null}
+        {topbar ? <header className={shell.header({ variant })}>{topbar}</header> : null}
         <main className={cn("flex min-h-0 flex-1 flex-col overflow-y-auto", mainClassName)}>
           {children}
         </main>

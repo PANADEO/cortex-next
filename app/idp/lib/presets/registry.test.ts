@@ -29,6 +29,16 @@ describe("rejestr presetów", () => {
     }
   })
 
+  // Ten sam kształt asercji co wyżej, dla czwartej osi wariantu. Kompilator
+  // wymusza obecność pola przez `Record<PresetId, Preset>`, ale nie łapie
+  // literówki w WARTOŚCI, jeśli ktoś rozszerzy unię `ShellVariant` i zapomni
+  // dołożyć gałąź w tabeli CVA — wtedy `cva` cicho zwróci samą bazę.
+  it("każdy preset ma wariant powłoki z zamkniętej listy", () => {
+    for (const preset of Object.values(PRESETS)) {
+      expect(["plain", "ruled"]).toContain(preset.variants.shell)
+    }
+  })
+
   /**
    * §5d: pominięcie klasy skinu na safeliście Tailwinda NIE objawia się brakiem
    * skinu. Purge warstwy `base` wycina bare `.skin-x`, ale zostawia

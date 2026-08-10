@@ -1,7 +1,21 @@
 "use client"
 
 import { useModuleVersion } from "@cortex/api"
+import { cva } from "class-variance-authority"
+import { usePreset } from "@/lib/presets/preset-store"
 import { TILES } from "@/lib/tiles"
+
+/** Stopka paska bocznego. Pod `ruled` numer wersji jest monospace'owy i pisany
+ *  wersalikami — jak stopka druku, spójnie z etykietami sekcji w menu. */
+const versionText = cva("px-2", {
+  variants: {
+    variant: {
+      plain: "text-[10px] text-muted-foreground",
+      ruled: "font-mono text-[11px] uppercase text-sidebar-foreground",
+    },
+  },
+  defaultVariants: { variant: "plain" },
+})
 
 // Inlined at build time (Next.js NEXT_PUBLIC_ vars are compiled into the
 // bundle, not read at runtime). In prod, Dockerfile/GHA set it from
@@ -18,6 +32,7 @@ interface VersionLabelProps {
 }
 
 export function VersionLabel({ tileId }: VersionLabelProps) {
+  const variant = usePreset().variants.shell
   const tile = TILES.find((t) => t.id === tileId)
   const { data, isLoading, isError } = useModuleVersion(tile?.versionEndpoint)
 
@@ -34,7 +49,7 @@ export function VersionLabel({ tileId }: VersionLabelProps) {
   }
 
   return (
-    <p className="px-2 text-[10px] text-muted-foreground">
+    <p className={versionText({ variant })}>
       {fePart} · {modulePart}
     </p>
   )

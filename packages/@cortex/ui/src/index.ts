@@ -107,6 +107,10 @@ export { CortexDataGrid } from "./components/cortex-data-grid"
 export type { CortexDataGridProps } from "./components/cortex-data-grid"
 export { EmptyState } from "./components/empty-state"
 export { AppShell } from "./components/app-shell"
+// Typ MUSI wyjść przez barrel razem z komponentem: konsument spoza tego repo
+// nie ma jak nazwać wartości, którą podaje w `variant`, a to jest dokładnie
+// przypadek, dla którego wariant jedzie propsem, a nie kontekstem.
+export type { AppShellVariant } from "./components/app-shell"
 export { TileMenu } from "./components/tile-menu"
 export type { TileMenuItem, TileMenuSection } from "./components/tile-menu"
 export { UserMenu } from "./components/user-menu"

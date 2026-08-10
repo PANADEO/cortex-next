@@ -17,16 +17,52 @@ import {
   TooltipTrigger,
   UserMenu,
 } from "@cortex/ui"
+import { cva } from "class-variance-authority"
 import { Bell, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Fragment, useEffect, useState } from "react"
 import { useResolvedBreadcrumbs } from "../lib/breadcrumbs"
-import { usePresetStore } from "../lib/presets/preset-store"
+import { usePreset, usePresetStore } from "../lib/presets/preset-store"
 import { PRESET_CHOICES, presetChoiceToStored, storedToPresetChoice } from "../lib/presets/registry"
 import { useSidebarStore } from "../lib/stores/sidebar-store"
 import { useThemeStore } from "../lib/stores/theme-store"
 import { CommandPalette } from "./command-palette"
+
+/**
+ * Pole szukania i klawisz `⌘K`. Kolory zostają tokenami; wariant zmienia
+ * grubość ramki, krój klawisza i sposób reakcji na hover.
+ *
+ * `shadow-[2px_2px_0_hsl(var(--chart-1))]` to jedyne miejsce w tej zmianie,
+ * gdzie sięgam po wartość arbitralną: twardy cień bez rozmycia nie ma
+ * odpowiednika w skali Tailwinda. Kolor nadal idzie tokenem, a reguła siedzi w
+ * tabeli wariantu — nie wraca do `globals.css` jako ręczna klasa `ch-*`, przez
+ * którą poprzednie podejście trafiło do rewertu.
+ */
+const topbarSlots = {
+  search: cva(
+    "hidden h-8 w-64 items-center gap-2 rounded-md px-3 text-left text-xs transition-colors lg:flex",
+    {
+      variants: {
+        variant: {
+          plain: "border border-border bg-muted/40 text-muted-foreground hover:bg-muted",
+          ruled:
+            "border-2 border-border bg-sidebar-accent text-sidebar-foreground hover:shadow-[2px_2px_0_hsl(var(--chart-1))]",
+        },
+      },
+      defaultVariants: { variant: "plain" },
+    },
+  ),
+  kbd: cva("rounded font-mono", {
+    variants: {
+      variant: {
+        plain: "border border-border bg-background px-1 py-0.5 text-[10px]",
+        ruled: "border-[1.5px] border-border bg-sidebar px-[5px] py-px text-[11px]",
+      },
+    },
+    defaultVariants: { variant: "plain" },
+  }),
+}
 
 interface TopbarProps {
   showSidebarToggle?: boolean
@@ -41,6 +77,9 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
   // Wybór ze store'a, nie rozwiązany preset — uzasadnienie w `shell-header.tsx`.
   const storedPreset = usePresetStore((s) => s.preset)
   const setPreset = usePresetStore((s) => s.setPreset)
+  // Tu odwrotnie: kształt ma iść za tym, co użytkownik REALNIE widzi, więc
+  // rozwiązany preset (user → instancja → domyślny), nie sam wybór ze store'u.
+  const shellVariant = usePreset().variants.shell
   const persistPreferences = useSetUserPreferences()
   const shellUser = useShellUser()
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -111,13 +150,11 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
         <button
           type="button"
           onClick={() => setPaletteOpen(true)}
-          className="hidden h-8 w-64 items-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-left text-xs text-muted-foreground transition-colors hover:bg-muted lg:flex"
+          className={topbarSlots.search({ variant: shellVariant })}
         >
           <Search className="h-3.5 w-3.5" />
           <span className="flex-1">Search or jump...</span>
-          <kbd className="rounded border border-border bg-background px-1 py-0.5 font-mono text-[10px]">
-            ⌘K
-          </kbd>
+          <kbd className={topbarSlots.kbd({ variant: shellVariant })}>⌘K</kbd>
         </button>
 
         <div className="flex shrink-0 items-center gap-1">

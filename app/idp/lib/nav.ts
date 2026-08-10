@@ -424,6 +424,47 @@ function normalizeMenuKey(value: string): string {
 type HiddenMenuItemsConfig = FeatureFlagsResponse["hide_menu_items"]
 const ADMIN_ITEM_IDS = new Set(["configuration"])
 
+/**
+ * Która pozycja menu jest aktywna dla bieżącej ścieżki.
+ *
+ * DLACZEGO PO `href`, A NIE PO `id`. Poprzednia wersja wyliczała identyfikator
+ * ze ścieżki (`pathToItemId()` w `(main)/layout.tsx`) i porównywała go z `id`
+ * pozycji — czyli wymagała, żeby DWIE listy pozostały zgodne: mapowanie
+ * segmentów i identyfikatory w tym pliku. Nic tego nie pilnowało i rozjechało
+ * się w trzech miejscach naraz: korzeń kafelka bez podstrony dawał stałe
+ * `"dashboard"`, więc `/content-guru` (`generowanie`),
+ * `/geo-score-calculator` (`kalkulator`) i `/visual-guru` (`generator`) nie
+ * podświetlały ŻADNEJ pozycji. Zmierzone na wdrożonej instancji 10.08.2026 —
+ * razem z `aria-current`, więc sygnał „gdzie jestem" znikał też dla czytnika
+ * ekranu, a nie tylko dla wzroku.
+ *
+ * `href` jest jedynym źródłem, które i tak MUSI być poprawne, żeby link
+ * działał. Dopasowanie po nim usuwa całą klasę tego błędu zamiast naprawiać
+ * trzy wystąpienia.
+ *
+ * NAJDŁUŻSZY pasujący prefiks, nie pierwszy: `/content-guru/history` pasuje
+ * i do `/content-guru`, i do `/content-guru/history` — wygrać ma ta druga.
+ * Granica segmentu jest sprawdzana wprost, bo `/content-guru-inny` nie jest
+ * podstroną `/content-guru`.
+ */
+export function resolveActiveItemId(
+  pathname: string,
+  sections: readonly TileMenuSection[],
+): string | undefined {
+  let best: { id: string; length: number } | undefined
+
+  for (const section of sections) {
+    for (const item of section.items) {
+      const href = item.href
+      const matches = pathname === href || pathname.startsWith(`${href}/`)
+      if (!matches) continue
+      if (!best || href.length > best.length) best = { id: item.id, length: href.length }
+    }
+  }
+
+  return best?.id
+}
+
 export function parseHiddenMenuItems(value: HiddenMenuItemsConfig): ReadonlySet<string> {
   const items = Array.isArray(value) ? value : (value ?? "").split(",")
   return new Set(items.map(normalizeMenuKey).filter(Boolean))

@@ -1,5 +1,14 @@
+import type { TileMenuSection } from "@cortex/ui"
+import { LayoutDashboard } from "lucide-react"
 import { describe, expect, it } from "vitest"
-import { filterNavSections, IDP_NAV, ILUSTROMAT_NAV, INTRASTAT_NAV, parseHiddenMenuItems } from "./nav"
+import {
+  filterNavSections,
+  IDP_NAV,
+  ILUSTROMAT_NAV,
+  INTRASTAT_NAV,
+  parseHiddenMenuItems,
+  resolveActiveItemId,
+} from "./nav"
 
 function itemIds(sections: ReturnType<typeof filterNavSections>): string[] {
   return sections.flatMap((section) => section.items.map((item) => item.id))
@@ -65,5 +74,52 @@ describe("ILUSTROMAT_NAV", () => {
 
     const hrefs = ILUSTROMAT_NAV.flatMap((section) => section.items.map((item) => item.href))
     expect(hrefs).toEqual(["/ilustromat/generation", "/ilustromat/templates"])
+  })
+})
+
+describe("resolveActiveItemId — podświetlenie pozycji menu", () => {
+  const SECTIONS: TileMenuSection[] = [
+    {
+      id: "praca",
+      label: "Praca",
+      items: [
+        { id: "generowanie", label: "Generowanie", icon: LayoutDashboard, href: "/content-guru" },
+        { id: "historia", label: "Historia", icon: LayoutDashboard, href: "/content-guru/history" },
+      ],
+    },
+  ]
+
+  /**
+   * DEFEKT, KTÓRY TO NAPRAWIA (zmierzony na wdrożonej instancji 10.08.2026):
+   * na `/content-guru` ŻADNA pozycja menu nie była podświetlona. Poprzednie
+   * dopasowanie szło po `id` wyliczonym ze ścieżki — korzeń kafelka bez
+   * podstrony dawał stałe `"dashboard"`, więc pasował wyłącznie do menu, które
+   * akurat tak nazwało swoją pierwszą pozycję. Trzy kafelki tego nie robiły
+   * (`content-guru` → `generowanie`, `geo-score-calculator` → `kalkulator`,
+   * `visual-guru` → `generator`) i traciły jedyny wizualny sygnał „gdzie
+   * jestem"; `aria-current` też nie było, więc czytnik ekranu też go nie miał.
+   *
+   * Reguła jest teraz jedna i nie wymaga zgodności dwóch list: aktywna jest
+   * pozycja o NAJDŁUŻSZYM `href`, który jest prefiksem bieżącej ścieżki.
+   */
+  it("korzeń kafelka podświetla własną pozycję, nie żadną", () => {
+    expect(resolveActiveItemId("/content-guru", SECTIONS)).toBe("generowanie")
+  })
+
+  it("podstrona wygrywa z korzeniem — liczy się NAJDŁUŻSZY pasujący href", () => {
+    expect(resolveActiveItemId("/content-guru/history", SECTIONS)).toBe("historia")
+  })
+
+  it("trasa zagnieżdżona głębiej niż menu podświetla najbliższego przodka", () => {
+    expect(resolveActiveItemId("/content-guru/history/42", SECTIONS)).toBe("historia")
+  })
+
+  it("prefiks musi kończyć się na granicy segmentu", () => {
+    // `/content-guru-inny` NIE jest podstroną `/content-guru`.
+    expect(resolveActiveItemId("/content-guru-inny", SECTIONS)).toBeUndefined()
+  })
+
+  it("brak dopasowania to brak podświetlenia, nie zgadywanie", () => {
+    expect(resolveActiveItemId("/zupelnie-inny-kafelek", SECTIONS)).toBeUndefined()
   })
 })
