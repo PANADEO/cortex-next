@@ -50,8 +50,13 @@ interface AppShellProps {
  * byłoby dopiero wpisanie w tabelę wariantu wartości koloru zamiast tokena.
  */
 const shell = {
+  // `motion-reduce:transition-none` siedzi w BAZIE, nie w wariancie: to jest
+  // ustawienie dostępności użytkownika, a nie cecha wyglądu — Neutral ma je
+  // respektować dokładnie tak samo jak Domino. Ta akurat animacja jest
+  // najbardziej dotkliwa z trzech w powłoce, bo rusza SZEROKOŚCIĄ, czyli
+  // przesuwa całą treść obok.
   aside: cva(
-    "hidden shrink-0 border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:flex md:flex-col",
+    "hidden shrink-0 border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 motion-reduce:transition-none md:flex md:flex-col",
     {
       variants: {
         variant: { plain: "border-r", ruled: "border-r-2" },

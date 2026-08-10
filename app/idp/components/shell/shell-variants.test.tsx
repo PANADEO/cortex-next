@@ -115,13 +115,19 @@ describe("powłoka — wariant plain nie rusza wyglądu sprzed zmiany", () => {
   // Każda z tych list to KOMPLET klas elementu, przepisany z wersji sprzed
   // wprowadzenia wariantów. Porównanie jest na równość, nie na zawieranie:
   // klasa dołożona przypadkiem jest tu tak samo błędem jak zgubiona.
+  //
+  // JEDYNE ODSTĘPSTWO od wersji sprzed zmiany: `motion-reduce:transition-none`.
+  // Dołożone ŚWIADOMIE i celowo także do Neutrala — to ustawienie dostępności
+  // użytkownika, nie cecha wyglądu, więc obowiązuje wszystkie presety. Ten test
+  // wyłapał tę zmianę na czerwono i o to w nim chodzi: każde inne odstępstwo
+  // ma być tak samo widoczne, a nie przemycone.
   it("aside i nagłówek mają dokładnie ten sam komplet klas", () => {
     const { container } = renderShell("plain")
 
     expect(classSet(container.querySelector("aside"))).toEqual(
       [
         "hidden", "shrink-0", "border-r", "border-sidebar-border", "bg-sidebar",
-        "text-sidebar-foreground", "transition-[width]", "duration-200",
+        "text-sidebar-foreground", "transition-[width]", "duration-200", "motion-reduce:transition-none",
         "md:flex", "md:flex-col", "w-sidebar",
       ].sort(),
     )
@@ -140,7 +146,7 @@ describe("powłoka — wariant plain nie rusza wyglądu sprzed zmiany", () => {
     expect(classSet(container.querySelector('[aria-current="page"]'))).toEqual(
       [
         "group", "flex", "h-8", "items-center", "rounded-md", "text-sm",
-        "transition-colors", "gap-2.5", "px-2",
+        "transition-colors", "motion-reduce:transition-none", "gap-2.5", "px-2",
         "bg-sidebar-accent", "text-sidebar-accent-foreground", "font-medium",
       ].sort(),
     )
@@ -171,7 +177,7 @@ describe("powłoka — wariant plain nie rusza wyglądu sprzed zmiany", () => {
     expect(classSet(inactiveLink(container))).toEqual(
       [
         "group", "flex", "h-8", "items-center", "rounded-md", "text-sm",
-        "transition-colors", "gap-2.5", "px-2",
+        "transition-colors", "motion-reduce:transition-none", "gap-2.5", "px-2",
         "text-sidebar-foreground/80",
         "hover:bg-sidebar-accent", "hover:text-sidebar-accent-foreground",
       ].sort(),
@@ -187,7 +193,7 @@ describe("powłoka — wariant plain nie rusza wyglądu sprzed zmiany", () => {
     expect(classSet(container.querySelector("aside"))).toEqual(
       [
         "hidden", "shrink-0", "border-r", "border-sidebar-border", "bg-sidebar",
-        "text-sidebar-foreground", "transition-[width]", "duration-200",
+        "text-sidebar-foreground", "transition-[width]", "duration-200", "motion-reduce:transition-none",
         "md:flex", "md:flex-col", "w-sidebar-icon",
       ].sort(),
     )
@@ -195,7 +201,7 @@ describe("powłoka — wariant plain nie rusza wyglądu sprzed zmiany", () => {
     expect(classSet(container.querySelector('[aria-current="page"]'))).toEqual(
       [
         "group", "flex", "h-8", "items-center", "rounded-md", "text-sm",
-        "transition-colors", "justify-center", "px-0",
+        "transition-colors", "motion-reduce:transition-none", "justify-center", "px-0",
         "bg-sidebar-accent", "text-sidebar-accent-foreground", "font-medium",
       ].sort(),
     )
@@ -260,6 +266,28 @@ describe("powłoka — reguła warstw", () => {
       const { container } = renderShell(shell)
       const found = container.innerHTML.match(HARDCODED_PALETTE)
       expect(found, `powłoka wypisała klasę z palety: ${found?.[0]}`).toBeNull()
+    },
+  )
+
+  /**
+   * Ustawienie systemowe „ogranicz ruch" ma być respektowane przez OBA
+   * warianty — to dostępność użytkownika, nie cecha wyglądu. Stąd asercja
+   * parametryzowana po presetach, a nie jednorazowa.
+   *
+   * Oryginał Cezarego niósł to jako osobny blok `@media (prefers-reduced-motion)`
+   * wyłączający przejścia linku menu i pola szukania. Tu ta sama reguła
+   * wyrażona narzędziem Tailwinda, w BAZIE tabel — plus animacja szerokości
+   * sidebara, której tamten blok nie obejmował (bo tamta wersja usuwała ją
+   * całkowicie). Ona jest z tych trzech najbardziej dotkliwa: rusza szerokością,
+   * więc przesuwa całą treść obok.
+   */
+  it.each(Object.values(PRESETS).map((preset) => [preset.id, preset.variants.shell] as const))(
+    "preset %s wyłącza przejścia przy prefers-reduced-motion",
+    (_id, shell) => {
+      const { container } = renderShell(shell)
+
+      expect(classSet(container.querySelector("aside"))).toContain("motion-reduce:transition-none")
+      expect(classSet(inactiveLink(container))).toContain("motion-reduce:transition-none")
     },
   )
 

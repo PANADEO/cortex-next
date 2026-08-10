@@ -34,7 +34,7 @@ const menu = {
     },
     defaultVariants: { variant: "plain" },
   }),
-  link: cva("group flex h-8 items-center rounded-md text-sm transition-colors", {
+  link: cva("group flex h-8 items-center rounded-md text-sm transition-colors motion-reduce:transition-none", {
     variants: {
       variant: { plain: "", ruled: "border-[1.5px] border-transparent" },
       active: { true: "", false: "" },

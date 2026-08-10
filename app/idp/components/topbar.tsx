@@ -41,7 +41,7 @@ import { CommandPalette } from "./command-palette"
  */
 const topbarSlots = {
   search: cva(
-    "hidden h-8 w-64 items-center gap-2 rounded-md px-3 text-left text-xs transition-colors lg:flex",
+    "hidden h-8 w-64 items-center gap-2 rounded-md px-3 text-left text-xs transition-colors motion-reduce:transition-none lg:flex",
     {
       variants: {
         variant: {
