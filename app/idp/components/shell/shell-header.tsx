@@ -2,10 +2,32 @@
 
 import { useSetUserPreferences, useShellUser } from "@cortex/api"
 import { SkinToggle, ThemeToggle, UserMenu } from "@cortex/ui"
+import { cva } from "class-variance-authority"
 import Image from "next/image"
-import { usePresetStore } from "@/lib/presets/preset-store"
+import { usePreset, usePresetStore } from "@/lib/presets/preset-store"
 import { PRESET_CHOICES, presetChoiceToStored, storedToPresetChoice } from "@/lib/presets/registry"
 import { useThemeStore } from "@/lib/stores/theme-store"
+
+/**
+ * Pasek ekranu startowego — odpowiednik `.ch-shellbar` z oryginału. Ta sama
+ * zasada co w powłoce `(main)`: kolory zostają tokenami, wariant rozstrzyga
+ * grubość linii i rolę semantyczną tła.
+ *
+ * UWAGA NA ZAKRES PRESETU TUTAJ. Ten ekran ogląda też NIEZALOGOWANY, a wybór
+ * użytkownika mieszka w `localStorage` — przy pierwszej wizycie go nie ma.
+ * W praktyce więc ekran logowania pokazuje wygląd INSTANCJI, nigdy osobisty,
+ * i to jest zachowanie zamierzone: wygląd bramy wejściowej należy do
+ * właściciela instancji, nie do odwiedzającego.
+ */
+const shellBar = cva("sticky top-0 z-30 border-border backdrop-blur", {
+  variants: {
+    variant: {
+      plain: "border-b bg-card/80",
+      ruled: "border-b-2 bg-background/80",
+    },
+  },
+  defaultVariants: { variant: "plain" },
+})
 
 export function ShellHeader() {
   const themeMode = useThemeStore((s) => s.mode)
@@ -18,9 +40,12 @@ export function ShellHeader() {
   const setPreset = usePresetStore((s) => s.setPreset)
   const persistPreferences = useSetUserPreferences()
   const shellUser = useShellUser()
+  // Tu odwrotnie niż przy przełączniku wyżej: kształt idzie za tym, co
+  // użytkownik REALNIE widzi, więc rozwiązany preset, nie sam wybór.
+  const variant = usePreset().variants.shell
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur">
+    <header className={shellBar({ variant })}>
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-6">
         <div className="flex shrink-0 items-center gap-2.5">
           <Image

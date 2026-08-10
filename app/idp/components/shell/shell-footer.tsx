@@ -1,7 +1,9 @@
 "use client"
 
+import { cva } from "class-variance-authority"
 import { Globe } from "lucide-react"
 import { useEffect, useState } from "react"
+import { usePreset } from "@/lib/presets/preset-store"
 import pkg from "../../../../package.json"
 import { SHELL_VERSION, stripLeadingV } from "./version-label"
 
@@ -42,16 +44,46 @@ function useDiagnostics(): Diagnostics | null {
   return diag
 }
 
+/**
+ * Stopka ekranu startowego i huba — odpowiednik `.ch-shellfoot`. Wariant
+ * zmienia grubość linii i rolę tła; kolory zostają tokenami.
+ *
+ * Świadomie NIE przeniesione z oryginału: monospace. Tam stopka nie miała
+ * własnego kroju, a dołożenie go tutaj byłoby moim pomysłem podanym jako
+ * odtworzenie cudzego projektu. Do rozważenia osobno, gdyby „drukowany"
+ * charakter miał objąć też pasek diagnostyczny.
+ */
+const shellFoot = cva("border-border backdrop-blur", {
+  variants: {
+    variant: {
+      plain: "border-t bg-card/60",
+      ruled: "border-t-2 bg-sidebar/60",
+    },
+  },
+  defaultVariants: { variant: "plain" },
+})
+
+const footText = cva(
+  "mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-1 px-6 py-3 text-[11px]",
+  {
+    variants: {
+      variant: { plain: "text-muted-foreground", ruled: "text-sidebar-foreground" },
+    },
+    defaultVariants: { variant: "plain" },
+  },
+)
+
 export function ShellFooter() {
   const diag = useDiagnostics()
+  const variant = usePreset().variants.shell
   // Stylowanie tokenami, NIE klasą zakresowaną do `.cortex-home` (D5: powłoka
   // zostaje na warstwie 1). Ta stopka renderuje się w DWÓCH miejscach — pod
   // hubem i w `landing-hero.tsx`, gdzie `.cortex-home` nie istnieje — więc
   // stylowanie zakresowane do jednego wyglądu znaczyłoby stopkę bez ramki i tła
   // na ekranie logowania.
   return (
-    <footer className="border-t border-border bg-card/60 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-1 px-6 py-3 text-[11px] text-muted-foreground">
+    <footer className={shellFoot({ variant })}>
+      <div className={footText({ variant })}>
         <div>Cortex360 © {new Date().getFullYear()}</div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
           <span>Wersja: {APP_VERSION}</span>

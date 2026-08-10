@@ -65,10 +65,15 @@ const HARDCODED_PALETTE = new RegExp(
  * przechodziły na zielono.
  */
 const SHELL_SOURCES = [
+  // powłoka aplikacji `(main)`
   "packages/@cortex/ui/src/components/app-shell.tsx",
   "packages/@cortex/ui/src/components/tile-menu.tsx",
   "app/idp/components/topbar.tsx",
   "app/idp/components/shell/version-label.tsx",
+  // ekran startowy `(shell)` — inny szkielet, ta sama reguła
+  "app/idp/components/shell/shell-header.tsx",
+  "app/idp/components/shell/shell-footer.tsx",
+  "app/idp/components/shell/landing-hero.tsx",
 ]
 
 afterEach(cleanup)

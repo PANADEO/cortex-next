@@ -35,3 +35,41 @@ describe("ShellFooter", () => {
     expect((screen.getByText(/Online:/).textContent ?? "").trim()).toMatch(/Online: (Tak|Nie)/)
   })
 })
+
+describe("ShellFooter — wariant powłoki", () => {
+  /**
+   * Stopka renderuje się w DWÓCH miejscach: pod hubem i na ekranie startowym
+   * (`landing-hero.tsx`). Ten drugi ogląda też NIEZALOGOWANY, więc wygląd
+   * bierze się tam z presetu INSTANCJI — wybór użytkownika mieszka w
+   * `localStorage` i przy pierwszej wizycie go nie ma. Zachowanie zamierzone:
+   * wygląd bramy wejściowej należy do właściciela instancji.
+   */
+  it("bez wyboru użytkownika renderuje wariant plain, znak w znak jak przed zmianą", async () => {
+    const { usePresetStore } = await import("@/lib/presets/preset-store")
+    usePresetStore.setState({ preset: null })
+
+    const { ShellFooter } = await import("./shell-footer")
+    const { container } = render(createElement(ShellFooter))
+
+    const footer = container.querySelector("footer")
+    expect(footer?.className).toContain("border-t")
+    expect(footer?.className).not.toContain("border-t-2")
+    expect(footer?.className).toContain("bg-card/60")
+    expect(container.querySelector("footer > div")?.className).toContain("text-muted-foreground")
+  })
+
+  it("pod wyglądem ruled linia jest grubsza, a tło i tekst biorą rolę paska bocznego", async () => {
+    const { usePresetStore } = await import("@/lib/presets/preset-store")
+    usePresetStore.setState({ preset: "domino" })
+
+    const { ShellFooter } = await import("./shell-footer")
+    const { container } = render(createElement(ShellFooter))
+
+    const footer = container.querySelector("footer")
+    expect(footer?.className).toContain("border-t-2")
+    expect(footer?.className).toContain("bg-sidebar/60")
+    expect(container.querySelector("footer > div")?.className).toContain("text-sidebar-foreground")
+
+    usePresetStore.setState({ preset: null })
+  })
+})
