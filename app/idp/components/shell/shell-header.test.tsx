@@ -18,11 +18,32 @@ vi.mock("@cortex/api", () => ({
   useSetUserPreferences: () => ({ mutate: vi.fn() }),
 }))
 
+/**
+ * Zawartość nagłówka jest tu bez znaczenia — asercje dotyczą wyłącznie
+ * kompletu klas samego `<header>`. Renderowanie prawdziwych `SkinToggle`,
+ * `ThemeToggle`, `UserMenu` i `next/image` kosztowało 1,8 s na dwa przypadki
+ * i realnie dokładało się do niestabilności katalogu pod obciążeniem.
+ */
+vi.mock("@cortex/ui", () => ({
+  SkinToggle: () => null,
+  ThemeToggle: () => null,
+  UserMenu: () => null,
+}))
+
+vi.mock("next/image", () => ({ default: () => null }))
+
 function classSet(el: Element | null | undefined): string[] {
   return (el?.className ?? "").split(/\s+/).filter(Boolean).sort()
 }
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  // Store presetu jest persystowany w `localStorage`, więc bez tego wpis
+  // `cortex.skin` przeżywa test i rehydruje się przy następnym imporcie —
+  // ten sam mechanizm, który w `shell-footer.test.tsx` kazał przenieść
+  // sprzątanie z ciała testu do haka.
+  localStorage.removeItem("cortex.skin")
+})
 
 async function renderHeader(preset: "domino" | null) {
   const { usePresetStore } = await import("@/lib/presets/preset-store")

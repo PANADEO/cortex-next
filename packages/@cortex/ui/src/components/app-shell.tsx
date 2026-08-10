@@ -50,13 +50,23 @@ interface AppShellProps {
  * byłoby dopiero wpisanie w tabelę wariantu wartości koloru zamiast tokena.
  */
 const shell = {
-  // `motion-reduce:transition-none` siedzi w BAZIE, nie w wariancie: to jest
-  // ustawienie dostępności użytkownika, a nie cecha wyglądu — Neutral ma je
-  // respektować dokładnie tak samo jak Domino. Ta akurat animacja jest
-  // najbardziej dotkliwa z trzech w powłoce, bo rusza SZEROKOŚCIĄ, czyli
-  // przesuwa całą treść obok.
+  /**
+   * BEZ ANIMACJI SZEROKOŚCI — usunięte `transition-[width] duration-200`.
+   *
+   * `width` jest własnością UKŁADU: animowanie jej każe przeglądarce przeliczyć
+   * pozycje nie tylko paska, ale i całej treści obok, i to w każdej klatce.
+   * Zwijanie paska jest przy tym akcją binarną i rzadką, więc płacimy tę cenę
+   * za 200 ms efektu, którego nikt nie ogląda dwa razy. Decyzja oryginału
+   * (`ef85991`), przyjęta świadomie: „Collapse is a binary, infrequent state
+   * change — it swaps instantly instead."
+   *
+   * Nie ma tu już czego osłaniać `motion-reduce:`, bo nie ma przejścia —
+   * a użytkownik z włączonym „ogranicz ruch" i tak dostawał natychmiastowe
+   * przełączenie, więc dla niego nic się nie zmienia. Pozostałe animacje
+   * powłoki (link menu, pole szukania, sloty marki) osłonę mają i zachowują ją.
+   */
   aside: cva(
-    "hidden shrink-0 border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 motion-reduce:transition-none md:flex md:flex-col",
+    "hidden shrink-0 border-sidebar-border bg-sidebar text-sidebar-foreground md:flex md:flex-col",
     {
       variants: {
         variant: { plain: "border-r", ruled: "border-r-2" },

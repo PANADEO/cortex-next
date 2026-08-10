@@ -1,7 +1,9 @@
 "use client"
 
+import { usePreset } from "@/lib/presets/preset-store"
 import { useThemeStore } from "@/lib/stores/theme-store"
 import { Alert, AlertDescription, AlertTitle, Button, ThemeToggle } from "@cortex/ui"
+import { cva } from "class-variance-authority"
 import { AlertTriangle, ArrowRight, ShieldCheck, Sparkles, Workflow } from "lucide-react"
 import Image from "next/image"
 import { DotGrid } from "./dot-grid"
@@ -12,7 +14,36 @@ interface LandingHeroProps {
   authErrorMessage?: string | null
 }
 
+/**
+ * Pasek ekranu logowania — właściwy odpowiednik `.ch-shellbar` z oryginału
+ * (papier, 2px atramentu u dołu). To NIE jest `ShellHeader`: tamten renderuje
+ * się dopiero po zalogowaniu, z `authed-home.tsx`, i przez pomyłkę opisałem go
+ * wcześniej jako pasek logowania.
+ *
+ * `plain` jest PUSTY z premedytacją. Dzisiejszy nagłówek tego ekranu jest
+ * przezroczysty i bezramkowy — dołożenie mu tła pod Neutralem byłoby zmianą
+ * wyglądu przemyconą przy okazji portu cudzego projektu. Zmienia się wyłącznie
+ * to, co ogląda ktoś, kto Domino wybrał.
+ *
+ * Preset bierze się tu z INSTANCJI, nie z wyboru użytkownika: ten ekran ogląda
+ * niezalogowany, a jego wybór mieszka w `localStorage`, którego przy pierwszej
+ * wizycie nie ma. Wygląd bramy wejściowej należy do właściciela instancji.
+ */
+const landingBar = cva(
+  "relative z-10 flex items-center justify-between gap-2.5 px-6 py-5 md:px-10",
+  {
+    variants: {
+      variant: {
+        plain: "",
+        ruled: "border-b-2 border-border bg-background/80 backdrop-blur",
+      },
+    },
+    defaultVariants: { variant: "plain" },
+  },
+)
+
 export function LandingHero({ authErrorMessage }: LandingHeroProps) {
+  const variant = usePreset().variants.shell
   const themeMode = useThemeStore((s) => s.mode)
   const setThemeMode = useThemeStore((s) => s.setMode)
 
@@ -25,7 +56,7 @@ export function LandingHero({ authErrorMessage }: LandingHeroProps) {
     <div className="relative flex min-h-screen flex-col bg-background text-foreground">
       <DotGrid animate />
 
-      <header className="relative z-10 flex items-center justify-between gap-2.5 px-6 py-5 md:px-10">
+      <header className={landingBar({ variant })}>
         <div className="flex items-center gap-2.5">
           <Image
             src="/cortex-logo.png"
@@ -45,7 +76,7 @@ export function LandingHero({ authErrorMessage }: LandingHeroProps) {
           <div className="flex flex-col space-y-7">
             <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border/80 bg-card/60 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground backdrop-blur">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cortex/60 opacity-75" />
+                <span className="absolute inline-flex h-full w-full animate-ping motion-reduce:animate-none rounded-full bg-cortex/60 opacity-75" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cortex" />
               </span>
               Enterprise AI Platform
@@ -94,9 +125,9 @@ export function LandingHero({ authErrorMessage }: LandingHeroProps) {
             <div className="group relative w-full max-w-sm">
               <div
                 aria-hidden="true"
-                className="absolute -inset-px rounded-2xl bg-gradient-to-br from-cortex/40 via-cortex/0 to-cortex/20 opacity-60 blur-md transition-opacity duration-500 group-hover:opacity-100"
+                className="absolute -inset-px rounded-2xl bg-gradient-to-br from-cortex/40 via-cortex/0 to-cortex/20 opacity-60 blur-md transition-opacity duration-500 motion-reduce:transition-none group-hover:opacity-100"
               />
-              <div className="relative rounded-2xl border border-cortex/30 bg-card/80 p-8 shadow-xl shadow-cortex/10 backdrop-blur-md transition-all duration-300 hover:border-cortex hover:shadow-cortex/20">
+              <div className="relative rounded-2xl border border-cortex/30 bg-card/80 p-8 shadow-xl shadow-cortex/10 backdrop-blur-md transition-all duration-300 motion-reduce:transition-none hover:border-cortex hover:shadow-cortex/20">
                 <div className="flex flex-col items-center space-y-6 text-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-background">
                     <Image
@@ -129,7 +160,7 @@ export function LandingHero({ authErrorMessage }: LandingHeroProps) {
                     className="group/btn w-full gap-2 text-sm font-medium"
                   >
                     Kontynuuj
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-0.5" />
+                    <ArrowRight className="h-4 w-4 transition-transform motion-reduce:transition-none group-hover/btn:translate-x-0.5" />
                   </Button>
 
                   <p className="text-[11px] leading-relaxed text-muted-foreground">

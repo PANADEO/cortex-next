@@ -159,7 +159,7 @@ describe("powłoka — wariant plain nie rusza wyglądu sprzed zmiany", () => {
     expect(classSet(container.querySelector("aside"))).toEqual(
       [
         "hidden", "shrink-0", "border-r", "border-sidebar-border", "bg-sidebar",
-        "text-sidebar-foreground", "transition-[width]", "duration-200", "motion-reduce:transition-none",
+        "text-sidebar-foreground",
         "md:flex", "md:flex-col", "w-sidebar",
       ].sort(),
     )
@@ -225,7 +225,7 @@ describe("powłoka — wariant plain nie rusza wyglądu sprzed zmiany", () => {
     expect(classSet(container.querySelector("aside"))).toEqual(
       [
         "hidden", "shrink-0", "border-r", "border-sidebar-border", "bg-sidebar",
-        "text-sidebar-foreground", "transition-[width]", "duration-200", "motion-reduce:transition-none",
+        "text-sidebar-foreground",
         "md:flex", "md:flex-col", "w-sidebar-icon",
       ].sort(),
     )
@@ -318,7 +318,6 @@ describe("powłoka — reguła warstw", () => {
     (_id, shell) => {
       const { container } = renderShell(shell)
 
-      expect(classSet(container.querySelector("aside"))).toContain("motion-reduce:transition-none")
       expect(classSet(inactiveLink(container))).toContain("motion-reduce:transition-none")
     },
   )
