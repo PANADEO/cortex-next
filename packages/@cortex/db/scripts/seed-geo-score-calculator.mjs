@@ -10,9 +10,18 @@
 // ustawiony przez seed-tile-manifests.mjs. GEO Score Calculator jest
 // odwrotnie: to NOWY moduł, Faza 0 (fundament) — PROJECT/cortex-frontend-
 // geo-score-calculator-port-projekt.md §5. Ma zostać nieaktywnym kandydatem
-// (is_active=false, show_on_hub=false, activated_at=null) w rejestrze
-// `applications`, widocznym w formularzu "Dodaj aplikację" do RĘCZNEJ
-// aktywacji — nie auto-aktywowanym przez ten seed.
+// (is_active=false, activated_at=null) w rejestrze `applications`, widocznym
+// w formularzu "Dodaj aplikację" do RĘCZNEJ aktywacji — nie auto-aktywowanym
+// przez ten seed.
+//
+// `show_on_hub` NIE jest już częścią tego stanu (K1b). Do K1b zapisywano tu
+// „show_on_hub=false" jako pożądany stan rejestracji nowego modułu i było to
+// mylące już wtedy: kolumna nie opisuje etapu wdrożenia, tylko to, czy kod ma
+// własną kartę na hubie. Od K1b bierze się z manifestowego `entitlementOnly`,
+// więc GEO Score Calculator — prawdziwy kafelek — rejestruje się z
+// `show_on_hub=true` i jest niewidoczny wyłącznie przez `is_active=false`
+// (listHubApplications() wymaga obu). Aktywacja nadal pozostaje świadomym
+// krokiem operatora, zmienia się tylko to, która kolumna go wyraża.
 //
 // Grant dla roli admin do TEGO wiersza i tak już istnieje bez żadnej
 // dodatkowej pracy tutaj: seed-system-config.mjs (wcześniej w łańcuchu

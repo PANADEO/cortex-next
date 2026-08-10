@@ -8,4 +8,10 @@ export const systemConfigTile = defineTile({
   label: "Konfiguracja Systemu",
   entitlementCode: "system-config",
   route: "/system-config",
+  description: "Użytkownicy, role, uprawnienia i aplikacje instancji",
+  icon: "Settings",
+  color: "slate",
+  categoryFunctional: "admin-system",
+  categoryDepartment: ["it"],
+  sortOrder: 100,
 })

@@ -18,7 +18,7 @@ import { NextResponse } from "next/server"
  *
  * A caller without the `cortex-cowork` grant falls into that second case even
  * in open mode: the empty list is exactly what the hub already renders for
- * them (tile-grid.tsx gates this section on the same grant), so the API stops
+ * them (hub/use-hub-model.ts gates this section on the same grant), so the API stops
  * handing out project names, descriptions and briefs that the UI would not
  * have shown. Why the grant is what bootstrap keys off: bootstrap-trust.ts.
  */

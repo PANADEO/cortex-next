@@ -16,29 +16,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
   UserMenu,
-  type SkinOption,
 } from "@cortex/ui"
 import { Bell, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Fragment, useEffect, useState } from "react"
 import { useResolvedBreadcrumbs } from "../lib/breadcrumbs"
+import { usePresetStore } from "../lib/presets/preset-store"
+import { PRESET_CHOICES, presetChoiceToStored, storedToPresetChoice } from "../lib/presets/registry"
 import { useSidebarStore } from "../lib/stores/sidebar-store"
-import { SKINS, useSkinStore, type SkinId } from "../lib/stores/skin-store"
 import { useThemeStore } from "../lib/stores/theme-store"
 import { CommandPalette } from "./command-palette"
-
-const SKIN_SWATCHES: Record<SkinId, readonly [string, string, string]> = {
-  default: ["#0a0a0a", "#f5f5f5", "#a3a3a3"],
-  customs: ["#f97316", "#15803d", "#fbbf24"],
-}
-
-const SKIN_OPTIONS: readonly SkinOption<SkinId>[] = SKINS.map((s) => ({
-  id: s.id,
-  label: s.label,
-  description: s.description,
-  swatch: SKIN_SWATCHES[s.id],
-}))
 
 interface TopbarProps {
   showSidebarToggle?: boolean
@@ -50,8 +38,9 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
   const toggle = useSidebarStore((s) => s.toggle)
   const themeMode = useThemeStore((s) => s.mode)
   const setThemeMode = useThemeStore((s) => s.setMode)
-  const skin = useSkinStore((s) => s.skin)
-  const setSkin = useSkinStore((s) => s.setSkin)
+  // Wybór ze store'a, nie rozwiązany preset — uzasadnienie w `shell-header.tsx`.
+  const storedPreset = usePresetStore((s) => s.preset)
+  const setPreset = usePresetStore((s) => s.setPreset)
   const persistPreferences = useSetUserPreferences()
   const shellUser = useShellUser()
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -140,7 +129,13 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
             </TooltipTrigger>
             <TooltipContent side="bottom">Notifications</TooltipContent>
           </Tooltip>
-          <SkinToggle skin={skin} options={SKIN_OPTIONS} onSkinChange={setSkin} />
+          {/* Drugie miejsce renderu jednego store'u — ten sam wzorzec, którym
+              chodzi już `ThemeToggle`. Uzasadnienie propsów w `shell-header.tsx`. */}
+          <SkinToggle
+            skin={storedToPresetChoice(storedPreset)}
+            options={PRESET_CHOICES}
+            onSkinChange={(choice) => setPreset(presetChoiceToStored(choice))}
+          />
           <ThemeToggle
             mode={themeMode}
             onModeChange={(next) => {

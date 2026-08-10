@@ -35,6 +35,7 @@ import {
   generationJobs as contentGuruGenerationJobs,
   generations,
   generationVariants,
+  instanceSettings,
   jobs,
   marketProfiles as contentGuruMarketProfiles,
   permissionsMatrix,
@@ -61,6 +62,7 @@ import {
 // w e2e/shell/hub-activation.spec.ts (tamta dotyczy pakietu BEZ aliasu).
 import { GEO_SCORE_CONFIG_DEFAULTS } from "@cortex/service"
 import { execFileSync } from "node:child_process"
+import { readFileSync } from "node:fs"
 import path from "node:path"
 
 const ADMIN_ROLE_CODE = "admin"
@@ -186,6 +188,10 @@ export async function resetSystemConfig(): Promise<void> {
   await db.delete(applications)
   await db.delete(roles)
   await db.delete(users)
+  // Ustawienia instancji (E5) — bez tego preset wyglądu ustawiony przez jeden
+  // scenariusz przemalowałby (i przełożył na inny layout huba) każdy następny.
+  // Tabela nie ma FK w żadną stronę, więc miejsce w kolejności jest dowolne.
+  await db.delete(instanceSettings)
   // Schemat modułu Ilustromat. Czyszczony razem z system_config, bo scenariusz
   // ma dawać JEDEN deterministyczny stan całej bazy, nie tylko jednego
   // schematu. template_assets ma FK cascade, ale kasujemy jawnie — kolejność
@@ -435,7 +441,9 @@ const dbPackageDir = path.resolve(process.cwd(), "packages/@cortex/db")
  *
  * Wymaga wcześniejszych migracji — schemat musi już istnieć.
  */
-export function runRegistrySeed(options: { adminEmail?: string } = {}): void {
+export function runRegistrySeed(
+  options: { adminEmail?: string; bootstrapModules?: readonly string[] } = {},
+): void {
   const databaseUrl = process.env.DATABASE_URL
   if (!databaseUrl) throw new Error("runRegistrySeed: DATABASE_URL nie jest ustawione")
 
@@ -446,10 +454,40 @@ export function runRegistrySeed(options: { adminEmail?: string } = {}): void {
         DATABASE_URL: databaseUrl,
         // Pusty ADMIN_EMAIL = seed w ogóle nie dotyka bloku administratora.
         ADMIN_EMAIL: options.adminEmail ?? "",
+        // Od K3 świeża baza aktywuje WYŁĄCZNIE `system-config` — scenariusz,
+        // który potrzebuje działającego rejestru, musi o to poprosić wprost
+        // (ALL_MANIFEST_CODES). Pusta wartość jest tu więc realnym stanem
+        // "instancja po pierwszym deployu", a nie brakiem konfiguracji.
+        BOOTSTRAP_MODULES: (options.bootstrapModules ?? []).join(","),
+        // Jawnie puste, a nie dziedziczone z powłoki: ENABLED_MODULES ustawione
+        // w środowisku dewelopera przepuszczałoby przez bramkę licencyjną tylko
+        // część BOOTSTRAP_MODULES i macierz uprawnień niżej wywalałaby się
+        // losowo, zależnie od czyjegoś `.env`.
+        ENABLED_MODULES: "",
       },
       stdio: "pipe",
     })
   }
+}
+
+/**
+ * Kody WSZYSTKICH manifestów tego checkoutu — do `bootstrapModules` w
+ * scenariuszach, które potrzebują rejestru w stanie "instancja z włączonymi
+ * kafelkami" (czyli tego, co przed K3 robiła statyczna lista APPLICATIONS).
+ *
+ * Czytane z `tile-manifests.generated.json`, a nie z barrela: to jest ten sam
+ * artefakt, który realnie karmi seed-tile-manifests.mjs, i jest generowany
+ * przez `npm run test:e2e` przed uruchomieniem Playwrighta. Import barrela
+ * (`@/lib/tile-manifests`) ciągnąłby aliasy aplikacji do procesu testowego
+ * Playwrighta — tu, w przeciwieństwie do vitest, nie jest to konfigurowane.
+ */
+export function allManifestCodes(): string[] {
+  const raw = readFileSync(path.join(dbPackageDir, "scripts", "tile-manifests.generated.json"), "utf8")
+  const manifests = JSON.parse(raw) as { entitlementCode: string }[]
+  if (manifests.length === 0) {
+    throw new Error("allManifestCodes: tile-manifests.generated.json jest puste — `npm run tile-manifests`")
+  }
+  return manifests.map((manifest) => manifest.entitlementCode)
 }
 
 /** `<kod>@matrix.e2e.local` — użytkownik z grantem WYŁĄCZNIE do tego kodu. */
@@ -464,7 +502,11 @@ export function accessMatrixEmail(code: string): string {
  * macierz w testach.
  */
 async function seedRegistryPerCodeUsers(): Promise<ScenarioResult> {
-  runRegistrySeed()
+  // Wszystkie manifesty aktywne — macierz sprawdza bramkę POWŁOKI (kto ma
+  // grant), a ta czyta `applications.is_active`, więc na rejestrze samych
+  // nieaktywnych kandydatów każdy kod odmawiałby dostępu z zupełnie innego
+  // powodu, niż testuje ten plik.
+  runRegistrySeed({ bootstrapModules: allManifestCodes() })
   const db = getDb()
   const registry = await db.select().from(applications)
 

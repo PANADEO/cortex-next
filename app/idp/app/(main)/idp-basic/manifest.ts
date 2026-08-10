@@ -9,4 +9,10 @@ export const idpBasicTile = defineTile({
   label: "IDP Basic",
   entitlementCode: "idp-basic",
   route: "/idp-basic/dashboard",
+  description: "Uproszczone procesowanie dokumentów w osobnym pipeline",
+  icon: "FileText",
+  color: "sky",
+  categoryFunctional: "misc",
+  categoryDepartment: ["operations"],
+  sortOrder: 10,
 })

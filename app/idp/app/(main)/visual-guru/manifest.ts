@@ -18,10 +18,18 @@ import { defineTile } from "@cortex/tile-sdk"
 // w formularzu "Dodaj aplikację" — świadomie, wzorem
 // geo-score-calculator/document-parser (seed-tile-manifests.mjs insertuje
 // is_active=false, activated_at=null na pierwszym deployu).
+//
+// K2: `description`/`icon` niżej odczytane 08.08.2026 z bazy `cortex`, nie
+// przeniesione z APPLICATIONS — tego kodu tam nigdy nie było. Pełne
+// uzasadnienie (łącznie z tym, czemu tiles.ts mówi co innego i czemu
+// color/kategorie zostają pominięte, bo w bazie są NULL): komentarz w
+// app/idp/app/(main)/document-parser/manifest.ts, ten sam przypadek.
 export const visualGuruTile = defineTile({
   id: "visual-guru",
   kind: "native",
   label: "Visual Guru",
   entitlementCode: "visual-guru",
   route: "/visual-guru",
+  description: "Generuje obrazy AI ze swobodnego promptu i obrazu referencyjnego",
+  icon: "Wand2",
 })

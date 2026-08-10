@@ -12,7 +12,7 @@ import { Suspense, type ReactNode } from "react"
 // tileId jest tu JAWNE i wymagane. Wcześniej ten callsite nie podawał go
 // wcale, więc do Coworka wchodził każdy z dowolnym grantem — kod
 // `cortex-cowork` istniał w rejestrze, ale nikt o niego nie pytał. Ta sama
-// stała bramkuje sekcję task-chat na hubie (components/shell/tile-grid.tsx);
+// stała bramkuje sekcję task-chat na hubie (components/shell/hub/use-hub-model.ts);
 // gdyby te dwa miejsca się rozjechały, kafelek byłby widoczny i odmawiałby.
 export default function CortexCoworkLayout({ children }: { children: ReactNode }) {
   return (

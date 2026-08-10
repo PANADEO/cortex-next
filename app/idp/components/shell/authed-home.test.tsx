@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest"
 import type { HubTile } from "@cortex/api"
-import { cleanup, render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 interface AuthorizedMock {
@@ -27,7 +27,7 @@ interface HubTilesMock {
 }
 
 /** Kształt jednego wiersza tak, jak GET /api/hub/tiles go dziś zwraca —
- *  fixture, nie static TILES: Krok 3 przełącza TileGrid na useHubTiles(). */
+ *  fixture, nie static TILES: Krok 3 przełączył hub na useHubTiles(). */
 function hubRow(partial: { code: string; name: string } & Partial<HubTile>) {
   return {
     id: partial.code,
@@ -78,8 +78,8 @@ vi.mock("@cortex/api", () => ({
   useHubTiles: () => hubTilesMock,
 }))
 
-// TileGrid merges in governed task-chat project tiles from a query hook; the
-// grid's own authorization logic is what these tests cover, so stub the hook.
+// Hub dokłada kafelki task-chat z governance store przez osobny hook; testy
+// niżej pokrywają logikę AUTORYZACJI huba, więc hook jest zaślepiony.
 // Hook zwraca to, co governance store uznał za widoczne dla tego usera — czyli
 // filtr PER PROJEKT jest już zrobiony i celowo tu nie testujemy go ponownie.
 let coworkTilesMock: { tiles: Tile[]; projects: unknown[]; isLoading: boolean } = {
@@ -92,9 +92,18 @@ vi.mock("@/features/cortex-cowork", () => ({
   useCoworkProjectTiles: () => coworkTilesMock,
 }))
 
+// Chrome powłoki (logo, menu użytkownika, zegar w stopce, tło) jest tu
+// zaślepiony CELOWO: te testy sprawdzają hub, a nie powłokę, a bez zaślepki
+// ciągnęłyby useMe(), next/image i setInterval z żywym zegarem. Nie zaślepiamy
+// za to bramki ładowanie/błąd — od podziału warstw (D4) siedzi ona właśnie w
+// AuthedHome i to jest jedyne miejsce, gdzie da się ją przetestować.
+vi.mock("./dot-grid", () => ({ DotGrid: () => null }))
+vi.mock("./shell-header", () => ({ ShellHeader: () => null }))
+vi.mock("./shell-footer", () => ({ ShellFooter: () => null }))
+
 import type { Tile } from "@/lib/tiles"
 import { MessagesSquare } from "lucide-react"
-import { TileGrid } from "./tile-grid"
+import { AuthedHome } from "./authed-home"
 
 /** Kafelek task-chat w kształcie, w jakim useCoworkProjectTiles zwraca projekt. */
 function coworkProjectTile(name = "Cortex Cowork", id = "cortex-cowork"): Tile {
@@ -125,7 +134,7 @@ afterEach(() => {
   coworkTilesMock = { tiles: [], projects: [], isLoading: false }
 })
 
-describe("TileGrid", () => {
+describe("AuthedHome — hub", () => {
   it("renders only tiles present in authorized apps", () => {
     authorizedMock = {
       allowed: true,
@@ -135,7 +144,7 @@ describe("TileGrid", () => {
       isError: false,
     }
 
-    render(<TileGrid />)
+    render(<AuthedHome />)
 
     expect(screen.getByText("IDP Basic")).not.toBeNull()
     expect(screen.queryByText("IDP")).toBeNull()
@@ -150,7 +159,7 @@ describe("TileGrid", () => {
       isError: false,
     }
 
-    render(<TileGrid />)
+    render(<AuthedHome />)
 
     expect(screen.getByText("Intrastat")).not.toBeNull()
     expect(screen.queryByText("IDP Basic")).toBeNull()
@@ -165,7 +174,7 @@ describe("TileGrid", () => {
       isError: false,
     }
 
-    render(<TileGrid />)
+    render(<AuthedHome />)
 
     expect(screen.getByText("Podświetlacz tekstu")).not.toBeNull()
     expect(screen.queryByText("Transformator tekstu")).toBeNull()
@@ -181,7 +190,7 @@ describe("TileGrid", () => {
       isError: false,
     }
 
-    render(<TileGrid />)
+    render(<AuthedHome />)
 
     expect(screen.getByText("Podświetlacz tekstu")).not.toBeNull()
     expect(screen.getByText("Transformator tekstu")).not.toBeNull()
@@ -198,7 +207,7 @@ describe("TileGrid", () => {
       isError: false,
     }
 
-    render(<TileGrid />)
+    render(<AuthedHome />)
 
     expect(screen.getByText("Nie znaleziono aplikacji")).not.toBeNull()
   })
@@ -209,7 +218,7 @@ describe("TileGrid", () => {
   it("pokazuje stan ładowania zamiast pustego stanu, dopóki katalog huba się nie wczyta", () => {
     hubTilesMock = { tiles: [], isLoading: true, isError: false }
 
-    render(<TileGrid />)
+    render(<AuthedHome />)
 
     expect(screen.getByText("Wczytywanie aplikacji…")).not.toBeNull()
     expect(screen.queryByText("Nie znaleziono aplikacji")).toBeNull()
@@ -218,7 +227,7 @@ describe("TileGrid", () => {
   it("pokazuje osobny komunikat błędu, gdy katalog huba nie wczytał się wcale", () => {
     hubTilesMock = { tiles: [], isLoading: false, isError: true }
 
-    render(<TileGrid />)
+    render(<AuthedHome />)
 
     expect(screen.getByText("Nie udało się wczytać aplikacji")).not.toBeNull()
   })
@@ -236,7 +245,7 @@ describe("TileGrid", () => {
     }
     coworkTilesMock = { tiles: [coworkProjectTile()], projects: [], isLoading: false }
 
-    render(<TileGrid />)
+    render(<AuthedHome />)
 
     // Własny kafelek widoczny — dowód, że grid się wyrenderował i asercja niżej
     // nie przechodzi tylko dlatego, że nie ma na ekranie niczego.
@@ -258,18 +267,64 @@ describe("TileGrid", () => {
       isLoading: false,
     }
 
-    render(<TileGrid />)
+    render(<AuthedHome />)
 
     expect(screen.getByText("Cortex Cowork")).not.toBeNull()
     expect(screen.getByText("Projekt Beta")).not.toBeNull()
   })
 
   it("applies tile href overrides", () => {
-    render(<TileGrid tileHrefOverrides={{ idp: "/idp/packages" }} />)
+    render(<AuthedHome tileHrefOverrides={{ idp: "/idp/packages" }} />)
 
     expect(screen.getByRole("link", { name: /IDP Procesowanie/i })).toHaveAttribute(
       "href",
       "/idp/packages",
     )
+  })
+
+  // Licznik zakładki liczy wynik szukania, nie cały katalog z grantem — to są
+  // dwie różne liczby (HubCounts.matching vs HubCounts.authorized) i zgadzają
+  // się tylko przy pustej szukajce, więc scenariusz MUSI mieć zapytanie
+  // zawężające. Drugą z nich renderuje wyłącznie `masthead`, i tam też siedzi
+  // test, który pilnuje, że layout nie poda ich sobie zamienionych miejscami.
+  it("zakładka Wszystkie liczy wynik szukania, nie cały katalog z grantem", async () => {
+    authorizedMock = {
+      allowed: true,
+      apps: ["ai-tools"],
+      email: "u@x.com",
+      isLoading: false,
+      isError: false,
+    }
+
+    render(<AuthedHome />)
+    fireEvent.change(screen.getByLabelText("Szukaj aplikacji"), {
+      target: { value: "Analizator" },
+    })
+
+    // 3 kafelki ai-tools w katalogu, 1 pasuje do zapytania.
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Wszystkie aplikacje" }).textContent).toBe(
+        "Wszystkie 1",
+      )
+    })
+  })
+
+  // Strażnik defektu E0: cherry-pick `19e1dd2` PODMIENIŁ markup huba zamiast
+  // dołożyć drugi layout, więc `classic` przez jeden etap renderował DOM
+  // Domino. Po E4 pytanie brzmi inaczej i szerzej, bo wygląd nie jest już
+  // przypięty do layoutu: instancja bez wybranego presetu ma dostać hub
+  // sprzed redesignu W CAŁOŚCI — ten layout ORAZ te warianty.
+  it("bez wybranego presetu hub jest ten sprzed redesignu — layout i warianty", () => {
+    const { container } = render(<AuthedHome />)
+
+    // Licznik „Narzędzia: N" renderuje wyłącznie `masthead` — to jest
+    // rozstrzygnięcie o layoucie (warstwa 3).
+    expect(screen.queryByText(/^Narzędzia: /)).toBeNull()
+
+    // A to o wariancie (warstwa 2): kafelek karty ma wysokość wpisaną wprost,
+    // chiclet bierze ją z tokena. Bez tej asercji preset ze zmienionym samym
+    // wariantem przeszedłby test „domyślny layout" bez mrugnięcia.
+    expect(container.querySelector(".min-h-\\[184px\\]")).not.toBeNull()
+    expect(container.querySelector(".min-h-tile")).toBeNull()
   })
 })

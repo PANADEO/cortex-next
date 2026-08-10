@@ -295,9 +295,9 @@ describe("GET /api/cortex-cowork/projects — filtr ról po stronie serwera", ()
   })
 
   // Druga połowa tej samej reguły: tożsamość jest, ale grantu na kafelek nie
-  // ma. Hub takiemu użytkownikowi tej sekcji i tak nie renderuje (tile-grid.tsx
-  // pyta o ten sam kod), więc API przestaje oddawać nazwy, opisy i briefy
-  // projektów, których UI by nie pokazało.
+  // ma. Hub takiemu użytkownikowi tej sekcji i tak nie renderuje
+  // (hub/use-hub-model.ts pyta o ten sam kod), więc API przestaje oddawać
+  // nazwy, opisy i briefy projektów, których UI by nie pokazało.
   it("tryb otwarty: bez grantu cortex-cowork lista jest pusta (200)", async () => {
     setGrants({})
     await writeConfig(openModeConfig())

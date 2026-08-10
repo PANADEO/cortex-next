@@ -14,7 +14,7 @@
 // ten zestaw grantów, którego ten plik potrzebuje, bez seedowania bazy.
 //
 // GRANT `cortex-cowork` W MOCKU JEST CZĘŚCIĄ SCENARIUSZA, nie ozdobnikiem.
-// Hub bramkuje CAŁĄ sekcję kafelków task-chat tym grantem (tile-grid.tsx),
+// Hub bramkuje CAŁĄ sekcję kafelków task-chat tym grantem (hub/use-hub-model.ts),
 // więc bez niego wszystkie asercje niżej sprawdzałyby pustą listę i milczały
 // o tym, co ten plik ma testować — filtr RÓL per projekt. Że sam grant działa
 // (ma go → widzi sekcję, nie ma → nie widzi), dowodzi realną ścieżką

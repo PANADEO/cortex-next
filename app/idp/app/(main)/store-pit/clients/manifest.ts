@@ -11,4 +11,10 @@ export const spClientTile = defineTile({
   label: "Store-Pit Client Zone",
   entitlementCode: "sp-client",
   route: "/store-pit/clients",
+  description: "Widok klienta — jego przesyłki i kwota do rozliczenia",
+  icon: "Users",
+  color: "indigo",
+  categoryFunctional: "misc",
+  categoryDepartment: ["finance"],
+  sortOrder: 30,
 })

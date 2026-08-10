@@ -12,4 +12,10 @@ export const intrastatTile = defineTile({
   label: "Intrastat",
   entitlementCode: "intrastat",
   route: "/intrastat/dashboard",
+  description: "Przygotowanie importowych Exceli WNT/WDT z faktur",
+  icon: "FileSpreadsheet",
+  color: "emerald",
+  categoryFunctional: "misc",
+  categoryDepartment: ["operations", "finance"],
+  sortOrder: 70,
 })

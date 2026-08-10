@@ -9,4 +9,10 @@ export const oknaCzasoweTile = defineTile({
   label: "Okna czasowe",
   entitlementCode: "okna-czasowe",
   route: "/okna-czasowe/dashboard",
+  description: "Śledzenie dostępności filmów na Rakuten TV PL",
+  icon: "CalendarClock",
+  color: "amber",
+  categoryFunctional: "research",
+  categoryDepartment: ["marketing"],
+  sortOrder: 40,
 })

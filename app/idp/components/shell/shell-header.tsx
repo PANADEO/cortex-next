@@ -1,28 +1,21 @@
 "use client"
 
 import { useSetUserPreferences, useShellUser } from "@cortex/api"
-import { SkinToggle, type SkinOption, ThemeToggle, UserMenu } from "@cortex/ui"
+import { SkinToggle, ThemeToggle, UserMenu } from "@cortex/ui"
 import Image from "next/image"
-import { SKINS, type SkinId, useSkinStore } from "@/lib/stores/skin-store"
+import { usePresetStore } from "@/lib/presets/preset-store"
+import { PRESET_CHOICES, presetChoiceToStored, storedToPresetChoice } from "@/lib/presets/registry"
 import { useThemeStore } from "@/lib/stores/theme-store"
-
-const SKIN_SWATCHES: Record<SkinId, readonly [string, string, string]> = {
-  default: ["#0a0a0a", "#f5f5f5", "#a3a3a3"],
-  customs: ["#f97316", "#15803d", "#fbbf24"],
-}
-
-const SKIN_OPTIONS: readonly SkinOption<SkinId>[] = SKINS.map((s) => ({
-  id: s.id,
-  label: s.label,
-  description: s.description,
-  swatch: SKIN_SWATCHES[s.id],
-}))
 
 export function ShellHeader() {
   const themeMode = useThemeStore((s) => s.mode)
   const setThemeMode = useThemeStore((s) => s.setMode)
-  const skin = useSkinStore((s) => s.skin)
-  const setSkin = useSkinStore((s) => s.setSkin)
+  // WYBÓR ze store'a, nie rozwiązany preset z `usePreset()`. Rozwiązany nigdy
+  // nie jest pusty (spada na `DEFAULT_PRESET`), więc przełącznik pokazywałby
+  // „Neutral" komuś, kto nie wybrał niczego — i pozycja „domyślny instancji"
+  // byłaby nieosiągalna do zaznaczenia mimo że jest na liście.
+  const storedPreset = usePresetStore((s) => s.preset)
+  const setPreset = usePresetStore((s) => s.setPreset)
   const persistPreferences = useSetUserPreferences()
   const shellUser = useShellUser()
 
@@ -42,7 +35,17 @@ export function ShellHeader() {
         </div>
         <div className="flex-1" />
         <div className="flex items-center gap-1">
-          <SkinToggle skin={skin} options={SKIN_OPTIONS} onSkinChange={setSkin} />
+          {/* `SkinToggle` bez adaptera: jego props to `SkinOption<T extends
+              string>[]`, a `PRESET_CHOICES` jest strukturalnie właśnie tym —
+              E3 zbudował sentinel jako NAPIS dokładnie po to. Para mapperów
+              zamienia go na `null` w store i z powrotem, więc pierwsze
+              kliknięcie nie zabetonowuje wyboru i preset instancji z E5 ma jak
+              wygrać. */}
+          <SkinToggle
+            skin={storedToPresetChoice(storedPreset)}
+            options={PRESET_CHOICES}
+            onSkinChange={(choice) => setPreset(presetChoiceToStored(choice))}
+          />
           <ThemeToggle
             mode={themeMode}
             onModeChange={(next) => {

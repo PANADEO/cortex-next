@@ -159,3 +159,9 @@ export interface OpenwebuiRoleGroupState {
 }
 
 export type AttachOpenwebuiGroupInput = { action: "create" } | { action: "existing"; groupId: string }
+
+/** Wygląd narzucony instancji. `preset: null` = nic nie narzuca, czyli
+ *  rozstrzyga wybór użytkownika, a po nim `DEFAULT_PRESET`. */
+export interface InstanceAppearance {
+  preset: string | null
+}

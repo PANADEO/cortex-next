@@ -25,7 +25,8 @@ export interface Tile {
   // `null` = kafelek dodany z UI Aplikacje bez wybranej kategorii (D3,
   // PROJECT/cortex-frontend-hub-db-driven-projekt.md) — zdegradowany, nie
   // zepsuty: kafelek zostaje widoczny w zakładce "Wszystkie", ale nie trafia
-  // do żadnej zakładki kategorii (patrz tileBelongsTo w tile-grid.tsx).
+  // do żadnej zakładki kategorii (patrz tileBelongsTo w
+  // components/shell/hub/use-hub-model.ts).
   categoryFunctional: TileCategoryFunctional | null
   categoryDepartment: TileCategoryDepartment[]
   /** Platform taxonomy (see docs/ROADMAP.md): what kind of thing this tile depicts. */
@@ -352,9 +353,9 @@ export const TILES: ReadonlyArray<Tile> = [
     // to jako osobny, ręczny wpis (nie generowany z AI_TOOL_DEFINITIONS) —
     // kafelek ma własny model danych i multi-ekranowy przepływ, nie pasuje
     // już do kształtu `aiToolTile()`. Nie renderuje duplikatu karty na hubie —
-    // TileGrid czyta z bazy (useHubTiles(), Krok 3 projektu hub-db-driven),
-    // nie z tej stałej; TILES służy dziś wyłącznie do rozstrzygania
-    // sidebar/breadcrumb w app-shellu.
+    // hub czyta z bazy (useHubTiles() w components/shell/hub/use-hub-model.ts,
+    // Krok 3 projektu hub-db-driven), nie z tej stałej; TILES służy dziś
+    // wyłącznie do rozstrzygania sidebar/breadcrumb w app-shellu.
     id: "content-guru",
     label: "Content Guru",
     description: "Generowanie roboczych treści marketingowych, produktowych i rekrutacyjnych",

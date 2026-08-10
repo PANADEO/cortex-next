@@ -10,4 +10,10 @@ export const linkedinGeneratorTile = defineTile({
   label: "Generator LinkedIn",
   entitlementCode: "linkedin-generator",
   route: "/ai-tools/linkedin-generator",
+  description: "Tworzy posty na LinkedIn",
+  icon: "MessageSquareText",
+  color: "violet",
+  categoryFunctional: "content-generation",
+  categoryDepartment: ["marketing", "hr", "operations"],
+  sortOrder: 170,
 })

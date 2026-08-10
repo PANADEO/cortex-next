@@ -6,6 +6,7 @@ import {
   applicationScopes,
   applications,
   getDb,
+  instanceSettings,
   permissionsMatrix,
   roleApplicationScopes,
   roles,
@@ -17,7 +18,7 @@ import {
   type UserRow,
 } from "@cortex/db"
 import { isHttpUrl, isInternalRoute, TileKind } from "@cortex/tile-sdk"
-import { and, asc, eq, inArray, isNotNull, isNull, ne, or } from "drizzle-orm"
+import { and, asc, eq, inArray, isNotNull, isNull, max, ne, or } from "drizzle-orm"
 import { z } from "zod"
 import { isModuleEnabled, moduleLicensingConfig } from "./module-licensing"
 import {
@@ -47,6 +48,27 @@ export interface UserWithRoles {
   roles: RoleSummary[]
 }
 
+/** Górna granica `sort_order` — JEDNA liczba dla schematu wejścia i dla
+ *  wyliczania pozycji nowego wiersza (nextSortOrder). Rozjazd tych dwóch
+ *  byłby cichy: kolumna to zwykły `integer`, więc wartość spoza zakresu
+ *  przeszłaby INSERT-em, a odbiłaby się dopiero od `applicationInputSchema`
+ *  w updateApplication — i to WYŁĄCZNIE przy PATCH-u, który sam nie niesie
+ *  `sortOrder` (mergeApplicationInput woli `patch.sortOrder` od wartości z
+ *  bazy). Czyli 400 dostawałby formularz edycji (nazwa, opis, ikona,
+ *  kategorie), a tryb "Zmień kolejność" — wysyłający samo `{ sortOrder }` —
+ *  przechodziłby i taki wiersz wręcz LECZYŁ. Promień rażenia mniejszy niż
+ *  "nieedytowalny", ale defekt realny, a granica kosztuje jedną stałą. */
+const MAX_SORT_ORDER = 10_000
+
+/** Odstęp między kolejnymi pozycjami. Bliźniak `SORT_ORDER_STEP` z
+ *  app/idp/app/(main)/system-config/applications/page.tsx (tryb zmiany
+ *  kolejności przenumerowuje listę na `(index + 1) * 10`). Zduplikowany
+ *  świadomie, nie zaimportowany: tamten plik jest komponentem klienckim, a
+ *  import z @cortex/service wciągnąłby drizzle i sterownik bazy do bundla.
+ *  Obie liczby (ta i MAX_SORT_ORDER wyżej) trzyma razem strażnik parzystości
+ *  system-config.sort-order-parity.test.ts — komentarz nie jest egzekucją. */
+const SORT_ORDER_STEP = 10
+
 const applicationFieldsSchema = z.object({
   code: z
     .string()
@@ -66,7 +88,7 @@ const applicationFieldsSchema = z.object({
   url: z.string().url().max(500).nullish(),
   target: z.enum(["_self", "_blank"]).nullish(),
   isActive: z.boolean().optional(),
-  sortOrder: z.number().int().min(0).max(10_000).optional(),
+  sortOrder: z.number().int().min(0).max(MAX_SORT_ORDER).optional(),
   // Hub-render (Krok 1/3, PROJECT/cortex-frontend-hub-db-driven-projekt.md
   // D1/D2/D3). Zestaw dozwolonych wartości (5 funkcji, 5 kategorii) egzekwuje
   // formularz (select/multi-select), nie ten schemat — celowo, żeby nie
@@ -572,6 +594,24 @@ export async function listUnactivatedNativeApplications(): Promise<ApplicationRo
  * żadnego wiersza (D4 — licencja nigdy nie zapisuje do danych instancji).
  * Nieustawione/puste `ENABLED_MODULES` => isModuleEnabled() zawsze `true` =>
  * zachowanie bez zmian.
+ *
+ * `show_on_hub` NIE JEST tu ustawiane (K1b, PROJECT/cortex-frontend/ARTIFACTS/
+ * licencjonowanie/cortex-frontend-konsolidacja-rejestrow-kafelka-projekt.md
+ * §4). Wcześniej leciało `showOnHub: true` bezwarunkowo, a cztery kody w
+ * rejestrze nie są kafelkami, tylko uprawnieniami (`ai-tools`,
+ * `cortex-cowork`, `intrastat-cn-editor`, `intrastat-config-editor` — grant
+ * zbiorczy albo flaga odblokowująca przycisk WEWNĄTRZ innego kafelka). Trzyma
+ * je dziś poza hubem wyłącznie `show_on_hub = excluded.show_on_hub` w
+ * seed-system-config.mjs, czyli linia, którą K3 usuwa jako defekt — po niej
+ * pierwsza aktywacja z pickera "Dodaj aplikację" wystawiłaby na hub cztery
+ * karty prowadzące do ekranów, które kafelkami nie są.
+ *
+ * O tej kolumnie rozstrzyga więc REJESTRACJA, nie aktywacja:
+ * seed-tile-manifests.mjs wstawia ją na INSERCIE z manifestowego
+ * `entitlementOnly`. Aktywacja odpowiada wyłącznie na pytanie "czy ta
+ * instancja włącza ten moduł" (`is_active` + `activated_at`) — czy moduł ma
+ * własną kartę na hubie, jest faktem o kodzie i nie zależy od tego, kto i
+ * kiedy kliknął "Dodaj aplikację".
  */
 export async function activateApplication(code: string): Promise<ApplicationRow | null> {
   if (!isModuleEnabled(code)) throw new ModuleNotLicensedError(code)
@@ -580,7 +620,7 @@ export async function activateApplication(code: string): Promise<ApplicationRow 
 
   const [activated] = await db
     .update(applications)
-    .set({ isActive: true, showOnHub: true, activatedAt: new Date(), updatedAt: new Date() })
+    .set({ isActive: true, activatedAt: new Date(), updatedAt: new Date() })
     .where(and(eq(applications.code, code), eq(applications.kind, "native"), isNull(applications.activatedAt)))
     .returning()
 
@@ -600,15 +640,37 @@ export async function activateApplication(code: string): Promise<ApplicationRow 
  * (D6-rewizja/D10-rewizja d). To jest egzekwowanie w SERWISIE, nie tylko w
  * UI: samo ukrycie pola `route` w formularzu niczego by nie gwarantowało dla
  * żądania wysłanego z pominięciem przeglądarki.
+ *
+ * Pozycja nowego wiersza to KONIEC listy (nextSortOrder), a nie `0` (K4/D5,
+ * PROJECT/cortex-frontend/ARTIFACTS/licencjonowanie/cortex-frontend-
+ * konsolidacja-rejestrow-kafelka-projekt.md). Jawny `sortOrder` z wejścia
+ * wygrywa — pole jest częścią kontraktu zapisu, więc "koniec listy" znaczy
+ * wyłącznie "nie podano żadnej pozycji".
+ *
+ * Bez blokady i bez transakcji: dwa równoległe POST-y odczytają to samo
+ * maksimum i dostaną tę samą wartość. To REMIS, nie kolizja — oba wiersze i
+ * tak lądują za wszystkim, co istniało wcześniej, a między sobą rozstrzyga je
+ * drugi klucz sortowania (`asc(code)` w listApplications/listHubApplications),
+ * więc lista zostaje deterministyczna i admin ma czym to poprawić (tryb zmiany
+ * kolejności). Odrzucone: `for update`/SERIALIZABLE — serializowałyby
+ * zakładanie aplikacji (ręczna czynność, kilka razy w roku) dla kosmetyki.
+ * Odrzucone też wepchnięcie `max()` do podzapytania w INSERT-cie: w READ
+ * COMMITTED druga transakcja i tak nie widzi niezacommitowanego wiersza
+ * pierwszej, więc jeden statement remisu NIE USUWA — zmierzone przy review:
+ * 39/40 remisów wobec 40/40 przy dwóch instrukcjach. Okno zwęża się
+ * marginalnie, nie znika, a płaci się za to SQL-em w `values()`.
  */
 export async function createApplication(input: ApplicationInput): Promise<ApplicationRow> {
   if (input.kind === "native") {
     throw new NativeCreationNotAllowedError()
   }
 
-  const [created] = await getDb()
+  const db = getDb()
+  const [highest] = await db.select({ value: max(applications.sortOrder) }).from(applications)
+
+  const [created] = await db
     .insert(applications)
-    .values(toApplicationValues(input))
+    .values(toApplicationValues(input, nextSortOrder(highest?.value ?? null)))
     .returning()
 
   return created as ApplicationRow
@@ -637,7 +699,7 @@ export async function updateApplication(
 
   const [updated] = await db
     .update(applications)
-    .set({ ...toApplicationValues(merged), updatedAt: new Date() })
+    .set({ ...toApplicationValues(merged, existing.sortOrder), updatedAt: new Date() })
     .where(eq(applications.id, id))
     .returning()
 
@@ -854,6 +916,72 @@ export async function setApplicationScopeRoles(
   clearTileAccessCache()
 }
 
+/**
+ * Wygląd ustawiony dla całej instancji. `preset === null` znaczy „instancja
+ * nie narzuca niczego" i jest STANEM POPRAWNYM, nie błędem ani brakiem
+ * konfiguracji — każda świeża instancja tak właśnie wygląda.
+ */
+export interface InstanceAppearance {
+  preset: string | null
+}
+
+/**
+ * Walidacja kształtu, nie przynależności do rejestru presetów. Rejestr
+ * (`app/idp/lib/presets/registry.ts`) jest w warstwie aplikacji, a ten pakiet
+ * nie ma prawa jej znać; poza tym twarda lista tutaj oznaczałaby, że dodanie
+ * presetu wymaga wdrożenia backendu. Wartość spoza rejestru rozstrzyga się w
+ * `resolvePresetId()` jak brak wyboru, więc najgorszy skutek błędnego zapisu
+ * to instancja na wartości domyślnej — nie awaria.
+ *
+ * Ten sam kształt co `applications.code` (małe litery, cyfry, myślnik): to
+ * jest identyfikator w URL-o-podobnym sensie, nie wolny tekst.
+ */
+export const instanceAppearanceInputSchema = z.object({
+  preset: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-z0-9-]+$/, "Identyfikator presetu może zawierać tylko małe litery, cyfry i myślnik")
+    .nullable(),
+})
+
+export type InstanceAppearanceInput = z.infer<typeof instanceAppearanceInputSchema>
+
+/** Brak wiersza = instancja nigdy nic nie ustawiła. Nie zakładamy go leniwie
+ *  przy odczycie: ta funkcja stoi na ścieżce KAŻDEGO renderu strony (patrz
+ *  app/idp/app/layout.tsx), więc musi być czystym odczytem. */
+export async function getInstanceAppearance(): Promise<InstanceAppearance> {
+  const [row] = await getDb()
+    .select({ preset: instanceSettings.appearancePreset })
+    .from(instanceSettings)
+    .limit(1)
+  return { preset: row?.preset ?? null }
+}
+
+/**
+ * `onConflictDoUpdate` na kluczu głównym singletona — jedno zapytanie zamiast
+ * „sprawdź, potem wstaw albo zaktualizuj". Tamten wariant to TOCTOU: dwa
+ * równoległe zapisy przechodzą oba sprawdzenia i drugi INSERT łamie klucz.
+ *
+ * `set` wymienia WYŁĄCZNIE tę jedną kolumnę (plus znacznik czasu). Gdy dojdą
+ * kolejne ustawienia instancji, zapis jednego nie może kasować pozostałych —
+ * to jest cena wspólnego wiersza i trzeba ją płacić przy każdym setterze.
+ */
+export async function setInstanceAppearance(
+  input: InstanceAppearanceInput,
+): Promise<InstanceAppearance> {
+  const { preset } = instanceAppearanceInputSchema.parse(input)
+  const [row] = await getDb()
+    .insert(instanceSettings)
+    .values({ id: true, appearancePreset: preset })
+    .onConflictDoUpdate({
+      target: instanceSettings.id,
+      set: { appearancePreset: preset, updatedAt: new Date() },
+    })
+    .returning({ preset: instanceSettings.appearancePreset })
+  return { preset: row?.preset ?? null }
+}
+
 export class UnknownUserError extends Error {
   constructor(userId: string) {
     super(`Nie ma użytkownika o id ${userId}`)
@@ -977,7 +1105,9 @@ function assertKeepsModuleReachable(existing: ApplicationRow, input: Application
   // `external-link`/`iframe` albo ścieżki na obcy adres zamienia wejście do
   // administracji w przekierowanie poza aplikację (finding 8 zastosowany do
   // kafelka samej administracji), więc te pola też są niezmienne.
-  const next = toApplicationValues(input)
+  // `existing.sortOrder` jako fallback: ta funkcja patrzy wyłącznie na
+  // kind/route/url, więc pozycja ma tu być no-opem, a nie nową wartością.
+  const next = toApplicationValues(input, existing.sortOrder)
   if (next.kind !== existing.kind || next.route !== existing.route || next.url !== existing.url) {
     throw new SelfLockoutError(
       "Nie można zmienić typu ani adresu aplikacji Konfiguracja Systemu — ten wiersz opisuje sam moduł administracyjny, a podmiana go na adres zewnętrzny wyprowadzałaby administratorów poza tę aplikację.",
@@ -1017,7 +1147,8 @@ function assertKeepsModuleReachable(existing: ApplicationRow, input: Application
  * tego, jaki był `existing.kind` PRZED edycją.
  */
 function assertNativeApplicationImmutable(existing: ApplicationRow, input: ApplicationInput): void {
-  const next = toApplicationValues(input)
+  // Jak wyżej — porównywane są code/kind/route, pozycja jest tu bez znaczenia.
+  const next = toApplicationValues(input, existing.sortOrder)
 
   if (existing.kind !== "native") {
     if (next.kind === "native") {
@@ -1270,7 +1401,39 @@ function mergeApplicationInput(existing: ApplicationRow, patch: ApplicationPatch
   }
 }
 
-function toApplicationValues(input: ApplicationInput) {
+/**
+ * Reguła "nowy wiersz ląduje na końcu" wyrażona na samej liczbie — `highest`
+ * to `max(sort_order)` z CAŁEJ tabeli.
+ *
+ * Maksimum liczone globalnie, a nie po wierszach huba (`is_active` +
+ * `show_on_hub`): zawężenie stawiałoby nową aplikację PRZED zarejestrowanym,
+ * ale jeszcze nieaktywowanym kandydatem `native`, który jutro zostanie
+ * włączony i wskoczyłby nad wiersz założony wcześniej. Kolumna jest jedna i
+ * wspólna dla wszystkich list (listApplications, listHubApplications), więc i
+ * punkt odniesienia ma być jeden.
+ *
+ * Pusta tabela (`max()` po zerze wierszy to NULL, nie 0) -> `0`: pierwszy
+ * wiersz nie ma za czym lądować. Funkcja jest wydzielona z zapytania właśnie
+ * po to, żeby ten przypadek dało się udowodnić testem — bazy integracyjnej nie
+ * da się opróżnić, bo dzieli ją seed i równoległe suity.
+ *
+ * Przy suficie funkcja SATURUJE: po osiągnięciu MAX_SORT_ORDER każde kolejne
+ * utworzenie remisuje na tej samej wartości. Akceptowalne dokładnie z tego
+ * powodu, co remis dwóch równoległych POST-ów (patrz createApplication) —
+ * wiersz nadal jest na końcu, remis rozstrzyga `asc(code)`, a admin ma czym to
+ * ułożyć. Odrzucone: przenumerowanie całej tabeli przy INSERCIE, żeby zrobić
+ * miejsce — przepisywałoby układ ustawiony ręcznie przez admina, czyli łamało
+ * regułę, dla której obrony ta funkcja w ogóle powstała.
+ */
+export function nextSortOrder(highest: number | null): number {
+  if (highest === null) return 0
+  return Math.min(highest + SORT_ORDER_STEP, MAX_SORT_ORDER)
+}
+
+/** `fallbackSortOrder` — pozycja, gdy wołający nie podał własnej: przy
+ *  tworzeniu koniec listy, przy PATCH-u dotychczasowa pozycja wiersza.
+ *  Wcześniej było tu na sztywno `0`, czyli POCZĄTEK huba (K4/D5). */
+function toApplicationValues(input: ApplicationInput, fallbackSortOrder: number) {
   const isNative = input.kind === "native"
   return {
     code: input.code,
@@ -1282,7 +1445,7 @@ function toApplicationValues(input: ApplicationInput) {
     url: isNative ? null : (input.url ?? null),
     target: input.target ?? null,
     isActive: input.isActive ?? true,
-    sortOrder: input.sortOrder ?? 0,
+    sortOrder: input.sortOrder ?? fallbackSortOrder,
     showOnHub: input.showOnHub ?? true,
     color: input.color ?? null,
     categoryFunctional: input.categoryFunctional ?? null,

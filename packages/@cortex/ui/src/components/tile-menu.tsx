@@ -30,6 +30,16 @@ interface TileMenuProps {
   footerSlot?: ReactNode
 }
 
+/**
+ * Stan aktywny pozycji (`bg-sidebar-accent`, `text-sidebar-accent-foreground`),
+ * kolor pozycji nieaktywnej i separator stopki są TOKENAMI — i tak zostaje,
+ * E2 tego nie tknie. Uzasadnienie w całości: nagłówek `app-shell.tsx` obok.
+ *
+ * Tutaj stawka jest wyższa niż samo tło: bez tych klas jedyną pozostałą
+ * oznaką „gdzie jestem" w nawigacji jest `aria-current`, czyli sygnał
+ * niewidoczny dla wzroku. Przemalowanie sidebara pod nowy skin robi się przez
+ * `--sidebar-accent` w bloku `.skin-*`, bez dotykania tego pliku.
+ */
 export function TileMenu({
   sections,
   activeItemId,

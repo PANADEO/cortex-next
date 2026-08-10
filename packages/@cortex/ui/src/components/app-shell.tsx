@@ -12,6 +12,22 @@ interface AppShellProps {
   sidebarCollapsed?: boolean
 }
 
+/**
+ * Tło, ramki i kolory idą TOKENAMI (`bg-sidebar`, `border-sidebar-border`,
+ * `border-border`) i tak zostaje — E2 tego nie tknie.
+ *
+ * Wariant z gałęzi Domino (`ef85991`) wymieniał je na klasy `ch-*` czytające
+ * `--ch-*` z `:root`, działające wyłącznie pod scope'em `.cortex-chrome`.
+ * Odrzucone i wycofane z dwóch powodów. Po pierwsze, `@cortex/ui` jest pakietem
+ * współdzielonym: komponent wyrenderowany poza tym jednym scope'em traci tło i
+ * ramki, więc koszt płaci każdy przyszły konsument, nie tylko autor skinu. Po
+ * drugie — i to jest właściwy argument — powłoka zostaje na warstwie 1 (D5,
+ * PROJECT/cortex-frontend/ARTIFACTS/cortex-frontend-presety-wygladu-projekt.md):
+ * dowodem jest to, że `ef85991` nie zmienił DOM-u ani o jeden element, więc
+ * cały chrome wyraża się samymi wartościami tokenów. Skin przemalowuje go,
+ * nadpisując `--sidebar`/`--border` w bloku `.skin-*`, i nie potrzebuje ani
+ * jednej własnej reguły układu ani drugiego zestawu klas.
+ */
 export function AppShell({
   sidebar,
   topbar,

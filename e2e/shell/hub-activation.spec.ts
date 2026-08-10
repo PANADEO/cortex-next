@@ -14,7 +14,7 @@
 
 import { applications, getDb, permissionsMatrix, roles } from "@cortex/db"
 import { asUser, expect, test } from "../fixtures/fixtures"
-import { resetSystemConfig, runRegistrySeed } from "../fixtures/db-seed"
+import { allManifestCodes, resetSystemConfig, runRegistrySeed } from "../fixtures/db-seed"
 import { mockIdpConfig } from "../support/mocks/idp-config"
 
 test.describe.configure({ timeout: 300_000 })
@@ -23,6 +23,14 @@ const ADMIN_EMAIL = "admin-activation@e2e.local"
 const UNACTIVATED_CODE = "e2e-unactivated-native"
 const UNACTIVATED_NAME = "E2E Nieaktywowany Moduł"
 const UNACTIVATED_ROUTE = `/${UNACTIVATED_CODE}`
+
+// Kafelek `external-link` — po K3 (usunięcie APPLICATIONS) żaden seed takiego
+// wiersza nie zakłada: to dane instancji, które admin dodaje z UI (D3). Test
+// niżej porównuje wygląd wyłączonego wiersza native z wyłączonym wierszem
+// nienatywnym, więc potrzebuje go wprost. Wartości odpowiadają temu, co do K3
+// seedowało się pod kodem `meeting-guru`.
+const EXTERNAL_CODE = "meeting-guru"
+const EXTERNAL_NAME = "Nagrywanie Spotkań"
 
 /**
  * Stan bazy: pełny rejestr prawdziwych seedów (`runRegistrySeed`, ten sam
@@ -35,7 +43,7 @@ const UNACTIVATED_ROUTE = `/${UNACTIVATED_CODE}`
  */
 async function seedUnactivatedNativeCandidate(): Promise<void> {
   await resetSystemConfig()
-  runRegistrySeed({ adminEmail: ADMIN_EMAIL })
+  runRegistrySeed({ adminEmail: ADMIN_EMAIL, bootstrapModules: allManifestCodes() })
 
   const db = getDb()
   const [candidate] = await db
@@ -46,9 +54,31 @@ async function seedUnactivatedNativeCandidate(): Promise<void> {
       kind: "native",
       route: UNACTIVATED_ROUTE,
       isActive: false,
-      showOnHub: false,
+      // `showOnHub: true` odwzorowuje to, co od K1b wstawia
+      // seed-tile-manifests.mjs prawdziwemu kafelkowi (kolumna bierze się z
+      // manifestowego `entitlementOnly`, wcześniej było tu zaszyte `false`
+      // dla wszystkich). Wiersz i tak jest niewidoczny na hubie, bo
+      // listHubApplications() wymaga `is_active AND show_on_hub` — i to
+      // sprawdza pierwszy krok testu niżej. Po K1b activateApplication() tej
+      // kolumny NIE podnosi: o niej rozstrzyga rejestracja, nie aktywacja.
+      showOnHub: true,
       activatedAt: null,
       sortOrder: 999,
+    })
+    .returning()
+
+  // Wiersz `external-link` — nie ma go w żadnym seedzie od K3 (D3: kafelek bez
+  // kodu w tym repo zakłada admin z UI), a test porównujący wygląd wyłączonych
+  // wierszy potrzebuje jednego takiego obok wiersza native.
+  const [external] = await db
+    .insert(applications)
+    .values({
+      code: EXTERNAL_CODE,
+      name: EXTERNAL_NAME,
+      kind: "external-link",
+      url: "https://chat.megu.me",
+      target: "_blank",
+      sortOrder: 998,
     })
     .returning()
 
@@ -59,20 +89,26 @@ async function seedUnactivatedNativeCandidate(): Promise<void> {
   // zbiór jest mały.
   const allRoles = await db.select({ id: roles.id, code: roles.code }).from(roles)
   const adminRole = allRoles.find((role) => role.code === "admin")
-  await db.insert(permissionsMatrix).values({ roleId: adminRole!.id, applicationId: candidate!.id })
+  await db.insert(permissionsMatrix).values([
+    { roleId: adminRole!.id, applicationId: candidate!.id },
+    { roleId: adminRole!.id, applicationId: external!.id },
+  ])
 }
 
 /**
  * Krok 5 (PROJECT/cortex-frontend-hub-db-driven-projekt.md — stan pusty
- * SELECT-a): rejestr bez ŻADNEGO dodatkowego, ręcznie wstawionego kandydata —
- * WSZYSTKIE ~24 dzisiejsze manifesty przychodzą z prawdziwych seedów już
- * aktywowane (`activated_at = now()`, patrz seed-system-config.mjs), więc
- * listUnactivatedNativeApplications() zwraca pustą listę tak samo, jak
- * zwróciłaby na świeżym, w pełni zaktywowanym deployu.
+ * SELECT-a): rejestr bez ŻADNEGO dodatkowego, ręcznie wstawionego kandydata i
+ * bez ani jednego kandydata NIEAKTYWOWANEGO, więc
+ * listUnactivatedNativeApplications() zwraca pustą listę.
+ *
+ * Do K3 wychodziło to samo z niczego, bo statyczna lista APPLICATIONS
+ * aktywowała wszystko INSERT-em. Dziś świeża baza aktywuje wyłącznie rdzeń, a
+ * "w pełni zaktywowany deploy" trzeba nazwać wprost — dokładnie tym, czym
+ * nazywa go dziś operator stawiający środowisko (BOOTSTRAP_MODULES).
  */
 async function seedFullyActivatedRegistry(): Promise<void> {
   await resetSystemConfig()
-  runRegistrySeed({ adminEmail: ADMIN_EMAIL })
+  runRegistrySeed({ adminEmail: ADMIN_EMAIL, bootstrapModules: allManifestCodes() })
 }
 
 test.describe("Aktywacja natywnego kafelka z listy manifestów (D6-rewizja/D10-rewizja d)", () => {
@@ -253,10 +289,10 @@ test.describe("Aktywowany-a-potem-wyłączony wiersz native — ten sam wygląd 
     await applicationsPage.goto()
 
     await applicationsPage.deactivate(UNACTIVATED_NAME)
-    await applicationsPage.deactivate("Nagrywanie Spotkań") // meeting-guru, kind=external-link (realny seed)
+    await applicationsPage.deactivate(EXTERNAL_NAME) // kind=external-link, wiersz z fixture'u
 
     const nativeBadge = await applicationsPage.statusBadge(UNACTIVATED_CODE)
-    const externalBadge = await applicationsPage.statusBadge("meeting-guru")
+    const externalBadge = await applicationsPage.statusBadge(EXTERNAL_CODE)
 
     await expect(nativeBadge).toHaveText("Wyłączona")
     await expect(externalBadge).toHaveText("Wyłączona")

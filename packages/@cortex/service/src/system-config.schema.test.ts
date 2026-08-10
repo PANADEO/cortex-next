@@ -5,6 +5,8 @@
 import { describe, expect, it } from "vitest"
 import {
   applicationInputSchema,
+  applicationPatchSchema,
+  nextSortOrder,
   roleInputSchema,
   rolePatchSchema,
   userInputSchema,
@@ -170,6 +172,42 @@ describe("roleInputSchema — tworzenie roli", () => {
     const parsed = roleInputSchema.safeParse({ code: "marketing", name: "Marketing", isSystem: true })
     expect(parsed.success).toBe(true)
     if (parsed.success) expect(parsed.data).not.toHaveProperty("isSystem")
+  })
+})
+
+// K4/D5. Zachowanie na PRAWDZIWEJ bazie (nowa aplikacja ląduje za wszystkim,
+// co już istnieje) dowodzi system-config.integration.test.ts. Tutaj zostają
+// dwa przypadki, których na tamtej bazie pokazać się NIE DA, bo jest
+// współdzielona z seedem i równoległymi suitami: PUSTA tabela (nie da się jej
+// opróżnić) i wiersz przy samej górnej granicy (nie da się go tam wstawić bez
+// psucia kolejności innym testom).
+describe("nextSortOrder — nowy wiersz ląduje na końcu listy", () => {
+  it("pusta tabela (max(sort_order) = NULL, nie 0) daje 0 — pierwszy wiersz nie ma za czym lądować", () => {
+    expect(nextSortOrder(null)).toBe(0)
+  })
+
+  it("dokłada krok 10 do najwyższej istniejącej pozycji", () => {
+    expect(nextSortOrder(0)).toBe(10)
+    expect(nextSortOrder(220)).toBe(230)
+  })
+
+  it("przycina do górnej granicy kontraktu zapisu — inaczej edycja takiego wiersza wracałaby 400", () => {
+    expect(nextSortOrder(10_000)).toBe(10_000)
+    // Sedno przycinania: cokolwiek stąd wyjdzie, musi przejść przez PATCH-a.
+    // Wartość 10_010 wstawiłaby się (kolumna to zwykły integer), ale odbiłaby
+    // się od walidacji SCALONEGO wiersza w updateApplication przy każdym
+    // PATCH-u, który sam nie niesie `sortOrder` — czyli przy zwykłej edycji
+    // nazwy/opisu/ikony. PATCH z własnym `sortOrder` (tryb "Zmień kolejność")
+    // przechodzi, bo mergeApplicationInput woli wartość z patcha.
+    expect(applicationPatchSchema.safeParse({ sortOrder: nextSortOrder(10_000) }).success).toBe(true)
+    expect(applicationPatchSchema.safeParse({ sortOrder: 10_010 }).success).toBe(false)
+  })
+
+  // Saturacja przy suficie jest ŚWIADOMA, nie przeoczeniem — ten test istnieje
+  // po to, żeby ktoś, kto ją odkryje, zobaczył ją zapisaną jako decyzja.
+  it("przy suficie saturuje — kolejne utworzenia remisują, tak jak dwa równoległe POST-y", () => {
+    expect(nextSortOrder(9_995)).toBe(10_000)
+    expect(nextSortOrder(10_000)).toBe(10_000)
   })
 })
 

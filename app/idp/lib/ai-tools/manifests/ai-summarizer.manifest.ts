@@ -10,4 +10,10 @@ export const aiSummarizerTile = defineTile({
   label: "Sumaryzator",
   entitlementCode: "ai-summarizer",
   route: "/ai-tools/ai-summarizer",
+  description: "Skraca długie teksty do streszczenia",
+  icon: "FileText",
+  color: "blue",
+  categoryFunctional: "content-generation",
+  categoryDepartment: ["marketing", "operations", "it"],
+  sortOrder: 150,
 })

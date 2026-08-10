@@ -13,4 +13,10 @@ export const spConsoleTile = defineTile({
   label: "Store-Pit Re-Rating",
   entitlementCode: "sp-console",
   route: "/store-pit/dashboard",
+  description: "Przeliczanie faktur przewoźnika na rozliczenia per klient",
+  icon: "Workflow",
+  color: "cyan",
+  categoryFunctional: "agents",
+  categoryDepartment: ["finance", "operations"],
+  sortOrder: 20,
 })

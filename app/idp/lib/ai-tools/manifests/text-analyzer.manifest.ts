@@ -10,4 +10,10 @@ export const textAnalyzerTile = defineTile({
   label: "Analizator tekstu",
   entitlementCode: "text-analyzer",
   route: "/ai-tools/text-analyzer",
+  description: "Analiza treści, tonu i struktury tekstu",
+  icon: "TextCursorInput",
+  color: "blue",
+  categoryFunctional: "content-generation",
+  categoryDepartment: ["marketing", "operations", "it"],
+  sortOrder: 140,
 })

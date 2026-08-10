@@ -2,8 +2,7 @@
 
 import { cn } from "@cortex/utils"
 import { Search } from "lucide-react"
-
-export type HeroView = "functional" | "department"
+import type { HeroView } from "../../types"
 
 interface HeroSearchProps {
   value: string

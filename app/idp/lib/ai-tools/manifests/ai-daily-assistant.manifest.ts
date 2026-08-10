@@ -10,4 +10,10 @@ export const aiDailyAssistantTile = defineTile({
   label: "Chatbot AI",
   entitlementCode: "ai-daily-assistant",
   route: "/ai-tools/ai-daily-assistant",
+  description: "Asystent ogólnego przeznaczenia",
+  icon: "Bot",
+  color: "indigo",
+  categoryFunctional: "agents",
+  categoryDepartment: ["operations", "it"],
+  sortOrder: 200,
 })

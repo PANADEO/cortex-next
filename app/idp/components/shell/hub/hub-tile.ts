@@ -7,7 +7,7 @@ import type { HubTile } from "@cortex/api"
  * `GET /api/hub/tiles` row -> `Tile` (kształt bez zmian, Krok 3,
  * PROJECT/cortex-frontend-hub-db-driven-projekt.md). WYŁĄCZNIE mapowanie
  * wyglądu — kto co widzi nadal rozstrzyga wyłącznie `canAccessTile()` w
- * tile-grid.tsx, wołany PO tej mapie, na `authorized.apps` z
+ * hub/use-hub-model.ts, wołany PO tej mapie, na `authorized.apps` z
  * `/api/me/access` (D7 — ten plik nie ma i nie może mieć logiki dostępu).
  *
  * `id` = `code` (entitlement) — dokładnie to, po czym `canAccessTile`/

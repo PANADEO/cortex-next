@@ -8,4 +8,10 @@ export const idpTile = defineTile({
   label: "IDP",
   entitlementCode: "idp",
   route: "/idp/dashboard",
+  description: "Procesowanie i ekstrakcja danych z dokumentów handlowych",
+  icon: "ScanText",
+  color: "rose",
+  categoryFunctional: "misc",
+  categoryDepartment: ["operations"],
+  sortOrder: 0,
 })

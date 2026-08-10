@@ -21,4 +21,10 @@ export const contentGuruTile = defineTile({
   label: "Kreator treści",
   entitlementCode: "content-guru",
   route: "/content-guru",
+  description: "Generuje treści marketingowe i redakcyjne",
+  icon: "Sparkles",
+  color: "violet",
+  categoryFunctional: "content-generation",
+  categoryDepartment: ["marketing", "hr", "operations"],
+  sortOrder: 160,
 })

@@ -23,7 +23,7 @@ Rozdzielenie, o które łatwo się potknąć: **`tiles.ts` odpowiada na „jak k
 
 Praktyczne skutki:
 
-- Kod nieobecny w `applications` **nigdy** nie trafi do `apps` — SQL go nie zwróci. Nowy kafelek wymaga wiersza w rejestrze (seed `packages/@cortex/db/scripts/seed-system-config.mjs`), nie tylko wpisu w `TILES`.
+- Kod nieobecny w `applications` **nigdy** nie trafi do `apps` — SQL go nie zwróci. Nowy kafelek wymaga wiersza w rejestrze; zakłada go `packages/@cortex/db/scripts/seed-tile-manifests.mjs` z manifestu kafelka (`defineTile()`), jako NIEAKTYWNEGO kandydata. Sam wpis w `TILES` nie wystarcza, a ręcznej listy kodów w seedzie nie ma już wcale (K3 — konsolidacja rejestrów).
 - Kafelek obecny w `TILES`, ale bez wiersza w `applications`, jest nieosiągalny dla wszystkich — i to jest zachowanie zamierzone (fail-closed), nie usterka.
 - Kod obecny w `applications`, ale bez wpisu w `TILES`, jest **uprawnieniem, nie kafelkiem**: nie wyrenderuje się w hubie, ale otwiera funkcje w środku innego kafelka. Dziś cztery takie: `ai-tools` i `cortex-cowork` (granty zbiorcze — kod sam nigdy nie renderuje własnej karty, tylko bramkuje rodzinę kafelków renderowaną gdzie indziej) oraz `intrastat-cn-editor` / `intrastat-config-editor` (przyciski edycji w Intrastacie; realną egzekucją zajmuje się zewnętrzny backend FastAPI).
 - `route`/`url` w rejestrze są celowo identyczne z `href` odpowiadającego wpisu w `TILES` — rejestr i kod mają wskazywać to samo miejsce.

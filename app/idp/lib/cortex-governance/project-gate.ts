@@ -33,7 +33,7 @@ export interface ProjectAccessContext {
  * every enabled project and start a billable agent session, which on a fresh
  * cortex-next instance is its permanent starting state; the hub had already
  * been tightened to hide these tiles without the `cortex-cowork` grant
- * (tile-grid.tsx), so the API was simply more permissive than the UI it
+ * (hub/use-hub-model.ts), so the API was simply more permissive than the UI it
  * serves. Rationale for keying bootstrap trust off the grant: bootstrap-trust.ts.
  *
  * 404 for a project id that doesn't exist in the config at all (typo/stale

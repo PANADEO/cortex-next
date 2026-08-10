@@ -233,3 +233,15 @@ export function useRenameApplicationScope() {
     onSuccess: (_data, { id }) => client.invalidateQueries({ queryKey: queryKeys.applicationScopes(id) }),
   })
 }
+
+export function useInstanceAppearance() {
+  return useQuery({ queryKey: queryKeys.appearance(), queryFn: endpoints.appearance.get })
+}
+
+export function useSetInstanceAppearance() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (preset: string | null) => endpoints.appearance.set(preset),
+    onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.appearance() }),
+  })
+}
