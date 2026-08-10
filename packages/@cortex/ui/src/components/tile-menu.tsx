@@ -1,10 +1,81 @@
 "use client"
 
 import { cn } from "@cortex/utils"
+import { cva } from "class-variance-authority"
 import type { LucideIcon } from "lucide-react"
 import Link from "next/link"
 import type { ReactNode } from "react"
+import type { AppShellVariant } from "./app-shell"
 import { Badge } from "./ui/badge"
+
+/**
+ * Kształt paska bocznego. Kolory zostają tokenami i nie zależą od wariantu —
+ * od niego zależy grubość linii, krój etykiety sekcji i sposób wyrażenia stanu
+ * aktywnego (podświetlenie tła kontra wypełnienie akcentem).
+ *
+ * Promień CELOWO siedzi w bazie jako `rounded-md`, a nie w wariancie:
+ * rozwija się przez `--radius-md`, który `.skin-domino` ustawia na 2px. Twarda
+ * krawędź przychodzi więc z palety. Wpisanie jej tutaj rozdwoiłoby źródło
+ * promienia między warstwę 1 i 2.
+ */
+const menu = {
+  brand: cva("flex h-header items-center", {
+    variants: {
+      variant: { plain: "", ruled: "border-b-2 border-sidebar-border" },
+    },
+    defaultVariants: { variant: "plain" },
+  }),
+  label: cva("mb-2 px-2 font-semibold uppercase", {
+    variants: {
+      variant: {
+        plain: "text-[10px] tracking-wider text-muted-foreground",
+        ruled: "font-mono text-[11px] tracking-[0.14em] text-sidebar-primary",
+      },
+    },
+    defaultVariants: { variant: "plain" },
+  }),
+  link: cva("group flex h-8 items-center rounded-md text-sm transition-colors", {
+    variants: {
+      variant: { plain: "", ruled: "border-[1.5px] border-transparent" },
+      active: { true: "", false: "" },
+    },
+    compoundVariants: [
+      {
+        variant: "plain",
+        active: true,
+        class: "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
+      },
+      {
+        variant: "plain",
+        active: false,
+        class:
+          "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+      },
+      {
+        variant: "ruled",
+        active: true,
+        // `border-sidebar-border` nadpisuje `border-transparent` z wariantu
+        // WYŁĄCZNIE dlatego, że konsument owija wynik w `cn()` — twMerge
+        // wyrzuca wcześniejszą klasę tej samej rodziny. Wywołane surowo
+        // (`menu.link(...)` bez `cn`) pojechałyby obie i o kolorze
+        // rozstrzygałaby kolejność reguł w arkuszu. Nośne, nie kosmetyczne.
+        class: "bg-chart-1 text-chart-1-foreground border-sidebar-border font-semibold",
+      },
+      {
+        variant: "ruled",
+        active: false,
+        class: "text-sidebar-foreground hover:bg-sidebar-accent",
+      },
+    ],
+    defaultVariants: { variant: "plain", active: false },
+  }),
+  foot: cva("border-sidebar-border p-3", {
+    variants: {
+      variant: { plain: "border-t", ruled: "border-t-2" },
+    },
+    defaultVariants: { variant: "plain" },
+  }),
+}
 
 export interface TileMenuItem {
   id: string
@@ -28,6 +99,8 @@ interface TileMenuProps {
   brandIcon?: ReactNode
   collapsed?: boolean
   footerSlot?: ReactNode
+  /** Domyślnie `plain` — wygląd sprzed wprowadzenia wariantów. */
+  variant?: AppShellVariant
 }
 
 /**
@@ -47,16 +120,12 @@ export function TileMenu({
   brandIcon,
   collapsed = false,
   footerSlot,
+  variant = "plain",
 }: TileMenuProps) {
   return (
     <div className="flex h-full flex-col">
       {brand || brandIcon ? (
-        <div
-          className={cn(
-            "flex h-header items-center",
-            collapsed ? "justify-center px-0" : "px-5",
-          )}
-        >
+        <div className={cn(menu.brand({ variant }), collapsed ? "justify-center px-0" : "px-5")}>
           {collapsed ? brandIcon ?? brand : brand}
         </div>
       ) : null}
@@ -65,9 +134,7 @@ export function TileMenu({
         {sections.map((section) => (
           <div key={section.id} className="mb-5 last:mb-0">
             {section.label && !collapsed ? (
-              <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {section.label}
-              </p>
+              <p className={menu.label({ variant })}>{section.label}</p>
             ) : null}
             <ul className="space-y-0.5">
               {section.items.map((item) => {
@@ -81,11 +148,8 @@ export function TileMenu({
                       aria-current={isActive ? "page" : undefined}
                       title={collapsed ? item.label : undefined}
                       className={cn(
-                        "group flex h-8 items-center rounded-md text-sm transition-colors",
+                        menu.link({ variant, active: isActive }),
                         collapsed ? "justify-center px-0" : "gap-2.5 px-2",
-                        isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                          : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                         item.disabled && "pointer-events-none opacity-50",
                       )}
                     >
@@ -113,7 +177,7 @@ export function TileMenu({
       </nav>
 
       {footerSlot && !collapsed ? (
-        <div className="border-t border-sidebar-border p-3">{footerSlot}</div>
+        <div className={menu.foot({ variant })}>{footerSlot}</div>
       ) : null}
     </div>
   )

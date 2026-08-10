@@ -18,6 +18,29 @@ export type TabsVariant = "underline" | "folder"
 export type TileVariant = "card" | "chiclet"
 
 /**
+ * Powłoka — sidebar, topbar i stopka. `plain` to krawędź włosowa i zaokrąglony
+ * stan aktywny; `ruled` to 2-pikselowe linie atramentem, monospace'owe
+ * etykiety sekcji i stan aktywny jako wypełnienie akcentem.
+ *
+ * Nazwa opisuje KSZTAŁT, nie preset — tak samo jak `card`/`chiclet` i
+ * `underline`/`folder`. Wariant nazwany `domino` związałby warstwę 2 z jedną
+ * wiązką i zabił sens rozdzielenia: czwarty preset ma prawo chcieć `ruled` bez
+ * reszty Domina. „Rule" to zresztą typograficzna nazwa tych linii.
+ *
+ * DLACZEGO TO JEST WARSTWA 2, MIMO ŻE NAGŁÓWEK `app-shell.tsx` TWIERDZIŁ
+ * INACZEJ. Tamten komentarz wnioskował z faktu, że `ef85991` nie zmienił DOM-u
+ * ani o jeden element, iż „cały chrome wyraża się samymi wartościami tokenów".
+ * Wniosek był za szeroki: tamten commit zmieniał też grubość krawędzi (2px
+ * zamiast 1px), krój i wersaliki etykiet, oraz twardy cień `2px 2px 0` przy
+ * hoverze pola szukania — a to są decyzje o kształcie, których żadna wartość
+ * tokena nie wyrazi. Kolory faktycznie zostały na warstwie 1 i ten plik ich
+ * nie dotyka; dochodzi wyłącznie kształt.
+ *
+ * Konsumenci: `@cortex/ui` (`app-shell`, `tile-menu`), `components/topbar.tsx`.
+ */
+export type ShellVariant = "plain" | "ruled"
+
+/**
  * Warianty są UNIAMI LITERAŁOWYMI, nie `string`, i E4 potwierdził, po co:
  * `cva({ variants: { variant: { card: …, chiclet: … } } })` typuje się po
  * kluczach tabeli wariantów, więc `preset.variants.tile` wchodzi tam wprost,
@@ -28,6 +51,7 @@ export type TileVariant = "card" | "chiclet"
 export interface PresetVariants {
   tabs: TabsVariant
   tile: TileVariant
+  shell: ShellVariant
 }
 
 export interface Preset {
@@ -70,7 +94,7 @@ export const PRESETS: Readonly<Record<PresetId, Preset>> = {
     description: "Monochrome shadcn defaults.",
     skin: "",
     hubLayout: "classic",
-    variants: { tabs: "underline", tile: "card" },
+    variants: { tabs: "underline", tile: "card", shell: "plain" },
     swatch: ["#0a0a0a", "#f5f5f5", "#a3a3a3"],
   },
   customs: {
@@ -79,7 +103,7 @@ export const PRESETS: Readonly<Record<PresetId, Preset>> = {
     description: "Hi-vis orange + duty-green.",
     skin: "skin-customs",
     hubLayout: "classic",
-    variants: { tabs: "underline", tile: "card" },
+    variants: { tabs: "underline", tile: "card", shell: "plain" },
     swatch: ["#f97316", "#15803d", "#fbbf24"],
   },
   domino: {
@@ -88,7 +112,7 @@ export const PRESETS: Readonly<Record<PresetId, Preset>> = {
     description: "Papier i atrament, twarde krawędzie.",
     skin: "skin-domino",
     hubLayout: "masthead",
-    variants: { tabs: "folder", tile: "chiclet" },
+    variants: { tabs: "folder", tile: "chiclet", shell: "ruled" },
     swatch: ["#d9a441", "#1f6e6b", "#b85c38"],
   },
 }

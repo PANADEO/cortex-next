@@ -20,6 +20,7 @@ import {
   useStorePitNavSections,
   useVisualGuruNavSections,
 } from "@/lib/nav"
+import { usePreset } from "@/lib/presets/preset-store"
 import { useSidebarStore } from "@/lib/stores/sidebar-store"
 import { AI_TOOLS_TILE_ID } from "@/lib/ai-tools/app-codes"
 import { resolveRequiredTileId, TILES } from "@/lib/tiles"
@@ -83,6 +84,11 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const tile = TILES.find((t) => t.id === tileId)
   const activeItemId = pathToItemId(pathname)
   const collapsed = useSidebarStore((s) => s.collapsed)
+  // Warstwa 2 dojeżdża do `@cortex/ui` PROPSEM, nie kontekstem. Pakiet
+  // prymitywów nie ma prawa zależeć od mechanizmu presetów aplikacji —
+  // kierunek zależności jest odwrotny. Ten sam wzorzec, którym hub podaje
+  // `variants` do swojego layoutu.
+  const shellVariant = usePreset().variants.shell
   const isBoardRoute = pathname === "/idp/dashboard" || pathname === "/idp/board"
   const idpNavSections = useIdpNavSections()
   const idpBasicNavSections = useIdpBasicNavSections()
@@ -156,11 +162,13 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   return (
     <AppGate tileId={requiredTileId}>
       <AppShell
+        variant={shellVariant}
         sidebarCollapsed={collapsed}
         {...(isBoardRoute ? { mainClassName: "overflow-hidden" } : {})}
         sidebar={
           isAiToolPage ? null : (
             <TileMenu
+              variant={shellVariant}
               sections={navSections}
               activeItemId={activeItemId}
               collapsed={collapsed}
