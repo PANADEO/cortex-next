@@ -1,9 +1,20 @@
 ---
 name: code-compose
-description: Dopisanie usługi/rodziny usług do jednego docker-compose.yml (include:+profiles). Użyj przy dodawaniu nowego kontenera do środowiska cortex-next.
+description: Dopisanie usługi/rodziny usług do docker-compose (include:+profiles) w cortex-frontend. Użyj przy dodawaniu nowego kontenera do środowiska cortex-next albo dowolnej edycji pliku compose. UWAGA — są DWA pliki compose, które muszą pozostać zgodne; łańcuch seedów w usłudze `migrate` → code-seed.
 ---
 
 # code-compose
+
+## Najpierw: są DWA pliki compose i rozjazd między nimi jest cichy
+
+```
+docker-compose.yml         — lokalnie, buduje obrazy ze źródeł (build:)
+docker-compose.image.yml   — wdrożenia, ciągnie gotowe obrazy (image:)
+```
+
+Różnią się **prawnie** (build vs image, nazwy kontenerów, `ENVIRONMENT_TAG`), więc nie porównuj ich całych. Ale `command:` usługi `migrate` — czyli łańcuch migracji i seedów — musi być w obu **identyczny co do listy i kolejności**. Edycja tylko jednego z nich daje defekt widoczny wyłącznie na wdrożeniu, przy zielonych testach lokalnie; zdarzyło się dwa razy (`token-usage`, GEO Score), więc reguła ma dziś test: `packages/@cortex/db/scripts/seed-chain-parity.test.ts`. Szczegóły i podział ról → **`code-seed`**.
+
+`pnpm lint` obejmuje wyłącznie `{app,packages}/**/*.{ts,tsx}` — **plików compose nie sprawdza nic poza tym testem.**
 
 ## Reguła
 

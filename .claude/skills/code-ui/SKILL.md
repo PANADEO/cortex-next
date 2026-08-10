@@ -1,6 +1,6 @@
 ---
 name: code-ui
-description: Konwencje UI w cortex-frontend — tylko @cortex/ui + @cortex/styles, zero customowego CSS/inline hex/emoji. Użyj przy pisaniu dowolnego komponentu React/JSX.
+description: Konwencje UI w cortex-frontend — tylko @cortex/ui + @cortex/styles, zero customowego CSS/inline hex/emoji, wzorce list/tabel/nagłówków. Użyj przy pisaniu dowolnego komponentu React/JSX. Presety wyglądu, skiny, tokeny kolorów i layouty huba → code-theme.
 ---
 
 # code-ui
@@ -8,7 +8,7 @@ description: Konwencje UI w cortex-frontend — tylko @cortex/ui + @cortex/style
 ## Reguły (twarde, bez wyjątków)
 
 1. Komponenty wyłącznie z `@cortex/ui` (shadcn/ui + Radix). Nowy prymityw UI → dodaj do `@cortex/ui`, nie twórz lokalnego odpowiednika w module.
-2. Kolory/spacing wyłącznie przez tokeny `@cortex/styles` (CSS variables) — zero inline hex (`#4A90E2` itd.), zero magicznych wartości Tailwind poza tokenami.
+2. Kolory/spacing wyłącznie przez tokeny `@cortex/styles` (CSS variables) — zero inline hex (`#4A90E2` itd.), zero magicznych wartości Tailwind poza tokenami. Token ma **jedną** definicję na warstwę: wartość żyje w `globals.css`, kształt w wariancie CVA komponentu. Zmiana koloru w komponencie zamiast w tokenie jest tym samym błędem co inline hex — patrz **`code-theme`**, sekcja "Trzy warstwy".
 3. Zero emoji w UI copy, komentarzach, komunikatach błędów — produkt dla regulowanych klientów enterprise, ma wyglądać intencjonalnie.
 4. UI copy po polsku, identyfikatory kodu po angielsku (zmienne, funkcje, nazwy plików). To obejmuje wprost **segmenty ścieżek URL** (foldery Next.js file-based routing — folder = URL) — zawsze angielskie, bez wyjątków typu "spójność z istniejącym polskim segmentem w tym samym module". Poprawka realnego błędu z 02.08.2026: `/system-config/{aplikacje,uzytkownicy}` i `/ilustromat/{generowanie,szablony}` (razem z komponentami `AplikacjePage`/`UzytkownicyPage`/`SzablonyPage`/`GenerowaniePage` i hookami-hybrydami `useKonfiguracjaApplications` itp.) zostały zbudowane po polsku — dla `system-config` była to jawna, ale błędna decyzja ([[cortex-frontend-aplikacje-ux-projekt]]: "Polski segment, spójnie z istniejącym `/system-config/uzytkownicy`"), tu odwrócona. Naprawione na `/system-config/{applications,users}` i `/ilustromat/{generation,templates}` — stare adresy żyją dalej jako 308 w `LEGACY_REDIRECTS` (`app/idp/middleware.ts`).
 5. Logo (`app/idp/public/cortex-logo.png`) i kolor marki `cortex` (`#4A90E2` w `tailwind.config.ts`) — nie wymyślać alternatyw.
@@ -24,6 +24,8 @@ Strona szczegółów/konfiguracji, która z czasem dokłada kolejne niezależne 
 ## Dark mode
 
 Jeden asset, jeden mechanizm: `<Image className="dark:invert dark:hue-rotate-180" />` dla logo. Nie dodawać osobnych assetów per motyw bez wyraźnej potrzeby.
+
+**Motyw i preset to dwie prostopadłe osie, łatwe do pomylenia.** Motyw to klasa `.dark` na `<html>` (jasny/ciemny, wybór użytkownika, `theme_mode` w preferencjach). Preset to klasa `.skin-*` na tym samym elemencie (Customs/Domino; Neutral nie ma własnej klasy — jego wygląd to tokeny bazowe z `:root`). Każdy preset ma swój wariant ciemny — dla Customs i Domina jako `.skin-*.dark`, dla Neutrala jako samo `.dark` — więc kombinacji jest tyle, ile presetów razy dwa. Zrzut ekranu w innym kolorze tła to najczęściej po prostu drugi motyw, nie inny preset. Szczegóły: **`code-theme`**.
 
 ## Listy: row-actions, nie klik-w-wiersz
 
