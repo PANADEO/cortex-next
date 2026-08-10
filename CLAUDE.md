@@ -32,17 +32,20 @@
 ## Repository layout
 
 ```
-/app/<tile>/*            → aplikacje (kafelki) — np. /app/idp
-/libs/@cortex/ui/*       → shared komponenty
-/libs/@cortex/styles/*   → tokens, Tailwind config, themes
-/libs/@cortex/api/*      → shared API layer
-/libs/@cortex/types/*    → shared TypeScript types
-/libs/@cortex/utils/*    → shared utilities
-/docs/*                  → dokumentacja architektoniczna
+/app/<tile>/*                → aplikacje (kafelki) — np. /app/idp
+/packages/@cortex/ui/*       → shared komponenty
+/packages/@cortex/styles/*   → tokens, Tailwind config, themes
+/packages/@cortex/api/*      → shared API layer
+/packages/@cortex/db/*       → schema Drizzle, migracje, seedy deployu
+/packages/@cortex/service/*  → logika domenowa (RBAC, system-config, sync)
+/packages/@cortex/tile-sdk/* → `defineTile()` i schemat manifestu kafelka
+/packages/@cortex/types/*    → shared TypeScript types
+/packages/@cortex/utils/*    → shared utilities
+/docs/*                      → dokumentacja architektoniczna
 ```
 
-Reużywalne → `/libs/@cortex/*`. App-specific → `/app/<tile>/*`.
-Brak workspace managera na tym etapie (pnpm/turbo dorzucamy gdy zacznie boleć).
+Reużywalne → `/packages/@cortex/*`. App-specific → `/app/<tile>/*`.
+pnpm workspace (`pnpm-workspace.yaml`) — katalog `/libs/` już nie istnieje.
 
 ## Shell architecture
 
@@ -52,8 +55,20 @@ Brak workspace managera na tym etapie (pnpm/turbo dorzucamy gdy zacznie boleć).
   - `(shell)` — landing (header + tile-grid + footer, brak sidebara)
   - `(main)` — moduły z app-shell (sidebar `TileMenu` + `Topbar`)
   - `idp/<route>` poza `(main)` — fullscreen workspace pages (np. `verify/[id]`, `classification/[id]`)
-- **Code-backed tiles są hardcoded w kodzie**, nie przez API. Rejestr: `app/idp/lib/tiles.ts` (typowany `Tile[]`, pole `archetype: agent-config | dashboard | task-chat`).
-  Decyzja: te tiles zmieniają się rzadko, code-driven jest szybsze niż backend + admin panel.
+- **Kafelek z kodem rejestruje MANIFEST**, nie ręczna lista. `defineTile()` (`@cortex/tile-sdk`) obok strony
+  kafelka, zebrany w barrelu `app/idp/lib/tile-manifests.ts` → JSON w etapie `builder` → `seed-tile-manifests.mjs`
+  wstawia wiersz do `system_config.applications`. Manifest jest **dowodem, że kod istnieje w tym repo**:
+  niesie tożsamość, trasowanie i wartości POCZĄTKOWE pól prezentacyjnych, wpisywane wyłącznie przy pierwszym
+  INSERCIE — w runtime właścicielem jest admin i jego edycje przeżywają deploy.
+  Zapomniany import w barrelu = kafelek nie zarejestruje się w żadnej instancji; pilnuje tego
+  `tile-manifests-completeness.test.ts`, bo `tsc` nie widzi pliku, którego nikt nie importuje.
+- **Kafelki `external-link` NIE mają manifestu** i to jest reguła, nie zaniedbanie: nie mają kodu w tym repo,
+  więc zakłada je admin z panelu i są daną instancji. Rejestru pilnuje `tile-registry-parity.test.ts`.
+- **Świeża baza aktywuje wyłącznie rdzeń** (`system-config`; plus `ilustromat` i `token-usage`, które aktywują
+  się we własnych seedach — historyczny wzorzec do uporządkowania). Resztę włącza admin albo `BOOTSTRAP_MODULES`,
+  przechodzące przez tę samą bramkę licencyjną co `ENABLED_MODULES` — **przecięcie, nigdy suma**.
+- `app/idp/lib/tiles.ts` **nie jest już rejestrem** — hub renderuje z bazy (`GET /api/hub/tiles`). Plik żyje jako
+  źródło nawigacji, palety poleceń i stałych kategorii; jego konsolidacja to osobne zadanie.
 - **Wyjątek — kafelki `task-chat` (Cortex Cowork)** NIE są w `tiles.ts`. Konfiguruje je centralnie
   kafelek **Cortex Config** (`archetype: agent-config`), a hub dociąga je per user z governance store
   (`GET /api/cortex-cowork/projects`, filtr ról server-side). Governance (role, grupy skilli,
@@ -75,13 +90,27 @@ Brak workspace managera na tym etapie (pnpm/turbo dorzucamy gdy zacznie boleć).
   Dark mode: `<Image className="dark:invert dark:hue-rotate-180" />` → navy w light → light cyan-blue w dark, jeden asset.
   Logo to drzewo obwodów, koniec — nie wymyślać alternatyw (literki, kwadraty, gradient).
 - **Favicon**: `app/idp/app/favicon.ico` (Next.js convention — auto picked up, nie pisać `<link>`).
-- Theme/skin store: `useThemeStore` (light/dark/system), `useSkinStore` (default/customs).
-  Toggle w `(shell)` shell-header i `(main)` topbar — JEDEN store, dwa miejsca renderu.
-- Paleta CSS-vars: `libs/@cortex/styles/globals.css` (źródło prawdy, NIE duplikować w inline style).
+- **Wygląd to PRESET, nie sam skin**: nazwana wiązka `{ skin, hubLayout, variants }` w
+  `app/idp/lib/presets/registry.ts` (`neutral` | `customs` | `domino`). Store: `usePresetStore`
+  (zastąpił `useSkinStore`), `useThemeStore` osobno dla light/dark/system. Przełącznik w `(shell)`
+  shell-header i `(main)` topbar.
+- **Trzy warstwy i nie mieszać ich** (`PROJECT/cortex-frontend/ARTIFACTS/cortex-frontend-presety-wygladu-projekt.md`):
+  1. tokeny — kolor, promień, grubość krawędzi, font, tracking; **skin to WYŁĄCZNIE wartości, ani jednej reguły układu**,
+  2. warianty CVA — ten sam DOM ułożony inaczej (`tabs`, `tile`),
+  3. layout — DOM realnie się różni; rejestr `HUB_LAYOUTS`, wejście bramkowane testem kontraktowym.
+  Nowy wygląd zaczyna na warstwie 1; awans wyżej wymaga wykazania, że niżej się nie da.
+- **Ani jedna reguła CSS nie jest zakresowana `[data-preset]`** — o layoucie i wariantach decyduje preset
+  w Reakcie, więc warunek w CSS-ie powtarzałby decyzję już podjętą i kosztował mignięcie nieostylowanego układu.
+- Preset instancji (`system_config.instance_settings`, ekran `/system-config/appearance`) czyta **layout korzenia
+  po stronie serwera** i emituje w pierwszych bajtach dokumentu — stąd `force-dynamic` i zero tras prerenderowanych.
+  Odczyt jest ograniczony czasowo, bo niedostępna baza stoi na ścieżce renderu każdej strony.
+- Paleta CSS-vars: `packages/@cortex/styles/globals.css` (źródło prawdy, NIE duplikować w inline style).
+  Klasa skinu nakładana runtime'owo **musi być w `safelist`** w `tailwind.config.ts` — forma napisowa, nie wzorzec
+  (wzorce rozwijają się wobec nazw narzędzi, więc `.skin-*` zostaje wycięte, i to tylko w jasnym motywie).
 
 ## Backend integration — known gap
 
-`apiClient` (`libs/@cortex/api/`) wywołuje endpointy bez prefixu — middleware proxuje wybrane wzorce do
+`apiClient` (`packages/@cortex/api/`) wywołuje endpointy bez prefixu — middleware proxuje wybrane wzorce do
 backendu IDP (`IDP_BACKEND_URL`, default `http://idp-app`).
 
 **MSW handlery (`app/idp/mocks/handlers.ts`) traktujemy jako żywą specyfikację kontraktu** dla
