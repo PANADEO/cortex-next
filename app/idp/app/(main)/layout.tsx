@@ -129,7 +129,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     <Link
       href="/"
       aria-label="Powrót do Cortex360 hub"
-      className="inline-block transition-opacity hover:opacity-80"
+      className="inline-block transition-opacity motion-reduce:transition-none hover:opacity-80"
     >
       <Image
         src="/cortex-logo.png"
@@ -146,7 +146,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     <Link
       href="/"
       aria-label="Powrót do Cortex360 hub"
-      className="flex items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-80"
+      className="flex items-center gap-2 font-semibold tracking-tight transition-opacity motion-reduce:transition-none hover:opacity-80"
     >
       <Image
         src="/cortex-logo.png"

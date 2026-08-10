@@ -45,13 +45,16 @@ function useDiagnostics(): Diagnostics | null {
 }
 
 /**
- * Stopka ekranu startowego i huba — odpowiednik `.ch-shellfoot`. Wariant
- * zmienia grubość linii i rolę tła; kolory zostają tokenami.
+ * Stopka ekranu startowego i huba — odpowiednik `.ch-shellfoot` z oryginału.
+ * Wariant zmienia grubość linii, rolę tła i typografię; wartości kolorów
+ * zostają tokenami.
  *
- * Świadomie NIE przeniesione z oryginału: monospace. Tam stopka nie miała
- * własnego kroju, a dołożenie go tutaj byłoby moim pomysłem podanym jako
- * odtworzenie cudzego projektu. Do rozważenia osobno, gdyby „drukowany"
- * charakter miał objąć też pasek diagnostyczny.
+ * KOREKTA WCZEŚNIEJSZEGO ZAPISU. Komentarz w tym miejscu twierdził, że
+ * monospace „nie było w oryginale" i dlatego go nie przenoszę. To była
+ * nieprawda — `.ch-shellfoot` miał `font-family: IBM Plex Mono`,
+ * `letter-spacing: 0.08em` i `text-transform: uppercase`. Wszystkie trzy są
+ * teraz przeniesione. Twierdzenie o cudzym projekcie, którego nikt nie
+ * sprawdził, jest gorsze niż brak komentarza; wychwycił to dopiero przegląd.
  */
 const shellFoot = cva("border-border backdrop-blur", {
   variants: {
@@ -67,7 +70,10 @@ const footText = cva(
   "mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-1 px-6 py-3 text-[11px]",
   {
     variants: {
-      variant: { plain: "text-muted-foreground", ruled: "text-sidebar-foreground" },
+      variant: {
+        plain: "text-muted-foreground",
+        ruled: "font-mono uppercase tracking-[0.08em] text-sidebar-foreground",
+      },
     },
     defaultVariants: { variant: "plain" },
   },

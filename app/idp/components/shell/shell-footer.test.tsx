@@ -10,7 +10,17 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllEnvs()
   vi.resetModules()
+  // Store presetu jest PERSYSTOWANY (`cortex.skin` w localStorage), więc
+  // `vi.resetModules()` go nie czyści — wręcz pogarsza sprawę, bo świeżo
+  // zaimportowany store rehydruje zapisaną wartość. Sprzątanie MUSI stać
+  // tutaj, a nie w ciele testu: test przerwany asercją pomijał tamto
+  // przypisanie i zatruwał każdy kolejny w pliku.
+  localStorage.removeItem("cortex.skin")
 })
+
+function classSet(el: Element | null | undefined): string[] {
+  return (el?.className ?? "").split(/\s+/).filter(Boolean).sort()
+}
 
 describe("ShellFooter", () => {
   it("renders copyright and the shell version stripped of leading 'v'", async () => {
@@ -51,11 +61,21 @@ describe("ShellFooter — wariant powłoki", () => {
     const { ShellFooter } = await import("./shell-footer")
     const { container } = render(createElement(ShellFooter))
 
-    const footer = container.querySelector("footer")
-    expect(footer?.className).toContain("border-t")
-    expect(footer?.className).not.toContain("border-t-2")
-    expect(footer?.className).toContain("bg-card/60")
-    expect(container.querySelector("footer > div")?.className).toContain("text-muted-foreground")
+    // RÓWNOŚĆ zbiorów, nie zawieranie — tytuł mówi „znak w znak" i ma to
+    // znaczyć. Pierwsza wersja używała `toContain` i przepuszczała klasę
+    // dołożoną przypadkiem (sprawdzone mutacją: `shadow-lg ring-2` w bazie
+    // przechodziło na zielono).
+    expect(classSet(container.querySelector("footer"))).toEqual(
+      ["border-t", "border-border", "bg-card/60", "backdrop-blur"].sort(),
+    )
+
+    expect(classSet(container.querySelector("footer > div"))).toEqual(
+      [
+        "mx-auto", "flex", "max-w-7xl", "flex-wrap", "items-center",
+        "justify-between", "gap-x-6", "gap-y-1", "px-6", "py-3",
+        "text-[11px]", "text-muted-foreground",
+      ].sort(),
+    )
   })
 
   it("pod wyglądem ruled linia jest grubsza, a tło i tekst biorą rolę paska bocznego", async () => {
@@ -68,8 +88,14 @@ describe("ShellFooter — wariant powłoki", () => {
     const footer = container.querySelector("footer")
     expect(footer?.className).toContain("border-t-2")
     expect(footer?.className).toContain("bg-sidebar/60")
-    expect(container.querySelector("footer > div")?.className).toContain("text-sidebar-foreground")
 
-    usePresetStore.setState({ preset: null })
+    // Typografia przeniesiona z oryginału (`.ch-shellfoot`): mono, wersaliki,
+    // tracking 0.08em. Komentarz w kodzie twierdził wcześniej, że oryginał
+    // tego nie miał — nieprawda, wychwycone przy przeglądzie.
+    const inner = container.querySelector("footer > div")
+    expect(inner?.className).toContain("font-mono")
+    expect(inner?.className).toContain("uppercase")
+    expect(inner?.className).toContain("tracking-[0.08em]")
+    expect(inner?.className).toContain("text-sidebar-foreground")
   })
 })

@@ -9,15 +9,19 @@ import { PRESET_CHOICES, presetChoiceToStored, storedToPresetChoice } from "@/li
 import { useThemeStore } from "@/lib/stores/theme-store"
 
 /**
- * Pasek ekranu startowego — odpowiednik `.ch-shellbar` z oryginału. Ta sama
- * zasada co w powłoce `(main)`: kolory zostają tokenami, wariant rozstrzyga
- * grubość linii i rolę semantyczną tła.
+ * Pasek nad hubem — odpowiednik `.ch-shellbar`. Ta sama zasada co w powłoce
+ * `(main)`: wartości kolorów zostają tokenami, wariant rozstrzyga grubość
+ * linii i rolę semantyczną tła.
  *
- * UWAGA NA ZAKRES PRESETU TUTAJ. Ten ekran ogląda też NIEZALOGOWANY, a wybór
- * użytkownika mieszka w `localStorage` — przy pierwszej wizycie go nie ma.
- * W praktyce więc ekran logowania pokazuje wygląd INSTANCJI, nigdy osobisty,
- * i to jest zachowanie zamierzone: wygląd bramy wejściowej należy do
- * właściciela instancji, nie do odwiedzającego.
+ * KOREKTA ZAKRESU. Komentarz w tym miejscu twierdził, że to pasek EKRANU
+ * LOGOWANIA i wywodził z tego rozważania o niezalogowanym użytkowniku. To
+ * nieprawda: `ShellHeader` renderuje się WYŁĄCZNIE z `authed-home.tsx`, czyli
+ * na hubie po zalogowaniu. Ekran logowania (`landing-hero.tsx`) ma własny,
+ * bezramkowy `<header>` i ten wariant go NIE dotyczy — `.ch-shellbar` nie
+ * został tam przeniesiony i jest to otwarte zadanie, nie zrobione.
+ *
+ * Rozważanie o presecie instancji zostaje aktualne dla `ShellFooter`, który
+ * renderuje się w obu miejscach — patrz komentarz tam.
  */
 const shellBar = cva("sticky top-0 z-30 border-border backdrop-blur", {
   variants: {

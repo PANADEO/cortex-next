@@ -48,6 +48,14 @@ const SECTIONS = [
  * `text-black` (nie mają sufiksu liczbowego, a są najbardziej nieprzemalowalne
  * ze wszystkich), oraz rodziny `from-`/`via-`/`to-`/`outline-`/`divide-`/
  * `stroke-`/`accent-`/`decoration-`, których w ogóle nie wymieniała.
+ *
+ * ŚWIADOMIE POZA WZORCEM: `cortex` — kolor marki, w `tailwind.config.ts`
+ * literalny `#4A90E2`, więc faktycznie nieprzemalowalny przez skin. To jest
+ * wyłączenie celowe (`code-ui` reguła 5: „kolor marki — nie wymyślać
+ * alternatyw"), a nie przeoczenie: `landing-hero.tsx` używa go w kilkunastu
+ * miejscach i ma prawo. Odnotowane, bo przegląd słusznie zauważył, że bez tego
+ * zdania „zero twardych klas palety" brzmi jak pomiar, którym nie jest —
+ * wzorzec po prostu nie wymieniał tej nazwy.
  */
 const HARDCODED_PALETTE = new RegExp(
   String.raw`\b(?:bg|text|border|fill|ring|shadow|from|via|to|outline|divide|stroke|accent|decoration|caret)-` +
@@ -74,6 +82,25 @@ const SHELL_SOURCES = [
   "app/idp/components/shell/shell-header.tsx",
   "app/idp/components/shell/shell-footer.tsx",
   "app/idp/components/shell/landing-hero.tsx",
+  // layout składa `brand`/`brandIcon` i podaje je do powłoki jako sloty —
+  // czyli wypisuje klasy powłoki, choć sam powłoką nie jest
+  "app/idp/app/(main)/layout.tsx",
+]
+
+/**
+ * Pliki powłoki, w których animacja MUSI dać się wyłączyć ustawieniem
+ * systemowym. Sprawdzane na źródle, bo część z nich (topbar, sloty marki
+ * w layoucie) nie jest montowana w renderze niżej — a review wykazał
+ * mutacją, że usunięcie klasy z topbara zostawiało cały zestaw zielony.
+ *
+ * Reguła: KAŻDE wystąpienie `transition-`/`animate-` ma mieć w tym samym
+ * napisie klasy odpowiednik `motion-reduce:`.
+ */
+const MOTION_SOURCES = [
+  "packages/@cortex/ui/src/components/app-shell.tsx",
+  "packages/@cortex/ui/src/components/tile-menu.tsx",
+  "app/idp/components/topbar.tsx",
+  "app/idp/app/(main)/layout.tsx",
 ]
 
 afterEach(cleanup)
@@ -295,6 +322,30 @@ describe("powłoka — reguła warstw", () => {
       expect(classSet(inactiveLink(container))).toContain("motion-reduce:transition-none")
     },
   )
+
+  /**
+   * Strażnik źródłowy dla „ogranicz ruch". Wersja renderowana wyżej pokrywała
+   * wyłącznie `aside` i link menu — usunięcie klasy z topbara zostawiało cały
+   * zestaw zielony, co wykazał dopiero przegląd mutacją. Tu liczy się każde
+   * wystąpienie w źródle, więc nowa animacja dopisana bez odpowiednika
+   * `motion-reduce:` jest czerwona od razu.
+   */
+  it.each(MOTION_SOURCES)("źródło %s wyłącza każdą animację przy reduced-motion", (relative) => {
+    const source = readFileSync(path.join(repoRoot, relative), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "")
+
+    // Napisy klas: literały w cudzysłowie zawierające `transition-`/`animate-`.
+    const bezOslony: string[] = []
+    for (const m of source.matchAll(/"([^"]*\b(?:transition|animate)-[^"]*)"/g)) {
+      const klasy = m[1] as string
+      if (!klasy.includes("motion-reduce:")) bezOslony.push(klasy.trim().slice(0, 70))
+    }
+
+    expect(bezOslony, `animacja bez motion-reduce w ${relative}: ${bezOslony.join(" | ")}`).toEqual(
+      [],
+    )
+  })
 
   // Drugi strażnik tej samej reguły, obejmujący pliki, których render powyżej
   // nie montuje. Skan pomija komentarze — te niosą realną treść i wymieniają
