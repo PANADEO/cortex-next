@@ -5,6 +5,7 @@ import { AppGate } from "@/components/shell/app-gate"
 import { VersionLabel } from "@/components/shell/version-label"
 import { Topbar } from "@/components/topbar"
 import {
+  resolveActiveItemId,
   useContentGuruNavSections,
   useCortexConfigNavSections,
   useDocumentParserNavSections,
@@ -50,13 +51,10 @@ const KNOWN_TILE_SEGMENTS = new Set([
   "document-parser",
 ])
 
-function pathToItemId(pathname: string): string {
-  const segments = pathname.split("/").filter(Boolean)
-  const first = segments[0]
-  if (first === "ai-tools") return segments[1] ?? "app"
-  if (first && KNOWN_TILE_SEGMENTS.has(first)) return segments[1] ?? "dashboard"
-  return first ?? "dashboard"
-}
+/* `pathToItemId()` usunięte — mapowało ścieżkę na identyfikator pozycji menu,
+   czyli wymagało zgodności dwóch niezależnych list i w trzech kafelkach jej nie
+   było. Zastąpione dopasowaniem po `href` (`resolveActiveItemId` w `lib/nav.ts`,
+   tam pełne uzasadnienie i opis defektu). */
 
 function pathToTileId(pathname: string): string {
   const segments = pathname.split("/").filter(Boolean)
@@ -82,7 +80,6 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const tileId = pathToTileId(pathname)
   const requiredTileId = resolveRequiredTileId(pathname)
   const tile = TILES.find((t) => t.id === tileId)
-  const activeItemId = pathToItemId(pathname)
   const collapsed = useSidebarStore((s) => s.collapsed)
   // Warstwa 2 dojeżdża do `@cortex/ui` PROPSEM, nie kontekstem. Pakiet
   // prymitywów nie ma prawa zależeć od mechanizmu presetów aplikacji —
@@ -123,6 +120,9 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   }
   const isAiToolPage = tileId === AI_TOOLS_TILE_ID || (tile?.href.startsWith("/ai-tools/") ?? false)
   const navSections = isAiToolPage ? [] : (navByTile[tileId] ?? idpNavSections)
+  // PO `navSections`, bo dopasowanie idzie po `href` pozycji z faktycznie
+  // renderowanego menu — a to menu bywa przefiltrowane (ukryte pozycje).
+  const activeItemId = resolveActiveItemId(pathname, navSections)
   const tileLabel = tile?.label ?? TILE_LABELS[tileId] ?? "IDP"
 
   const brandIcon = (

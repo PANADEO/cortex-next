@@ -94,7 +94,11 @@ export interface TileMenuSection {
 
 interface TileMenuProps {
   sections: TileMenuSection[]
-  activeItemId?: string
+  /** `undefined` znaczy „żadna pozycja nie jest aktywna" i jest stanem
+   *  LEGALNYM — trasa spoza menu (np. ekran szczegółów otwierany z tabeli) nie
+   *  ma prawa podświetlać przypadkowej pozycji. Typ jest jawnie rozszerzony o
+   *  `undefined`, bo repo działa z `exactOptionalPropertyTypes`. */
+  activeItemId?: string | undefined
   brand?: ReactNode
   brandIcon?: ReactNode
   collapsed?: boolean
