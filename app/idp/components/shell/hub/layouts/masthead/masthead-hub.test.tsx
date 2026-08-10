@@ -122,14 +122,14 @@ describe("layout huba: masthead", () => {
   })
 
   // Cztery rzeczy, które `classic` pod wariantem `card` renderuje inaczej albo
-  // wcale, a które składają się na chiclet: akcent z hasha kategorii, kaskada
+  // wcale, a które składają się na chiclet: akcent z mapy kategorii, kaskada
   // wejścia, mikroetykieta i krawędź panelu, w którą wtapiają się zakładki.
   //
   // Kafelki fixture'u mają `categoryFunctional: null` i to jest tu WARUNEK
   // TESTU, nie skutek uboczny: dokładnie tak wygląda `document-parser` i
   // `visual-guru` na standardowej instancji (§5b), a wersja `accentFor`
   // z `main` wołała `.length` na tej wartości. Akcent 1 znaczy więc „przeszło
-  // przez ścieżkę pustej kategorii", a nie „hash przypadkiem trafił w 1".
+  // przez ścieżkę pustej kategorii", a nie „kategoria przypadkiem trafiła w 1".
   it("renderuje chiclet — akcent, kaskada, mikroetykieta, krawędź panelu", () => {
     const { container } = render(<Harness />)
 

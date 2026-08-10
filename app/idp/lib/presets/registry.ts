@@ -13,8 +13,8 @@ export type PresetId = "neutral" | "customs" | "domino"
  *  panelu (Domino). Konsument: `hub/category-tabs.tsx`. */
 export type TabsVariant = "underline" | "folder"
 
-/** Kafelek — karta z paletą admina albo chiclet z akcentem z hasha kategorii
- *  (Domino, D6). Konsument: `hub/tile-card.tsx`. */
+/** Kafelek — karta z paletą admina albo chiclet z akcentem rozpisanym po
+ *  kategorii funkcjonalnej (Domino, D6). Konsument: `hub/tile-card.tsx`. */
 export type TileVariant = "card" | "chiclet"
 
 /**
@@ -91,6 +91,27 @@ export const PRESETS: Readonly<Record<PresetId, Preset>> = {
     variants: { tabs: "folder", tile: "chiclet" },
     swatch: ["#d9a441", "#1f6e6b", "#b85c38"],
   },
+}
+
+/**
+ * Czy ten wygląd maluje ikonę kafelka 11-kolorową paletą admina
+ * (`applications.color`), czy własnym akcentem. Pyta o to formularz Aplikacji
+ * w Konfiguracji Systemu: pod Dominem paleta jest z założenia bezwładna (D6 —
+ * trzy akcenty i ani jeden więcej), a kontrolka, która zapisuje wartość i
+ * niczego nie zmienia, to defekt panelu, nie wyglądu.
+ *
+ * Predykat pyta o WARIANT KAFELKA, nie o `preset.id`, bo rozstrzyga o tym
+ * jedna ZMIENNA DECYZYJNA w `components/shell/hub/tile-card.tsx` — `isChiclet`
+ * — czytana w dwóch sąsiadujących gałęziach: tło kwadratu ikony
+ * (`isChiclet ? ACCENT_BG[accent] : tile.iconBg`) i kolor samego glifu
+ * (`isChiclet ? ACCENT_FG[accent] : tile.iconFg`). Obie muszą iść razem;
+ * rozjazd znaczyłby glif z palety admina na akcencie Domino. Lista
+ * identyfikatorów presetów byłaby kopią tamtej decyzji, trzymaną ręcznie —
+ * a pierwszy preset dopisany bez dopisania do listy to znowu kontrolka,
+ * która kłamie.
+ */
+export function presetUsesApplicationColor(preset: Preset): boolean {
+  return preset.variants.tile === "card"
 }
 
 /**

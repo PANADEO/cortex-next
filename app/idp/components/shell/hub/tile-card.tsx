@@ -182,11 +182,14 @@ export function TileCard({
       >
         <Star className={slots.favStar({ variant, active: isFavorite })} />
       </button>
-      {/* D6 w jednej linii: `chiclet` bierze akcent z hasha kategorii, `card`
-          zostaje przy 11-kolorowej palecie per aplikacja, którą admin ustawia
-          w Konfiguracji Systemu (`applications.color`). Pole nie staje się
-          więc martwe globalnie — traci wpływ wyłącznie tam, gdzie wygląd z
-          założenia ma trzy kolory i ani jednego więcej. Odrzucone: zostawić
+      {/* D6 w jednej linii: `chiclet` bierze akcent z mapy kategorii
+          (`accent.ts`), `card` zostaje przy 11-kolorowej palecie per
+          aplikacja, którą admin ustawia w Konfiguracji Systemu
+          (`applications.color`). Pole nie staje się więc martwe globalnie —
+          traci wpływ wyłącznie tam, gdzie wygląd z założenia ma trzy kolory i
+          ani jednego więcej; formularz Aplikacji mówi o tym wprost, pytając
+          `presetUsesApplicationColor` o AKTYWNY wygląd (ta gałąź niżej jest
+          jedynym miejscem, które o tym rozstrzyga). Odrzucone: zostawić
           `tile.iconBg` obok akcentu i liczyć na `tailwind-merge` — wygrywałby
           ostatni napis, czyli o kolorze rozstrzygałaby kolejność argumentów. */}
       <div className={cn(slots.icon({ variant }), isChiclet ? ACCENT_BG[accent] : tile.iconBg)}>

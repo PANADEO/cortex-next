@@ -15,6 +15,8 @@ import { resolveApplicationIcon } from "@/features/system-config/icons"
 import { KIND_LABELS } from "@/features/system-config/kinds"
 import { TILE_COLOR_OPTIONS } from "@/features/system-config/colors"
 import type { Application, ApplicationInput, RoleSummary } from "@/features/system-config/types"
+import { usePreset } from "@/lib/presets/preset-store"
+import { presetUsesApplicationColor } from "@/lib/presets/registry"
 import { DEPARTMENT_CATEGORIES, FUNCTIONAL_CATEGORIES } from "@/lib/tiles"
 import { toastApiError } from "@cortex/api"
 import type { TileKind } from "@cortex/tile-sdk"
@@ -56,7 +58,7 @@ import {
   TabsTrigger,
 } from "@cortex/ui"
 import type { ColumnDef } from "@tanstack/react-table"
-import { ArrowLeft, ChevronDown, LayoutDashboard, ShieldAlert, Trash2 } from "lucide-react"
+import { ArrowLeft, ChevronDown, Info, LayoutDashboard, ShieldAlert, Trash2 } from "lucide-react"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import { useParams, useRouter } from "next/navigation"
@@ -293,6 +295,12 @@ export default function ApplicationDetailPage() {
   // `tab`/`activeTab` w `idp/rules/[id]/page.tsx` i `content-guru/page.tsx`,
   // żaden z nich nie synchronizuje wyboru taba z query stringiem).
   const [tab, setTab] = useState("basics")
+
+  // Aktywny wygląd — potrzebny wyłącznie po to, żeby paleta kolorów niżej
+  // powiedziała, kiedy nic nie robi (D6). Hook stoi PRZED wczesnymi returnami,
+  // jak każdy inny w tym komponencie.
+  const preset = usePreset()
+  const isColorInertHere = !presetUsesApplicationColor(preset)
 
   // Wiersz, którego uprawnieniem chroniony jest ten moduł — tę samą regułę
   // egzekwuje serwer (SelfLockoutError), UI tylko ją tłumaczy.
@@ -638,6 +646,29 @@ export default function ApplicationDetailPage() {
                 <span className="text-xs text-muted-foreground">
                   Kolor ikony kafelka na hubie. Bez wyboru kafelek dostaje neutralny kolor domyślny.
                 </span>
+                {/* Wygląd, który tej palety nie czyta (dziś: Domino, D6 — trzy
+                    akcenty z kategorii funkcjonalnej), zostawiał tu w pełni
+                    działającą kontrolkę bez żadnego skutku na hubie: wartość
+                    się zapisywała, kafelek się nie zmieniał i nic tego nie
+                    tłumaczyło.
+
+                    Świadomie NIE `disabled` na swatchach: kolor jest daną
+                    INSTANCJI, nie ustawieniem podglądu edytującego. Zapisana
+                    wartość zostaje w bazie i maluje kafelek każdemu, kto ma
+                    wygląd czytający paletę — wyszarzenie kontrolki mówiłoby
+                    „nie da się ustawić", czyli nieprawdę. Stąd zdanie, nie
+                    blokada, i w tym samym miejscu co pozostałe podpowiedzi
+                    formularza (wzorem `isNativeLocked` niżej). */}
+                {isColorInertHere ? (
+                  <span className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    <span>
+                      Wygląd „{preset.label}” tej palety nie używa — kafelki na hubie dostają jeden z
+                      trzech akcentów wyglądu, dobierany po kategorii funkcjonalnej. Wybór zapisze
+                      się i zadziała w wyglądach, które paletę czytają.
+                    </span>
+                  </span>
+                ) : null}
               </div>
 
               {/* Dokładnie DWA pola kategorii, oba z zamkniętej listy — decyzja
