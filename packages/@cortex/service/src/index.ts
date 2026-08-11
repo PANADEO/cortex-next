@@ -24,12 +24,15 @@ export {
   openwebuiConfig,
   previewRoleGroupSync,
   reconcileAllMappedGroups,
+  reconcileEverything,
   reconcileRoleGroup,
   reconcileRoleGroups,
 } from "./openwebui-sync"
 export type {
   AttachRoleGroupError,
   AttachRoleGroupInput,
+  OpenwebuiFullSyncResult,
+  OpenwebuiPlanEntry,
   OpenwebuiSyncResult,
   RoleGroupSyncPreview,
 } from "./openwebui-sync"

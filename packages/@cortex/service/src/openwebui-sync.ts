@@ -372,3 +372,169 @@ export function getRoleGroupMapping(roleId: string) {
 export function listOpenwebuiGroups(config: client.OpenwebuiConfig) {
   return client.listGroups(config)
 }
+
+/**
+ * PEŁNE UZGODNIENIE KONT — „Synchronizuj wszystko" z panelu.
+ *
+ * Odpowiada na pytanie, na które haki zdarzeniowe odpowiedzieć NIE MOGĄ: czy
+ * OpenWebUI odzwierciedla dzisiejszy stan Cortexa. Haki obejmują wyłącznie
+ * zmiany zrobione po ich wdrożeniu i milkną, gdy OpenWebUI nie odpowiada —
+ * zapis w Cortexie i tak przechodzi, bo odbieranie dostępu nie może zależeć od
+ * tego, czy czat żyje. Pełne uzgodnienie jest jedynym momentem, w którym da
+ * się powiedzieć „stan jest zgodny", i jest idempotentne: wolno je puszczać
+ * dowolnie wiele razy.
+ *
+ * TRYB DOMYŚLNY TO PODGLĄD (`dryRun: true`). Pierwsze uruchomienie na
+ * instancji jest najbardziej destrukcyjnym momentem w życiu tego mechanizmu —
+ * różnica liczy się wtedy wobec stanu, którego nikt nigdy nie uzgadniał, więc
+ * każda niepełność danych w Cortexie trafia do OpenWebUI hurtem. Zapis wymaga
+ * jawnego `dryRun: false`.
+ */
+export interface OpenwebuiPlanEntry {
+  email: string
+  action: "create" | "promote-admin" | "demote-user" | "revoke" | "orphan-revoke"
+  detail: string
+}
+
+export interface OpenwebuiFullSyncResult extends OpenwebuiSyncResult {
+  dryRun: boolean
+  plan: OpenwebuiPlanEntry[]
+  groups: OpenwebuiSyncResult
+  applied: number
+  failures: string[]
+}
+
+/** Adresy, których uzgodnienie NIE MOŻE tknąć. Poza listą z konfiguracji
+ *  zawsze chronione jest konto właściciela tokenu — inaczej pierwszy przebieg
+ *  potrafi odciąć sam siebie od instancji, którą właśnie synchronizuje.
+ *  Zabezpieczenie przeniesione z cortex-admina jako jedyne z jego obsługi
+ *  sierot, które warto było wziąć. */
+function protectedEmails(): Set<string> {
+  const raw = process.env.OPENWEBUI_SYNC_PROTECTED_EMAILS ?? ""
+  return new Set(
+    raw
+      .split(",")
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean),
+  )
+}
+
+export async function reconcileEverything(
+  options: { dryRun?: boolean } = {},
+): Promise<OpenwebuiFullSyncResult> {
+  const dryRun = options.dryRun !== false
+  const empty: OpenwebuiFullSyncResult = {
+    status: "skipped",
+    dryRun,
+    plan: [],
+    groups: { status: "skipped" },
+    applied: 0,
+    failures: [],
+  }
+
+  const config = openwebuiConfig()
+  if (!config) return { ...empty, message: "OpenWebUI nie jest skonfigurowane (OPENWEBUI_URL/TOKEN)" }
+
+  let target: Awaited<ReturnType<typeof store.loadOpenwebuiTargetUsers>>
+  let knownEmails: string[]
+  let existing: client.OpenwebuiUser[]
+  try {
+    ;[target, knownEmails, existing] = await Promise.all([
+      store.loadOpenwebuiTargetUsers(),
+      store.loadAllKnownEmails(),
+      client.listAllUsers(config),
+    ])
+  } catch (error) {
+    return { ...empty, status: "failed", message: errorMessage(error) }
+  }
+
+  const protectedSet = protectedEmails()
+  const byEmail = new Map(existing.map((row) => [row.email, row]))
+  const targetByEmail = new Map(target.map((row) => [row.email.toLowerCase(), row]))
+  const known = new Set(knownEmails.map((email) => email.toLowerCase()))
+
+  const plan: OpenwebuiPlanEntry[] = []
+
+  // (1) Konta, które mają istnieć, oraz rola konta.
+  for (const wanted of target) {
+    const email = wanted.email.toLowerCase()
+    if (protectedSet.has(email)) continue
+
+    const wantedRole = wanted.isAdmin ? "admin" : "user"
+    const current = byEmail.get(email)
+
+    if (!current) {
+      plan.push({ email, action: "create", detail: `załóż konto (${wantedRole})` })
+      continue
+    }
+    // `pending` traktowane jak każda inna niezgodność roli — człowiek, który
+    // odzyskał dostęp, ma wrócić do `user`/`admin` bez ręcznej interwencji.
+    if (current.role !== wantedRole) {
+      plan.push({
+        email,
+        action: wantedRole === "admin" ? "promote-admin" : "demote-user",
+        detail: `${current.role} → ${wantedRole}`,
+      })
+    }
+  }
+
+  // (2) Konta w OpenWebUI, które dostępu mieć NIE POWINNY.
+  for (const row of existing) {
+    if (protectedSet.has(row.email)) continue
+    if (targetByEmail.has(row.email)) continue
+    if (row.role === "pending") continue
+
+    plan.push({
+      email: row.email,
+      // Rozróżnienie jest istotne przy czytaniu podglądu: „sierota" znaczy
+      // konto nieznane Cortexowi w ogóle, a nie takie, któremu odebrano rolę.
+      action: known.has(row.email) ? "revoke" : "orphan-revoke",
+      detail: `${row.role} → pending`,
+    })
+  }
+
+  if (dryRun) {
+    return { ...empty, status: "ok", plan, groups: { status: "skipped" } }
+  }
+
+  // (3) Zapis. Każda pozycja osobno — jedna awaria nie przerywa reszty, bo
+  // uzgodnienie częściowe jest lepsze niż żadne, a to, co nie przeszło, zostaje
+  // w `failures` i pojawi się w następnym podglądzie.
+  const failures: string[] = []
+  let applied = 0
+
+  for (const entry of plan) {
+    try {
+      if (entry.action === "create") {
+        const wanted = targetByEmail.get(entry.email)
+        await client.createUser(config, {
+          email: entry.email,
+          name: wanted?.fullName?.trim() || entry.email,
+          role: wanted?.isAdmin ? "admin" : "user",
+        })
+      } else {
+        const current = byEmail.get(entry.email)
+        if (!current) continue
+        const nextRole =
+          entry.action === "promote-admin" ? "admin" : entry.action === "demote-user" ? "user" : "pending"
+        await client.updateUserRole(config, current.id, nextRole)
+      }
+      applied += 1
+    } catch (error) {
+      failures.push(`${entry.email}: ${errorMessage(error)}`)
+    }
+  }
+
+  // (4) Członkostwo grup przez istniejącą ścieżkę — nie duplikujemy jej tutaj.
+  const groups = await reconcileAllMappedGroups()
+
+  return {
+    status: failures.length === 0 && groups.status !== "failed" ? "ok" : "failed",
+    dryRun: false,
+    plan,
+    groups,
+    applied,
+    failures,
+    ...(failures.length > 0 ? { message: `${failures.length} operacji nie powiodło się` } : {}),
+  }
+}

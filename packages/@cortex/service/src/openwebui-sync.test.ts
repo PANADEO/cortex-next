@@ -14,6 +14,9 @@ const clientMock = vi.hoisted(() => ({
   addUsersToGroup: vi.fn(),
   removeUsersFromGroup: vi.fn(),
   listAllUserEmailIds: vi.fn(),
+  listAllUsers: vi.fn(),
+  createUser: vi.fn(),
+  updateUserRole: vi.fn(),
 }))
 
 class FakeOpenwebuiClientError extends Error {
@@ -35,6 +38,8 @@ const storeMock = vi.hoisted(() => ({
   upsertRoleGroupMapping: vi.fn(),
   deleteRoleGroupMapping: vi.fn(),
   recordSyncResult: vi.fn(),
+  loadOpenwebuiTargetUsers: vi.fn(),
+  loadAllKnownEmails: vi.fn(),
 }))
 
 vi.mock("./openwebui-client", () => ({ ...clientMock, OpenwebuiClientError: FakeOpenwebuiClientError }))
@@ -47,6 +52,7 @@ const {
   groupNameForRoleCode,
   openwebuiConfig,
   reconcileAllMappedGroups,
+  reconcileEverything,
   reconcileRoleGroup,
   reconcileRoleGroups,
 } = await import("./openwebui-sync")
@@ -362,5 +368,142 @@ describe("detachRoleGroup — usuwa WYŁĄCZNIE mapowanie, nie dotyka OpenWebUI"
     expect(detached).toBe(true)
     expect(clientMock.removeUsersFromGroup).not.toHaveBeenCalled()
     expect(clientMock.getGroup).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * Pełne uzgodnienie kont — „Synchronizuj wszystko".
+ *
+ * Klient jest zamockowany i to NIE jest wygoda testowa: `OPENWEBUI_URL` na tej
+ * maszynie wskazuje na realnie działający kontener `chat`, więc test
+ * uderzający w prawdziwego klienta zakładałby i odcinał konta ludziom.
+ */
+describe("reconcileEverything — pełne uzgodnienie kont", () => {
+  beforeEach(() => {
+    vi.stubEnv("OPENWEBUI_URL", "https://chat.example.com")
+    vi.stubEnv("OPENWEBUI_ADMIN_TOKEN", "token")
+    vi.stubEnv("OPENWEBUI_SYNC_PROTECTED_EMAILS", "")
+    storeMock.loadAllKnownEmails.mockResolvedValue([])
+    clientMock.listAllUsers.mockResolvedValue([])
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([])
+    storeMock.listMappedRoleIds.mockResolvedValue([])
+  })
+
+  it("TRYB DOMYŚLNY TO PODGLĄD — nie wykonuje ANI JEDNEGO zapisu", async () => {
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
+      { email: "nowy@firma.pl", fullName: "Nowy Ktoś", isAdmin: false },
+    ])
+
+    const result = await reconcileEverything()
+
+    expect(result.dryRun).toBe(true)
+    expect(result.plan).toEqual([
+      { email: "nowy@firma.pl", action: "create", detail: "załóż konto (user)" },
+    ])
+    expect(clientMock.createUser).not.toHaveBeenCalled()
+    expect(clientMock.updateUserRole).not.toHaveBeenCalled()
+  })
+
+  it("zakłada konto dopiero przy jawnym dryRun:false", async () => {
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
+      { email: "nowy@firma.pl", fullName: "Nowy Ktoś", isAdmin: false },
+    ])
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(clientMock.createUser).toHaveBeenCalledWith(expect.anything(), {
+      email: "nowy@firma.pl",
+      name: "Nowy Ktoś",
+      role: "user",
+    })
+    expect(result.applied).toBe(1)
+  })
+
+  it("rola admina bierze się z KODU roli, nie z nazwy", async () => {
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
+      { email: "szef@firma.pl", fullName: "Szef", isAdmin: true },
+    ])
+    clientMock.listAllUsers.mockResolvedValue([
+      { id: "u1", email: "szef@firma.pl", name: "Szef", role: "user" },
+    ])
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.plan[0]).toMatchObject({ action: "promote-admin", detail: "user → admin" })
+    expect(clientMock.updateUserRole).toHaveBeenCalledWith(expect.anything(), "u1", "admin")
+  })
+
+  it("kto stracił dostęp, dostaje pending — konto NIE jest kasowane", async () => {
+    storeMock.loadAllKnownEmails.mockResolvedValue(["byly@firma.pl"])
+    clientMock.listAllUsers.mockResolvedValue([
+      { id: "u2", email: "byly@firma.pl", name: "Były", role: "user" },
+    ])
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.plan[0]).toMatchObject({ action: "revoke", detail: "user → pending" })
+    expect(clientMock.updateUserRole).toHaveBeenCalledWith(expect.anything(), "u2", "pending")
+  })
+
+  it("konto nieznane Cortexowi jest odróżniane od odebrania roli", async () => {
+    clientMock.listAllUsers.mockResolvedValue([
+      { id: "u3", email: "obcy@inna.pl", name: "Obcy", role: "user" },
+    ])
+
+    const result = await reconcileEverything()
+
+    expect(result.plan[0]).toMatchObject({ action: "orphan-revoke" })
+  })
+
+  /** Bez tego pierwszy przebieg potrafi odciąć od instancji konto, którym
+   *  właśnie się synchronizuje. Przeniesione z cortex-admina. */
+  it("adres z listy chronionej jest pomijany w OBU kierunkach", async () => {
+    vi.stubEnv("OPENWEBUI_SYNC_PROTECTED_EMAILS", "wlasciciel@firma.pl, inny@firma.pl")
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
+      { email: "inny@firma.pl", fullName: null, isAdmin: true },
+    ])
+    clientMock.listAllUsers.mockResolvedValue([
+      { id: "u4", email: "wlasciciel@firma.pl", name: "Właściciel", role: "admin" },
+    ])
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.plan).toEqual([])
+    expect(clientMock.updateUserRole).not.toHaveBeenCalled()
+    expect(clientMock.createUser).not.toHaveBeenCalled()
+  })
+
+  it("już ustawiony pending nie generuje pozycji planu", async () => {
+    clientMock.listAllUsers.mockResolvedValue([
+      { id: "u5", email: "spiacy@firma.pl", name: "Śpiący", role: "pending" },
+    ])
+
+    expect((await reconcileEverything()).plan).toEqual([])
+  })
+
+  it("awaria jednej pozycji nie przerywa pozostałych", async () => {
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
+      { email: "a@firma.pl", fullName: "A", isAdmin: false },
+      { email: "b@firma.pl", fullName: "B", isAdmin: false },
+    ])
+    clientMock.createUser
+      .mockRejectedValueOnce(new Error("sieć padła"))
+      .mockResolvedValueOnce(undefined)
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.applied).toBe(1)
+    expect(result.failures).toHaveLength(1)
+    expect(result.status).toBe("failed")
+  })
+
+  it("bez konfiguracji zwraca skipped i nie woła klienta", async () => {
+    vi.stubEnv("OPENWEBUI_URL", "")
+    vi.stubEnv("OPENWEBUI_ADMIN_TOKEN", "")
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.status).toBe("skipped")
+    expect(clientMock.listAllUsers).not.toHaveBeenCalled()
   })
 })

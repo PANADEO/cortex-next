@@ -355,3 +355,80 @@ export async function listAllUserEmailIds(config: OpenwebuiConfig): Promise<Map<
   }
   return byEmail
 }
+
+/** Konto w OpenWebUI z polami, które Cortex ma prawo nadpisywać. */
+export interface OpenwebuiUser {
+  id: string
+  email: string
+  name: string
+  role: string
+}
+
+/**
+ * Pełna lista kont, nie sama mapa e-mail→id (`listAllUserEmailIds` wyżej).
+ * Potrzebna do uzgodnienia stanu KONT, bo bez `role` i `name` nie da się
+ * powiedzieć, czy coś wymaga zmiany — a wysyłanie zapisu „na wszelki wypadek"
+ * zamieniłoby uzgodnienie w bezwarunkowe nadpisanie cudzych danych.
+ */
+export async function listAllUsers(config: OpenwebuiConfig): Promise<OpenwebuiUser[]> {
+  const data = await request(config, "GET", "/api/v1/users/all")
+  const rows = isRecord(data) && Array.isArray(data.users) ? data.users : Array.isArray(data) ? data : null
+  if (rows === null) {
+    throw new OpenwebuiClientError("malformed-response", "Lista użytkowników OpenWebUI ma nieoczekiwany kształt")
+  }
+
+  const out: OpenwebuiUser[] = []
+  for (const row of rows) {
+    if (!isRecord(row)) continue
+    if (typeof row.id !== "string" || typeof row.email !== "string") continue
+    out.push({
+      id: row.id,
+      email: row.email.trim().toLowerCase(),
+      name: typeof row.name === "string" ? row.name : "",
+      role: typeof row.role === "string" ? row.role : "user",
+    })
+  }
+  return out
+}
+
+/**
+ * Zakłada konto. Hasło PUSTE i to nie jest niedopatrzenie: instancja stoi za
+ * `WEBUI_AUTH_TRUSTED_EMAIL_HEADER`, więc logowanie idzie nagłówkiem od
+ * oauth2-proxy, a hasło nie jest do niczego używane. Ten sam kształt żądania,
+ * którego używał cortex-admin (`POST /api/v1/auths/add`).
+ *
+ * ZAŁOŻENIE DO POTWIERDZENIA NA ŻYWEJ INSTANCJI: pierwsze logowanie
+ * trusted-header trafia w konto założone tędy (dopasowanie po adresie), a nie
+ * tworzy drugiego. `OAUTH_MERGE_ACCOUNTS_BY_EMAIL=true` na kontenerze to
+ * sugeruje, ale nie jest to sprawdzone zachowanie — patrz S0 w projekcie.
+ */
+export async function createUser(
+  config: OpenwebuiConfig,
+  input: { email: string; name: string; role: string },
+): Promise<void> {
+  await request(config, "POST", "/api/v1/auths/add", {
+    email: input.email,
+    name: input.name,
+    password: "",
+    role: input.role,
+  })
+}
+
+/**
+ * Zmienia rolę konta (`user`/`admin`/`pending`). `pending` to sposób OpenWebUI
+ * na odcięcie dostępu BEZ kasowania konta — a konta nie kasujemy nigdy, bo
+ * mieszka w nim historia rozmów człowieka.
+ *
+ * Świadomie NIE przenoszę z cortex-admina awaryjnego kasowania konta, gdy ten
+ * zapis się nie uda (`deactivate_or_delete_orphaned_user_profiles`). Nieudany
+ * zapis to zwykle chwilowy błąd sieci, a reakcją było tam sięgnięcie po
+ * najbardziej nieodwracalną operację w całym mechanizmie. Awaria ma
+ * zatrzymywać, nie eskalować.
+ */
+export async function updateUserRole(
+  config: OpenwebuiConfig,
+  userId: string,
+  role: string,
+): Promise<void> {
+  await request(config, "POST", `/api/v1/users/${userId}/update/role`, { id: userId, role })
+}

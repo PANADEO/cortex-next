@@ -19,6 +19,7 @@ import {
   LineChart,
   ListChecks,
   Package,
+  RefreshCw,
   Palette,
   Receipt,
   ScrollText,
@@ -179,6 +180,12 @@ export const SYSTEM_CONFIG_NAV: TileMenuSection[] = [
         href: "/system-config/users",
       },
       { id: "role", label: "Role", icon: KeyRound, href: "/system-config/role" },
+      {
+        id: "openwebui",
+        label: "OpenWebUI",
+        icon: RefreshCw,
+        href: "/system-config/openwebui",
+      },
     ],
   },
   {

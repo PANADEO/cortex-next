@@ -115,3 +115,64 @@ export async function recordSyncResult(roleId: string, error: string | null): Pr
     .set({ lastSyncedAt: new Date(), lastSyncError: error, updatedAt: new Date() })
     .where(eq(openwebuiGroupMappings.roleId, roleId))
 }
+
+/**
+ * Stan docelowy KONT w OpenWebUI, policzony wyłącznie z Cortexa.
+ *
+ * KTO MA MIEĆ KONTO: aktywny użytkownik, który trzyma co najmniej jedną rolę
+ * ze zmapowaną grupą. Rozważone i odrzucone: warunek „ma grant do kafelka
+ * czatu". Kafelek OpenWebUI jest wierszem `external-link` zakładanym przez
+ * admina, więc jego kod jest RÓŻNY w każdej instancji — na tej nie ma go
+ * wcale (27 aplikacji, wszystkie `native`). Wymagałby nowej zmiennej
+ * konfiguracyjnej i wprowadzał drugi, niezależny warunek, który może się
+ * rozjechać z mapowaniem. Mapowanie rola→grupa JEST już świadomą deklaracją
+ * „ta rola korzysta z OpenWebUI" i wystarcza.
+ *
+ * `isAdmin` po KODZIE roli (`admin`), nie po nazwie — dokładnie ten sam
+ * warunek, którego używał cortex-admin (`role.get("code") == "admin"`).
+ * W tej bazie `code='admin'` niesie `name='Administrator'`, więc reguła
+ * przenosi się bez tłumaczenia.
+ */
+export interface OpenwebuiTargetUser {
+  email: string
+  fullName: string | null
+  isAdmin: boolean
+}
+
+export async function loadOpenwebuiTargetUsers(): Promise<OpenwebuiTargetUser[]> {
+  const db = getDb()
+
+  // Aktywni członkowie ról, które mają zmapowaną grupę.
+  const eligible = await db
+    .selectDistinct({ id: users.id, email: users.email, fullName: users.fullName })
+    .from(users)
+    .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    .innerJoin(openwebuiGroupMappings, eq(openwebuiGroupMappings.roleId, userRoles.roleId))
+    .where(eq(users.isActive, true))
+
+  if (eligible.length === 0) return []
+
+  // Osobne zapytanie o adminów zamiast drugiego JOIN-a w tym samym: rola
+  // `admin` NIE musi mieć zmapowanej grupy, a przy jednym zapytaniu
+  // administrator bez takiej roli wypadłby z wyniku razem z flagą.
+  const adminRows = await db
+    .selectDistinct({ userId: userRoles.userId })
+    .from(userRoles)
+    .innerJoin(roles, eq(roles.id, userRoles.roleId))
+    .where(eq(roles.code, "admin"))
+
+  const admins = new Set(adminRows.map((row) => row.userId))
+
+  return eligible.map((row) => ({
+    email: row.email,
+    fullName: row.fullName,
+    isAdmin: admins.has(row.id),
+  }))
+}
+
+/** Wszystkie adresy z Cortexa, niezależnie od aktywności i ról — do rozpoznania
+ *  SIEROT, czyli kont istniejących w OpenWebUI, a nieznanych Cortexowi. */
+export async function loadAllKnownEmails(): Promise<string[]> {
+  const rows = await getDb().select({ email: users.email }).from(users)
+  return rows.map((row) => row.email)
+}
