@@ -15,6 +15,7 @@ const clientMock = vi.hoisted(() => ({
   removeUsersFromGroup: vi.fn(),
   listAllUserEmailIds: vi.fn(),
   listAllUsers: vi.fn(),
+  getTokenOwnerEmail: vi.fn(),
   createUser: vi.fn(),
   updateUserRole: vi.fn(),
 }))
@@ -385,6 +386,7 @@ describe("reconcileEverything — pełne uzgodnienie kont", () => {
     vi.stubEnv("OPENWEBUI_SYNC_PROTECTED_EMAILS", "")
     storeMock.loadAllKnownEmails.mockResolvedValue([])
     clientMock.listAllUsers.mockResolvedValue([])
+    clientMock.getTokenOwnerEmail.mockResolvedValue("wlasciciel@firma.pl")
     storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([])
     storeMock.listMappedRoleIds.mockResolvedValue([])
   })
@@ -434,14 +436,24 @@ describe("reconcileEverything — pełne uzgodnienie kont", () => {
   })
 
   it("kto stracił dostęp, dostaje pending — konto NIE jest kasowane", async () => {
+    // Cel MUSI być niepusty, inaczej zadziała blokada masowego odcięcia
+    // (osobny opis niżej) — a tu sprawdzamy samą ścieżkę odebrania dostępu.
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
+      { email: "zostaje@firma.pl", fullName: "Zostaje", isAdmin: false },
+    ])
     storeMock.loadAllKnownEmails.mockResolvedValue(["byly@firma.pl"])
     clientMock.listAllUsers.mockResolvedValue([
+      { id: "u9", email: "zostaje@firma.pl", name: "Zostaje", role: "user" },
       { id: "u2", email: "byly@firma.pl", name: "Były", role: "user" },
     ])
 
     const result = await reconcileEverything({ dryRun: false })
 
-    expect(result.plan[0]).toMatchObject({ action: "revoke", detail: "user → pending" })
+    expect(result.plan).toContainEqual({
+      email: "byly@firma.pl",
+      action: "revoke",
+      detail: "user → pending",
+    })
     expect(clientMock.updateUserRole).toHaveBeenCalledWith(expect.anything(), "u2", "pending")
   })
 
@@ -505,5 +517,135 @@ describe("reconcileEverything — pełne uzgodnienie kont", () => {
 
     expect(result.status).toBe("skipped")
     expect(clientMock.listAllUsers).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * Dwa zabezpieczenia dopisane PO teście na żywej instancji (11.08.2026).
+ * Stan zastany był taki: Cortex nie miał ani jednego mapowania rola→grupa,
+ * OpenWebUI miało cztery konta, a właścicielem tokenu był jedyny admin.
+ * Uzgodnienie w tamtym kształcie ustawiłoby `pending` wszystkim, łącznie
+ * z kontem, którym się synchronizuje.
+ */
+describe("reconcileEverything — zabezpieczenia przed odcięciem", () => {
+  beforeEach(() => {
+    vi.stubEnv("OPENWEBUI_URL", "https://chat.example.com")
+    vi.stubEnv("OPENWEBUI_ADMIN_TOKEN", "token")
+    vi.stubEnv("OPENWEBUI_SYNC_PROTECTED_EMAILS", "")
+    storeMock.loadAllKnownEmails.mockResolvedValue([])
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([])
+    storeMock.listMappedRoleIds.mockResolvedValue([])
+    clientMock.listAllUsers.mockResolvedValue([])
+    clientMock.getTokenOwnerEmail.mockResolvedValue("wlasciciel@firma.pl")
+  })
+
+  it("właściciel tokenu jest chroniony ZAWSZE, nawet przy pustej liście z konfiguracji", async () => {
+    clientMock.getTokenOwnerEmail.mockResolvedValue("wlasciciel@firma.pl")
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
+      { email: "ktos@firma.pl", fullName: "Ktoś", isAdmin: false },
+    ])
+    clientMock.listAllUsers.mockResolvedValue([
+      { id: "u1", email: "wlasciciel@firma.pl", name: "Właściciel", role: "admin" },
+      { id: "u2", email: "ktos@firma.pl", name: "Ktoś", role: "user" },
+    ])
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.plan.map((e) => e.email)).not.toContain("wlasciciel@firma.pl")
+    expect(clientMock.updateUserRole).not.toHaveBeenCalled()
+  })
+
+  it("puste źródło prawdy NIE znaczy odciecia wszystkich — zapis odmowiony", async () => {
+    clientMock.listAllUsers.mockResolvedValue([
+      { id: "u1", email: "anna@firma.pl", name: "Anna", role: "user" },
+      { id: "u2", email: "bartek@firma.pl", name: "Bartek", role: "user" },
+    ])
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.blocked).toMatch(/ani jednego uprawnionego/)
+    expect(result.status).toBe("failed")
+    expect(result.applied).toBe(0)
+    expect(clientMock.updateUserRole).not.toHaveBeenCalled()
+    // Plan MA być widoczny — admin musi zobaczyć, co by się stało.
+    expect(result.plan).toHaveLength(2)
+  })
+
+  it("gdy jest choć jeden uprawniony, odcięcie pozostałych przechodzi normalnie", async () => {
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
+      { email: "anna@firma.pl", fullName: "Anna", isAdmin: false },
+    ])
+    clientMock.listAllUsers.mockResolvedValue([
+      { id: "u1", email: "anna@firma.pl", name: "Anna", role: "user" },
+      { id: "u2", email: "bartek@firma.pl", name: "Bartek", role: "user" },
+    ])
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.blocked).toBeUndefined()
+    expect(clientMock.updateUserRole).toHaveBeenCalledWith(expect.anything(), "u2", "pending")
+  })
+})
+
+describe("reconcileEverything — poprawki po przeglądzie", () => {
+  beforeEach(() => {
+    vi.stubEnv("OPENWEBUI_URL", "https://chat.example.com")
+    vi.stubEnv("OPENWEBUI_ADMIN_TOKEN", "token")
+    vi.stubEnv("OPENWEBUI_SYNC_PROTECTED_EMAILS", "")
+    storeMock.loadAllKnownEmails.mockResolvedValue([])
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([])
+    storeMock.listMappedRoleIds.mockResolvedValue([])
+    clientMock.listAllUsers.mockResolvedValue([])
+    clientMock.getTokenOwnerEmail.mockResolvedValue("wlasciciel@firma.pl")
+  })
+
+  /** Fail-closed: nieznany właściciel tokenu to jedyna sytuacja, w której to
+   *  zabezpieczenie ma znaczenie, więc nie wolno jej przejść dalej. */
+  it("nieustalony właściciel tokenu WSTRZYMUJE uzgodnienie", async () => {
+    clientMock.getTokenOwnerEmail.mockResolvedValue(null)
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
+      { email: "ktos@firma.pl", fullName: "Ktoś", isAdmin: false },
+    ])
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.status).toBe("failed")
+    expect(result.message).toMatch(/właściciela tokenu/)
+    expect(clientMock.createUser).not.toHaveBeenCalled()
+  })
+
+  /** `pending → user` to przywrócenie dostępu. Ekran potwierdzenia jest
+   *  jedynym miejscem, gdzie admin decyduje, więc nie może tam stać
+   *  „Odbierz admina" przy człowieku, któremu dostęp wraca. */
+  it("wyjście z pending jest oznaczone jako przywrócenie, nie degradacja", async () => {
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
+      { email: "wraca@firma.pl", fullName: "Wraca", isAdmin: false },
+    ])
+    clientMock.listAllUsers.mockResolvedValue([
+      { id: "u1", email: "wraca@firma.pl", name: "Wraca", role: "pending" },
+    ])
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.plan[0]).toMatchObject({ action: "restore", detail: "pending → user" })
+    expect(clientMock.updateUserRole).toHaveBeenCalledWith(expect.anything(), "u1", "user")
+  })
+
+  it("awaria synchronizacji grup nie może zniknąć z komunikatu", async () => {
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
+      { email: "a@firma.pl", fullName: "A", isAdmin: false },
+    ])
+    storeMock.listMappedRoleIds.mockResolvedValue(["r1"])
+    storeMock.getRoleGroupMapping.mockResolvedValue({
+      roleId: "r1",
+      groupId: "g1",
+      groupName: "cortex:x",
+    })
+    clientMock.getGroup.mockRejectedValue(new Error("OpenWebUI leży"))
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.status).toBe("failed")
+    expect(result.message).toMatch(/synchronizacja grup/)
   })
 })

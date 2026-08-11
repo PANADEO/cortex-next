@@ -392,7 +392,7 @@ export function listOpenwebuiGroups(config: client.OpenwebuiConfig) {
  */
 export interface OpenwebuiPlanEntry {
   email: string
-  action: "create" | "promote-admin" | "demote-user" | "revoke" | "orphan-revoke"
+  action: "create" | "promote-admin" | "demote-user" | "restore" | "revoke" | "orphan-revoke"
   detail: string
 }
 
@@ -402,6 +402,9 @@ export interface OpenwebuiFullSyncResult extends OpenwebuiSyncResult {
   groups: OpenwebuiSyncResult
   applied: number
   failures: string[]
+  /** Ustawione, gdy plan jest policzony, ale zapis jest ODMÓWIONY. Podgląd
+   *  nadal pokazuje pozycje — po to, żeby było widać, CO by się stało. */
+  blocked?: string
 }
 
 /** Adresy, których uzgodnienie NIE MOŻE tknąć. Poza listą z konfiguracji
@@ -449,6 +452,27 @@ export async function reconcileEverything(
   }
 
   const protectedSet = protectedEmails()
+
+  // Właściciel tokenu — ZAWSZE chroniony, niezależnie od konfiguracji.
+  // Bez tego pierwszy przebieg na instancji bez mapowań ustawia `pending`
+  // kontu, którym właśnie się synchronizuje, i odbiera sobie dostęp do
+  // naprawienia tego. Zmierzone na żywej instancji 11.08.2026: cel był pusty,
+  // a właścicielem tokenu okazał się jedyny admin.
+  const owner = await client.getTokenOwnerEmail(config)
+  if (!owner) {
+    // FAIL-CLOSED, nie fail-open. Bez tego adresu nie wiadomo, czego chronić,
+    // a jedyny scenariusz, w którym to sprawdzenie ma znaczenie, to właśnie
+    // ten, w którym uzgodnienie mogłoby odciąć samo siebie.
+    return {
+      ...empty,
+      status: "failed",
+      message:
+        "Nie udało się ustalić właściciela tokenu OpenWebUI — uzgodnienie wstrzymane, " +
+        "żeby nie odciąć konta, którym się synchronizuje.",
+    }
+  }
+  protectedSet.add(owner)
+
   const byEmail = new Map(existing.map((row) => [row.email, row]))
   const targetByEmail = new Map(target.map((row) => [row.email.toLowerCase(), row]))
   const known = new Set(knownEmails.map((email) => email.toLowerCase()))
@@ -470,11 +494,17 @@ export async function reconcileEverything(
     // `pending` traktowane jak każda inna niezgodność roli — człowiek, który
     // odzyskał dostęp, ma wrócić do `user`/`admin` bez ręcznej interwencji.
     if (current.role !== wantedRole) {
-      plan.push({
-        email,
-        action: wantedRole === "admin" ? "promote-admin" : "demote-user",
-        detail: `${current.role} → ${wantedRole}`,
-      })
+      // `pending → user` to PRZYWRÓCENIE dostępu, nie odebranie admina.
+      // Rozróżnienie jest wyłącznie po to, żeby ekran potwierdzenia nie
+      // pokazywał „Odbierz admina" przy człowieku, któremu dostęp wraca —
+      // a to jest jedyny ekran, na którym admin decyduje.
+      const action =
+        current.role === "pending"
+          ? ("restore" as const)
+          : wantedRole === "admin"
+            ? ("promote-admin" as const)
+            : ("demote-user" as const)
+      plan.push({ email, action, detail: `${current.role} → ${wantedRole}` })
     }
   }
 
@@ -493,8 +523,31 @@ export async function reconcileEverything(
     })
   }
 
-  if (dryRun) {
-    return { ...empty, status: "ok", plan, groups: { status: "skipped" } }
+  // PUSTE ŹRÓDŁO PRAWDY NIE ZNACZY „ODETNIJ WSZYSTKICH".
+  //
+  // Gdy Cortex nie wskazuje ANI JEDNEGO uprawnionego, a w OpenWebUI są konta,
+  // to praktycznie zawsze znaczy brak konfiguracji (żadna rola nie ma jeszcze
+  // zmapowanej grupy), a nie decyzję o odebraniu dostępu wszystkim. Różnica
+  // jest nieodwracalna w skutkach dla ludzi, więc rozstrzygamy ją na korzyść
+  // bezpieczeństwa: plan pokazujemy, zapisu odmawiamy.
+  //
+  // Odblokowanie jest w rękach admina i jest jawne: wystarczy zmapować grupę
+  // dla choćby jednej roli, czyli powiedzieć wprost, kto ma mieć dostęp.
+  const revocations = plan.filter((e) => e.action === "revoke" || e.action === "orphan-revoke")
+  const blocked =
+    target.length === 0 && revocations.length > 0
+      ? `Cortex nie wskazuje ani jednego uprawnionego, a uzgodnienie odcięłoby ${revocations.length} kont. ` +
+        "Zmapuj grupę OpenWebUI dla przynajmniej jednej roli, zanim zastosujesz."
+      : undefined
+
+  if (dryRun || blocked) {
+    return {
+      ...empty,
+      status: blocked ? "failed" : "ok",
+      plan,
+      groups: { status: "skipped" },
+      ...(blocked ? { blocked, message: blocked } : {}),
+    }
   }
 
   // (3) Zapis. Każda pozycja osobno — jedna awaria nie przerywa reszty, bo
@@ -516,7 +569,11 @@ export async function reconcileEverything(
         const current = byEmail.get(entry.email)
         if (!current) continue
         const nextRole =
-          entry.action === "promote-admin" ? "admin" : entry.action === "demote-user" ? "user" : "pending"
+          entry.action === "promote-admin"
+            ? "admin"
+            : entry.action === "demote-user" || entry.action === "restore"
+              ? "user"
+              : "pending"
         await client.updateUserRole(config, current.id, nextRole)
       }
       applied += 1
@@ -535,6 +592,15 @@ export async function reconcileEverything(
     groups,
     applied,
     failures,
-    ...(failures.length > 0 ? { message: `${failures.length} operacji nie powiodło się` } : {}),
+    ...(failures.length > 0 || groups.status === "failed"
+      ? {
+          message: [
+            failures.length > 0 ? `${failures.length} operacji na kontach nie powiodło się` : null,
+            groups.status === "failed" ? `synchronizacja grup: ${groups.message ?? "błąd"}` : null,
+          ]
+            .filter(Boolean)
+            .join("; "),
+        }
+      : {}),
   }
 }

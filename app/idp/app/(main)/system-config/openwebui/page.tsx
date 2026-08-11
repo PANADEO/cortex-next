@@ -20,6 +20,7 @@ const ACTION_LABEL: Record<OpenwebuiPlanEntry["action"], string> = {
   create: "Załóż konto",
   "promote-admin": "Nadaj admina",
   "demote-user": "Odbierz admina",
+  restore: "Przywróć dostęp",
   revoke: "Odetnij dostęp",
   "orphan-revoke": "Odetnij (spoza Cortexa)",
 }
@@ -117,8 +118,14 @@ export default function OpenwebuiSyncPage() {
       ) : null}
 
       {result && !result.dryRun ? (
-        <Alert variant={result.failures.length > 0 ? "destructive" : "default"}>
-          {result.failures.length > 0 ? (
+        <Alert
+          variant={
+            result.failures.length > 0 || result.groups.status === "failed"
+              ? "destructive"
+              : "default"
+          }
+        >
+          {result.failures.length > 0 || result.groups.status === "failed" ? (
             <AlertTriangle className="h-4 w-4" />
           ) : (
             <CheckCircle2 className="h-4 w-4" />
@@ -126,6 +133,7 @@ export default function OpenwebuiSyncPage() {
           <AlertTitle>Wykonano {result.applied} z {result.plan.length}</AlertTitle>
           <AlertDescription>
             Grupy: {result.groups.status}
+            {result.groups.message ? ` — ${result.groups.message}` : ""}
             {result.failures.length > 0 ? (
               <ul className="mt-2 list-disc pl-5">
                 {result.failures.map((failure) => (

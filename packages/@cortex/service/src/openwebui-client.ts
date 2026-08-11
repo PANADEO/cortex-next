@@ -419,16 +419,58 @@ export async function createUser(
  * na odcięcie dostępu BEZ kasowania konta — a konta nie kasujemy nigdy, bo
  * mieszka w nim historia rozmów człowieka.
  *
+ * DLACZEGO NAJPIERW ODCZYT. Endpoint to `/update`, nie `/update/role`, a jego
+ * `UserUpdateForm` wymaga KOMPLETU pól: `role`, `name`, `email`
+ * i `profile_image_url` (sprawdzone w `openwebui.openapi.json`). Lista
+ * `/users/all` nie zwraca `profile_image_url`, więc bez tego odczytu każdy
+ * zapis roli kasowałby człowiekowi avatar, podmieniając go na domyślny.
+ *
+ * Pierwsza wersja strzelała w `/api/v1/users/{id}/update/role` z samą rolą —
+ * ścieżka nieistniejąca w tej wersji OpenWebUI, więc KAŻDE odebranie dostępu
+ * i każda zmiana admina kończyłyby się 404. Złapane przeglądem, potwierdzone
+ * na specyfikacji i na żywej instancji.
+ *
  * Świadomie NIE przenoszę z cortex-admina awaryjnego kasowania konta, gdy ten
- * zapis się nie uda (`deactivate_or_delete_orphaned_user_profiles`). Nieudany
- * zapis to zwykle chwilowy błąd sieci, a reakcją było tam sięgnięcie po
- * najbardziej nieodwracalną operację w całym mechanizmie. Awaria ma
- * zatrzymywać, nie eskalować.
+ * zapis się nie uda. Nieudany zapis to zwykle chwilowy błąd sieci, a reakcją
+ * było tam sięgnięcie po najbardziej nieodwracalną operację w mechanizmie.
+ * Awaria ma zatrzymywać, nie eskalować.
  */
 export async function updateUserRole(
   config: OpenwebuiConfig,
   userId: string,
   role: string,
 ): Promise<void> {
-  await request(config, "POST", `/api/v1/users/${userId}/update/role`, { id: userId, role })
+  const id = encodeURIComponent(userId)
+  const current = await request(config, "GET", `/api/v1/users/${id}`)
+  if (!isRecord(current) || typeof current.email !== "string") {
+    throw new OpenwebuiClientError("malformed-response", `Konto ${userId} ma nieoczekiwany kształt`)
+  }
+
+  await request(config, "POST", `/api/v1/users/${id}/update`, {
+    role,
+    email: current.email,
+    name: typeof current.name === "string" ? current.name : current.email,
+    profile_image_url:
+      typeof current.profile_image_url === "string" ? current.profile_image_url : "/user.png",
+  })
+}
+
+/**
+ * Konto, do którego należy token administracyjny. Potrzebne, żeby uzgodnienie
+ * nie odcięło dostępu SAMEMU SOBIE — cortex-admin chronił ten adres przez
+ * `get_session_user()` i było to jedyne zabezpieczenie jego obsługi sierot
+ * warte przeniesienia.
+ *
+ * Zwraca `null` przy dowolnym problemie. Wołający MA OBOWIĄZEK potraktować to
+ * jako powód do odmowy uzgodnienia, nie do przejścia dalej: nie wiadomo wtedy,
+ * czego chronić.
+ */
+export async function getTokenOwnerEmail(config: OpenwebuiConfig): Promise<string | null> {
+  try {
+    const data = await request(config, "GET", "/api/v1/auths/")
+    if (!isRecord(data) || typeof data.email !== "string") return null
+    return data.email.trim().toLowerCase()
+  } catch {
+    return null
+  }
 }
