@@ -119,14 +119,23 @@ export async function recordSyncResult(roleId: string, error: string | null): Pr
 /**
  * Stan docelowy KONT w OpenWebUI, policzony wyłącznie z Cortexa.
  *
- * KTO MA MIEĆ KONTO: aktywny użytkownik, który trzyma co najmniej jedną rolę
- * ze zmapowaną grupą. Rozważone i odrzucone: warunek „ma grant do kafelka
- * czatu". Kafelek OpenWebUI jest wierszem `external-link` zakładanym przez
- * admina, więc jego kod jest RÓŻNY w każdej instancji — na tej nie ma go
- * wcale (27 aplikacji, wszystkie `native`). Wymagałby nowej zmiennej
- * konfiguracyjnej i wprowadzał drugi, niezależny warunek, który może się
- * rozjechać z mapowaniem. Mapowanie rola→grupa JEST już świadomą deklaracją
- * „ta rola korzysta z OpenWebUI" i wystarcza.
+ * KTO MA MIEĆ KONTO: aktywny użytkownik z co najmniej JEDNĄ rolą — i nic
+ * więcej. Zero konfiguracji wstępnej, bo pełne uzgodnienie samo zakłada grupę
+ * dla każdej roli instancji (wzorem cortex-admina, który tworzył grupę per
+ * rola i nie znał pojęcia „ręczne mapowanie").
+ *
+ * Poprzednia wersja wymagała, żeby rola miała ZMAPOWANĄ grupę. Brzmiało to
+ * spójnie, a było pułapką: na świeżej instancji żadna rola mapowania nie ma,
+ * więc zbiór docelowy był pusty i nic się nie synchronizowało, dopóki ktoś nie
+ * wyklikał mapowań ręcznie. Gorzej — po zmapowaniu JEDNEJ roli reszta ludzi
+ * (w tym administratorzy) stawała się „nieuprawniona" i kwalifikowała się do
+ * odcięcia. Warunek konfiguracyjny w miejscu, gdzie użytkownik oczekuje
+ * działania z pudełka, jest defektem, nie decyzją.
+ *
+ * Odrzucone osobno: warunek „ma grant do kafelka czatu". Kafelek OpenWebUI to
+ * wiersz `external-link` zakładany przez admina, więc jego kod jest RÓŻNY
+ * w każdej instancji — wymagałby nowej zmiennej konfiguracyjnej, czyli znowu
+ * kroku wstępnego.
  *
  * `isAdmin` po KODZIE roli (`admin`), nie po nazwie — dokładnie ten sam
  * warunek, którego używał cortex-admin (`role.get("code") == "admin"`).
@@ -147,7 +156,6 @@ export async function loadOpenwebuiTargetUsers(): Promise<OpenwebuiTargetUser[]>
     .selectDistinct({ id: users.id, email: users.email, fullName: users.fullName })
     .from(users)
     .innerJoin(userRoles, eq(userRoles.userId, users.id))
-    .innerJoin(openwebuiGroupMappings, eq(openwebuiGroupMappings.roleId, userRoles.roleId))
     .where(eq(users.isActive, true))
 
   if (eligible.length === 0) return []
@@ -175,4 +183,25 @@ export async function loadOpenwebuiTargetUsers(): Promise<OpenwebuiTargetUser[]>
 export async function loadAllKnownEmails(): Promise<string[]> {
   const rows = await getDb().select({ email: users.email }).from(users)
   return rows.map((row) => row.email)
+}
+
+/** Adresy AKTYWNYCH administratorów Cortexa (rola o kodzie `admin`),
+ *  niezależnie od tego, czy ich rola ma zmapowaną grupę. Używane wyłącznie
+ *  jako zabezpieczenie przed ODEBRANIEM dostępu — patrz `neverRevoke`
+ *  w openwebui-sync.ts. */
+export async function loadAdminEmails(): Promise<string[]> {
+  const rows = await getDb()
+    .selectDistinct({ email: users.email })
+    .from(users)
+    .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    .innerJoin(roles, eq(roles.id, userRoles.roleId))
+    .where(and(eq(users.isActive, true), eq(roles.code, "admin")))
+  return rows.map((row) => row.email)
+}
+
+/** Wszystkie role instancji — do automatycznego założenia grupy dla każdej
+ *  z nich przy pełnym uzgodnieniu (zerowa konfiguracja, wzorem cortex-admina,
+ *  który tworzył grupę per rola bez żadnego ręcznego mapowania). */
+export async function listAllRoles(): Promise<{ id: string; code: string }[]> {
+  return getDb().select({ id: roles.id, code: roles.code }).from(roles)
 }

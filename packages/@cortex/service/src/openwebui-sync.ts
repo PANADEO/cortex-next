@@ -392,7 +392,14 @@ export function listOpenwebuiGroups(config: client.OpenwebuiConfig) {
  */
 export interface OpenwebuiPlanEntry {
   email: string
-  action: "create" | "promote-admin" | "demote-user" | "restore" | "revoke" | "orphan-revoke"
+  action:
+    | "create-group"
+    | "create"
+    | "promote-admin"
+    | "demote-user"
+    | "restore"
+    | "revoke"
+    | "orphan-revoke"
   detail: string
 }
 
@@ -441,11 +448,15 @@ export async function reconcileEverything(
   let target: Awaited<ReturnType<typeof store.loadOpenwebuiTargetUsers>>
   let knownEmails: string[]
   let existing: client.OpenwebuiUser[]
+  let adminEmails: string[]
+  let allRoles: { id: string; code: string }[]
   try {
-    ;[target, knownEmails, existing] = await Promise.all([
+    ;[target, knownEmails, existing, adminEmails, allRoles] = await Promise.all([
       store.loadOpenwebuiTargetUsers(),
       store.loadAllKnownEmails(),
       client.listAllUsers(config),
+      store.loadAdminEmails(),
+      store.listAllRoles(),
     ])
   } catch (error) {
     return { ...empty, status: "failed", message: errorMessage(error) }
@@ -477,7 +488,57 @@ export async function reconcileEverything(
   const targetByEmail = new Map(target.map((row) => [row.email.toLowerCase(), row]))
   const known = new Set(knownEmails.map((email) => email.toLowerCase()))
 
+  /**
+   * ADMINISTRATORÓW CORTEXA NIGDY NIE ODCINAMY — i to jest zabezpieczenie
+   * jednostronne, nie druga reguła uprawnień.
+   *
+   * Uprawnienie nadal wynika WYŁĄCZNIE z mapowania rola→grupa (D1): admin bez
+   * zmapowanej roli nie dostanie założonego konta. Ale gdy konto już ma, nie
+   * odbieramy mu dostępu — bo najgroźniejszy stan tego mechanizmu to
+   * konfiguracja CZĘŚCIOWA: ktoś mapuje grupę dla jednej roli, przez co zbiór
+   * docelowy przestaje być pusty (więc blokada masowego odcięcia się nie
+   * odpala), a administratorzy do niego nie należą i lecą w `pending`.
+   * Właściciel tokenu jest chroniony osobno, ale KAŻDY INNY administrator nie
+   * byłby. Bez tej asymetrii mechanizm nie jest bezpieczny „z pudełka".
+   *
+   * Cena jest znana i przyjęta: administratorowi, któremu dostęp do czatu ma
+   * być realnie odebrany, trzeba najpierw odebrać rolę `admin`.
+   */
+  const neverRevoke = new Set(adminEmails.map((email) => email.toLowerCase()))
+
   const plan: OpenwebuiPlanEntry[] = []
+
+  // (0) GRUPA DLA KAŻDEJ ROLI — zero konfiguracji wstępnej.
+  //
+  // NAJPIERW SZUKAMY PO NAZWIE, dopiero potem tworzymy. cortex-admin robił
+  // dokładnie tak (`if role_name in existing_groups`), i jest ku temu twardy
+  // powód: grupa w OpenWebUI przeżywa skasowanie mapowania po naszej stronie,
+  // więc tworzenie bezwarunkowe produkuje DUPLIKATY o tej samej nazwie.
+  // Zmierzone na żywej instancji 11.08.2026: dwie grupy `cortex:admin` po
+  // wyczyszczeniu mapowań i ponownym uzgodnieniu.
+  //
+  // cortex-admin nie znał pojęcia „ręczne mapowanie": dla każdej roli tworzył
+  // grupę o nazwie roli, jeśli jej nie było. Tak samo tutaj. Bez tego kroku
+  // świeża instancja wymagała, żeby ktoś najpierw wyklikał mapowania, a do
+  // tego czasu „Synchronizuj" nie robił nic — albo, po zmapowaniu jednej roli,
+  // kwalifikował całą resztę do odcięcia.
+  const existingGroups = await client.listGroups(config).catch(() => [])
+  const groupIdByName = new Map(existingGroups.map((group) => [group.name, group.id]))
+
+  const rolesWithoutGroup: { id: string; code: string; reuseGroupId?: string }[] = []
+  for (const role of allRoles) {
+    const mapping = await store.getRoleGroupMapping(role.id).catch(() => null)
+    if (mapping) continue
+
+    const groupName = groupNameForRoleCode(role.code)
+    const reuseGroupId = groupIdByName.get(groupName)
+    rolesWithoutGroup.push(reuseGroupId ? { ...role, reuseGroupId } : role)
+    plan.push({
+      email: `rola: ${role.code}`,
+      action: "create-group",
+      detail: reuseGroupId ? `podepnij istniejącą grupę ${groupName}` : `załóż grupę ${groupName}`,
+    })
+  }
 
   // (1) Konta, które mają istnieć, oraz rola konta.
   for (const wanted of target) {
@@ -512,6 +573,7 @@ export async function reconcileEverything(
   for (const row of existing) {
     if (protectedSet.has(row.email)) continue
     if (targetByEmail.has(row.email)) continue
+    if (neverRevoke.has(row.email)) continue
     if (row.role === "pending") continue
 
     plan.push({
@@ -556,7 +618,26 @@ export async function reconcileEverything(
   const failures: string[] = []
   let applied = 0
 
+  // Grupy PRZED kontami: `reconcileAllMappedGroups()` na końcu ma zobaczyć
+  // komplet mapowań, inaczej świeżo założone role nie dostałyby członków przy
+  // tym samym kliknięciu.
+  for (const role of rolesWithoutGroup) {
+    try {
+      const attached = await attachRoleGroup({
+        roleId: role.id,
+        action: role.reuseGroupId
+          ? { kind: "existing", groupId: role.reuseGroupId }
+          : { kind: "create" },
+      })
+      if ("error" in attached) throw new Error(attached.error)
+      applied += 1
+    } catch (error) {
+      failures.push(`grupa dla roli ${role.code}: ${errorMessage(error)}`)
+    }
+  }
+
   for (const entry of plan) {
+    if (entry.action === "create-group") continue
     try {
       if (entry.action === "create") {
         const wanted = targetByEmail.get(entry.email)

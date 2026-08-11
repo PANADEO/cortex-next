@@ -41,6 +41,8 @@ const storeMock = vi.hoisted(() => ({
   recordSyncResult: vi.fn(),
   loadOpenwebuiTargetUsers: vi.fn(),
   loadAllKnownEmails: vi.fn(),
+  loadAdminEmails: vi.fn(),
+  listAllRoles: vi.fn(),
 }))
 
 vi.mock("./openwebui-client", () => ({ ...clientMock, OpenwebuiClientError: FakeOpenwebuiClientError }))
@@ -385,8 +387,11 @@ describe("reconcileEverything — pełne uzgodnienie kont", () => {
     vi.stubEnv("OPENWEBUI_ADMIN_TOKEN", "token")
     vi.stubEnv("OPENWEBUI_SYNC_PROTECTED_EMAILS", "")
     storeMock.loadAllKnownEmails.mockResolvedValue([])
+    storeMock.loadAdminEmails.mockResolvedValue([])
+    storeMock.listAllRoles.mockResolvedValue([])
     clientMock.listAllUsers.mockResolvedValue([])
     clientMock.getTokenOwnerEmail.mockResolvedValue("wlasciciel@firma.pl")
+    clientMock.listGroups.mockResolvedValue([])
     storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([])
     storeMock.listMappedRoleIds.mockResolvedValue([])
   })
@@ -533,14 +538,18 @@ describe("reconcileEverything — zabezpieczenia przed odcięciem", () => {
     vi.stubEnv("OPENWEBUI_ADMIN_TOKEN", "token")
     vi.stubEnv("OPENWEBUI_SYNC_PROTECTED_EMAILS", "")
     storeMock.loadAllKnownEmails.mockResolvedValue([])
+    storeMock.loadAdminEmails.mockResolvedValue([])
+    storeMock.listAllRoles.mockResolvedValue([])
     storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([])
     storeMock.listMappedRoleIds.mockResolvedValue([])
     clientMock.listAllUsers.mockResolvedValue([])
     clientMock.getTokenOwnerEmail.mockResolvedValue("wlasciciel@firma.pl")
+    clientMock.listGroups.mockResolvedValue([])
   })
 
   it("właściciel tokenu jest chroniony ZAWSZE, nawet przy pustej liście z konfiguracji", async () => {
     clientMock.getTokenOwnerEmail.mockResolvedValue("wlasciciel@firma.pl")
+    clientMock.listGroups.mockResolvedValue([])
     storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
       { email: "ktos@firma.pl", fullName: "Ktoś", isAdmin: false },
     ])
@@ -593,10 +602,13 @@ describe("reconcileEverything — poprawki po przeglądzie", () => {
     vi.stubEnv("OPENWEBUI_ADMIN_TOKEN", "token")
     vi.stubEnv("OPENWEBUI_SYNC_PROTECTED_EMAILS", "")
     storeMock.loadAllKnownEmails.mockResolvedValue([])
+    storeMock.loadAdminEmails.mockResolvedValue([])
+    storeMock.listAllRoles.mockResolvedValue([])
     storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([])
     storeMock.listMappedRoleIds.mockResolvedValue([])
     clientMock.listAllUsers.mockResolvedValue([])
     clientMock.getTokenOwnerEmail.mockResolvedValue("wlasciciel@firma.pl")
+    clientMock.listGroups.mockResolvedValue([])
   })
 
   /** Fail-closed: nieznany właściciel tokenu to jedyna sytuacja, w której to
@@ -647,5 +659,175 @@ describe("reconcileEverything — poprawki po przeglądzie", () => {
 
     expect(result.status).toBe("failed")
     expect(result.message).toMatch(/synchronizacja grup/)
+  })
+})
+
+describe("reconcileEverything — administratorzy Cortexa", () => {
+  beforeEach(() => {
+    vi.stubEnv("OPENWEBUI_URL", "https://chat.example.com")
+    vi.stubEnv("OPENWEBUI_ADMIN_TOKEN", "token")
+    vi.stubEnv("OPENWEBUI_SYNC_PROTECTED_EMAILS", "")
+    storeMock.loadAllKnownEmails.mockResolvedValue([])
+    storeMock.loadAdminEmails.mockResolvedValue([])
+    storeMock.listAllRoles.mockResolvedValue([])
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([])
+    storeMock.listMappedRoleIds.mockResolvedValue([])
+    clientMock.listAllUsers.mockResolvedValue([])
+    clientMock.getTokenOwnerEmail.mockResolvedValue("wlasciciel@firma.pl")
+    clientMock.listGroups.mockResolvedValue([])
+  })
+
+  /**
+   * NAJGROŹNIEJSZY STAN CAŁEGO MECHANIZMU: konfiguracja CZĘŚCIOWA. Ktoś mapuje
+   * grupę dla jednej roli, więc zbiór docelowy przestaje być pusty i blokada
+   * masowego odcięcia się NIE odpala — a administratorzy do tego zbioru nie
+   * należą i lecieliby w `pending`. Właściciel tokenu jest chroniony osobno,
+   * każdy inny administrator NIE.
+   */
+  it("administrator Cortexa NIE jest odcinany przy częściowej konfiguracji", async () => {
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
+      { email: "konsultant@firma.pl", fullName: "Konsultant", isAdmin: false },
+    ])
+    storeMock.loadAdminEmails.mockResolvedValue(["szef@firma.pl"])
+    storeMock.loadAllKnownEmails.mockResolvedValue(["szef@firma.pl", "konsultant@firma.pl"])
+    clientMock.listAllUsers.mockResolvedValue([
+      { id: "u1", email: "konsultant@firma.pl", name: "Konsultant", role: "user" },
+      { id: "u2", email: "szef@firma.pl", name: "Szef", role: "admin" },
+    ])
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.plan.map((e) => e.email)).not.toContain("szef@firma.pl")
+    expect(clientMock.updateUserRole).not.toHaveBeenCalled()
+  })
+
+  /** Zabezpieczenie jest JEDNOSTRONNE: chroni przed odebraniem, nie nadaje
+   *  uprawnienia. Admin bez zmapowanej roli nadal nie dostaje konta —
+   *  inaczej byłaby to druga, niezależna reguła uprawnień (odrzucona w D1a). */
+  it("ochrona admina nie zakłada mu konta, gdy nie jest uprawniony", async () => {
+    storeMock.loadAdminEmails.mockResolvedValue(["szef@firma.pl"])
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
+      { email: "konsultant@firma.pl", fullName: "Konsultant", isAdmin: false },
+    ])
+    clientMock.listAllUsers.mockResolvedValue([])
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.plan.map((e) => e.email)).toEqual(["konsultant@firma.pl"])
+    expect(clientMock.createUser).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("reconcileEverything — działa z pudełka", () => {
+  beforeEach(() => {
+    vi.stubEnv("OPENWEBUI_URL", "https://chat.example.com")
+    vi.stubEnv("OPENWEBUI_ADMIN_TOKEN", "token")
+    vi.stubEnv("OPENWEBUI_SYNC_PROTECTED_EMAILS", "")
+    storeMock.loadAllKnownEmails.mockResolvedValue([])
+    storeMock.loadAdminEmails.mockResolvedValue([])
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([])
+    storeMock.listAllRoles.mockResolvedValue([])
+    storeMock.listMappedRoleIds.mockResolvedValue([])
+    storeMock.getRoleGroupMapping.mockResolvedValue(null)
+    clientMock.listAllUsers.mockResolvedValue([])
+    clientMock.getTokenOwnerEmail.mockResolvedValue("wlasciciel@firma.pl")
+    clientMock.listGroups.mockResolvedValue([])
+  })
+
+  /**
+   * ŚWIEŻA INSTANCJA, ZERO KONFIGURACJI. Jedno kliknięcie ma założyć grupy dla
+   * ról i konta dla ludzi. Poprzednia wersja wymagała, żeby ktoś najpierw
+   * ręcznie zmapował grupy — do tego czasu „Synchronizuj" nie robił nic.
+   */
+  it("zakłada grupę dla KAŻDEJ roli, która jej nie ma", async () => {
+    storeMock.listAllRoles.mockResolvedValue([
+      { id: "r1", code: "admin" },
+      { id: "r2", code: "konsultanci" },
+    ])
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
+      { email: "szef@firma.pl", fullName: "Szef", isAdmin: true },
+    ])
+
+    const result = await reconcileEverything()
+
+    expect(result.plan.filter((e) => e.action === "create-group").map((e) => e.detail)).toEqual([
+      "załóż grupę cortex:admin",
+      "załóż grupę cortex:konsultanci",
+    ])
+    expect(result.plan.some((e) => e.action === "create" && e.email === "szef@firma.pl")).toBe(true)
+  })
+
+  it("rola, która grupę już ma, nie jest zakładana drugi raz", async () => {
+    storeMock.listAllRoles.mockResolvedValue([{ id: "r1", code: "admin" }])
+    storeMock.getRoleGroupMapping.mockResolvedValue({
+      roleId: "r1",
+      groupId: "g1",
+      groupName: "cortex:admin",
+    })
+
+    const result = await reconcileEverything()
+
+    expect(result.plan.filter((e) => e.action === "create-group")).toEqual([])
+  })
+
+  /** Uprawnienie wynika z POSIADANIA ROLI, nie z istnienia mapowania —
+   *  inaczej na świeżej instancji nie byłoby uprawnionych i blokada masowego
+   *  odcięcia zatrzymywałaby wszystko. */
+  it("administrator świeżej instancji jest uprawniony bez żadnej konfiguracji", async () => {
+    storeMock.listAllRoles.mockResolvedValue([{ id: "r1", code: "admin" }])
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([
+      { email: "szef@firma.pl", fullName: "Szef", isAdmin: true },
+    ])
+    clientMock.listAllUsers.mockResolvedValue([])
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.blocked).toBeUndefined()
+    expect(clientMock.createUser).toHaveBeenCalledWith(expect.anything(), {
+      email: "szef@firma.pl",
+      name: "Szef",
+      role: "admin",
+    })
+  })
+})
+
+describe("reconcileEverything — grupa po nazwie, nie duplikat", () => {
+  beforeEach(() => {
+    vi.stubEnv("OPENWEBUI_URL", "https://chat.example.com")
+    vi.stubEnv("OPENWEBUI_ADMIN_TOKEN", "token")
+    vi.stubEnv("OPENWEBUI_SYNC_PROTECTED_EMAILS", "")
+    storeMock.loadAllKnownEmails.mockResolvedValue([])
+    storeMock.loadAdminEmails.mockResolvedValue([])
+    storeMock.loadOpenwebuiTargetUsers.mockResolvedValue([])
+    storeMock.listMappedRoleIds.mockResolvedValue([])
+    storeMock.getRoleGroupMapping.mockResolvedValue(null)
+    storeMock.listAllRoles.mockResolvedValue([{ id: "r1", code: "admin" }])
+    clientMock.listAllUsers.mockResolvedValue([])
+    clientMock.getTokenOwnerEmail.mockResolvedValue("wlasciciel@firma.pl")
+    clientMock.listGroups.mockResolvedValue([])
+  })
+
+  /**
+   * Grupa w OpenWebUI przeżywa skasowanie mapowania po naszej stronie, więc
+   * bezwarunkowe tworzenie produkuje DUPLIKATY o tej samej nazwie. Zmierzone
+   * na żywej instancji: dwie grupy `cortex:admin` po wyczyszczeniu mapowań
+   * i ponownym uzgodnieniu.
+   */
+  it("istniejącą grupę o tej nazwie PODPINA, zamiast tworzyć drugą", async () => {
+    clientMock.listGroups.mockResolvedValue([{ id: "g-stare", name: "cortex:admin" }])
+
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.plan[0]).toMatchObject({
+      action: "create-group",
+      detail: "podepnij istniejącą grupę cortex:admin",
+    })
+    expect(clientMock.createGroup).not.toHaveBeenCalled()
+  })
+
+  it("gdy grupy o tej nazwie nie ma, tworzy nową", async () => {
+    const result = await reconcileEverything({ dryRun: false })
+
+    expect(result.plan[0]).toMatchObject({ detail: "załóż grupę cortex:admin" })
   })
 })

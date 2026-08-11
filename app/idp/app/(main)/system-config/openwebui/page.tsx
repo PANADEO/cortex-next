@@ -17,6 +17,7 @@ import { useState } from "react"
  * dotyczy, zanim to się stanie.
  */
 const ACTION_LABEL: Record<OpenwebuiPlanEntry["action"], string> = {
+  "create-group": "Załóż grupę",
   create: "Załóż konto",
   "promote-admin": "Nadaj admina",
   "demote-user": "Odbierz admina",
@@ -99,7 +100,7 @@ export default function OpenwebuiSyncPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left">
               <tr>
-                <th className="px-4 py-2 font-medium">Użytkownik</th>
+                <th className="px-4 py-2 font-medium">Kogo dotyczy</th>
                 <th className="px-4 py-2 font-medium">Operacja</th>
                 <th className="px-4 py-2 font-medium">Zmiana</th>
               </tr>
