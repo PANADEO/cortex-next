@@ -29,20 +29,26 @@ interface ClientMeta {
   slug: string
   name: string
   market: string
-  pricingBasis: string
-  pricingRule: string
+  pricingBasisKey: string
+  pricingRuleKey: string
   accent: AccentKey
 }
 
-/** Per-client metadata: how each brand is re-rated and where it ships. */
+/**
+ * Per-client metadata: how each brand is re-rated and where it ships.
+ *
+ * `name` i `market` zostają daną — nazwa własna klienta i kody krajów. Opisy
+ * wyceny są już interfejsem, więc trzymamy tu KLUCZE przestrzeni `store-pit`,
+ * nie napisy: ten plik nie jest komponentem i nie ma dostępu do `t`.
+ */
 export const CLIENT_META: Record<ClientKey, ClientMeta> = {
   FlatPay: {
     key: "FlatPay",
     slug: "flatpay",
     name: "FlatPay",
     market: "DE / FR / NL",
-    pricingBasis: "GLS net after ShopDelivery discount",
-    pricingRule: "GLS net x 1.1",
+    pricingBasisKey: "clientMeta.flatpay.basis",
+    pricingRuleKey: "clientMeta.flatpay.rule",
     accent: "sky",
   },
   Braintimizer: {
@@ -50,8 +56,8 @@ export const CLIENT_META: Record<ClientKey, ClientMeta> = {
     slug: "braintimizer",
     name: "Braintimizer",
     market: "DK",
-    pricingBasis: "BT contractual GLS pricing",
-    pricingRule: "BT price map (DKK)",
+    pricingBasisKey: "clientMeta.braintimizer.basis",
+    pricingRuleKey: "clientMeta.braintimizer.rule",
     accent: "violet",
   },
   Drywear: {
@@ -59,8 +65,8 @@ export const CLIENT_META: Record<ClientKey, ClientMeta> = {
     slug: "drywear",
     name: "Drywear",
     market: "DE",
-    pricingBasis: "DAO price list",
-    pricingRule: "DAO lookup by service / weight",
+    pricingBasisKey: "clientMeta.drywear.basis",
+    pricingRuleKey: "clientMeta.drywear.rule",
     accent: "emerald",
   },
   Nordvio: {
@@ -68,8 +74,8 @@ export const CLIENT_META: Record<ClientKey, ClientMeta> = {
     slug: "nordvio",
     name: "Nordvio",
     market: "DE",
-    pricingBasis: "DAO price list",
-    pricingRule: "DAO lookup by service / weight",
+    pricingBasisKey: "clientMeta.nordvio.basis",
+    pricingRuleKey: "clientMeta.nordvio.rule",
     accent: "amber",
   },
 }

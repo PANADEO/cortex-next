@@ -11,6 +11,9 @@ import {
   useUpdateRole,
 } from "@/features/system-config/hooks"
 import type { RoleSummary } from "@/features/system-config/types"
+import { apiErrorMessage } from "@/lib/i18n/api-error"
+import { formatDateTime } from "@/lib/i18n/formats"
+import { useLocaleStore } from "@/lib/i18n/locale-store"
 import { toastApiError } from "@cortex/api"
 import {
   Alert,
@@ -118,7 +121,9 @@ export default function RolePage() {
       await deleteRole.mutateAsync(roleToDelete.id)
       toast.success(t("roles.toast.deleted", { name: roleToDelete.name }))
     } catch (error) {
-      toastApiError(error, t("roles.errors.deleteFailed"))
+      // apiErrorMessage, a nie toastApiError: odmowa niesie KLUCZ zdania —
+      // rola systemowa albo ostatnia rola z dostępem do modułu.
+      toast.error(apiErrorMessage(t, error, t("roles.errors.deleteFailed")))
     } finally {
       setRoleToDelete(null)
     }
@@ -300,6 +305,7 @@ export default function RolePage() {
  */
 function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
   const { t } = useTranslation(["system-config", "common"])
+  const locale = useLocaleStore((s) => s.locale)
   const { data, isLoading } = useRoleOpenwebuiGroup(role.id)
   const attach = useAttachRoleOpenwebuiGroup()
   const detach = useDetachRoleOpenwebuiGroup()
@@ -329,7 +335,8 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
       )
       setSelectedGroupName("")
     } catch (error) {
-      toastApiError(error, t("roles.openwebui.errors.attachFailed"))
+      // Grupa już podpięta pod INNĄ rolę wraca z kluczem i kodem tamtej roli.
+      toast.error(apiErrorMessage(t, error, t("roles.openwebui.errors.attachFailed")))
     } finally {
       setConfirmGroup(null)
     }
@@ -437,7 +444,7 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
         <Badge variant={mapping.lastSyncError ? "destructive" : "outline"}>
           {mapping.lastSyncedAt
             ? t("roles.openwebui.syncedAt", {
-                date: new Date(mapping.lastSyncedAt).toLocaleString("pl-PL"),
+                date: formatDateTime(mapping.lastSyncedAt, locale),
               })
             : t("roles.openwebui.neverSynced")}
         </Badge>

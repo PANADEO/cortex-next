@@ -5,8 +5,11 @@ import { Checkbox, PackageStatusBadges } from "@cortex/ui"
 import { formatRelative } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
 import Link from "next/link"
+import type { useTranslation } from "react-i18next"
 
 export interface PackageColumnsOptions {
+  /** `t` wędruje parametrem — to nie jest komponent, więc hooka tu wołać nie wolno. */
+  t: ReturnType<typeof useTranslation>["t"]
   selection?: {
     selected: Set<string>
     allSelectedOnPage: boolean
@@ -16,9 +19,9 @@ export interface PackageColumnsOptions {
 }
 
 export function packageColumns(
-  options: PackageColumnsOptions = {},
+  options: PackageColumnsOptions,
 ): ColumnDef<PackageReadModel, unknown>[] {
-  const { selection } = options
+  const { selection, t } = options
   const cols: ColumnDef<PackageReadModel, unknown>[] = []
 
   if (selection) {
@@ -29,7 +32,7 @@ export function packageColumns(
         <Checkbox
           checked={selection.allSelectedOnPage}
           onCheckedChange={() => selection.toggleAll()}
-          aria-label="Select all on page"
+          aria-label={t("packages.columns.selectAll")}
         />
       ),
       cell: ({ row }) => (
@@ -37,7 +40,9 @@ export function packageColumns(
           checked={selection.selected.has(row.original.id)}
           onCheckedChange={() => selection.toggleRow(row.original.id)}
           onClick={(e) => e.stopPropagation()}
-          aria-label={`Select ${row.original.package_name ?? row.original.file_name}`}
+          aria-label={t("packages.columns.selectRow", {
+            name: row.original.package_name ?? row.original.file_name,
+          })}
         />
       ),
     })
@@ -45,7 +50,7 @@ export function packageColumns(
 
   cols.push({
     accessorKey: "file_name",
-    header: "File",
+    header: t("packages.columns.file"),
     cell: ({ row }) => (
       <Link href={`/idp/packages/${row.original.id}`} className="block min-w-0 hover:underline">
         <span className="block truncate text-xs font-medium">
@@ -62,7 +67,7 @@ export function packageColumns(
 
   cols.push({
     accessorKey: "uploaded_by",
-    header: "Uploader",
+    header: t("packages.columns.uploader"),
     size: 140,
     cell: ({ row }) => (
       <span className="text-xs text-muted-foreground">{row.original.uploaded_by ?? "—"}</span>
@@ -72,7 +77,7 @@ export function packageColumns(
   cols.push(
     {
       accessorKey: "created_date",
-      header: "Created",
+      header: t("packages.columns.created"),
       size: 160,
       cell: ({ row }) => (
         <span className="text-xs text-muted-foreground">
@@ -82,7 +87,7 @@ export function packageColumns(
     },
     {
       accessorKey: "processing_state",
-      header: "Status",
+      header: t("packages.columns.status"),
       size: 260,
       cell: ({ row }) => (
         <PackageStatusBadges
@@ -93,7 +98,7 @@ export function packageColumns(
     },
     {
       accessorKey: "assignee",
-      header: "Assignee",
+      header: t("packages.columns.assignee"),
       size: 180,
       cell: ({ row }) => (
         <span className="text-xs text-muted-foreground">{row.original.assignee ?? "—"}</span>

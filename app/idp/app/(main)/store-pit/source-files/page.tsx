@@ -5,6 +5,8 @@ import { count, eur } from "@/features/store-pit/helpers"
 import { Badge, Card, CardContent, PageHeader } from "@cortex/ui"
 import type { LucideIcon } from "lucide-react"
 import { FileSpreadsheet, FileText } from "lucide-react"
+import { useMemo } from "react"
+import { useTranslation } from "react-i18next"
 
 interface FileEntry {
   icon: LucideIcon
@@ -13,49 +15,57 @@ interface FileEntry {
   stats: Array<{ label: string; value: string }>
 }
 
-const FILES: FileEntry[] = [
-  {
-    icon: FileSpreadsheet,
-    name: "276.2300.2026.06.h.a.aa.3230613421.j.c.2760363466.910104622.de.24944.3.xx.a.csv",
-    role: "Line-level CSV detail",
-    stats: [
-      { label: "Rows", value: count(INVOICE.csvRows) },
-      { label: "Type", value: "GLS CSV export" },
-      { label: "Encoding", value: "UTF-8" },
-    ],
-  },
-  {
-    icon: FileText,
-    name: "276.2300.2026.06.h.a.re.3230613421.j.c.2760363466.910104622.de.24944.3.xx.a.pdf",
-    role: "Invoice summary / rates",
-    stats: [
-      { label: "Pages", value: "3" },
-      { label: "Net total", value: eur(INVOICE.pdfNetTotal) },
-      { label: "Gross total", value: eur(INVOICE.pdfGrossTotal) },
-    ],
-  },
-]
-
-const META: Array<{ label: string; value: string }> = [
-  { label: "Carrier", value: INVOICE.carrier },
-  { label: "GLS invoice no", value: INVOICE.glsInvoiceNo },
-  { label: "Store-Pit invoice no", value: INVOICE.spInvoiceNo },
-  { label: "Customer no", value: INVOICE.customerNo },
-  { label: "Invoice date", value: INVOICE.invoiceDate },
-  { label: "Period", value: `${INVOICE.periodFrom} - ${INVOICE.periodTo}` },
-  { label: "Week", value: INVOICE.week },
-  { label: "Currency", value: INVOICE.currency },
-  { label: "Net total", value: eur(INVOICE.pdfNetTotal) },
-  { label: "VAT", value: eur(INVOICE.pdfVat) },
-  { label: "Gross total", value: eur(INVOICE.pdfGrossTotal) },
-]
-
 export default function SourceFilesPage() {
+  const { t } = useTranslation("store-pit")
+
+  const files: FileEntry[] = useMemo(
+    () => [
+      {
+        icon: FileSpreadsheet,
+        name: "276.2300.2026.06.h.a.aa.3230613421.j.c.2760363466.910104622.de.24944.3.xx.a.csv",
+        role: t("sourceFiles.roles.csv"),
+        stats: [
+          { label: t("sourceFiles.stats.rows"), value: count(INVOICE.csvRows) },
+          { label: t("sourceFiles.stats.type"), value: t("sourceFiles.stats.typeCsv") },
+          { label: t("sourceFiles.stats.encoding"), value: "UTF-8" },
+        ],
+      },
+      {
+        icon: FileText,
+        name: "276.2300.2026.06.h.a.re.3230613421.j.c.2760363466.910104622.de.24944.3.xx.a.pdf",
+        role: t("sourceFiles.roles.pdf"),
+        stats: [
+          { label: t("sourceFiles.stats.pages"), value: "3" },
+          { label: t("fields.netTotal"), value: eur(INVOICE.pdfNetTotal) },
+          { label: t("fields.grossTotal"), value: eur(INVOICE.pdfGrossTotal) },
+        ],
+      },
+    ],
+    [t],
+  )
+
+  const meta: Array<{ label: string; value: string }> = useMemo(
+    () => [
+      { label: t("sourceFiles.meta.carrier"), value: INVOICE.carrier },
+      { label: t("sourceFiles.meta.glsInvoiceNo"), value: INVOICE.glsInvoiceNo },
+      { label: t("sourceFiles.meta.spInvoiceNo"), value: INVOICE.spInvoiceNo },
+      { label: t("sourceFiles.meta.customerNo"), value: INVOICE.customerNo },
+      { label: t("sourceFiles.meta.invoiceDate"), value: INVOICE.invoiceDate },
+      { label: t("sourceFiles.meta.period"), value: `${INVOICE.periodFrom} - ${INVOICE.periodTo}` },
+      { label: t("sourceFiles.meta.week"), value: INVOICE.week },
+      { label: t("sourceFiles.meta.currency"), value: INVOICE.currency },
+      { label: t("fields.netTotal"), value: eur(INVOICE.pdfNetTotal) },
+      { label: t("sourceFiles.meta.vat"), value: eur(INVOICE.pdfVat) },
+      { label: t("fields.grossTotal"), value: eur(INVOICE.pdfGrossTotal) },
+    ],
+    [t],
+  )
+
   return (
     <>
       <PageHeader
-        title="Source files"
-        description="Input files registered for this GLS Germany invoice."
+        title={t("sourceFiles.title")}
+        description={t("sourceFiles.description")}
         actions={
           <Badge variant="outline" className="font-mono text-xs">
             {INVOICE.carrier} · {INVOICE.glsInvoiceNo}
@@ -65,9 +75,9 @@ export default function SourceFilesPage() {
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold">Input files</h2>
+          <h2 className="text-sm font-semibold">{t("sourceFiles.inputFilesTitle")}</h2>
           <div className="grid gap-4 sm:grid-cols-2">
-            {FILES.map((f) => {
+            {files.map((f) => {
               const Icon = f.icon
               return (
                 <Card key={f.name} className="border-border/70">
@@ -83,7 +93,7 @@ export default function SourceFilesPage() {
                         variant="outline"
                         className="shrink-0 border-emerald-500/30 bg-emerald-500/15 text-xs text-emerald-700 dark:text-emerald-300"
                       >
-                        Parsed
+                        {t("sourceFiles.parsed")}
                       </Badge>
                     </div>
                     <p className="break-all font-mono text-xs text-foreground">{f.name}</p>
@@ -105,11 +115,11 @@ export default function SourceFilesPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold">Invoice metadata</h2>
+          <h2 className="text-sm font-semibold">{t("sourceFiles.metadataTitle")}</h2>
           <Card>
             <CardContent className="p-6">
               <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-                {META.map((m) => (
+                {meta.map((m) => (
                   <div key={m.label}>
                     <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
                       {m.label}
@@ -123,8 +133,10 @@ export default function SourceFilesPage() {
         </section>
 
         <p className="text-[11px] text-muted-foreground">
-          The CSV carries {count(INVOICE.csvRows)} lines that become {count(INVOICE.shipmentRows)}{" "}
-          parcel rows after invoice-level charges are split out - handled under Reconciliation.
+          {t("sourceFiles.footnote", {
+            csvRows: count(INVOICE.csvRows),
+            shipmentRows: count(INVOICE.shipmentRows),
+          })}
         </p>
       </div>
     </>

@@ -11,6 +11,7 @@ import {
 } from "@/features/ilustromat/hooks"
 import type { FrameTemplateDto, FrameTemplateInputDto } from "@/features/ilustromat/types"
 import { useObjectUrl } from "@/features/ilustromat/use-object-url"
+import { apiErrorMessage } from "@/lib/i18n/api-error"
 import { contrastRatio, parseHexColor, WCAG_AA_NORMAL_TEXT } from "@/lib/ilustromat/color"
 import { fontLibraryOptions } from "@/lib/ilustromat/font-catalog"
 import {
@@ -19,12 +20,7 @@ import {
   DEFAULT_MIN_IMAGE_AREA_RATIO,
   MIN_IMAGE_AREA_RATIO_RANGE,
 } from "@/lib/ilustromat/presets"
-import {
-  FRAME_LAYOUT_LABELS,
-  LOGO_POSITION_LABELS,
-  TEXT_ALIGN_LABELS,
-} from "@/lib/ilustromat/types"
-import { toastApiError } from "@cortex/api"
+import { FRAME_LAYOUTS, LOGO_POSITIONS, TEXT_ALIGNS } from "@/lib/ilustromat/types"
 import {
   Alert,
   AlertDescription,
@@ -171,7 +167,11 @@ export default function TemplatesPage() {
       )
       setPreviewBlob(null)
     } catch (error) {
-      toastApiError(error, t("toasts.uploadFailed"))
+      // apiErrorMessage, a nie toastApiError: odmowy wgrania niosą KLUCZ
+      // komunikatu (brakujące polskie znaki, kolekcja krojów, render
+      // weryfikacyjny), a sam zapas nie powiedziałby, co jest nie tak
+      // z plikiem.
+      toast.error(apiErrorMessage(t, error, t("toasts.uploadFailed")))
     }
   }
 
@@ -187,7 +187,7 @@ export default function TemplatesPage() {
         toast.success(t("toasts.saved"))
       }
     } catch (error) {
-      toastApiError(error, t("toasts.saveFailed"))
+      toast.error(apiErrorMessage(t, error, t("toasts.saveFailed")))
     }
   }
 
@@ -274,7 +274,7 @@ export default function TemplatesPage() {
                   <SelectContent>
                     {fonts.map((font) => (
                       <SelectItem key={font.id} value={font.id}>
-                        {t(`options.font.${font.id}`, { defaultValue: font.label })}
+                        {t(`options.font.${font.id}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -302,11 +302,11 @@ export default function TemplatesPage() {
                     })
                   }
                 >
-                  {Object.entries(LOGO_POSITION_LABELS).map(([value, label]) => (
+                  {LOGO_POSITIONS.map((value) => (
                     <div key={value} className="flex items-center gap-2">
                       <RadioGroupItem id={`logo-${value}`} value={value} />
                       <Label htmlFor={`logo-${value}`} className="font-normal">
-                        {t(`options.logoPosition.${value}`, { defaultValue: label })}
+                        {t(`options.logoPosition.${value}`)}
                       </Label>
                     </div>
                   ))}
@@ -321,11 +321,11 @@ export default function TemplatesPage() {
                     setDraft({ ...draft, layout: layout as FrameTemplateDto["layout"] })
                   }
                 >
-                  {Object.entries(FRAME_LAYOUT_LABELS).map(([value, label]) => (
+                  {FRAME_LAYOUTS.map((value) => (
                     <div key={value} className="flex items-center gap-2">
                       <RadioGroupItem id={`layout-${value}`} value={value} />
                       <Label htmlFor={`layout-${value}`} className="font-normal">
-                        {t(`options.layout.${value}`, { defaultValue: label })}
+                        {t(`options.layout.${value}`)}
                       </Label>
                     </div>
                   ))}
@@ -340,11 +340,11 @@ export default function TemplatesPage() {
                     setDraft({ ...draft, textAlign: textAlign as FrameTemplateDto["textAlign"] })
                   }
                 >
-                  {Object.entries(TEXT_ALIGN_LABELS).map(([value, label]) => (
+                  {TEXT_ALIGNS.map((value) => (
                     <div key={value} className="flex items-center gap-2">
                       <RadioGroupItem id={`align-${value}`} value={value} />
                       <Label htmlFor={`align-${value}`} className="font-normal">
-                        {t(`options.textAlign.${value}`, { defaultValue: label })}
+                        {t(`options.textAlign.${value}`)}
                       </Label>
                     </div>
                   ))}

@@ -4,6 +4,7 @@ import { Button, Checkbox, Popover, PopoverContent, PopoverTrigger, Separator } 
 import { cn, useFeatureFlag } from "@cortex/utils"
 import { Check, UserCog, Users } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 export const UNASSIGNED = "__unassigned__"
 
@@ -21,20 +22,23 @@ function initials(identifier: string): string {
   return (identifier[0] ?? "?").toUpperCase()
 }
 
+/** `t` wędruje parametrem, bo to nie jest komponent i nie wolno tu wołać hooka. */
 function describeSelection(
+  t: ReturnType<typeof useTranslation>["t"],
   selection: OwnerSelection,
   currentUser: string | null,
   totalOwners: number,
 ): string {
-  if (selection === "all") return "All owners"
-  if (selection.size === 0) return "Nobody"
-  if (currentUser && selection.size === 1 && selection.has(currentUser)) return "Just me"
+  if (selection === "all") return t("board.owner.allOwners")
+  if (selection.size === 0) return t("board.owner.nobody")
+  if (currentUser && selection.size === 1 && selection.has(currentUser))
+    return t("board.owner.justMe")
   if (selection.size === 1) {
     const only = [...selection][0]!
-    return only === UNASSIGNED ? "Unassigned" : (only.split("@")[0] ?? only)
+    return only === UNASSIGNED ? t("board.owner.unassigned") : (only.split("@")[0] ?? only)
   }
-  if (selection.size === totalOwners + 1) return "All owners"
-  return `${selection.size} owners`
+  if (selection.size === totalOwners + 1) return t("board.owner.allOwners")
+  return t("board.owner.ownersCount", { n: selection.size })
 }
 
 export function OwnerFilter({
@@ -44,6 +48,7 @@ export function OwnerFilter({
   onChange,
   className,
 }: OwnerFilterProps) {
+  const { t } = useTranslation("idp")
   const [open, setOpen] = useState(false)
   const classificationEnabled = useFeatureFlag("idp.classification")
 
@@ -72,7 +77,7 @@ export function OwnerFilter({
   const selectAll = () => onChange("all")
   const selectNone = () => onChange(new Set())
 
-  const label = describeSelection(selection, currentUser, options.rest.length)
+  const label = describeSelection(t, selection, currentUser, options.rest.length)
   const isMineActive =
     currentUser != null && selection !== "all" && selection.size === 1 && selection.has(currentUser)
 
@@ -86,7 +91,7 @@ export function OwnerFilter({
           onClick={isMineActive ? selectAll : selectJustMe}
         >
           <UserCog className="mr-1.5 h-3.5 w-3.5" />
-          {isMineActive ? "My view" : "Just me"}
+          {isMineActive ? t("board.owner.myView") : t("board.owner.justMe")}
         </Button>
       ) : null}
 
@@ -100,7 +105,7 @@ export function OwnerFilter({
         <PopoverContent align="end" className="w-72 p-2">
           <div className="flex items-center justify-between px-2 pb-1 pt-0.5">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Show packages of
+              {t("board.owner.showPackagesOf")}
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -108,7 +113,7 @@ export function OwnerFilter({
                 onClick={selectAll}
                 className="text-[11px] text-muted-foreground hover:text-foreground"
               >
-                All
+                {t("board.owner.selectAll")}
               </button>
               <span className="text-[11px] text-muted-foreground/50">·</span>
               <button
@@ -116,7 +121,7 @@ export function OwnerFilter({
                 onClick={selectNone}
                 className="text-[11px] text-muted-foreground hover:text-foreground"
               >
-                None
+                {t("board.owner.selectNone")}
               </button>
             </div>
           </div>
@@ -126,7 +131,7 @@ export function OwnerFilter({
               <OwnerRow
                 value={currentUser}
                 label={currentUser.split("@")[0] ?? currentUser}
-                hint="you"
+                hint={t("board.owner.hintYou")}
                 checked={isSelected(currentUser)}
                 onToggle={() => toggle(currentUser)}
               />
@@ -149,8 +154,12 @@ export function OwnerFilter({
 
             <OwnerRow
               value={UNASSIGNED}
-              label="Unassigned"
-              hint={classificationEnabled ? "no owner (incl. dirty)" : "no owner"}
+              label={t("board.owner.unassigned")}
+              hint={
+                classificationEnabled
+                  ? t("board.owner.hintNoOwnerDirty")
+                  : t("board.owner.hintNoOwner")
+              }
               checked={isSelected(UNASSIGNED)}
               onToggle={() => toggle(UNASSIGNED)}
               isMeta
@@ -159,7 +168,7 @@ export function OwnerFilter({
 
           {selection === "all" ? (
             <div className="mt-2 flex items-center gap-1 rounded-md bg-muted px-2 py-1.5 text-[11px] text-muted-foreground">
-              <Check className="h-3 w-3" /> All owners included
+              <Check className="h-3 w-3" /> {t("board.owner.allIncluded")}
             </div>
           ) : null}
         </PopoverContent>

@@ -7,31 +7,33 @@ import { cn } from "@cortex/utils"
 import type { LucideIcon } from "lucide-react"
 import { ArrowRight, CheckCircle2, History, SlidersHorizontal } from "lucide-react"
 import Link from "next/link"
+import { useMemo } from "react"
+import { useTranslation } from "react-i18next"
 
 interface LayerStyle {
-  label: string
+  labelKey: string
   badge: string
   circle: string
 }
 
 const LAYER: Record<string, LayerStyle> = {
   input: {
-    label: "Input",
+    labelKey: "layers.input",
     badge: "border-slate-400/40 bg-slate-400/15 text-slate-600 dark:text-slate-300",
     circle: "bg-slate-400",
   },
   idp: {
-    label: "OCR",
+    labelKey: "layers.ocr",
     badge: "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
     circle: "bg-emerald-500",
   },
   engine: {
-    label: "Engine",
+    labelKey: "layers.engine",
     badge: "border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300",
     circle: "bg-amber-500",
   },
   output: {
-    label: "Output",
+    labelKey: "layers.output",
     badge: "border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300",
     circle: "bg-sky-500",
   },
@@ -39,49 +41,41 @@ const LAYER: Record<string, LayerStyle> = {
 
 interface StepLink {
   href: string
-  blurb: string
+  blurbKey: string
 }
 
 const STEP_LINKS: Record<string, StepLink> = {
   "source-files": {
     href: "/store-pit/source-files",
-    blurb:
-      "GLS sends two files each week - a CSV with every parcel and a PDF with the rate summary. Everything starts here.",
+    blurbKey: "overview.steps.sourceFiles",
   },
   extraction: {
     href: "/store-pit/extraction",
-    blurb:
-      "Read those files into clean shipment lines. This is the only step that is OCR - everything after it is calculation.",
+    blurbKey: "overview.steps.extraction",
   },
   reconciliation: {
     href: "/store-pit/reconciliation",
-    blurb:
-      "Check the numbers tie out: the CSV total equals the PDF total and parcel counts match. Bad data is caught before any billing.",
+    blurbKey: "overview.steps.reconciliation",
   },
   classification: {
     href: "/store-pit/extraction",
-    blurb:
-      "Work out which client each parcel belongs to, from the reference code on it (FP- is FlatPay, NV is Nordvio, and so on).",
+    blurbKey: "overview.steps.classification",
   },
   netting: {
     href: "/store-pit/netting",
-    blurb:
-      "Match GLS discounts to the right parcels and subtract them first, so the saving is passed to the client before any margin.",
+    blurbKey: "overview.steps.netting",
   },
   "re-rating": {
     href: "/store-pit/re-rating",
-    blurb:
-      "Apply each client's own price deal - FlatPay x1.1, Braintimizer's contract, Drywear and Nordvio off a price list. This is the heart of it, not a flat markup.",
+    blurbKey: "overview.steps.reRating",
   },
   aggregation: {
     href: "/store-pit/re-rating",
-    blurb:
-      "Roll everything up per client and country, then add the surcharges - energy, road tolls and pre-financing.",
+    blurbKey: "overview.steps.aggregation",
   },
   export: {
     href: "/store-pit/clients",
-    blurb:
-      "Each client gets a clean statement: their parcels, their countries, the amount to settle. Store-Pit sees its margin.",
+    blurbKey: "overview.steps.export",
   },
 }
 
@@ -91,43 +85,48 @@ interface StateStat {
   tone?: "success"
 }
 
-const STATE: StateStat[] = [
-  { label: "Status", value: "Completed", tone: "success" },
-  { label: "Parcels", value: count(INVOICE.parcelCount) },
-  { label: "GLS invoice (net)", value: eur(INVOICE.pdfNetTotal) },
-  { label: "Store-Pit billed", value: eur(GRAND_TOTAL.spTotal) },
-  { label: "Store-Pit margin", value: signedEur(MARGIN.total), tone: "success" },
-  { label: "Variance", value: "0.00", tone: "success" },
-]
-
 interface ReferenceLink {
   href: string
-  title: string
-  blurb: string
+  titleKey: string
+  blurbKey: string
   icon: LucideIcon
 }
 
 const REFERENCES: ReferenceLink[] = [
   {
     href: "/store-pit/pricing",
-    title: "Pricing rules",
-    blurb: "The reference price lists and settings the engine looks up while re-rating.",
+    titleKey: "pricing.title",
+    blurbKey: "overview.references.pricingBlurb",
     icon: SlidersHorizontal,
   },
   {
     href: "/store-pit/audit-log",
-    title: "Audit log",
-    blurb: "The immutable, step-by-step record of this processing run.",
+    titleKey: "auditLog.title",
+    blurbKey: "overview.references.auditLogBlurb",
     icon: History,
   },
 ]
 
 export default function StorePitOverviewPage() {
+  const { t } = useTranslation("store-pit")
+
+  const state: StateStat[] = useMemo(
+    () => [
+      { label: t("fields.status"), value: t("status.completed"), tone: "success" },
+      { label: t("fields.parcels"), value: count(INVOICE.parcelCount) },
+      { label: t("overview.state.glsInvoiceNet"), value: eur(INVOICE.pdfNetTotal) },
+      { label: t("overview.state.spBilled"), value: eur(GRAND_TOTAL.spTotal) },
+      { label: t("overview.state.spMargin"), value: signedEur(MARGIN.total), tone: "success" },
+      { label: t("fields.variance"), value: "0.00", tone: "success" },
+    ],
+    [t],
+  )
+
   return (
     <>
       <PageHeader
-        title="Process overview"
-        description="What this invoice is, where it is, and the data behind every step."
+        title={t("overview.title")}
+        description={t("overview.description")}
         actions={
           <>
             <Badge variant="outline" className="font-mono text-xs">
@@ -138,7 +137,7 @@ export default function StorePitOverviewPage() {
               className="border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
             >
               <CheckCircle2 className="mr-1 h-3 w-3" />
-              Run completed
+              {t("overview.runCompleted")}
             </Badge>
           </>
         }
@@ -148,21 +147,23 @@ export default function StorePitOverviewPage() {
         <Card className="border-border/70 bg-muted/30">
           <CardContent className="space-y-2 p-5">
             <p className="text-sm leading-relaxed">
-              <span className="font-medium">Store-Pit buys parcels in bulk from GLS</span> and
-              re-bills them to each of its clients with a margin. This screen follows one weekly GLS
-              invoice through the eight steps that turn a single mixed bill into a clean, per-client
-              settlement. Click any step to open the data behind it.
+              <span className="font-medium">{t("overview.introLead")}</span>{" "}
+              {t("overview.introBody")}
             </p>
             <p className="text-xs text-muted-foreground">
-              Week {INVOICE.week} · period {INVOICE.periodFrom} to {INVOICE.periodTo} · invoice{" "}
-              {INVOICE.spInvoiceNo}
+              {t("overview.period", {
+                week: INVOICE.week,
+                from: INVOICE.periodFrom,
+                to: INVOICE.periodTo,
+                invoice: INVOICE.spInvoiceNo,
+              })}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="flex flex-wrap items-stretch gap-x-8 gap-y-4 p-5">
-            {STATE.map((s) => (
+            {state.map((s) => (
               <div key={s.label} className="space-y-0.5">
                 <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   {s.label}
@@ -182,19 +183,19 @@ export default function StorePitOverviewPage() {
 
         <section className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold">This invoice, step by step</h2>
+            <h2 className="text-sm font-semibold">{t("overview.stepsTitle")}</h2>
             <div className="flex flex-wrap items-center gap-4 text-[11px] text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-slate-400" /> Input
+                <span className="h-2 w-2 rounded-full bg-slate-400" /> {t("layers.input")}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" /> OCR
+                <span className="h-2 w-2 rounded-full bg-emerald-500" /> {t("layers.ocr")}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-amber-500" /> Engine
+                <span className="h-2 w-2 rounded-full bg-amber-500" /> {t("layers.engine")}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-sky-500" /> Output
+                <span className="h-2 w-2 rounded-full bg-sky-500" /> {t("layers.output")}
               </span>
             </div>
           </div>
@@ -220,7 +221,7 @@ export default function StorePitOverviewPage() {
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-sm font-semibold">{step.name}</h3>
                           <Badge variant="outline" className={cn("text-[10px]", layer.badge)}>
-                            {layer.label}
+                            {t(layer.labelKey)}
                           </Badge>
                           <span className="ml-auto flex items-center gap-2">
                             <span className="font-mono text-xs text-muted-foreground">
@@ -230,7 +231,7 @@ export default function StorePitOverviewPage() {
                           </span>
                         </div>
                         <p className="text-sm leading-relaxed text-muted-foreground">
-                          {link.blurb}
+                          {t(link.blurbKey)}
                         </p>
                       </div>
                       <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
@@ -243,7 +244,7 @@ export default function StorePitOverviewPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold">Reference and controls</h2>
+          <h2 className="text-sm font-semibold">{t("overview.referenceTitle")}</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {REFERENCES.map((r) => (
               <Link key={r.href} href={r.href} className="group block">
@@ -253,8 +254,8 @@ export default function StorePitOverviewPage() {
                       <r.icon className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-sm font-semibold">{r.title}</h3>
-                      <p className="text-xs text-muted-foreground">{r.blurb}</p>
+                      <h3 className="text-sm font-semibold">{t(r.titleKey)}</h3>
+                      <p className="text-xs text-muted-foreground">{t(r.blurbKey)}</p>
                     </div>
                     <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                   </CardContent>

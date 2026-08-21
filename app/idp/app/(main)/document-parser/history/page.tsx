@@ -1,7 +1,7 @@
 "use client"
 
 import { useMyJobs } from "@/features/document-parser/hooks"
-import { STATUS_BADGE_VARIANT, STATUS_LABELS } from "@/features/document-parser/status"
+import { STATUS_BADGE_VARIANT, STATUS_LABEL_KEYS } from "@/features/document-parser/status"
 import type { DocumentParserJob, JobStatus } from "@/features/document-parser/types"
 import {
   Badge,
@@ -25,8 +25,7 @@ import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 // Etykieta opcji "wszystkie" przechodzi przez `t()`, więc lista powstaje w
-// komponencie. Nazwy samych stanów wciąż biorą się ze `status.ts` — ten plik
-// nie jest częścią tej migracji (patrz raport).
+// komponencie. Nazwy samych stanów też — `status.ts` niesie już tylko klucze.
 const STATUS_FILTER_VALUES = ["all", "queued", "processing", "done", "error"] as const
 
 // Referencja stabilna między renderami — inaczej `jobsQuery.data ?? []`
@@ -45,7 +44,7 @@ export default function DocumentParserHistoryPage() {
     () =>
       STATUS_FILTER_VALUES.map((value) => ({
         value,
-        label: value === "all" ? t("history.filters.allStatuses") : STATUS_LABELS[value],
+        label: value === "all" ? t("history.filters.allStatuses") : t(STATUS_LABEL_KEYS[value]),
       })),
     [t],
   )
@@ -63,7 +62,7 @@ export default function DocumentParserHistoryPage() {
         enableSorting: true,
         cell: ({ row }) => (
           <Badge variant={STATUS_BADGE_VARIANT[row.original.status]}>
-            {STATUS_LABELS[row.original.status]}
+            {t(STATUS_LABEL_KEYS[row.original.status])}
           </Badge>
         ),
       },

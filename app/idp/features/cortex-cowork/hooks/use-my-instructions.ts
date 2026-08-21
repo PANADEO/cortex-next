@@ -1,7 +1,9 @@
 "use client"
 
-import { toastApiError } from "@cortex/api"
+import { apiErrorMessage } from "@/lib/i18n/api-error"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useTranslation } from "react-i18next"
+import { toast } from "sonner"
 import { coworkApi, coworkQueryKeys } from "../queries"
 
 /**
@@ -18,11 +20,14 @@ export function useMyInstructions(enabled = true) {
 
 export function useSaveMyInstructions() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation("cortex-cowork")
   return useMutation({
     mutationFn: (instructions: string) => coworkApi.setMyInstructions(instructions),
     onSuccess: (result) => {
       queryClient.setQueryData(coworkQueryKeys.myInstructions(), result)
     },
-    onError: (error) => toastApiError(error, "Nie udało się zapisać instrukcji"),
+    // Trasa zwraca kod, a przy przekroczonym limicie także klucz komunikatu i
+    // jego parametr — samą wartość limitu zna wyłącznie serwer.
+    onError: (error) => toast.error(apiErrorMessage(t, error, t("sidebar.saveInstructionsFailed"))),
   })
 }

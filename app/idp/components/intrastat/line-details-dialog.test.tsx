@@ -50,7 +50,9 @@ describe("IntrastatLineDetailsDialog", () => {
   it("shows declaration, matching, correction, and alert details", () => {
     render(<IntrastatLineDetailsDialog line={line} open onOpenChange={vi.fn()} />)
 
-    expect(screen.getByRole("heading", { name: "Declaration line details" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("heading", { name: "Szczegóły pozycji deklaracji" }),
+    ).toBeInTheDocument()
     expect(screen.getAllByText("NEW-100")).toHaveLength(2)
     expect(screen.getByText("Power supply")).toBeInTheDocument()
     expect(screen.getByText("FV/0")).toBeInTheDocument()

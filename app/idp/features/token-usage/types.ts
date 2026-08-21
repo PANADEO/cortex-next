@@ -26,13 +26,29 @@ export interface UsageDateRange {
 export type TokenUsageResponse = UsageReport & { range: UsageDateRange }
 
 /** Kody błędów zwracane przez route. Rozróżnienie ma znaczenie operacyjne:
- *  brak konfiguracji to zadanie dla devopsa, niedostępne proxy to awaria. */
-export type TokenUsageErrorCode =
-  | "cortex-proxy-not-configured"
-  | "cortex-proxy-unauthorized"
-  | "cortex-proxy-unreachable"
-  | "cortex-proxy-error"
-  | "invalid-format"
-  | "invalid-date"
-  | "reversed-range"
-  | "range-too-long"
+ *  brak konfiguracji to zadanie dla devopsa, niedostępne proxy to awaria.
+ *
+ *  Lista jest WARTOŚCIĄ, nie samym typem, bo klient musi ją sprawdzić
+ *  w runtime: kod przychodzi z sieci, a i18next bez `parseMissingKeyHandler`
+ *  zwraca dla nieznanego klucza sam klucz — czyli napis prawdziwy, którego
+ *  żaden zapas `??` nie odsieje. Nierozpoznany kod ma więc zostać odrzucony
+ *  ZANIM stanie się członem klucza tłumaczenia.
+ *
+ *  Zbiór musi pokrywać KAŻDY kod, jaki route potrafi wypuścić — łącznie
+ *  z odmowami bramki (`forbidden`, `missing-email`) i awarią serwera
+ *  (`internal-error`), które nie przechodzą przez cortex-proxy. */
+export const TOKEN_USAGE_ERROR_CODES = [
+  "cortex-proxy-not-configured",
+  "cortex-proxy-unauthorized",
+  "cortex-proxy-unreachable",
+  "cortex-proxy-error",
+  "invalid-format",
+  "invalid-date",
+  "reversed-range",
+  "range-too-long",
+  "forbidden",
+  "missing-email",
+  "internal-error",
+] as const
+
+export type TokenUsageErrorCode = (typeof TOKEN_USAGE_ERROR_CODES)[number]

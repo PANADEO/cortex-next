@@ -54,9 +54,20 @@ export const ACCEPT_ATTRIBUTE = ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(
 export const MAX_UPLOAD_MB = 100
 export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 
-export type FileValidationError =
-  | { ok: false; error: "unsupported-format"; message: string }
-  | { ok: false; error: "file-too-large"; message: string }
+/**
+ * Wynik walidacji niesie KLUCZ komunikatu, nie gotowy napis. Ten moduł działa
+ * po obu stronach — na serwerze nie ma ani wybranego języka, ani `t()`, więc
+ * zamrożenie tu napisu zamroziłoby polski dla wszystkich. Napis powstaje
+ * dopiero na kliencie, w miejscu, które zna język użytkownika.
+ */
+export interface FileValidationError {
+  ok: false
+  error: "unsupported-format" | "file-too-large"
+  /** Klucz w przestrzeni `document-parser`. */
+  messageKey: string
+  /** Wartości do interpolacji `{{...}}` w tym kluczu. */
+  messageParams?: Record<string, string | number>
+}
 
 export type FileValidationResult = { ok: true } | FileValidationError
 
@@ -71,20 +82,22 @@ function extensionOf(fileName: string): string {
 export function validateDocumentFile(file: { name: string; size: number }): FileValidationResult {
   const extension = extensionOf(file.name)
   if (!ALLOWED_EXTENSIONS.includes(extension as AllowedExtension)) {
-    return {
-      ok: false,
-      error: "unsupported-format",
-      message: extension
-        ? `Nieobsługiwany format pliku: .${extension}. Dozwolone: ${ALLOWED_EXTENSIONS.join(", ")}.`
-        : "Plik nie ma rozszerzenia — nie da się rozpoznać formatu.",
-    }
+    return extension
+      ? {
+          ok: false,
+          error: "unsupported-format",
+          messageKey: "validation.unsupportedFormat",
+          messageParams: { extension, allowed: ALLOWED_EXTENSIONS.join(", ") },
+        }
+      : { ok: false, error: "unsupported-format", messageKey: "validation.missingExtension" }
   }
 
   if (file.size > MAX_UPLOAD_BYTES) {
     return {
       ok: false,
       error: "file-too-large",
-      message: `Plik jest za duży (limit: ${MAX_UPLOAD_MB} MB).`,
+      messageKey: "validation.fileTooLarge",
+      messageParams: { maxMb: MAX_UPLOAD_MB },
     }
   }
 

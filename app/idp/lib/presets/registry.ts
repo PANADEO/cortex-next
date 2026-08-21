@@ -206,9 +206,7 @@ const INSTANCE_DEFAULT_CHOICE: PresetChoice = {
  * przełączeniu na angielski, i to tylko czasem, zależnie od kolejności
  * importów. `t` podaje wołający, więc lista nie musi nic wiedzieć o i18n.
  */
-export function presetChoices(
-  t: (key: string) => string,
-): readonly {
+export function presetChoices(t: (key: string) => string): readonly {
   id: PresetChoiceId
   label: string
   description: string

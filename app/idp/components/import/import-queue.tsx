@@ -24,6 +24,7 @@ import { Button } from "@cortex/ui"
 import { useFeatureFlag } from "@cortex/utils"
 import { Loader2, Send } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { Trans, useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { detectIntakeKind } from "./file-intake"
 import { ImportSlot, type ImportSlotValue } from "./import-slot"
@@ -45,6 +46,7 @@ function makeEmptySlot(
 }
 
 export function ImportQueue() {
+  const { t } = useTranslation("idp")
   const [slots, setSlots] = useState<ImportSlotValue[]>(() => [makeEmptySlot()])
   const [savedDefaultEmail, setSavedDefaultEmail] = useState("")
   const [savedDefaultExportTemplate, setSavedDefaultExportTemplate] = useState("")
@@ -189,7 +191,7 @@ export function ImportQueue() {
           ? normalizeExportEmailRecipient(slot.notificationEmail)
           : null
       if (showImportEmailNotifications && slot.notificationEmailEnabled && !notificationEmail) {
-        const message = "Enter a valid notification email."
+        const message = t("import.queue.invalidEmail")
         toast.error(message)
         patchSlot(slot.id, { status: "error", errorMessage: message })
         return
@@ -203,7 +205,7 @@ export function ImportQueue() {
         slot.notificationEmailEnabled &&
         !notificationExportTemplate
       ) {
-        const message = "Select an export template."
+        const message = t("import.queue.selectTemplate")
         toast.error(message)
         patchSlot(slot.id, { status: "error", errorMessage: message })
         return
@@ -219,7 +221,7 @@ export function ImportQueue() {
             notification_export_template: notificationExportTemplate,
             ...serialized,
           })
-          toast.success(`Imported ${slot.files[0]!.name}`)
+          toast.success(t("import.queue.imported", { name: slot.files[0]!.name }))
         } else if (kind === "email") {
           result = await importEmail.mutateAsync({
             file: slot.files[0]!,
@@ -228,7 +230,7 @@ export function ImportQueue() {
             notification_export_template: notificationExportTemplate,
             ...serialized,
           })
-          toast.success(`Imported email ${slot.files[0]!.name}`)
+          toast.success(t("import.queue.importedEmail", { name: slot.files[0]!.name }))
         } else {
           result = await importMany.mutateAsync({
             files: slot.files,
@@ -237,7 +239,7 @@ export function ImportQueue() {
             notification_export_template: notificationExportTemplate,
             ...serialized,
           })
-          toast.success(`Imported ${slot.files.length} file(s)`)
+          toast.success(t("import.queue.importedFiles", { count: slot.files.length }))
         }
         if (notificationEmail) {
           setSavedDefaultEmail(rememberExportEmailRecipient(notificationEmail, userEmail)[0] ?? "")
@@ -250,7 +252,7 @@ export function ImportQueue() {
         patchSlot(slot.id, { status: "done", packageId: result.id })
       } catch (err) {
         toastApiError(err)
-        const message = err instanceof Error ? err.message : "Upload failed — please retry."
+        const message = err instanceof Error ? err.message : t("import.queue.uploadFailed")
         patchSlot(slot.id, { status: "error", errorMessage: message })
       }
     },
@@ -265,6 +267,7 @@ export function ImportQueue() {
       showImportEmailNotifications,
       defaultNotificationExportTemplate,
       userEmail,
+      t,
     ],
   )
 
@@ -314,16 +317,19 @@ export function ImportQueue() {
 
       <div className="sticky bottom-0 -mx-2 flex items-center justify-between gap-3 rounded-lg border border-border bg-background/80 px-4 py-3 shadow-sm backdrop-blur">
         <div className="text-xs text-muted-foreground">
-          {pendingCount === 0 && doneCount === 0
-            ? "Drop a ZIP, EML, MSG, files or folders to start — a new slot appears automatically."
-            : null}
+          {pendingCount === 0 && doneCount === 0 ? t("import.queue.emptyHint") : null}
           {pendingCount > 0 ? (
-            <>
-              <span className="font-medium text-foreground">{pendingCount}</span> ready to import
-            </>
+            <Trans
+              t={t}
+              i18nKey="import.queue.readyToImportCount"
+              count={pendingCount}
+              components={{ n: <span className="font-medium text-foreground" /> }}
+            />
           ) : null}
           {doneCount > 0 ? (
-            <span className="ml-2 text-emerald-600">· {doneCount} imported</span>
+            <span className="ml-2 text-emerald-600">
+              {t("import.queue.importedCount", { n: doneCount })}
+            </span>
           ) : null}
         </div>
         <Button onClick={submitAll} disabled={pendingCount === 0 || isUploading} className="h-9">
@@ -332,7 +338,7 @@ export function ImportQueue() {
           ) : (
             <Send className="mr-1.5 h-4 w-4" />
           )}
-          Import all
+          {t("import.queue.importAll")}
         </Button>
       </div>
     </div>

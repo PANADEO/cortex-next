@@ -10,7 +10,7 @@ import type {
 } from "@/lib/invoice-supervisor/types"
 import {
   formatInvoiceSupervisorDateTime,
-  INVOICE_SUPERVISOR_CHANNEL_LABELS,
+  INVOICE_SUPERVISOR_CHANNEL_LABEL_KEYS,
 } from "@/lib/invoice-supervisor/types"
 import {
   Badge,
@@ -151,7 +151,7 @@ function NotificationLogTable({ entries }: { entries: InvoiceSupervisorNotificat
               <td className="px-4 py-3 font-medium">{entry.invoice_number}</td>
               <td className="px-4 py-3">{entry.client_name}</td>
               <td className="px-4 py-3">
-                {INVOICE_SUPERVISOR_CHANNEL_LABELS[entry.channel] ?? entry.channel}
+                {t(INVOICE_SUPERVISOR_CHANNEL_LABEL_KEYS[entry.channel] ?? entry.channel)}
               </td>
               <td className="px-4 py-3">{entry.recipient}</td>
               <td className="px-4 py-3">
@@ -212,7 +212,7 @@ function FailedTasksTable({ tasks }: { tasks: InvoiceSupervisorFailedTask[] }) {
               </td>
               <td className="px-4 py-3 font-medium">#{task.invoice_id}</td>
               <td className="px-4 py-3">
-                {INVOICE_SUPERVISOR_CHANNEL_LABELS[task.task_type] ?? task.task_type}
+                {t(INVOICE_SUPERVISOR_CHANNEL_LABEL_KEYS[task.task_type] ?? task.task_type)}
               </td>
               <td className="px-4 py-3 text-destructive">{task.error_message}</td>
               <td className="px-4 py-3">{task.retry_count}</td>

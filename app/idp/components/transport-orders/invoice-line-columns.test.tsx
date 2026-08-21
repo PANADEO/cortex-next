@@ -103,30 +103,30 @@ describe("InvoiceLineColumnsDialog", () => {
 
     renderWithClient(<InvoiceLineColumnsDialog />)
 
-    await user.click(screen.getByRole("button", { name: /columns/i }))
-    await user.click(screen.getByRole("checkbox", { name: /product code/i }))
-    await user.click(screen.getByRole("button", { name: /cancel/i }))
+    await user.click(screen.getByRole("button", { name: /kolumny/i }))
+    await user.click(screen.getByRole("checkbox", { name: /kod produktu/i }))
+    await user.click(screen.getByRole("button", { name: /anuluj/i }))
 
     expect(fetchMock).toHaveBeenCalledTimes(0)
 
-    await user.click(screen.getByRole("button", { name: /columns/i }))
-    expect(screen.getByRole("checkbox", { name: /product code/i }).getAttribute("data-state")).toBe(
+    await user.click(screen.getByRole("button", { name: /kolumny/i }))
+    expect(screen.getByRole("checkbox", { name: /kod produktu/i }).getAttribute("data-state")).toBe(
       "checked",
     )
 
-    await user.click(screen.getByRole("checkbox", { name: /product code/i }))
-    await user.click(screen.getByRole("button", { name: /^save$/i }))
+    await user.click(screen.getByRole("checkbox", { name: /kod produktu/i }))
+    await user.click(screen.getByRole("button", { name: /^zapisz$/i }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
       invoice_line_hidden_columns: ["product_code"],
     })
 
-    await user.click(screen.getByRole("button", { name: /columns/i }))
-    expect(screen.getByRole("checkbox", { name: /product code/i }).getAttribute("data-state")).toBe(
+    await user.click(screen.getByRole("button", { name: /kolumny/i }))
+    expect(screen.getByRole("checkbox", { name: /kod produktu/i }).getAttribute("data-state")).toBe(
       "unchecked",
     )
-    await user.click(screen.getByRole("button", { name: /reset defaults/i }))
+    await user.click(screen.getByRole("button", { name: /przywróć domyślne/i }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
     expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toMatchObject({
@@ -143,9 +143,9 @@ describe("InvoiceLineColumnsDialog", () => {
       theme_mode: null,
     })
 
-    await user.click(screen.getByRole("button", { name: /columns/i }))
+    await user.click(screen.getByRole("button", { name: /kolumny/i }))
 
-    expect(screen.getByRole("checkbox", { name: /product code/i }).getAttribute("data-state")).toBe(
+    expect(screen.getByRole("checkbox", { name: /kod produktu/i }).getAttribute("data-state")).toBe(
       "unchecked",
     )
   })
@@ -156,9 +156,9 @@ describe("InvoiceLineColumnsDialog", () => {
 
     renderWithClient(<InvoiceLineColumnsDialog />)
 
-    await user.click(screen.getByRole("button", { name: /columns/i }))
-    await user.click(screen.getByRole("checkbox", { name: /polish name/i }))
-    await user.click(screen.getByRole("button", { name: /^save$/i }))
+    await user.click(screen.getByRole("button", { name: /kolumny/i }))
+    await user.click(screen.getByRole("checkbox", { name: /nazwa polska/i }))
+    await user.click(screen.getByRole("button", { name: /^zapisz$/i }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
@@ -172,9 +172,9 @@ describe("InvoiceLineColumnsDialog", () => {
 
     renderWithClient(<InvoiceLineColumnsDialog />)
 
-    await user.click(screen.getByRole("button", { name: /columns/i }))
-    await user.click(screen.getByRole("checkbox", { name: /polish name/i }))
-    await user.click(screen.getByRole("button", { name: /^save$/i }))
+    await user.click(screen.getByRole("button", { name: /kolumny/i }))
+    await user.click(screen.getByRole("checkbox", { name: /nazwa polska/i }))
+    await user.click(screen.getByRole("button", { name: /^zapisz$/i }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
@@ -187,8 +187,8 @@ describe("InvoiceLineColumnsDialog", () => {
       JSON.stringify(["description_pl"]),
     )
 
-    await user.click(screen.getByRole("button", { name: /columns/i }))
-    expect(screen.getByRole("checkbox", { name: /polish name/i }).getAttribute("data-state")).toBe(
+    await user.click(screen.getByRole("button", { name: /kolumny/i }))
+    expect(screen.getByRole("checkbox", { name: /nazwa polska/i }).getAttribute("data-state")).toBe(
       "unchecked",
     )
   })

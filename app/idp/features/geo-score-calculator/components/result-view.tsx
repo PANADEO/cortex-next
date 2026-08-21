@@ -120,7 +120,7 @@ export function GeoScoreResultView({
           ) : null}
 
           <span className="text-sm text-muted-foreground">
-            {t("result.wordsInText", { words: result.wordCount })}
+            {t("result.wordsInText", { count: result.wordCount })}
           </span>
 
           {headerActions ? <div className="ml-auto">{headerActions}</div> : null}

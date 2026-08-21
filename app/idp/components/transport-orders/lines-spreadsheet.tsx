@@ -8,8 +8,10 @@ import { cn } from "@cortex/utils"
 import type { LucideIcon } from "lucide-react"
 import { ArrowDown, ArrowUp, ArrowUpDown, Download, Loader2, RotateCcw, Save } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
   getAvailableInvoiceLineColumns,
+  invoiceLineColumnLabelKey,
   InvoiceLineColumnsDialog,
   useVisibleInvoiceLineColumns,
   type InvoiceLineColumnConfig,
@@ -23,7 +25,7 @@ import { invoiceLineRowToRequest, invoiceLineToRow, type InvoiceLineRow } from "
 
 interface SpreadsheetColumnDef {
   key: keyof InvoiceLineRow
-  label: string
+  labelKey: string
   width: number
   uppercase?: boolean
   numeric?: boolean
@@ -39,19 +41,23 @@ function buildSpreadsheetColumns(
         ? [
             {
               key: "cn_code",
-              label: column.spreadsheetLabel,
+              labelKey: invoiceLineColumnLabelKey(column.key, "sheet"),
               width: column.width,
             },
           ]
         : [
-            { key: "cn_code", label: "CN", width: 112 },
-            { key: "hs", label: "HS", width: 96 },
+            {
+              key: "cn_code",
+              labelKey: invoiceLineColumnLabelKey("cn_code", "sheet"),
+              width: 112,
+            },
+            { key: "hs", labelKey: invoiceLineColumnLabelKey("hs", "sheet"), width: 96 },
           ]
     }
     const key = column.key as keyof InvoiceLineRow
     const next: SpreadsheetColumnDef = {
       key,
-      label: column.spreadsheetLabel,
+      labelKey: invoiceLineColumnLabelKey(column.key, "sheet"),
       width: column.width,
     }
     if (column.uppercase !== undefined) next.uppercase = column.uppercase
@@ -115,6 +121,7 @@ export function LinesSpreadsheet({
   useCustomsCode = false,
   showAtrProcessing = true,
 }: Props) {
+  const { t } = useTranslation("idp")
   const { columns: visibleLineColumns } = useVisibleInvoiceLineColumns(showAtrProcessing)
   const availableLineColumns = useMemo(
     () => getAvailableInvoiceLineColumns(showAtrProcessing),
@@ -328,6 +335,7 @@ export function LinesSpreadsheet({
 
   const handleDownloadCsv = () => {
     const csv = buildInvoiceLinesCsv(sortedLines, {
+      t,
       columns: visibleLineColumns,
       useCustomsCode,
       label: "spreadsheet",
@@ -344,11 +352,14 @@ export function LinesSpreadsheet({
       <header className="flex items-center justify-between border-b border-border px-3 py-2">
         <div>
           <h2 className="text-sm font-semibold">
-            Invoice {invoice.invoice_number ?? invoice.id} — {invoice.lines.length} lines
+            {t("transportOrders.spreadsheet.title", {
+              number: invoice.invoice_number ?? invoice.id,
+              count: invoice.lines.length,
+            })}
           </h2>
           {dirty ? (
             <p className="text-[10px] uppercase tracking-wide text-warning-foreground">
-              Unsaved changes
+              {t("transportOrders.spreadsheet.unsaved")}
             </p>
           ) : null}
         </div>
@@ -360,7 +371,7 @@ export function LinesSpreadsheet({
             disabled={invoice.lines.length === 0}
           >
             <Download className="mr-1.5 h-4 w-4" />
-            Download CSV
+            {t("transportOrders.grid.downloadCsv")}
           </Button>
           <InvoiceLineColumnsDialog showAtrColumns={showAtrProcessing} />
           {canEdit ? (
@@ -371,7 +382,7 @@ export function LinesSpreadsheet({
                 onClick={handleReset}
                 disabled={!dirty || isSaving}
               >
-                <RotateCcw className="mr-1.5 h-4 w-4" /> Reset
+                <RotateCcw className="mr-1.5 h-4 w-4" /> {t("transportOrders.form.reset")}
               </Button>
               <Button size="sm" onClick={handleSave} disabled={!dirty || isSaving}>
                 {isSaving ? (
@@ -379,7 +390,7 @@ export function LinesSpreadsheet({
                 ) : (
                   <Save className="mr-1.5 h-4 w-4" />
                 )}
-                Save lines
+                {t("transportOrders.spreadsheet.saveLines")}
               </Button>
             </>
           ) : null}
@@ -414,7 +425,7 @@ export function LinesSpreadsheet({
                         sortActive && "text-foreground",
                       )}
                     >
-                      <span className="truncate">{c.label}</span>
+                      <span className="truncate">{t(c.labelKey)}</span>
                       <SortIcon
                         className={cn("h-3 w-3 shrink-0", sortActive ? "opacity-80" : "opacity-30")}
                       />
@@ -481,7 +492,7 @@ export function LinesSpreadsheet({
                     {isTotalColumn
                       ? (columnTotals[c.key] ?? "0")
                       : c.key === totalLabelColumnKey
-                        ? "Total"
+                        ? t("transportOrders.spreadsheet.total")
                         : ""}
                   </td>
                 )

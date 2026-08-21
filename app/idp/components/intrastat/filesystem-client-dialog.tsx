@@ -19,6 +19,7 @@ import {
 } from "@cortex/ui"
 import { Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 interface Props {
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export function FilesystemClientDialog({ client, open, onOpenChange, onSaved }: Props) {
+  const { t } = useTranslation(["intrastat", "common"])
   const createClient = useIntrastatCreateFilesystemClient()
   const updateClient = useIntrastatUpdateFilesystemClient()
   const [clientName, setClientName] = useState("")
@@ -47,11 +49,11 @@ export function FilesystemClientDialog({ client, open, onOpenChange, onSaved }: 
       folder_name: folderName.trim(),
     }
     if (!payload.client_name) {
-      toast.error("Enter a client name")
+      toast.error(t("filesystemClient.nameRequired"))
       return
     }
     if (!isValidFolderName(payload.folder_name)) {
-      toast.error("Enter one mounted folder name without slashes or parent paths")
+      toast.error(t("filesystemClient.folderInvalid"))
       return
     }
 
@@ -59,11 +61,11 @@ export function FilesystemClientDialog({ client, open, onOpenChange, onSaved }: 
       const saved = client
         ? await updateClient.mutateAsync({ clientId: client.id, payload })
         : await createClient.mutateAsync(payload)
-      toast.success(client ? "Client folder updated" : "Client folder added")
+      toast.success(client ? t("filesystemClient.updated") : t("filesystemClient.added"))
       onSaved(saved)
       onOpenChange(false)
     } catch (error) {
-      toast.error(formatIntrastatError(error, "Client folder could not be saved"))
+      toast.error(formatIntrastatError(error, t("filesystemClient.saveFailed")))
     }
   }
 
@@ -71,43 +73,44 @@ export function FilesystemClientDialog({ client, open, onOpenChange, onSaved }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{client ? "Edit client folder" : "Add client folder"}</DialogTitle>
-          <DialogDescription>
-            Map a client to one mounted folder directly below the configured filesystem root.
-          </DialogDescription>
+          <DialogTitle>
+            {client ? t("filesystemClient.editTitle") : t("filesystemClient.addTitle")}
+          </DialogTitle>
+          <DialogDescription>{t("filesystemClient.description")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="intrastat-filesystem-client-name">Client</Label>
+            <Label htmlFor="intrastat-filesystem-client-name">
+              {t("filesystemClient.clientLabel")}
+            </Label>
             <Input
               id="intrastat-filesystem-client-name"
               value={clientName}
               onChange={(event) => setClientName(event.target.value)}
-              placeholder="Jabil"
+              placeholder={t("filesystemClient.clientExample")}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="intrastat-filesystem-folder-name">Mounted folder</Label>
+            <Label htmlFor="intrastat-filesystem-folder-name">
+              {t("filesystemClient.folderLabel")}
+            </Label>
             <Input
               id="intrastat-filesystem-folder-name"
               value={folderName}
               onChange={(event) => setFolderName(event.target.value)}
-              placeholder="jabil-share"
+              placeholder={t("filesystemClient.folderExample")}
               className="font-mono"
             />
-            <p className="text-xs text-muted-foreground">
-              The folder may be saved before the network share is mounted; it will appear as Missing
-              until available.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("filesystemClient.folderHint")}</p>
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
-            Cancel
+            {t("common:actions.cancel")}
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Save
+            {t("common:actions.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -15,6 +15,7 @@ import {
 import { resolveApplicationIcon } from "@/features/system-config/icons"
 import { KIND_LABEL_KEYS } from "@/features/system-config/kinds"
 import type { Application, ApplicationInput, RoleSummary } from "@/features/system-config/types"
+import { apiErrorMessage } from "@/lib/i18n/api-error"
 import { usePreset } from "@/lib/presets/preset-store"
 import { presetUsesApplicationColor } from "@/lib/presets/registry"
 import { DEPARTMENT_CATEGORIES, FUNCTIONAL_CATEGORIES } from "@/lib/tiles"
@@ -458,7 +459,9 @@ export default function ApplicationDetailPage() {
       await updateApplication.mutateAsync({ id: application.id, body: toInput(code, form) })
       toast.success(t("applications.detail.toast.detailsSaved"))
     } catch (error) {
-      toastApiError(error, t("applications.detail.errors.saveFailed"))
+      // apiErrorMessage, a nie toastApiError: samo-zablokowanie i niezmienność
+      // wiersza natywnego niosą KLUCZ zdania mówiący, CO dokładnie blokuje.
+      toast.error(apiErrorMessage(t, error, t("applications.detail.errors.saveFailed")))
     }
   }
 
@@ -472,7 +475,7 @@ export default function ApplicationDetailPage() {
       // po staremu — checkboxy muszą wrócić do stanu z serwera. Bez tego ekran
       // pokazuje odznaczoną rolę, której nikt nie odebrał.
       setSelectedRoleIds(applicationRolesQuery.data?.roleIds ?? [])
-      toastApiError(error, t("applications.detail.errors.permissionsSaveFailed"))
+      toast.error(apiErrorMessage(t, error, t("applications.detail.errors.permissionsSaveFailed")))
     }
   }
 
@@ -532,7 +535,7 @@ export default function ApplicationDetailPage() {
       toast.success(t("applications.detail.toast.deleted", { name: application.name }))
       router.push("/system-config/applications")
     } catch (error) {
-      toastApiError(error, t("applications.detail.errors.deleteFailed"))
+      toast.error(apiErrorMessage(t, error, t("applications.detail.errors.deleteFailed")))
     } finally {
       setIsDeleteOpen(false)
     }
@@ -693,7 +696,10 @@ export default function ApplicationDetailPage() {
                     id="categoryDepartment"
                     labelledBy="categoryDepartment-label"
                     value={form.categoryDepartment}
-                    options={DEPARTMENT_CATEGORIES.map((c) => ({ id: c.id, label: t(`common:${c.labelKey}`) }))}
+                    options={DEPARTMENT_CATEGORIES.map((c) => ({
+                      id: c.id,
+                      label: t(`common:${c.labelKey}`),
+                    }))}
                     placeholder={t("applications.form.categoryDepartmentPlaceholder")}
                     onChange={(next) => update("categoryDepartment", next)}
                   />

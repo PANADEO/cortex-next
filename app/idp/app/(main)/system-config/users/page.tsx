@@ -8,6 +8,7 @@ import {
   useUsers,
 } from "@/features/system-config/hooks"
 import type { RoleSummary, UserWithRoles } from "@/features/system-config/types"
+import { apiErrorMessage } from "@/lib/i18n/api-error"
 import { toastApiError } from "@cortex/api"
 import {
   Badge,
@@ -81,7 +82,10 @@ export default function UsersPage() {
       // Zapis odrzucony (np. 409 — ostatni użytkownik z dostępem do modułu):
       // role w bazie zostały po staremu, więc checkboxy też muszą wrócić.
       setSelectedRoleIds(edited.roles.map((role) => role.id))
-      toastApiError(error, t("users.errors.rolesSaveFailed"))
+      // apiErrorMessage, a nie toastApiError: odmowa samo-zablokowania niesie
+      // KLUCZ zdania (która granica została naruszona), a ogólny zapas by go
+      // nie odtworzył.
+      toast.error(apiErrorMessage(t, error, t("users.errors.rolesSaveFailed")))
     }
   }
 
@@ -118,7 +122,7 @@ export default function UsersPage() {
       toast.success(t("users.toast.detailsSaved", { email: editedDetails.email }))
       setEditedDetails(null)
     } catch (error) {
-      toastApiError(error, t("users.errors.detailsSaveFailed"))
+      toast.error(apiErrorMessage(t, error, t("users.errors.detailsSaveFailed")))
     }
   }
 
@@ -135,9 +139,12 @@ export default function UsersPage() {
           : t("users.toast.activated", { email: user.email }),
       )
     } catch (error) {
-      toastApiError(
-        error,
-        user.isActive ? t("users.errors.deactivateFailed") : t("users.errors.activateFailed"),
+      toast.error(
+        apiErrorMessage(
+          t,
+          error,
+          user.isActive ? t("users.errors.deactivateFailed") : t("users.errors.activateFailed"),
+        ),
       )
     }
   }

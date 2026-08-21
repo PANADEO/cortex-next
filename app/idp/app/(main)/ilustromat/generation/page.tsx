@@ -13,6 +13,7 @@ import type {
   SessionHistoryEntry,
 } from "@/features/ilustromat/types"
 import { toPngDataUrl, useObjectUrl } from "@/features/ilustromat/use-object-url"
+import { apiErrorMessage } from "@/lib/i18n/api-error"
 import {
   DEFAULT_FORMAT,
   DEFAULT_STYLE,
@@ -24,7 +25,6 @@ import {
   SUBTITLE_MAX_CHARS,
   TITLE_MAX_CHARS,
 } from "@/lib/ilustromat/presets"
-import { toastApiError } from "@cortex/api"
 import {
   Button,
   Card,
@@ -187,7 +187,11 @@ export default function GenerationPage() {
           background: selectedVariant.background,
         })
         .then(setRecomposed)
-        .catch((error) => toastApiError(error, t("toasts.recomposeFailed")))
+        // apiErrorMessage, a nie toastApiError: rekompozycja pada na
+        // konkretnym szablonie (brak szablonu, niekompletny font), a te
+        // odpowiedzi niosą KLUCZ komunikatu — ogólny zapas nie powiedziałby,
+        // CO jest nie tak.
+        .catch((error) => toast.error(apiErrorMessage(t, error, t("toasts.recomposeFailed"))))
     }, RECOMPOSE_DEBOUNCE_MS)
 
     return () => {
@@ -238,7 +242,7 @@ export default function GenerationPage() {
       lastComposedRef.current = `${title}|${subtitle}|0|${entry.id}`
       setHistory((current) => [entry, ...current].slice(0, 10))
     } catch (error) {
-      toastApiError(error, t("toasts.generateFailed"))
+      toast.error(apiErrorMessage(t, error, t("toasts.generateFailed")))
     }
   }
 
@@ -279,7 +283,7 @@ export default function GenerationPage() {
         },
       }))
     } catch (error) {
-      toastApiError(error, t("toasts.assistFailed"))
+      toast.error(apiErrorMessage(t, error, t("toasts.assistFailed")))
     }
   }
 
@@ -450,7 +454,7 @@ export default function GenerationPage() {
                   <SelectContent>
                     {STYLES.map((style) => (
                       <SelectItem key={style.key} value={style.key}>
-                        {t(`options.style.${style.key}`, { defaultValue: style.label })}
+                        {t(`options.style.${style.key}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -466,7 +470,7 @@ export default function GenerationPage() {
                   <SelectContent>
                     {FORMATS.map((format) => (
                       <SelectItem key={format.key} value={format.key}>
-                        {t(`options.format.${format.key}`, { defaultValue: format.label })}
+                        {t(`options.format.${format.key}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>

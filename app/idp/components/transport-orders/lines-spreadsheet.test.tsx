@@ -145,10 +145,10 @@ describe("LinesSpreadsheet", () => {
       />,
     )
 
-    const totalRow = screen.getByText("Total").closest("tr")
+    const totalRow = screen.getByText("Razem").closest("tr")
     if (!totalRow) throw new Error("Expected total row")
     const totalCells = within(totalRow).getAllByRole("cell")
-    expect(totalCells[0]?.textContent).toBe("Total")
+    expect(totalCells[0]?.textContent).toBe("Razem")
     expect(within(totalRow).getByText("3.5")).not.toBeNull()
     expect(within(totalRow).getByText("30.25")).not.toBeNull()
     expect(within(totalRow).getByText("6")).not.toBeNull()
@@ -168,7 +168,7 @@ describe("LinesSpreadsheet", () => {
       ["invoice_value"],
     )
 
-    const totalRow = screen.getByText("Total").closest("tr")
+    const totalRow = screen.getByText("Razem").closest("tr")
     if (!totalRow) throw new Error("Expected total row")
     expect(within(totalRow).queryByText("30.25")).toBeNull()
     expect(within(totalRow).getByText("3.5")).not.toBeNull()
@@ -190,7 +190,7 @@ describe("LinesSpreadsheet", () => {
       />,
     )
 
-    const totalRow = screen.getByText("Total").closest("tr")
+    const totalRow = screen.getByText("Razem").closest("tr")
     if (!totalRow) throw new Error("Expected total row")
     expect(within(totalRow).queryByText("0")).toBeNull()
     expect(within(totalRow).getByText("30.25")).not.toBeNull()
@@ -213,7 +213,7 @@ describe("LinesSpreadsheet", () => {
       ["quantity", "invoice_value", "net_weight_kg", "gross_weight_kg", "packages_quantity"],
     )
 
-    const totalRow = screen.getByText("Total").closest("tr")
+    const totalRow = screen.getByText("Razem").closest("tr")
     if (!totalRow) throw new Error("Expected total row")
     expect(within(totalRow).getByText("0")).not.toBeNull()
   })
@@ -232,7 +232,7 @@ describe("LinesSpreadsheet", () => {
     await userEvent.clear(valueInput)
     await userEvent.type(valueInput, "40.25")
 
-    const totalRow = screen.getByText("Total").closest("tr")
+    const totalRow = screen.getByText("Razem").closest("tr")
     if (!totalRow) throw new Error("Expected total row")
     expect(within(totalRow).getByText("60.5")).not.toBeNull()
     expect(within(totalRow).queryByText("30.25")).toBeNull()
@@ -288,15 +288,15 @@ describe("LinesSpreadsheet", () => {
       />,
     )
 
-    expect(screen.getByRole("button", { name: /customs code/i })).not.toBeNull()
-    expect(screen.getByRole("button", { name: /polish name/i })).not.toBeNull()
+    expect(screen.getByRole("button", { name: /kod celny/i })).not.toBeNull()
+    expect(screen.getByRole("button", { name: /nazwa pl/i })).not.toBeNull()
     expect(screen.queryByRole("button", { name: /^cn$/i })).toBeNull()
     expect(screen.queryByRole("button", { name: /^hs$/i })).toBeNull()
 
     const customsInput = screen.getByDisplayValue("850440")
     await userEvent.clear(customsInput)
     await userEvent.type(customsInput, "9999999999")
-    await userEvent.click(screen.getByRole("button", { name: /save lines/i }))
+    await userEvent.click(screen.getByRole("button", { name: /zapisz pozycje/i }))
 
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledTimes(1)
@@ -323,9 +323,9 @@ describe("LinesSpreadsheet", () => {
       ["product_code"],
     )
 
-    expect(screen.queryByRole("button", { name: /product/i })).toBeNull()
+    expect(screen.queryByRole("button", { name: /produkt/i })).toBeNull()
     expect(screen.queryByDisplayValue("AX2486029")).toBeNull()
-    expect(screen.getByRole("button", { name: /^qty/i })).not.toBeNull()
+    expect(screen.getByRole("button", { name: /^ilość/i })).not.toBeNull()
   })
 
   it("hides Polish name from the editable spreadsheet", () => {
@@ -339,9 +339,9 @@ describe("LinesSpreadsheet", () => {
       ["description_pl"],
     )
 
-    expect(screen.queryByRole("button", { name: /polish name/i })).toBeNull()
+    expect(screen.queryByRole("button", { name: /nazwa pl/i })).toBeNull()
     expect(screen.queryByDisplayValue("Produkt testowy")).toBeNull()
-    expect(screen.getByRole("button", { name: /description/i })).not.toBeNull()
+    expect(screen.getByRole("button", { name: /^opis$/i })).not.toBeNull()
   })
 
   it("hides A.TR spreadsheet columns when A.TR processing is disabled", () => {
@@ -356,7 +356,7 @@ describe("LinesSpreadsheet", () => {
     )
 
     expect(screen.queryByRole("button", { name: /^pref/i })).toBeNull()
-    expect(screen.queryByRole("button", { name: /^pref\. docs/i })).toBeNull()
+    expect(screen.queryByRole("button", { name: /^dok\. pref/i })).toBeNull()
     expect(screen.queryByDisplayValue("400")).toBeNull()
     expect(screen.queryByDisplayValue("N018 / ATR-123 / 1")).toBeNull()
   })
@@ -374,7 +374,7 @@ describe("LinesSpreadsheet", () => {
     const productInput = screen.getByDisplayValue("AX2486029")
     await userEvent.clear(productInput)
     await userEvent.type(productInput, "UPDATED-SKU")
-    await userEvent.click(screen.getByRole("button", { name: /download csv/i }))
+    await userEvent.click(screen.getByRole("button", { name: /pobierz csv/i }))
 
     expect(downloadBlob).toHaveBeenCalledTimes(1)
     const [blob, fileName] = vi.mocked(downloadBlob).mock.calls[0] ?? []
@@ -395,12 +395,12 @@ describe("LinesSpreadsheet", () => {
       ["description_pl"],
     )
 
-    await userEvent.click(screen.getByRole("button", { name: /download csv/i }))
+    await userEvent.click(screen.getByRole("button", { name: /pobierz csv/i }))
 
     expect(downloadBlob).toHaveBeenCalledTimes(1)
     const [blob] = vi.mocked(downloadBlob).mock.calls[0] ?? []
     const csv = await readBlobText(blob as Blob)
-    expect(csv).not.toContain("Polish Name")
+    expect(csv).not.toContain("Nazwa PL")
     expect(csv).not.toContain("Produkt testowy")
     expect(csv).toContain("Sample product")
   })

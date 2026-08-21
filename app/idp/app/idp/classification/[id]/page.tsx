@@ -3,7 +3,7 @@
 import { DocumentPreview } from "@/components/classification/document-preview"
 import { DocumentTree } from "@/components/classification/document-tree"
 import { DraftList } from "@/components/classification/draft-list"
-import { DIRTY_STATUS_LABEL } from "@/components/classification/labels"
+import { DIRTY_STATUS_LABEL_KEY } from "@/components/classification/labels"
 import {
   toastApiError,
   useAutoClassify,
@@ -29,10 +29,12 @@ import { ArrowLeft, Loader2, Rocket, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { notFound, useParams, useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { toast } from "sonner"
 
 export default function ClassificationWorkspacePage() {
+  const { t } = useTranslation(["idp", "common"])
   const flagState = useFeatureFlagState("idp.classification")
   const params = useParams<{ id: string }>()
   const id = params.id
@@ -52,21 +54,21 @@ export default function ClassificationWorkspacePage() {
   }, [data?.drafts])
 
   if (flagState.isPending) {
-    return <LoadingState label="Loading classification…" />
+    return <LoadingState label={t("classification.loading")} />
   }
   if (!flagState.enabled) {
     notFound()
   }
 
   if (isLoading) {
-    return <LoadingState label="Loading dirty package…" />
+    return <LoadingState label={t("classification.workspace.loadingPackage")} />
   }
 
   if (error || !data) {
     return (
       <ErrorState
-        title="Could not load classification workspace"
-        message="The dirty package may have been removed or never existed."
+        title={t("classification.workspace.errorTitle")}
+        message={t("classification.workspace.errorMessage")}
       />
     )
   }
@@ -84,7 +86,10 @@ export default function ClassificationWorkspacePage() {
     autoClassify.mutate(undefined, {
       onSuccess: (res) =>
         toast.success(
-          `AI classified ${res.documents_updated} doc(s), proposed ${res.drafts_proposed} draft(s)`,
+          t("classification.workspace.autoClassifyDone", {
+            docs: res.documents_updated,
+            drafts: res.drafts_proposed,
+          }),
         ),
       onError: (err) => toastApiError(err),
     })
@@ -94,8 +99,12 @@ export default function ClassificationWorkspacePage() {
     promote.mutate(undefined, {
       onSuccess: (res) => {
         toast.success(
-          `Promoted to ${res.clean_package_ids.length} clean package(s)` +
-            (res.skipped_documents ? ` · ${res.skipped_documents} doc(s) skipped` : ""),
+          t("classification.workspace.promoted", { count: res.clean_package_ids.length }) +
+            (res.skipped_documents
+              ? ` · ${t("classification.workspace.promotedSkipped", {
+                  count: res.skipped_documents,
+                })}`
+              : ""),
         )
         setConfirmPromote(false)
         router.push("/idp/packages")
@@ -114,16 +123,20 @@ export default function ClassificationWorkspacePage() {
           <Button asChild variant="ghost" size="sm" className="-ml-2">
             <Link href="/idp/classification">
               <ArrowLeft className="mr-1.5 h-4 w-4" />
-              Back
+              {t("classification.workspace.back")}
             </Link>
           </Button>
           <div className="flex flex-col">
             <span className="text-sm font-semibold">{data.name}</span>
             <span className="text-[11px] text-muted-foreground">
-              {data.id} · {reviewedCount}/{totalReviewable} reviewed
+              {data.id} ·{" "}
+              {t("classification.workspace.reviewedCount", {
+                done: reviewedCount,
+                total: totalReviewable,
+              })}
             </span>
           </div>
-          <Badge variant="outline">{DIRTY_STATUS_LABEL[data.status]}</Badge>
+          <Badge variant="outline">{t(DIRTY_STATUS_LABEL_KEY[data.status])}</Badge>
           {data.customer_tag ? <Badge variant="secondary">{data.customer_tag}</Badge> : null}
         </div>
         <div className="flex items-center gap-2">
@@ -138,7 +151,7 @@ export default function ClassificationWorkspacePage() {
             ) : (
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
             )}
-            Auto-reclassify with AI
+            {t("classification.workspace.autoReclassify")}
           </Button>
           <Button
             size="sm"
@@ -150,7 +163,7 @@ export default function ClassificationWorkspacePage() {
             ) : (
               <Rocket className="mr-1.5 h-3.5 w-3.5" />
             )}
-            Promote to processing
+            {t("classification.workspace.promote")}
           </Button>
         </div>
       </header>
@@ -180,20 +193,24 @@ export default function ClassificationWorkspacePage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Promote to {data.drafts.length} clean package
-              {data.drafts.length === 1 ? "" : "s"}?
+              {t("classification.workspace.confirmTitle", { count: data.drafts.length })}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {data.documents.filter((d) => d.mode === "process").length} document(s) will be sent
-              to LLM processing, {data.documents.filter((d) => d.mode === "pass_through").length}{" "}
-              will be attached as reference, and{" "}
-              {data.documents.filter((d) => d.mode === "skip").length} will be dropped.
+              {t("classification.workspace.confirmBody", {
+                process: data.documents.filter((d) => d.mode === "process").length,
+                passThrough: data.documents.filter((d) => d.mode === "pass_through").length,
+                skip: data.documents.filter((d) => d.mode === "skip").length,
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={promote.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={promote.isPending}>
+              {t("common:actions.cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction onClick={runPromote} disabled={promote.isPending}>
-              {promote.isPending ? "Promoting…" : "Promote"}
+              {promote.isPending
+                ? t("classification.workspace.promoting")
+                : t("classification.workspace.promoteAction")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

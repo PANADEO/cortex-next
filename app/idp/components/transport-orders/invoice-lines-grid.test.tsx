@@ -126,24 +126,24 @@ describe("InvoiceLinesGrid", () => {
       />,
     )
 
-    expect(screen.getByRole("heading", { name: "Invoice Lines" })).not.toBeNull()
+    expect(screen.getByRole("heading", { name: "Pozycje faktury" })).not.toBeNull()
     for (const name of [
       "#",
-      "PO Number",
-      "Product Code",
-      "Description",
-      "Polish Name",
-      "CN Code",
-      "HS Code",
+      "Numer PO",
+      "Kod produktu",
+      "Opis",
+      "Nazwa polska",
+      "Kod CN",
+      "Kod HS",
       "Pref.",
-      "Pref. Docs",
-      "Qty",
-      "UoM",
-      "Value",
-      "Net Wt (kg)",
-      "Gross Wt (kg)",
-      "Est. Gross Wt (kg)",
-      "Origin",
+      "Dok. pref.",
+      "Ilość",
+      "JM",
+      "Wartość",
+      "Netto (kg)",
+      "Brutto (kg)",
+      "Szac. brutto (kg)",
+      "Pochodzenie",
     ]) {
       expect(screen.getByRole("columnheader", { name })).not.toBeNull()
     }
@@ -190,10 +190,10 @@ describe("InvoiceLinesGrid", () => {
       />,
     )
 
-    await userEvent.click(screen.getByRole("button", { name: /edit line/i }))
+    await userEvent.click(screen.getByRole("button", { name: /edytuj pozycję/i }))
 
     expect(onSelectLine).not.toHaveBeenCalled()
-    expect(screen.getByRole("heading", { name: /edit line 1/i })).not.toBeNull()
+    expect(screen.getByRole("heading", { name: /edycja pozycji 1/i })).not.toBeNull()
   })
 
   it("renders one Customs Code column when customs-code mode is enabled", () => {
@@ -207,9 +207,9 @@ describe("InvoiceLinesGrid", () => {
       />,
     )
 
-    expect(screen.getByRole("columnheader", { name: "Customs Code" })).not.toBeNull()
-    expect(screen.queryByRole("columnheader", { name: "CN Code" })).toBeNull()
-    expect(screen.queryByRole("columnheader", { name: "HS Code" })).toBeNull()
+    expect(screen.getByRole("columnheader", { name: "Kod celny" })).not.toBeNull()
+    expect(screen.queryByRole("columnheader", { name: "Kod CN" })).toBeNull()
+    expect(screen.queryByRole("columnheader", { name: "Kod HS" })).toBeNull()
     expect(screen.getByText("8536")).not.toBeNull()
   })
 
@@ -224,9 +224,9 @@ describe("InvoiceLinesGrid", () => {
       ["description"],
     )
 
-    expect(screen.queryByRole("columnheader", { name: "Description" })).toBeNull()
+    expect(screen.queryByRole("columnheader", { name: "Opis" })).toBeNull()
     expect(screen.queryByText("Sample product")).toBeNull()
-    expect(screen.getByRole("button", { name: "Edit line" })).not.toBeNull()
+    expect(screen.getByRole("button", { name: "Edytuj pozycję" })).not.toBeNull()
   })
 
   it("hides Polish name without hiding the edit action", () => {
@@ -240,10 +240,10 @@ describe("InvoiceLinesGrid", () => {
       ["description_pl"],
     )
 
-    expect(screen.queryByRole("columnheader", { name: "Polish Name" })).toBeNull()
+    expect(screen.queryByRole("columnheader", { name: "Nazwa polska" })).toBeNull()
     expect(screen.queryByText("Produkt testowy")).toBeNull()
-    expect(screen.getByRole("columnheader", { name: "Description" })).not.toBeNull()
-    expect(screen.getByRole("button", { name: "Edit line" })).not.toBeNull()
+    expect(screen.getByRole("columnheader", { name: "Opis" })).not.toBeNull()
+    expect(screen.getByRole("button", { name: "Edytuj pozycję" })).not.toBeNull()
   })
 
   it("hides A.TR columns when A.TR processing is disabled", () => {
@@ -258,7 +258,7 @@ describe("InvoiceLinesGrid", () => {
     )
 
     expect(screen.queryByRole("columnheader", { name: "Pref." })).toBeNull()
-    expect(screen.queryByRole("columnheader", { name: "Pref. Docs" })).toBeNull()
+    expect(screen.queryByRole("columnheader", { name: "Dok. pref." })).toBeNull()
     expect(screen.queryByText("400")).toBeNull()
     expect(screen.queryByText("N018 / ATR-123 / 1144")).toBeNull()
   })
@@ -274,14 +274,14 @@ describe("InvoiceLinesGrid", () => {
       ["description"],
     )
 
-    await userEvent.click(screen.getByRole("button", { name: /download csv/i }))
+    await userEvent.click(screen.getByRole("button", { name: /pobierz csv/i }))
 
     expect(downloadBlob).toHaveBeenCalledTimes(1)
     const [blob, fileName] = vi.mocked(downloadBlob).mock.calls[0] ?? []
     expect(fileName).toBe("FV-1_invoice_lines.csv")
     const csv = await readBlobText(blob as Blob)
-    expect(csv).toContain("PO Number")
-    expect(csv).not.toContain("Description")
+    expect(csv).toContain("Numer PO")
+    expect(csv).not.toContain("Opis")
     expect(csv).toContain("N018 / ATR-123 / 1144")
   })
 
@@ -296,12 +296,12 @@ describe("InvoiceLinesGrid", () => {
       ["description_pl"],
     )
 
-    await userEvent.click(screen.getByRole("button", { name: /download csv/i }))
+    await userEvent.click(screen.getByRole("button", { name: /pobierz csv/i }))
 
     expect(downloadBlob).toHaveBeenCalledTimes(1)
     const [blob] = vi.mocked(downloadBlob).mock.calls[0] ?? []
     const csv = await readBlobText(blob as Blob)
-    expect(csv).not.toContain("Polish Name")
+    expect(csv).not.toContain("Nazwa polska")
     expect(csv).not.toContain("Produkt testowy")
     expect(csv).toContain("Sample product")
   })

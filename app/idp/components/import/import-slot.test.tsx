@@ -39,7 +39,7 @@ describe("ImportSlot", () => {
       />,
     )
 
-    const input = screen.getByLabelText("Package name")
+    const input = screen.getByLabelText("Nazwa paczki")
     expect(input).not.toBeNull()
 
     fireEvent.change(input, { target: { value: "MAN Customs Batch" } })
@@ -65,7 +65,7 @@ describe("ImportSlot", () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole("checkbox", { name: "Email result after processing" }))
+    fireEvent.click(screen.getByRole("checkbox", { name: "Wyślij wynik mailem po przetworzeniu" }))
     expect(onNotificationEmailEnabledChange).toHaveBeenCalledWith(true)
 
     rerender(
@@ -106,7 +106,9 @@ describe("ImportSlot", () => {
       />,
     )
 
-    expect(screen.queryByRole("checkbox", { name: "Email result after processing" })).toBeNull()
+    expect(
+      screen.queryByRole("checkbox", { name: "Wyślij wynik mailem po przetworzeniu" }),
+    ).toBeNull()
     expect(screen.queryByDisplayValue("user@example.com")).toBeNull()
   })
 })

@@ -75,7 +75,7 @@ export function DateRangeFilter({ value, onChange, isLoading }: DateRangeFilterP
               onClick={() => applyPreset(preset.build)}
               disabled={isLoading}
             >
-              {t(`filter.presets.${preset.id}`, { defaultValue: preset.label })}
+              {t(`filter.presets.${preset.id}`)}
             </Button>
           ))}
         </div>

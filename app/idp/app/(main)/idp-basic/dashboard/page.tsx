@@ -38,6 +38,7 @@ import {
 } from "@cortex/ui"
 import { cn, formatAbsolute, formatRelative } from "@cortex/utils"
 import { keepPreviousData, useQueries, type UseQueryResult } from "@tanstack/react-query"
+import type { TFunction } from "i18next"
 import type { LucideIcon } from "lucide-react"
 import {
   AlertTriangle,
@@ -55,6 +56,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useDeferredValue, useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 const BOARD_PAGE_SIZE = 30
@@ -63,8 +65,7 @@ const IDLE_STATUS_REFETCH_MS = 10_000
 
 interface BasicBoardColumnMeta {
   id: IdpBasicPackageStatus
-  label: string
-  description: string
+  descriptionKey: string
   accent: string
   headerBg: string
   headerText: string
@@ -74,8 +75,7 @@ interface BasicBoardColumnMeta {
 const BASIC_BOARD_COLUMNS: readonly BasicBoardColumnMeta[] = [
   {
     id: "queued",
-    label: "Queued",
-    description: "Waiting for worker",
+    descriptionKey: "board.queuedDescription",
     accent: "before:bg-sky-500",
     headerBg: "bg-sky-50 dark:bg-sky-950/40",
     headerText: "text-sky-800 dark:text-sky-200",
@@ -83,8 +83,7 @@ const BASIC_BOARD_COLUMNS: readonly BasicBoardColumnMeta[] = [
   },
   {
     id: "processing",
-    label: "Processing",
-    description: "AI analysis in progress",
+    descriptionKey: "board.processingDescription",
     accent: "before:bg-indigo-500",
     headerBg: "bg-indigo-50 dark:bg-indigo-950/40",
     headerText: "text-indigo-800 dark:text-indigo-200",
@@ -92,8 +91,7 @@ const BASIC_BOARD_COLUMNS: readonly BasicBoardColumnMeta[] = [
   },
   {
     id: "needs_review",
-    label: "Needs review",
-    description: "Alerts or missing data",
+    descriptionKey: "board.needsReviewDescription",
     accent: "before:bg-amber-500",
     headerBg: "bg-amber-50 dark:bg-amber-950/40",
     headerText: "text-amber-800 dark:text-amber-200",
@@ -101,8 +99,7 @@ const BASIC_BOARD_COLUMNS: readonly BasicBoardColumnMeta[] = [
   },
   {
     id: "ready",
-    label: "Ready",
-    description: "Processed packages",
+    descriptionKey: "board.readyDescription",
     accent: "before:bg-emerald-500",
     headerBg: "bg-emerald-50 dark:bg-emerald-950/40",
     headerText: "text-emerald-800 dark:text-emerald-200",
@@ -110,8 +107,7 @@ const BASIC_BOARD_COLUMNS: readonly BasicBoardColumnMeta[] = [
   },
   {
     id: "failed",
-    label: "Failed",
-    description: "Processing errors",
+    descriptionKey: "board.failedDescription",
     accent: "before:bg-red-500",
     headerBg: "bg-red-50 dark:bg-red-950/40",
     headerText: "text-red-800 dark:text-red-200",
@@ -150,6 +146,7 @@ interface AuditEvent {
 }
 
 export default function IdpBasicDashboardPage() {
+  const { t } = useTranslation(["idp-basic", "common"])
   const [search, setSearch] = useState("")
   const [hiddenStatuses, setHiddenStatuses] = useState<ReadonlySet<IdpBasicPackageStatus>>(
     () => new Set(),
@@ -204,17 +201,17 @@ export default function IdpBasicDashboardPage() {
 
   const boardState = buildBoardState(pageRequests, boardQueries)
   const auditEvents = useMemo(
-    () => buildAuditEvents(recentPackages.data?.items ?? []),
-    [recentPackages.data?.items],
+    () => buildAuditEvents(t, recentPackages.data?.items ?? []),
+    [t, recentPackages.data?.items],
   )
   const totalOnBoard = visibleMetas.reduce((sum, meta) => sum + boardState.totals[meta.id], 0)
 
   const handlePoll = async () => {
     try {
       const result = await pollMail.mutateAsync()
-      toast.success(`Imported ${result.imported} new package(s)`)
+      toast.success(t("toast.imported", { count: result.imported }))
     } catch {
-      toast.error("Mailbox poll failed")
+      toast.error(t("toast.pollFailed"))
     }
   }
 
@@ -243,7 +240,7 @@ export default function IdpBasicDashboardPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader
-        title="Dashboard"
+        title={t("dashboard.title")}
         actions={
           <div className="flex flex-wrap items-center justify-end gap-2">
             <div className="relative">
@@ -251,11 +248,12 @@ export default function IdpBasicDashboardPage() {
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search packages..."
+                placeholder={t("dashboard.searchPlaceholder")}
                 className="h-9 w-56 pl-9 lg:w-72"
               />
             </div>
             <ColumnVisibilityMenu
+              t={t}
               hiddenStatuses={hiddenStatuses}
               onCheckedChange={handleColumnCheckedChange}
             />
@@ -270,7 +268,7 @@ export default function IdpBasicDashboardPage() {
               ) : (
                 <MailCheck className="mr-2 h-4 w-4" />
               )}
-              Poll now
+              {t("actions.pollNow")}
             </Button>
           </div>
         }
@@ -281,17 +279,18 @@ export default function IdpBasicDashboardPage() {
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">
               {boardQueries.some((query) => query.isLoading)
-                ? "Loading..."
-                : `${totalOnBoard} on board`}
+                ? t("common:state.loading")
+                : t("dashboard.onBoard", { total: totalOnBoard })}
             </p>
             {boardState.isFetching ? (
-              <p className="text-xs text-muted-foreground">Refreshing...</p>
+              <p className="text-xs text-muted-foreground">{t("state.refreshing")}</p>
             ) : null}
           </div>
           <div className="-mx-2 flex h-[36vh] max-h-[390px] min-h-[260px] gap-3 overflow-x-auto overflow-y-hidden px-2 pb-4">
             {visibleMetas.map((meta) => (
               <BasicKanbanColumn
                 key={meta.id}
+                t={t}
                 meta={meta}
                 cards={boardState.columns[meta.id]}
                 total={boardState.totals[meta.id]}
@@ -306,43 +305,49 @@ export default function IdpBasicDashboardPage() {
         <section className="grid items-start gap-5 2xl:grid-cols-[minmax(0,1fr)_25rem]">
           <Card>
             <CardHeader className="border-b border-border px-4 py-3">
-              <CardTitle className="text-sm">Intake status</CardTitle>
+              <CardTitle className="text-sm">{t("dashboard.intakeStatus")}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-0 p-0 md:grid-cols-2 xl:grid-cols-4">
               <SystemStatusItem
                 icon={Inbox}
-                label="Mailbox"
-                value={settings.data?.mailbox_configured ? "Connected" : "Not configured"}
+                label={t("fields.mailbox")}
+                value={t(
+                  settings.data?.mailbox_configured ? "intake.connected" : "intake.notConfigured",
+                )}
                 description={
                   settings.data?.mailbox_configured
                     ? `${settings.data.imap_host ?? "IMAP"} / ${settings.data.imap_mailbox}`
-                    : "Set IMAP env vars in idp-basic backend"
+                    : t("intake.mailboxHint")
                 }
                 tone={settings.data?.mailbox_configured ? "success" : "warning"}
               />
               <SystemStatusItem
                 icon={PlayCircle}
-                label="Worker"
-                value={settings.data?.worker_enabled ? "Enabled" : "Disabled"}
+                label={t("fields.worker")}
+                value={t(settings.data?.worker_enabled ? "intake.enabled" : "intake.disabled")}
                 description={
                   settings.data
-                    ? `Poll interval ${settings.data.poll_interval_seconds}s`
-                    : "Loading settings"
+                    ? t("intake.pollIntervalDescription", {
+                        seconds: settings.data.poll_interval_seconds,
+                      })
+                    : t("intake.loadingSettings")
                 }
                 tone={settings.data?.worker_enabled ? "success" : "warning"}
               />
               <SystemStatusItem
                 icon={FolderInput}
-                label="Filesystem"
-                value={filesystemStatusValue(settings.data)}
-                description={filesystemStatusDescription(settings.data)}
+                label={t("fields.filesystem")}
+                value={filesystemStatusValue(t, settings.data)}
+                description={filesystemStatusDescription(t, settings.data)}
                 tone={filesystemStatusTone(settings.data)}
               />
               <SystemStatusItem
                 icon={FileText}
-                label="Documents"
+                label={t("fields.documents")}
                 value={stats.data?.documents_total ?? 0}
-                description={`${stats.data?.packages_total ?? 0} packages total`}
+                description={t("intake.packagesTotal", {
+                  total: stats.data?.packages_total ?? 0,
+                })}
                 tone="default"
               />
             </CardContent>
@@ -352,7 +357,7 @@ export default function IdpBasicDashboardPage() {
             <CardHeader className="shrink-0 border-b border-border px-4 py-3">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <History className="h-4 w-4 text-muted-foreground" />
-                Audit log
+                {t("dashboard.auditLog")}
               </CardTitle>
             </CardHeader>
             <CardContent className="min-h-0 overflow-y-auto p-0">
@@ -394,8 +399,8 @@ export default function IdpBasicDashboardPage() {
               ) : (
                 <EmptyState
                   icon={History}
-                  title="No audit events yet"
-                  description="Recent imports and status changes will appear here."
+                  title={t("dashboard.auditEmptyTitle")}
+                  description={t("dashboard.auditEmptyDescription")}
                 />
               )}
             </CardContent>
@@ -407,9 +412,11 @@ export default function IdpBasicDashboardPage() {
 }
 
 function ColumnVisibilityMenu({
+  t,
   hiddenStatuses,
   onCheckedChange,
 }: {
+  t: TFunction<["idp-basic", "common"]>
   hiddenStatuses: ReadonlySet<IdpBasicPackageStatus>
   onCheckedChange: (status: IdpBasicPackageStatus, checked: boolean) => void
 }) {
@@ -418,11 +425,11 @@ function ColumnVisibilityMenu({
       <DropdownMenuTrigger asChild>
         <Button type="button" variant="outline" size="sm" className="h-9">
           <Columns3 className="mr-1.5 h-3.5 w-3.5" />
-          Columns
+          {t("dashboard.columns")}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("dashboard.visibleColumns")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {BASIC_BOARD_COLUMNS.map((meta) => (
           <DropdownMenuCheckboxItem
@@ -430,7 +437,7 @@ function ColumnVisibilityMenu({
             checked={!hiddenStatuses.has(meta.id)}
             onCheckedChange={(checked) => onCheckedChange(meta.id, checked)}
           >
-            {meta.label}
+            {getIdpBasicStatusLabel(t, meta.id)}
           </DropdownMenuCheckboxItem>
         ))}
       </DropdownMenuContent>
@@ -439,6 +446,7 @@ function ColumnVisibilityMenu({
 }
 
 function BasicKanbanColumn({
+  t,
   meta,
   cards,
   total,
@@ -446,6 +454,7 @@ function BasicKanbanColumn({
   isLoadingMore,
   onLoadMore,
 }: {
+  t: TFunction<["idp-basic", "common"]>
   meta: BasicBoardColumnMeta
   cards: IdpBasicPackageSummary[]
   total: number
@@ -471,9 +480,11 @@ function BasicKanbanColumn({
       >
         <div className="min-w-0">
           <h2 className={cn("text-sm font-semibold leading-none", meta.headerText)}>
-            {meta.label}
+            {getIdpBasicStatusLabel(t, meta.id)}
           </h2>
-          <p className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">{meta.description}</p>
+          <p className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">
+            {t(meta.descriptionKey)}
+          </p>
         </div>
         <span
           className={cn(
@@ -488,17 +499,17 @@ function BasicKanbanColumn({
       {isLoading ? (
         <div className="flex min-h-[180px] flex-1 flex-col items-center justify-center gap-2 px-3 py-10 text-center text-xs text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Loading packages</span>
+          <span>{t("board.loading")}</span>
         </div>
       ) : cards.length === 0 ? (
         <div className="flex min-h-0 flex-1 flex-col items-center gap-1 px-3 py-8 text-center text-xs text-muted-foreground">
           <Inbox className="h-4 w-4 opacity-50" />
-          <span>No packages here</span>
+          <span>{t("board.empty")}</span>
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-contain p-2">
           {cards.map((card) => (
-            <BasicKanbanCard key={card.id} card={card} />
+            <BasicKanbanCard key={card.id} t={t} card={card} />
           ))}
           {hasMore ? (
             <Button
@@ -510,7 +521,7 @@ function BasicKanbanColumn({
               disabled={isLoadingMore}
             >
               {isLoadingMore ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-              Load more ({cards.length}/{total})
+              {t("board.loadMore", { loaded: cards.length, total })}
             </Button>
           ) : null}
         </div>
@@ -519,7 +530,13 @@ function BasicKanbanColumn({
   )
 }
 
-function BasicKanbanCard({ card }: { card: IdpBasicPackageSummary }) {
+function BasicKanbanCard({
+  t,
+  card,
+}: {
+  t: TFunction<["idp-basic", "common"]>
+  card: IdpBasicPackageSummary
+}) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   return (
@@ -548,13 +565,13 @@ function BasicKanbanCard({ card }: { card: IdpBasicPackageSummary }) {
             {card.alerts.length > 0 ? (
               <AlertTriangle
                 className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300"
-                aria-label="Package has alerts"
+                aria-label={t("board.hasAlerts")}
               />
             ) : null}
             {card.error_message ? (
               <AlertTriangle
                 className="h-3.5 w-3.5 text-red-600 dark:text-red-400"
-                aria-label="Processing error"
+                aria-label={t("board.processingError")}
               />
             ) : null}
           </span>
@@ -564,7 +581,7 @@ function BasicKanbanCard({ card }: { card: IdpBasicPackageSummary }) {
       {isExpanded ? (
         <div className="border-t border-border px-2.5 py-2">
           <p className="line-clamp-1 text-[11px] text-muted-foreground">
-            {card.sender || "manual-upload"}
+            {card.sender || t("board.manualUploadSender")}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <IdpBasicStatusBadge status={card.status} />
@@ -581,7 +598,7 @@ function BasicKanbanCard({ card }: { card: IdpBasicPackageSummary }) {
             </p>
           ) : null}
           <Button asChild size="sm" variant="outline" className="mt-2 h-7 w-full">
-            <Link href={`/idp-basic/results/${card.id}`}>Open result</Link>
+            <Link href={`/idp-basic/results/${card.id}`}>{t("board.openResult")}</Link>
           </Button>
         </div>
       ) : null}
@@ -741,20 +758,26 @@ function shortId(id: string): string {
   return (cleaned || id).slice(0, 10).toUpperCase()
 }
 
-function filesystemStatusValue(settings: IdpBasicSettings | undefined): string {
-  if (!settings) return "Loading"
-  if (!settings.filesystem_enabled) return "Disabled"
-  if (!settings.filesystem_watch_dir) return "Missing env"
-  if (!settings.filesystem_configured) return "Missing folder"
-  return "Watching"
+function filesystemStatusValue(
+  t: TFunction<["idp-basic", "common"]>,
+  settings: IdpBasicSettings | undefined,
+): string {
+  if (!settings) return t("intake.loading")
+  if (!settings.filesystem_enabled) return t("intake.disabled")
+  if (!settings.filesystem_watch_dir) return t("intake.missingEnv")
+  if (!settings.filesystem_configured) return t("intake.missingFolder")
+  return t("intake.watching")
 }
 
-function filesystemStatusDescription(settings: IdpBasicSettings | undefined): string {
-  if (!settings) return "Loading settings"
+function filesystemStatusDescription(
+  t: TFunction<["idp-basic", "common"]>,
+  settings: IdpBasicSettings | undefined,
+): string {
+  if (!settings) return t("intake.loadingSettings")
   if (settings.filesystem_watch_dir) {
     return `${settings.filesystem_watch_dir} / ${settings.filesystem_poll_interval_seconds}s`
   }
-  return "Set FILESYSTEM_WATCH_DIR"
+  return t("intake.setWatchDir")
 }
 
 function filesystemStatusTone(
@@ -764,7 +787,10 @@ function filesystemStatusTone(
   return settings.filesystem_configured ? "success" : "warning"
 }
 
-function buildAuditEvents(packages: IdpBasicPackageSummary[]): AuditEvent[] {
+function buildAuditEvents(
+  t: TFunction<["idp-basic", "common"]>,
+  packages: IdpBasicPackageSummary[],
+): AuditEvent[] {
   return packages
     .flatMap((pkg) => {
       const baseDescription = pkg.reference_number
@@ -774,7 +800,7 @@ function buildAuditEvents(packages: IdpBasicPackageSummary[]): AuditEvent[] {
         {
           id: `${pkg.id}:created`,
           packageId: pkg.id,
-          title: "Package imported",
+          title: t("audit.packageImported"),
           description: baseDescription,
           timestamp: pkg.created_at,
           icon: Clock3,
@@ -786,8 +812,8 @@ function buildAuditEvents(packages: IdpBasicPackageSummary[]): AuditEvent[] {
         events.push({
           id: `${pkg.id}:${pkg.status}`,
           packageId: pkg.id,
-          title: statusEventTitle(pkg.status),
-          description: `${getIdpBasicStatusLabel(pkg.status)} - ${baseDescription}`,
+          title: statusEventTitle(t, pkg.status),
+          description: `${getIdpBasicStatusLabel(t, pkg.status)} - ${baseDescription}`,
           timestamp: pkg.updated_at,
           icon: auditIcon(pkg.status),
           iconClassName: auditIconClassName(pkg.status),
@@ -800,12 +826,15 @@ function buildAuditEvents(packages: IdpBasicPackageSummary[]): AuditEvent[] {
     .slice(0, 8)
 }
 
-function statusEventTitle(status: IdpBasicPackageStatus): string {
-  if (status === "failed") return "Job failed"
-  if (status === "needs_review") return "Review required"
-  if (status === "ready") return "Job completed"
-  if (status === "processing") return "Job processing"
-  return "Job queued"
+function statusEventTitle(
+  t: TFunction<["idp-basic", "common"]>,
+  status: IdpBasicPackageStatus,
+): string {
+  if (status === "failed") return t("audit.jobFailed")
+  if (status === "needs_review") return t("audit.reviewRequired")
+  if (status === "ready") return t("audit.jobCompleted")
+  if (status === "processing") return t("audit.jobProcessing")
+  return t("audit.jobQueued")
 }
 
 function auditIcon(status: IdpBasicPackageStatus): LucideIcon {

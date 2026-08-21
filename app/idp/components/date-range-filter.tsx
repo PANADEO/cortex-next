@@ -1,6 +1,7 @@
 "use client"
 
 import { Input, Label } from "@cortex/ui"
+import { useTranslation } from "react-i18next"
 
 interface Props {
   idPrefix: string
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function DateRangeFilter({ idPrefix, from, to, onChange }: Props) {
+  const { t } = useTranslation("common")
   return (
     <div className="flex items-end gap-2">
       <div className="space-y-1">
@@ -17,7 +19,7 @@ export function DateRangeFilter({ idPrefix, from, to, onChange }: Props) {
           htmlFor={`${idPrefix}-from`}
           className="text-[10px] uppercase tracking-wide text-muted-foreground"
         >
-          From
+          {t("fields.from")}
         </Label>
         <Input
           id={`${idPrefix}-from`}
@@ -32,7 +34,7 @@ export function DateRangeFilter({ idPrefix, from, to, onChange }: Props) {
           htmlFor={`${idPrefix}-to`}
           className="text-[10px] uppercase tracking-wide text-muted-foreground"
         >
-          To
+          {t("fields.to")}
         </Label>
         <Input
           id={`${idPrefix}-to`}

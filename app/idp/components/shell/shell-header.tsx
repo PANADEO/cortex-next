@@ -6,8 +6,8 @@ import { useThemeStore } from "@/lib/stores/theme-store"
 import { useSetUserPreferences, useShellUser } from "@cortex/api"
 import { SkinToggle, ThemeToggle, UserMenu } from "@cortex/ui"
 import { cva } from "class-variance-authority"
-import { useTranslation } from "react-i18next"
 import Image from "next/image"
+import { useTranslation } from "react-i18next"
 
 /**
  * Pasek nad hubem — odpowiednik `.ch-shellbar`. Ta sama zasada co w powłoce

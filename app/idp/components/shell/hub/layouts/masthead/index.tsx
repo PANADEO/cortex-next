@@ -66,7 +66,7 @@ export function MastheadHub({ model, variants }: HubLayoutProps) {
              selektora zgadującego jego wnętrze. */
           <EmptyState
             icon={Search}
-            title="Nie znaleziono aplikacji"
+            title={t("hub.emptyTitle")}
             description={t("hub.noResults")}
             action={
               <Button variant="outline" size="sm" onClick={model.clearFilters}>

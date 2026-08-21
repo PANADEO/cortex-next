@@ -31,12 +31,20 @@ import { useQuery } from "@tanstack/react-query"
 import { CheckCircle2, ChevronDown, FileX, Layers, Loader2 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import { DOC_MODE_LABEL, DOC_TYPE_LABEL } from "./labels"
+import { DOC_MODE_LABEL_KEY, DOC_TYPE_LABEL_KEY } from "./labels"
+
+/** Osobny komponent, bo `loading` w `dynamic()` stoi poza drzewem Reacta
+ *  i nie wolno tam wołać hooka. */
+function ViewerLoading() {
+  const { t } = useTranslation("idp")
+  return <LoadingState label={t("classification.preview.loadingViewer")} />
+}
 
 const DocumentViewer = dynamic(
   () => import("@cortex/ui/components/document-viewer").then((m) => m.DocumentViewer),
-  { ssr: false, loading: () => <LoadingState label="Loading viewer…" /> },
+  { ssr: false, loading: () => <ViewerLoading /> },
 )
 
 interface DocumentPreviewProps {
@@ -46,6 +54,7 @@ interface DocumentPreviewProps {
 }
 
 export function DocumentPreview({ dirtyPackageId, document, drafts }: DocumentPreviewProps) {
+  const { t } = useTranslation("idp")
   const update = useUpdateDocumentClassification(dirtyPackageId)
   const [notes, setNotes] = useState("")
 
@@ -56,7 +65,7 @@ export function DocumentPreview({ dirtyPackageId, document, drafts }: DocumentPr
   if (!document) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-        Select a document on the left to preview and edit its classification.
+        {t("classification.preview.selectPrompt")}
       </div>
     )
   }
@@ -76,10 +85,12 @@ export function DocumentPreview({ dirtyPackageId, document, drafts }: DocumentPr
         <div className="flex flex-col">
           <span className="text-sm font-medium">{document.file_name}</span>
           <span className="text-xs text-muted-foreground">
-            {document.page_count} page{document.page_count > 1 ? "s" : ""} ·{" "}
+            {t("classification.preview.pages", { n: document.page_count })} ·{" "}
             {formatFileSizeBytes(document.size_bytes)}
             {document.confidence !== null
-              ? ` · AI confidence ${Math.round(document.confidence * 100)}%`
+              ? ` · ${t("classification.preview.confidence", {
+                  n: Math.round(document.confidence * 100),
+                })}`
               : ""}
           </span>
         </div>
@@ -88,7 +99,7 @@ export function DocumentPreview({ dirtyPackageId, document, drafts }: DocumentPr
           variant={document.human_reviewed ? "default" : "outline"}
           onClick={() => {
             apply({ human_reviewed: !document.human_reviewed })
-            if (!document.human_reviewed) toast.success("Marked as reviewed")
+            if (!document.human_reviewed) toast.success(t("classification.preview.markedReviewed"))
           }}
           disabled={update.isPending}
         >
@@ -97,7 +108,9 @@ export function DocumentPreview({ dirtyPackageId, document, drafts }: DocumentPr
           ) : (
             <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
           )}
-          {document.human_reviewed ? "Reviewed" : "Mark reviewed"}
+          {document.human_reviewed
+            ? t("classification.preview.reviewed")
+            : t("classification.preview.markReviewed")}
         </Button>
       </div>
 
@@ -107,7 +120,9 @@ export function DocumentPreview({ dirtyPackageId, document, drafts }: DocumentPr
 
       <div className="grid grid-cols-3 gap-3 border-t border-border bg-background/40 px-4 py-3">
         <div className="space-y-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Type</Label>
+          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            {t("classification.preview.typeLabel")}
+          </Label>
           <Select
             value={document.doc_type}
             onValueChange={(v) => apply({ doc_type: v as DocType })}
@@ -116,24 +131,9 @@ export function DocumentPreview({ dirtyPackageId, document, drafts }: DocumentPr
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {DOC_TYPE.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {DOC_TYPE_LABEL[t]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Mode</Label>
-          <Select value={document.mode} onValueChange={(v) => apply({ mode: v as DocMode })}>
-            <SelectTrigger className="h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DOC_MODE.map((m) => (
-                <SelectItem key={m} value={m}>
-                  {DOC_MODE_LABEL[m]}
+              {DOC_TYPE.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {t(DOC_TYPE_LABEL_KEY[type])}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -141,7 +141,24 @@ export function DocumentPreview({ dirtyPackageId, document, drafts }: DocumentPr
         </div>
         <div className="space-y-1">
           <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            Target packages
+            {t("classification.preview.modeLabel")}
+          </Label>
+          <Select value={document.mode} onValueChange={(v) => apply({ mode: v as DocMode })}>
+            <SelectTrigger className="h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {DOC_MODE.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {t(DOC_MODE_LABEL_KEY[m])}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            {t("classification.preview.targetPackagesLabel")}
           </Label>
           <TargetPackagesPicker
             value={document.target_clean_package_ids}
@@ -151,12 +168,14 @@ export function DocumentPreview({ dirtyPackageId, document, drafts }: DocumentPr
           />
         </div>
         <div className="col-span-3 space-y-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Notes</Label>
+          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            {t("classification.preview.notesLabel")}
+          </Label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             onBlur={saveNotes}
-            placeholder="Free-text reviewer notes…"
+            placeholder={t("classification.preview.notesPlaceholder")}
             rows={2}
           />
         </div>
@@ -176,6 +195,7 @@ function TargetPackagesPicker({
   disabled: boolean
   onChange: (next: string[]) => void
 }) {
+  const { t } = useTranslation("idp")
   const selected = new Set(value)
   const selectedDrafts = drafts.filter((d) => selected.has(d.id))
 
@@ -191,12 +211,12 @@ function TargetPackagesPicker({
 
   const label =
     selectedDrafts.length === 0
-      ? "— Unassigned —"
+      ? t("classification.target.unassigned")
       : selectedDrafts.length === 1
         ? selectedDrafts[0]!.name
         : selectedDrafts.length === drafts.length
-          ? `All ${drafts.length} packages`
-          : `${selectedDrafts.length} packages`
+          ? t("classification.target.allPackages", { n: drafts.length })
+          : t("classification.target.somePackages", { n: selectedDrafts.length })
 
   return (
     <Popover>
@@ -222,7 +242,7 @@ function TargetPackagesPicker({
       <PopoverContent align="start" className="w-72 p-2">
         <div className="flex items-center justify-between px-2 pb-1 pt-0.5">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Assign to clean package(s)
+            {t("classification.target.heading")}
           </span>
           <div className="flex items-center gap-1">
             <button
@@ -231,7 +251,7 @@ function TargetPackagesPicker({
               className="text-[11px] text-muted-foreground hover:text-foreground"
               disabled={drafts.length === 0}
             >
-              All
+              {t("classification.target.selectAll")}
             </button>
             <span className="text-[11px] text-muted-foreground/50">·</span>
             <button
@@ -239,14 +259,14 @@ function TargetPackagesPicker({
               onClick={clear}
               className="text-[11px] text-muted-foreground hover:text-foreground"
             >
-              None
+              {t("classification.target.selectNone")}
             </button>
           </div>
         </div>
         <Separator className="my-1" />
         {drafts.length === 0 ? (
           <p className="px-2 py-2 text-xs text-muted-foreground">
-            No draft clean packages yet. Create one on the right.
+            {t("classification.target.empty")}
           </p>
         ) : (
           <ul className="flex max-h-60 flex-col gap-0.5 overflow-y-auto">
@@ -264,8 +284,7 @@ function TargetPackagesPicker({
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-xs font-medium">{draft.name}</span>
                     <span className="text-[10px] text-muted-foreground">
-                      {draft.document_ids.length} doc
-                      {draft.document_ids.length === 1 ? "" : "s"}
+                      {t("classification.drafts.docCount", { n: draft.document_ids.length })}
                       {draft.customer_tag ? ` · ${draft.customer_tag}` : ""}
                     </span>
                   </span>
@@ -286,6 +305,7 @@ function DocumentBody({
   dirtyPackageId: string
   document: DirtyDocument
 }) {
+  const { t } = useTranslation("idp")
   const previewable = canPreviewInline(
     document.file_name,
     document.media_type,
@@ -303,10 +323,9 @@ function DocumentBody({
       <div className="flex h-full items-center justify-center">
         <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border bg-background/60 px-6 py-12 text-center">
           <FileX className="h-8 w-8 text-muted-foreground" />
-          <p className="text-sm font-medium">No inline preview</p>
+          <p className="text-sm font-medium">{t("classification.preview.noInlineTitle")}</p>
           <p className="max-w-sm text-xs text-muted-foreground">
-            {document.media_type} files are attached as references — open externally if you need to
-            peek.
+            {t("classification.preview.noInlineBody", { type: document.media_type })}
           </p>
           <Badge variant="outline" className="text-[10px]">
             {document.media_type}
@@ -316,12 +335,15 @@ function DocumentBody({
     )
   }
 
-  if (content.isLoading) return <LoadingState label={`Loading ${document.file_name}…`} />
+  if (content.isLoading)
+    return (
+      <LoadingState label={t("classification.preview.loadingFile", { name: document.file_name })} />
+    )
 
   if (content.error || !content.data) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-destructive">
-        Failed to load document content.
+        {t("classification.preview.loadFailed")}
       </div>
     )
   }

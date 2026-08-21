@@ -189,7 +189,7 @@ describe("ImportOptionsFields", () => {
       }),
     )
 
-    expect(screen.queryByText("Additional AI context")).toBeNull()
+    expect(screen.queryByText("Dodatkowy kontekst dla AI")).toBeNull()
   })
 
   it("renders Additional AI context when the feature flag exposes it", () => {
@@ -202,7 +202,7 @@ describe("ImportOptionsFields", () => {
       }),
     )
 
-    expect(screen.getByText("Additional AI context")).not.toBeNull()
+    expect(screen.getByText("Dodatkowy kontekst dla AI")).not.toBeNull()
   })
 
   it("renders Packaging mode when the feature flag exposes it", () => {
@@ -215,7 +215,7 @@ describe("ImportOptionsFields", () => {
       }),
     )
 
-    expect(screen.getByText("Packaging mode")).not.toBeNull()
-    expect(screen.getByText("Auto by B/L")).not.toBeNull()
+    expect(screen.getByText("Tryb liczenia opakowań")).not.toBeNull()
+    expect(screen.getByText("Automatycznie wg B/L")).not.toBeNull()
   })
 })

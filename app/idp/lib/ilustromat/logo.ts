@@ -15,9 +15,14 @@ import sharp from "sharp"
 const LOGO_RASTER_HEIGHT = 400
 
 export class InvalidLogoError extends Error {
+  /** Diagnostyka od sharpa — pole STRUKTURALNE, żeby kontroler wstawił ją do
+   *  przetłumaczonego zdania zamiast przepuszczać `message` na ekran. */
+  readonly detail: string
+
   constructor(reason: string) {
     super(`Nie udało się odczytać pliku logo: ${reason}`)
     this.name = "InvalidLogoError"
+    this.detail = reason
   }
 }
 

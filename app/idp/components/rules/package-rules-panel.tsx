@@ -43,8 +43,9 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import { RULE_TRIGGER_LABEL } from "./labels"
+import { RULE_TRIGGER_LABEL_KEY } from "./labels"
 
 const TRIGGER_AUTO: RuleTrigger = "auto_on_extraction"
 
@@ -69,6 +70,7 @@ interface PackageRulesPanelProps {
 }
 
 export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps) {
+  const { t } = useTranslation(["idp", "common"])
   const attachments = usePackageRuleAttachments(packageId)
   const attach = useAttachRule(packageId)
   const detach = useDetachRule(packageId)
@@ -87,14 +89,14 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
 
   const onAttach = () => {
     if (!pickedRuleId) {
-      toast.error("Pick a rule first.")
+      toast.error(t("rules.attachments.toasts.pickFirst"))
       return
     }
     attach.mutate(
       { rule_id: pickedRuleId, trigger: pickedTrigger },
       {
         onSuccess: () => {
-          toast.success("Rule attached")
+          toast.success(t("rules.attachments.toasts.attached"))
           setPickerOpen(false)
           setPickedRuleId("")
         },
@@ -108,37 +110,31 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">
-          Rules transform extracted data after analysis. Auto-triggered rules run on every
-          extraction; manual rules require explicit run.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("rules.attachments.intro")}</p>
         {canEdit ? (
           <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
             <Button size="sm" onClick={() => setPickerOpen(true)}>
               <Plus className="mr-1.5 h-3.5 w-3.5" />
-              Attach rule
+              {t("rules.attachments.attach")}
             </Button>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Attach a rule</DialogTitle>
-                <DialogDescription>
-                  Pick from active rules. Manual triggers require explicit run; auto runs on every
-                  extraction.
-                </DialogDescription>
+                <DialogTitle>{t("rules.attachments.dialogTitle")}</DialogTitle>
+                <DialogDescription>{t("rules.attachments.dialogDescription")}</DialogDescription>
               </DialogHeader>
               <div className="space-y-3">
                 <div className="space-y-1">
                   <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Rule
+                    {t("rules.attachments.ruleLabel")}
                   </Label>
                   <Select value={pickedRuleId} onValueChange={setPickedRuleId}>
                     <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Pick a rule…" />
+                      <SelectValue placeholder={t("rules.attachments.rulePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       {availableRules.length === 0 ? (
                         <SelectItem value="none" disabled>
-                          No more active rules to attach
+                          {t("rules.attachments.noneAvailable")}
                         </SelectItem>
                       ) : (
                         availableRules.map((r) => (
@@ -152,7 +148,7 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Trigger
+                    {t("rules.attachments.triggerLabel")}
                   </Label>
                   <Select
                     value={pickedTrigger}
@@ -162,9 +158,9 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {RULE_TRIGGER.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {RULE_TRIGGER_LABEL[t]}
+                      {RULE_TRIGGER.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {t(RULE_TRIGGER_LABEL_KEY[option])}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -173,13 +169,13 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
               </div>
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setPickerOpen(false)}>
-                  Cancel
+                  {t("common:actions.cancel")}
                 </Button>
                 <Button onClick={onAttach} disabled={attach.isPending || !pickedRuleId}>
                   {attach.isPending ? (
                     <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                   ) : null}
-                  Attach
+                  {t("rules.attachments.confirm")}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -190,8 +186,8 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
       {(items ?? []).length === 0 ? (
         <EmptyState
           icon={ScrollText}
-          title="No rules attached"
-          description="Attach a rule to transform extracted data — allocations, aggregations, lookups."
+          title={t("rules.attachments.emptyTitle")}
+          description={t("rules.attachments.emptyDescription")}
         />
       ) : (
         <div className="space-y-2">
@@ -210,12 +206,16 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
                       </Link>
                       <Badge variant="outline">v{att.rule_version}</Badge>
                       <Badge variant={att.trigger === TRIGGER_AUTO ? "default" : "secondary"}>
-                        {RULE_TRIGGER_LABEL[att.trigger]}
+                        {t(RULE_TRIGGER_LABEL_KEY[att.trigger])}
                       </Badge>
                     </div>
                     <span className="text-[11px] text-muted-foreground">
-                      Attached {formatAbsolute(att.attached_at, "yyyy-MM-dd")} · last run{" "}
-                      {att.last_executed_at ? formatAbsolute(att.last_executed_at) : "never"}
+                      {t("rules.attachments.attachedAt", {
+                        date: formatAbsolute(att.attached_at, "yyyy-MM-dd"),
+                        lastRun: att.last_executed_at
+                          ? formatAbsolute(att.last_executed_at)
+                          : t("rules.attachments.never"),
+                      })}
                     </span>
                   </div>
                 </div>
@@ -232,14 +232,17 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
                         variant="ghost"
                         onClick={() => {
                           runRule.mutate(att.id, {
-                            onSuccess: () => toast.success(`Ran ${att.rule_name}`),
+                            onSuccess: () =>
+                              toast.success(
+                                t("rules.attachments.toasts.ran", { name: att.rule_name }),
+                              ),
                             onError: (err) => toastApiError(err),
                           })
                         }}
                         disabled={runRule.isPending}
                       >
                         <PlayCircle className="mr-1.5 h-3.5 w-3.5" />
-                        Run
+                        {t("rules.attachments.run")}
                       </Button>
                       <Button
                         size="sm"
@@ -247,7 +250,7 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
                         className="text-muted-foreground hover:text-destructive"
                         onClick={() => {
                           detach.mutate(att.id, {
-                            onSuccess: () => toast.success("Detached"),
+                            onSuccess: () => toast.success(t("rules.attachments.toasts.detached")),
                             onError: (err) => toastApiError(err),
                           })
                         }}

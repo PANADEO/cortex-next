@@ -12,7 +12,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 import { Fragment, useEffect, useId, useState } from "react"
 import { useForm } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { z } from "zod"
+
+/** `t` wędruje parametrem tam, gdzie kod nie jest komponentem. */
+type Translate = ReturnType<typeof useTranslation>["t"]
 
 const textField = z.string().max(255)
 
@@ -60,12 +64,27 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 type FieldName = keyof FormValues
 
-class JsonListError extends Error {}
+/** Niesie KLUCZ i nazwę pola — napis powstaje dopiero w komponencie. */
+class JsonListError extends Error {
+  constructor(
+    readonly messageKey: string,
+    readonly label: string,
+  ) {
+    super(`${label}: ${messageKey}`)
+  }
+}
 
 interface FieldSpec {
   name: FieldName
-  label: string
+  /** Nazwa pola formatu SAD/Huzar — identyfikator, nie tłumaczy się. */
+  label?: string
+  /** Klucz przestrzeni `idp` dla etykiet pisanych prozą. */
+  labelKey?: string
   uppercase?: boolean
+}
+
+function fieldLabel(t: Translate, field: FieldSpec): string {
+  return field.labelKey ? t(field.labelKey) : (field.label ?? String(field.name))
 }
 
 const DECLARATION_FIELDS: readonly FieldSpec[] = [
@@ -100,12 +119,15 @@ const ISSUER_FIELDS: readonly FieldSpec[] = [
   { name: "issued_by_phone", label: "IssuedByPhone" },
 ]
 
+// Etykiety prozą idą przez `labelKey`; nazwy pól formatu SAD/Huzar
+// (`EORI`, `TIN`, `REGON`, `TypeOfPerson`) zostają, bo to identyfikatory
+// schematu, nie tekst interfejsu.
 const AGENT_FIELDS: readonly FieldSpec[] = [
-  { name: "agent_name", label: "Name" },
-  { name: "agent_street", label: "Street" },
-  { name: "agent_city", label: "City" },
-  { name: "agent_postal_code", label: "Postal code" },
-  { name: "agent_country_code", label: "Country code", uppercase: true },
+  { name: "agent_name", labelKey: "transportOrders.fields.name" },
+  { name: "agent_street", labelKey: "transportOrders.fields.street" },
+  { name: "agent_city", labelKey: "transportOrders.fields.city" },
+  { name: "agent_postal_code", labelKey: "transportOrders.fields.postalCode" },
+  { name: "agent_country_code", labelKey: "transportOrders.fields.countryCode", uppercase: true },
   { name: "agent_eori", label: "EORI" },
   { name: "agent_tin", label: "TIN" },
   { name: "agent_regon", label: "REGON" },
@@ -137,10 +159,10 @@ function parseDocumentObjects(value: string, label: string): Record<string, unkn
   if (!trimmed) return null
   const parsed = JSON.parse(trimmed) as unknown
   if (!Array.isArray(parsed)) {
-    throw new JsonListError(`${label} must be a JSON list`)
+    throw new JsonListError("transportOrders.sad.mustBeJsonList", label)
   }
   if (!parsed.every((item) => item !== null && typeof item === "object" && !Array.isArray(item))) {
-    throw new JsonListError(`${label} items must be JSON objects`)
+    throw new JsonListError("transportOrders.sad.itemsMustBeObjects", label)
   }
   return parsed as Record<string, unknown>[]
 }
@@ -292,6 +314,7 @@ interface Props {
 }
 
 export function SadContextEditor({ order, canEdit, isSaving = false, onSave }: Props) {
+  const { t } = useTranslation(["idp", "common"])
   const idPrefix = useId()
   const [jsonError, setJsonError] = useState<string | null>(null)
   const defaults = toDefaults(order.sad_context)
@@ -313,8 +336,12 @@ export function SadContextEditor({ order, canEdit, isSaving = false, onSave }: P
       await onSave(request)
       form.reset(values)
     } catch (err) {
-      if (err instanceof SyntaxError || err instanceof JsonListError) {
-        setJsonError(err.message)
+      if (err instanceof JsonListError) {
+        setJsonError(t(err.messageKey, { label: err.label }))
+        return
+      }
+      if (err instanceof SyntaxError) {
+        setJsonError(t("transportOrders.sad.invalidJson", { detail: err.message }))
         return
       }
       throw err
@@ -331,14 +358,14 @@ export function SadContextEditor({ order, canEdit, isSaving = false, onSave }: P
         <h3 className="text-sm font-semibold">SAD / Huzar</h3>
         <form onSubmit={submit} className="space-y-5">
           <FieldGroup
-            title="Declaration"
+            title={t("transportOrders.sad.declaration")}
             fields={DECLARATION_FIELDS}
             form={form}
             idPrefix={idPrefix}
             canEdit={canEdit}
           />
           <FieldGroup
-            title="Transport"
+            title={t("transportOrders.sad.transport")}
             fields={TRANSPORT_FIELDS}
             form={form}
             idPrefix={idPrefix}
@@ -346,14 +373,14 @@ export function SadContextEditor({ order, canEdit, isSaving = false, onSave }: P
           />
           <div className="grid gap-4 lg:grid-cols-2">
             <FieldGroup
-              title="Field 54"
+              title={t("transportOrders.sad.field54")}
               fields={ISSUER_FIELDS}
               form={form}
               idPrefix={idPrefix}
               canEdit={canEdit}
             />
             <FieldGroup
-              title="Agent"
+              title={t("transportOrders.sad.agent")}
               fields={AGENT_FIELDS}
               form={form}
               idPrefix={idPrefix}
@@ -361,7 +388,7 @@ export function SadContextEditor({ order, canEdit, isSaving = false, onSave }: P
             />
           </div>
           <FieldGroup
-            title="Defaults"
+            title={t("transportOrders.sad.defaults")}
             fields={DEFAULT_FIELDS}
             form={form}
             idPrefix={idPrefix}
@@ -393,11 +420,11 @@ export function SadContextEditor({ order, canEdit, isSaving = false, onSave }: P
                 onClick={() => form.reset(defaults)}
                 disabled={disableActions}
               >
-                Reset
+                {t("transportOrders.form.reset")}
               </Button>
               <Button type="submit" size="sm" disabled={disableActions}>
                 {isSaving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-                Save
+                {t("common:actions.save")}
               </Button>
             </div>
           ) : null}
@@ -416,6 +443,7 @@ interface FieldGroupProps {
 }
 
 function FieldGroup({ title, fields, form, idPrefix, canEdit }: FieldGroupProps) {
+  const { t } = useTranslation("idp")
   if (!canEdit) {
     return (
       <section className="space-y-2">
@@ -425,7 +453,7 @@ function FieldGroup({ title, fields, form, idPrefix, canEdit }: FieldGroupProps)
         <dl className="grid grid-cols-[10rem_1fr] gap-y-1 text-sm md:grid-cols-[10rem_1fr_10rem_1fr]">
           {fields.map((field) => (
             <Fragment key={field.name}>
-              <dt className="text-muted-foreground">{field.label}</dt>
+              <dt className="text-muted-foreground">{fieldLabel(t, field)}</dt>
               <dd className="truncate font-mono text-xs">{form.getValues(field.name) || "—"}</dd>
             </Fragment>
           ))}
@@ -446,7 +474,7 @@ function FieldGroup({ title, fields, form, idPrefix, canEdit }: FieldGroupProps)
           return (
             <div key={field.name}>
               <Label htmlFor={fieldId} className="text-xs text-muted-foreground">
-                {field.label}
+                {fieldLabel(t, field)}
               </Label>
               <Input
                 id={fieldId}
@@ -459,7 +487,7 @@ function FieldGroup({ title, fields, form, idPrefix, canEdit }: FieldGroupProps)
               />
               {error ? (
                 <p className="mt-1 text-xs text-destructive">
-                  {String(error.message ?? "Invalid")}
+                  {t(String(error.message ?? "transportOrders.form.invalid"))}
                 </p>
               ) : null}
             </div>

@@ -1,3 +1,4 @@
+import i18n from "@/lib/i18n"
 import { describe, expect, it } from "vitest"
 import { buildUsageReport, type ProxyUsageRow } from "./aggregate"
 import {
@@ -10,6 +11,11 @@ import {
 } from "./csv"
 
 const BOM = "﻿"
+
+// Nagłówki eksportu są tłumaczone, więc test bierze REALNE zasoby w języku
+// źródłowym — nie atrapę. Dzięki temu literówka w kluczu wywala asercję na
+// treści zamiast przechodzić na podmienionym tłumaczeniu.
+const t = i18n.getFixedT("pl", "token-usage")
 
 function row(overrides: Partial<ProxyUsageRow> = {}): ProxyUsageRow {
   return {
@@ -71,18 +77,18 @@ describe("buildGroupCsv", () => {
   ])
 
   it("nagłówek pierwszej kolumny mówi Użytkownik, nie E-mail", () => {
-    const csv = buildGroupCsv(report.byUser, "Użytkownik")
+    const csv = buildGroupCsv(report.byUser, "Użytkownik", t)
 
     expect(csv.split("\r\n")[0]).toContain("Użytkownik")
     expect(csv).not.toContain("E-mail")
   })
 
   it("zawiera kolumnę tokenów rozumowania, której oryginał nie eksportował", () => {
-    expect(buildGroupCsv(report.byUser, "Użytkownik")).toContain("Tokeny rozumowania")
+    expect(buildGroupCsv(report.byUser, "Użytkownik", t)).toContain("Tokeny rozumowania")
   })
 
   it("zachowuje kolejność malejącą i udział z kropką dziesiętną", () => {
-    const lines = buildGroupCsv(report.byUser, "Użytkownik").split("\r\n")
+    const lines = buildGroupCsv(report.byUser, "Użytkownik", t).split("\r\n")
 
     expect(lines[1]).toBe("jan@firma.pl,75,1,1,0,0,3,1,75.0")
     expect(lines[2]).toBe("anna@firma.pl,25,1,1,0,0,1,1,25.0")
@@ -90,7 +96,7 @@ describe("buildGroupCsv", () => {
 
   // Pusty zakres dat to realny przypadek — oryginał wywalał się na nim NameError-em.
   it("pusty wymiar daje sam nagłówek, nie wyjątek", () => {
-    const csv = buildGroupCsv([], "Zakres")
+    const csv = buildGroupCsv([], "Zakres", t)
 
     expect(csv.split("\r\n")).toHaveLength(1)
   })
@@ -99,7 +105,7 @@ describe("buildGroupCsv", () => {
 describe("buildDetailCsv", () => {
   it("niesie komplet czterech wymiarów i pięć liczników", () => {
     const report = buildUsageReport([row({ user_id: "a", scope: "summarizer" })])
-    const lines = buildDetailCsv(report.rows).split("\r\n")
+    const lines = buildDetailCsv(report.rows, t).split("\r\n")
 
     expect(lines[0]).toContain("Aplikacja")
     expect(lines[0]).toContain("Zakres")
@@ -109,7 +115,7 @@ describe("buildDetailCsv", () => {
 
 describe("buildDetailJson", () => {
   const report = buildUsageReport([row({ user_id: "a", total_tokens: 10 })])
-  const json = buildDetailJson(report, { start: "2026-07-01", end: "2026-07-30" })
+  const json = buildDetailJson(report, { start: "2026-07-01", end: "2026-07-30" }, t)
 
   it("niesie zakres dat i strefę, w której proxy parsuje daty", () => {
     const parsed = JSON.parse(json) as Record<string, unknown>

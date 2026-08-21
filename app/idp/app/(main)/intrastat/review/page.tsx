@@ -5,7 +5,10 @@ import { IntrastatDeleteBatchButton } from "@/components/intrastat/delete-batch-
 import { IntrastatDocumentPreviewPanel } from "@/components/intrastat/document-preview-panel"
 import { IntrastatExportButtons } from "@/components/intrastat/export-buttons"
 import { IntrastatLineDetailsDialog } from "@/components/intrastat/line-details-dialog"
-import { IntrastatMatchDetailsPopover } from "@/components/intrastat/match-details-popover"
+import {
+  IntrastatMatchDetailsPopover,
+  formatReviewCount,
+} from "@/components/intrastat/match-details-popover"
 import { IntrastatPeriodInvoicesDialog } from "@/components/intrastat/period-invoices-dialog"
 import {
   IntrastatKindBadge,
@@ -72,6 +75,7 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { toast } from "sonner"
 
@@ -81,16 +85,18 @@ const PREVIEW_VISIBLE_STORAGE_KEY = "intrastat.review.documentPreviewVisible"
 const PREVIEW_SPLIT_STORAGE_KEY = "intrastat-review-document-preview-split"
 const MANUAL_EXCLUSION_REASON = "manual-exclusion"
 const MAX_AI_CONTEXT_LENGTH = 4000
-const MATCH_OPTIONS: Array<{ value: IntrastatCnMatchStatus | "all"; label: string }> = [
-  { value: "all", label: "All match statuses" },
-  { value: "exact", label: "Exact" },
-  { value: "prefix_unique", label: "Prefix" },
-  { value: "description_match", label: "Description" },
-  { value: "semantic_match", label: "Semantic" },
-  { value: "invoice_cn", label: "Invoice CN" },
-  { value: "manual", label: "Manual" },
-  { value: "ambiguous", label: "Ambiguous" },
-  { value: "unmatched", label: "Unmatched" },
+// Same wartości: etykiety biorą się z `getIntrastatMatchLabel`, więc drugi
+// zestaw napisów tutaj rozjeżdżałby się przy pierwszej zmianie.
+const MATCH_OPTIONS: Array<IntrastatCnMatchStatus | "all"> = [
+  "all",
+  "exact",
+  "prefix_unique",
+  "description_match",
+  "semantic_match",
+  "invoice_cn",
+  "manual",
+  "ambiguous",
+  "unmatched",
 ]
 
 type LineFormState = {
@@ -119,6 +125,7 @@ function getBatchParam(): string | null {
 }
 
 export default function IntrastatReviewPage() {
+  const { t } = useTranslation(["intrastat", "common"])
   const router = useRouter()
   const [batchId, setBatchId] = useState("")
   const [page, setPage] = useState(0)
@@ -294,16 +301,21 @@ export default function IntrastatReviewPage() {
         for (const lineId of changedIds) next.delete(lineId)
         return next
       })
+      const count = targetLines.length
       toast.success(
-        `${targetLines.length} line${targetLines.length === 1 ? "" : "s"} ${
-          isExcluded ? "excluded from" : "restored to"
-        } XLSX export`,
+        isExcluded
+          ? count === 1
+            ? t("review.linesExcludedOne")
+            : t("review.linesExcludedMany", { count })
+          : count === 1
+            ? t("review.linesRestoredOne")
+            : t("review.linesRestoredMany", { count }),
       )
     } catch (error) {
       toast.error(
         formatIntrastatError(
           error,
-          isExcluded ? "Excluding lines failed" : "Restoring lines failed",
+          isExcluded ? t("review.excludeFailed") : t("review.restoreFailed"),
         ),
       )
     } finally {
@@ -348,7 +360,7 @@ export default function IntrastatReviewPage() {
       toast.error(
         formatIntrastatError(
           error,
-          currentEditor.mode === "create" ? "Line creation failed" : "Line update failed",
+          currentEditor.mode === "create" ? t("review.createFailed") : t("review.updateFailed"),
         ),
       )
       return
@@ -371,16 +383,16 @@ export default function IntrastatReviewPage() {
         await upsertCnResourceRow.mutateAsync({ payload: resourcePayload })
       } catch (error) {
         if (!isIntrastatErrorDetail(error, "cn-resource-index-conflict")) {
-          toast.error(formatIntrastatError(error, "Line saved, but CN database update failed"))
+          toast.error(formatIntrastatError(error, t("review.cnUpdateFailed")))
           handleCancelEdit()
           return
         }
 
         const shouldReplace = window.confirm(
-          `Index ${resourcePayload.index_value} already has a different CN code. Replace it with ${cn8}?`,
+          t("review.replaceConflictConfirm", { index: resourcePayload.index_value, cn: cn8 }),
         )
         if (!shouldReplace) {
-          toast.success("Intrastat line saved; CN database unchanged")
+          toast.success(t("review.cnUnchanged"))
           handleCancelEdit()
           return
         }
@@ -390,17 +402,15 @@ export default function IntrastatReviewPage() {
             replaceConflict: true,
           })
         } catch (replaceError) {
-          toast.error(
-            formatIntrastatError(replaceError, "Line saved, but CN database update failed"),
-          )
+          toast.error(formatIntrastatError(replaceError, t("review.cnUpdateFailed")))
           handleCancelEdit()
           return
         }
       }
-      toast.success("Intrastat line and CN database updated")
+      toast.success(t("review.lineAndCnUpdated"))
     } else {
       toast.success(
-        currentEditor.mode === "create" ? "Intrastat line created" : "Intrastat line updated",
+        currentEditor.mode === "create" ? t("review.lineCreated") : t("review.lineUpdated"),
       )
     }
     setSelectedSourceFile(savedLine.source_file)
@@ -416,7 +426,7 @@ export default function IntrastatReviewPage() {
     if (editor?.line.id !== line.id) return null
     return (
       <Input
-        aria-label={`${label} ${line.id}`}
+        aria-label={t("review.editorInputLabel", { label, id: line.id })}
         type={options?.type ?? "text"}
         value={editor.form[key]}
         onChange={(event) =>
@@ -436,7 +446,7 @@ export default function IntrastatReviewPage() {
       id: "actions",
       header: () => (
         <Checkbox
-          aria-label="Select all visible lines"
+          aria-label={t("review.selectAllVisible")}
           checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
           disabled={mutationsDisabled || items.length === 0}
           onCheckedChange={(checked) => handleSelectAllVisible(checked === true)}
@@ -447,7 +457,7 @@ export default function IntrastatReviewPage() {
         const isActive = editor?.line.id === row.original.id
         const selectionCheckbox = (
           <Checkbox
-            aria-label={`Select line ${row.original.id}`}
+            aria-label={t("review.selectLine", { id: row.original.id })}
             checked={selectedLineIds.has(row.original.id)}
             disabled={mutationsDisabled || isDraftLine(row.original)}
             onCheckedChange={(checked) => handleLineSelection(row.original.id, checked === true)}
@@ -461,8 +471,8 @@ export default function IntrastatReviewPage() {
               <Button
                 size="sm"
                 variant="ghost"
-                aria-label={`Cancel line ${row.original.id}`}
-                title="Cancel"
+                aria-label={t("review.cancelLine", { id: row.original.id })}
+                title={t("review.cancelLineTitle")}
                 disabled={isSaving}
                 onClick={(event) => {
                   event.stopPropagation()
@@ -474,8 +484,8 @@ export default function IntrastatReviewPage() {
               <Button
                 size="sm"
                 variant="ghost"
-                aria-label={`Save line ${row.original.id}`}
-                title="Save line"
+                aria-label={t("review.saveLine", { id: row.original.id })}
+                title={t("review.saveLineTitle")}
                 disabled={isSaving}
                 onClick={(event) => {
                   event.stopPropagation()
@@ -492,8 +502,8 @@ export default function IntrastatReviewPage() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  aria-label={`Save line ${row.original.id} and add to CN database`}
-                  title="Save and add to CN database"
+                  aria-label={t("review.saveLineToCn", { id: row.original.id })}
+                  title={t("review.saveLineToCnTitle")}
                   disabled={isSaving || !canSaveToCnResource}
                   onClick={(event) => {
                     event.stopPropagation()
@@ -512,8 +522,8 @@ export default function IntrastatReviewPage() {
             <Button
               size="sm"
               variant="ghost"
-              aria-label={`View line ${row.original.id}`}
-              title="View details"
+              aria-label={t("review.viewLine", { id: row.original.id })}
+              title={t("review.viewLineTitle")}
               disabled={Boolean(editor)}
               onClick={(event) => {
                 event.stopPropagation()
@@ -525,8 +535,8 @@ export default function IntrastatReviewPage() {
             <Button
               size="sm"
               variant="ghost"
-              aria-label={`Edit line ${row.original.id}`}
-              title="Edit line"
+              aria-label={t("review.editLine", { id: row.original.id })}
+              title={t("review.editLineTitle")}
               disabled={mutationsDisabled}
               onClick={(event) => {
                 event.stopPropagation()
@@ -538,8 +548,8 @@ export default function IntrastatReviewPage() {
             <Button
               size="sm"
               variant="ghost"
-              aria-label={`Add line after ${row.original.id}`}
-              title="Add line to this invoice"
+              aria-label={t("review.addLineAfter", { id: row.original.id })}
+              title={t("review.addLineTitle")}
               disabled={mutationsDisabled}
               onClick={(event) => {
                 event.stopPropagation()
@@ -554,13 +564,13 @@ export default function IntrastatReviewPage() {
     },
     {
       accessorKey: "lp",
-      header: "LP",
+      header: t("review.columnLp"),
       size: 60,
       cell: ({ row }) => <span className="font-mono text-xs">{row.original.lp}</span>,
     },
     {
       accessorKey: "invoice_number",
-      header: "Invoice",
+      header: t("review.columnInvoice"),
       size: 220,
       cell: ({ row }) => (
         <div className="min-w-0">
@@ -574,7 +584,7 @@ export default function IntrastatReviewPage() {
             {row.original.invoice_number}
           </p>
           <p className="truncate text-xs text-muted-foreground">
-            {row.original.invoice_date ?? "No date"}
+            {row.original.invoice_date ?? t("review.noDate")}
           </p>
           <IntrastatCorrectionInfo line={row.original} />
         </div>
@@ -582,11 +592,11 @@ export default function IntrastatReviewPage() {
     },
     {
       accessorKey: "item_index",
-      header: "Index",
+      header: t("review.columnIndex"),
       size: 170,
       cell: ({ row }) =>
         editor?.mode === "create" && editor.line.id === row.original.id ? (
-          renderEditorInput(row.original, "item_index", "Item index", {
+          renderEditorInput(row.original, "item_index", t("fields.itemIndex"), {
             className: "h-8 min-w-36 font-mono",
           })
         ) : (
@@ -595,7 +605,7 @@ export default function IntrastatReviewPage() {
     },
     {
       accessorKey: "cn_code",
-      header: "CN",
+      header: t("review.columnCn"),
       size: 150,
       cell: ({ row }) => {
         if (editor?.line.id !== row.original.id) {
@@ -604,7 +614,7 @@ export default function IntrastatReviewPage() {
         return (
           <div className="relative">
             <Input
-              aria-label={`CN code ${row.original.id}`}
+              aria-label={t("review.cnCodeInputLabel", { id: row.original.id })}
               value={editor.form.cn_code}
               onFocus={() => setCnSuggestionsOpen(true)}
               onChange={(event) => {
@@ -640,7 +650,7 @@ export default function IntrastatReviewPage() {
                 ))}
                 {suggestions.isFetching && (suggestions.data?.items.length ?? 0) === 0 ? (
                   <div className="px-3 py-2 text-xs text-muted-foreground">
-                    Loading suggestions...
+                    {t("review.loadingSuggestions")}
                   </div>
                 ) : null}
               </div>
@@ -651,10 +661,10 @@ export default function IntrastatReviewPage() {
     },
     {
       accessorKey: "description",
-      header: "Description",
+      header: t("review.columnDescription"),
       size: 280,
       cell: ({ row }) =>
-        renderEditorInput(row.original, "description", "Description", {
+        renderEditorInput(row.original, "description", t("fields.description"), {
           className: "h-8 min-w-64",
         }) ?? (
           <span className="block max-w-[260px] truncate">{row.original.description ?? "—"}</span>
@@ -662,101 +672,101 @@ export default function IntrastatReviewPage() {
     },
     {
       accessorKey: "quantity",
-      header: "Quantity",
+      header: t("review.columnQuantity"),
       size: 110,
       cell: ({ row }) =>
-        renderEditorInput(row.original, "quantity", "Quantity", {
+        renderEditorInput(row.original, "quantity", t("fields.quantity"), {
           type: "number",
         }) ?? <span className="whitespace-nowrap">{row.original.quantity ?? "—"}</span>,
     },
     {
       accessorKey: "value",
-      header: "Value",
+      header: t("review.columnValue"),
       size: 120,
       cell: ({ row }) =>
-        renderEditorInput(row.original, "value", "Value", { type: "number" }) ?? (
+        renderEditorInput(row.original, "value", t("fields.value"), { type: "number" }) ?? (
           <span className="whitespace-nowrap">{row.original.value ?? "—"}</span>
         ),
     },
     {
       accessorKey: "currency",
-      header: "Currency",
+      header: t("review.columnCurrency"),
       size: 100,
       cell: ({ row }) =>
-        renderEditorInput(row.original, "currency", "Currency", {
+        renderEditorInput(row.original, "currency", t("fields.currency"), {
           uppercase: true,
         }) ?? <span className="font-mono text-xs">{row.original.currency ?? "—"}</span>,
     },
     {
       accessorKey: "net_weight",
-      header: "Weight",
+      header: t("review.columnWeight"),
       size: 110,
       cell: ({ row }) =>
-        renderEditorInput(row.original, "net_weight", "Net weight", {
+        renderEditorInput(row.original, "net_weight", t("fields.netWeight"), {
           type: "number",
         }) ?? <span className="whitespace-nowrap">{row.original.net_weight ?? "—"}</span>,
     },
     {
       accessorKey: "origin_country",
-      header: "Origin",
+      header: t("review.columnOrigin"),
       size: 100,
       cell: ({ row }) =>
-        renderEditorInput(row.original, "origin_country", "Origin", {
+        renderEditorInput(row.original, "origin_country", t("fields.originCountry"), {
           uppercase: true,
         }) ?? <span className="font-mono text-xs">{row.original.origin_country ?? "—"}</span>,
     },
     {
       accessorKey: "delivery_terms",
-      header: "Delivery",
+      header: t("review.columnDelivery"),
       size: 110,
       cell: ({ row }) =>
-        renderEditorInput(row.original, "delivery_terms", "Delivery terms", {
+        renderEditorInput(row.original, "delivery_terms", t("fields.deliveryTerms"), {
           uppercase: true,
         }) ?? <span className="font-mono text-xs">{row.original.delivery_terms ?? "—"}</span>,
     },
     {
       accessorKey: "vat_number",
-      header: "NIP/VAT",
+      header: t("review.columnVat"),
       size: 150,
       cell: ({ row }) =>
-        renderEditorInput(row.original, "vat_number", "NIP/VAT") ?? (
+        renderEditorInput(row.original, "vat_number", t("fields.vatNumber")) ?? (
           <span className="font-mono text-xs">{row.original.vat_number ?? "—"}</span>
         ),
     },
     {
       id: "export_status",
-      header: "Export",
+      header: t("review.columnExport"),
       size: 150,
       cell: ({ row }) =>
         row.original.is_excluded ? (
           <span
             className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground"
-            title={row.original.exclusion_reason ?? "Excluded from XLSX"}
+            title={row.original.exclusion_reason ?? t("review.excludedFromXlsx")}
           >
             <EyeOff className="h-4 w-4" aria-hidden="true" />
-            Excluded from XLSX
+            {t("review.excludedFromXlsx")}
           </span>
         ) : (
           <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs">
             <Check className="h-4 w-4 text-emerald-600" aria-hidden="true" />
-            Included
+            {t("review.included")}
           </span>
         ),
     },
     {
       accessorKey: "cn_match_status",
-      header: "Match",
+      header: t("review.columnMatch"),
       size: 140,
       cell: ({ row }) =>
         isDraftLine(row.original) ? (
-          <span className="text-xs text-muted-foreground">New line</span>
+          <span className="text-xs text-muted-foreground">{t("review.newLine")}</span>
         ) : (
           <IntrastatMatchDetailsPopover line={row.original} />
         ),
     },
     {
       accessorKey: "alerts",
-      header: "Alerts",
+      header: t("review.columnAlerts"),
       size: 110,
       cell: ({ row }) =>
         row.original.alerts.length > 0 ? (
@@ -766,18 +776,19 @@ export default function IntrastatReviewPage() {
                 <span
                   className="inline-flex cursor-help items-center gap-1.5 whitespace-nowrap"
                   tabIndex={0}
-                  aria-label={formatReviewCount(row.original.alerts.length)}
+                  aria-label={formatReviewCount(t, row.original.alerts.length)}
                 >
                   <AlertTriangle className="h-4 w-4 text-amber-500" aria-hidden="true" />
                   <span className="text-xs text-muted-foreground">
-                    {row.original.alerts.length} field
-                    {row.original.alerts.length === 1 ? "" : "s"}
+                    {row.original.alerts.length === 1
+                      ? t("review.alertFieldCountOne")
+                      : t("review.alertFieldCountMany", { count: row.original.alerts.length })}
                   </span>
                 </span>
               </TooltipTrigger>
               <TooltipContent className="max-w-80 border bg-popover p-3 text-popover-foreground shadow-lg">
                 <p className="mb-2 text-sm font-medium">
-                  {formatReviewCount(row.original.alerts.length)}
+                  {formatReviewCount(t, row.original.alerts.length)}
                 </p>
                 <ul className="space-y-1 text-sm">
                   {row.original.alerts.map((alert) => (
@@ -840,18 +851,18 @@ export default function IntrastatReviewPage() {
         batchId,
         additionalAiContext: additionalAiContext.trim() || null,
       })
-      toast.success("Batch queued for reprocessing")
+      toast.success(t("review.reprocessQueued"))
       setReprocessOpen(false)
     } catch {
-      toast.error("Batch reprocess failed")
+      toast.error(t("review.reprocessFailed"))
     }
   }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <PageHeader
-        title="Intrastat Review"
-        description="Correct CN, weight, VAT, and delivery fields before exporting the importer workbook."
+        title={t("review.title")}
+        description={t("review.description")}
         actions={
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={handleDocumentPreviewToggle}>
@@ -860,7 +871,7 @@ export default function IntrastatReviewPage() {
               ) : (
                 <Eye className="mr-2 h-4 w-4" />
               )}
-              {documentPreviewVisible ? "Hide preview" : "Show preview"}
+              {documentPreviewVisible ? t("review.hidePreview") : t("review.showPreview")}
             </Button>
             <Button
               size="sm"
@@ -873,12 +884,12 @@ export default function IntrastatReviewPage() {
               ) : (
                 <PlayCircle className="mr-2 h-4 w-4" />
               )}
-              Reprocess
+              {t("review.reprocess")}
             </Button>
             <IntrastatExportButtons batchId={batchId} />
             <IntrastatDeleteBatchButton
               batchId={batchId}
-              batchName={selectedBatch.data?.name ?? "this batch"}
+              batchName={selectedBatch.data?.name ?? t("review.thisBatch")}
               disabled={!selectedBatch.data || selectedBatch.data.status === "processing"}
               onDeleted={() => router.push("/intrastat/batches")}
             />
@@ -894,15 +905,12 @@ export default function IntrastatReviewPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reprocess with AI instructions</DialogTitle>
-            <DialogDescription>
-              Run extraction again for all source documents in this batch. Current extracted lines
-              and manual corrections will be replaced.
-            </DialogDescription>
+            <DialogTitle>{t("review.reprocessDialogTitle")}</DialogTitle>
+            <DialogDescription>{t("review.reprocessDialogDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <label htmlFor="intrastat-reprocess-ai-context" className="text-sm font-medium">
-              Additional AI instructions
+              {t("review.aiContextLabel")}
             </label>
             <Textarea
               id="intrastat-reprocess-ai-context"
@@ -910,7 +918,7 @@ export default function IntrastatReviewPage() {
               onChange={(event) => setAdditionalAiContext(event.target.value)}
               maxLength={MAX_AI_CONTEXT_LENGTH}
               className="min-h-32 resize-y"
-              placeholder="For example: Merge each invoice with its matching packing list and treat them as one document. Use the packing list to supplement missing invoice data."
+              placeholder={t("review.aiContextPlaceholder")}
             />
             <p className="text-right text-xs text-muted-foreground">
               {additionalAiContext.length} / {MAX_AI_CONTEXT_LENGTH}
@@ -922,7 +930,7 @@ export default function IntrastatReviewPage() {
               onClick={() => setReprocessOpen(false)}
               disabled={reprocess.isPending}
             >
-              Cancel
+              {t("common:actions.cancel")}
             </Button>
             <Button onClick={handleReprocess} disabled={reprocess.isPending || !batchId}>
               {reprocess.isPending ? (
@@ -930,7 +938,7 @@ export default function IntrastatReviewPage() {
               ) : (
                 <PlayCircle className="mr-2 h-4 w-4" />
               )}
-              Reprocess batch
+              {t("review.reprocessSubmit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -951,7 +959,7 @@ export default function IntrastatReviewPage() {
             <div className="flex shrink-0 flex-wrap items-center gap-3">
               <Select value={batchId} onValueChange={handleBatchChange} disabled={Boolean(editor)}>
                 <SelectTrigger className="h-9 w-[340px]">
-                  <SelectValue placeholder="Choose a batch" />
+                  <SelectValue placeholder={t("review.batchPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {(batches.data?.items ?? []).map((batch) => (
@@ -980,7 +988,7 @@ export default function IntrastatReviewPage() {
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search invoice, index, CN..."
+                  placeholder={t("review.searchPlaceholder")}
                   value={search}
                   onChange={(event) => {
                     setSelectedLineIds(new Set())
@@ -1001,12 +1009,14 @@ export default function IntrastatReviewPage() {
                 }}
               >
                 <SelectTrigger className="h-9 w-[210px]">
-                  <SelectValue placeholder="Match status" />
+                  <SelectValue placeholder={t("review.matchStatusPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {MATCH_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.value === "all" ? option.label : getIntrastatMatchLabel(option.value)}
+                    <SelectItem key={option} value={option}>
+                      {option === "all"
+                        ? t("review.allMatchStatuses")
+                        : getIntrastatMatchLabel(t, option)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1022,7 +1032,7 @@ export default function IntrastatReviewPage() {
                 ) : (
                   <EyeOff className="mr-2 h-4 w-4" />
                 )}
-                Exclude from XLSX
+                {t("review.excludeFromXlsx")}
                 {selectedIncludedLines.length > 0 ? ` (${selectedIncludedLines.length})` : ""}
               </Button>
               <Button
@@ -1036,11 +1046,11 @@ export default function IntrastatReviewPage() {
                 ) : (
                   <Eye className="mr-2 h-4 w-4" />
                 )}
-                Restore to XLSX
+                {t("review.restoreToXlsx")}
                 {selectedExcludedLines.length > 0 ? ` (${selectedExcludedLines.length})` : ""}
               </Button>
               <div className="ml-auto text-xs text-muted-foreground">
-                {lines.isFetching ? "Refreshing..." : `${total} total`}
+                {lines.isFetching ? t("review.refreshing") : t("review.total", { count: total })}
               </div>
             </div>
 
@@ -1063,11 +1073,11 @@ export default function IntrastatReviewPage() {
                 emptyState={
                   <EmptyState
                     icon={TableProperties}
-                    title={batchId ? "No lines in this batch" : "Choose a batch"}
+                    title={batchId ? t("review.emptyNoLines") : t("review.emptyNoBatch")}
                     description={
                       batchId
-                        ? "Lines appear after worker processing finishes."
-                        : "Select an Intrastat batch to review declaration lines."
+                        ? t("review.emptyNoLinesDescription")
+                        : t("review.emptyNoBatchDescription")
                     }
                   />
                 }
@@ -1075,9 +1085,7 @@ export default function IntrastatReviewPage() {
             </div>
 
             {editor ? (
-              <p className="text-xs text-muted-foreground">
-                Save or cancel the active line before changing pages.
-              </p>
+              <p className="text-xs text-muted-foreground">{t("review.pendingEditHint")}</p>
             ) : (
               <Pagination
                 page={page}
@@ -1120,10 +1128,6 @@ export default function IntrastatReviewPage() {
       />
     </div>
   )
-}
-
-function formatReviewCount(count: number): string {
-  return count === 1 ? "1 field requires review" : `${count} fields require review`
 }
 
 function lineFormFromLine(line: IntrastatDeclarationLine): LineFormState {

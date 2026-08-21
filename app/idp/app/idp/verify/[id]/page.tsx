@@ -44,6 +44,7 @@ import {
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { toast } from "sonner"
 
@@ -54,9 +55,12 @@ interface InvoiceTabItem {
   ordinal: number
 }
 
-const READ_ONLY_ACTION_HELP = "This action is available for the assignee or IDP admin."
+/** `t` wędruje parametrem — to nie komponent, hooka tu wołać nie wolno. */
+type Translate = ReturnType<typeof useTranslation>["t"]
 
 export default function VerifyWorkspacePage() {
+  const { t } = useTranslation("idp")
+  const readOnlyActionHelp = t("verify.readOnlyActionHelp")
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ""
   const me = useMe()
@@ -115,7 +119,7 @@ export default function VerifyWorkspacePage() {
         invoiceId: activeInvoiceTab.invoice.id,
         body,
       })
-      toast.success(`Saved ${body.lines.length} line(s)`)
+      toast.success(t("verify.savedLines", { count: body.lines.length }))
     } catch (err) {
       toastApiError(err)
       throw err
@@ -125,7 +129,7 @@ export default function VerifyWorkspacePage() {
   const handleUnlock = async () => {
     try {
       await unlock.mutateAsync()
-      toast.success("Package unlocked")
+      toast.success(t("verify.packageUnlocked"))
       await Promise.all([pkgQuery.refetch(), transitions.refetch()])
     } catch (err) {
       toastApiError(err)
@@ -138,22 +142,22 @@ export default function VerifyWorkspacePage() {
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="sm">
             <Link href={`/idp/packages/${id}`}>
-              <ArrowLeft className="mr-1 h-4 w-4" /> Back to package
+              <ArrowLeft className="mr-1 h-4 w-4" /> {t("verify.backToPackage")}
             </Link>
           </Button>
           <div>
             <h1 className="text-sm font-semibold">
-              {pkg?.package_name ?? pkg?.file_name ?? "Verification workspace"}
+              {pkg?.package_name ?? pkg?.file_name ?? t("verify.workspaceTitle")}
             </h1>
             {!pkg ? (
-              <p className="text-[10px] text-muted-foreground">Loading…</p>
+              <p className="text-[10px] text-muted-foreground">{t("verify.loading")}</p>
             ) : pkg.package_name ? (
               <p className="text-[10px] text-muted-foreground">
                 {pkg.file_name}
-                {!canEdit ? " · Read-only" : ""}
+                {!canEdit ? ` · ${t("verify.readOnly")}` : ""}
               </p>
             ) : !canEdit ? (
-              <p className="text-[10px] text-muted-foreground">Read-only</p>
+              <p className="text-[10px] text-muted-foreground">{t("verify.readOnly")}</p>
             ) : null}
           </div>
         </div>
@@ -162,14 +166,16 @@ export default function VerifyWorkspacePage() {
             size="sm"
             variant="outline"
             onClick={() => setDocumentPreviewVisible((visible) => !visible)}
-            aria-label={documentPreviewVisible ? "Hide document preview" : "Show document preview"}
+            aria-label={
+              documentPreviewVisible ? t("verify.hidePreviewAria") : t("verify.showPreviewAria")
+            }
           >
             {documentPreviewVisible ? (
               <EyeOff className="mr-1.5 h-3.5 w-3.5" />
             ) : (
               <Eye className="mr-1.5 h-3.5 w-3.5" />
             )}
-            {documentPreviewVisible ? "Hide preview" : "Show preview"}
+            {documentPreviewVisible ? t("verify.hidePreview") : t("verify.showPreview")}
           </Button>
           {pkg && !canEdit && showReadOnlyHelp ? (
             <TooltipProvider delayDuration={250}>
@@ -177,23 +183,27 @@ export default function VerifyWorkspacePage() {
                 <TooltipTrigger asChild>
                   <span
                     className="flex items-center gap-1 text-xs text-muted-foreground"
-                    title={READ_ONLY_ACTION_HELP}
+                    title={readOnlyActionHelp}
                   >
                     <Lock className="h-3.5 w-3.5" />
                     {isActiveVerification
-                      ? `Only ${pkg.assignee ?? "assignee"} can edit`
-                      : "Start verification to edit"}
+                      ? t("verify.onlyAssigneeCanEdit", {
+                          assignee: pkg.assignee ?? t("verify.assigneeFallback"),
+                        })
+                      : t("verify.startToEdit")}
                   </span>
                 </TooltipTrigger>
-                <TooltipContent>{READ_ONLY_ACTION_HELP}</TooltipContent>
+                <TooltipContent>{readOnlyActionHelp}</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           ) : pkg && !canEdit ? (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Lock className="h-3.5 w-3.5" />
               {isActiveVerification
-                ? `Only ${pkg.assignee ?? "assignee"} can edit`
-                : "Start verification to edit"}
+                ? t("verify.onlyAssigneeCanEdit", {
+                    assignee: pkg.assignee ?? t("verify.assigneeFallback"),
+                  })
+                : t("verify.startToEdit")}
             </span>
           ) : null}
           {pkg && !canEdit && canUnlock ? (
@@ -203,17 +213,17 @@ export default function VerifyWorkspacePage() {
               ) : (
                 <LockOpen className="mr-1.5 h-3.5 w-3.5" />
               )}
-              Unlock package
+              {t("verify.unlockPackage")}
             </Button>
           ) : null}
         </div>
       </header>
       <div className="min-h-0 flex-1">
         {pkgQuery.isLoading || toQuery.isLoading ? (
-          <LoadingState label="Loading workspace…" />
+          <LoadingState label={t("verify.loadingWorkspace")} />
         ) : !activeInvoiceTab ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            No invoices extracted for this package.
+            {t("verify.noInvoices")}
           </div>
         ) : (
           <PanelGroup
@@ -271,6 +281,7 @@ function InvoiceTabs({
   value: string
   onValueChange: (value: string) => void
 }) {
+  const { t } = useTranslation("idp")
   const scrollerRef = useRef<HTMLDivElement | null>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
@@ -323,7 +334,7 @@ function InvoiceTabs({
           <button
             type="button"
             onClick={() => handleScrollBy(-200)}
-            aria-label="Scroll invoice tabs left"
+            aria-label={t("verify.scrollTabsLeft")}
             className="flex h-8 w-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -339,14 +350,14 @@ function InvoiceTabs({
               key={item.key}
               value={item.key}
               data-tab-key={item.key}
-              title={invoiceTabLabel(item)}
+              title={invoiceTabLabel(t, item)}
               onClick={() => onValueChange(item.key)}
               className={cn(
                 "inline-flex max-w-[220px] shrink-0 items-center gap-1.5 rounded-none rounded-t-md border-x border-t border-transparent px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-border data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-none",
               )}
             >
               <FileText className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{invoiceTabLabel(item)}</span>
+              <span className="truncate">{invoiceTabLabel(t, item)}</span>
             </TabsTrigger>
           ))}
         </TabsList>
@@ -354,7 +365,7 @@ function InvoiceTabs({
           <button
             type="button"
             onClick={() => handleScrollBy(200)}
-            aria-label="Scroll invoice tabs right"
+            aria-label={t("verify.scrollTabsRight")}
             className="flex h-8 w-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
           >
             <ChevronRight className="h-4 w-4" />
@@ -368,7 +379,7 @@ function InvoiceTabs({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 shrink-0"
-                aria-label="Show all invoices"
+                aria-label={t("verify.showAllInvoices")}
               >
                 <ChevronDown className="h-4 w-4" />
               </Button>
@@ -383,8 +394,8 @@ function InvoiceTabs({
                     className={cn("gap-2", isActive && "bg-accent")}
                   >
                     <FileText className="h-3.5 w-3.5 shrink-0" />
-                    <span className="max-w-[280px] truncate" title={invoiceTabLabel(item)}>
-                      {invoiceTabLabel(item)}
+                    <span className="max-w-[280px] truncate" title={invoiceTabLabel(t, item)}>
+                      {invoiceTabLabel(t, item)}
                     </span>
                   </DropdownMenuItem>
                 )
@@ -397,10 +408,8 @@ function InvoiceTabs({
   )
 }
 
-function invoiceTabLabel(item: InvoiceTabItem): string {
-  return item.invoice.invoice_number
-    ? `Invoice ${item.invoice.invoice_number}`
-    : `Invoice ${item.ordinal}`
+function invoiceTabLabel(t: Translate, item: InvoiceTabItem): string {
+  return t("verify.invoiceTab", { label: item.invoice.invoice_number || item.ordinal })
 }
 
 function findInvoiceTabTrigger(root: HTMLElement, key: string): HTMLElement | null {

@@ -1,6 +1,10 @@
 import type { Invoice, InvoiceLine } from "@cortex/types"
-import type { InvoiceLineColumnConfig } from "./invoice-line-columns"
+import type { useTranslation } from "react-i18next"
+import { invoiceLineColumnLabelKey, type InvoiceLineColumnConfig } from "./invoice-line-columns"
 import { invoiceLineToRow, type InvoiceLineRow } from "./invoice-line-row"
+
+/** `t` wędruje parametrem — plik nie jest komponentem. */
+type Translate = ReturnType<typeof useTranslation>["t"]
 
 type InvoiceLineCsvLabel = "grid" | "spreadsheet"
 
@@ -10,6 +14,7 @@ interface CsvColumn {
 }
 
 interface BuildInvoiceLinesCsvOptions {
+  t: Translate
   columns: readonly InvoiceLineColumnConfig[]
   useCustomsCode?: boolean
   label?: InvoiceLineCsvLabel
@@ -21,13 +26,14 @@ export const INVOICE_LINES_CSV_MIME = "text/csv;charset=utf-8"
 export function buildInvoiceLinesCsv(
   lines: readonly InvoiceLine[],
   {
+    t,
     columns,
     useCustomsCode = false,
     label = "grid",
     rowOverrides = {},
   }: BuildInvoiceLinesCsvOptions,
 ): string {
-  const csvColumns = buildCsvColumns(columns, useCustomsCode, label)
+  const csvColumns = buildCsvColumns(t, columns, useCustomsCode, label)
   const rows = [
     csvColumns.map((column) => encodeCsvCell(column.label)).join(","),
     ...lines.map((line) => {
@@ -47,18 +53,20 @@ export function buildInvoiceLinesCsvFileName(invoice: Invoice): string {
 }
 
 function buildCsvColumns(
+  t: Translate,
   columns: readonly InvoiceLineColumnConfig[],
   useCustomsCode: boolean,
   label: InvoiceLineCsvLabel,
 ): CsvColumn[] {
+  const variant = label === "spreadsheet" ? "sheet" : "grid"
   return columns.flatMap<CsvColumn>((column) => {
-    const columnLabel = label === "spreadsheet" ? column.spreadsheetLabel : column.gridLabel
+    const columnLabel = t(invoiceLineColumnLabelKey(column.key, variant))
     if (column.key === "customs_code") {
       return useCustomsCode
         ? [{ key: "cn_code", label: columnLabel }]
         : [
-            { key: "cn_code", label: "CN Code" },
-            { key: "hs", label: "HS Code" },
+            { key: "cn_code", label: t(invoiceLineColumnLabelKey("cn_code", "grid")) },
+            { key: "hs", label: t(invoiceLineColumnLabelKey("hs", "grid")) },
           ]
     }
     return [{ key: column.key as keyof InvoiceLineRow, label: columnLabel }]

@@ -20,6 +20,7 @@ import {
 } from "@cortex/ui"
 import { Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 interface Props {
@@ -36,6 +37,7 @@ type FormState = {
 }
 
 export function IntrastatCnResourceRowDialog({ row, open, onOpenChange }: Props) {
+  const { t } = useTranslation(["intrastat", "common"])
   const createRow = useIntrastatCreateCnResourceRow()
   const updateRow = useIntrastatUpdateCnResourceRow()
   const [form, setForm] = useState<FormState>(() => emptyForm())
@@ -66,21 +68,21 @@ export function IntrastatCnResourceRowDialog({ row, open, onOpenChange }: Props)
       description: form.description.trim(),
     }
     if (!payload.index_value || !/^\d{8}$/.test(payload.cn8) || !payload.description) {
-      toast.error("Enter an item index, an 8-digit CN code and a description")
+      toast.error(t("cnRowDialog.validationFailed"))
       return
     }
 
     try {
       if (row) {
         await updateRow.mutateAsync({ rowId: row.id, payload })
-        toast.success("CN code updated")
+        toast.success(t("cnRowDialog.updated"))
       } else {
         await createRow.mutateAsync(payload)
-        toast.success("CN code added")
+        toast.success(t("cnRowDialog.added"))
       }
       onOpenChange(false)
     } catch (error) {
-      toast.error(formatIntrastatError(error, "CN code could not be saved"))
+      toast.error(formatIntrastatError(error, t("cnRowDialog.saveFailed")))
     }
   }
 
@@ -88,14 +90,12 @@ export function IntrastatCnResourceRowDialog({ row, open, onOpenChange }: Props)
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>{row ? "Edit CN code" : "Add CN code"}</DialogTitle>
-          <DialogDescription>
-            This updates the active CN database and rebuilds its matching index.
-          </DialogDescription>
+          <DialogTitle>{row ? t("cnRowDialog.editTitle") : t("cnRowDialog.addTitle")}</DialogTitle>
+          <DialogDescription>{t("cnRowDialog.description")}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="cn-resource-index">Item index</Label>
+            <Label htmlFor="cn-resource-index">{t("cnRowDialog.indexLabel")}</Label>
             <Input
               id="cn-resource-index"
               value={form.indexValue}
@@ -103,7 +103,7 @@ export function IntrastatCnResourceRowDialog({ row, open, onOpenChange }: Props)
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cn-resource-cn8">CN code (8 digits)</Label>
+            <Label htmlFor="cn-resource-cn8">{t("cnRowDialog.cn8Label")}</Label>
             <Input
               id="cn-resource-cn8"
               inputMode="numeric"
@@ -113,7 +113,7 @@ export function IntrastatCnResourceRowDialog({ row, open, onOpenChange }: Props)
             />
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="cn-resource-cn">Additional CN code</Label>
+            <Label htmlFor="cn-resource-cn">{t("cnRowDialog.cnLabel")}</Label>
             <Input
               id="cn-resource-cn"
               inputMode="numeric"
@@ -122,7 +122,7 @@ export function IntrastatCnResourceRowDialog({ row, open, onOpenChange }: Props)
             />
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="cn-resource-description">Description</Label>
+            <Label htmlFor="cn-resource-description">{t("cnRowDialog.descriptionLabel")}</Label>
             <Textarea
               id="cn-resource-description"
               rows={3}
@@ -133,11 +133,11 @@ export function IntrastatCnResourceRowDialog({ row, open, onOpenChange }: Props)
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
-            Cancel
+            {t("common:actions.cancel")}
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Save
+            {t("common:actions.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

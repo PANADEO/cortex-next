@@ -20,9 +20,14 @@ import {
 import type { ColumnDef } from "@tanstack/react-table"
 import { Download, Pencil } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { z } from "zod"
 import { FieldsForm, type FieldSpec } from "./fields-form"
-import { InvoiceLineColumnsDialog, useVisibleInvoiceLineColumns } from "./invoice-line-columns"
+import {
+  invoiceLineColumnLabelKey,
+  InvoiceLineColumnsDialog,
+  useVisibleInvoiceLineColumns,
+} from "./invoice-line-columns"
 import {
   buildInvoiceLinesCsv,
   buildInvoiceLinesCsvFileName,
@@ -52,47 +57,42 @@ const lineSchema = z.object({
   atr_documents: z.string().max(2000),
 }) satisfies z.ZodType<InvoiceLineRow>
 
+const COMMON_LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
+  { name: "origin_country", labelKey: "transportOrders.fields.origin", span: 1, uppercase: true },
+  { name: "preference_code", labelKey: "transportOrders.fields.pref", span: 1 },
+  { name: "description", labelKey: "transportOrders.fields.description", span: 2 },
+  { name: "description_pl", labelKey: "transportOrders.fields.polishName", span: 2 },
+  { name: "quantity", labelKey: "transportOrders.fields.quantity", span: 1 },
+  { name: "unit_of_measure", labelKey: "transportOrders.fields.uom", span: 1 },
+  { name: "invoice_value", labelKey: "transportOrders.fields.invoiceValue", span: 1 },
+  { name: "net_weight_kg", labelKey: "transportOrders.fields.netWeight", span: 1 },
+  { name: "gross_weight_kg", labelKey: "transportOrders.fields.grossWeight", span: 1 },
+  {
+    name: "estimated_gross_weight_kg",
+    labelKey: "transportOrders.fields.estGrossWeight",
+    span: 1,
+  },
+  { name: "packages_quantity", labelKey: "transportOrders.fields.packagesQty", span: 1 },
+  { name: "packages_type", labelKey: "transportOrders.fields.packagesType", span: 1 },
+  { name: "packages_marking", labelKey: "transportOrders.fields.packagesMarking", span: 2 },
+  { name: "atr_documents", labelKey: "transportOrders.fields.prefDocs", span: 2 },
+]
+
 const LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
-  { name: "line_number", label: "Line #", span: 1 },
-  { name: "po_number", label: "PO number", span: 1 },
-  { name: "product_code", label: "Product code", span: 1 },
-  { name: "cn_code", label: "CN code", span: 1 },
-  { name: "hs", label: "HS code", span: 1 },
-  { name: "origin_country", label: "Origin", span: 1, uppercase: true },
-  { name: "preference_code", label: "Pref.", span: 1 },
-  { name: "description", label: "Description", span: 2 },
-  { name: "description_pl", label: "Polish name", span: 2 },
-  { name: "quantity", label: "Quantity", span: 1 },
-  { name: "unit_of_measure", label: "UoM", span: 1 },
-  { name: "invoice_value", label: "Invoice value", span: 1 },
-  { name: "net_weight_kg", label: "Net weight (kg)", span: 1 },
-  { name: "gross_weight_kg", label: "Gross weight (kg)", span: 1 },
-  { name: "estimated_gross_weight_kg", label: "Estimated gross weight (kg)", span: 1 },
-  { name: "packages_quantity", label: "Packages qty", span: 1 },
-  { name: "packages_type", label: "Packages type", span: 1 },
-  { name: "packages_marking", label: "Packages marking", span: 2 },
-  { name: "atr_documents", label: "Pref. Docs", span: 2 },
+  { name: "line_number", labelKey: "transportOrders.fields.lineNumber", span: 1 },
+  { name: "po_number", labelKey: "transportOrders.fields.poNumber", span: 1 },
+  { name: "product_code", labelKey: "transportOrders.fields.productCode", span: 1 },
+  { name: "cn_code", labelKey: "transportOrders.fields.cnCode", span: 1 },
+  { name: "hs", labelKey: "transportOrders.fields.hsCode", span: 1 },
+  ...COMMON_LINE_FIELDS,
 ]
 
 const CUSTOMS_CODE_LINE_FIELDS: readonly FieldSpec<InvoiceLineRow>[] = [
-  { name: "line_number", label: "Line #", span: 1 },
-  { name: "po_number", label: "PO number", span: 1 },
-  { name: "product_code", label: "Product code", span: 1 },
-  { name: "cn_code", label: "Customs Code", span: 1 },
-  { name: "origin_country", label: "Origin", span: 1, uppercase: true },
-  { name: "preference_code", label: "Pref.", span: 1 },
-  { name: "description", label: "Description", span: 2 },
-  { name: "description_pl", label: "Polish name", span: 2 },
-  { name: "quantity", label: "Quantity", span: 1 },
-  { name: "unit_of_measure", label: "UoM", span: 1 },
-  { name: "invoice_value", label: "Invoice value", span: 1 },
-  { name: "net_weight_kg", label: "Net weight (kg)", span: 1 },
-  { name: "gross_weight_kg", label: "Gross weight (kg)", span: 1 },
-  { name: "estimated_gross_weight_kg", label: "Estimated gross weight (kg)", span: 1 },
-  { name: "packages_quantity", label: "Packages qty", span: 1 },
-  { name: "packages_type", label: "Packages type", span: 1 },
-  { name: "packages_marking", label: "Packages marking", span: 2 },
-  { name: "atr_documents", label: "Pref. Docs", span: 2 },
+  { name: "line_number", labelKey: "transportOrders.fields.lineNumber", span: 1 },
+  { name: "po_number", labelKey: "transportOrders.fields.poNumber", span: 1 },
+  { name: "product_code", labelKey: "transportOrders.fields.productCode", span: 1 },
+  { name: "cn_code", labelKey: "transportOrders.fields.customsCode", span: 1 },
+  ...COMMON_LINE_FIELDS,
 ]
 
 const ATR_FIELD_NAMES = new Set<keyof InvoiceLineRow>(["preference_code", "atr_documents"])
@@ -141,6 +141,7 @@ export function InvoiceLinesGrid({
   useCustomsCode = false,
   showAtrProcessing = true,
 }: Props) {
+  const { t } = useTranslation("idp")
   const [editingId, setEditingId] = useState<string | null>(null)
   const editingLine = invoice.lines.find((l) => l.id === editingId) ?? null
   const { columns: visibleLineColumns } = useVisibleInvoiceLineColumns(showAtrProcessing)
@@ -157,7 +158,7 @@ export function InvoiceLinesGrid({
           return [
             {
               id: "customs_code",
-              header: column.gridLabel,
+              header: t(invoiceLineColumnLabelKey(column.key, "grid")),
               size: column.width,
               cell: ({ row }) => (
                 <span className="font-mono text-xs">{displayCustomsCode(row.original)}</span>
@@ -168,7 +169,7 @@ export function InvoiceLinesGrid({
         return [
           {
             id: "cn_code",
-            header: "CN Code",
+            header: t(invoiceLineColumnLabelKey("cn_code", "grid")),
             size: 110,
             cell: ({ row }) => (
               <span className="font-mono text-xs">{row.original.cn_code ?? "—"}</span>
@@ -176,7 +177,7 @@ export function InvoiceLinesGrid({
           },
           {
             id: "hs",
-            header: "HS Code",
+            header: t(invoiceLineColumnLabelKey("hs", "grid")),
             size: 110,
             cell: ({ row }) => <span className="font-mono text-xs">{row.original.hs ?? "—"}</span>,
           },
@@ -186,7 +187,7 @@ export function InvoiceLinesGrid({
       return [
         {
           id: key,
-          header: column.gridLabel,
+          header: t(invoiceLineColumnLabelKey(column.key, "grid")),
           size: column.width,
           cell: ({ row }) => {
             const isDescription = key === "description" || key === "description_pl"
@@ -214,7 +215,7 @@ export function InvoiceLinesGrid({
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Edit line"
+            aria-label={t("transportOrders.grid.editLine")}
             onClick={(e) => {
               e.stopPropagation()
               setEditingId(row.original.id)
@@ -225,7 +226,7 @@ export function InvoiceLinesGrid({
         ),
       },
     ]
-  }, [canEdit, useCustomsCode, visibleLineColumns])
+  }, [canEdit, t, useCustomsCode, visibleLineColumns])
 
   const handleSaveLine = async (values: InvoiceLineRow): Promise<void> => {
     if (!editingLine) return
@@ -242,6 +243,7 @@ export function InvoiceLinesGrid({
 
   const handleDownloadCsv = () => {
     const csv = buildInvoiceLinesCsv(invoice.lines, {
+      t,
       columns: visibleLineColumns,
       useCustomsCode,
       label: "grid",
@@ -255,7 +257,7 @@ export function InvoiceLinesGrid({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold">Invoice Lines</h4>
+        <h4 className="text-sm font-semibold">{t("transportOrders.grid.title")}</h4>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -264,7 +266,7 @@ export function InvoiceLinesGrid({
             disabled={invoice.lines.length === 0}
           >
             <Download className="mr-1.5 h-4 w-4" />
-            Download CSV
+            {t("transportOrders.grid.downloadCsv")}
           </Button>
           <InvoiceLineColumnsDialog showAtrColumns={showAtrProcessing} />
         </div>
@@ -278,17 +280,17 @@ export function InvoiceLinesGrid({
         {...(onSelectLine ? { onRowClick: onSelectLine } : {})}
         emptyState={
           <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">
-            No invoice lines extracted.
+            {t("transportOrders.grid.empty")}
           </div>
         }
       />
       <Sheet open={Boolean(editingLine)} onOpenChange={(o) => !o && setEditingId(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
           <SheetHeader>
-            <SheetTitle>Edit line {editingLine?.line_number ?? ""}</SheetTitle>
-            <SheetDescription>
-              Changes are submitted with the entire invoice line list.
-            </SheetDescription>
+            <SheetTitle>
+              {t("transportOrders.grid.editLineTitle", { number: editingLine?.line_number ?? "" })}
+            </SheetTitle>
+            <SheetDescription>{t("transportOrders.grid.editLineDescription")}</SheetDescription>
           </SheetHeader>
           {editingLine ? (
             <div className="mt-4">

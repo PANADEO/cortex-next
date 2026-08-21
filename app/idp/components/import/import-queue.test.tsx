@@ -69,7 +69,7 @@ describe("ImportQueue", () => {
   it("defaults notification email from current user and submits it with ZIP import", async () => {
     render(<ImportQueue />)
 
-    fireEvent.click(screen.getByRole("checkbox", { name: "Email result after processing" }))
+    fireEvent.click(screen.getByRole("checkbox", { name: "Wyślij wynik mailem po przetworzeniu" }))
 
     await waitFor(() => {
       expect(screen.getByDisplayValue("user@example.com")).not.toBeNull()
@@ -83,7 +83,7 @@ describe("ImportQueue", () => {
       },
     })
 
-    fireEvent.click(screen.getByRole("button", { name: "Import" }))
+    fireEvent.click(screen.getByRole("button", { name: "Importuj" }))
 
     await waitFor(() => expect(mocks.importPackage).toHaveBeenCalledTimes(1))
     expect(mocks.importPackage).toHaveBeenCalledWith(
@@ -112,7 +112,7 @@ describe("ImportQueue", () => {
 
     render(<ImportQueue />)
 
-    fireEvent.click(screen.getByRole("checkbox", { name: "Email result after processing" }))
+    fireEvent.click(screen.getByRole("checkbox", { name: "Wyślij wynik mailem po przetworzeniu" }))
 
     await waitFor(() => {
       expect(screen.getByDisplayValue("last@example.com")).not.toBeNull()
@@ -127,7 +127,7 @@ describe("ImportQueue", () => {
       },
     })
 
-    fireEvent.click(screen.getByRole("button", { name: "Import" }))
+    fireEvent.click(screen.getByRole("button", { name: "Importuj" }))
 
     await waitFor(() => expect(mocks.importPackage).toHaveBeenCalledTimes(1))
     expect(mocks.importPackage).toHaveBeenCalledWith(

@@ -55,6 +55,7 @@ import {
   configDtoToFormValues,
   formValuesToUpdateRequest,
   geoScoreSettingsSchema,
+  invalidBulletPatterns,
   type GeoScoreSettingsFormValues,
 } from "../config-schema"
 import { useResetGeoScoreConfig, useUpdateGeoScoreConfig } from "../hooks"
@@ -152,9 +153,12 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
               />
             </div>
           ))}
+          {/* Schemat oddaje KLUCZ (żyje na poziomie modułu, więc `t` tam nie
+              istnieje) — wartość do `{{sum}}` dokładamy tutaj, bo tu suma jest
+              już policzona na potrzeby paska wyżej. */}
           {form.formState.errors.weightStatistics ? (
             <p className="text-xs text-destructive">
-              {form.formState.errors.weightStatistics.message}
+              {t(form.formState.errors.weightStatistics.message as string, { sum: weightSum })}
             </p>
           ) : null}
         </CardContent>
@@ -239,7 +243,7 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
             />
             {form.formState.errors.actionVerbs ? (
               <p className="text-xs text-destructive">
-                {form.formState.errors.actionVerbs.message as string}
+                {t(form.formState.errors.actionVerbs.message as string)}
               </p>
             ) : null}
           </div>
@@ -261,7 +265,7 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
             />
             {form.formState.errors.subjectiveWords ? (
               <p className="text-xs text-destructive">
-                {form.formState.errors.subjectiveWords.message as string}
+                {t(form.formState.errors.subjectiveWords.message as string)}
               </p>
             ) : null}
           </div>
@@ -311,7 +315,9 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
                 />
                 {form.formState.errors.bulletPatterns ? (
                   <p className="text-xs text-destructive">
-                    {form.formState.errors.bulletPatterns.message as string}
+                    {t(form.formState.errors.bulletPatterns.message as string, {
+                      pattern: invalidBulletPatterns(form.watch("bulletPatterns")).join(", "),
+                    })}
                   </p>
                 ) : null}
               </div>

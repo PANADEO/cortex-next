@@ -6,37 +6,29 @@ import type {
   IntrastatTransactionKind,
 } from "@/lib/intrastat/types"
 import { Badge } from "@cortex/ui"
+import type { TFunction } from "i18next"
+import { useTranslation } from "react-i18next"
 
-const STATUS_LABELS: Record<IntrastatBatchStatus, string> = {
-  queued: "Queued",
-  processing: "Processing",
-  ready: "Ready",
-  needs_review: "Needs review",
-  failed: "Failed",
+// `t` przychodzi argumentem, bo te dwie funkcje wołają też definicje kolumn
+// tabeli — zwykłe funkcje, nie komponenty, więc hook nie ma się gdzie zaczepić.
+export function getIntrastatStatusLabel(
+  t: TFunction<"intrastat">,
+  status: IntrastatBatchStatus,
+): string {
+  return t(`status.${status}`)
 }
 
-const MATCH_LABELS: Record<IntrastatCnMatchStatus, string> = {
-  exact: "Exact",
-  prefix_unique: "Closest index",
-  description_match: "Description",
-  semantic_match: "Semantic",
-  invoice_cn: "Invoice CN",
-  manual: "Manual",
-  ambiguous: "Ambiguous",
-  unmatched: "Unmatched",
-}
-
-export function getIntrastatStatusLabel(status: IntrastatBatchStatus): string {
-  return STATUS_LABELS[status]
-}
-
-export function getIntrastatMatchLabel(status: IntrastatCnMatchStatus): string {
-  return MATCH_LABELS[status]
+export function getIntrastatMatchLabel(
+  t: TFunction<"intrastat">,
+  status: IntrastatCnMatchStatus,
+): string {
+  return t(`match.${status}`)
 }
 
 export function IntrastatStatusBadge({ status }: { status: IntrastatBatchStatus }) {
+  const { t } = useTranslation("intrastat")
   const variant = status === "failed" ? "destructive" : status === "ready" ? "secondary" : "outline"
-  return <Badge variant={variant}>{STATUS_LABELS[status]}</Badge>
+  return <Badge variant={variant}>{getIntrastatStatusLabel(t, status)}</Badge>
 }
 
 export function IntrastatMatchBadge({
@@ -46,6 +38,7 @@ export function IntrastatMatchBadge({
   status: IntrastatCnMatchStatus
   confidence?: number | null
 }) {
+  const { t } = useTranslation("intrastat")
   const variant =
     status === "ambiguous" || status === "unmatched"
       ? "destructive"
@@ -56,7 +49,7 @@ export function IntrastatMatchBadge({
     confidence === null || confidence === undefined ? null : Math.round(confidence * 100)
   return (
     <Badge variant={variant} className="whitespace-nowrap">
-      {MATCH_LABELS[status]}
+      {getIntrastatMatchLabel(t, status)}
       {percentage === null ? null : ` ${percentage}%`}
     </Badge>
   )

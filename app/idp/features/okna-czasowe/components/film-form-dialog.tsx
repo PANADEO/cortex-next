@@ -80,7 +80,7 @@ export function FilmFormDialog({
               <Input id="film-title" className="mt-1" {...form.register("title")} />
               {form.formState.errors.title ? (
                 <p className="mt-1 text-xs text-destructive">
-                  {form.formState.errors.title.message}
+                  {t(form.formState.errors.title.message ?? "")}
                 </p>
               ) : null}
             </div>
@@ -89,7 +89,7 @@ export function FilmFormDialog({
               <Input id="film-year" type="number" className="mt-1" {...form.register("year")} />
               {form.formState.errors.year ? (
                 <p className="mt-1 text-xs text-destructive">
-                  {form.formState.errors.year.message}
+                  {t(form.formState.errors.year.message ?? "")}
                 </p>
               ) : null}
             </div>

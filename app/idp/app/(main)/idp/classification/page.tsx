@@ -1,6 +1,6 @@
 "use client"
 
-import { DIRTY_STATUS_LABEL } from "@/components/classification/labels"
+import { DIRTY_STATUS_LABEL_KEY } from "@/components/classification/labels"
 import { useDirtyPackages } from "@cortex/api"
 import {
   DIRTY_PACKAGE_STATUS,
@@ -40,13 +40,14 @@ import {
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 type DirtySortField = "created_date" | "name" | "status"
 
-const SORT_FIELDS: ReadonlyArray<{ value: DirtySortField; label: string }> = [
-  { value: "created_date", label: "Created date" },
-  { value: "name", label: "Name" },
-  { value: "status", label: "Status" },
+const SORT_FIELDS: ReadonlyArray<{ value: DirtySortField; labelKey: string }> = [
+  { value: "created_date", labelKey: "classification.list.sortCreated" },
+  { value: "name", labelKey: "classification.list.sortName" },
+  { value: "status", labelKey: "classification.list.sortStatus" },
 ]
 
 const STATUS_BADGE_VARIANT: Record<
@@ -77,11 +78,12 @@ const STATUS_BADGE_VARIANT: Record<
 }
 
 function StatusBadge({ status }: { status: DirtyPackageStatus }) {
+  const { t } = useTranslation("idp")
   const { className, icon: Icon, animate } = STATUS_BADGE_VARIANT[status]
   return (
     <Badge variant="outline" className={className}>
       <Icon className={`mr-1 h-3 w-3 ${animate ? "animate-spin" : ""}`} />
-      {DIRTY_STATUS_LABEL[status]}
+      {t(DIRTY_STATUS_LABEL_KEY[status])}
     </Badge>
   )
 }
@@ -89,6 +91,7 @@ function StatusBadge({ status }: { status: DirtyPackageStatus }) {
 const PAGE_SIZE = 10
 
 export default function ClassificationPage() {
+  const { t } = useTranslation("idp")
   const flagState = useFeatureFlagState("idp.classification")
   const [page, setPage] = useState(0)
   const [status, setStatus] = useState<DirtyPackageStatus | "all">("all")
@@ -122,7 +125,7 @@ export default function ClassificationPage() {
       {
         id: "name",
         accessorKey: "name",
-        header: "Name",
+        header: t("classification.list.columnName"),
         cell: ({ row }) => (
           <Link
             href={`/idp/classification/${row.original.id}`}
@@ -135,7 +138,7 @@ export default function ClassificationPage() {
       {
         id: "id",
         accessorKey: "id",
-        header: "ID",
+        header: t("classification.list.columnId"),
         size: 140,
         cell: ({ row }) => (
           <span className="font-mono text-[10px] text-muted-foreground">{row.original.id}</span>
@@ -143,7 +146,7 @@ export default function ClassificationPage() {
       },
       {
         id: "customer",
-        header: "Customer",
+        header: t("classification.list.columnCustomer"),
         size: 180,
         cell: ({ row }) =>
           row.original.customer_tag ? (
@@ -154,20 +157,20 @@ export default function ClassificationPage() {
       },
       {
         id: "status",
-        header: "Status",
+        header: t("classification.list.columnStatus"),
         size: 220,
         cell: ({ row }) => <StatusBadge status={row.original.status} />,
       },
       {
         id: "documents",
-        header: "Documents",
+        header: t("classification.list.columnDocuments"),
         size: 180,
         cell: ({ row }) => (
           <div className="flex items-center gap-2 text-sm">
             <span>{row.original.document_count}</span>
             {row.original.needs_review_count > 0 ? (
               <Badge variant="outline" className="border-amber-500/30 text-amber-700">
-                {row.original.needs_review_count} need review
+                {t("classification.list.needReview", { count: row.original.needs_review_count })}
               </Badge>
             ) : null}
           </div>
@@ -175,7 +178,7 @@ export default function ClassificationPage() {
       },
       {
         id: "created",
-        header: "Created",
+        header: t("classification.list.columnCreated"),
         size: 160,
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground">
@@ -185,22 +188,22 @@ export default function ClassificationPage() {
       },
       {
         id: "actions",
-        header: () => <span className="sr-only">Actions</span>,
+        header: () => <span className="sr-only">{t("classification.list.columnActions")}</span>,
         cell: ({ row }) => (
           <Button asChild size="sm" variant="ghost">
             <Link href={`/idp/classification/${row.original.id}`}>
-              Open
+              {t("classification.list.open")}
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Link>
           </Button>
         ),
       },
     ],
-    [],
+    [t],
   )
 
   if (flagState.isPending) {
-    return <LoadingState label="Loading classification…" />
+    return <LoadingState label={t("classification.loading")} />
   }
   if (!flagState.enabled) {
     notFound()
@@ -212,15 +215,15 @@ export default function ClassificationPage() {
   return (
     <>
       <PageHeader
-        title="Classification"
-        description="Triage uploaded documents into clean packages with AI assistance."
+        title={t("classification.list.title")}
+        description={t("classification.list.description")}
       />
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by name…"
+              placeholder={t("classification.list.searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 resetPage()
@@ -240,23 +243,25 @@ export default function ClassificationPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="all">{t("classification.list.allStatuses")}</SelectItem>
               {DIRTY_PACKAGE_STATUS.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {DIRTY_STATUS_LABEL[s]}
+                  {t(DIRTY_STATUS_LABEL_KEY[s])}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <div className="ml-auto text-xs text-muted-foreground">
-            {isFetching ? "Refreshing…" : `${total} total`}
+            {isFetching
+              ? t("classification.list.refreshing")
+              : t("classification.list.total", { n: total })}
           </div>
         </div>
 
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
             <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Sort by
+              {t("classification.list.sortBy")}
             </Label>
             <div className="flex items-center gap-2">
               <Select
@@ -272,7 +277,7 @@ export default function ClassificationPage() {
                 <SelectContent>
                   {SORT_FIELDS.map((f) => (
                     <SelectItem key={f.value} value={f.value}>
-                      {f.label}
+                      {t(f.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -285,7 +290,11 @@ export default function ClassificationPage() {
                   resetPage()
                   setSortOrder((o) => (o === "asc" ? "desc" : "asc"))
                 }}
-                aria-label={sortOrder === "asc" ? "Sort ascending" : "Sort descending"}
+                aria-label={
+                  sortOrder === "asc"
+                    ? t("classification.list.sortAscending")
+                    : t("classification.list.sortDescending")
+                }
               >
                 {sortOrder === "asc" ? (
                   <ArrowUp className="h-4 w-4" />
@@ -308,7 +317,7 @@ export default function ClassificationPage() {
                 setSortOrder("desc")
               }}
             >
-              Reset filters
+              {t("classification.list.resetFilters")}
             </Button>
           ) : null}
         </div>
@@ -320,8 +329,8 @@ export default function ClassificationPage() {
           emptyState={
             <EmptyState
               icon={FileSpreadsheet}
-              title="No dirty packages"
-              description="Upload a mixed bundle of documents to start triage."
+              title={t("classification.list.emptyTitle")}
+              description={t("classification.list.emptyDescription")}
             />
           }
           getRowId={(row) => row.id}

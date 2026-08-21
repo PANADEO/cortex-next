@@ -6,13 +6,15 @@ import type {
   IdpBasicPackageStatus,
 } from "@/lib/idp-basic/types"
 import { Badge } from "@cortex/ui"
+import type { TFunction } from "i18next"
+import { useTranslation } from "react-i18next"
 
-const STATUS_LABELS: Record<IdpBasicPackageStatus, string> = {
-  queued: "Queued",
-  processing: "Processing",
-  ready: "Ready",
-  needs_review: "Needs review",
-  failed: "Failed",
+const STATUS_LABEL_KEYS: Record<IdpBasicPackageStatus, string> = {
+  queued: "status.queued",
+  processing: "status.processing",
+  ready: "status.ready",
+  needs_review: "status.needsReview",
+  failed: "status.failed",
 }
 
 const STATUS_CLASS: Record<IdpBasicPackageStatus, string> = {
@@ -23,10 +25,10 @@ const STATUS_CLASS: Record<IdpBasicPackageStatus, string> = {
   failed: "border-destructive/40 bg-destructive/10 text-destructive",
 }
 
-const COMPLETENESS_LABELS: Record<IdpBasicCompletenessStatus, string> = {
-  complete: "Complete",
-  incomplete: "Incomplete",
-  unknown: "Unknown",
+const COMPLETENESS_LABEL_KEYS: Record<IdpBasicCompletenessStatus, string> = {
+  complete: "completeness.complete",
+  incomplete: "completeness.incomplete",
+  unknown: "completeness.unknown",
 }
 
 const COMPLETENESS_CLASS: Record<IdpBasicCompletenessStatus, string> = {
@@ -35,18 +37,19 @@ const COMPLETENESS_CLASS: Record<IdpBasicCompletenessStatus, string> = {
   unknown: "border-muted-foreground/30 bg-muted text-muted-foreground",
 }
 
-const DOCUMENT_TYPE_LABELS: Record<IdpBasicDocumentType, string> = {
-  cost_invoice: "Cost invoice",
-  cmr: "CMR",
-  pod: "POD / proof of delivery",
-  transport_order: "Transport order",
-  other: "Other document",
+const DOCUMENT_TYPE_LABEL_KEYS: Record<IdpBasicDocumentType, string> = {
+  cost_invoice: "documentType.costInvoice",
+  cmr: "documentType.cmr",
+  pod: "documentType.pod",
+  transport_order: "documentType.transportOrder",
+  other: "documentType.other",
 }
 
 export function IdpBasicStatusBadge({ status }: { status: IdpBasicPackageStatus }) {
+  const { t } = useTranslation("idp-basic")
   return (
     <Badge variant="outline" className={`${STATUS_CLASS[status]} whitespace-nowrap`}>
-      {STATUS_LABELS[status]}
+      {getIdpBasicStatusLabel(t, status)}
     </Badge>
   )
 }
@@ -56,41 +59,67 @@ export function IdpBasicCompletenessBadge({
 }: {
   status: IdpBasicCompletenessStatus | null
 }) {
+  const { t } = useTranslation("idp-basic")
   const resolved = status ?? "unknown"
   return (
     <Badge variant="outline" className={`${COMPLETENESS_CLASS[resolved]} whitespace-nowrap`}>
-      {COMPLETENESS_LABELS[resolved]}
+      {t(COMPLETENESS_LABEL_KEYS[resolved])}
     </Badge>
   )
 }
 
-export function getIdpBasicDocumentTypeLabel(type: IdpBasicDocumentType | null): string {
-  return type ? DOCUMENT_TYPE_LABELS[type] : "Unknown"
+export function getIdpBasicDocumentTypeLabel(
+  t: TFunction<"idp-basic">,
+  type: IdpBasicDocumentType | null,
+): string {
+  return t(type ? DOCUMENT_TYPE_LABEL_KEYS[type] : "documentType.unknown")
 }
 
-export function getIdpBasicStatusLabel(status: IdpBasicPackageStatus): string {
-  return STATUS_LABELS[status]
+export function getIdpBasicStatusLabel(
+  t: TFunction<"idp-basic">,
+  status: IdpBasicPackageStatus,
+): string {
+  return t(STATUS_LABEL_KEYS[status])
 }
 
-export function formatIdpBasicDisplayText(value: string): string {
-  const exactLabels: Record<string, string> = {
-    "Brak CMR": "Missing CMR",
-    "Brak POD": "Missing POD",
-    "Brak faktury kosztowej": "Missing cost invoice",
-    "Brak zlecenia transportowego": "Missing transport order",
-    "Nie znaleziono numeru referencyjnego": "Reference number not found",
-  }
-  if (exactLabels[value]) return exactLabels[value]
+/**
+ * Napisy, które backend `idp-basic` przysyła gotową POLSKĄ prozą — ostrzeżenia
+ * AI oraz pozycje `missing_required` / `missing_optional`.
+ *
+ * Polski napis jest tu KLUCZEM DOPASOWANIA, czyli DANĄ z drutu, a nie
+ * etykietą do pokazania. Wynikiem jest `t()`, więc trzeci język dokłada się w
+ * pliku JSON i ten plik zostaje nietknięty. Poprzednia wersja trzymała po
+ * prawej stronie zaszyty angielski — czyli drugi, równoległy mechanizm
+ * tłumaczenia, który przy trzecim języku nie miał dokąd urosnąć.
+ *
+ * Gdy backend zacznie zwracać KODY zamiast prozy, znika tylko lewa kolumna;
+ * klucze i tłumaczenia zostają bez zmian.
+ */
+const BACKEND_TEXT_KEYS: Record<string, string> = {
+  "Brak CMR": "backendText.missingCmr",
+  "Brak POD": "backendText.missingPod",
+  "Brak faktury kosztowej": "backendText.missingCostInvoice",
+  "Brak zlecenia transportowego": "backendText.missingTransportOrder",
+  "Nie znaleziono numeru referencyjnego": "backendText.referenceNotFound",
+}
 
-  const prefixes: Array<[string, string]> = [
-    ["Dokument nierozpoznany:", "Unrecognized document:"],
-    ["Niska pewność klasyfikacji:", "Low classification confidence:"],
-    ["CMR zawiera uwagę lub zastrzeżenie:", "CMR contains a remark or reservation:"],
-    ["Niepełna analiza po maksymalnym zakresie:", "Incomplete analysis after full coverage:"],
-    ["Pominięto nieobsługiwany plik:", "Skipped unsupported file:"],
-  ]
-  for (const [source, replacement] of prefixes) {
-    if (value.startsWith(source)) return value.replace(source, replacement)
+/** Przedrostek z backendu -> klucz. Ogon (nazwa pliku, treść uwagi, wynik
+ *  pewności) jest daną i wchodzi do napisu jako interpolacja `{{detail}}`. */
+const BACKEND_TEXT_PREFIX_KEYS: ReadonlyArray<readonly [string, string]> = [
+  ["Dokument nierozpoznany:", "backendText.unrecognizedDocument"],
+  ["Niska pewność klasyfikacji:", "backendText.lowConfidence"],
+  ["CMR zawiera uwagę lub zastrzeżenie:", "backendText.cmrRemark"],
+  ["Niepełna analiza po maksymalnym zakresie:", "backendText.incompleteAnalysis"],
+  ["Pominięto nieobsługiwany plik:", "backendText.skippedUnsupportedFile"],
+]
+
+export function formatIdpBasicDisplayText(t: TFunction<"idp-basic">, value: string): string {
+  const exactKey = BACKEND_TEXT_KEYS[value]
+  if (exactKey) return t(exactKey)
+
+  for (const [prefix, key] of BACKEND_TEXT_PREFIX_KEYS) {
+    if (!value.startsWith(prefix)) continue
+    return t(key, { detail: value.slice(prefix.length).trim() })
   }
   return value
 }

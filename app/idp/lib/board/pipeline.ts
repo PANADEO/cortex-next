@@ -9,8 +9,6 @@ export type BoardStage = "intake" | "classified" | "processing" | "ready" | "ver
 
 export interface BoardColumnMeta {
   id: BoardStage
-  label: string
-  description: string
   accent: string
   headerBg: string
   headerText: string
@@ -20,8 +18,6 @@ export interface BoardColumnMeta {
 export const BOARD_COLUMNS: readonly BoardColumnMeta[] = [
   {
     id: "processing",
-    label: "Processing",
-    description: "Packages being analysed by AI",
     accent: "before:bg-indigo-500",
     headerBg: "bg-indigo-50 dark:bg-indigo-950/40",
     headerText: "text-indigo-800 dark:text-indigo-200",
@@ -29,8 +25,6 @@ export const BOARD_COLUMNS: readonly BoardColumnMeta[] = [
   },
   {
     id: "ready",
-    label: "Ready",
-    description: "Waiting for human verification",
     accent: "before:bg-emerald-500",
     headerBg: "bg-emerald-50 dark:bg-emerald-950/40",
     headerText: "text-emerald-800 dark:text-emerald-200",
@@ -38,8 +32,6 @@ export const BOARD_COLUMNS: readonly BoardColumnMeta[] = [
   },
   {
     id: "verifying",
-    label: "Verifying",
-    description: "Currently being verified",
     accent: "before:bg-violet-500",
     headerBg: "bg-violet-50 dark:bg-violet-950/40",
     headerText: "text-violet-800 dark:text-violet-200",
@@ -47,8 +39,6 @@ export const BOARD_COLUMNS: readonly BoardColumnMeta[] = [
   },
   {
     id: "done",
-    label: "Exported",
-    description: "Verified, promoted, ready to ship",
     accent: "before:bg-teal-600",
     headerBg: "bg-teal-50 dark:bg-teal-950/40",
     headerText: "text-teal-800 dark:text-teal-200",
@@ -69,7 +59,7 @@ export interface DirtyBoardCard {
   docCount: number
   needsReviewCount: number
   href: string
-  subtitle: string
+  searchText: string
   source: DirtyPackageReadModel
 }
 
@@ -80,12 +70,13 @@ export interface CleanBoardCard {
   title: string
   badgeId: string
   createdDate: string
+  fileName: string | null
   assignee: string | null
   processingState: ProcessingState
   verificationState: VerificationState
   hasError: boolean
   href: string
-  subtitle: string
+  searchText: string
   source: PackageReadModel
 }
 
@@ -118,12 +109,15 @@ function shortId(id: string): string {
   return (cleaned || id).toUpperCase()
 }
 
-function dirtySubtitle(pkg: DirtyPackageReadModel): string {
-  const parts: string[] = []
-  if (pkg.customer_tag) parts.push(pkg.customer_tag)
-  parts.push(`${pkg.document_count} docs`)
-  if (pkg.needs_review_count > 0) parts.push(`${pkg.needs_review_count} need review`)
-  return parts.join(" · ")
+/**
+ * SIANO DLA WYSZUKIWARKI, nie napis dla użytkownika. Podpis karty składa się
+ * dopiero w `kanban-card.tsx`, bo tylko tam jest `t()`; tutaj zostają wyłącznie
+ * dane, po których filtruje `use-pipeline-board`. Człony policzalne („3 docs”)
+ * świadomie wypadły — nikt nie szuka paczki po liczbie dokumentów, a po
+ * przetłumaczeniu i tak nie zgadzałyby się z wpisanym zapytaniem.
+ */
+function joinSearchText(parts: readonly (string | null)[]): string {
+  return parts.filter(Boolean).join(" ")
 }
 
 export function toDirtyCard(pkg: DirtyPackageReadModel): DirtyBoardCard | null {
@@ -140,7 +134,7 @@ export function toDirtyCard(pkg: DirtyPackageReadModel): DirtyBoardCard | null {
     docCount: pkg.document_count,
     needsReviewCount: pkg.needs_review_count,
     href: `/idp/classification/${pkg.id}`,
-    subtitle: dirtySubtitle(pkg),
+    searchText: joinSearchText([pkg.customer_tag]),
     source: pkg,
   }
 }
@@ -150,9 +144,9 @@ export function toCleanCard(pkg: PackageReadModel): CleanBoardCard {
   const hasError =
     pkg.processing_state === "imported_with_error" || pkg.processing_state === "analysis_failed"
   const title = pkg.package_name ?? pkg.file_name
-  const subtitle = pkg.package_name
-    ? `${pkg.file_name} · ${pkg.assignee ?? "Unassigned"}`
-    : (pkg.assignee ?? "Unassigned")
+  // Nazwa pliku trafia do podpisu tylko wtedy, gdy tytułem jest nazwa paczki —
+  // inaczej karta powtarzałaby to samo dwa razy.
+  const fileName = pkg.package_name ? pkg.file_name : null
   return {
     kind: "clean",
     id: pkg.id,
@@ -160,12 +154,13 @@ export function toCleanCard(pkg: PackageReadModel): CleanBoardCard {
     title,
     badgeId: `PKG-${shortId(pkg.id)}`,
     createdDate: pkg.created_date,
+    fileName,
     assignee: pkg.assignee,
     processingState: pkg.processing_state,
     verificationState: pkg.verification_state,
     hasError,
     href: `/idp/packages/${pkg.id}`,
-    subtitle,
+    searchText: joinSearchText([pkg.file_name, pkg.assignee]),
     source: pkg,
   }
 }

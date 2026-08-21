@@ -47,7 +47,7 @@ describe("buildNotifications", () => {
     })
   })
 
-  it("adds Invoice <number> source field for multi-invoice packages and falls back to id when invoice_number is null", () => {
+  it("carries the invoice number for multi-invoice packages and falls back to id when invoice_number is null", () => {
     const result = buildNotifications([
       invoice({
         id: "inv-1",
@@ -62,8 +62,9 @@ describe("buildNotifications", () => {
     ])
 
     expect(result).toHaveLength(2)
-    expect(result[0]?.sourceField).toBe("Invoice INV-0001")
-    expect(result[1]?.sourceField).toBe("Invoice inv-2-uuid")
+    // SAM numer, bez słowa „Invoice” — etykietę składa dopiero `t()` przy renderze.
+    expect(result[0]?.invoiceNumber).toBe("INV-0001")
+    expect(result[1]?.invoiceNumber).toBe("inv-2-uuid")
   })
 })
 

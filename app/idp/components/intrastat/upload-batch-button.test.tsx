@@ -66,9 +66,9 @@ describe("IntrastatUploadBatchButton", () => {
   it("uploads with an existing client and month", async () => {
     const user = await openFilesystemUpload()
 
-    await chooseOption(user, "Transaction kind", "WDT - sales invoices")
-    await chooseOption(user, "Client", "Jabil")
-    await chooseOption(user, "Month", "Czerwiec 2026")
+    await chooseOption(user, "Rodzaj transakcji", "WDT — faktury sprzedaży")
+    await chooseOption(user, "Klient", "Jabil")
+    await chooseOption(user, "Miesiąc", "Czerwiec 2026")
 
     const file = new File(["zip"], "invoices.zip", { type: "application/zip" })
     fireEvent.change(getFileInput(), { target: { files: [file] } })
@@ -87,10 +87,10 @@ describe("IntrastatUploadBatchButton", () => {
   it("combines a new client with an existing month", async () => {
     const user = await openFilesystemUpload()
 
-    await chooseOption(user, "Transaction kind", "WNT - purchase invoices")
-    await chooseOption(user, "Client", "Add new client...")
-    await user.type(screen.getByLabelText("New client name"), "  Somfy  ")
-    await chooseOption(user, "Month", "Lipiec 2026")
+    await chooseOption(user, "Rodzaj transakcji", "WNT — faktury zakupu")
+    await chooseOption(user, "Klient", "Dodaj nowego klienta…")
+    await user.type(screen.getByLabelText("Nazwa nowego klienta"), "  Somfy  ")
+    await chooseOption(user, "Miesiąc", "Lipiec 2026")
 
     const file = new File(["zip"], "invoices.zip", { type: "application/zip" })
     fireEvent.change(getFileInput(), { target: { files: [file] } })
@@ -105,10 +105,10 @@ describe("IntrastatUploadBatchButton", () => {
   it("combines an existing client with a new month", async () => {
     const user = await openFilesystemUpload()
 
-    await chooseOption(user, "Transaction kind", "WNT - purchase invoices")
-    await chooseOption(user, "Client", "Flex")
-    await chooseOption(user, "Month", "Add new month...")
-    await user.type(screen.getByLabelText("New month"), "  Sierpień 2026  ")
+    await chooseOption(user, "Rodzaj transakcji", "WNT — faktury zakupu")
+    await chooseOption(user, "Klient", "Flex")
+    await chooseOption(user, "Miesiąc", "Dodaj nowy miesiąc…")
+    await user.type(screen.getByLabelText("Nowy miesiąc"), "  Sierpień 2026  ")
 
     const file = new File(["zip"], "invoices.zip", { type: "application/zip" })
     fireEvent.change(getFileInput(), { target: { files: [file] } })
@@ -123,17 +123,17 @@ describe("IntrastatUploadBatchButton", () => {
   it("keeps upload disabled until both new values are entered", async () => {
     const user = await openFilesystemUpload()
 
-    await chooseOption(user, "Transaction kind", "WNT - purchase invoices")
-    await chooseOption(user, "Client", "Add new client...")
-    await chooseOption(user, "Month", "Add new month...")
+    await chooseOption(user, "Rodzaj transakcji", "WNT — faktury zakupu")
+    await chooseOption(user, "Klient", "Dodaj nowego klienta…")
+    await chooseOption(user, "Miesiąc", "Dodaj nowy miesiąc…")
 
-    const chooseZip = screen.getByRole("button", { name: "Choose ZIP" })
+    const chooseZip = screen.getByRole("button", { name: "Wybierz ZIP" })
     expect(chooseZip).toBeDisabled()
 
-    await user.type(screen.getByLabelText("New client name"), "Jabil")
+    await user.type(screen.getByLabelText("Nazwa nowego klienta"), "Jabil")
     expect(chooseZip).toBeDisabled()
 
-    await user.type(screen.getByLabelText("New month"), "Wrzesień 2026")
+    await user.type(screen.getByLabelText("Nowy miesiąc"), "Wrzesień 2026")
     expect(chooseZip).toBeEnabled()
   })
 
@@ -143,22 +143,22 @@ describe("IntrastatUploadBatchButton", () => {
     const user = await openFilesystemUpload()
 
     expect(
-      screen.getByText("Could not load existing clients and months. Enter new values manually."),
+      screen.getByText("Nie udało się wczytać listy klientów i miesięcy. Wpisz wartości ręcznie."),
     ).toBeInTheDocument()
 
-    await chooseOption(user, "Transaction kind", "WDT - sales invoices")
-    await user.type(screen.getByLabelText("Client"), "Jabil")
-    await user.type(screen.getByLabelText("Month"), "Październik 2026")
+    await chooseOption(user, "Rodzaj transakcji", "WDT — faktury sprzedaży")
+    await user.type(screen.getByLabelText("Klient"), "Jabil")
+    await user.type(screen.getByLabelText("Miesiąc"), "Październik 2026")
 
-    expect(screen.getByRole("button", { name: "Choose ZIP" })).toBeEnabled()
+    expect(screen.getByRole("button", { name: "Wybierz ZIP" })).toBeEnabled()
   })
 })
 
 async function openFilesystemUpload() {
   const user = userEvent.setup()
   render(<IntrastatUploadBatchButton />)
-  await user.click(screen.getByRole("button", { name: "Upload ZIP" }))
-  await user.click(screen.getByLabelText("Upload to filesystem"))
+  await user.click(screen.getByRole("button", { name: "Wgraj ZIP" }))
+  await user.click(screen.getByLabelText("Wgraj na dysk sieciowy"))
   return user
 }
 

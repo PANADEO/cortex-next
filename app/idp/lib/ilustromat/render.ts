@@ -13,19 +13,30 @@ import { resolveFontLibraryEntry } from "./font-library"
 import type { FrameTemplate } from "./types"
 
 export class TemplateNotFoundError extends Error {
+  /** Identyfikator szablonu — pole STRUKTURALNE dla kontrolera. */
+  readonly templateId: string
+
   constructor(templateId: string) {
     super(`Nie ma szablonu o id ${templateId}`)
     this.name = "TemplateNotFoundError"
+    this.templateId = templateId
   }
 }
 
 export class IncompleteCustomFontError extends Error {
+  /** Pola STRUKTURALNE dla kontrolera — `kind` to techniczny rodzaj assetu
+   *  ("font-regular"/"font-bold"), identyfikator, nie napis do tłumaczenia. */
+  readonly templateId: string
+  readonly kind: string
+
   constructor(templateId: string, kind: string) {
     super(
       `Szablon ${templateId} deklaruje własny font, ale brakuje pliku "${kind}". ` +
         `Render przerwany — Ilustromat nie podmienia brakującego fontu po cichu.`,
     )
     this.name = "IncompleteCustomFontError"
+    this.templateId = templateId
+    this.kind = kind
   }
 }
 

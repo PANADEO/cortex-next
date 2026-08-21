@@ -5,22 +5,31 @@ import { useIdpBasicDocumentContent } from "@/lib/idp-basic/hooks"
 import type { IdpBasicDocument } from "@/lib/idp-basic/types"
 import { Badge, Card, CardContent, LoadingState } from "@cortex/ui"
 import { canPreviewInline, cn, formatFileSizeBytes, getFileTypeIcon } from "@cortex/utils"
+import type { TFunction } from "i18next"
 import { Loader2 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import { formatIdpBasicDisplayText, getIdpBasicDocumentTypeLabel } from "./status"
 
 const DocumentViewer = dynamic(
   () => import("@cortex/ui/components/document-viewer").then((m) => m.DocumentViewer),
   {
     ssr: false,
-    loading: () => (
-      <div className="flex min-h-[320px] items-center justify-center rounded-md border border-border bg-muted/30 text-xs text-muted-foreground">
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading viewer…
-      </div>
-    ),
+    loading: () => <DocumentViewerFallback />,
   },
 )
+
+/** Osobny komponent, bo `loading` z `next/dynamic` renderuje się bez dostępu
+ *  do `t` z komponentu nadrzędnego — hook musi mieć własne wywołanie. */
+function DocumentViewerFallback() {
+  const { t } = useTranslation("idp-basic")
+  return (
+    <div className="flex min-h-[320px] items-center justify-center rounded-md border border-border bg-muted/30 text-xs text-muted-foreground">
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("preview.loadingViewer")}
+    </div>
+  )
+}
 
 interface DocumentPreviewPanelProps {
   packageId: string
@@ -35,6 +44,7 @@ export function DocumentPreviewPanel({
   deleteDisabled,
   sidebarSlot,
 }: DocumentPreviewPanelProps) {
+  const { t } = useTranslation("idp-basic")
   const [activeId, setActiveId] = useState(documents[0]?.id ?? "")
 
   useEffect(() => {
@@ -60,7 +70,7 @@ export function DocumentPreviewPanel({
     return (
       <Card>
         <CardContent className="p-6 text-sm text-muted-foreground">
-          No documents in this package.
+          {t("preview.noDocuments")}
         </CardContent>
       </Card>
     )
@@ -104,7 +114,7 @@ export function DocumentPreviewPanel({
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <Badge variant="secondary">
-                        {getIdpBasicDocumentTypeLabel(document.document_type)}
+                        {getIdpBasicDocumentTypeLabel(t, document.document_type)}
                       </Badge>
                       {document.confidence != null ? (
                         <span className="text-xs text-muted-foreground">
@@ -117,7 +127,7 @@ export function DocumentPreviewPanel({
                         {document.summary}
                       </p>
                     ) : null}
-                    <DocumentAiFields document={document} />
+                    <DocumentAiFields t={t} document={document} />
                   </button>
                   <IdpBasicDeleteDocumentButton
                     packageId={packageId}
@@ -138,19 +148,18 @@ export function DocumentPreviewPanel({
         {!active ? null : !previewable ? (
           <Card className="h-full">
             <CardContent className="flex h-full min-h-0 flex-col items-center justify-center gap-3 p-8 text-center">
-              <p className="text-sm font-medium">No inline preview for this file.</p>
+              <p className="text-sm font-medium">{t("preview.noInlinePreview")}</p>
               <p className="max-w-md text-xs text-muted-foreground">
-                The file is still stored with the package and can be sent to downstream systems
-                later.
+                {t("preview.noInlinePreviewHint")}
               </p>
             </CardContent>
           </Card>
         ) : content.isLoading ? (
-          <LoadingState label={`Loading ${active.file_name}…`} />
+          <LoadingState label={t("preview.loadingFile", { fileName: active.file_name })} />
         ) : content.error || !content.data ? (
           <Card className="h-full">
             <CardContent className="flex h-full min-h-0 items-center justify-center p-8 text-sm text-destructive">
-              Failed to load document preview.
+              {t("preview.loadFailed")}
             </CardContent>
           </Card>
         ) : (
@@ -166,15 +175,21 @@ export function DocumentPreviewPanel({
   )
 }
 
-function DocumentAiFields({ document }: { document: IdpBasicDocument }) {
+function DocumentAiFields({
+  t,
+  document,
+}: {
+  t: TFunction<"idp-basic">
+  document: IdpBasicDocument
+}) {
   const fields = [
-    ["Reference", document.document_reference_number],
-    ["Date", document.document_date],
-    ["Issuer/carrier", document.issuer_or_carrier],
-    ["Invoice no.", document.invoice_number],
-    ["CMR notes", document.cmr_notes],
+    [t("fields.reference"), document.document_reference_number],
+    [t("fields.date"), document.document_date],
+    [t("fields.issuerOrCarrier"), document.issuer_or_carrier],
+    [t("fields.invoiceNumber"), document.invoice_number],
+    [t("fields.cmrNotes"), document.cmr_notes],
     ...document.extracted_data.map(
-      (field) => [formatAiFieldLabel(field.name), field.value] as const,
+      (field) => [formatAiFieldLabel(t, field.name), field.value] as const,
     ),
   ].filter(([, value]) => Boolean(value))
 
@@ -199,7 +214,7 @@ function DocumentAiFields({ document }: { document: IdpBasicDocument }) {
         <div className="flex flex-wrap gap-1.5">
           {document.ai_alerts.map((alert) => (
             <Badge key={alert} variant="outline" className="border-warning/40 text-warning">
-              {formatIdpBasicDisplayText(alert)}
+              {formatIdpBasicDisplayText(t, alert)}
             </Badge>
           ))}
         </div>
@@ -208,17 +223,25 @@ function DocumentAiFields({ document }: { document: IdpBasicDocument }) {
   )
 }
 
-function formatAiFieldLabel(label: string): string {
-  const normalized = label.trim().toLowerCase()
-  const labels: Record<string, string> = {
-    "beleg-nr.": "Document no.",
-    "beleg-nr": "Document no.",
-    "nr faktury": "Invoice no.",
-    "numer faktury": "Invoice no.",
-    data: "Date",
-    nadawca: "Sender",
-    przewoźnik: "Carrier",
-    przewoznik: "Carrier",
-  }
-  return labels[normalized] ?? label
+/**
+ * Nazwy pól przysyłane przez AI bywają po polsku albo po niemiecku — to DANE
+ * z drutu, nie etykiety, więc zostają po lewej stronie jako klucz dopasowania.
+ * Po prawej stoi KLUCZ tłumaczenia, dzięki czemu trzeci język nie wymaga
+ * dotknięcia tego pliku. Nazwa, której tu nie ma, idzie na ekran tak, jak
+ * przyszła.
+ */
+const AI_FIELD_LABEL_KEYS: Record<string, string> = {
+  "beleg-nr.": "fields.documentNumber",
+  "beleg-nr": "fields.documentNumber",
+  "nr faktury": "fields.invoiceNumber",
+  "numer faktury": "fields.invoiceNumber",
+  data: "fields.date",
+  nadawca: "fields.sender",
+  przewoźnik: "fields.carrier",
+  przewoznik: "fields.carrier",
+}
+
+function formatAiFieldLabel(t: TFunction<"idp-basic">, label: string): string {
+  const key = AI_FIELD_LABEL_KEYS[label.trim().toLowerCase()]
+  return key ? t(key) : label
 }

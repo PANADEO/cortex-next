@@ -1,21 +1,21 @@
 // @vitest-environment jsdom
 import { HUB_LAYOUTS } from "@/components/shell/hub/registry"
 import { describe, expect, it } from "vitest"
-
-/** Atrapa `t` — ten test sprawdza KSZTAŁT listy wyboru, nie tłumaczenia. */
-const identity = (key: string) => key
 import tailwind from "../../../../tailwind.config"
 import { migrateLegacySkin, usePresetStore } from "./preset-store"
 import {
   DEFAULT_PRESET,
   INSTANCE_DEFAULT_ID,
   PRESETS,
-  presetChoices,
   isPresetId,
   presetChoiceToStored,
+  presetChoices,
   resolvePresetId,
   storedToPresetChoice,
 } from "./registry"
+
+/** Atrapa `t` — ten test sprawdza KSZTAŁT listy wyboru, nie tłumaczenia. */
+const identity = (key: string) => key
 
 /** Wartość, która nie może stać się prawdziwym presetem — nie jest nazwą
  *  żadnego skinu ani z tej gałęzi, ani z `main`. */

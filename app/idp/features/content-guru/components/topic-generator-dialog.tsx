@@ -20,7 +20,7 @@ import {
   TOPIC_COUNT_MAX,
   TOPIC_COUNT_MIN,
 } from "@/lib/content-guru/mini-generators"
-import { toastApiError } from "@cortex/api"
+import { apiErrorMessage } from "@/lib/i18n/api-error"
 import {
   Button,
   Checkbox,
@@ -37,6 +37,7 @@ import {
 import { Sparkles } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
+import { toast } from "sonner"
 import { useGenerateTopics } from "../hooks"
 
 const TRANSCRIPT_MAX = 20000
@@ -87,7 +88,7 @@ export function TopicGeneratorDialog({
       setCandidates(response.topics)
       setSelected(new Set())
     } catch (error) {
-      toastApiError(error, t("topicGenerator.errors.generateFailed"))
+      toast.error(apiErrorMessage(t, error, t("topicGenerator.errors.generateFailed")))
     }
   }
 

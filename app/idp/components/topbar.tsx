@@ -18,11 +18,11 @@ import {
   UserMenu,
 } from "@cortex/ui"
 import { cva } from "class-variance-authority"
-import { useTranslation } from "react-i18next"
 import { Bell, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Fragment, useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { useResolvedBreadcrumbs } from "../lib/breadcrumbs"
 import { usePreset, usePresetStore } from "../lib/presets/preset-store"
 import { presetChoices, presetChoiceToStored, storedToPresetChoice } from "../lib/presets/registry"
@@ -111,7 +111,11 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
                   size="icon"
                   className="h-8 w-8"
                   onClick={toggle}
-                  aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                  aria-label={
+                    collapsed
+                      ? tCommon("actions.expandSidebar")
+                      : tCommon("actions.collapseSidebar")
+                  }
                 >
                   {collapsed ? (
                     <PanelLeftOpen className="h-4 w-4" />
@@ -121,7 +125,7 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                {collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                {collapsed ? tCommon("actions.expandSidebar") : tCommon("actions.collapseSidebar")}
               </TooltipContent>
             </Tooltip>
           ) : null}
@@ -155,7 +159,7 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
           className={topbarSlots.search({ variant: shellVariant })}
         >
           <Search className="h-3.5 w-3.5" />
-          <span className="flex-1">Search or jump...</span>
+          <span className="flex-1">{tCommon("palette.searchOrJump")}</span>
           <kbd className={topbarSlots.kbd({ variant: shellVariant })}>⌘K</kbd>
         </button>
 
@@ -166,7 +170,7 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
                 <Bell className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Notifications</TooltipContent>
+            <TooltipContent side="bottom">{tCommon("nav.notifications")}</TooltipContent>
           </Tooltip>
           {/* Drugie miejsce renderu jednego store'u — ten sam wzorzec, którym
               chodzi już `ThemeToggle`. Uzasadnienie propsów w `shell-header.tsx`. */}

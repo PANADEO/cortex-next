@@ -13,6 +13,7 @@ import { Button } from "@cortex/ui"
 import { formatRoute } from "@cortex/utils"
 import { ChevronDown, ChevronRight, FileText } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { z } from "zod"
 import { FieldsForm, type FieldSpec } from "./fields-form"
 import { InvoiceLinesGrid } from "./invoice-lines-grid"
@@ -20,11 +21,11 @@ import { InvoiceLinesGrid } from "./invoice-lines-grid"
 const currencySchema = z
   .string()
   .max(4)
-  .regex(/^[A-Za-z]{0,3}$/, "ISO currency code")
+  .regex(/^[A-Za-z]{0,3}$/, "transportOrders.validation.isoCurrency")
 
 const headerSchema = z.object({
   invoice_number: z.string().max(64),
-  invoice_date: z.string().regex(/^$|^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD"),
+  invoice_date: z.string().regex(/^$|^\d{4}-\d{2}-\d{2}$/, "transportOrders.validation.date"),
   invoice_currency: currencySchema,
   country_of_dispatch: countryCodeSchema,
   country_of_destination: countryCodeSchema,
@@ -33,18 +34,33 @@ const headerSchema = z.object({
 type HeaderValues = z.infer<typeof headerSchema>
 
 const HEADER_FIELDS: readonly FieldSpec<HeaderValues>[] = [
-  { name: "invoice_number", label: "Invoice number", span: 2 },
-  { name: "invoice_date", label: "Invoice date", span: 1 },
-  { name: "invoice_currency", label: "Currency", span: 1, uppercase: true },
-  { name: "country_of_dispatch", label: "From", span: 1, uppercase: true },
-  { name: "country_of_destination", label: "To", span: 1, uppercase: true },
+  { name: "invoice_number", labelKey: "transportOrders.fields.invoiceNumber", span: 2 },
+  { name: "invoice_date", labelKey: "transportOrders.fields.invoiceDate", span: 1 },
+  {
+    name: "invoice_currency",
+    labelKey: "transportOrders.fields.currency",
+    span: 1,
+    uppercase: true,
+  },
+  {
+    name: "country_of_dispatch",
+    labelKey: "transportOrders.fields.from",
+    span: 1,
+    uppercase: true,
+  },
+  {
+    name: "country_of_destination",
+    labelKey: "transportOrders.fields.to",
+    span: 1,
+    uppercase: true,
+  },
 ]
 
 const deliverySchema = z.object({
   incoterms_code: z
     .string()
     .max(8)
-    .regex(/^[A-Za-z]{0,4}$/, "e.g. CIP, DAP"),
+    .regex(/^[A-Za-z]{0,4}$/, "transportOrders.validation.incoterms"),
   incoterms_place: z.string().max(100),
   delivery_area: z.string().max(100),
   base_of_delivery: z.string().max(100),
@@ -53,10 +69,15 @@ const deliverySchema = z.object({
 type DeliveryValues = z.infer<typeof deliverySchema>
 
 const DELIVERY_FIELDS: readonly FieldSpec<DeliveryValues>[] = [
-  { name: "incoterms_code", label: "Incoterms code", span: 1, uppercase: true },
-  { name: "incoterms_place", label: "Incoterms place", span: 1 },
-  { name: "delivery_area", label: "Delivery area", span: 1 },
-  { name: "base_of_delivery", label: "Base of delivery", span: 1 },
+  {
+    name: "incoterms_code",
+    labelKey: "transportOrders.fields.incotermsCode",
+    span: 1,
+    uppercase: true,
+  },
+  { name: "incoterms_place", labelKey: "transportOrders.fields.incotermsPlace", span: 1 },
+  { name: "delivery_area", labelKey: "transportOrders.fields.deliveryArea", span: 1 },
+  { name: "base_of_delivery", labelKey: "transportOrders.fields.baseOfDelivery", span: 1 },
 ]
 
 const totalsSchema = z.object({
@@ -70,11 +91,15 @@ const totalsSchema = z.object({
 type TotalsValues = z.infer<typeof totalsSchema>
 
 const TOTALS_FIELDS: readonly FieldSpec<TotalsValues>[] = [
-  { name: "total_invoice_value", label: "Total invoice value", span: 1 },
-  { name: "total_packages_quantity", label: "Total packages qty", span: 1 },
-  { name: "total_packages_type", label: "Total packages type", span: 1 },
-  { name: "total_net_weight_kg", label: "Total net weight (kg)", span: 1 },
-  { name: "total_gross_weight_kg", label: "Total gross weight (kg)", span: 1 },
+  { name: "total_invoice_value", labelKey: "transportOrders.fields.totalInvoiceValue", span: 1 },
+  {
+    name: "total_packages_quantity",
+    labelKey: "transportOrders.fields.totalPackagesQty",
+    span: 1,
+  },
+  { name: "total_packages_type", labelKey: "transportOrders.fields.totalPackagesType", span: 1 },
+  { name: "total_net_weight_kg", labelKey: "transportOrders.fields.totalNetWeight", span: 1 },
+  { name: "total_gross_weight_kg", labelKey: "transportOrders.fields.totalGrossWeight", span: 1 },
 ]
 
 function headerDefaults(invoice: Invoice): HeaderValues {
@@ -139,11 +164,14 @@ export function InvoiceEditor({
   useCustomsCode = false,
   showAtrProcessing = true,
 }: Props) {
+  const { t } = useTranslation("idp")
   const [open, setOpen] = useState(true)
   const Chevron = open ? ChevronDown : ChevronRight
   const route = formatRoute(invoice.country_of_dispatch, invoice.country_of_destination)
   const summaryBits = [
-    invoice.invoice_number ? `Invoice ${invoice.invoice_number}` : null,
+    invoice.invoice_number
+      ? t("transportOrders.invoiceLabel", { number: invoice.invoice_number })
+      : null,
     invoice.invoice_date,
     invoice.invoice_currency,
     route,
@@ -165,10 +193,10 @@ export function InvoiceEditor({
           <Chevron className="h-4 w-4 shrink-0 text-muted-foreground" />
           <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
           <span className="text-xs font-semibold">
-            Invoice {invoice.invoice_number ?? invoice.id}
+            {t("transportOrders.invoiceLabel", { number: invoice.invoice_number ?? invoice.id })}
           </span>
           <span className="truncate text-xs font-normal text-muted-foreground">
-            {summaryBits.length > 0 ? summaryBits.join(" · ") : "No invoice data"}
+            {summaryBits.length > 0 ? summaryBits.join(" · ") : t("transportOrders.noInvoiceData")}
           </span>
         </Button>
       </div>
@@ -183,7 +211,7 @@ export function InvoiceEditor({
         <div id={contentId} className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <FieldsForm
-              label="Header"
+              label={t("transportOrders.sections.header")}
               fields={HEADER_FIELDS}
               defaults={headerDefaults(invoice)}
               schema={headerSchema}
@@ -193,7 +221,7 @@ export function InvoiceEditor({
               onSave={(v) => onSaveHeader(mapTrimToNull(v))}
             />
             <FieldsForm
-              label="Delivery terms"
+              label={t("transportOrders.sections.deliveryTerms")}
               fields={DELIVERY_FIELDS}
               defaults={deliveryDefaults(invoice)}
               schema={deliverySchema}
@@ -203,7 +231,7 @@ export function InvoiceEditor({
               onSave={(v) => onSaveDelivery(mapTrimToNull(v))}
             />
             <FieldsForm
-              label="Totals"
+              label={t("transportOrders.sections.totals")}
               fields={TOTALS_FIELDS}
               defaults={totalsDefaults(invoice)}
               schema={totalsSchema}

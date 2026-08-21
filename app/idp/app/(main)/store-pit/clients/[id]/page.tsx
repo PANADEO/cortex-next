@@ -31,72 +31,79 @@ import {
 } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
+import type { TFunction } from "i18next"
 import { ArrowLeft, Package, Receipt, Scale, SearchX, Users, Wallet } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 const PAGE_SIZE = 12
 
-const columns: ColumnDef<ClientParcel, unknown>[] = [
-  {
-    accessorKey: "parcel",
-    header: "Parcel / reference",
-    cell: ({ row }) => (
-      <div className="min-w-0">
-        <span className="block truncate font-mono text-xs font-medium">{row.original.parcel}</span>
-        <span className="block truncate font-mono text-[10px] text-muted-foreground">
-          {row.original.reference}
+function buildColumns(t: TFunction<"store-pit">): ColumnDef<ClientParcel, unknown>[] {
+  return [
+    {
+      accessorKey: "parcel",
+      header: t("fields.parcelReference"),
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <span className="block truncate font-mono text-xs font-medium">
+            {row.original.parcel}
+          </span>
+          <span className="block truncate font-mono text-[10px] text-muted-foreground">
+            {row.original.reference}
+          </span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "date",
+      header: t("clientDetail.columns.date"),
+      size: 100,
+      cell: ({ row }) => (
+        <span className="text-xs tabular-nums text-muted-foreground">{row.original.date}</span>
+      ),
+    },
+    {
+      accessorKey: "service",
+      header: t("fields.service"),
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <span className="block truncate text-xs">{row.original.service}</span>
+          <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+            {row.original.domExport || "—"}
+          </span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "city",
+      header: t("fields.destination"),
+      size: 180,
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <span className="block truncate text-xs">{row.original.city || "—"}</span>
+          <span className="block truncate text-[10px] text-muted-foreground">
+            {row.original.country} · {row.original.recipient || "—"}
+          </span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "weight",
+      header: t("fields.weight"),
+      size: 90,
+      cell: ({ row }) => (
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {row.original.weight ? kg(row.original.weight) : "—"}
         </span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "date",
-    header: "Date",
-    size: 100,
-    cell: ({ row }) => (
-      <span className="text-xs tabular-nums text-muted-foreground">{row.original.date}</span>
-    ),
-  },
-  {
-    accessorKey: "service",
-    header: "Service",
-    cell: ({ row }) => (
-      <div className="min-w-0">
-        <span className="block truncate text-xs">{row.original.service}</span>
-        <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
-          {row.original.domExport || "—"}
-        </span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "city",
-    header: "Destination",
-    size: 180,
-    cell: ({ row }) => (
-      <div className="min-w-0">
-        <span className="block truncate text-xs">{row.original.city || "—"}</span>
-        <span className="block truncate text-[10px] text-muted-foreground">
-          {row.original.country} · {row.original.recipient || "—"}
-        </span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "weight",
-    header: "Weight",
-    size: 90,
-    cell: ({ row }) => (
-      <span className="text-xs tabular-nums text-muted-foreground">
-        {row.original.weight ? kg(row.original.weight) : "—"}
-      </span>
-    ),
-  },
-]
+      ),
+    },
+  ]
+}
 
 export default function ClientDetailPage() {
+  const { t } = useTranslation("store-pit")
   const params = useParams<{ id: string }>()
   const slug = params?.id ?? ""
   const key = clientKeyFromSlug(slug)
@@ -107,6 +114,7 @@ export default function ClientDetailPage() {
   const meta = key ? CLIENT_META[key] : null
   const summary = key ? CLIENT_SUMMARY.find((c) => c.client === key) : null
   const bd = key ? BREAKDOWNS[key] : null
+  const columns = useMemo(() => buildColumns(t), [t])
 
   const filteredParcels = useMemo(() => {
     const allParcels = bd?.parcels ?? []
@@ -129,12 +137,12 @@ export default function ClientDetailPage() {
       <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 py-6">
         <EmptyState
           icon={Users}
-          title="Client not found"
-          description="The requested client does not exist."
+          title={t("clientDetail.notFoundTitle")}
+          description={t("clientDetail.notFoundDescription")}
         />
         <Button asChild variant="outline" size="sm">
           <Link href="/store-pit/clients">
-            <ArrowLeft className="mr-1 h-4 w-4" /> Back to Clients
+            <ArrowLeft className="mr-1 h-4 w-4" /> {t("clientDetail.backToClients")}
           </Link>
         </Button>
       </div>
@@ -151,7 +159,7 @@ export default function ClientDetailPage() {
     <>
       <PageHeader
         title={meta.name}
-        description={meta.pricingBasis}
+        description={t(meta.pricingBasisKey)}
         actions={
           <>
             <Badge variant="outline" className={cn("font-medium", ACCENT_BADGE[meta.accent])}>
@@ -159,7 +167,7 @@ export default function ClientDetailPage() {
             </Badge>
             <Button asChild variant="outline" size="sm">
               <Link href="/store-pit/clients">
-                <ArrowLeft className="mr-1 h-4 w-4" /> Back
+                <ArrowLeft className="mr-1 h-4 w-4" /> {t("clientDetail.back")}
               </Link>
             </Button>
           </>
@@ -171,26 +179,30 @@ export default function ClientDetailPage() {
           <div className={cn("h-1.5", ACCENT_DOT[meta.accent])} />
           <CardContent className="flex flex-col gap-1 p-5">
             <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Amount to settle
+              {t("clientDetail.amountToSettle")}
             </div>
             <div className="text-3xl font-semibold tabular-nums">{eur(summary.spTotal)}</div>
             <div className="text-xs text-muted-foreground">
-              GLS cost {eur(summary.glsTotal)} · margin {signedEur(margin)} ({pct(marginPct)})
+              {t("clientDetail.costLine", {
+                cost: eur(summary.glsTotal),
+                margin: signedEur(margin),
+                pct: pct(marginPct),
+              })}
             </div>
           </CardContent>
         </Card>
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <DataCard label="Parcels" value={count(summary.qty)} icon={Package} />
-          <DataCard label="Weight" value={kg(summary.weight)} icon={Scale} />
-          <DataCard label="GLS cost" value={eur(summary.glsTotal)} icon={Receipt} />
-          <DataCard label="Store-Pit price" value={eur(summary.spTotal)} icon={Wallet} />
+          <DataCard label={t("fields.parcels")} value={count(summary.qty)} icon={Package} />
+          <DataCard label={t("fields.weight")} value={kg(summary.weight)} icon={Scale} />
+          <DataCard label={t("fields.glsCost")} value={eur(summary.glsTotal)} icon={Receipt} />
+          <DataCard label={t("fields.storePitPrice")} value={eur(summary.spTotal)} icon={Wallet} />
         </section>
 
         <Tabs defaultValue="breakdown" className="flex flex-1 flex-col">
           <TabsList>
-            <TabsTrigger value="breakdown">Service breakdown</TabsTrigger>
-            <TabsTrigger value="parcels">Parcels</TabsTrigger>
+            <TabsTrigger value="breakdown">{t("clientDetail.tabs.breakdown")}</TabsTrigger>
+            <TabsTrigger value="parcels">{t("fields.parcels")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="breakdown" className="mt-2">
@@ -200,16 +212,30 @@ export default function ClientDetailPage() {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/40">
                       <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                        <th className="px-4 py-2.5 font-medium">Dom/Export</th>
-                        <th className="px-3 py-2.5 font-medium">Country</th>
-                        <th className="px-3 py-2.5 font-medium">Service</th>
-                        <th className="px-3 py-2.5 text-right font-medium">Shipments</th>
-                        <th className="px-3 py-2.5 text-right font-medium">Weight</th>
-                        <th className="px-3 py-2.5 text-right font-medium">Freight</th>
-                        <th className="px-3 py-2.5 text-right font-medium">Energy</th>
-                        <th className="px-3 py-2.5 text-right font-medium">Service flat</th>
-                        <th className="px-3 py-2.5 text-right font-medium">Pre-finance</th>
-                        <th className="px-4 py-2.5 text-right font-medium">Grand total</th>
+                        <th className="px-4 py-2.5 font-medium">
+                          {t("clientDetail.breakdown.domExport")}
+                        </th>
+                        <th className="px-3 py-2.5 font-medium">{t("fields.country")}</th>
+                        <th className="px-3 py-2.5 font-medium">{t("fields.service")}</th>
+                        <th className="px-3 py-2.5 text-right font-medium">
+                          {t("clientDetail.breakdown.shipments")}
+                        </th>
+                        <th className="px-3 py-2.5 text-right font-medium">{t("fields.weight")}</th>
+                        <th className="px-3 py-2.5 text-right font-medium">
+                          {t("clientDetail.breakdown.freight")}
+                        </th>
+                        <th className="px-3 py-2.5 text-right font-medium">
+                          {t("clientDetail.breakdown.energy")}
+                        </th>
+                        <th className="px-3 py-2.5 text-right font-medium">
+                          {t("clientDetail.breakdown.serviceFlat")}
+                        </th>
+                        <th className="px-3 py-2.5 text-right font-medium">
+                          {t("clientDetail.breakdown.preFinance")}
+                        </th>
+                        <th className="px-4 py-2.5 text-right font-medium">
+                          {t("fields.grandTotal")}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -286,7 +312,7 @@ export default function ClientDetailPage() {
                       <tfoot>
                         <tr className="border-t border-border bg-muted/40 font-semibold">
                           <td className="px-4 py-2.5 text-xs" colSpan={3}>
-                            Total
+                            {t("clientDetail.breakdown.total")}
                           </td>
                           <td className="px-3 py-2.5 text-right text-xs tabular-nums">
                             {count(bdTotal.shipments)}
@@ -321,7 +347,7 @@ export default function ClientDetailPage() {
           <TabsContent value="parcels" className="mt-2 flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-3">
               <Input
-                placeholder="Search parcel, reference, recipient..."
+                placeholder={t("clientDetail.searchPlaceholder")}
                 value={search}
                 onChange={(e) => {
                   setPage(0)
@@ -330,7 +356,10 @@ export default function ClientDetailPage() {
                 className="h-9 w-72"
               />
               <div className="ml-auto text-xs text-muted-foreground">
-                {count(total)} of {count(bd?.parcels.length ?? 0)} parcels
+                {t("clientDetail.shownCount", {
+                  shown: count(total),
+                  total: count(bd?.parcels.length ?? 0),
+                })}
               </div>
             </div>
             <DataTable
@@ -340,8 +369,8 @@ export default function ClientDetailPage() {
               emptyState={
                 <EmptyState
                   icon={SearchX}
-                  title="No parcels match"
-                  description="Clear the search to see all parcels for this client."
+                  title={t("clientDetail.emptyTitle")}
+                  description={t("clientDetail.emptyDescription")}
                 />
               }
             />

@@ -16,54 +16,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@cortex/ui"
-import { cn, formatAbsolute, humanizeEnum } from "@cortex/utils"
+import { cn, formatAbsolute } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
+import type { TFunction } from "i18next"
 import { History, RotateCw } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
-const columns: ColumnDef<ActionLogReadModel, unknown>[] = [
-  {
-    accessorKey: "timestamp",
-    header: "When",
-    size: 200,
-    cell: ({ row }) => (
-      <span className="font-mono text-xs text-muted-foreground">
-        {formatAbsolute(row.original.timestamp)}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "action_type",
-    header: "Event",
-    size: 200,
-    cell: ({ row }) => <span className="text-xs">{humanizeEnum(row.original.action_type)}</span>,
-  },
-  {
-    accessorKey: "package_file_name",
-    header: "Package",
-    cell: ({ row }) => (
-      <Link
-        href={`/idp/packages/${row.original.package_id}`}
-        className="font-mono text-xs hover:underline"
-      >
-        {row.original.package_file_name}
-      </Link>
-    ),
-  },
-  {
-    accessorKey: "performed_by",
-    header: "Actor",
-    size: 200,
-    cell: ({ row }) => (
-      <span className="font-mono text-xs text-muted-foreground">{row.original.performed_by}</span>
-    ),
-  },
-]
+/** Napis zdarzenia bierze się z klucza, nie z `humanizeEnum` — maszynowe
+ *  rozbicie nazwy enuma działa tylko po angielsku. */
+const ACTION_LABEL_KEY = (type: PackageActionType) => `auditLog.actions.${type}`
+
+const KNOWN_ACTION_TYPES: ReadonlySet<string> = new Set(PACKAGE_ACTION_TYPE)
+
+/** Backend potrafi dołożyć rodzaj zdarzenia, którego ten build jeszcze nie zna.
+ *  Bez tego zapasu i18next zwróciłby surowy klucz `auditLog.actions.<nowy>`
+ *  wprost do komórki tabeli. */
+function actionLabel(t: TFunction, type: string): string {
+  return KNOWN_ACTION_TYPES.has(type)
+    ? t(ACTION_LABEL_KEY(type as PackageActionType))
+    : t("auditLog.unknownAction")
+}
 
 const PAGE_SIZE = 20
 
 export default function AuditLogPage() {
+  const { t } = useTranslation("idp")
   const [page, setPage] = useState(0)
   const [actionType, setActionType] = useState<PackageActionType | "all">("all")
   const [performedBy, setPerformedBy] = useState("")
@@ -86,15 +65,61 @@ export default function AuditLogPage() {
   const total = data?.total ?? 0
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
+  const columns = useMemo<ColumnDef<ActionLogReadModel, unknown>[]>(
+    () => [
+      {
+        accessorKey: "timestamp",
+        header: t("auditLog.columnWhen"),
+        size: 200,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs text-muted-foreground">
+            {formatAbsolute(row.original.timestamp)}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "action_type",
+        header: t("auditLog.columnEvent"),
+        size: 200,
+        cell: ({ row }) => (
+          <span className="text-xs">{actionLabel(t, row.original.action_type)}</span>
+        ),
+      },
+      {
+        accessorKey: "package_file_name",
+        header: t("auditLog.columnPackage"),
+        cell: ({ row }) => (
+          <Link
+            href={`/idp/packages/${row.original.package_id}`}
+            className="font-mono text-xs hover:underline"
+          >
+            {row.original.package_file_name}
+          </Link>
+        ),
+      },
+      {
+        accessorKey: "performed_by",
+        header: t("auditLog.columnActor"),
+        size: 200,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs text-muted-foreground">
+            {row.original.performed_by}
+          </span>
+        ),
+      },
+    ],
+    [t],
+  )
+
   return (
     <>
       <PageHeader
-        title="Audit log"
-        description="Cross-package event history."
+        title={t("auditLog.title")}
+        description={t("auditLog.description")}
         actions={
           <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RotateCw className={cn("mr-1 h-4 w-4", isFetching && "animate-spin")} />
-            Refresh
+            {t("auditLog.refresh")}
           </Button>
         }
       />
@@ -108,19 +133,19 @@ export default function AuditLogPage() {
             }}
           >
             <SelectTrigger className="h-9 w-[220px]">
-              <SelectValue placeholder="Event type" />
+              <SelectValue placeholder={t("auditLog.eventTypePlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All events</SelectItem>
-              {PACKAGE_ACTION_TYPE.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {humanizeEnum(t)}
+              <SelectItem value="all">{t("auditLog.allEvents")}</SelectItem>
+              {PACKAGE_ACTION_TYPE.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {t(ACTION_LABEL_KEY(type))}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Input
-            placeholder="Performed by…"
+            placeholder={t("auditLog.performedByPlaceholder")}
             value={performedBy}
             onChange={(e) => {
               setPage(0)
@@ -139,7 +164,7 @@ export default function AuditLogPage() {
             }}
           />
           <div className="ml-auto text-xs text-muted-foreground">
-            {isFetching ? "Refreshing…" : `${total} events`}
+            {isFetching ? t("auditLog.refreshing") : t("auditLog.total", { count: total })}
           </div>
         </div>
 
@@ -150,8 +175,8 @@ export default function AuditLogPage() {
           emptyState={
             <EmptyState
               icon={History}
-              title="No events match"
-              description="Try clearing filters."
+              title={t("auditLog.emptyTitle")}
+              description={t("auditLog.emptyDescription")}
             />
           }
           getRowId={(row) => row.id}

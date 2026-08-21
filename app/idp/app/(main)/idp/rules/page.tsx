@@ -1,6 +1,10 @@
 "use client"
 
-import { RULE_CATEGORY_LABEL, RULE_STATUS_LABEL, RULE_STATUS_TONE } from "@/components/rules/labels"
+import {
+  RULE_CATEGORY_LABEL_KEY,
+  RULE_STATUS_LABEL_KEY,
+  RULE_STATUS_TONE,
+} from "@/components/rules/labels"
 import { toastApiError, useCreateRule, useRuleTemplates, useRules } from "@cortex/api"
 import {
   RULE_CATEGORY,
@@ -43,11 +47,13 @@ import { ArrowRight, Loader2, Plus, ScrollText, Search, Sparkles } from "lucide-
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 const PAGE_SIZE = 25
 const TRIGGER_AUTO: RuleTrigger = "auto_on_extraction"
 
 export default function RulesPage() {
+  const { t } = useTranslation("idp")
   const router = useRouter()
   const [page, setPage] = useState(0)
   const [status, setStatus] = useState<RuleStatus | "all">("all")
@@ -76,7 +82,7 @@ export default function RulesPage() {
   const onCreateFromTemplate = (tpl: RuleTemplateReadModel | null) => {
     create.mutate(
       {
-        name: tpl?.name ?? "Untitled rule",
+        name: tpl?.name ?? t("rules.list.untitled"),
         description: tpl?.description ?? null,
         category: tpl?.category ?? "custom",
         tags: tpl?.default_tags ?? [],
@@ -97,7 +103,7 @@ export default function RulesPage() {
     () => [
       {
         id: "name",
-        header: "Name",
+        header: t("rules.list.columnName"),
         cell: ({ row }) => (
           <div className="flex flex-col">
             <span className="font-medium">{row.original.name}</span>
@@ -109,42 +115,44 @@ export default function RulesPage() {
       },
       {
         id: "category",
-        header: "Category",
+        header: t("rules.list.columnCategory"),
         cell: ({ row }) => (
-          <Badge variant="outline">{RULE_CATEGORY_LABEL[row.original.category]}</Badge>
+          <Badge variant="outline">{t(RULE_CATEGORY_LABEL_KEY[row.original.category])}</Badge>
         ),
       },
       {
         id: "status",
-        header: "Status",
+        header: t("rules.list.columnStatus"),
         cell: ({ row }) => (
           <Badge variant="outline" className={RULE_STATUS_TONE[row.original.status]}>
-            {RULE_STATUS_LABEL[row.original.status]}
+            {t(RULE_STATUS_LABEL_KEY[row.original.status])}
           </Badge>
         ),
       },
       {
         id: "version",
-        header: "Version",
+        header: t("rules.list.columnVersion"),
         cell: ({ row }) => <span className="text-sm">v{row.original.current_version}</span>,
       },
       {
         id: "trigger",
-        header: "Trigger",
+        header: t("rules.list.columnTrigger"),
         cell: ({ row }) => (
           <Badge variant={row.original.trigger === TRIGGER_AUTO ? "default" : "secondary"}>
-            {row.original.trigger === TRIGGER_AUTO ? "Auto" : "Manual"}
+            {row.original.trigger === TRIGGER_AUTO
+              ? t("rules.list.triggerAuto")
+              : t("rules.list.triggerManual")}
           </Badge>
         ),
       },
       {
         id: "attached",
-        header: "Packages",
+        header: t("rules.list.columnPackages"),
         cell: ({ row }) => <span className="text-sm">{row.original.attached_package_count}</span>,
       },
       {
         id: "lastRun",
-        header: "Last run",
+        header: t("rules.list.columnLastRun"),
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground">
             {row.original.last_run_at
@@ -155,40 +163,37 @@ export default function RulesPage() {
       },
       {
         id: "actions",
-        header: () => <span className="sr-only">Actions</span>,
+        header: () => <span className="sr-only">{t("rules.list.columnActions")}</span>,
         cell: ({ row }) => (
           <Button asChild size="sm" variant="ghost">
             <Link href={`/idp/rules/${row.original.id}`}>
-              Open
+              {t("rules.list.open")}
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Link>
           </Button>
         ),
       },
     ],
-    [],
+    [t],
   )
 
   return (
     <>
       <PageHeader
-        title="Rule editor"
-        description="Customs transformations defined in plain language, compiled to Python by AI."
+        title={t("rules.list.title")}
+        description={t("rules.list.description")}
         actions={
           <Dialog open={newRuleOpen} onOpenChange={setNewRuleOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="mr-1.5 h-4 w-4" />
-                New rule
+                {t("rules.list.newRule")}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl">
               <DialogHeader>
-                <DialogTitle>Start from a template</DialogTitle>
-                <DialogDescription>
-                  Pick a customs preset or start blank. You can edit the natural-language definition
-                  in the next step.
-                </DialogDescription>
+                <DialogTitle>{t("rules.list.templateDialogTitle")}</DialogTitle>
+                <DialogDescription>{t("rules.list.templateDialogDescription")}</DialogDescription>
               </DialogHeader>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {templates.data?.map((tpl) => (
@@ -203,7 +208,7 @@ export default function RulesPage() {
                     </CardHeader>
                     <CardContent>
                       <Badge variant="outline" className="text-[10px]">
-                        {RULE_CATEGORY_LABEL[tpl.category]}
+                        {t(RULE_CATEGORY_LABEL_KEY[tpl.category])}
                       </Badge>
                       <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
                         <Sparkles className="mr-1 inline h-3 w-3" />
@@ -214,14 +219,16 @@ export default function RulesPage() {
                 ))}
               </div>
               <DialogFooter className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Or start from scratch.</span>
+                <span className="text-xs text-muted-foreground">
+                  {t("rules.list.orStartFromScratch")}
+                </span>
                 <Button
                   variant="outline"
                   onClick={() => onCreateFromTemplate(null)}
                   disabled={create.isPending}
                 >
                   {create.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-                  Blank rule
+                  {t("rules.list.blankRule")}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -234,7 +241,7 @@ export default function RulesPage() {
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search rules…"
+              placeholder={t("rules.list.searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setPage(0)
@@ -254,10 +261,10 @@ export default function RulesPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="all">{t("rules.list.allStatuses")}</SelectItem>
               {RULE_STATUS.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {RULE_STATUS_LABEL[s]}
+                  {t(RULE_STATUS_LABEL_KEY[s])}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -273,16 +280,16 @@ export default function RulesPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All categories</SelectItem>
+              <SelectItem value="all">{t("rules.list.allCategories")}</SelectItem>
               {RULE_CATEGORY.map((c) => (
                 <SelectItem key={c} value={c}>
-                  {RULE_CATEGORY_LABEL[c]}
+                  {t(RULE_CATEGORY_LABEL_KEY[c])}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <div className="ml-auto text-xs text-muted-foreground">
-            {isFetching ? "Refreshing…" : `${total} rules`}
+            {isFetching ? t("rules.list.refreshing") : t("rules.list.total", { count: total })}
           </div>
         </div>
 
@@ -293,8 +300,8 @@ export default function RulesPage() {
           emptyState={
             <EmptyState
               icon={ScrollText}
-              title="No rules yet"
-              description="Pick a customs preset or write your own in plain language."
+              title={t("rules.list.emptyTitle")}
+              description={t("rules.list.emptyDescription")}
             />
           }
           getRowId={(row) => row.id}

@@ -7,12 +7,10 @@
 
 export interface FontCatalogEntry {
   id: string
-  label: string
   /** Nazwa rodziny DOKŁADNIE tak, jak widzi ją Pango (LUKA 3 projektu). */
   family: string
   regularFile: string
   boldFile: string
-  note: string
 }
 
 export const DEFAULT_FONT_LIBRARY_ID = "noto-sans"
@@ -20,15 +18,14 @@ export const DEFAULT_FONT_LIBRARY_ID = "noto-sans"
 export const FONT_CATALOG: Record<string, FontCatalogEntry> = {
   "noto-sans": {
     id: "noto-sans",
-    label: "Noto Sans (biblioteka, domyślny)",
     family: "Noto Sans",
     regularFile: "NotoSans-Regular.ttf",
     boldFile: "NotoSans-Bold.ttf",
-    note: "Neutralny, bezpieczny wybór — pełne pokrycie polskich znaków.",
   },
 }
 
-/** Lista dla UI kreatora — bez ścieżek dyskowych, których klient nie potrzebuje. */
-export function fontLibraryOptions(): { id: string; label: string; note: string }[] {
-  return Object.values(FONT_CATALOG).map(({ id, label, note }) => ({ id, label, note }))
+/** Lista dla UI kreatora — bez ścieżek dyskowych, których klient nie potrzebuje.
+ *  Napis pozycji bierze się z `options.font.<id>` w przestrzeni `ilustromat`. */
+export function fontLibraryOptions(): { id: string }[] {
+  return Object.values(FONT_CATALOG).map(({ id }) => ({ id }))
 }

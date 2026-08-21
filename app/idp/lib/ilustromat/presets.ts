@@ -2,16 +2,17 @@
 // Czyste dane, zero zależności. Dotyczy TREŚCI generacji (styl, format, limity),
 // nie brandu — brand żyje jako dane w schemacie `ilustromat` (FrameTemplate).
 
+// Napisy wybieralnych opcji żyją w przestrzeni `ilustromat`
+// (`options.style.<key>`, `options.format.<key>`) — tutaj zostaje tożsamość
+// i to, co realnie jedzie do modelu albo do rendera.
 export interface StylePreset {
   key: string
-  label: string
   promptModifier: string
 }
 
 export const STYLES: readonly StylePreset[] = [
   {
     key: "photorealistic",
-    label: "Fotorealistyczny",
     promptModifier:
       "professional editorial photography, natural light, shallow depth of " +
       "field, muted corporate tones — think Financial Times or Harvard " +
@@ -19,7 +20,6 @@ export const STYLES: readonly StylePreset[] = [
   },
   {
     key: "flat",
-    label: "Ilustracja",
     promptModifier:
       "modern flat vector illustration, clean geometric shapes, generous " +
       "negative space, Swiss design influence — think premium fintech " +
@@ -27,14 +27,12 @@ export const STYLES: readonly StylePreset[] = [
   },
   {
     key: "isometric",
-    label: "Izometryczny",
     promptModifier:
       "isometric 3D illustration, soft gradients, organized structural " +
       "composition, minimal scene — think Big Four annual report cover art",
   },
   {
     key: "comic",
-    label: "Komiksowy",
     promptModifier:
       "comic book style illustration, bold outlines, dynamic but restrained " +
       "composition (no speech bubbles, no text) — think a modern explainer " +
@@ -42,7 +40,6 @@ export const STYLES: readonly StylePreset[] = [
   },
   {
     key: "abstract",
-    label: "Abstrakcyjny",
     promptModifier:
       "abstract representation of data flows, networks and connections, " +
       "glassmorphism, layered depth, deep violet and warm orange accents " +
@@ -55,7 +52,6 @@ export const DEFAULT_STYLE = STYLES[0]!
 
 export interface FormatPreset {
   key: string
-  label: string
   width: number
   height: number
   /** Etykieta proporcji dla prompt buildera (LLM), nie surowy stosunek pikseli. */
@@ -66,21 +62,18 @@ export interface FormatPreset {
 // format przeglądania LinkedIn), 1.91:1 to natywny format linka/cover.
 export const SQUARE_FORMAT: FormatPreset = {
   key: "square",
-  label: "Kwadrat 1200×1200 (feed)",
   width: 1200,
   height: 1200,
   aspectRatio: "1:1",
 }
 export const PORTRAIT_FORMAT: FormatPreset = {
   key: "portrait",
-  label: "Pionowy 1080×1350 (4:5)",
   width: 1080,
   height: 1350,
   aspectRatio: "4:5",
 }
 export const LINK_FORMAT: FormatPreset = {
   key: "link",
-  label: "Poziomy 1200×627 (link/cover, 1.91:1)",
   width: 1200,
   height: 627,
   aspectRatio: "1.91:1",

@@ -1,6 +1,7 @@
 "use client"
 
 import { LOCALES, type Locale } from "@/lib/i18n/config"
+import { formatClockTime } from "@/lib/i18n/formats"
 import { useLocaleStore } from "@/lib/i18n/locale-store"
 import { usePreset } from "@/lib/presets/preset-store"
 import { cva } from "class-variance-authority"
@@ -18,14 +19,23 @@ interface Diagnostics {
   online: boolean
 }
 
-/** Browser-only diagnostics; null until mounted so SSR markup stays stable. */
-function useDiagnostics(): Diagnostics | null {
+/**
+ * Browser-only diagnostics; null until mounted so SSR markup stays stable.
+ *
+ * `locale` wchodzi PARAMETREM, nie hookiem wewnątrz — ta funkcja czyta zegar
+ * w `useEffect`, więc bez jawnej zależności przełączenie języka zostawiłoby
+ * na ekranie godzinę sformatowaną po staremu aż do najbliższego tyknięcia
+ * (do 15 sekund). Ten sam `null` przed zamontowaniem trzyma ścieżkę SSR z dala
+ * od formatowania: serwer nie zna wyboru z `localStorage`, więc gdyby zegar
+ * renderował się od razu, hydratacja rozjechałaby się na tekście.
+ */
+function useDiagnostics(locale: Locale): Diagnostics | null {
   const [diag, setDiag] = useState<Diagnostics | null>(null)
 
   useEffect(() => {
     function read(): Diagnostics {
       return {
-        time: new Date().toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" }),
+        time: formatClockTime(new Date(), locale),
         resolution: `${window.innerWidth}x${window.innerHeight}`,
         online: navigator.onLine,
       }
@@ -42,7 +52,7 @@ function useDiagnostics(): Diagnostics | null {
       window.removeEventListener("online", update)
       window.removeEventListener("offline", update)
     }
-  }, [])
+  }, [locale])
 
   return diag
 }
@@ -83,11 +93,11 @@ const footText = cva(
 )
 
 export function ShellFooter() {
-  const diag = useDiagnostics()
   const variant = usePreset().variants.shell
   const { t } = useTranslation("common")
   const locale = useLocaleStore((s) => s.locale)
   const setLocale = useLocaleStore((s) => s.setLocale)
+  const diag = useDiagnostics(locale)
   // Stylowanie tokenami, NIE klasą zakresowaną do `.cortex-home` (D5: powłoka
   // zostaje na warstwie 1). Ta stopka renderuje się w DWÓCH miejscach — pod
   // hubem i w `landing-hero.tsx`, gdzie `.cortex-home` nie istnieje — więc

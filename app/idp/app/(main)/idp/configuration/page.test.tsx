@@ -95,51 +95,51 @@ describe("ConfigurationPage", () => {
       </Wrapper>,
     )
 
-    await screen.findByText("Classification")
-    fireEvent.click(screen.getByLabelText("Classification"))
-    fireEvent.click(screen.getByLabelText("Packaging selection mode"))
-    fireEvent.change(screen.getByLabelText("Hidden menu items"), {
+    await screen.findByText("Klasyfikacja")
+    fireEvent.click(screen.getByLabelText("Klasyfikacja"))
+    fireEvent.click(screen.getByLabelText("Tryb liczenia opakowań"))
+    fireEvent.change(screen.getByLabelText("Ukryte pozycje menu"), {
       target: { value: "rules" },
     })
-    fireEvent.change(screen.getByLabelText("Custom statuses"), {
-      target: { value: "Accepted, Controling Department" },
+    fireEvent.change(screen.getByLabelText("Statusy własne"), {
+      target: { value: "Accepted, Controlling Department" },
     })
-    fireEvent.change(screen.getByLabelText("Export templates"), {
+    fireEvent.change(screen.getByLabelText("Szablony eksportu"), {
       target: { value: "standard_xml, sad_xml" },
     })
-    fireEvent.change(screen.getByLabelText("SAD context defaults"), {
+    fireEvent.change(screen.getByLabelText("Domyślny kontekst SAD"), {
       target: { value: '{"header":{"decl_customs_off_no":"PL123456"}}' },
     })
-    fireEvent.change(screen.getByLabelText("SMTP user"), {
+    fireEvent.change(screen.getByLabelText("Użytkownik SMTP"), {
       target: { value: "new-smtp-user@example.com" },
     })
-    fireEvent.change(screen.getByLabelText("SMTP password (configured)"), {
+    fireEvent.change(screen.getByLabelText("Hasło SMTP (ustawione)"), {
       target: { value: "new-smtp-secret" },
     })
     fireEvent.change(screen.getByLabelText("Model"), {
       target: { value: "gemini-custom" },
     })
-    fireEvent.change(screen.getByLabelText("Fast model"), {
+    fireEvent.change(screen.getByLabelText("Model szybki"), {
       target: { value: "" },
     })
-    fireEvent.change(screen.getByLabelText("Temperature"), {
+    fireEvent.change(screen.getByLabelText("Temperatura"), {
       target: { value: "0.4" },
     })
-    fireEvent.change(screen.getByLabelText("Fast temperature"), {
+    fireEvent.change(screen.getByLabelText("Temperatura modelu szybkiego"), {
       target: { value: "" },
     })
-    fireEvent.change(screen.getByLabelText("Thinking budget"), {
+    fireEvent.change(screen.getByLabelText("Budżet rozumowania"), {
       target: { value: "-1" },
     })
-    fireEvent.click(screen.getByLabelText("IMAP import"))
-    fireEvent.click(screen.getByLabelText("Import email notifications"))
-    fireEvent.change(screen.getByLabelText("IMAP host"), {
+    fireEvent.click(screen.getByLabelText("Import przez IMAP"))
+    fireEvent.click(screen.getByLabelText("Powiadomienia mailowe o imporcie"))
+    fireEvent.change(screen.getByLabelText("Host IMAP"), {
       target: { value: "imap.example.com" },
     })
-    fireEvent.change(screen.getByLabelText("IMAP password (configured)"), {
+    fireEvent.change(screen.getByLabelText("Hasło IMAP (ustawione)"), {
       target: { value: "new-secret" },
     })
-    fireEvent.click(screen.getByRole("button", { name: /^save$/i }))
+    fireEvent.click(screen.getByRole("button", { name: /^zapisz$/i }))
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -153,7 +153,7 @@ describe("ConfigurationPage", () => {
       enable_classification: true,
       enable_packaging_selection_mode: true,
       hide_menu_items: ["rules"],
-      custom_statuses: ["Accepted", "Controling Department"],
+      custom_statuses: ["Accepted", "Controlling Department"],
       export_templates: ["standard_xml", "sad_xml"],
       sad_context_defaults: '{"header":{"decl_customs_off_no":"PL123456"}}',
       gemini_model: "gemini-custom",
@@ -191,11 +191,11 @@ describe("ConfigurationPage", () => {
       </Wrapper>,
     )
 
-    await screen.findByText("Classification")
-    fireEvent.click(screen.getByRole("button", { name: /load from env/i }))
+    await screen.findByText("Klasyfikacja")
+    fireEvent.click(screen.getByRole("button", { name: /wczytaj z env/i }))
 
     await waitFor(() => {
-      const input = screen.getByLabelText("Hidden menu items") as HTMLInputElement
+      const input = screen.getByLabelText("Ukryte pozycje menu") as HTMLInputElement
       expect(input.value).toBe("rules")
     })
     expect((screen.getByLabelText("Model") as HTMLInputElement).value).toBe("env-model")
@@ -220,14 +220,14 @@ describe("ConfigurationPage", () => {
       </Wrapper>,
     )
 
-    await screen.findByText("Classification")
-    fireEvent.change(screen.getByLabelText("IMAP host"), {
+    await screen.findByText("Klasyfikacja")
+    fireEvent.change(screen.getByLabelText("Host IMAP"), {
       target: { value: "imap.changed.example.com" },
     })
-    fireEvent.change(screen.getByLabelText("IMAP password (configured)"), {
+    fireEvent.change(screen.getByLabelText("Hasło IMAP (ustawione)"), {
       target: { value: "typed-secret" },
     })
-    fireEvent.click(screen.getByRole("button", { name: /test connection/i }))
+    fireEvent.click(screen.getByRole("button", { name: /testuj połączenie/i }))
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -264,14 +264,14 @@ describe("ConfigurationPage", () => {
       </Wrapper>,
     )
 
-    await screen.findByText("Classification")
-    fireEvent.change(screen.getByLabelText("SMTP host"), {
+    await screen.findByText("Klasyfikacja")
+    fireEvent.change(screen.getByLabelText("Host SMTP"), {
       target: { value: "smtp.changed.example.com" },
     })
-    fireEvent.change(screen.getByLabelText("SMTP password (configured)"), {
+    fireEvent.change(screen.getByLabelText("Hasło SMTP (ustawione)"), {
       target: { value: "typed-smtp-secret" },
     })
-    fireEvent.click(screen.getByRole("button", { name: /test smtp/i }))
+    fireEvent.click(screen.getByRole("button", { name: /testuj smtp/i }))
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(

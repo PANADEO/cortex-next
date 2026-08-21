@@ -12,6 +12,7 @@ import {
   Textarea,
 } from "@cortex/ui"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 
 export const MAX_AI_CONTEXT = 4000
 export const DEFAULT_PACKAGING_SELECTION_MODE: PackagingSelectionMode = "auto_by_bill_of_lading"
@@ -92,12 +93,15 @@ export function ImportOptionsFields({
   showAdditionalAiContext = false,
   showPackagingSelectionMode = false,
 }: ImportOptionsFieldsProps) {
+  const { t } = useTranslation("idp")
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
         <div>
-          <p className="text-xs font-medium">Fast processing</p>
-          <p className="text-[10px] text-muted-foreground">Cheaper Gemini model; lower accuracy.</p>
+          <p className="text-xs font-medium">{t("import.options.fastProcessing")}</p>
+          <p className="text-[10px] text-muted-foreground">
+            {t("import.options.fastProcessingHint")}
+          </p>
         </div>
         <Switch
           checked={state.fast_processing}
@@ -108,10 +112,8 @@ export function ImportOptionsFields({
       {showAtrProcessing ? (
         <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
           <div>
-            <p className="text-xs font-medium">Process A.TR documents</p>
-            <p className="text-[10px] text-muted-foreground">
-              Extract and assign A.TR data for this package.
-            </p>
+            <p className="text-xs font-medium">{t("import.options.atr")}</p>
+            <p className="text-[10px] text-muted-foreground">{t("import.options.atrHint")}</p>
           </div>
           <Switch
             checked={state.atr_processing_enabled}
@@ -123,9 +125,9 @@ export function ImportOptionsFields({
       {showPackagingSelectionMode ? (
         <div className="space-y-2 rounded-md border border-border px-3 py-2">
           <div>
-            <p className="text-xs font-medium">Packaging mode</p>
+            <p className="text-xs font-medium">{t("import.options.packagingMode")}</p>
             <p className="text-[10px] text-muted-foreground">
-              Select package or pallet counts for SAD/Huzar extraction.
+              {t("import.options.packagingModeHint")}
             </p>
           </div>
           <Select
@@ -138,9 +140,13 @@ export function ImportOptionsFields({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="auto_by_bill_of_lading">Auto by B/L</SelectItem>
-              <SelectItem value="force_packages">Packages</SelectItem>
-              <SelectItem value="force_pallets">Pallets</SelectItem>
+              <SelectItem value="auto_by_bill_of_lading">
+                {t("import.options.packagingAuto")}
+              </SelectItem>
+              <SelectItem value="force_packages">
+                {t("import.options.packagingPackages")}
+              </SelectItem>
+              <SelectItem value="force_pallets">{t("import.options.packagingPallets")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -150,9 +156,9 @@ export function ImportOptionsFields({
         <div className="space-y-2 rounded-md border border-border px-3 py-2">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium">Additional AI context</p>
+              <p className="text-xs font-medium">{t("import.options.aiContext")}</p>
               <p className="text-[10px] text-muted-foreground">
-                Extra prompt appended to extraction. Max {MAX_AI_CONTEXT} chars.
+                {t("import.options.aiContextHint", { max: MAX_AI_CONTEXT })}
               </p>
             </div>
             <Switch
@@ -163,7 +169,7 @@ export function ImportOptionsFields({
           {state.additional_ai_context_enabled ? (
             <div className="space-y-1">
               <Label htmlFor={`${idPrefix}-ai-context`} className="sr-only">
-                Additional AI context
+                {t("import.options.aiContext")}
               </Label>
               <Textarea
                 id={`${idPrefix}-ai-context`}
@@ -171,7 +177,7 @@ export function ImportOptionsFields({
                 onChange={(e) => onChange({ additional_ai_context: e.target.value })}
                 maxLength={MAX_AI_CONTEXT}
                 rows={3}
-                placeholder="e.g. 'This batch is from DHL — invoice totals in EUR.'"
+                placeholder={t("import.options.aiContextPlaceholder")}
                 className="resize-none"
               />
               <p className="text-right text-[10px] text-muted-foreground">

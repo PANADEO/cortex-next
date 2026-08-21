@@ -109,7 +109,7 @@ export default function InvoiceSupervisorInboxPage() {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>
-                    {t("inbox.rejectConfirmTitle", { n: selectedIdsArray.length })}
+                    {t("inbox.rejectConfirmTitle", { count: selectedIdsArray.length })}
                   </AlertDialogTitle>
                   <AlertDialogDescription>
                     {t("inbox.rejectConfirmDescription")}
@@ -139,7 +139,7 @@ export default function InvoiceSupervisorInboxPage() {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>
-                    {t("inbox.approveConfirmTitle", { n: selectedIdsArray.length })}
+                    {t("inbox.approveConfirmTitle", { count: selectedIdsArray.length })}
                   </AlertDialogTitle>
                   <AlertDialogDescription>
                     {t("inbox.approveConfirmDescription")}

@@ -82,7 +82,7 @@ export function LandingHero({ authErrorMessage }: LandingHeroProps) {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cortex/60 opacity-75 motion-reduce:animate-none" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cortex" />
               </span>
-              Enterprise AI Platform
+              {t("landing.platformBadge")}
             </div>
 
             <h1 className="text-[2.75rem] font-semibold leading-[1.05] tracking-tight md:text-6xl lg:text-[4rem]">
@@ -164,7 +164,7 @@ export function LandingHero({ authErrorMessage }: LandingHeroProps) {
                   </Button>
 
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    Logowanie SSO przez Auth0
+                    {t("landing.ssoNote")}
                   </p>
                 </div>
               </div>

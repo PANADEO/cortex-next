@@ -39,14 +39,21 @@ export function formatInvoiceSupervisorDateTime(value: string): string {
 export type InvoiceSupervisorEscalationStage =
   "proactive" | "first_reminder" | "follow_up_reminder" | "payment_demand"
 
-export const INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS: Record<
+/**
+ * Etykiety trzymają KLUCZ tłumaczenia z przestrzeni `invoice-supervisor`, nie
+ * napis — stąd `_LABEL_KEYS` w nazwie. Ta sama mapa karmi listę wyboru,
+ * odznakę w wierszu tabeli i nagłówek potwierdzenia, więc napis wpisany tutaj
+ * byłby polski we wszystkich trzech miejscach niezależnie od wybranego języka.
+ * Miejsce renderu woła `t()`.
+ */
+export const INVOICE_SUPERVISOR_ESCALATION_STAGE_LABEL_KEYS: Record<
   InvoiceSupervisorEscalationStage,
   string
 > = {
-  proactive: "Proaktywne",
-  first_reminder: "Pierwsze przypomnienie",
-  follow_up_reminder: "Kolejne przypomnienie",
-  payment_demand: "Wezwanie do zapłaty",
+  proactive: "escalationStage.proactive",
+  first_reminder: "escalationStage.firstReminder",
+  follow_up_reminder: "escalationStage.followUpReminder",
+  payment_demand: "escalationStage.paymentDemand",
 }
 
 // Tailwind classes per stage — deliberately escalating in visual intensity
@@ -64,17 +71,17 @@ export const INVOICE_SUPERVISOR_ESCALATION_STAGE_COLORS: Record<
 export type InvoiceSupervisorInvoiceStatus =
   "pending" | "upcoming" | "due_today" | "overdue" | "paid" | "partially_paid" | "disputed"
 
-export const INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS: Record<
+export const INVOICE_SUPERVISOR_INVOICE_STATUS_LABEL_KEYS: Record<
   InvoiceSupervisorInvoiceStatus,
   string
 > = {
-  pending: "Oczekująca",
-  upcoming: "Zbliża się termin",
-  due_today: "Termin dzisiaj",
-  overdue: "Po terminie",
-  paid: "Zapłacona",
-  partially_paid: "Częściowo zapłacona",
-  disputed: "Sporna",
+  pending: "invoiceStatus.pending",
+  upcoming: "invoiceStatus.upcoming",
+  due_today: "invoiceStatus.dueToday",
+  overdue: "invoiceStatus.overdue",
+  paid: "invoiceStatus.paid",
+  partially_paid: "invoiceStatus.partiallyPaid",
+  disputed: "invoiceStatus.disputed",
 }
 
 export const INVOICE_SUPERVISOR_INVOICE_STATUS_COLORS: Record<
@@ -92,9 +99,9 @@ export const INVOICE_SUPERVISOR_INVOICE_STATUS_COLORS: Record<
 
 export type InvoiceSupervisorChannel = "email" | "sms"
 
-export const INVOICE_SUPERVISOR_CHANNEL_LABELS: Record<InvoiceSupervisorChannel, string> = {
-  email: "E-mail",
-  sms: "SMS",
+export const INVOICE_SUPERVISOR_CHANNEL_LABEL_KEYS: Record<InvoiceSupervisorChannel, string> = {
+  email: "channel.email",
+  sms: "channel.sms",
 }
 
 export type InvoiceSupervisorProposalStatus =
@@ -104,10 +111,15 @@ export type InvoiceSupervisorRestrictiveness = "mała" | "średnia" | "duża" | 
 
 export type InvoiceSupervisorClientType = "nowy" | "stały" | "vip"
 
-export const INVOICE_SUPERVISOR_CLIENT_TYPE_LABELS: Record<InvoiceSupervisorClientType, string> = {
-  nowy: "Nowy",
-  stały: "Stały",
-  vip: "VIP",
+// Klucze mapy to WARTOŚCI z backendu (kolumna `type`), nie napisy — zostają po
+// polsku, bo tak brzmi kontrakt API. Tłumaczy się wyłącznie to, co widać.
+export const INVOICE_SUPERVISOR_CLIENT_TYPE_LABEL_KEYS: Record<
+  InvoiceSupervisorClientType,
+  string
+> = {
+  nowy: "clientType.new",
+  stały: "clientType.regular",
+  vip: "clientType.vip",
 }
 
 // Invoices
@@ -264,17 +276,20 @@ export interface InvoiceSupervisorGenerateDraftResult {
   body: string
 }
 
-export const INVOICE_SUPERVISOR_TEMPLATE_VARIABLES: Record<string, string> = {
-  numer_faktury: "Numer faktury",
-  kwota: "Kwota",
-  kwota_pozostala: "Kwota pozostała",
-  waluta: "Waluta",
-  termin_platnosci: "Termin płatności",
-  dni_po_terminie: "Dni po terminie",
-  nazwa_klienta: "Nazwa klienta",
-  link_platnosci: "Link do płatności",
-  nazwa_sprzedawcy: "Nazwa sprzedawcy",
-  numer_konta: "Numer konta",
+// Klucze mapy to NAZWY ZMIENNYCH wstawiane w treść szablonu ({numer_faktury})
+// — kontrakt z backendem, zostają po polsku. Wartości to klucze tłumaczeń
+// opisu, który widzi człowiek na liście zmiennych do wstawienia.
+export const INVOICE_SUPERVISOR_TEMPLATE_VARIABLE_LABEL_KEYS: Record<string, string> = {
+  numer_faktury: "templateVariables.numer_faktury",
+  kwota: "templateVariables.kwota",
+  kwota_pozostala: "templateVariables.kwota_pozostala",
+  waluta: "templateVariables.waluta",
+  termin_platnosci: "templateVariables.termin_platnosci",
+  dni_po_terminie: "templateVariables.dni_po_terminie",
+  nazwa_klienta: "templateVariables.nazwa_klienta",
+  link_platnosci: "templateVariables.link_platnosci",
+  nazwa_sprzedawcy: "templateVariables.nazwa_sprzedawcy",
+  numer_konta: "templateVariables.numer_konta",
 }
 
 // Notifications

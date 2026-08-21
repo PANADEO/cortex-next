@@ -12,7 +12,7 @@ import {
   formatInvoiceSupervisorCurrency,
   formatInvoiceSupervisorDate,
   INVOICE_SUPERVISOR_INVOICE_STATUS_COLORS,
-  INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS,
+  INVOICE_SUPERVISOR_INVOICE_STATUS_LABEL_KEYS,
 } from "@/lib/invoice-supervisor/types"
 import {
   Badge,
@@ -169,7 +169,7 @@ export default function InvoiceSupervisorInvoiceDetailPage() {
               variant="secondary"
               className={cn("border-0", INVOICE_SUPERVISOR_INVOICE_STATUS_COLORS[invoice.status])}
             >
-              {INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS[invoice.status] ?? invoice.status}
+              {t(INVOICE_SUPERVISOR_INVOICE_STATUS_LABEL_KEYS[invoice.status] ?? invoice.status)}
             </Badge>
           </div>
           <div className="flex gap-2">

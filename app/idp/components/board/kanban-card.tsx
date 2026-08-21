@@ -1,10 +1,12 @@
 "use client"
 
+import { DIRTY_STATUS_LABEL_KEY } from "@/components/classification/labels"
 import type { BoardCard } from "@/lib/board/pipeline"
 import { PackageStatusBadges } from "@cortex/ui"
 import { cn, formatRelative, useFeatureFlag } from "@cortex/utils"
 import { AlertTriangle, ArchiveRestore, Files, Flag, UserRound } from "lucide-react"
 import Link from "next/link"
+import { useTranslation } from "react-i18next"
 
 function initials(identifier: string): string {
   return (identifier[0] ?? "?").toUpperCase()
@@ -15,18 +17,38 @@ const KIND_STYLES: Record<BoardCard["kind"], string> = {
   clean: "bg-sky-500/15 text-sky-800 dark:text-sky-200",
 }
 
-const KIND_LABEL: Record<BoardCard["kind"], string> = {
-  dirty: "Dirty",
-  clean: "Clean",
+const KIND_LABEL_KEY: Record<BoardCard["kind"], string> = {
+  dirty: "board.card.kindDirty",
+  clean: "board.card.kindClean",
 }
 
 interface KanbanCardProps {
   card: BoardCard
 }
 
+/** Podpis karty składa się TUTAJ, bo tylko komponent ma `t()`. Wcześniej robił
+ *  to `pipeline.ts` i polski użytkownik oglądał „3 docs · Unassigned”. */
+function useCardSubtitle(card: BoardCard): string {
+  const { t } = useTranslation("idp")
+  if (card.kind === "dirty") {
+    const parts = [
+      ...(card.customer ? [card.customer] : []),
+      t("board.card.docCount", { count: card.docCount }),
+      ...(card.needsReviewCount > 0
+        ? [t("board.card.needsReviewCount", { count: card.needsReviewCount })]
+        : []),
+    ]
+    return parts.join(" · ")
+  }
+  const owner = card.assignee ?? t("board.card.unassigned")
+  return card.fileName ? `${card.fileName} · ${owner}` : owner
+}
+
 export function KanbanCard({ card }: KanbanCardProps) {
+  const { t } = useTranslation("idp")
   const classificationEnabled = useFeatureFlag("idp.classification")
   const assignee = card.kind === "clean" ? card.assignee : null
+  const subtitle = useCardSubtitle(card)
   return (
     <Link
       href={card.href}
@@ -46,7 +68,7 @@ export function KanbanCard({ card }: KanbanCardProps) {
               KIND_STYLES[card.kind],
             )}
           >
-            {KIND_LABEL[card.kind]}
+            {t(KIND_LABEL_KEY[card.kind])}
           </span>
         ) : null}
       </div>
@@ -55,8 +77,8 @@ export function KanbanCard({ card }: KanbanCardProps) {
         {card.title}
       </p>
 
-      {card.subtitle ? (
-        <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">{card.subtitle}</p>
+      {subtitle ? (
+        <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">{subtitle}</p>
       ) : null}
 
       <div className="mt-2.5">
@@ -84,7 +106,7 @@ export function KanbanCard({ card }: KanbanCardProps) {
           {card.kind === "clean" && card.hasError ? (
             <AlertTriangle
               className="h-3.5 w-3.5 text-red-600 dark:text-red-400"
-              aria-label="Processing error"
+              aria-label={t("board.card.processingError")}
             />
           ) : null}
           {assignee ? (
@@ -95,7 +117,7 @@ export function KanbanCard({ card }: KanbanCardProps) {
               {initials(assignee)}
             </span>
           ) : card.kind === "clean" ? (
-            <UserRound className="h-3.5 w-3.5 opacity-40" aria-label="Unassigned" />
+            <UserRound className="h-3.5 w-3.5 opacity-40" aria-label={t("board.card.unassigned")} />
           ) : null}
         </div>
       </div>
@@ -104,6 +126,7 @@ export function KanbanCard({ card }: KanbanCardProps) {
 }
 
 function DirtyStatusRow({ card }: { card: Extract<BoardCard, { kind: "dirty" }> }) {
+  const { t } = useTranslation("idp")
   const isPromoted = card.source.status === "promoted"
   const isArchived = card.source.status === "archived"
   const Icon = isPromoted || isArchived ? ArchiveRestore : Files
@@ -118,7 +141,7 @@ function DirtyStatusRow({ card }: { card: Extract<BoardCard, { kind: "dirty" }> 
           ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
           : "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300"
 
-  const label = card.source.status.replace(/_/g, " ")
+  const label = t(DIRTY_STATUS_LABEL_KEY[card.source.status])
 
   return (
     <span
@@ -130,7 +153,7 @@ function DirtyStatusRow({ card }: { card: Extract<BoardCard, { kind: "dirty" }> 
       <Icon
         className={cn("h-2.5 w-2.5", card.source.status === "classifying" && "animate-pulse")}
       />
-      <span className="capitalize">{label}</span>
+      <span>{label}</span>
     </span>
   )
 }

@@ -271,9 +271,9 @@ describe("intrastatApi", () => {
     const response = await intrastatApi.lines("batch-1", { limit: 20, offset: 0 })
 
     expect(response.items[0]?.alerts).toEqual([
-      "Missing CN code for Intrastat export.",
-      "Ambiguous CN match: 85322400, 85423269.",
-      "Sum of line values (2000.00 EUR) does not match the invoice net total (2300.00 EUR).",
+      "Brak kodu CN do eksportu Intrastat.",
+      "Niejednoznaczne dopasowanie CN: 85322400, 85423269.",
+      "Suma wartości pozycji (2000.00 EUR) nie zgadza się z kwotą netto faktury (2300.00 EUR).",
     ])
   })
 

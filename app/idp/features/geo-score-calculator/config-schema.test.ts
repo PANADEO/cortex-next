@@ -2,13 +2,26 @@
 // LUSTRO serwerowego Zod w app/api/geo-score-calculator/config/route.ts) i
 // konwersje ułamek<->procent między DTO sieciowym a formularzem.
 
+import plGeoScore from "@/locales/pl/geo-score-calculator.json"
 import { describe, expect, it } from "vitest"
 import {
   configDtoToFormValues,
   formValuesToUpdateRequest,
   geoScoreSettingsSchema,
+  invalidBulletPatterns,
 } from "./config-schema"
 import type { GeoScoreConfigDto } from "./types"
+
+/** Zdanie z przestrzeni `geo-score-calculator` po ścieżce klucza — bez
+ *  i18next, bo tu sprawdzamy WYŁĄCZNIE, czy klucz istnieje w pliku źródłowym. */
+function sourceSentence(key: string): unknown {
+  return key
+    .split(".")
+    .reduce<unknown>(
+      (node, part) => (node as Record<string, unknown> | undefined)?.[part],
+      plGeoScore as unknown,
+    )
+}
 
 const CONFIG: GeoScoreConfigDto = {
   weightStatistics: 0.3,
@@ -58,7 +71,7 @@ describe("geoScoreSettingsSchema", () => {
     expect(result.success).toBe(true)
   })
 
-  it("odrzuca sumę wag > 100%, błąd na weightStatistics", () => {
+  it("odrzuca sumę wag > 100%, błąd na weightStatistics — KLUCZEM, nie zdaniem", () => {
     const invalid = { ...VALID, weightStatistics: 31 } // suma = 101
     const result = geoScoreSettingsSchema.safeParse(invalid)
 
@@ -67,7 +80,10 @@ describe("geoScoreSettingsSchema", () => {
       expect(result.error.issues.some((issue) => issue.path.join(".") === "weightStatistics")).toBe(
         true,
       )
-      expect(result.error.issues[0]?.message).toMatch(/100%/)
+      // Schemat żyje na poziomie modułu, więc `t` tam nie istnieje — konkret
+      // (bieżąca suma) jedzie parametrem interpolacji z renderu, a `message`
+      // zostaje samym kluczem. Zdanie wpisane tu z powrotem wywróci ten test.
+      expect(result.error.issues[0]?.message).toBe("settings.validation.weightSum")
     }
   })
 
@@ -86,12 +102,50 @@ describe("geoScoreSettingsSchema", () => {
   it("odrzuca niepoprawny regex we wzorcach bulletów", () => {
     const invalid = { ...VALID, bulletPatterns: ["(unclosed"] }
     const result = geoScoreSettingsSchema.safeParse(invalid)
+
     expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe("settings.validation.invalidRegex")
+    }
+  })
+
+  it("odrzuca pusty wpis na liście słów KLUCZEM", () => {
+    const result = geoScoreSettingsSchema.safeParse({ ...VALID, actionVerbs: ["  "] })
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe("settings.validation.emptyEntry")
+    }
   })
 
   it("akceptuje pustą listę wyjątków (false positives) — to jedyna lista, która może być pusta", () => {
     const valid = { ...VALID, falsePositives: [] }
     const result = geoScoreSettingsSchema.safeParse(valid)
     expect(result.success).toBe(true)
+  })
+
+  /**
+   * Bez tego literówka w kluczu byłaby NIEWIDOCZNA w runtime: i18next oddaje
+   * wtedy sam klucz, więc pod polem staje „settings.validation.weightSum"
+   * zamiast zdania. Ekran wygląda na działający, a komunikat cicho ginie.
+   */
+  it.each([
+    "settings.validation.weightSum",
+    "settings.validation.listNotEmpty",
+    "settings.validation.emptyEntry",
+    "settings.validation.invalidRegex",
+  ])("klucz %s ISTNIEJE w pliku źródłowym", (key) => {
+    expect(typeof sourceSentence(key)).toBe("string")
+  })
+})
+
+describe("invalidBulletPatterns", () => {
+  // Ta sama funkcja odpowiada na pytanie walidacji ORAZ karmi `{{pattern}}`
+  // w komunikacie — inaczej render musiałby powtórzyć regułę u siebie.
+  it("wymienia wyłącznie wzorce, których RegExp nie przyjmuje", () => {
+    expect(invalidBulletPatterns(["^-\\s+", "(unclosed", "[a-z", "\\d+"])).toEqual([
+      "(unclosed",
+      "[a-z",
+    ])
   })
 })

@@ -8,17 +8,8 @@ export const MAX_REFERENCE_IMAGES = 3
 export const VARIANT_COUNTS = [2, 4] as const
 export const DEFAULT_VARIANT_COUNT = 2
 
-export const FIDELITY_OPTIONS: { key: FidelityKey; label: string; description: string }[] = [
-  {
-    key: "high",
-    label: "Wysoka",
-    description: "Model trzyma się kompozycji i szczegółów załączonego obrazu.",
-  },
-  {
-    key: "loose",
-    label: "Swobodna",
-    description: "Model traktuje załączony obraz jako luźną inspirację.",
-  },
-]
+// Sama KOLEJNOŚĆ opcji; napis i tooltip biorą się z
+// `generator.fidelity.<key>.{label,description}` w przestrzeni `visual-guru`.
+export const FIDELITY_OPTIONS: { key: FidelityKey }[] = [{ key: "high" }, { key: "loose" }]
 
 export const DEFAULT_FIDELITY: FidelityKey = "high"

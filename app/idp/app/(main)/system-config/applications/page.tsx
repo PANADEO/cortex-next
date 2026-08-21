@@ -10,6 +10,7 @@ import {
 import { resolveApplicationIcon } from "@/features/system-config/icons"
 import { KIND_LABEL_KEYS, KIND_SHORT_LABEL_KEYS } from "@/features/system-config/kinds"
 import type { Application } from "@/features/system-config/types"
+import { apiErrorMessage } from "@/lib/i18n/api-error"
 import { toastApiError } from "@cortex/api"
 import type { TileKind } from "@cortex/tile-sdk"
 import { TileKind as TileKindSchema } from "@cortex/tile-sdk"
@@ -155,11 +156,16 @@ export default function ApplicationsPage() {
       toast.success(t("applications.toast.created", { name: created.name }))
       router.push(`/system-config/applications/${created.code}`)
     } catch (error) {
-      toastApiError(
-        error,
-        form.kind === "native"
-          ? t("applications.errors.activateFailed")
-          : t("applications.errors.createFailed"),
+      // apiErrorMessage, a nie toastApiError: brak licencji na moduł i odmowa
+      // utworzenia kafelka natywnego z formularza niosą KLUCZ zdania.
+      toast.error(
+        apiErrorMessage(
+          t,
+          error,
+          form.kind === "native"
+            ? t("applications.errors.activateFailed")
+            : t("applications.errors.createFailed"),
+        ),
       )
     }
   }
@@ -182,11 +188,14 @@ export default function ApplicationsPage() {
           : t("applications.toast.enabled", { name: application.name }),
       )
     } catch (error) {
-      toastApiError(
-        error,
-        application.isActive
-          ? t("applications.errors.disableFailed")
-          : t("applications.errors.enableFailed"),
+      toast.error(
+        apiErrorMessage(
+          t,
+          error,
+          application.isActive
+            ? t("applications.errors.disableFailed")
+            : t("applications.errors.enableFailed"),
+        ),
       )
     }
   }

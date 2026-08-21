@@ -11,10 +11,31 @@
 import { z } from "zod"
 import type { GeoScoreConfigDto, UpdateGeoScoreConfigRequestDto } from "./types"
 
+// Komunikat walidacji jest KLUCZEM i18n, nie gotowym zdaniem — schemat żyje na
+// poziomie modułu, więc `t` jeszcze nie istnieje, a napis wpisany tutaj
+// zamroziłby jeden język dla wszystkich (wzorem
+// components/invoice-supervisor/policy-form-dialog.tsx). Wartości do wstawienia
+// w `{{...}}` dokłada RENDER (components/settings-form.tsx) — zodResolver
+// przepuszcza z issue wyłącznie `message` i `code`, więc parametr wklejony tu
+// w napis nie dałby się już od niego oddzielić.
 const percentWeight = z.number().min(0).max(100)
 const benchmark = z.number().min(0)
 const gradeThreshold = z.number().int().min(0).max(100)
-const wordList = z.array(z.string().trim().min(1, "Pusty wpis jest niedozwolony"))
+const wordList = z.array(z.string().trim().min(1, "settings.validation.emptyEntry"))
+
+/** Wzorce, których `RegExp` nie przyjmuje. Jedno źródło reguły dla walidacji
+ *  niżej i dla ekranu, który musi WYMIENIĆ je w komunikacie — inaczej render
+ *  nie miałby czym wypełnić `{{pattern}}`. */
+export function invalidBulletPatterns(patterns: readonly string[]): string[] {
+  return patterns.filter((pattern) => {
+    try {
+      new RegExp(pattern)
+      return false
+    } catch {
+      return true
+    }
+  })
+}
 
 export const geoScoreSettingsSchema = z
   .object({
@@ -30,8 +51,8 @@ export const geoScoreSettingsSchema = z
     gradeBMin: gradeThreshold,
     gradeCMin: gradeThreshold,
     gradeDMin: gradeThreshold,
-    actionVerbs: wordList.min(1, "Lista musi zawierać co najmniej jeden element"),
-    subjectiveWords: wordList.min(1, "Lista musi zawierać co najmniej jeden element"),
+    actionVerbs: wordList.min(1, "settings.validation.listNotEmpty"),
+    subjectiveWords: wordList.min(1, "settings.validation.listNotEmpty"),
     falsePositives: wordList,
     bulletPatterns: wordList,
   })
@@ -42,19 +63,18 @@ export const geoScoreSettingsSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["weightStatistics"],
-        message: `Suma wag musi wynosić 100% (obecnie ${sum}%)`,
+        message: "settings.validation.weightSum",
       })
     }
-    for (const pattern of data.bulletPatterns) {
-      try {
-        new RegExp(pattern)
-      } catch {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["bulletPatterns"],
-          message: `Nieprawidłowy wzorzec regex: ${pattern}`,
-        })
-      }
+    // Jedno zgłoszenie na CAŁE pole, nie po jednym na wzorzec: react-hook-form
+    // i tak trzyma pierwszy błąd na ścieżce, a wszystkie wadliwe wzorce render
+    // wymienia z `invalidBulletPatterns` w parametrze `{{pattern}}`.
+    if (invalidBulletPatterns(data.bulletPatterns).length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["bulletPatterns"],
+        message: "settings.validation.invalidRegex",
+      })
     }
   })
 

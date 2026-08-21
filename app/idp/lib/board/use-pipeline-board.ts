@@ -66,7 +66,7 @@ export function usePipelineBoard(): PipelineBoardState {
   const columns = useMemo<BoardColumns>(() => {
     const matchSearch = (card: BoardCard) => {
       if (!deferredSearch) return true
-      const haystack = [card.title, card.id, card.subtitle].join(" ").toLowerCase()
+      const haystack = [card.title, card.id, card.searchText].join(" ").toLowerCase()
       return haystack.includes(deferredSearch)
     }
     const matchKind = (card: BoardCard) => kindFilter === "all" || card.kind === kindFilter

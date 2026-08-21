@@ -77,7 +77,7 @@ const TILE_LABELS: Record<string, string> = {
 }
 
 export default function MainLayout({ children }: { children: ReactNode }) {
-  const { t } = useTranslation("misc")
+  const { t } = useTranslation("common")
   const pathname = usePathname()
   const tileId = pathToTileId(pathname)
   const requiredTileId = resolveRequiredTileId(pathname)

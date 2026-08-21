@@ -1,20 +1,23 @@
 import type { RuleCategory, RuleStatus, RuleTrigger } from "@cortex/types"
 
-export const RULE_CATEGORY_LABEL: Record<RuleCategory, string> = {
-  transport_allocation: "Alokacja transportu",
-  aggregation: "Agregacja",
-  split: "Podział",
-  lookup: "Słownik",
-  currency: "Waluta",
-  tax: "Podatek",
-  weight_derivation: "Wyliczanie wagi",
-  custom: "Niestandardowa",
+// Stałe trzymają KLUCZE przestrzeni `idp`, nie napisy — ten plik nie jest
+// komponentem i nie ma własnego `t()`. Napis powstaje w miejscu renderu.
+
+export const RULE_CATEGORY_LABEL_KEY: Record<RuleCategory, string> = {
+  transport_allocation: "rules.categories.transport_allocation",
+  aggregation: "rules.categories.aggregation",
+  split: "rules.categories.split",
+  lookup: "rules.categories.lookup",
+  currency: "rules.categories.currency",
+  tax: "rules.categories.tax",
+  weight_derivation: "rules.categories.weight_derivation",
+  custom: "rules.categories.custom",
 }
 
-export const RULE_STATUS_LABEL: Record<RuleStatus, string> = {
-  draft: "Szkic",
-  active: "Aktywna",
-  archived: "Archiwalna",
+export const RULE_STATUS_LABEL_KEY: Record<RuleStatus, string> = {
+  draft: "rules.statuses.draft",
+  active: "rules.statuses.active",
+  archived: "rules.statuses.archived",
 }
 
 export const RULE_STATUS_TONE: Record<RuleStatus, string> = {
@@ -23,9 +26,9 @@ export const RULE_STATUS_TONE: Record<RuleStatus, string> = {
   archived: "border-border text-muted-foreground",
 }
 
-export const RULE_TRIGGER_LABEL: Record<RuleTrigger, string> = {
-  manual: "Ręcznie",
-  auto_on_extraction: "Auto przy ekstrakcji",
+export const RULE_TRIGGER_LABEL_KEY: Record<RuleTrigger, string> = {
+  manual: "rules.triggers.manual",
+  auto_on_extraction: "rules.triggers.auto_on_extraction",
 }
 
 export function hasMeaningfulNl(nl: string): boolean {

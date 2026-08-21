@@ -124,13 +124,13 @@ function expectPending(): void {
   expect(screen.queryByTestId("child")).toBeNull()
   expect(screen.queryByRole("heading", { name: "Brak dostępu" })).toBeNull()
   // `AccessDeniedScreen` ma DWA tytuły zależne od `reason` (access-denied-screen.tsx):
-  // "Brak dostępu" dla `denied` i "Brak uprawnień" dla `error`. Punkt 2. wyżej
+  // "Brak dostępu" dla `denied` i "Nie udało się sprawdzić uprawnień" dla `error`. Punkt 2. wyżej
   // wykluczał tylko pierwszy, a `AppGate` fail-closed'uje na `reason="error"`
   // CZĘŚCIEJ niż na `"denied"` — więc asercja pokrywała mniej niż połowę
   // przypadków, które sama deklaruje. Wyszło z mutation testu (review 05.08.2026):
   // wariant "spinner + AccessDeniedScreen reason=error" jako jedyny z dziesięciu
   // przechodził cały plik na zielono.
-  expect(screen.queryByRole("heading", { name: "Brak uprawnień" })).toBeNull()
+  expect(screen.queryByRole("heading", { name: "Nie udało się sprawdzić uprawnień" })).toBeNull()
   expect(screen.getByText("Sprawdzanie dostępu…")).not.toBeNull()
 }
 

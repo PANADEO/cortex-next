@@ -7,6 +7,7 @@ import { cva } from "class-variance-authority"
 import { Star } from "lucide-react"
 import Link from "next/link"
 import type { CSSProperties } from "react"
+import { useTranslation } from "react-i18next"
 import { type Accent, accentFor } from "./accent"
 
 /**
@@ -154,6 +155,7 @@ export function TileCard({
   index,
   categoryTag,
 }: TileCardProps) {
+  const { t } = useTranslation("shell")
   const Icon = tile.icon
   const isChiclet = variant === "chiclet"
   const accent = accentFor(tile.categoryFunctional)
@@ -182,7 +184,9 @@ export function TileCard({
           onToggleFavorite(tile.id)
         }}
         aria-label={
-          isFavorite ? `Usuń ${tile.label} z ulubionych` : `Dodaj ${tile.label} do ulubionych`
+          isFavorite
+            ? t("hub.removeFavorite", { name: tile.label })
+            : t("hub.addFavorite", { name: tile.label })
         }
         aria-pressed={isFavorite}
         className={slots.fav({ variant, active: isFavorite })}

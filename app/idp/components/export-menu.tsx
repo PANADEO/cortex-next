@@ -80,7 +80,7 @@ function getDefaultEmailTemplate(
 }
 
 export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
-  const { t } = useTranslation("misc")
+  const { t } = useTranslation(["idp", "common"])
   const templates = useExportTemplates()
   const me = useMe()
   const [downloading, setDownloading] = useState<string | null>(null)
@@ -101,7 +101,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
       const blob = await endpoints.packages.exportResult(packageId, templateName)
       const exportFileName = deriveFileName(fileName, templateName, format)
       downloadBlob(blob, exportFileName)
-      toast.success(`Exported as ${templateName}`)
+      toast.success(t("export.menu.exported", { template: templateName }))
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return
       toastApiError(err)
@@ -118,8 +118,8 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
       displayName: template.display_name,
       format: template.format,
       toEmail: defaultEmailRecipient,
-      subject: `Export ${template.display_name}`,
-      body: t("export.emailDefaultBody"),
+      subject: t("export.menu.subject", { template: template.display_name }),
+      body: t("common:export.emailDefaultBody"),
     })
   }
 
@@ -134,7 +134,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
       templateName: template.name,
       displayName: template.display_name,
       format: template.format,
-      subject: `Export ${template.display_name}`,
+      subject: t("export.menu.subject", { template: template.display_name }),
     })
   }
 
@@ -155,7 +155,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
       })
       setSavedEmailRecipients(rememberExportEmailRecipient(toEmail, userEmail))
       rememberImportNotificationExportTemplate(emailDraft.templateName, userEmail)
-      toast.success(`Export emailed to ${result.sent_to}`)
+      toast.success(t("export.menu.emailed", { email: result.sent_to }))
       setEmailDraft(null)
     } catch (err) {
       toastApiError(err)
@@ -167,7 +167,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
   if (templates.isLoading) {
     return (
       <Button variant="outline" size="sm" disabled>
-        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Export
+        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> {t("export.menu.trigger")}
       </Button>
     )
   }
@@ -176,7 +176,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
   if (items.length === 0) {
     return (
       <Button variant="outline" size="sm" disabled>
-        <FileDown className="mr-1.5 h-4 w-4" /> No templates
+        <FileDown className="mr-1.5 h-4 w-4" /> {t("export.menu.noTemplates")}
       </Button>
     )
   }
@@ -200,7 +200,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
             ) : (
               <Download className="mr-1.5 h-4 w-4" />
             )}
-            Export
+            {t("export.menu.trigger")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
@@ -209,18 +209,20 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
             disabled={downloading !== null}
           >
             <Send className="mr-2 h-4 w-4 text-muted-foreground" />
-            Send by email
+            {t("export.menu.sendByEmail")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          {items.map((t) => (
+          {items.map((template) => (
             <DropdownMenuItem
-              key={t.name}
-              onClick={() => handleExport(t.name, t.display_name, t.format)}
+              key={template.name}
+              onClick={() => handleExport(template.name, template.display_name, template.format)}
               disabled={downloading !== null}
             >
               <div className="min-w-0 flex-1 space-y-0.5">
-                <p className="truncate text-sm">{t.display_name}</p>
-                <p className="truncate text-[10px] uppercase text-muted-foreground">{t.format}</p>
+                <p className="truncate text-sm">{template.display_name}</p>
+                <p className="truncate text-[10px] uppercase text-muted-foreground">
+                  {template.format}
+                </p>
               </div>
             </DropdownMenuItem>
           ))}
@@ -235,9 +237,9 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
         <DialogContent className="sm:max-w-lg">
           <form className="space-y-4" onSubmit={handleSendEmail}>
             <DialogHeader>
-              <DialogTitle>Email export</DialogTitle>
+              <DialogTitle>{t("export.menu.dialogTitle")}</DialogTitle>
               <DialogDescription className="sr-only">
-                Send selected export as an email attachment.
+                {t("export.menu.dialogDescription")}
               </DialogDescription>
             </DialogHeader>
 
@@ -245,7 +247,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
               <>
                 <div className="space-y-2">
                   <Label htmlFor={`export-email-template-${packageId}`} className="text-xs">
-                    Export template
+                    {t("export.menu.templateLabel")}
                   </Label>
                   <Select
                     value={emailDraft.templateName}
@@ -253,7 +255,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
                     disabled={isSendingEmail}
                   >
                     <SelectTrigger id={`export-email-template-${packageId}`} className="h-9">
-                      <SelectValue placeholder="Export template" />
+                      <SelectValue placeholder={t("export.menu.templateLabel")} />
                     </SelectTrigger>
                     <SelectContent>
                       {items.map((template) => (
@@ -267,7 +269,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
 
                 <div className="space-y-2">
                   <Label htmlFor={`export-email-to-${packageId}`} className="text-xs">
-                    To
+                    {t("export.menu.to")}
                   </Label>
                   <Input
                     id={`export-email-to-${packageId}`}
@@ -308,7 +310,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
 
                 <div className="space-y-2">
                   <Label htmlFor={`export-email-subject-${packageId}`} className="text-xs">
-                    Subject
+                    {t("export.menu.subjectLabel")}
                   </Label>
                   <Input
                     id={`export-email-subject-${packageId}`}
@@ -324,7 +326,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
 
                 <div className="space-y-2">
                   <Label htmlFor={`export-email-body-${packageId}`} className="text-xs">
-                    Message
+                    {t("export.menu.message")}
                   </Label>
                   <Textarea
                     id={`export-email-body-${packageId}`}
@@ -346,7 +348,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
                 onClick={() => setEmailDraft(null)}
                 disabled={isSendingEmail}
               >
-                Cancel
+                {t("common:actions.cancel")}
               </Button>
               <Button type="submit" disabled={!canSendEmail || isSendingEmail}>
                 {isSendingEmail ? (
@@ -354,7 +356,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
                 ) : (
                   <Send className="mr-1.5 h-4 w-4" />
                 )}
-                Send
+                {t("export.menu.send")}
               </Button>
             </DialogFooter>
           </form>

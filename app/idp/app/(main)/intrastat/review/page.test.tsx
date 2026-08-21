@@ -356,13 +356,13 @@ describe("IntrastatReviewPage line actions", () => {
     window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
     render(<IntrastatReviewPage />)
 
-    await user.click(screen.getByRole("button", { name: "Reprocess" }))
+    await user.click(screen.getByRole("button", { name: "Przetwórz ponownie" }))
     const dialog = screen.getByRole("dialog")
     const instructions = within(dialog).getByRole("textbox", {
-      name: "Additional AI instructions",
+      name: "Dodatkowe instrukcje dla AI",
     })
     await user.type(instructions, "  Merge the invoice with its packing list.  ")
-    await user.click(within(dialog).getByRole("button", { name: "Reprocess batch" }))
+    await user.click(within(dialog).getByRole("button", { name: "Przetwórz partię" }))
 
     await waitFor(() =>
       expect(reprocessBatch).toHaveBeenCalledWith({
@@ -388,11 +388,11 @@ describe("IntrastatReviewPage line actions", () => {
     window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
     render(<IntrastatReviewPage />)
 
-    await user.click(screen.getByRole("button", { name: "Edit line line-1" }))
-    const description = screen.getByRole("textbox", { name: "Description line-1" })
+    await user.click(screen.getByRole("button", { name: "Edytuj pozycję line-1" }))
+    const description = screen.getByRole("textbox", { name: "Opis line-1" })
     await user.clear(description)
     await user.type(description, "Updated cable")
-    await user.click(screen.getByRole("button", { name: "Save line line-1" }))
+    await user.click(screen.getByRole("button", { name: "Zapisz pozycję line-1" }))
 
     await waitFor(() =>
       expect(patchLine).toHaveBeenCalledWith({
@@ -407,10 +407,10 @@ describe("IntrastatReviewPage line actions", () => {
     window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
     render(<IntrastatReviewPage />)
 
-    await user.click(screen.getByRole("button", { name: "Add line after line-1" }))
-    await user.type(screen.getByRole("textbox", { name: "Item index draft:line-1" }), "NEW-100")
-    await user.type(screen.getByRole("textbox", { name: "CN code draft:line-1" }), "85044095")
-    await user.click(screen.getByRole("button", { name: "Save line draft:line-1" }))
+    await user.click(screen.getByRole("button", { name: "Dodaj pozycję po line-1" }))
+    await user.type(screen.getByRole("textbox", { name: "Indeks towaru draft:line-1" }), "NEW-100")
+    await user.type(screen.getByRole("textbox", { name: "Kod CN draft:line-1" }), "85044095")
+    await user.click(screen.getByRole("button", { name: "Zapisz pozycję draft:line-1" }))
 
     await waitFor(() =>
       expect(createLine).toHaveBeenCalledWith(
@@ -431,7 +431,7 @@ describe("IntrastatReviewPage line actions", () => {
     window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
     render(<IntrastatReviewPage />)
 
-    await user.click(screen.getByRole("button", { name: "View line line-1" }))
+    await user.click(screen.getByRole("button", { name: "Podejrzyj pozycję line-1" }))
 
     expect(screen.getByText("Details for line-1")).toBeInTheDocument()
   })
@@ -441,8 +441,8 @@ describe("IntrastatReviewPage line actions", () => {
     window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
     render(<IntrastatReviewPage />)
 
-    await user.click(screen.getByRole("checkbox", { name: "Select line line-1" }))
-    await user.click(screen.getByRole("button", { name: "Exclude from XLSX (1)" }))
+    await user.click(screen.getByRole("checkbox", { name: "Zaznacz pozycję line-1" }))
+    await user.click(screen.getByRole("button", { name: "Wyłącz z XLSX (1)" }))
 
     await waitFor(() =>
       expect(patchLine).toHaveBeenCalledWith({
@@ -461,9 +461,9 @@ describe("IntrastatReviewPage line actions", () => {
     window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
     render(<IntrastatReviewPage />)
 
-    expect(screen.getByText("Excluded from XLSX")).toBeInTheDocument()
-    await user.click(screen.getByRole("checkbox", { name: "Select line line-excluded" }))
-    await user.click(screen.getByRole("button", { name: "Restore to XLSX (1)" }))
+    expect(screen.getByText("Wyłączona z XLSX")).toBeInTheDocument()
+    await user.click(screen.getByRole("checkbox", { name: "Zaznacz pozycję line-excluded" }))
+    await user.click(screen.getByRole("button", { name: "Przywróć do XLSX (1)" }))
 
     await waitFor(() =>
       expect(patchLine).toHaveBeenCalledWith({
@@ -482,10 +482,10 @@ describe("IntrastatReviewPage line actions", () => {
     window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
     render(<IntrastatReviewPage />)
 
-    await user.click(screen.getByRole("button", { name: "Edit line line-1" }))
+    await user.click(screen.getByRole("button", { name: "Edytuj pozycję line-1" }))
     await user.click(
       screen.getByRole("button", {
-        name: "Save line line-1 and add to CN database",
+        name: "Zapisz pozycję line-1 i dodaj do bazy kodów CN",
       }),
     )
 
@@ -511,16 +511,16 @@ describe("IntrastatReviewPage line actions", () => {
     window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
     render(<IntrastatReviewPage />)
 
-    await user.click(screen.getByRole("button", { name: "Edit line line-1" }))
+    await user.click(screen.getByRole("button", { name: "Edytuj pozycję line-1" }))
     await user.click(
       screen.getByRole("button", {
-        name: "Save line line-1 and add to CN database",
+        name: "Zapisz pozycję line-1 i dodaj do bazy kodów CN",
       }),
     )
 
     await waitFor(() => expect(upsertCnResourceRow).toHaveBeenCalledTimes(2))
     expect(confirm).toHaveBeenCalledWith(
-      "Index ABC already has a different CN code. Replace it with 85444290?",
+      "Indeks ABC ma już przypisany inny kod CN. Zastąpić go kodem 85444290?",
     )
     expect(upsertCnResourceRow).toHaveBeenLastCalledWith({
       payload: {
@@ -539,11 +539,11 @@ describe("IntrastatReviewPage line actions", () => {
     window.history.pushState({}, "", "/intrastat/review?batch=batch-1")
     render(<IntrastatReviewPage />)
 
-    await user.click(screen.getByRole("button", { name: "Edit line line-1" }))
+    await user.click(screen.getByRole("button", { name: "Edytuj pozycję line-1" }))
 
     expect(
       screen.queryByRole("button", {
-        name: "Save line line-1 and add to CN database",
+        name: "Zapisz pozycję line-1 i dodaj do bazy kodów CN",
       }),
     ).not.toBeInTheDocument()
   })

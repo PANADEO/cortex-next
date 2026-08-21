@@ -71,12 +71,17 @@ export interface ComposeInput {
 }
 
 export class MissingFontFileError extends Error {
+  /** Ścieżka brakującego pliku — pole STRUKTURALNE dla kontrolera; `message`
+   *  zostaje diagnostyką do logu i do asercji testów. */
+  readonly path: string
+
   constructor(path: string) {
     super(
       `Plik fontu nie istnieje: ${path}. Render przerwany — Ilustromat nigdy nie ` +
         `renderuje fontem zastępczym, bo jedyną wartością produktu jest gwarancja brandu.`,
     )
     this.name = "MissingFontFileError"
+    this.path = path
   }
 }
 

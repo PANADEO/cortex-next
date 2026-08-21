@@ -46,18 +46,20 @@ import {
   UserCheck,
 } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
+import { Trans, useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
-const SORT_FIELDS: ReadonlyArray<{ value: PackageSortField; label: string }> = [
-  { value: "created_date", label: "Created date" },
-  { value: "package_name", label: "Package name" },
-  { value: "file_name", label: "File name" },
-  { value: "processing_state", label: "Processing state" },
+const SORT_FIELDS: ReadonlyArray<{ value: PackageSortField; labelKey: string }> = [
+  { value: "created_date", labelKey: "packages.list.sortCreated" },
+  { value: "package_name", labelKey: "packages.list.sortPackageName" },
+  { value: "file_name", labelKey: "packages.list.sortFileName" },
+  { value: "processing_state", labelKey: "packages.list.sortProcessingState" },
 ]
 
 const PAGE_SIZE = 10
 
 export default function PackagesPage() {
+  const { t } = useTranslation(["idp", "common"])
   const me = useMe()
   const currentEmail = me.data?.email ?? null
 
@@ -143,6 +145,7 @@ export default function PackagesPage() {
   const columns = useMemo(
     () =>
       packageColumns({
+        t,
         selection: {
           selected: selectedIds,
           allSelectedOnPage,
@@ -150,7 +153,7 @@ export default function PackagesPage() {
           toggleAll,
         },
       }),
-    [selectedIds, allSelectedOnPage, toggleRow, toggleAll],
+    [t, selectedIds, allSelectedOnPage, toggleRow, toggleAll],
   )
 
   const handleDelete = async () => {
@@ -158,7 +161,7 @@ export default function PackagesPage() {
     if (ids.length === 0) return
     try {
       await deleteMutation.mutateAsync({ package_ids: ids })
-      toast.success(`Deleted ${ids.length} package(s)`)
+      toast.success(t("packages.list.deleted", { count: ids.length }))
       clearSelection()
       setConfirmOpen(false)
     } catch (err) {
@@ -170,17 +173,14 @@ export default function PackagesPage() {
 
   return (
     <>
-      <PageHeader
-        title="Extraction"
-        description="Browse, filter, and manage all document packages."
-      />
+      <PageHeader title={t("packages.list.title")} description={t("packages.list.description")} />
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by package or file name…"
+              placeholder={t("packages.list.searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 resetPage()
@@ -197,10 +197,10 @@ export default function PackagesPage() {
             }}
           >
             <SelectTrigger className="h-9 w-[180px]">
-              <SelectValue placeholder="Processing" />
+              <SelectValue placeholder={t("packages.list.processingPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All processing</SelectItem>
+              <SelectItem value="all">{t("packages.list.allProcessing")}</SelectItem>
               {PROCESSING_STATE.map((s) => (
                 <SelectItem key={s} value={s}>
                   {getProcessingStateLabel(s)}
@@ -216,10 +216,10 @@ export default function PackagesPage() {
             }}
           >
             <SelectTrigger className="h-9 w-[180px]">
-              <SelectValue placeholder="Verification" />
+              <SelectValue placeholder={t("packages.list.verificationPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All verification</SelectItem>
+              <SelectItem value="all">{t("packages.list.allVerification")}</SelectItem>
               {VERIFICATION_STATE.map((s) => (
                 <SelectItem key={s} value={s}>
                   {getVerificationStateLabel(s)}
@@ -228,7 +228,7 @@ export default function PackagesPage() {
             </SelectContent>
           </Select>
           <Input
-            placeholder="Custom status"
+            placeholder={t("packages.list.customStatusPlaceholder")}
             value={customStatus}
             onChange={(e) => {
               resetPage()
@@ -248,7 +248,7 @@ export default function PackagesPage() {
             aria-pressed={assignedToMe}
           >
             <UserCheck className="mr-1.5 h-3.5 w-3.5" />
-            Assigned to me
+            {t("packages.list.assignedToMe")}
           </Button>
           <Button
             variant={uploadedByMe ? "default" : "outline"}
@@ -262,17 +262,17 @@ export default function PackagesPage() {
             aria-pressed={uploadedByMe}
           >
             <Upload className="mr-1.5 h-3.5 w-3.5" />
-            Uploaded by me
+            {t("packages.list.uploadedByMe")}
           </Button>
           <div className="ml-auto text-xs text-muted-foreground">
-            {isFetching ? "Refreshing…" : `${total} total`}
+            {isFetching ? t("packages.list.refreshing") : t("packages.list.total", { n: total })}
           </div>
         </div>
 
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
             <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Sort by
+              {t("packages.list.sortBy")}
             </Label>
             <div className="flex items-center gap-2">
               <Select
@@ -288,7 +288,7 @@ export default function PackagesPage() {
                 <SelectContent>
                   {SORT_FIELDS.map((f) => (
                     <SelectItem key={f.value} value={f.value}>
-                      {f.label}
+                      {t(f.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -301,7 +301,11 @@ export default function PackagesPage() {
                   resetPage()
                   setSortOrder((o) => (o === "asc" ? "desc" : "asc"))
                 }}
-                aria-label={sortOrder === "asc" ? "Sort ascending" : "Sort descending"}
+                aria-label={
+                  sortOrder === "asc"
+                    ? t("packages.list.sortAscending")
+                    : t("packages.list.sortDescending")
+                }
               >
                 {sortOrder === "asc" ? (
                   <ArrowUp className="h-4 w-4" />
@@ -343,7 +347,7 @@ export default function PackagesPage() {
                 setSortOrder("desc")
               }}
             >
-              Reset filters
+              {t("packages.list.resetFilters")}
             </Button>
           ) : null}
         </div>
@@ -351,11 +355,18 @@ export default function PackagesPage() {
         {selectionCount > 0 ? (
           <div className="flex items-center justify-between rounded-md border border-border bg-muted/50 px-3 py-2 text-sm">
             <span>
-              <strong>{selectionCount}</strong> selected
+              {/* Trans, bo polska forma zależy od liczebnika, a liczba ma zostać
+                  pogrubiona — rozbicie na „liczba + sufiks” dawało „2 zaznaczonych". */}
+              <Trans
+                t={t}
+                i18nKey="packages.list.selectedCount"
+                count={selectionCount}
+                components={{ n: <strong /> }}
+              />
             </span>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={clearSelection}>
-                Clear
+                {t("packages.list.clearSelection")}
               </Button>
               <Button
                 variant="destructive"
@@ -368,7 +379,7 @@ export default function PackagesPage() {
                 ) : (
                   <Trash2 className="mr-1.5 h-4 w-4" />
                 )}
-                Delete selected
+                {t("packages.list.deleteSelected")}
               </Button>
             </div>
           </div>
@@ -381,8 +392,8 @@ export default function PackagesPage() {
           emptyState={
             <EmptyState
               icon={FileQuestion}
-              title="No packages match"
-              description="Try clearing filters or importing a new package."
+              title={t("packages.list.emptyTitle")}
+              description={t("packages.list.emptyDescription")}
             />
           }
           getRowId={(row) => row.id}
@@ -394,16 +405,17 @@ export default function PackagesPage() {
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {selectionCount} package(s)?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Packages are soft-deleted — they can be restored later via the API. Proceed with
-              delete?
-            </AlertDialogDescription>
+            <AlertDialogTitle>
+              {t("packages.list.confirmDeleteTitle", { count: selectionCount })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>{t("packages.list.confirmDeleteBody")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>
+              {t("common:actions.cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleteMutation.isPending}>
-              Delete
+              {t("common:actions.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

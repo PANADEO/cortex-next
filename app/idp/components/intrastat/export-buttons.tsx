@@ -5,6 +5,7 @@ import { formatIntrastatError } from "@/lib/intrastat/api"
 import { useIntrastatExportAudit, useIntrastatExportIntrastat } from "@/lib/intrastat/hooks"
 import { Button } from "@cortex/ui"
 import { FileSpreadsheet, Loader2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 interface Props {
@@ -19,9 +20,10 @@ export function IntrastatExportButtons({
   batchId,
   batchIds,
   disabled: disabledProp,
-  exportLabel = "Export XLSX",
-  auditLabel = "Audit XLSX",
+  exportLabel,
+  auditLabel,
 }: Props) {
+  const { t } = useTranslation("intrastat")
   const intrastatExport = useIntrastatExportIntrastat()
   const auditExport = useIntrastatExportAudit()
   const resolvedBatchIds = batchIds ?? (batchId ? [batchId] : [])
@@ -36,7 +38,7 @@ export function IntrastatExportButtons({
       const result = await intrastatExport.mutateAsync(resolvedBatchIds)
       downloadBlob(result.blob, result.filename)
     } catch (error) {
-      toast.error(formatIntrastatError(error, "Intrastat export failed"))
+      toast.error(formatIntrastatError(error, t("exports.exportFailed")))
     }
   }
 
@@ -45,7 +47,7 @@ export function IntrastatExportButtons({
       const result = await auditExport.mutateAsync(resolvedBatchIds)
       downloadBlob(result.blob, result.filename)
     } catch (error) {
-      toast.error(formatIntrastatError(error, "Audit export failed"))
+      toast.error(formatIntrastatError(error, t("exports.auditFailed")))
     }
   }
 
@@ -57,7 +59,7 @@ export function IntrastatExportButtons({
         ) : (
           <FileSpreadsheet className="mr-2 h-4 w-4" />
         )}
-        {exportLabel}
+        {exportLabel ?? t("exports.exportXlsx")}
       </Button>
       <Button size="sm" variant="outline" onClick={handleAuditExport} disabled={disabled}>
         {auditExport.isPending ? (
@@ -65,7 +67,7 @@ export function IntrastatExportButtons({
         ) : (
           <FileSpreadsheet className="mr-2 h-4 w-4" />
         )}
-        {auditLabel}
+        {auditLabel ?? t("exports.auditXlsx")}
       </Button>
     </div>
   )

@@ -8,11 +8,12 @@ import {
   MAX_UPLOAD_MB,
   validateDocumentFile,
 } from "@/lib/document-parser/constraints"
-import { toastApiError } from "@cortex/api"
+import { apiErrorMessage } from "@/lib/i18n/api-error"
 import { Button, Card, CardContent, FileUploader, LoadingState, PageHeader } from "@cortex/ui"
 import { RotateCcw, Upload } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
+import { toast } from "sonner"
 
 const UPLOADER_FORMATS = ALLOWED_EXTENSIONS.join(", ").toUpperCase()
 
@@ -35,7 +36,7 @@ export default function DocumentParserUploadPage() {
     const validation = validateDocumentFile({ name: file.name, size: file.size })
     if (!validation.ok) {
       setPendingFile(null)
-      setFileError(validation.message)
+      setFileError(t(validation.messageKey, { ...validation.messageParams }))
       return
     }
 
@@ -50,7 +51,7 @@ export default function DocumentParserUploadPage() {
       setActiveJobId(response.jobId)
       setPendingFile(null)
     } catch (error) {
-      toastApiError(error, t("upload.errors.submitFailed"))
+      toast.error(apiErrorMessage(t, error, t("upload.errors.submitFailed")))
     }
   }
 

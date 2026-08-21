@@ -14,6 +14,7 @@ import {
 } from "@cortex/ui"
 import { Eye, FileText, Search } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 interface IntrastatPeriodInvoicesDialogProps {
   periodLabel: string
@@ -28,6 +29,7 @@ export function IntrastatPeriodInvoicesDialog({
   documents,
   onInvoiceSelect,
 }: IntrastatPeriodInvoicesDialogProps) {
+  const { t } = useTranslation("intrastat")
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   const filteredDocuments = useMemo(() => {
@@ -55,10 +57,10 @@ export function IntrastatPeriodInvoicesDialog({
           size="sm"
           variant="outline"
           disabled={documents.length === 0}
-          aria-label={`Open invoices for ${periodLabel}`}
+          aria-label={t("periodInvoices.openLabel", { period: periodLabel })}
         >
           <FileText className="mr-2 h-4 w-4" />
-          Invoices
+          {t("periodInvoices.trigger")}
           <Badge variant="secondary" className="ml-2 px-1.5 font-mono text-[10px]">
             {invoiceCount}
           </Badge>
@@ -69,8 +71,9 @@ export function IntrastatPeriodInvoicesDialog({
         <DialogHeader>
           <DialogTitle>{periodLabel}</DialogTitle>
           <DialogDescription>
-            {invoiceCount} {invoiceCount === 1 ? "invoice" : "invoices"} in this period. Choose a
-            file to open its preview.
+            {invoiceCount === 1
+              ? t("periodInvoices.summaryOne")
+              : t("periodInvoices.summaryMany", { count: invoiceCount })}
           </DialogDescription>
         </DialogHeader>
 
@@ -79,7 +82,7 @@ export function IntrastatPeriodInvoicesDialog({
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search invoice file..."
+            placeholder={t("periodInvoices.searchPlaceholder")}
             className="pl-9"
             autoFocus
           />
@@ -101,7 +104,7 @@ export function IntrastatPeriodInvoicesDialog({
                     </span>
                     <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
                       <Eye className="h-3.5 w-3.5" />
-                      Preview
+                      {t("periodInvoices.preview")}
                     </span>
                   </button>
                 </li>
@@ -109,7 +112,7 @@ export function IntrastatPeriodInvoicesDialog({
             </ul>
           ) : (
             <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-              No invoices match this search.
+              {t("periodInvoices.noResults")}
             </p>
           )}
         </div>

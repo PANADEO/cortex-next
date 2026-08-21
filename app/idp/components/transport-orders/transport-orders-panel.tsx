@@ -21,6 +21,7 @@ import { EmptyState, LoadingState, Tabs, TabsContent, TabsList, TabsTrigger } fr
 import { useFeatureFlag } from "@cortex/utils"
 import { Truck } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { InvoiceEditor } from "./invoice-editor"
 import { PartyEditor } from "./party-editor"
 import { SadContextEditor } from "./sad-context-editor"
@@ -43,6 +44,7 @@ function usesSadContextExportTemplate(templateName: string): boolean {
 }
 
 export function TransportOrdersPanel({ packageId, canEdit }: Props) {
+  const { t } = useTranslation("idp")
   const { data, isLoading } = usePackageTransportOrders(packageId, { polling: false })
   const exportTemplates = useExportTemplates()
   const useCustomsCode = useFeatureFlag("idp.customs-code")
@@ -71,8 +73,8 @@ export function TransportOrdersPanel({ packageId, canEdit }: Props) {
     return (
       <EmptyState
         icon={Truck}
-        title="No transport orders extracted yet"
-        description="Once analysis finishes, extracted transport orders will appear here."
+        title={t("transportOrders.panel.emptyTitle")}
+        description={t("transportOrders.panel.emptyDescription")}
       />
     )
   }
@@ -140,7 +142,7 @@ interface SectionProps {
 }
 
 interface PartyConfig {
-  label: string
+  labelKey: string
   role: "seller" | "buyer" | "consignor" | "consignee"
   value: Party | null
 }
@@ -154,6 +156,7 @@ function TransportOrderSection({
   showAtrProcessing,
   showHeader,
 }: SectionProps) {
+  const { t } = useTranslation("idp")
   const seller = useUpdateSeller()
   const buyer = useUpdateBuyer()
   const consignor = useUpdateConsignor()
@@ -167,19 +170,19 @@ function TransportOrderSection({
   const selectLine = useSourceMaterialSelectionStore((s) => s.selectLine)
 
   const partyMutations = { seller, buyer, consignor, consignee }
-  const saveTransportInfo = wrapMutation(transportInfo, "Transport info updated")
-  const saveSadContext = wrapMutation(sadContext, "SAD context updated")
-  const saveInvoiceHeader = wrapMutation(invoiceHeader, "Invoice updated")
-  const saveDeliveryTerms = wrapMutation(deliveryTerms, "Delivery terms updated")
-  const saveInvoiceTotals = wrapMutation(invoiceTotals, "Totals updated")
-  const saveInvoiceLines = wrapMutation(invoiceLines, "Lines updated")
+  const saveTransportInfo = wrapMutation(transportInfo, t("transportOrders.toasts.transportInfo"))
+  const saveSadContext = wrapMutation(sadContext, t("transportOrders.toasts.sadContext"))
+  const saveInvoiceHeader = wrapMutation(invoiceHeader, t("transportOrders.toasts.invoice"))
+  const saveDeliveryTerms = wrapMutation(deliveryTerms, t("transportOrders.toasts.deliveryTerms"))
+  const saveInvoiceTotals = wrapMutation(invoiceTotals, t("transportOrders.toasts.totals"))
+  const saveInvoiceLines = wrapMutation(invoiceLines, t("transportOrders.toasts.lines"))
 
   const parties: readonly PartyConfig[] = useMemo(
     () => [
-      { label: "Seller", role: "seller", value: order.seller },
-      { label: "Buyer", role: "buyer", value: order.buyer },
-      { label: "Consignor", role: "consignor", value: order.consignor },
-      { label: "Consignee", role: "consignee", value: order.consignee },
+      { labelKey: "transportOrders.parties.seller", role: "seller", value: order.seller },
+      { labelKey: "transportOrders.parties.buyer", role: "buyer", value: order.buyer },
+      { labelKey: "transportOrders.parties.consignor", role: "consignor", value: order.consignor },
+      { labelKey: "transportOrders.parties.consignee", role: "consignee", value: order.consignee },
     ],
     [order.seller, order.buyer, order.consignor, order.consignee],
   )
@@ -189,7 +192,9 @@ function TransportOrderSection({
       {showHeader ? (
         <header>
           <h2 className="text-sm font-semibold">
-            Transport order {order.transport_order_number ?? order.id}
+            {t("transportOrders.panel.orderHeading", {
+              label: order.transport_order_number ?? order.id,
+            })}
           </h2>
           <p className="text-xs text-muted-foreground">{transportOrderMeta(order)}</p>
         </header>
@@ -212,9 +217,10 @@ function TransportOrderSection({
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
-        {parties.map(({ label, role, value }) => {
+        {parties.map(({ labelKey, role, value }) => {
           const m = partyMutations[role]
-          const save = wrapMutation(m, `${label} updated`)
+          const label = t(labelKey)
+          const save = wrapMutation(m, t("transportOrders.toasts.party", { label }))
           return (
             <PartyEditor
               key={role}

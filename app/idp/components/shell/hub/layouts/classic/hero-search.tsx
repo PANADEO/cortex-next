@@ -17,7 +17,7 @@ export function HeroSearch({ value, onChange, view, onViewChange }: HeroSearchPr
   const { t } = useTranslation("shell")
   return (
     <section className="mb-8 text-center">
-      <h1 className="text-xl font-semibold">Enterprise AI Hub</h1>
+      <h1 className="text-xl font-semibold">{t("hub.heading")}</h1>
       <p className="mt-0.5 text-xs text-muted-foreground">{t("hub.subtitle")}</p>
 
       <div className="mx-auto mt-4 max-w-xl">
@@ -25,11 +25,11 @@ export function HeroSearch({ value, onChange, view, onViewChange }: HeroSearchPr
           <Search className="h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Szukaj aplikacji…"
+            placeholder={t("hub.searchPlaceholder")}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            aria-label="Szukaj aplikacji"
+            aria-label={t("hub.searchLabel")}
           />
           <span className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
             ⌘K
@@ -48,7 +48,7 @@ export function HeroSearch({ value, onChange, view, onViewChange }: HeroSearchPr
               : "text-muted-foreground hover:text-foreground",
           )}
         >
-          Funkcjonalnie
+          {t("hub.byFunction")}
         </button>
         <button
           type="button"

@@ -16,6 +16,7 @@ import {
 } from "@cortex/ui"
 import { Loader2, Trash2 } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 interface Props {
@@ -33,17 +34,18 @@ export function IntrastatDeleteBatchButton({
   disabled,
   onDeleted,
 }: Props) {
+  const { t } = useTranslation(["intrastat", "common"])
   const [open, setOpen] = useState(false)
   const mutation = useIntrastatDeleteBatch()
 
   const runDelete = async () => {
     try {
       await mutation.mutateAsync(batchId)
-      toast.success("Batch deleted")
+      toast.success(t("deleteBatch.success"))
       setOpen(false)
       onDeleted?.()
     } catch (error) {
-      toast.error(formatIntrastatError(error, "Batch delete failed"))
+      toast.error(formatIntrastatError(error, t("deleteBatch.failed")))
     }
   }
 
@@ -62,24 +64,30 @@ export function IntrastatDeleteBatchButton({
           ) : (
             <Trash2 className={compact ? "h-4 w-4" : "mr-2 h-4 w-4"} />
           )}
-          {compact ? <span className="sr-only">Delete batch</span> : "Delete"}
+          {compact ? (
+            <span className="sr-only">{t("deleteBatch.srLabel")}</span>
+          ) : (
+            t("common:actions.delete")
+          )}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete batch?</AlertDialogTitle>
+          <AlertDialogTitle>{t("deleteBatch.title")}</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently remove {batchName} and all files stored with it.
+            {t("deleteBatch.description", { name: batchName })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={mutation.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={mutation.isPending}>
+            {t("common:actions.cancel")}
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={runDelete}
             disabled={mutation.isPending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            Delete
+            {t("common:actions.delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

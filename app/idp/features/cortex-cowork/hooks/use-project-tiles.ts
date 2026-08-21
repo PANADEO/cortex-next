@@ -20,14 +20,17 @@ import { coworkApi, coworkQueryKeys, type CoworkProjectTile } from "../queries"
 // source for both the hub tiles and the project form's icon picker - add an
 // icon here and it shows up in both. Extend deliberately - a giant registry
 // would bloat the client bundle for no user value.
-export const PROJECT_ICON_OPTIONS: Array<{ value: string; label: string; icon: LucideIcon }> = [
-  { value: "bot", label: "Bot", icon: Bot },
-  { value: "messages-square", label: "Chat", icon: MessagesSquare },
-  { value: "file-text", label: "Dokument", icon: FileText },
-  { value: "file-spreadsheet", label: "Arkusz", icon: FileSpreadsheet },
-  { value: "search", label: "Lupa", icon: Search },
-  { value: "sparkles", label: "Iskry", icon: Sparkles },
-  { value: "table", label: "Tabela", icon: Table2 },
+//
+// The picker label lives in `projectEditor.icons.<value>` (namespace
+// `cortex-config`); this registry carries identity and icon only.
+export const PROJECT_ICON_OPTIONS: Array<{ value: string; icon: LucideIcon }> = [
+  { value: "bot", icon: Bot },
+  { value: "messages-square", icon: MessagesSquare },
+  { value: "file-text", icon: FileText },
+  { value: "file-spreadsheet", icon: FileSpreadsheet },
+  { value: "search", icon: Search },
+  { value: "sparkles", icon: Sparkles },
+  { value: "table", icon: Table2 },
 ]
 
 const PROJECT_ICONS: Record<string, LucideIcon> = Object.fromEntries(

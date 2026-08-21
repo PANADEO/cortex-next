@@ -7,17 +7,20 @@ import { Badge, Button, Card, CardContent, DataCard, PageHeader } from "@cortex/
 import { cn } from "@cortex/utils"
 import { ArrowUpRight, Percent, Receipt, TrendingUp, Wallet } from "lucide-react"
 import Link from "next/link"
+import { useTranslation } from "react-i18next"
 
 export default function ReRatingPage() {
+  const { t } = useTranslation("store-pit")
+
   return (
     <>
       <PageHeader
-        title="Re-rating"
-        description="Per-client pricing engine: classify, net, then re-rate GLS cost to the Store-Pit price."
+        title={t("reRating.title")}
+        description={t("reRating.description")}
         actions={
           <Button asChild variant="outline" size="sm">
             <Link href="/store-pit/clients">
-              Clients
+              {t("clients.title")}
               <ArrowUpRight className="ml-1.5 h-4 w-4" />
             </Link>
           </Button>
@@ -27,19 +30,25 @@ export default function ReRatingPage() {
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
         {/* KPI row */}
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <DataCard label="GLS cost" value={eur(GRAND_TOTAL.glsTotal)} icon={Receipt} />
-          <DataCard label="Store-Pit price" value={eur(GRAND_TOTAL.spTotal)} icon={Wallet} />
+          <DataCard label={t("fields.glsCost")} value={eur(GRAND_TOTAL.glsTotal)} icon={Receipt} />
           <DataCard
-            label="SP margin"
+            label={t("fields.storePitPrice")}
+            value={eur(GRAND_TOTAL.spTotal)}
+            icon={Wallet}
+          />
+          <DataCard
+            label={t("reRating.cards.spMargin")}
             value={signedEur(MARGIN.total)}
-            description={pct(MARGIN.pct) + " on grand total"}
+            description={t("reRating.cards.marginOnGrandTotal", { pct: pct(MARGIN.pct) })}
             icon={TrendingUp}
             tone="success"
           />
           <DataCard
-            label="Margin split"
+            label={t("reRating.cards.marginSplit")}
             value={signedEur(MARGIN.freight)}
-            description={"surcharge " + signedEur(MARGIN.surcharge)}
+            description={t("reRating.cards.surchargeAmount", {
+              value: signedEur(MARGIN.surcharge),
+            })}
             icon={Percent}
           />
         </section>
@@ -47,10 +56,8 @@ export default function ReRatingPage() {
         {/* Pricing rules table */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Pricing rules applied</h2>
-            <span className="text-xs text-muted-foreground">
-              Rule-based per client - not a flat markup
-            </span>
+            <h2 className="text-sm font-semibold">{t("reRating.rulesTitle")}</h2>
+            <span className="text-xs text-muted-foreground">{t("reRating.rulesNote")}</span>
           </div>
           <Card>
             <CardContent className="p-0">
@@ -58,10 +65,10 @@ export default function ReRatingPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-muted/40">
                     <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                      <th className="px-4 py-2.5 font-medium">Rule</th>
-                      <th className="px-3 py-2.5 font-medium">Pricing basis</th>
-                      <th className="px-3 py-2.5 font-medium">Formula</th>
-                      <th className="px-4 py-2.5 font-medium">Notes</th>
+                      <th className="px-4 py-2.5 font-medium">{t("markupTable.rule")}</th>
+                      <th className="px-3 py-2.5 font-medium">{t("markupTable.pricingBasis")}</th>
+                      <th className="px-3 py-2.5 font-medium">{t("markupTable.formula")}</th>
+                      <th className="px-4 py-2.5 font-medium">{t("markupTable.notes")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -90,10 +97,8 @@ export default function ReRatingPage() {
         {/* Per-client breakdown: GLS cost to SP price */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">GLS cost to Store-Pit price</h2>
-            <span className="text-xs text-muted-foreground">
-              Freight and surcharge split per client
-            </span>
+            <h2 className="text-sm font-semibold">{t("reRating.breakdownTitle")}</h2>
+            <span className="text-xs text-muted-foreground">{t("reRating.breakdownNote")}</span>
           </div>
           <Card>
             <CardContent className="p-0">
@@ -101,15 +106,27 @@ export default function ReRatingPage() {
                 <table className="w-full text-xs">
                   <thead className="bg-muted/40">
                     <tr className="border-b border-border text-left uppercase tracking-wide text-muted-foreground">
-                      <th className="px-4 py-2.5 font-medium">Client</th>
-                      <th className="px-3 py-2.5 text-right font-medium">Parcels</th>
-                      <th className="px-3 py-2.5 text-right font-medium">GLS freight</th>
-                      <th className="px-3 py-2.5 text-right font-medium">GLS surcharge</th>
-                      <th className="px-3 py-2.5 text-right font-medium">GLS total</th>
-                      <th className="px-3 py-2.5 text-right font-medium">SP freight</th>
-                      <th className="px-3 py-2.5 text-right font-medium">SP surcharge</th>
-                      <th className="px-3 py-2.5 text-right font-medium">SP total</th>
-                      <th className="px-4 py-2.5 text-right font-medium">Margin</th>
+                      <th className="px-4 py-2.5 font-medium">{t("fields.client")}</th>
+                      <th className="px-3 py-2.5 text-right font-medium">{t("fields.parcels")}</th>
+                      <th className="px-3 py-2.5 text-right font-medium">
+                        {t("reRating.columns.glsFreight")}
+                      </th>
+                      <th className="px-3 py-2.5 text-right font-medium">
+                        {t("reRating.columns.glsSurcharge")}
+                      </th>
+                      <th className="px-3 py-2.5 text-right font-medium">
+                        {t("reRating.columns.glsTotal")}
+                      </th>
+                      <th className="px-3 py-2.5 text-right font-medium">
+                        {t("reRating.columns.spFreight")}
+                      </th>
+                      <th className="px-3 py-2.5 text-right font-medium">
+                        {t("reRating.columns.spSurcharge")}
+                      </th>
+                      <th className="px-3 py-2.5 text-right font-medium">
+                        {t("reRating.columns.spTotal")}
+                      </th>
+                      <th className="px-4 py-2.5 text-right font-medium">{t("fields.margin")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -170,7 +187,7 @@ export default function ReRatingPage() {
                   </tbody>
                   <tfoot>
                     <tr className="bg-muted/40 font-semibold">
-                      <td className="px-4 py-3">Grand total</td>
+                      <td className="px-4 py-3">{t("fields.grandTotal")}</td>
                       <td className="px-3 py-3 text-right tabular-nums">
                         {count(GRAND_TOTAL.qty)}
                       </td>
@@ -205,12 +222,12 @@ export default function ReRatingPage() {
 
         {/* Margin build breakdown */}
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold">How the margin builds</h2>
+          <h2 className="text-sm font-semibold">{t("reRating.marginBuildTitle")}</h2>
           <Card>
             <CardContent className="py-4">
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-md bg-muted/40 px-3 py-2.5">
-                  <p className="text-xs text-muted-foreground">Freight margin</p>
+                  <p className="text-xs text-muted-foreground">{t("reRating.margin.freight")}</p>
                   <p className="mt-0.5 text-sm font-medium tabular-nums text-success-foreground">
                     {signedEur(MARGIN.freight)}
                     <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
@@ -219,7 +236,7 @@ export default function ReRatingPage() {
                   </p>
                 </div>
                 <div className="rounded-md bg-muted/40 px-3 py-2.5">
-                  <p className="text-xs text-muted-foreground">Surcharge margin</p>
+                  <p className="text-xs text-muted-foreground">{t("reRating.margin.surcharge")}</p>
                   <p className="mt-0.5 text-sm font-medium tabular-nums text-success-foreground">
                     {signedEur(MARGIN.surcharge)}
                     <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
@@ -228,7 +245,7 @@ export default function ReRatingPage() {
                   </p>
                 </div>
                 <div className="rounded-md bg-muted/40 px-3 py-2.5">
-                  <p className="text-xs text-muted-foreground">Total margin</p>
+                  <p className="text-xs text-muted-foreground">{t("reRating.margin.total")}</p>
                   <p className="mt-0.5 text-sm font-medium tabular-nums text-success-foreground">
                     {signedEur(MARGIN.total)}
                     <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">

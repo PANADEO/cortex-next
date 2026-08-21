@@ -18,6 +18,7 @@ import { cn } from "@cortex/utils"
 import { Loader2, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 interface DeletePackageButtonProps {
@@ -42,6 +43,7 @@ export function IdpBasicDeletePackageButton({
   redirectTo,
   disabled,
 }: DeletePackageButtonProps) {
+  const { t } = useTranslation(["idp-basic", "common"])
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const mutation = useIdpBasicDeletePackage()
@@ -49,11 +51,11 @@ export function IdpBasicDeletePackageButton({
   const runDelete = async () => {
     try {
       await mutation.mutateAsync(packageId)
-      toast.success("Package deleted")
+      toast.success(t("toast.packageDeleted"))
       setOpen(false)
       router.push(redirectTo)
     } catch (error) {
-      toast.error(formatIdpBasicError(error, "Package delete failed"))
+      toast.error(formatIdpBasicError(error, t("errors.packageDeleteFailed")))
     }
   }
 
@@ -66,24 +68,26 @@ export function IdpBasicDeletePackageButton({
           ) : (
             <Trash2 className="h-4 w-4" />
           )}
-          Delete package
+          {t("delete.packageTrigger")}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete package?</AlertDialogTitle>
+          <AlertDialogTitle>{t("delete.packageTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently remove {packageName} and all files stored with it.
+            {t("delete.packageDescription", { name: packageName })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={mutation.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={mutation.isPending}>
+            {t("common:actions.cancel")}
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={runDelete}
             disabled={mutation.isPending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            Delete
+            {t("common:actions.delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -99,16 +103,17 @@ export function IdpBasicDeleteDocumentButton({
   compact,
   className,
 }: DeleteDocumentButtonProps) {
+  const { t } = useTranslation(["idp-basic", "common"])
   const [open, setOpen] = useState(false)
   const mutation = useIdpBasicDeleteDocument(packageId)
 
   const runDelete = async () => {
     try {
       await mutation.mutateAsync(documentId)
-      toast.success("File deleted")
+      toast.success(t("toast.fileDeleted"))
       setOpen(false)
     } catch (error) {
-      toast.error(formatIdpBasicError(error, "File delete failed"))
+      toast.error(formatIdpBasicError(error, t("errors.fileDeleteFailed")))
     }
   }
 
@@ -127,24 +132,30 @@ export function IdpBasicDeleteDocumentButton({
           ) : (
             <Trash2 className="h-4 w-4" />
           )}
-          {compact ? <span className="sr-only">Delete file</span> : "Delete"}
+          {compact ? (
+            <span className="sr-only">{t("delete.fileSrLabel")}</span>
+          ) : (
+            t("common:actions.delete")
+          )}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete file?</AlertDialogTitle>
+          <AlertDialogTitle>{t("delete.fileTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently remove {fileName} from the package.
+            {t("delete.fileDescription", { name: fileName })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={mutation.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={mutation.isPending}>
+            {t("common:actions.cancel")}
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={runDelete}
             disabled={mutation.isPending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            Delete
+            {t("common:actions.delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

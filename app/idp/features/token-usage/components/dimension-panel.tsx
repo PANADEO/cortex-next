@@ -1,5 +1,6 @@
 "use client"
 
+import { useLocaleStore } from "@/lib/i18n/locale-store"
 import { buildExportFileName, buildGroupCsv } from "@/lib/token-usage/csv"
 import { BarList, Button, CortexDataGrid, EmptyState } from "@cortex/ui"
 import type { ColumnDef } from "@tanstack/react-table"
@@ -33,6 +34,8 @@ export function DimensionPanel({
   showUserCount = true,
 }: DimensionPanelProps) {
   const { t } = useTranslation("token-usage")
+  const locale = useLocaleStore((s) => s.locale)
+  const num = (value: number) => formatNumber(value, locale)
 
   const columns: ColumnDef<UsageGroup, unknown>[] = [
     { accessorKey: "key", header: dimensionLabel, enableSorting: true },
@@ -40,17 +43,13 @@ export function DimensionPanel({
       accessorKey: "totalTokens",
       header: t("columns.totalTokens"),
       enableSorting: true,
-      cell: ({ row }) => (
-        <span className="tabular-nums">{formatNumber(row.original.totalTokens)}</span>
-      ),
+      cell: ({ row }) => <span className="tabular-nums">{num(row.original.totalTokens)}</span>,
     },
     {
       accessorKey: "requestCount",
       header: t("columns.requestCount"),
       enableSorting: true,
-      cell: ({ row }) => (
-        <span className="tabular-nums">{formatNumber(row.original.requestCount)}</span>
-      ),
+      cell: ({ row }) => <span className="tabular-nums">{num(row.original.requestCount)}</span>,
     },
     ...(showUserCount
       ? [
@@ -58,9 +57,7 @@ export function DimensionPanel({
             accessorKey: "userCount",
             header: t("columns.userCount"),
             enableSorting: true,
-            cell: ({ row }) => (
-              <span className="tabular-nums">{formatNumber(row.original.userCount)}</span>
-            ),
+            cell: ({ row }) => <span className="tabular-nums">{num(row.original.userCount)}</span>,
           } as ColumnDef<UsageGroup, unknown>,
         ]
       : []),
@@ -94,7 +91,7 @@ export function DimensionPanel({
           size="sm"
           onClick={() =>
             downloadTextFile(
-              buildGroupCsv(groups, dimensionLabel),
+              buildGroupCsv(groups, dimensionLabel, t),
               buildExportFileName(exportKind, range, "csv"),
               "text/csv",
             )
@@ -110,9 +107,15 @@ export function DimensionPanel({
           label: group.key,
           value: group.totalTokens,
           share: group.share,
-          meta: t("panel.barMeta", { requests: formatNumber(group.requestCount) }),
+          // `count` musi być LICZBĄ — po niej i18next wybiera formę mnogą.
+          // `requests` niesie tę samą wartość już sformatowaną wg locale
+          // (separator tysięcy), bo to ona jest widoczna w napisie.
+          meta: t("panel.barMeta", {
+            count: group.requestCount,
+            requests: num(group.requestCount),
+          }),
         }))}
-        formatValue={formatNumber}
+        formatValue={num}
       />
 
       {groups.length > chartLimit ? (

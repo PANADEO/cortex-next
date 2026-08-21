@@ -4,6 +4,7 @@ import type { TabsVariant } from "@/lib/presets/registry"
 import { cn } from "@cortex/utils"
 import { cva } from "class-variance-authority"
 import { Star } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import type { CategoryTab } from "./types"
 
 /**
@@ -93,7 +94,7 @@ const SHAPE: Readonly<
   Record<
     TabsVariant,
     {
-      navLabel: string | undefined
+      navLabelKey: string | undefined
       /** Kreska między zakładkami syntetycznymi a kategoriami; `folder` jej nie ma. */
       separator: string | undefined
       /** Czy zakładka kategorii pokazuje własny licznik. */
@@ -106,13 +107,13 @@ const SHAPE: Readonly<
   >
 > = {
   underline: {
-    navLabel: undefined,
+    navLabelKey: undefined,
     separator: "mx-1 h-4 w-px bg-border",
     categoryCounts: false,
     countLead: "ml-1",
   },
   folder: {
-    navLabel: "Kategorie aplikacji",
+    navLabelKey: "hub.categoriesNavLabel",
     separator: undefined,
     categoryCounts: true,
     countLead: undefined,
@@ -138,29 +139,34 @@ export function CategoryTabs({
   onSelect,
   variant,
 }: CategoryTabsProps) {
+  const { t } = useTranslation("shell")
   const isActive = (id: string) => id === activeId
   const shape = SHAPE[variant]
   return (
-    <nav className={slots.nav({ variant })} aria-label={shape.navLabel}>
+    <nav
+      className={slots.nav({ variant })}
+      aria-label={shape.navLabelKey ? t(shape.navLabelKey) : undefined}
+    >
       <div className={slots.list({ variant })}>
         <TabButton
           variant={variant}
           isActive={isActive("all")}
           onClick={() => onSelect("all")}
-          aria-label="Wszystkie aplikacje"
+          aria-label={t("hub.allTabLabel")}
         >
-          Wszystkie{" "}
+          {t("hub.allTab")}{" "}
           <span className={cn(shape.countLead, slots.count({ variant }))}>{totalCount}</span>
         </TabButton>
         <TabButton
           variant={variant}
           isActive={isActive("favorites")}
           onClick={() => onSelect("favorites")}
-          aria-label="Ulubione aplikacje"
+          aria-label={t("hub.favoritesTabLabel")}
         >
           <span className={slots.favInner({ variant })}>
             <Star className={slots.star({ variant })} />
-            Ulubione <span className={slots.count({ variant })}>{favoritesCount}</span>
+            {t("hub.favoritesTab")}{" "}
+            <span className={slots.count({ variant })}>{favoritesCount}</span>
           </span>
         </TabButton>
         {shape.separator && categories.length > 0 ? (

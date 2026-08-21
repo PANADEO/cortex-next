@@ -22,6 +22,7 @@ import {
 } from "@cortex/ui"
 import { Download, Loader2, Save, Wifi } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 type BooleanFlagKey =
@@ -39,74 +40,26 @@ type BooleanFlagKey =
   | "enable_imap_import"
   | "enable_import_email_notifications"
 
+// Etykieta przełącznika trzymana jest jako KLUCZ przestrzeni `idp`; nazwa
+// zmiennej środowiskowej zostaje literałem, bo to identyfikator konfiguracji.
 const BOOLEAN_FLAGS: ReadonlyArray<{
   key: BooleanFlagKey
-  label: string
   env: string
 }> = [
-  {
-    key: "enable_verification_process",
-    label: "Verification process",
-    env: "FEATURE_FLAG_ENABLE_VERIFICATION_PROCESS",
-  },
-  {
-    key: "package_custom_statuses",
-    label: "Package custom statuses",
-    env: "FEATURE_FLAG_PACKAGE_CUSTOM_STATUSES",
-  },
-  {
-    key: "enable_user_notes",
-    label: "User notes",
-    env: "FEATURE_FLAG_ENABLE_USER_NOTES",
-  },
-  {
-    key: "enable_po_number",
-    label: "PO number",
-    env: "FEATURE_FLAG_ENABLE_PO_NUMBER",
-  },
-  {
-    key: "enable_customs_code",
-    label: "Customs code",
-    env: "FEATURE_FLAG_ENABLE_CUSTOMS_CODE",
-  },
-  {
-    key: "enable_additional_ai_context",
-    label: "Additional AI context",
-    env: "FEATURE_FLAG_ENABLE_ADDITIONAL_AI_CONTEXT",
-  },
-  {
-    key: "enable_atr_processing",
-    label: "A.TR processing",
-    env: "FEATURE_FLAG_ENABLE_ATR_PROCESSING",
-  },
-  {
-    key: "enable_packaging_selection_mode",
-    label: "Packaging selection mode",
-    env: "FEATURE_FLAG_ENABLE_PACKAGING_SELECTION_MODE",
-  },
-  {
-    key: "enable_cn_ai_enrichment",
-    label: "CN AI enrichment",
-    env: "FEATURE_FLAG_ENABLE_CN_AI_ENRICHMENT",
-  },
-  {
-    key: "enable_document_preview",
-    label: "Document preview",
-    env: "FEATURE_FLAG_ENABLE_DOCUMENT_PREVIEW",
-  },
-  {
-    key: "enable_classification",
-    label: "Classification",
-    env: "FEATURE_FLAG_ENABLE_CLASSIFICATION",
-  },
-  {
-    key: "enable_imap_import",
-    label: "IMAP import",
-    env: "FEATURE_FLAG_ENABLE_IMAP_IMPORT",
-  },
+  { key: "enable_verification_process", env: "FEATURE_FLAG_ENABLE_VERIFICATION_PROCESS" },
+  { key: "package_custom_statuses", env: "FEATURE_FLAG_PACKAGE_CUSTOM_STATUSES" },
+  { key: "enable_user_notes", env: "FEATURE_FLAG_ENABLE_USER_NOTES" },
+  { key: "enable_po_number", env: "FEATURE_FLAG_ENABLE_PO_NUMBER" },
+  { key: "enable_customs_code", env: "FEATURE_FLAG_ENABLE_CUSTOMS_CODE" },
+  { key: "enable_additional_ai_context", env: "FEATURE_FLAG_ENABLE_ADDITIONAL_AI_CONTEXT" },
+  { key: "enable_atr_processing", env: "FEATURE_FLAG_ENABLE_ATR_PROCESSING" },
+  { key: "enable_packaging_selection_mode", env: "FEATURE_FLAG_ENABLE_PACKAGING_SELECTION_MODE" },
+  { key: "enable_cn_ai_enrichment", env: "FEATURE_FLAG_ENABLE_CN_AI_ENRICHMENT" },
+  { key: "enable_document_preview", env: "FEATURE_FLAG_ENABLE_DOCUMENT_PREVIEW" },
+  { key: "enable_classification", env: "FEATURE_FLAG_ENABLE_CLASSIFICATION" },
+  { key: "enable_imap_import", env: "FEATURE_FLAG_ENABLE_IMAP_IMPORT" },
   {
     key: "enable_import_email_notifications",
-    label: "Import email notifications",
     env: "FEATURE_FLAG_ENABLE_IMPORT_EMAIL_NOTIFICATIONS",
   },
 ]
@@ -183,6 +136,7 @@ function isForbidden(error: unknown): boolean {
 }
 
 export default function ConfigurationPage() {
+  const { t } = useTranslation(["idp", "common"])
   const query = useFeatureFlagSettings()
   const update = useUpdateFeatureFlagSettings()
   const reload = useReloadFeatureFlagSettingsFromEnv()
@@ -253,7 +207,7 @@ export default function ConfigurationPage() {
         setGeminiThinkingBudgetText(numberText(settings.gemini_thinking_budget))
         setSmtpPassword("")
         setImapPassword("")
-        toast.success("Configuration saved.")
+        toast.success(t("configuration.saved"))
       },
       onError: (err) => toastApiError(err),
     })
@@ -271,7 +225,7 @@ export default function ConfigurationPage() {
         setGeminiThinkingBudgetText(numberText(settings.gemini_thinking_budget))
         setSmtpPassword("")
         setImapPassword("")
-        toast.success("Configuration loaded from env.")
+        toast.success(t("configuration.loadedFromEnv"))
       },
       onError: (err) => toastApiError(err),
     })
@@ -310,7 +264,7 @@ export default function ConfigurationPage() {
         size="sm"
         onClick={onSave}
         disabled={!canSave}
-        title="Save"
+        title={t("common:actions.save")}
         className="h-8 w-8 px-0 sm:w-auto sm:px-3"
       >
         {update.isPending ? (
@@ -318,7 +272,7 @@ export default function ConfigurationPage() {
         ) : (
           <Save className="h-4 w-4 sm:mr-1.5" />
         )}
-        <span className="hidden sm:inline">Save</span>
+        <span className="hidden sm:inline">{t("common:actions.save")}</span>
       </Button>
       <Button
         type="button"
@@ -326,7 +280,7 @@ export default function ConfigurationPage() {
         variant="outline"
         onClick={onReloadFromEnv}
         disabled={isBusy}
-        title="Load from env"
+        title={t("configuration.loadFromEnv")}
         className="h-8 w-8 px-0 sm:w-auto sm:px-3"
       >
         {reload.isPending ? (
@@ -334,22 +288,26 @@ export default function ConfigurationPage() {
         ) : (
           <Download className="h-4 w-4 sm:mr-1.5" />
         )}
-        <span className="hidden sm:inline">Load from env</span>
+        <span className="hidden sm:inline">{t("configuration.loadFromEnv")}</span>
       </Button>
     </>
   ) : null
 
   let content = null
   if (query.isLoading) {
-    content = <LoadingState label="Loading configuration" />
+    content = <LoadingState label={t("configuration.loading")} />
   } else if (query.isError) {
     content = (
       <ErrorState
-        title={isForbidden(query.error) ? "Admin scope required" : "Configuration unavailable"}
+        title={
+          isForbidden(query.error)
+            ? t("configuration.adminRequiredTitle")
+            : t("configuration.unavailableTitle")
+        }
         message={
           isForbidden(query.error)
-            ? "Your account does not have the admin action scope."
-            : "The feature flag configuration could not be loaded."
+            ? t("configuration.adminRequiredMessage")
+            : t("configuration.unavailableMessage")
         }
         onRetry={() => query.refetch()}
       />
@@ -359,8 +317,8 @@ export default function ConfigurationPage() {
       <div className="grid min-h-0 gap-3 xl:grid-cols-[minmax(360px,0.85fr)_minmax(520px,1.15fr)]">
         <div className="overflow-hidden rounded-lg border border-border bg-background">
           <div className="grid grid-cols-[minmax(0,1fr)_96px] border-b border-border bg-muted/30 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            <span>Flag</span>
-            <span className="text-right">State</span>
+            <span>{t("configuration.columnFlag")}</span>
+            <span className="text-right">{t("configuration.columnState")}</span>
           </div>
           <div className="divide-y divide-border">
             {BOOLEAN_FLAGS.map((flag) => (
@@ -370,7 +328,7 @@ export default function ConfigurationPage() {
               >
                 <div className="min-w-0">
                   <Label htmlFor={flag.key} className="text-sm font-medium">
-                    {flag.label}
+                    {t(`configuration.flags.${flag.key}`)}
                   </Label>
                   <p className="truncate font-mono text-[11px] text-muted-foreground">{flag.env}</p>
                 </div>
@@ -392,7 +350,7 @@ export default function ConfigurationPage() {
         <aside className="grid auto-rows-max gap-3 lg:grid-cols-2">
           <div className="space-y-2 rounded-lg border border-border bg-background p-3">
             <div>
-              <Label htmlFor="hide-menu-items">Hidden menu items</Label>
+              <Label htmlFor="hide-menu-items">{t("configuration.fields.hiddenMenuItems")}</Label>
               <Input
                 id="hide-menu-items"
                 value={hiddenMenuItemsText}
@@ -403,18 +361,18 @@ export default function ConfigurationPage() {
               />
             </div>
             <div>
-              <Label htmlFor="custom-statuses">Custom statuses</Label>
+              <Label htmlFor="custom-statuses">{t("configuration.fields.customStatuses")}</Label>
               <Textarea
                 id="custom-statuses"
                 value={customStatusesText}
                 disabled={isBusy}
                 onChange={(event) => setCustomStatusesText(event.target.value)}
-                placeholder="Accounting Department, Controling Department"
+                placeholder={t("configuration.fields.customStatusesPlaceholder")}
                 className="mt-1.5 min-h-[48px]"
               />
             </div>
             <div>
-              <Label htmlFor="export-templates">Export templates</Label>
+              <Label htmlFor="export-templates">{t("configuration.fields.exportTemplates")}</Label>
               <Textarea
                 id="export-templates"
                 value={exportTemplatesText}
@@ -425,7 +383,9 @@ export default function ConfigurationPage() {
               />
             </div>
             <div>
-              <Label htmlFor="sad-context-defaults">SAD context defaults</Label>
+              <Label htmlFor="sad-context-defaults">
+                {t("configuration.fields.sadContextDefaults")}
+              </Label>
               <Textarea
                 id="sad-context-defaults"
                 value={form.sad_context_defaults}
@@ -443,10 +403,10 @@ export default function ConfigurationPage() {
           </div>
 
           <div className="space-y-2 rounded-lg border border-border bg-background p-3">
-            <h3 className="text-sm font-semibold">Worker Gemini</h3>
+            <h3 className="text-sm font-semibold">{t("configuration.sections.geminiWorker")}</h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="gemini-model">Model</Label>
+                <Label htmlFor="gemini-model">{t("configuration.fields.model")}</Label>
                 <Input
                   id="gemini-model"
                   value={form.gemini_model}
@@ -462,7 +422,7 @@ export default function ConfigurationPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="gemini-fast-model">Fast model</Label>
+                <Label htmlFor="gemini-fast-model">{t("configuration.fields.fastModel")}</Label>
                 <Input
                   id="gemini-fast-model"
                   value={form.gemini_fast_model ?? ""}
@@ -480,7 +440,7 @@ export default function ConfigurationPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="gemini-temperature">Temperature</Label>
+                <Label htmlFor="gemini-temperature">{t("configuration.fields.temperature")}</Label>
                 <Input
                   id="gemini-temperature"
                   type="number"
@@ -494,7 +454,9 @@ export default function ConfigurationPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="gemini-fast-temperature">Fast temperature</Label>
+                <Label htmlFor="gemini-fast-temperature">
+                  {t("configuration.fields.fastTemperature")}
+                </Label>
                 <Input
                   id="gemini-fast-temperature"
                   type="number"
@@ -509,7 +471,9 @@ export default function ConfigurationPage() {
               </div>
             </div>
             <div>
-              <Label htmlFor="gemini-thinking-budget">Thinking budget</Label>
+              <Label htmlFor="gemini-thinking-budget">
+                {t("configuration.fields.thinkingBudget")}
+              </Label>
               <Input
                 id="gemini-thinking-budget"
                 type="number"
@@ -538,12 +502,12 @@ export default function ConfigurationPage() {
                 ) : (
                   <Wifi className="mr-1.5 h-4 w-4" />
                 )}
-                Test SMTP
+                {t("configuration.testSmtp")}
               </Button>
             </div>
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_110px_120px]">
               <div>
-                <Label htmlFor="smtp-host">SMTP host</Label>
+                <Label htmlFor="smtp-host">{t("configuration.fields.smtpHost")}</Label>
                 <Input
                   id="smtp-host"
                   value={form.smtp_host ?? ""}
@@ -559,7 +523,7 @@ export default function ConfigurationPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="smtp-port">SMTP port</Label>
+                <Label htmlFor="smtp-port">{t("configuration.fields.smtpPort")}</Label>
                 <Input
                   id="smtp-port"
                   type="number"
@@ -577,7 +541,7 @@ export default function ConfigurationPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="smtp-timeout">Timeout seconds</Label>
+                <Label htmlFor="smtp-timeout">{t("configuration.fields.timeoutSeconds")}</Label>
                 <Input
                   id="smtp-timeout"
                   type="number"
@@ -597,7 +561,7 @@ export default function ConfigurationPage() {
             </div>
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_96px_96px]">
               <div>
-                <Label htmlFor="smtp-from-email">From email</Label>
+                <Label htmlFor="smtp-from-email">{t("configuration.fields.fromEmail")}</Label>
                 <Input
                   id="smtp-from-email"
                   value={form.smtp_from_email ?? ""}
@@ -613,7 +577,7 @@ export default function ConfigurationPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="smtp-from-name">From name</Label>
+                <Label htmlFor="smtp-from-name">{t("configuration.fields.fromName")}</Label>
                 <Input
                   id="smtp-from-name"
                   value={form.smtp_from_name}
@@ -650,7 +614,7 @@ export default function ConfigurationPage() {
             </div>
             <div className="grid gap-3 lg:grid-cols-2">
               <div>
-                <Label htmlFor="smtp-username">SMTP user</Label>
+                <Label htmlFor="smtp-username">{t("configuration.fields.smtpUser")}</Label>
                 <Input
                   id="smtp-username"
                   value={form.smtp_username ?? ""}
@@ -668,7 +632,8 @@ export default function ConfigurationPage() {
               </div>
               <div>
                 <Label htmlFor="smtp-password">
-                  SMTP password{form.smtp_password_configured ? " (configured)" : ""}
+                  {t("configuration.fields.smtpPassword")}
+                  {form.smtp_password_configured ? t("configuration.configuredSuffix") : ""}
                 </Label>
                 <Input
                   id="smtp-password"
@@ -676,7 +641,9 @@ export default function ConfigurationPage() {
                   value={smtpPassword}
                   disabled={isBusy}
                   onChange={(event) => setSmtpPassword(event.target.value)}
-                  placeholder={form.smtp_password_configured ? "Leave blank to keep" : ""}
+                  placeholder={
+                    form.smtp_password_configured ? t("configuration.leaveBlankToKeep") : ""
+                  }
                   className="mt-1.5"
                   autoComplete="new-password"
                 />
@@ -699,12 +666,12 @@ export default function ConfigurationPage() {
                 ) : (
                   <Wifi className="mr-1.5 h-4 w-4" />
                 )}
-                Test connection
+                {t("configuration.testConnection")}
               </Button>
             </div>
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_110px_120px]">
               <div>
-                <Label htmlFor="imap-host">IMAP host</Label>
+                <Label htmlFor="imap-host">{t("configuration.fields.imapHost")}</Label>
                 <Input
                   id="imap-host"
                   value={form.imap_host ?? ""}
@@ -720,7 +687,7 @@ export default function ConfigurationPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="imap-port">IMAP port</Label>
+                <Label htmlFor="imap-port">{t("configuration.fields.imapPort")}</Label>
                 <Input
                   id="imap-port"
                   type="number"
@@ -738,7 +705,7 @@ export default function ConfigurationPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="imap-poll-limit">Poll limit</Label>
+                <Label htmlFor="imap-poll-limit">{t("configuration.fields.pollLimit")}</Label>
                 <Input
                   id="imap-poll-limit"
                   type="number"
@@ -758,7 +725,7 @@ export default function ConfigurationPage() {
             </div>
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_96px]">
               <div>
-                <Label htmlFor="imap-user">IMAP user</Label>
+                <Label htmlFor="imap-user">{t("configuration.fields.imapUser")}</Label>
                 <Input
                   id="imap-user"
                   value={form.imap_user ?? ""}
@@ -775,7 +742,8 @@ export default function ConfigurationPage() {
               </div>
               <div>
                 <Label htmlFor="imap-password">
-                  IMAP password{form.imap_password_configured ? " (configured)" : ""}
+                  {t("configuration.fields.imapPassword")}
+                  {form.imap_password_configured ? t("configuration.configuredSuffix") : ""}
                 </Label>
                 <Input
                   id="imap-password"
@@ -783,13 +751,15 @@ export default function ConfigurationPage() {
                   value={imapPassword}
                   disabled={isBusy}
                   onChange={(event) => setImapPassword(event.target.value)}
-                  placeholder={form.imap_password_configured ? "Leave blank to keep" : ""}
+                  placeholder={
+                    form.imap_password_configured ? t("configuration.leaveBlankToKeep") : ""
+                  }
                   className="mt-1.5"
                   autoComplete="new-password"
                 />
               </div>
               <label className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm">
-                Secure
+                {t("configuration.fields.secure")}
                 <Switch
                   checked={form.imap_secure}
                   disabled={isBusy}
@@ -801,7 +771,7 @@ export default function ConfigurationPage() {
             </div>
             <div className="grid gap-3 lg:grid-cols-3">
               <div>
-                <Label htmlFor="imap-mailbox">Mailbox</Label>
+                <Label htmlFor="imap-mailbox">{t("configuration.fields.mailbox")}</Label>
                 <Input
                   id="imap-mailbox"
                   value={form.imap_mailbox}
@@ -817,7 +787,9 @@ export default function ConfigurationPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="imap-processed-mailbox">Processed mailbox</Label>
+                <Label htmlFor="imap-processed-mailbox">
+                  {t("configuration.fields.processedMailbox")}
+                </Label>
                 <Input
                   id="imap-processed-mailbox"
                   value={form.imap_processed_mailbox ?? ""}
@@ -833,7 +805,9 @@ export default function ConfigurationPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="imap-drafts-mailbox">Drafts mailbox</Label>
+                <Label htmlFor="imap-drafts-mailbox">
+                  {t("configuration.fields.draftsMailbox")}
+                </Label>
                 <Input
                   id="imap-drafts-mailbox"
                   value={form.imap_drafts_mailbox ?? ""}
@@ -858,8 +832,8 @@ export default function ConfigurationPage() {
   return (
     <>
       <PageHeader
-        title="Configuration"
-        description="Runtime IDP settings stored in the database."
+        title={t("configuration.page.title")}
+        description={t("configuration.page.description")}
         actions={headerActions}
       />
       <div className="min-h-0 flex-1 px-6 py-4">{content}</div>

@@ -39,7 +39,9 @@ export function Masthead({
     <header className="mb-7">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold leading-[1.1] tracking-[-0.01em]">Enterprise AI Hub</h1>
+          <h1 className="text-3xl font-bold leading-[1.1] tracking-[-0.01em]">
+            {t("hub.heading")}
+          </h1>
           <p className="mt-1 text-[13px] text-muted-foreground">{t("hub.subtitle")}</p>
         </div>
 
@@ -56,11 +58,11 @@ export function Masthead({
           <Search className="h-[15px] w-[15px] shrink-0 text-primary" aria-hidden="true" />
           <input
             type="text"
-            placeholder="Szukaj aplikacji…"
+            placeholder={t("hub.searchPlaceholder")}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
-            aria-label="Szukaj aplikacji"
+            aria-label={t("hub.searchLabel")}
           />
           <span className="border-token border-border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
             ⌘K
@@ -77,12 +79,10 @@ export function Masthead({
           `--label-tracking` z E2. Wersaliki i tracking dziedziczą przyciski
           przekroju, bo preflight Tailwinda każe `button` dziedziczyć krój. */}
       <div className="mt-2 flex flex-wrap items-center justify-between gap-4 font-mono text-[11px] tracking-label text-muted-foreground [text-transform:var(--label-transform)]">
-        <span>
-          Narzędzia: {tileCount} · Kategorie: {categoryCount}
-        </span>
+        <span>{t("hub.counters", { tools: tileCount, categories: categoryCount })}</span>
         <span className="inline-flex" role="group" aria-label={t("hub.grouping")}>
           <ViewButton isActive={view === "functional"} onClick={() => onViewChange("functional")}>
-            Funkcjonalnie
+            {t("hub.byFunction")}
           </ViewButton>
           <ViewButton isActive={view === "department"} onClick={() => onViewChange("department")}>
             {t("hub.byDepartment")}

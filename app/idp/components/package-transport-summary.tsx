@@ -3,12 +3,14 @@
 import { usePackageTransportOrders } from "@cortex/api"
 import { Skeleton } from "@cortex/ui"
 import { formatRoute } from "@cortex/utils"
+import { useTranslation } from "react-i18next"
 
 interface Props {
   packageId: string
 }
 
 export function PackageTransportSummary({ packageId }: Props) {
+  const { t } = useTranslation("idp")
   const { data, isLoading } = usePackageTransportOrders(packageId, { polling: false })
 
   if (isLoading) return <Skeleton className="h-24 w-full" />
@@ -23,10 +25,18 @@ export function PackageTransportSummary({ packageId }: Props) {
       <table className="w-full text-sm">
         <thead className="bg-muted/40 text-[11px] uppercase tracking-wide text-muted-foreground">
           <tr>
-            <th className="px-3 py-2 text-left font-semibold">Transport order</th>
-            <th className="px-3 py-2 text-left font-semibold">Route</th>
-            <th className="px-3 py-2 text-left font-semibold">Mode</th>
-            <th className="px-3 py-2 text-right font-semibold">Invoices</th>
+            <th className="px-3 py-2 text-left font-semibold">
+              {t("packages.transportSummary.order")}
+            </th>
+            <th className="px-3 py-2 text-left font-semibold">
+              {t("packages.transportSummary.route")}
+            </th>
+            <th className="px-3 py-2 text-left font-semibold">
+              {t("packages.transportSummary.mode")}
+            </th>
+            <th className="px-3 py-2 text-right font-semibold">
+              {t("packages.transportSummary.invoices")}
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -54,7 +64,7 @@ export function PackageTransportSummary({ packageId }: Props) {
           {orders.length > 1 ? (
             <tr className="bg-muted/30 text-[12px]">
               <td colSpan={3} className="px-3 py-1.5 font-semibold text-muted-foreground">
-                Total
+                {t("packages.transportSummary.total")}
               </td>
               <td className="px-3 py-1.5 text-right font-semibold tabular-nums">{totalInvoices}</td>
             </tr>

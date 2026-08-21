@@ -247,7 +247,7 @@ export function AgentActivityTrail({ steps }: ActivityTrailProps) {
         className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         <DisclosureChevron open={open} />
-        {t("activity.trail", { n: stepCount })}
+        {t("activity.trail", { count: stepCount })}
       </button>
       <CollapseRegion open={open}>
         <div className="mt-1.5">

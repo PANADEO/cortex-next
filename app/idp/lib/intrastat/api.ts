@@ -1,3 +1,4 @@
+import i18n from "@/lib/i18n"
 import type {
   IntrastatBatchDetail,
   IntrastatBatchFilterOptionsResponse,
@@ -34,51 +35,64 @@ type IntrastatErrorBody = {
   message?: unknown
 }
 
-const INTRASTAT_ERROR_MESSAGES: Record<string, string> = {
-  "only-zip-files-supported": "Choose a ZIP file",
-  "empty-upload": "The uploaded ZIP is empty",
-  "invalid-zip-file": "The uploaded file is not a valid ZIP",
-  "zip-has-no-supported-documents": "The ZIP does not contain supported PDF invoices",
-  "batch-create-failed": "The batch could not be created",
-  "batch-not-found": "Batch not found. Refresh the list.",
-  "batch-processing": "The batch is currently processing. Try again after it finishes.",
-  "line-not-found": "Declaration line not found. Refresh the review table.",
-  "document-not-found": "Document not found. Refresh the batch.",
-  "document-content-not-found": "Document file is missing from storage.",
-  "filesystem-upload-metadata-required": "Enter client and month",
-  "invalid-cn-resource-xlsx": "Choose a valid XLSX CN resource",
-  "cn-resource-required-columns-missing": "The CN workbook is missing required columns",
-  "cn-resource-empty": "The CN workbook contains no usable resource rows",
-  "cn-resource-not-found": "No active CN resource is available",
-  "cn-resource-editor-required": "CN database editor permission is required",
-  "cn-resource-row-not-found": "CN database row not found. Refresh the list.",
-  "cn-resource-index-conflict": "This item index already has a different CN code",
-  "cn-resource-index-required": "Enter an item index",
-  "cn-resource-cn8-invalid": "Enter a valid 8-digit CN code",
-  "cn-resource-description-required": "Enter a description",
-  "filesystem-browser-not-directory": "This path is not a folder",
-  "filesystem-delete-directory-not-supported": "Folder delete is not supported",
-  "filesystem-file-not-found": "File not found. Refresh the folder.",
-  "filesystem-path-outside-root": "Path is outside the watch folder",
-  "filesystem-client-required": "Select a client folder",
-  "filesystem-client-not-found": "Client folder configuration not found. Refresh the list.",
-  "filesystem-client-conflict": "This client or mounted folder is already configured",
-  "filesystem-client-path-invalid": "Enter one folder name without slashes or parent paths",
-  "filesystem-client-name-required": "Enter a client name",
-  "intrastat-config-editor-required": "Intrastat configuration editor permission is required",
+/** Napis w języku wybranym w tej chwili. Klient HTTP jest wołany spoza
+ *  komponentu, więc `t` nie ma skąd przyjść z kontekstu Reacta — bierzemy je
+ *  z jedynej instancji i18next, wzorem `lib/breadcrumbs.ts`. */
+function translate(key: string, options?: Record<string, unknown>): string {
+  return i18n.t(key, { ns: "intrastat", ...options })
 }
 
-const LEGACY_ALERT_MESSAGES: Record<string, string> = {
-  "Brak dopasowania CN w bazie i na fakturze.": "No CN match found in the resource or invoice.",
-  "Brak indeksu towaru z faktury.": "Missing item index from the invoice.",
-  "Brak kodu CN do eksportu Intrastat.": "Missing CN code for Intrastat export.",
-  "Brak numeru VAT/NIP dla reguły WNT/WDT.": "Missing VAT number for WNT/WDT rules.",
+// Kod błędu z backendu -> KLUCZ tłumaczenia. Klucz, a nie gotowy napis, bo
+// mapa jest stałą modułu: powstaje zanim użytkownik wybierze język, więc napis
+// zamroziłby się na tym, który obowiązywał przy starcie aplikacji.
+const INTRASTAT_ERROR_MESSAGE_KEYS: Record<string, string> = {
+  "only-zip-files-supported": "errors.onlyZipFilesSupported",
+  "empty-upload": "errors.emptyUpload",
+  "invalid-zip-file": "errors.invalidZipFile",
+  "zip-has-no-supported-documents": "errors.zipHasNoSupportedDocuments",
+  "batch-create-failed": "errors.batchCreateFailed",
+  "batch-not-found": "errors.batchNotFound",
+  "batch-processing": "errors.batchProcessing",
+  "line-not-found": "errors.lineNotFound",
+  "document-not-found": "errors.documentNotFound",
+  "document-content-not-found": "errors.documentContentNotFound",
+  "filesystem-upload-metadata-required": "errors.filesystemUploadMetadataRequired",
+  "invalid-cn-resource-xlsx": "errors.invalidCnResourceXlsx",
+  "cn-resource-required-columns-missing": "errors.cnResourceRequiredColumnsMissing",
+  "cn-resource-empty": "errors.cnResourceEmpty",
+  "cn-resource-not-found": "errors.cnResourceNotFound",
+  "cn-resource-editor-required": "errors.cnResourceEditorRequired",
+  "cn-resource-row-not-found": "errors.cnResourceRowNotFound",
+  "cn-resource-index-conflict": "errors.cnResourceIndexConflict",
+  "cn-resource-index-required": "errors.cnResourceIndexRequired",
+  "cn-resource-cn8-invalid": "errors.cnResourceCn8Invalid",
+  "cn-resource-description-required": "errors.cnResourceDescriptionRequired",
+  "filesystem-browser-not-directory": "errors.filesystemBrowserNotDirectory",
+  "filesystem-delete-directory-not-supported": "errors.filesystemDeleteDirectoryNotSupported",
+  "filesystem-file-not-found": "errors.filesystemFileNotFound",
+  "filesystem-path-outside-root": "errors.filesystemPathOutsideRoot",
+  "filesystem-client-required": "errors.filesystemClientRequired",
+  "filesystem-client-not-found": "errors.filesystemClientNotFound",
+  "filesystem-client-conflict": "errors.filesystemClientConflict",
+  "filesystem-client-path-invalid": "errors.filesystemClientPathInvalid",
+  "filesystem-client-name-required": "errors.filesystemClientNameRequired",
+  "intrastat-config-editor-required": "errors.intrastatConfigEditorRequired",
+}
+
+// KLUCZE tej mapy to DANE, nie napisy interfejsu: dokładne zdania, które starsze
+// wersje backendu zapisały przy wierszach deklaracji. Zostają po polsku, bo
+// dopasowują się do zawartości bazy — przetłumaczenie ich zerwałoby dopasowanie.
+const LEGACY_ALERT_MESSAGE_KEYS: Record<string, string> = {
+  "Brak dopasowania CN w bazie i na fakturze.": "legacyAlerts.noCnMatch",
+  "Brak indeksu towaru z faktury.": "legacyAlerts.missingItemIndex",
+  "Brak kodu CN do eksportu Intrastat.": "legacyAlerts.missingCnCode",
+  "Brak numeru VAT/NIP dla reguły WNT/WDT.": "legacyAlerts.missingVatNumber",
   "Brak numeru faktury korygowanej; korekta pominięta w podsumowaniu.":
-    "Missing corrected invoice number; correction excluded from the summary.",
+    "legacyAlerts.missingCorrectedInvoiceNumber",
   "Brak sekcji przed korektą; korekta pominięta w podsumowaniu.":
-    "Missing before-correction section; correction excluded from the summary.",
+    "legacyAlerts.missingBeforeCorrectionSection",
   "Stan przed korektą nie zgadza się z aktualnym stanem faktury; korekta wymaga weryfikacji.":
-    "Before-correction state does not match the current invoice state; correction requires review.",
+    "legacyAlerts.beforeCorrectionMismatch",
 }
 
 class IntrastatApiError extends Error {
@@ -142,11 +156,14 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
 async function intrastatErrorFromResponse(response: Response): Promise<IntrastatApiError> {
   const body = await readErrorBody(response)
   const detail = detailToString(body?.detail)
-  const message = detail ? (INTRASTAT_ERROR_MESSAGES[detail] ?? detail) : null
+  const messageKey = detail ? INTRASTAT_ERROR_MESSAGE_KEYS[detail] : undefined
+  const message = detail ? (messageKey ? translate(messageKey) : detail) : null
 
   return new IntrastatApiError(
     response.status,
-    message ?? body?.message?.toString() ?? `Intrastat request failed: ${response.status}`,
+    message ??
+      body?.message?.toString() ??
+      translate("errors.requestFailed", { status: response.status }),
     detail,
   )
 }
@@ -169,31 +186,39 @@ function detailToString(detail: unknown): string | null {
 }
 
 function translateLegacyAlert(alert: string): string {
-  const translated = LEGACY_ALERT_MESSAGES[alert]
-  if (translated) return translated
+  const key = LEGACY_ALERT_MESSAGE_KEYS[alert]
+  if (key) return translate(key)
 
   const ambiguousMatch = alert.match(/^Niejednoznaczne dopasowanie CN: (.+)\.$/)
-  if (ambiguousMatch?.[1]) return `Ambiguous CN match: ${ambiguousMatch[1]}.`
+  if (ambiguousMatch?.[1]) {
+    return translate("legacyAlerts.ambiguousCnMatch", { match: ambiguousMatch[1] })
+  }
 
   const invoiceTotalMatch = alert.match(
     /^Suma wartości pozycji \((.+)\) nie zgadza się z kwotą netto faktury \((.+)\)\.$/,
   )
   if (invoiceTotalMatch?.[1] && invoiceTotalMatch[2]) {
-    return `Sum of line values (${invoiceTotalMatch[1]}) does not match the invoice net total (${invoiceTotalMatch[2]}).`
+    return translate("legacyAlerts.invoiceTotalMismatch", {
+      lines: invoiceTotalMatch[1],
+      invoice: invoiceTotalMatch[2],
+    })
   }
 
   const correctionTotalMatch = alert.match(
     /^Różnica wartości pozycji korekty \((.+)\) nie zgadza się z kwotą netto faktury \((.+)\)\.$/,
   )
   if (correctionTotalMatch?.[1] && correctionTotalMatch[2]) {
-    return `Difference in correction line values (${correctionTotalMatch[1]}) does not match the invoice net total (${correctionTotalMatch[2]}).`
+    return translate("legacyAlerts.correctionTotalMismatch", {
+      difference: correctionTotalMatch[1],
+      invoice: correctionTotalMatch[2],
+    })
   }
 
   const correctedInvoiceMatch = alert.match(
     /^Brak faktury korygowanej (.+); korekta pominięta w bieżącym podsumowaniu\.$/,
   )
   if (correctedInvoiceMatch?.[1]) {
-    return `Corrected invoice ${correctedInvoiceMatch[1]} not found; correction excluded from the current summary.`
+    return translate("legacyAlerts.correctedInvoiceNotFound", { invoice: correctedInvoiceMatch[1] })
   }
 
   return alert

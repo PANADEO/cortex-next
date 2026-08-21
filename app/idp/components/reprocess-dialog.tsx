@@ -12,6 +12,7 @@ import {
 } from "@cortex/ui"
 import { useFeatureFlag } from "@cortex/utils"
 import { Loader2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { ImportOptionsFields, useImportOptions } from "./import-options-fields"
 
@@ -22,6 +23,7 @@ interface ReprocessDialogProps {
 }
 
 export function ReprocessDialog({ open, onOpenChange, packageId }: ReprocessDialogProps) {
+  const { t } = useTranslation(["idp", "common"])
   const options = useImportOptions()
   const mutate = useReprocessPackage(packageId)
   const showAdditionalAiContext = useFeatureFlag("idp.additional-ai-context")
@@ -35,7 +37,7 @@ export function ReprocessDialog({ open, onOpenChange, packageId }: ReprocessDial
           packagingSelectionModeAvailable: showPackagingSelectionMode,
         }),
       )
-      toast.success("Reprocess started")
+      toast.success(t("reprocess.started"))
       options.reset()
       onOpenChange(false)
     } catch (err) {
@@ -52,10 +54,8 @@ export function ReprocessDialog({ open, onOpenChange, packageId }: ReprocessDial
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Reprocess package</DialogTitle>
-          <DialogDescription>
-            Reset analysis and run extraction again. Optionally pass extra hints to the model.
-          </DialogDescription>
+          <DialogTitle>{t("reprocess.title")}</DialogTitle>
+          <DialogDescription>{t("reprocess.description")}</DialogDescription>
         </DialogHeader>
         <ImportOptionsFields
           idPrefix={`reprocess-${packageId}`}
@@ -66,11 +66,11 @@ export function ReprocessDialog({ open, onOpenChange, packageId }: ReprocessDial
         />
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={mutate.isPending}>
-            Cancel
+            {t("common:actions.cancel")}
           </Button>
           <Button onClick={handleSubmit} disabled={mutate.isPending}>
             {mutate.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-            Reprocess
+            {t("reprocess.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

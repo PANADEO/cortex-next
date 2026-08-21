@@ -41,7 +41,15 @@ export interface GenerateContentResult {
 /** Jeden typ błędu dla każdej przyczyny (brak konfiguracji, model spoza
  *  listy, błąd upstreamu) — kontroler (Faza 1, jeszcze nie zbudowany) łapie
  *  go i mapuje na czytelny kod HTTP, nigdy nie zakłada że cortex-proxy jest
- *  zawsze dostępny (code-integration). */
+ *  zawsze dostępny (code-integration).
+ *
+ *  Nośnikiem znaczenia jest `code`, NIE `message`. `message` to diagnostyka
+ *  do logu i `Error.stack` — techniczna i po angielsku, jak reszta warstwy
+ *  integracyjnej (@cortex/api/cortex-proxy-client). Zdanie dla użytkownika
+ *  powstaje na kliencie z kodu odpowiedzi: serwer nie zna wybranego języka
+ *  (wybór siedzi w localStorage przeglądarki), więc każdy route, który
+ *  przepuszczał ten `message` do ciała odpowiedzi, pokazywał polskie zdanie
+ *  niezależnie od wyboru. Żaden już tego nie robi. */
 export class ContentGuruServiceError extends Error {
   constructor(
     message: string,
@@ -59,14 +67,14 @@ export async function generateContent(
   const baseUrl = process.env.CORTEX_PROXY_URL
   if (!baseUrl) {
     throw new ContentGuruServiceError(
-      "CORTEX_PROXY_URL nie jest ustawione — Content Guru nie może wywołać LLM.",
+      "CORTEX_PROXY_URL is not set — Content Guru cannot call the LLM.",
       "not-configured",
     )
   }
 
   if (!isAllowedContentGuruModel(request.model)) {
     throw new ContentGuruServiceError(
-      `Model "${request.model}" nie jest na liście dozwolonych modeli (CONTENT_GURU_MODELS).`,
+      `Model "${request.model}" is not in CONTENT_GURU_MODELS.`,
       "model-not-allowed",
     )
   }
@@ -87,6 +95,6 @@ export async function generateContent(
     })
     return result
   } catch (error) {
-    throw new ContentGuruServiceError("Błąd komunikacji z cortex-proxy.", "upstream-error", error)
+    throw new ContentGuruServiceError("Cortex Proxy call failed.", "upstream-error", error)
   }
 }

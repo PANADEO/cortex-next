@@ -14,7 +14,7 @@ interface AiToolGateProps {
 }
 
 export function AiToolGate({ children, toolId }: AiToolGateProps) {
-  const { t } = useTranslation("ai-tools")
+  const { t } = useTranslation(["ai-tools", "common"])
   const authorized = useAuthorizedApps()
 
   if (authorized.isLoading) return <LoadingState label={t("gate.checking")} />
@@ -33,7 +33,7 @@ export function AiToolGate({ children, toolId }: AiToolGateProps) {
         description={t("gate.deniedBody")}
         action={
           <Button asChild variant="outline" size="sm">
-            <Link href="/">{t("shared.backToHub")}</Link>
+            <Link href="/">{t("common:nav.backToHub")}</Link>
           </Button>
         }
       />

@@ -5,7 +5,8 @@ import type { CleanPackageDraft, DirtyDocument } from "@cortex/types"
 import { Badge, Button, Card, CardContent, Input, Label, ScrollArea } from "@cortex/ui"
 import { Plus, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
-import { DOC_TYPE_LABEL } from "./labels"
+import { useTranslation } from "react-i18next"
+import { DOC_TYPE_LABEL_KEY } from "./labels"
 
 interface DraftListProps {
   dirtyPackageId: string
@@ -14,6 +15,7 @@ interface DraftListProps {
 }
 
 export function DraftList({ dirtyPackageId, drafts, documents }: DraftListProps) {
+  const { t } = useTranslation("idp")
   const upsert = useUpsertDraft(dirtyPackageId)
   const remove = useDeleteDraft(dirtyPackageId)
   const [newName, setNewName] = useState("")
@@ -21,7 +23,11 @@ export function DraftList({ dirtyPackageId, drafts, documents }: DraftListProps)
   const docsById = useMemo(() => new Map(documents.map((d) => [d.id, d])), [documents])
 
   const addDraft = () => {
-    const name = newName.trim() || `Clean package ${String.fromCharCode(65 + drafts.length)}`
+    const name =
+      newName.trim() ||
+      t("classification.drafts.defaultName", {
+        letter: String.fromCharCode(65 + drafts.length),
+      })
     upsert.mutate(
       { name, customer_tag: null, notes: null },
       {
@@ -34,7 +40,7 @@ export function DraftList({ dirtyPackageId, drafts, documents }: DraftListProps)
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
-        <span>Clean package drafts · {drafts.length}</span>
+        <span>{t("classification.drafts.title", { n: drafts.length })}</span>
       </div>
       <ScrollArea className="flex-1">
         <div className="space-y-3 p-3">
@@ -49,7 +55,7 @@ export function DraftList({ dirtyPackageId, drafts, documents }: DraftListProps)
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">{draft.name}</span>
                       <span className="text-[10px] text-muted-foreground">
-                        {docs.length} doc{docs.length === 1 ? "" : "s"}
+                        {t("classification.drafts.docCount", { n: docs.length })}
                         {draft.customer_tag ? ` · ${draft.customer_tag}` : ""}
                       </span>
                     </div>
@@ -76,14 +82,14 @@ export function DraftList({ dirtyPackageId, drafts, documents }: DraftListProps)
                         >
                           <span className="truncate">{d.file_name}</span>
                           <Badge variant="outline" className="ml-2 shrink-0 text-[10px]">
-                            {DOC_TYPE_LABEL[d.doc_type]}
+                            {t(DOC_TYPE_LABEL_KEY[d.doc_type])}
                           </Badge>
                         </li>
                       ))}
                     </ul>
                   ) : (
                     <p className="rounded-md border border-dashed border-border px-2 py-2 text-center text-[10px] text-muted-foreground">
-                      Drag documents here or assign via the Target dropdown.
+                      {t("classification.drafts.empty")}
                     </p>
                   )}
                 </CardContent>
@@ -92,13 +98,15 @@ export function DraftList({ dirtyPackageId, drafts, documents }: DraftListProps)
           })}
           <div className="space-y-1.5 rounded-md border border-dashed border-border p-3">
             <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              New draft
+              {t("classification.drafts.newDraft")}
             </Label>
             <div className="flex items-center gap-2">
               <Input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder={`Clean package ${String.fromCharCode(65 + drafts.length)}`}
+                placeholder={t("classification.drafts.defaultName", {
+                  letter: String.fromCharCode(65 + drafts.length),
+                })}
                 className="h-8"
               />
               <Button size="sm" variant="outline" onClick={addDraft} disabled={upsert.isPending}>

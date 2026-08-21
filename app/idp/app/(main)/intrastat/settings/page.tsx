@@ -36,6 +36,7 @@ import {
   PageHeader,
   Pagination,
 } from "@cortex/ui"
+import type { TFunction } from "i18next"
 import {
   ArrowUp,
   Download,
@@ -52,12 +53,14 @@ import {
   Trash2,
 } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 const FILE_BROWSER_PAGE_SIZE = 10
 const CONFIG_EDITOR_APP_CODE = "intrastat-config-editor"
 
 export default function IntrastatSettingsPage() {
+  const { t } = useTranslation(["intrastat", "common"])
   const access = useAuthorizedApps()
   const canEditClients = access.apps.includes(CONFIG_EDITOR_APP_CODE)
   const settings = useIntrastatSettings()
@@ -88,30 +91,33 @@ export default function IntrastatSettingsPage() {
   const handlePoll = async () => {
     try {
       const result = await pollFilesystem.mutateAsync()
-      toast.success(`Imported ${result.imported} batch(es)`)
+      toast.success(t("settings.pollSuccess", { count: result.imported }))
     } catch (error) {
-      toast.error(formatIntrastatError(error, "Filesystem poll failed"))
+      toast.error(formatIntrastatError(error, t("settings.pollFailed")))
     }
   }
 
   if (settings.isLoading || filesystemClients.isLoading) {
-    return <LoadingState label="Loading Intrastat settings..." />
+    return <LoadingState label={t("settings.loading")} />
   }
 
   const filesystemReady = hasClientMappings
     ? availableClientCount > 0
     : Boolean(settings.data?.filesystem_configured)
   const filesystemValue = hasClientMappings
-    ? `${availableClientCount}/${clients.length} ready`
+    ? t("settings.filesystemReadyCount", {
+        available: availableClientCount,
+        total: clients.length,
+      })
     : settings.data?.filesystem_configured
-      ? "Legacy mode"
-      : "Missing folder"
+      ? t("settings.legacyMode")
+      : t("settings.missingFolder")
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader
-        title="Intrastat Settings"
-        description="Operational status for filesystem intake, worker processing, and Gemini extraction."
+        title={t("settings.title")}
+        description={t("settings.description")}
         actions={
           <Button
             size="sm"
@@ -127,28 +133,32 @@ export default function IntrastatSettingsPage() {
             ) : (
               <PlayCircle className="mr-2 h-4 w-4" />
             )}
-            Poll folders
+            {t("settings.pollFolders")}
           </Button>
         }
       />
 
       <div className="grid gap-4 px-8 py-6 lg:grid-cols-3">
         <DataCard
-          label="Filesystem"
+          label={t("settings.filesystemLabel")}
           value={filesystemValue}
-          description={settings.data?.intrastat_watch_dir ?? "Set INTRASTAT_WATCH_DIR"}
+          description={settings.data?.intrastat_watch_dir ?? t("settings.watchDirMissing")}
           icon={FolderInput}
           tone={filesystemReady ? "success" : "warning"}
         />
         <DataCard
-          label="Poll interval"
+          label={t("settings.pollIntervalLabel")}
           value={`${settings.data?.filesystem_poll_interval_seconds ?? 10}s`}
-          description="[Month]/[WNT|WDT] inside each client folder"
+          description={t("settings.pollIntervalDescription")}
         />
         <DataCard
           label="Gemini"
-          value={settings.data?.gemini_configured ? "Configured" : "Fallback"}
-          description={settings.data?.gemini_model ?? "No model"}
+          value={
+            settings.data?.gemini_configured
+              ? t("settings.geminiConfigured")
+              : t("settings.geminiFallbackValue")
+          }
+          description={settings.data?.gemini_model ?? t("settings.geminiNoModel")}
           icon={Sparkles}
           tone={settings.data?.gemini_configured ? "success" : "warning"}
         />
@@ -157,28 +167,29 @@ export default function IntrastatSettingsPage() {
           <CardContent className="space-y-3 p-5">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={settings.data?.worker_enabled ? "secondary" : "outline"}>
-                Worker {settings.data?.worker_enabled ? "enabled" : "disabled"}
+                {settings.data?.worker_enabled
+                  ? t("settings.workerEnabled")
+                  : t("settings.workerDisabled")}
               </Badge>
               <Badge
                 variant={
                   settings.data?.filesystem_enabled && filesystemReady ? "secondary" : "outline"
                 }
               >
-                Filesystem{" "}
-                {settings.data?.filesystem_enabled && filesystemReady ? "watching" : "disabled"}
+                {settings.data?.filesystem_enabled && filesystemReady
+                  ? t("settings.filesystemWatching")
+                  : t("settings.filesystemDisabled")}
               </Badge>
               <Badge variant={hasClientMappings ? "secondary" : "outline"}>
-                {hasClientMappings ? "Mapped clients" : "Legacy layout"}
+                {hasClientMappings ? t("settings.mappedClients") : t("settings.legacyLayout")}
               </Badge>
               <Badge variant={settings.data?.gemini_configured ? "secondary" : "outline"}>
-                Gemini {settings.data?.gemini_configured ? "live" : "heuristic fallback"}
+                {settings.data?.gemini_configured
+                  ? t("settings.geminiLive")
+                  : t("settings.geminiHeuristic")}
               </Badge>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Each configured client folder expects `[Month]/[WNT|WDT]`. The previous
-              `[Client]/[Month]/[WNT|WDT]` layout is used only while no client mappings exist.
-              Removing a mapping never removes its folder or files.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("settings.layoutNote")}</p>
           </CardContent>
         </Card>
 
@@ -186,10 +197,8 @@ export default function IntrastatSettingsPage() {
           <CardContent className="space-y-4 p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-sm font-semibold">Client folders</h2>
-                <p className="text-xs text-muted-foreground">
-                  Map each Intrastat client to a mounted folder directly below the filesystem root.
-                </p>
+                <h2 className="text-sm font-semibold">{t("settings.clientFolders")}</h2>
+                <p className="text-xs text-muted-foreground">{t("settings.clientFoldersHint")}</p>
               </div>
               {canEditClients ? (
                 <Button
@@ -200,7 +209,7 @@ export default function IntrastatSettingsPage() {
                   }}
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Add client
+                  {t("settings.addClient")}
                 </Button>
               ) : null}
             </div>
@@ -209,10 +218,18 @@ export default function IntrastatSettingsPage() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/60 text-xs text-muted-foreground">
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium">Client</th>
-                    <th className="px-3 py-2 text-left font-medium">Mounted folder</th>
-                    <th className="px-3 py-2 text-left font-medium">Status</th>
-                    <th className="px-3 py-2 text-right font-medium">Actions</th>
+                    <th className="px-3 py-2 text-left font-medium">
+                      {t("settings.columnClient")}
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium">
+                      {t("settings.columnFolder")}
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium">
+                      {t("settings.columnStatus")}
+                    </th>
+                    <th className="px-3 py-2 text-right font-medium">
+                      {t("settings.columnActions")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -222,7 +239,7 @@ export default function IntrastatSettingsPage() {
                         className="px-3 py-8 text-center text-sm text-muted-foreground"
                         colSpan={4}
                       >
-                        No client folders configured. The legacy folder layout is active.
+                        {t("settings.noClients")}
                       </td>
                     </tr>
                   ) : (
@@ -232,13 +249,16 @@ export default function IntrastatSettingsPage() {
                         <td className="px-3 py-2 font-mono text-xs">{client.folder_name}</td>
                         <td className="px-3 py-2">
                           <Badge variant={client.available ? "secondary" : "outline"}>
-                            {client.available ? "Ready" : "Missing"}
+                            {client.available
+                              ? t("settings.clientReady")
+                              : t("settings.clientMissing")}
                           </Badge>
                         </td>
                         <td className="px-3 py-2">
                           <FilesystemClientActions
                             client={client}
                             canEdit={canEditClients}
+                            t={t}
                             onBrowse={() => {
                               setSelectedClientId(client.id)
                               setBrowserPath("")
@@ -270,13 +290,13 @@ export default function IntrastatSettingsPage() {
           <CardContent className="space-y-4 p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-sm font-semibold">Watch folder preview</h2>
+                <h2 className="text-sm font-semibold">{t("settings.previewTitle")}</h2>
                 <p className="text-xs text-muted-foreground">
                   {selectedClient
                     ? `${selectedClient.client_name} — ${selectedClient.folder_name}`
                     : (filesystemPreview.data?.root ??
                       settings.data?.intrastat_watch_dir ??
-                      "INTRASTAT_WATCH_DIR is not set")}
+                      t("settings.previewNotConfigured"))}
                 </p>
               </div>
               <Button
@@ -290,11 +310,12 @@ export default function IntrastatSettingsPage() {
                 ) : (
                   <RefreshCw className="mr-2 h-4 w-4" />
                 )}
-                Refresh preview
+                {t("settings.refreshPreview")}
               </Button>
             </div>
 
             <FilesystemPreviewContent
+              t={t}
               preview={filesystemPreview.data}
               page={browserPage}
               isLoading={filesystemPreview.isLoading}
@@ -305,7 +326,7 @@ export default function IntrastatSettingsPage() {
               clientId={selectedClient?.id}
               missingMessage={
                 selectedClient
-                  ? `${selectedClient.client_name}'s mounted folder is not available.`
+                  ? t("settings.clientFolderUnavailable", { client: selectedClient.client_name })
                   : undefined
               }
               onOpenFolder={(path) => {
@@ -338,12 +359,14 @@ export default function IntrastatSettingsPage() {
 function FilesystemClientActions({
   client,
   canEdit,
+  t,
   onBrowse,
   onEdit,
   onDeleted,
 }: {
   client: IntrastatFilesystemClient
   canEdit: boolean
+  t: TFunction<["intrastat", "common"]>
   onBrowse: () => void
   onEdit: () => void
   onDeleted: () => void
@@ -354,11 +377,11 @@ function FilesystemClientActions({
   const runDelete = async () => {
     try {
       await deleteClient.mutateAsync(client.id)
-      toast.success("Client folder mapping deleted")
+      toast.success(t("settings.clientDeleted"))
       setConfirmOpen(false)
       onDeleted()
     } catch (error) {
-      toast.error(formatIntrastatError(error, "Client folder mapping could not be deleted"))
+      toast.error(formatIntrastatError(error, t("settings.clientDeleteFailed")))
     }
   }
 
@@ -366,13 +389,13 @@ function FilesystemClientActions({
     <div className="flex justify-end gap-1">
       <Button size="sm" variant="ghost" onClick={onBrowse}>
         <Eye className="mr-2 h-4 w-4" />
-        Browse
+        {t("settings.browse")}
       </Button>
       {canEdit ? (
         <>
           <Button size="sm" variant="ghost" onClick={onEdit} disabled={deleteClient.isPending}>
             <Pencil className="mr-2 h-4 w-4" />
-            Edit
+            {t("common:actions.edit")}
           </Button>
           <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
             <AlertDialogTrigger asChild>
@@ -387,25 +410,26 @@ function FilesystemClientActions({
                 ) : (
                   <Trash2 className="h-4 w-4" />
                 )}
-                <span className="sr-only">Delete client folder mapping</span>
+                <span className="sr-only">{t("settings.deleteClientSr")}</span>
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete client folder mapping?</AlertDialogTitle>
+                <AlertDialogTitle>{t("settings.deleteClientTitle")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This removes only the mapping for {client.client_name}. The mounted folder and all
-                  files inside it remain unchanged.
+                  {t("settings.deleteClientDescription", { client: client.client_name })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={deleteClient.isPending}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel disabled={deleteClient.isPending}>
+                  {t("common:actions.cancel")}
+                </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={runDelete}
                   disabled={deleteClient.isPending}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  Delete mapping
+                  {t("settings.deleteClientConfirm")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -417,6 +441,7 @@ function FilesystemClientActions({
 }
 
 function FilesystemPreviewContent({
+  t,
   preview,
   page,
   isLoading,
@@ -427,6 +452,7 @@ function FilesystemPreviewContent({
   onPageChange,
   onDeleted,
 }: {
+  t: TFunction<["intrastat", "common"]>
   preview: IntrastatFilesystemPreviewResponse | undefined
   page: number
   isLoading: boolean
@@ -444,14 +470,13 @@ function FilesystemPreviewContent({
   const pageCount = Math.max(1, Math.ceil(total / FILE_BROWSER_PAGE_SIZE))
 
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading folder preview...</p>
+    return <p className="text-sm text-muted-foreground">{t("settings.previewLoading")}</p>
   }
 
   if (!isConfigured) {
     return (
       <p className="text-sm text-muted-foreground">
-        {missingMessage ??
-          "Configure `INTRASTAT_WATCH_DIR` and make sure the folder exists to preview files."}
+        {missingMessage ?? t("settings.previewConfigureHint")}
       </p>
     )
   }
@@ -469,7 +494,7 @@ function FilesystemPreviewContent({
           }}
         >
           <ArrowUp className="h-4 w-4" />
-          <span className="sr-only">Go to parent folder</span>
+          <span className="sr-only">{t("settings.parentFolder")}</span>
         </Button>
         <div className="min-w-0 flex-1">
           <p className="truncate font-mono text-xs">{currentPath ? `/${currentPath}` : "/"}</p>
@@ -479,17 +504,17 @@ function FilesystemPreviewContent({
         <table className="w-full text-sm">
           <thead className="bg-muted/60 text-xs text-muted-foreground">
             <tr>
-              <th className="px-3 py-2 text-left font-medium">Name</th>
-              <th className="px-3 py-2 text-right font-medium">Size</th>
-              <th className="px-3 py-2 text-left font-medium">State</th>
-              <th className="px-3 py-2 text-right font-medium">Actions</th>
+              <th className="px-3 py-2 text-left font-medium">{t("settings.columnName")}</th>
+              <th className="px-3 py-2 text-right font-medium">{t("settings.columnSize")}</th>
+              <th className="px-3 py-2 text-left font-medium">{t("settings.columnState")}</th>
+              <th className="px-3 py-2 text-right font-medium">{t("settings.columnActions")}</th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {entries.length === 0 ? (
               <tr>
                 <td className="px-3 py-8 text-center text-sm text-muted-foreground" colSpan={4}>
-                  This folder is empty.
+                  {t("settings.emptyFolder")}
                 </td>
               </tr>
             ) : (
@@ -500,18 +525,25 @@ function FilesystemPreviewContent({
                   </td>
                   <td className="px-3 py-2 text-right">
                     {entry.size_bytes === null ? (
-                      <span className="text-xs text-muted-foreground">Folder</span>
+                      <span className="text-xs text-muted-foreground">
+                        {t("settings.entryFolder")}
+                      </span>
                     ) : (
                       formatBytes(entry.size_bytes)
                     )}
                   </td>
                   <td className="px-3 py-2">
                     <Badge variant={entry.stable ? "secondary" : "outline"}>
-                      {entry.stable ? "Stable" : "Changing"}
+                      {entry.stable ? t("settings.entryStable") : t("settings.entryChanging")}
                     </Badge>
                   </td>
                   <td className="px-3 py-2">
-                    <FileBrowserActions entry={entry} clientId={clientId} onDeleted={onDeleted} />
+                    <FileBrowserActions
+                      t={t}
+                      entry={entry}
+                      clientId={clientId}
+                      onDeleted={onDeleted}
+                    />
                   </td>
                 </tr>
               ))
@@ -553,10 +585,12 @@ function FileBrowserName({
 }
 
 function FileBrowserActions({
+  t,
   entry,
   clientId,
   onDeleted,
 }: {
+  t: TFunction<["intrastat", "common"]>
   entry: IntrastatFilesystemPreviewEntry
   clientId: string | undefined
   onDeleted: () => void
@@ -584,7 +618,7 @@ function FileBrowserActions({
       anchor.remove()
       window.setTimeout(() => URL.revokeObjectURL(url), 0)
     } catch (error) {
-      toast.error(formatIntrastatError(error, "File download failed"))
+      toast.error(formatIntrastatError(error, t("settings.downloadFailed")))
     }
   }
 
@@ -594,11 +628,11 @@ function FileBrowserActions({
         path: entry.relative_path,
         ...(clientId ? { clientId } : {}),
       })
-      toast.success("File deleted")
+      toast.success(t("settings.fileDeleted"))
       setConfirmOpen(false)
       onDeleted()
     } catch (error) {
-      toast.error(formatIntrastatError(error, "File delete failed"))
+      toast.error(formatIntrastatError(error, t("settings.deleteFileFailed")))
     }
   }
 
@@ -616,7 +650,7 @@ function FileBrowserActions({
         ) : (
           <Download className="h-4 w-4" />
         )}
-        <span className="sr-only">Download file</span>
+        <span className="sr-only">{t("settings.downloadFile")}</span>
       </Button>
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogTrigger asChild>
@@ -631,24 +665,26 @@ function FileBrowserActions({
             ) : (
               <Trash2 className="h-4 w-4" />
             )}
-            <span className="sr-only">Delete file</span>
+            <span className="sr-only">{t("settings.deleteFileSr")}</span>
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete file?</AlertDialogTitle>
+            <AlertDialogTitle>{t("settings.deleteFileTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently remove {entry.name} from the watch folder.
+              {t("settings.deleteFileDescription", { name: entry.name })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteFile.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteFile.isPending}>
+              {t("common:actions.cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={runDelete}
               disabled={deleteFile.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t("common:actions.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -51,7 +51,7 @@ export function ClassicHub({ model, variants }: HubLayoutProps) {
       {model.tiles.length === 0 ? (
         <EmptyState
           icon={Search}
-          title="Nie znaleziono aplikacji"
+          title={t("hub.emptyTitle")}
           description={t("hub.noResults")}
           action={
             <Button variant="outline" size="sm" onClick={model.clearFilters}>

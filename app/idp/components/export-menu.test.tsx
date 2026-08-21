@@ -81,28 +81,28 @@ describe("ExportMenu", () => {
     const user = userEvent.setup()
     render(<ExportMenu packageId="pkg-1" fileName="package.zip" />)
 
-    await user.click(screen.getByRole("button", { name: "Export" }))
+    await user.click(screen.getByRole("button", { name: "Eksport" }))
 
     expect(screen.queryByRole("menuitemcheckbox", { name: "Email" })).toBeNull()
 
-    await user.click(await screen.findByRole("menuitem", { name: /send by email/i }))
+    await user.click(await screen.findByRole("menuitem", { name: /wyślij mailem/i }))
 
     expect(await screen.findByRole("dialog")).toBeInTheDocument()
-    expect(screen.getByLabelText("Export template")).toHaveTextContent("SAD XML")
-    expect(screen.getByLabelText("To")).toHaveValue("user@example.com")
+    expect(screen.getByLabelText("Szablon eksportu")).toHaveTextContent("SAD XML")
+    expect(screen.getByLabelText("Do")).toHaveValue("user@example.com")
   })
 
   it("sends export email through backend endpoint", async () => {
     const user = userEvent.setup()
     render(<ExportMenu packageId="pkg-1" fileName="package.zip" />)
 
-    await user.click(screen.getByRole("button", { name: "Export" }))
-    await user.click(await screen.findByRole("menuitem", { name: /send by email/i }))
+    await user.click(screen.getByRole("button", { name: "Eksport" }))
+    await user.click(await screen.findByRole("menuitem", { name: /wyślij mailem/i }))
 
-    fireEvent.change(await screen.findByLabelText("Subject"), {
+    fireEvent.change(await screen.findByLabelText("Temat"), {
       target: { value: "Gotowy eksport" },
     })
-    fireEvent.click(screen.getByRole("button", { name: "Send" }))
+    fireEvent.click(screen.getByRole("button", { name: "Wyślij" }))
 
     await waitFor(() => {
       expect(mocks.sendExportEmail).toHaveBeenCalledWith("pkg-1", "sad_xml", {

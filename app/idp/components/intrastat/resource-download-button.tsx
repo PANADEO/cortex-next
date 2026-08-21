@@ -5,6 +5,7 @@ import { formatIntrastatError } from "@/lib/intrastat/api"
 import { useIntrastatDownloadCnResource } from "@/lib/intrastat/hooks"
 import { Button } from "@cortex/ui"
 import { Download, Loader2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function IntrastatResourceDownloadButton({ disabled }: Props) {
+  const { t } = useTranslation("intrastat")
   const download = useIntrastatDownloadCnResource()
 
   const handleDownload = async () => {
@@ -19,7 +21,7 @@ export function IntrastatResourceDownloadButton({ disabled }: Props) {
       const result = await download.mutateAsync()
       downloadBlob(result.blob, result.filename)
     } catch (error) {
-      toast.error(formatIntrastatError(error, "CN resource download failed"))
+      toast.error(formatIntrastatError(error, t("cnResource.downloadFailed")))
     }
   }
 
@@ -35,7 +37,7 @@ export function IntrastatResourceDownloadButton({ disabled }: Props) {
       ) : (
         <Download className="mr-2 h-4 w-4" />
       )}
-      Download CN XLSX
+      {t("cnResource.downloadButton")}
     </Button>
   )
 }

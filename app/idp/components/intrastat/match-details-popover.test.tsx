@@ -49,18 +49,18 @@ describe("IntrastatMatchDetailsPopover", () => {
   it("explains exact index matches", async () => {
     render(<IntrastatMatchDetailsPopover line={baseLine} />)
 
-    expect(screen.getByText("Exact 100%")).not.toBeNull()
-    await userEvent.click(screen.getByRole("button", { name: /show exact match details/i }))
+    expect(screen.getByText("Dokładne 100%")).not.toBeNull()
+    await userEvent.click(screen.getByRole("button", { name: /dopasowania: dokładne/i }))
 
-    expect(screen.getByText("Exact match")).not.toBeNull()
-    expect(screen.getByText(/CN is tied to the product index/i)).not.toBeNull()
-    expect(screen.getByText("Invoice index")).not.toBeNull()
-    expect(screen.getByText("Resource index")).not.toBeNull()
-    expect(screen.getByText("CN match confidence")).not.toBeNull()
-    expect(screen.getByText("Overall line confidence")).not.toBeNull()
+    expect(screen.getByText("Dopasowanie: Dokładne")).not.toBeNull()
+    expect(screen.getByText(/kod CN jest przypisany do indeksu towaru/i)).not.toBeNull()
+    expect(screen.getByText("Indeks z faktury")).not.toBeNull()
+    expect(screen.getByText("Indeks z bazy")).not.toBeNull()
+    expect(screen.getByText("Pewność dopasowania CN")).not.toBeNull()
+    expect(screen.getByText("Pewność całej pozycji")).not.toBeNull()
     expect(screen.getByText("100%")).not.toBeNull()
     expect(screen.getByText("90%")).not.toBeNull()
-    expect(screen.getByText(/uses the lower of document extraction confidence/i)).not.toBeNull()
+    expect(screen.getByText(/niższa z dwóch wartości/i)).not.toBeNull()
   })
 
   it("explains semantic matches and their score fragment", async () => {
@@ -76,11 +76,11 @@ describe("IntrastatMatchDetailsPopover", () => {
       />,
     )
 
-    expect(screen.getByText("Semantic 87%")).not.toBeNull()
-    await userEvent.click(screen.getByRole("button", { name: /show semantic match details/i }))
+    expect(screen.getByText("Semantyczne 87%")).not.toBeNull()
+    await userEvent.click(screen.getByRole("button", { name: /dopasowania: semantyczne/i }))
 
-    expect(screen.getByText("Semantic match")).not.toBeNull()
-    expect(screen.getByText(/description embeddings as a technical way/i)).not.toBeNull()
+    expect(screen.getByText("Dopasowanie: Semantyczne")).not.toBeNull()
+    expect(screen.getByText(/embeddingów opisu/i)).not.toBeNull()
     expect(screen.getByText("semantic:0.87")).not.toBeNull()
   })
 
@@ -96,8 +96,8 @@ describe("IntrastatMatchDetailsPopover", () => {
       />,
     )
 
-    expect(screen.getByText("Closest index 70%")).not.toBeNull()
-    await userEvent.click(screen.getByRole("button", { name: /show closest index match details/i }))
+    expect(screen.getByText("Najbliższy indeks 70%")).not.toBeNull()
+    await userEvent.click(screen.getByRole("button", { name: /dopasowania: najbliższy indeks/i }))
 
     expect(screen.getAllByText("70%")).toHaveLength(2)
   })
@@ -117,10 +117,10 @@ describe("IntrastatMatchDetailsPopover", () => {
       />,
     )
 
-    expect(screen.getByText("Exact 100%")).not.toBeNull()
-    await userEvent.click(screen.getByRole("button", { name: /show exact match details/i }))
+    expect(screen.getByText("Dokładne 100%")).not.toBeNull()
+    await userEvent.click(screen.getByRole("button", { name: /dopasowania: dokładne/i }))
 
-    expect(screen.getByText("4 fields require review")).not.toBeNull()
+    expect(screen.getByText("Pola do weryfikacji: 4")).not.toBeNull()
     expect(screen.getByText("delivery_terms not found.")).not.toBeNull()
   })
 })

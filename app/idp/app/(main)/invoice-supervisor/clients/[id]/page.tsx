@@ -13,7 +13,7 @@ import {
   formatInvoiceSupervisorDate,
   formatInvoiceSupervisorMultiCurrency,
   INVOICE_SUPERVISOR_INVOICE_STATUS_COLORS,
-  INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS,
+  INVOICE_SUPERVISOR_INVOICE_STATUS_LABEL_KEYS,
   type InvoiceSupervisorInvoice,
 } from "@/lib/invoice-supervisor/types"
 import {
@@ -87,7 +87,10 @@ function clientInvoiceColumns(
           variant="secondary"
           className={cn("border-0", INVOICE_SUPERVISOR_INVOICE_STATUS_COLORS[row.original.status])}
         >
-          {INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS[row.original.status] ?? row.original.status}
+          {t(
+            INVOICE_SUPERVISOR_INVOICE_STATUS_LABEL_KEYS[row.original.status] ??
+              row.original.status,
+          )}
         </Badge>
       ),
     },

@@ -7,40 +7,45 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary"
+import { useTranslation } from "react-i18next"
+
+/** `t` wędruje parametrem — `formatMessage` nie jest komponentem. */
+type Translate = ReturnType<typeof useTranslation>["t"]
 
 function isChunkLoadError(error: unknown): boolean {
   if (!(error instanceof Error)) return false
   return error.name === "ChunkLoadError" || /Loading chunk \d+ failed/i.test(error.message)
 }
 
-function formatMessage(error: unknown): string {
+function formatMessage(t: Translate, error: unknown): string {
   if (error instanceof Error) return error.message
-  return typeof error === "string" ? error : "Unexpected error."
+  return typeof error === "string" ? error : t("errorBoundary.unexpected")
 }
 
 function RootFallback({ error, resetErrorBoundary }: FallbackProps) {
+  const { t } = useTranslation(["idp", "common"])
   const chunk = isChunkLoadError(error)
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-6 py-12 text-center">
       <AlertTriangle className="h-10 w-10 text-destructive" />
       <div className="max-w-md space-y-2">
         <h1 className="text-lg font-semibold">
-          {chunk ? "A new version shipped" : "Something went wrong"}
+          {chunk ? t("errorBoundary.newVersionTitle") : t("errorBoundary.somethingWrong")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {chunk ? "Refresh to load the latest app bundle." : formatMessage(error)}
+          {chunk ? t("errorBoundary.refreshHint") : formatMessage(t, error)}
         </p>
       </div>
       <div className="flex gap-2">
         {chunk ? (
-          <Button onClick={() => window.location.reload()}>Refresh</Button>
+          <Button onClick={() => window.location.reload()}>{t("errorBoundary.refresh")}</Button>
         ) : (
           <Button onClick={resetErrorBoundary}>
-            <RotateCcw className="mr-1.5 h-4 w-4" /> Try again
+            <RotateCcw className="mr-1.5 h-4 w-4" /> {t("common:actions.retry")}
           </Button>
         )}
         <Button variant="outline" asChild>
-          <Link href="/">Back to dashboard</Link>
+          <Link href="/">{t("errorBoundary.backToDashboard")}</Link>
         </Button>
       </div>
     </div>
@@ -52,12 +57,13 @@ export function RootErrorBoundary({ children }: { children: ReactNode }) {
 }
 
 function FeatureFallback({ error, resetErrorBoundary }: FallbackProps) {
+  const { t } = useTranslation("idp")
   if (isChunkLoadError(error)) {
     return (
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         <ErrorState
-          title="A new version shipped"
-          message="Refresh to load the latest app bundle."
+          title={t("errorBoundary.newVersionTitle")}
+          message={t("errorBoundary.refreshHint")}
           onRetry={() => window.location.reload()}
         />
       </div>
@@ -66,8 +72,8 @@ function FeatureFallback({ error, resetErrorBoundary }: FallbackProps) {
   return (
     <div className="flex flex-1 flex-col gap-4 px-8 py-6">
       <ErrorState
-        title="This page hit an error"
-        message={formatMessage(error)}
+        title={t("errorBoundary.pageError")}
+        message={formatMessage(t, error)}
         onRetry={resetErrorBoundary}
       />
     </div>

@@ -21,152 +21,46 @@ import {
 import { cn } from "@cortex/utils"
 import { Loader2, RotateCcw, Settings2 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 export interface InvoiceLineColumnConfig {
   key: InvoiceLineColumnKey
-  label: string
-  gridLabel: string
-  spreadsheetLabel: string
   width: number
   uppercase?: boolean
   numeric?: boolean
 }
 
+/**
+ * Napis kolumny bierze się z klucza, nie z konfiguracji — ta sama kolumna ma
+ * trzy długości (pełna w oknie wyboru, skrócona w tabeli, najkrótsza w
+ * arkuszu), więc wariant jest częścią klucza.
+ */
+export function invoiceLineColumnLabelKey(
+  key: string,
+  variant: "label" | "grid" | "sheet" = "label",
+): string {
+  return `transportOrders.lineColumns.${key}.${variant}`
+}
+
 export const INVOICE_LINE_COLUMNS: readonly InvoiceLineColumnConfig[] = [
-  {
-    key: "line_number",
-    label: "Line #",
-    gridLabel: "#",
-    spreadsheetLabel: "#",
-    width: 56,
-    numeric: true,
-  },
-  {
-    key: "po_number",
-    label: "PO number",
-    gridLabel: "PO Number",
-    spreadsheetLabel: "PO",
-    width: 150,
-  },
-  {
-    key: "product_code",
-    label: "Product code",
-    gridLabel: "Product Code",
-    spreadsheetLabel: "Product",
-    width: 160,
-  },
-  {
-    key: "description",
-    label: "Description",
-    gridLabel: "Description",
-    spreadsheetLabel: "Description",
-    width: 320,
-  },
-  {
-    key: "description_pl",
-    label: "Polish name",
-    gridLabel: "Polish Name",
-    spreadsheetLabel: "Polish Name",
-    width: 240,
-  },
-  {
-    key: "customs_code",
-    label: "Customs code",
-    gridLabel: "Customs Code",
-    spreadsheetLabel: "Customs Code",
-    width: 132,
-  },
-  {
-    key: "preference_code",
-    label: "Preference code",
-    gridLabel: "Pref.",
-    spreadsheetLabel: "Pref.",
-    width: 72,
-  },
-  {
-    key: "atr_documents",
-    label: "Pref. Docs",
-    gridLabel: "Pref. Docs",
-    spreadsheetLabel: "Pref. Docs",
-    width: 220,
-  },
-  {
-    key: "quantity",
-    label: "Quantity",
-    gridLabel: "Qty",
-    spreadsheetLabel: "Qty",
-    width: 90,
-    numeric: true,
-  },
-  {
-    key: "unit_of_measure",
-    label: "Unit of measure",
-    gridLabel: "UoM",
-    spreadsheetLabel: "UoM",
-    width: 80,
-  },
-  {
-    key: "invoice_value",
-    label: "Invoice value",
-    gridLabel: "Value",
-    spreadsheetLabel: "Value",
-    width: 120,
-    numeric: true,
-  },
-  {
-    key: "net_weight_kg",
-    label: "Net weight (kg)",
-    gridLabel: "Net Wt (kg)",
-    spreadsheetLabel: "Net kg",
-    width: 130,
-    numeric: true,
-  },
-  {
-    key: "gross_weight_kg",
-    label: "Gross weight (kg)",
-    gridLabel: "Gross Wt (kg)",
-    spreadsheetLabel: "Gross kg",
-    width: 140,
-    numeric: true,
-  },
-  {
-    key: "estimated_gross_weight_kg",
-    label: "Estimated gross weight (kg)",
-    gridLabel: "Est. Gross Wt (kg)",
-    spreadsheetLabel: "Est. gross kg",
-    width: 150,
-    numeric: true,
-  },
-  {
-    key: "packages_quantity",
-    label: "Packages quantity",
-    gridLabel: "Packages Qty",
-    spreadsheetLabel: "Pkg qty",
-    width: 100,
-    numeric: true,
-  },
-  {
-    key: "packages_type",
-    label: "Packages type",
-    gridLabel: "Packages Type",
-    spreadsheetLabel: "Pkg type",
-    width: 120,
-  },
-  {
-    key: "packages_marking",
-    label: "Packages marking",
-    gridLabel: "Packages Marking",
-    spreadsheetLabel: "Pkg mark",
-    width: 150,
-  },
-  {
-    key: "origin_country",
-    label: "Origin country",
-    gridLabel: "Origin",
-    spreadsheetLabel: "Origin",
-    width: 90,
-    uppercase: true,
-  },
+  { key: "line_number", width: 56, numeric: true },
+  { key: "po_number", width: 150 },
+  { key: "product_code", width: 160 },
+  { key: "description", width: 320 },
+  { key: "description_pl", width: 240 },
+  { key: "customs_code", width: 132 },
+  { key: "preference_code", width: 72 },
+  { key: "atr_documents", width: 220 },
+  { key: "quantity", width: 90, numeric: true },
+  { key: "unit_of_measure", width: 80 },
+  { key: "invoice_value", width: 120, numeric: true },
+  { key: "net_weight_kg", width: 130, numeric: true },
+  { key: "gross_weight_kg", width: 140, numeric: true },
+  { key: "estimated_gross_weight_kg", width: 150, numeric: true },
+  { key: "packages_quantity", width: 100, numeric: true },
+  { key: "packages_type", width: 120 },
+  { key: "packages_marking", width: 150 },
+  { key: "origin_country", width: 90, uppercase: true },
 ]
 
 const ALL_COLUMN_KEYS = new Set<InvoiceLineColumnKey>(INVOICE_LINE_COLUMN_KEYS)
@@ -318,6 +212,7 @@ export function InvoiceLineColumnsDialog({
   className,
   showAtrColumns = true,
 }: InvoiceLineColumnsDialogProps) {
+  const { t } = useTranslation(["idp", "common"])
   const { hiddenColumns } = useVisibleInvoiceLineColumns(showAtrColumns)
   const availableColumns = useMemo(
     () => getAvailableInvoiceLineColumns(showAtrColumns),
@@ -380,18 +275,16 @@ export function InvoiceLineColumnsDialog({
           variant="outline"
           size="sm"
           className={cn("shrink-0", className)}
-          aria-label="Configure invoice line columns"
+          aria-label={t("transportOrders.columnsDialog.trigger")}
         >
           <Settings2 className="mr-1.5 h-4 w-4" />
-          Columns
+          {t("transportOrders.columnsDialog.triggerLabel")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Invoice line columns</DialogTitle>
-          <DialogDescription>
-            Choose which invoice line columns are visible in the list and verification workspace.
-          </DialogDescription>
+          <DialogTitle>{t("transportOrders.columnsDialog.title")}</DialogTitle>
+          <DialogDescription>{t("transportOrders.columnsDialog.description")}</DialogDescription>
         </DialogHeader>
         <div className="grid max-h-[52vh] gap-2 overflow-y-auto pr-1">
           {availableColumns.map((column) => {
@@ -409,16 +302,16 @@ export function InvoiceLineColumnsDialog({
                   checked={visible}
                   disabled={disabled}
                   onCheckedChange={(checked) => setColumnVisible(column.key, checked === true)}
-                  aria-label={column.label}
+                  aria-label={t(invoiceLineColumnLabelKey(column.key))}
                 />
-                <span>{column.label}</span>
+                <span>{t(invoiceLineColumnLabelKey(column.key))}</span>
               </Label>
             )
           })}
         </div>
         {visibleCount === 0 ? (
           <p className="text-xs text-destructive">
-            At least one invoice line column must stay visible.
+            {t("transportOrders.columnsDialog.atLeastOne")}
           </p>
         ) : null}
         <DialogFooter>
@@ -428,7 +321,7 @@ export function InvoiceLineColumnsDialog({
             onClick={() => setOpen(false)}
             disabled={persist.isPending}
           >
-            Cancel
+            {t("common:actions.cancel")}
           </Button>
           <Button
             type="button"
@@ -437,11 +330,11 @@ export function InvoiceLineColumnsDialog({
             disabled={persist.isPending}
           >
             <RotateCcw className="mr-1.5 h-4 w-4" />
-            Reset defaults
+            {t("transportOrders.columnsDialog.resetDefaults")}
           </Button>
           <Button type="button" onClick={handleSave} disabled={!canSave}>
             {persist.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-            Save
+            {t("common:actions.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,5 +1,6 @@
 "use client"
 
+import { useLocaleStore } from "@/lib/i18n/locale-store"
 import { buildDetailCsv, buildDetailJson, buildExportFileName } from "@/lib/token-usage/csv"
 import {
   Button,
@@ -36,11 +37,15 @@ interface DetailTableProps {
 
 export function DetailTable({ report, range }: DetailTableProps) {
   const { t } = useTranslation("token-usage")
+  const locale = useLocaleStore((s) => s.locale)
   const [filters, setFilters] = useState<DetailFilters>(NO_FILTERS)
 
-  // Nagłówki idą przez `t`, więc definicja kolumn nie może już być stałą
-  // modułu. `useMemo` po `t` zachowuje jej dotychczasową stabilność między
-  // renderami — inaczej grid dostawałby nową tablicę przy każdym z nich.
+  // Nagłówki idą przez `t`, a separator tysięcy przez `locale`, więc definicja
+  // kolumn nie może już być stałą modułu. `useMemo` po obu zachowuje jej
+  // dotychczasową stabilność między renderami — inaczej grid dostawałby nową
+  // tablicę przy każdym z nich. `locale` MUSI być w zależnościach: bez niego
+  // przełączenie języka odświeża nagłówki, a liczby w komórkach zostają
+  // sformatowane po staremu, bo `t` przy zmianie języka i tak jest nowe.
   const columns: ColumnDef<UsageDetailRow, unknown>[] = useMemo(
     () => [
       { accessorKey: "user", header: t("columns.user"), enableSorting: true },
@@ -52,7 +57,7 @@ export function DetailTable({ report, range }: DetailTableProps) {
         header: t("columns.totalTokens"),
         enableSorting: true,
         cell: ({ row }) => (
-          <span className="tabular-nums">{formatNumber(row.original.totalTokens)}</span>
+          <span className="tabular-nums">{formatNumber(row.original.totalTokens, locale)}</span>
         ),
       },
       {
@@ -61,7 +66,7 @@ export function DetailTable({ report, range }: DetailTableProps) {
         enableSorting: true,
         cell: ({ row }) => (
           <span className="tabular-nums text-muted-foreground">
-            {formatNumber(row.original.reasoningTokens)}
+            {formatNumber(row.original.reasoningTokens, locale)}
           </span>
         ),
       },
@@ -70,11 +75,11 @@ export function DetailTable({ report, range }: DetailTableProps) {
         header: t("columns.requestCount"),
         enableSorting: true,
         cell: ({ row }) => (
-          <span className="tabular-nums">{formatNumber(row.original.requestCount)}</span>
+          <span className="tabular-nums">{formatNumber(row.original.requestCount, locale)}</span>
         ),
       },
     ],
-    [t],
+    [t, locale],
   )
 
   const models = useMemo(
@@ -139,7 +144,7 @@ export function DetailTable({ report, range }: DetailTableProps) {
             size="sm"
             onClick={() =>
               downloadTextFile(
-                buildDetailCsv(rows),
+                buildDetailCsv(rows, t),
                 buildExportFileName("szczegoly", range, "csv"),
                 "text/csv",
               )
@@ -153,7 +158,7 @@ export function DetailTable({ report, range }: DetailTableProps) {
             size="sm"
             onClick={() =>
               downloadTextFile(
-                buildDetailJson(report, range),
+                buildDetailJson(report, range, t),
                 buildExportFileName("raport", range, "json"),
                 "application/json",
               )

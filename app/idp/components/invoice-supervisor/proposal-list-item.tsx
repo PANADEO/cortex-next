@@ -4,7 +4,7 @@ import {
   formatInvoiceSupervisorCurrency,
   formatInvoiceSupervisorDate,
   INVOICE_SUPERVISOR_ESCALATION_STAGE_COLORS,
-  INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS,
+  INVOICE_SUPERVISOR_ESCALATION_STAGE_LABEL_KEYS,
   type InvoiceSupervisorProposal,
 } from "@/lib/invoice-supervisor/types"
 import { Checkbox } from "@cortex/ui"
@@ -71,7 +71,7 @@ export function InvoiceSupervisorProposalListItem({
             INVOICE_SUPERVISOR_ESCALATION_STAGE_COLORS[proposal.escalation_stage],
           )}
         >
-          {INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS[proposal.escalation_stage]}
+          {t(INVOICE_SUPERVISOR_ESCALATION_STAGE_LABEL_KEYS[proposal.escalation_stage])}
         </span>
       </div>
     </div>

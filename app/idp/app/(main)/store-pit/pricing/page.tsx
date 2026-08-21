@@ -14,8 +14,10 @@ import {
   TabsTrigger,
 } from "@cortex/ui"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 
 export default function PricingPage() {
+  const { t } = useTranslation("store-pit")
   const [daoSearch, setDaoSearch] = useState("")
 
   const q = daoSearch.trim().toLowerCase()
@@ -25,23 +27,17 @@ export default function PricingPage() {
 
   return (
     <>
-      <PageHeader
-        title="Pricing rules"
-        description="Reference price lists and invoice settings the re-rating engine looks up."
-      />
+      <PageHeader title={t("pricing.title")} description={t("pricing.description")} />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
-        <p className="text-sm text-muted-foreground">
-          These tables are the dictionaries - mark-up multipliers, the DAO price list, Braintimizer
-          contract pricing, and invoice-level rate settings.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("pricing.intro")}</p>
 
         <Tabs defaultValue="markup">
           <TabsList>
-            <TabsTrigger value="markup">Store-Pit mark-up</TabsTrigger>
-            <TabsTrigger value="dao">DAO price list</TabsTrigger>
-            <TabsTrigger value="braintimizer">Braintimizer</TabsTrigger>
-            <TabsTrigger value="settings">Invoice settings</TabsTrigger>
+            <TabsTrigger value="markup">{t("pricing.tabs.markup")}</TabsTrigger>
+            <TabsTrigger value="dao">{t("pricing.tabs.dao")}</TabsTrigger>
+            <TabsTrigger value="braintimizer">{t("pricing.tabs.braintimizer")}</TabsTrigger>
+            <TabsTrigger value="settings">{t("pricing.tabs.settings")}</TabsTrigger>
           </TabsList>
 
           {/* ── Mark-up rules ── */}
@@ -52,10 +48,10 @@ export default function PricingPage() {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/40">
                       <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                        <th className="px-4 py-2.5 font-medium">Rule</th>
-                        <th className="px-3 py-2.5 font-medium">Pricing basis</th>
-                        <th className="px-3 py-2.5 font-medium">Formula</th>
-                        <th className="px-4 py-2.5 font-medium">Notes</th>
+                        <th className="px-4 py-2.5 font-medium">{t("markupTable.rule")}</th>
+                        <th className="px-3 py-2.5 font-medium">{t("markupTable.pricingBasis")}</th>
+                        <th className="px-3 py-2.5 font-medium">{t("markupTable.formula")}</th>
+                        <th className="px-4 py-2.5 font-medium">{t("markupTable.notes")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -87,22 +83,27 @@ export default function PricingPage() {
               <CardContent className="p-4 pb-0">
                 <div className="mb-3 flex items-center gap-3">
                   <Input
-                    placeholder="Filter by price key..."
+                    placeholder={t("pricing.dao.filterPlaceholder")}
                     value={daoSearch}
                     onChange={(e) => setDaoSearch(e.target.value)}
                     className="h-9 w-80"
                   />
                   <span className="text-xs text-muted-foreground">
-                    {count(filteredDao.length)} of {count(DAO_PRICES.length)}
+                    {t("pricing.dao.shownCount", {
+                      shown: count(filteredDao.length),
+                      total: count(DAO_PRICES.length),
+                    })}
                   </span>
                 </div>
                 <div className="max-h-[480px] overflow-y-auto">
                   <table className="w-full text-sm">
                     <thead className="sticky top-0 bg-muted/40">
                       <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                        <th className="px-4 py-2.5 font-medium">Tier</th>
-                        <th className="px-3 py-2.5 font-medium">Price key</th>
-                        <th className="px-4 py-2.5 text-right font-medium">Store-Pit price</th>
+                        <th className="px-4 py-2.5 font-medium">{t("pricing.dao.tier")}</th>
+                        <th className="px-3 py-2.5 font-medium">{t("pricing.dao.priceKey")}</th>
+                        <th className="px-4 py-2.5 text-right font-medium">
+                          {t("fields.storePitPrice")}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -139,11 +140,11 @@ export default function PricingPage() {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/40">
                       <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                        <th className="px-4 py-2.5 font-medium">Country</th>
+                        <th className="px-4 py-2.5 font-medium">{t("fields.country")}</th>
                         <th className="px-3 py-2.5 text-right font-medium">
-                          Price &lt; 5 kg (DKK)
+                          {t("pricing.bt.priceUnder5")}
                         </th>
-                        <th className="px-4 py-2.5 font-medium">Transit</th>
+                        <th className="px-4 py-2.5 font-medium">{t("pricing.bt.transit")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -174,9 +175,9 @@ export default function PricingPage() {
                   <table className="w-full text-sm">
                     <thead className="sticky top-0 bg-muted/40">
                       <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                        <th className="px-4 py-2.5 font-medium">Setting</th>
-                        <th className="px-3 py-2.5 font-medium">Value</th>
-                        <th className="px-4 py-2.5 font-medium">Source</th>
+                        <th className="px-4 py-2.5 font-medium">{t("pricing.settings.setting")}</th>
+                        <th className="px-3 py-2.5 font-medium">{t("pricing.settings.value")}</th>
+                        <th className="px-4 py-2.5 font-medium">{t("pricing.settings.source")}</th>
                       </tr>
                     </thead>
                     <tbody>

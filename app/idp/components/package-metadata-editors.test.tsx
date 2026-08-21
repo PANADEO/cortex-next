@@ -60,8 +60,8 @@ describe("PackageMetadataEditors", () => {
       </Wrapper>,
     )
 
-    const input = screen.getByLabelText(/custom status/i)
-    const save = screen.getByRole("button", { name: /save custom status/i })
+    const input = screen.getByLabelText(/status własny/i)
+    const save = screen.getByRole("button", { name: /zapisz status własny/i })
 
     expect(save).toBeDisabled()
 

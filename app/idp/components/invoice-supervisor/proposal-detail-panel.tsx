@@ -9,9 +9,9 @@ import {
   formatInvoiceSupervisorCurrency,
   formatInvoiceSupervisorDate,
   formatInvoiceSupervisorDateTime,
-  INVOICE_SUPERVISOR_CHANNEL_LABELS,
+  INVOICE_SUPERVISOR_CHANNEL_LABEL_KEYS,
   INVOICE_SUPERVISOR_ESCALATION_STAGE_COLORS,
-  INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS,
+  INVOICE_SUPERVISOR_ESCALATION_STAGE_LABEL_KEYS,
   type InvoiceSupervisorProposal,
 } from "@/lib/invoice-supervisor/types"
 import {
@@ -89,14 +89,14 @@ function ProposalDetailBody({ proposal }: { proposal: InvoiceSupervisorProposal 
                 INVOICE_SUPERVISOR_ESCALATION_STAGE_COLORS[proposal.escalation_stage],
               )}
             >
-              {INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS[proposal.escalation_stage]}
+              {t(INVOICE_SUPERVISOR_ESCALATION_STAGE_LABEL_KEYS[proposal.escalation_stage])}
             </span>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {proposal.invoice_number} ·{" "}
             {formatInvoiceSupervisorCurrency(proposal.amount, proposal.currency)} ·{" "}
             {t("proposal.dueLabel")} {formatInvoiceSupervisorDate(proposal.due_date)} ·{" "}
-            {INVOICE_SUPERVISOR_CHANNEL_LABELS[proposal.channel]}
+            {t(INVOICE_SUPERVISOR_CHANNEL_LABEL_KEYS[proposal.channel])}
           </p>
         </div>
       </div>

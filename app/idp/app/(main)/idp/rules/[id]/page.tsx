@@ -2,9 +2,9 @@
 
 import {
   hasMeaningfulNl,
-  RULE_CATEGORY_LABEL,
-  RULE_STATUS_LABEL,
-  RULE_TRIGGER_LABEL,
+  RULE_CATEGORY_LABEL_KEY,
+  RULE_STATUS_LABEL_KEY,
+  RULE_TRIGGER_LABEL_KEY,
 } from "@/components/rules/labels"
 import {
   toastApiError,
@@ -342,7 +342,7 @@ export default function RuleEditorPage() {
                 <SelectContent>
                   {RULE_CATEGORY.map((c) => (
                     <SelectItem key={c} value={c}>
-                      {RULE_CATEGORY_LABEL[c]}
+                      {t(RULE_CATEGORY_LABEL_KEY[c])}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -359,7 +359,7 @@ export default function RuleEditorPage() {
                 <SelectContent>
                   {RULE_STATUS.map((s) => (
                     <SelectItem key={s} value={s}>
-                      {RULE_STATUS_LABEL[s]}
+                      {t(RULE_STATUS_LABEL_KEY[s])}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -374,9 +374,9 @@ export default function RuleEditorPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {RULE_TRIGGER.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {RULE_TRIGGER_LABEL[t]}
+                  {RULE_TRIGGER.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {t(RULE_TRIGGER_LABEL_KEY[option])}
                     </SelectItem>
                   ))}
                 </SelectContent>

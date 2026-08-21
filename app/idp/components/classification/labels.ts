@@ -1,21 +1,24 @@
 import type { DirtyPackageStatus, DocMode, DocType } from "@cortex/types"
 
-export const DOC_TYPE_LABEL: Record<DocType, string> = {
-  invoice: "Invoice",
-  packing_list: "Packing list",
-  translation_sheet: "Translation",
-  code_assignment: "Code table",
-  bill_of_lading: "Bill of lading",
-  certificate_of_origin: "Cert. of origin",
-  correspondence: "Correspondence",
-  other: "Other",
-  skip: "Skip",
+// Stałe trzymają KLUCZE przestrzeni `idp`, nie napisy — ten plik nie jest
+// komponentem i nie ma własnego `t()`. Napis powstaje w miejscu renderu.
+
+export const DOC_TYPE_LABEL_KEY: Record<DocType, string> = {
+  invoice: "classification.docType.invoice",
+  packing_list: "classification.docType.packing_list",
+  translation_sheet: "classification.docType.translation_sheet",
+  code_assignment: "classification.docType.code_assignment",
+  bill_of_lading: "classification.docType.bill_of_lading",
+  certificate_of_origin: "classification.docType.certificate_of_origin",
+  correspondence: "classification.docType.correspondence",
+  other: "classification.docType.other",
+  skip: "classification.docType.skip",
 }
 
-export const DOC_MODE_LABEL: Record<DocMode, string> = {
-  process: "Process (LLM)",
-  pass_through: "Pass-through",
-  skip: "Skip",
+export const DOC_MODE_LABEL_KEY: Record<DocMode, string> = {
+  process: "classification.docMode.process",
+  pass_through: "classification.docMode.pass_through",
+  skip: "classification.docMode.skip",
 }
 
 export const DOC_MODE_COLOR: Record<DocMode, string> = {
@@ -24,10 +27,10 @@ export const DOC_MODE_COLOR: Record<DocMode, string> = {
   skip: "border-muted-foreground/30 text-muted-foreground bg-muted",
 }
 
-export const DIRTY_STATUS_LABEL: Record<DirtyPackageStatus, string> = {
-  needs_classification: "Needs classification",
-  classifying: "Classifying",
-  classified: "Classified",
-  promoted: "Promoted",
-  archived: "Archived",
+export const DIRTY_STATUS_LABEL_KEY: Record<DirtyPackageStatus, string> = {
+  needs_classification: "classification.dirtyStatus.needs_classification",
+  classifying: "classification.dirtyStatus.classifying",
+  classified: "classification.dirtyStatus.classified",
+  promoted: "classification.dirtyStatus.promoted",
+  archived: "classification.dirtyStatus.archived",
 }

@@ -86,7 +86,7 @@ export function InvoiceSupervisorImportDialog() {
             ) : null}
             {result.conflicts.length > 0 ? (
               <p className="text-warning-foreground">
-                {t("import.conflictsNote", { n: result.conflicts.length })}
+                {t("import.conflictsNote", { count: result.conflicts.length })}
               </p>
             ) : null}
           </div>

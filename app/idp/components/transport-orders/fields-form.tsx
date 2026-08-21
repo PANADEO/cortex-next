@@ -5,11 +5,13 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 import { Fragment, useEffect, useId } from "react"
 import { useForm, type Path } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import type { ZodType } from "zod"
 
 export interface FieldSpec<T> {
   name: Path<T>
-  label: string
+  /** Klucz przestrzeni `idp` — napis powstaje w miejscu renderu. */
+  labelKey: string
   span?: 1 | 2
   uppercase?: boolean
   readOnly?: boolean
@@ -39,6 +41,7 @@ export function FieldsForm<T extends Record<string, string>>({
   resetKey,
   onSave,
 }: Props<T>) {
+  const { t } = useTranslation(["idp", "common"])
   const idPrefix = useId()
   const form = useForm<T>({
     resolver: zodResolver(schema),
@@ -59,7 +62,7 @@ export function FieldsForm<T extends Record<string, string>>({
           <dl className="grid grid-cols-[10rem_1fr] gap-y-1 text-sm">
             {fields.map((f) => (
               <Fragment key={String(f.name)}>
-                <dt className="text-muted-foreground">{f.label}</dt>
+                <dt className="text-muted-foreground">{t(f.labelKey)}</dt>
                 <dd className="truncate font-mono text-xs">{defaults[f.name as keyof T] || "—"}</dd>
               </Fragment>
             ))}
@@ -90,7 +93,7 @@ export function FieldsForm<T extends Record<string, string>>({
             return (
               <div key={String(f.name)} className={f.span === 2 ? "md:col-span-2" : undefined}>
                 <Label htmlFor={fieldId} className="text-xs text-muted-foreground">
-                  {f.label}
+                  {t(f.labelKey)}
                 </Label>
                 <Input
                   id={fieldId}
@@ -105,7 +108,7 @@ export function FieldsForm<T extends Record<string, string>>({
                 />
                 {error ? (
                   <p className="mt-1 text-xs text-destructive">
-                    {String(error.message ?? "Invalid")}
+                    {t(String(error.message ?? "transportOrders.form.invalid"))}
                   </p>
                 ) : null}
               </div>
@@ -119,11 +122,11 @@ export function FieldsForm<T extends Record<string, string>>({
               onClick={() => form.reset(defaults as never)}
               disabled={disableActions}
             >
-              Reset
+              {t("transportOrders.form.reset")}
             </Button>
             <Button type="submit" size="sm" disabled={disableActions}>
               {isSaving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-              Save
+              {t("common:actions.save")}
             </Button>
           </div>
         </form>

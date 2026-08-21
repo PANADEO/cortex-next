@@ -20,7 +20,7 @@ function packageModel(overrides: Partial<PackageReadModel> = {}): PackageReadMod
 }
 
 describe("toCleanCard", () => {
-  it("uses package_name as the card title and keeps file_name searchable in subtitle", () => {
+  it("uses package_name as the card title and keeps file_name searchable", () => {
     const card = toCleanCard(
       packageModel({
         package_name: "May customs batch",
@@ -29,14 +29,24 @@ describe("toCleanCard", () => {
     )
 
     expect(card.title).toBe("May customs batch")
-    expect(card.subtitle).toContain("raw-import.zip")
-    expect(card.subtitle).toContain("owner@example.com")
+    expect(card.fileName).toBe("raw-import.zip")
+    expect(card.searchText).toContain("raw-import.zip")
+    expect(card.searchText).toContain("owner@example.com")
   })
 
   it("falls back to file_name when package_name is missing", () => {
     const card = toCleanCard(packageModel())
 
     expect(card.title).toBe("raw-import.zip")
-    expect(card.subtitle).toBe("Unassigned")
+    // Nazwa pliku JEST już tytułem, więc podpis jej nie powtarza.
+    expect(card.fileName).toBeNull()
+    expect(card.assignee).toBeNull()
+    expect(card.searchText).toBe("raw-import.zip")
+  })
+
+  it("leaves no user-facing text in the card — the subtitle is composed in the component", () => {
+    const card = toCleanCard(packageModel({ package_name: "May customs batch" }))
+
+    expect(Object.values(card)).not.toContain("Unassigned")
   })
 })

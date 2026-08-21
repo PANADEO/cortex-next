@@ -9,6 +9,7 @@ import type { LucideIcon } from "lucide-react"
 import { Package, Search } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 interface CommandPaletteProps {
   open: boolean
@@ -27,6 +28,7 @@ interface Entry {
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const { t } = useTranslation("common")
   const [query, setQuery] = useState("")
   const deferredQuery = useDeferredValue(query)
   const [activeIdx, setActiveIdx] = useState(0)
@@ -46,13 +48,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       navSections.flatMap((section) =>
         section.items.map((item) => ({
           id: `nav-${item.id}`,
-          group: "Navigation",
+          group: t("palette.navigation"),
           label: item.label,
           icon: item.icon,
           href: item.href,
         })),
       ),
-    [navSections],
+    [navSections, t],
   )
 
   const packages = usePackages(
@@ -67,7 +69,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       tileId === "idp"
         ? (packages.data?.items ?? []).map((p) => ({
             id: `pkg-${p.id}`,
-            group: "Extraction",
+            group: t("palette.extraction"),
             label: p.package_name ?? p.file_name,
             ...(p.package_name ? { hint: p.file_name } : {}),
             icon: Package,
@@ -75,7 +77,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           }))
         : []
     return [...nav, ...pkgEntries]
-  }, [deferredQuery, navEntries, packages.data, tileId])
+  }, [deferredQuery, navEntries, packages.data, tileId, t])
 
   useEffect(() => {
     setActiveIdx(0)
@@ -118,7 +120,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           inputRef.current?.focus()
         }}
       >
-        <DialogTitle className="sr-only">Command palette</DialogTitle>
+        <DialogTitle className="sr-only">{t("palette.title")}</DialogTitle>
         <div className="flex items-center gap-2 border-b border-border px-3">
           <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
           <Input
@@ -126,7 +128,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKey}
-            placeholder={tileId === "idp" ? "Search packages or jump to..." : "Jump to..."}
+            placeholder={tileId === "idp" ? t("palette.searchPackages") : t("palette.jumpTo")}
             className="h-12 border-0 bg-transparent text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
           />
           <kbd className="pointer-events-none hidden rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground md:inline-block">
@@ -135,7 +137,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         </div>
         <div className="max-h-80 overflow-y-auto p-2">
           {entries.length === 0 ? (
-            <p className="px-3 py-6 text-center text-sm text-muted-foreground">No results.</p>
+            <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+              {t("palette.noResults")}
+            </p>
           ) : (
             entries.map((entry, i) => {
               const showGroup = entry.group !== currentGroup
@@ -173,10 +177,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         <div className="flex items-center justify-between border-t border-border bg-muted/30 px-3 py-1.5 text-[10px] text-muted-foreground">
           <span>
             <kbd className="rounded border border-border bg-background px-1 font-mono">↑↓</kbd>{" "}
-            navigate
+            {t("palette.navigate")}
           </span>
           <span>
-            <kbd className="rounded border border-border bg-background px-1 font-mono">↵</kbd> open
+            <kbd className="rounded border border-border bg-background px-1 font-mono">↵</kbd>{" "}
+            {t("palette.open")}
           </span>
         </div>
       </DialogContent>

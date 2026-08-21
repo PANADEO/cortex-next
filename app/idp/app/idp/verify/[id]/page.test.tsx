@@ -270,12 +270,12 @@ describe("VerifyWorkspacePage — document preview toggle", () => {
 
     expect(await screen.findByTestId("document-preview-panel")).not.toBeNull()
 
-    await userEvent.click(screen.getByRole("button", { name: /hide document preview/i }))
+    await userEvent.click(screen.getByRole("button", { name: /ukryj podgląd dokumentu/i }))
 
     expect(screen.queryByTestId("document-preview-panel")).toBeNull()
-    expect(screen.getByRole("button", { name: /show document preview/i })).not.toBeNull()
+    expect(screen.getByRole("button", { name: /pokaż podgląd dokumentu/i })).not.toBeNull()
 
-    await userEvent.click(screen.getByRole("button", { name: /show document preview/i }))
+    await userEvent.click(screen.getByRole("button", { name: /pokaż podgląd dokumentu/i }))
 
     expect(await screen.findByTestId("document-preview-panel")).not.toBeNull()
   })
@@ -298,13 +298,13 @@ describe("VerifyWorkspacePage — document preview toggle", () => {
       </Wrapper>,
     )
 
-    expect(await screen.findByRole("tab", { name: /invoice fv-1/i })).not.toBeNull()
-    expect(screen.getByRole("tab", { name: /invoice fv-2/i })).not.toBeNull()
-    expect(screen.getByRole("heading", { name: /invoice fv-1.*1 lines/i })).not.toBeNull()
+    expect(await screen.findByRole("tab", { name: /faktura fv-1/i })).not.toBeNull()
+    expect(screen.getByRole("tab", { name: /faktura fv-2/i })).not.toBeNull()
+    expect(screen.getByRole("heading", { name: /faktura fv-1.*pozycji: 1/i })).not.toBeNull()
 
-    await userEvent.click(screen.getByRole("tab", { name: /invoice fv-2/i }))
+    await userEvent.click(screen.getByRole("tab", { name: /faktura fv-2/i }))
 
-    expect(screen.getByRole("heading", { name: /invoice fv-2.*2 lines/i })).not.toBeNull()
+    expect(screen.getByRole("heading", { name: /faktura fv-2.*pozycji: 2/i })).not.toBeNull()
   })
 
   it("opens the referenced PDF source when an invoice line is clicked", async () => {
@@ -332,7 +332,9 @@ describe("VerifyWorkspacePage — document preview toggle", () => {
       "data-state",
       "active",
     )
-    expect(screen.getByText(/source selected — invoice pdf · page 2 · 1 highlight/i)).not.toBeNull()
+    expect(
+      screen.getByText(/wybrano źródło — invoice pdf · strona 2 · podświetleń: 1/i),
+    ).not.toBeNull()
     expect(await screen.findByTestId("mock-document-viewer")).toHaveTextContent(
       "invoice.pdf page 2 highlights 1",
     )
@@ -370,7 +372,7 @@ describe("VerifyWorkspacePage — document preview toggle", () => {
       </Wrapper>,
     )
 
-    await userEvent.click(await screen.findByRole("tab", { name: /invoice fv-2/i }))
+    await userEvent.click(await screen.findByRole("tab", { name: /faktura fv-2/i }))
     await userEvent.click(screen.getByDisplayValue("SKU-2"))
 
     expect(await screen.findByRole("tab", { name: /packing-list\.xlsx/i })).toHaveAttribute(
@@ -378,8 +380,8 @@ describe("VerifyWorkspacePage — document preview toggle", () => {
       "active",
     )
 
-    const status = screen.getByText(/source selected — packing list/i)
-    expect(status).not.toHaveTextContent(/page|row|highlight/i)
+    const status = screen.getByText(/wybrano źródło — packing list/i)
+    expect(status).not.toHaveTextContent(/strona|wiersz|podświetl/i)
     expect(await screen.findByTestId("mock-document-viewer")).toHaveTextContent(
       /packing-list\.xlsx page none highlights 0 terms [1-9]/,
     )
@@ -404,7 +406,7 @@ describe("VerifyWorkspacePage — document preview toggle", () => {
       </Wrapper>,
     )
 
-    await userEvent.click(await screen.findByRole("button", { name: /unlock package/i }))
+    await userEvent.click(await screen.findByRole("button", { name: /odblokuj paczkę/i }))
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -434,12 +436,12 @@ describe("VerifyWorkspacePage — document preview toggle", () => {
       </Wrapper>,
     )
 
-    const readOnly = await screen.findByText(/only dev@cortex\.local can edit/i)
-    expect(screen.queryByRole("button", { name: /unlock package/i })).toBeNull()
+    const readOnly = await screen.findByText(/edytować może tylko dev@cortex\.local/i)
+    expect(screen.queryByRole("button", { name: /odblokuj paczkę/i })).toBeNull()
 
     expect(readOnly).toHaveAttribute(
       "title",
-      "This action is available for the assignee or IDP admin.",
+      "Ta operacja jest dostępna dla opiekuna paczki albo administratora IDP.",
     )
   })
 })

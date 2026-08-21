@@ -433,7 +433,7 @@ export const handlers = [
       enable_imap_import: false,
       enable_import_email_notifications: true,
       hide_menu_items: [],
-      custom_statuses: ["Accounting Department", "Controling Department", "Accepted"],
+      custom_statuses: ["Accounting Department", "Controlling Department", "Accepted"],
       export_templates: ["csv_new", "standard_xml", "standard_json", "sad_xml"],
       sad_context_defaults: "",
       smtp_host: "smtp.gmail.com",

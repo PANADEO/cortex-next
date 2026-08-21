@@ -2,6 +2,7 @@
 
 import { countryCodeSchema, mapTrimToNull } from "@/lib/form-helpers"
 import type { TransportOrder, UpdateTransportInfoRequest } from "@cortex/types"
+import { useTranslation } from "react-i18next"
 import { z } from "zod"
 import { FieldsForm, type FieldSpec } from "./fields-form"
 
@@ -17,12 +18,22 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 
 const FIELDS: readonly FieldSpec<FormValues>[] = [
-  { name: "transport_order_number", label: "TO number", span: 2 },
-  { name: "mode", label: "Mode", span: 1 },
-  { name: "truck_plate", label: "Truck plate", span: 1 },
-  { name: "trailer_plate", label: "Trailer plate", span: 1 },
-  { name: "country_of_dispatch", label: "From", span: 1, uppercase: true },
-  { name: "country_of_destination", label: "To", span: 1, uppercase: true },
+  { name: "transport_order_number", labelKey: "transportOrders.fields.toNumber", span: 2 },
+  { name: "mode", labelKey: "transportOrders.fields.mode", span: 1 },
+  { name: "truck_plate", labelKey: "transportOrders.fields.truckPlate", span: 1 },
+  { name: "trailer_plate", labelKey: "transportOrders.fields.trailerPlate", span: 1 },
+  {
+    name: "country_of_dispatch",
+    labelKey: "transportOrders.fields.from",
+    span: 1,
+    uppercase: true,
+  },
+  {
+    name: "country_of_destination",
+    labelKey: "transportOrders.fields.to",
+    span: 1,
+    uppercase: true,
+  },
 ]
 
 function toDefaults(order: TransportOrder): FormValues {
@@ -44,9 +55,10 @@ interface Props {
 }
 
 export function TransportInfoEditor({ order, canEdit, isSaving, onSave }: Props) {
+  const { t } = useTranslation("idp")
   return (
     <FieldsForm
-      label="Transport info"
+      label={t("transportOrders.sections.transportInfo")}
       fields={FIELDS}
       defaults={toDefaults(order)}
       schema={schema}

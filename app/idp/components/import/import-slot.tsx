@@ -30,6 +30,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useRef, useState, type DragEvent } from "react"
+import { useTranslation } from "react-i18next"
 import {
   detectIntakeKind,
   filesFromDataTransfer,
@@ -75,31 +76,31 @@ interface ImportSlotProps {
 
 const STATUS_META: Record<
   ImportSlotStatus,
-  { label: string; tone: string; icon: typeof Upload; animate?: boolean }
+  { labelKey: string; tone: string; icon: typeof Upload; animate?: boolean }
 > = {
   pending: {
-    label: "Waiting for files",
+    labelKey: "import.slot.status.pending",
     tone: "bg-muted text-muted-foreground",
     icon: Upload,
   },
   ready: {
-    label: "Ready to import",
+    labelKey: "import.slot.status.ready",
     tone: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300",
     icon: CheckCircle2,
   },
   uploading: {
-    label: "Uploading…",
+    labelKey: "import.slot.status.uploading",
     tone: "bg-sky-100 text-sky-800 dark:bg-sky-950/40 dark:text-sky-300",
     icon: Loader2,
     animate: true,
   },
   done: {
-    label: "Imported",
+    labelKey: "import.slot.status.done",
     tone: "bg-emerald-500/20 text-emerald-800 dark:text-emerald-200",
     icon: CheckCircle2,
   },
   error: {
-    label: "Failed",
+    labelKey: "import.slot.status.error",
     tone: "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300",
     icon: AlertCircle,
   },
@@ -122,6 +123,7 @@ export function ImportSlot({
   showAdditionalAiContext = false,
   showPackagingSelectionMode = false,
 }: ImportSlotProps) {
+  const { t } = useTranslation("idp")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
@@ -178,14 +180,14 @@ export function ImportSlot({
         {slot.status === "done" && slot.packageId ? (
           <Link
             href={`/idp/packages/${slot.packageId}`}
-            aria-label="Open package details"
+            aria-label={t("import.slot.openPackageAria")}
             className={cn(
               "inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors hover:bg-emerald-500/30",
               statusMeta.tone,
             )}
           >
             <StatusIcon className={cn("h-3 w-3", statusMeta.animate && "animate-spin")} />
-            {statusMeta.label}
+            {t(statusMeta.labelKey)}
           </Link>
         ) : (
           <span
@@ -195,7 +197,7 @@ export function ImportSlot({
             )}
           >
             <StatusIcon className={cn("h-3 w-3", statusMeta.animate && "animate-spin")} />
-            {statusMeta.label}
+            {t(statusMeta.labelKey)}
           </span>
         )}
 
@@ -209,10 +211,10 @@ export function ImportSlot({
               <Files className="h-3 w-3" />
             )}
             {kind === "zip"
-              ? "ZIP bundle"
+              ? t("import.slot.kindZip")
               : kind === "email"
-                ? "Email container"
-                : `${slot.files.length} files → one package`}
+                ? t("import.slot.kindEmail")
+                : t("import.slot.kindLoose", { count: slot.files.length })}
           </Badge>
         ) : null}
 
@@ -225,7 +227,7 @@ export function ImportSlot({
               className="h-7 w-7"
               disabled={isBusy}
               onClick={onRemove}
-              aria-label="Remove slot"
+              aria-label={t("import.slot.removeSlot")}
             >
               <X className="h-3.5 w-3.5" />
             </Button>
@@ -240,14 +242,14 @@ export function ImportSlot({
               htmlFor={`package-name-${slot.id}`}
               className="text-[10px] uppercase tracking-wide text-muted-foreground"
             >
-              Package name
+              {t("import.slot.packageName")}
             </Label>
             <Input
               id={`package-name-${slot.id}`}
               value={slot.packageName}
               onChange={(e) => onPackageNameChange(e.target.value)}
               maxLength={255}
-              placeholder="Optional display name"
+              placeholder={t("import.slot.packageNamePlaceholder")}
               className="h-8 text-xs"
               disabled={isBusy}
             />
@@ -266,7 +268,7 @@ export function ImportSlot({
                   htmlFor={`notification-email-enabled-${slot.id}`}
                   className="text-xs font-medium"
                 >
-                  Email result after processing
+                  {t("import.slot.emailResult")}
                 </Label>
               </div>
               {slot.notificationEmailEnabled ? (
@@ -289,9 +291,9 @@ export function ImportSlot({
                     <SelectTrigger
                       id={`notification-export-template-${slot.id}`}
                       className="h-8 text-xs"
-                      aria-label="Notification export template"
+                      aria-label={t("import.slot.templateAria")}
                     >
-                      <SelectValue placeholder="Export template" />
+                      <SelectValue placeholder={t("import.slot.templatePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       {notificationExportTemplates.map((template) => (
@@ -328,10 +330,8 @@ export function ImportSlot({
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-background">
             <Upload className="h-4 w-4 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium">Drop a ZIP, EML, MSG, files or folders here</p>
-          <p className="text-[11px] text-muted-foreground">
-            Single email files are unpacked by the backend; other files are grouped as one package.
-          </p>
+          <p className="text-sm font-medium">{t("import.slot.dropTitle")}</p>
+          <p className="text-[11px] text-muted-foreground">{t("import.slot.dropHint")}</p>
           <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               type="button"
@@ -340,7 +340,7 @@ export function ImportSlot({
               onClick={() => fileInputRef.current?.click()}
             >
               <FilePlus2 className="mr-1.5 h-3.5 w-3.5" />
-              Choose files
+              {t("import.slot.chooseFiles")}
             </Button>
             <Button
               type="button"
@@ -349,7 +349,7 @@ export function ImportSlot({
               onClick={() => folderInputRef.current?.click()}
             >
               <FolderPlus className="mr-1.5 h-3.5 w-3.5" />
-              Choose folder
+              {t("import.slot.chooseFolder")}
             </Button>
           </div>
           <input
@@ -392,7 +392,7 @@ export function ImportSlot({
                     type="button"
                     onClick={() => removeFile(idx)}
                     className="rounded-sm p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    aria-label={`Remove ${file.name}`}
+                    aria-label={t("import.slot.removeFile", { name: file.name })}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -411,8 +411,11 @@ export function ImportSlot({
             {slot.status === "done" ? (
               <div className="ml-auto">
                 <Button asChild size="sm" className="h-8">
-                  <Link href={`/idp/packages/${slot.packageId}`} aria-label="Open package details">
-                    Open package
+                  <Link
+                    href={`/idp/packages/${slot.packageId}`}
+                    aria-label={t("import.slot.openPackageAria")}
+                  >
+                    {t("import.slot.openPackage")}
                     <ArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
                   </Link>
                 </Button>
@@ -429,7 +432,7 @@ export function ImportSlot({
                     disabled={isBusy}
                   >
                     <FilePlus2 className="mr-1.5 h-3.5 w-3.5" />
-                    Add more
+                    {t("import.slot.addMore")}
                   </Button>
                 ) : null}
                 <Button
@@ -440,7 +443,7 @@ export function ImportSlot({
                   onClick={() => setShowOptions((v) => !v)}
                   disabled={isBusy}
                 >
-                  {showOptions ? "Hide options" : "Advanced options"}
+                  {showOptions ? t("import.slot.hideOptions") : t("import.slot.advancedOptions")}
                 </Button>
                 <div className="ml-auto">
                   <Button
@@ -453,7 +456,7 @@ export function ImportSlot({
                     {slot.status === "uploading" ? (
                       <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                     ) : null}
-                    {slot.status === "error" ? "Retry" : "Import"}
+                    {slot.status === "error" ? t("import.slot.retry") : t("import.slot.import")}
                   </Button>
                 </div>
               </>

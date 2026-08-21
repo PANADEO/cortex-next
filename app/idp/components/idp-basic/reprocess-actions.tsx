@@ -16,6 +16,7 @@ import {
 } from "@cortex/ui"
 import { Loader2, RefreshCw } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 interface ReprocessPackageButtonProps {
@@ -31,16 +32,17 @@ export function IdpBasicReprocessPackageButton({
   disabled,
   disabledReason,
 }: ReprocessPackageButtonProps) {
+  const { t } = useTranslation(["idp-basic", "common"])
   const [open, setOpen] = useState(false)
   const mutation = useIdpBasicReprocessPackage()
 
   const runReprocess = async () => {
     try {
       await mutation.mutateAsync(packageId)
-      toast.success("Package queued for reprocessing")
+      toast.success(t("toast.packageQueuedForReprocess"))
       setOpen(false)
     } catch (error) {
-      toast.error(formatIdpBasicError(error, "Package reprocess failed"))
+      toast.error(formatIdpBasicError(error, t("errors.packageReprocessFailed")))
     }
   }
 
@@ -58,21 +60,22 @@ export function IdpBasicReprocessPackageButton({
           ) : (
             <RefreshCw className="h-4 w-4" />
           )}
-          Reprocess
+          {t("reprocess.trigger")}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Reprocess package?</AlertDialogTitle>
+          <AlertDialogTitle>{t("reprocess.title")}</AlertDialogTitle>
           <AlertDialogDescription>
-            This will clear the current analysis for {packageName} and send the same stored files
-            through the worker again.
+            {t("reprocess.description", { name: packageName })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={mutation.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={mutation.isPending}>
+            {t("common:actions.cancel")}
+          </AlertDialogCancel>
           <AlertDialogAction onClick={runReprocess} disabled={mutation.isPending}>
-            Reprocess
+            {t("reprocess.confirm")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

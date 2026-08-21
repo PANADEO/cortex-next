@@ -14,6 +14,7 @@ import { cn, useFeatureFlag } from "@cortex/utils"
 import { Search, X } from "lucide-react"
 import type { KeyboardEvent } from "react"
 import { useEffect, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { OwnerFilter } from "./owner-filter"
 
 type SearchMode = "input" | "trigger" | "none"
@@ -25,6 +26,7 @@ interface BoardFiltersProps {
 }
 
 export function BoardFilters({ board, searchMode = "input", className }: BoardFiltersProps) {
+  const { t } = useTranslation("idp")
   const classificationEnabled = useFeatureFlag("idp.classification")
   return (
     <div className={cn("flex items-center gap-3", className)}>
@@ -40,9 +42,9 @@ export function BoardFilters({ board, searchMode = "input", className }: BoardFi
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All packages</SelectItem>
-            <SelectItem value="dirty">Dirty only</SelectItem>
-            <SelectItem value="clean">Clean only</SelectItem>
+            <SelectItem value="all">{t("board.filters.allPackages")}</SelectItem>
+            <SelectItem value="dirty">{t("board.filters.dirtyOnly")}</SelectItem>
+            <SelectItem value="clean">{t("board.filters.cleanOnly")}</SelectItem>
           </SelectContent>
         </Select>
       ) : null}
@@ -55,20 +57,25 @@ export function BoardFilters({ board, searchMode = "input", className }: BoardFi
       />
 
       <div className="ml-auto text-xs text-muted-foreground">
-        <span>{board.isLoading ? "Loading…" : `${board.totalCount} on board`}</span>
+        <span>
+          {board.isLoading
+            ? t("board.filters.loading")
+            : t("board.filters.onBoard", { n: board.totalCount })}
+        </span>
       </div>
     </div>
   )
 }
 
 function SearchInput({ board }: { board: PipelineBoardState }) {
+  const { t } = useTranslation("idp")
   return (
     <div className="relative">
       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         value={board.search}
         onChange={(e) => board.setSearch(e.target.value)}
-        placeholder="Search by package name, ID, customer…"
+        placeholder={t("board.search.placeholder")}
         className="h-9 w-72 pl-9"
       />
     </div>
@@ -76,6 +83,7 @@ function SearchInput({ board }: { board: PipelineBoardState }) {
 }
 
 function SearchTrigger({ board }: { board: PipelineBoardState }) {
+  const { t } = useTranslation("idp")
   const hasValue = board.search.length > 0
   const [expanded, setExpanded] = useState(hasValue)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -115,14 +123,14 @@ function SearchTrigger({ board }: { board: PipelineBoardState }) {
           onChange={(e) => board.setSearch(e.target.value)}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          placeholder="Search by package name, ID, customer…"
+          placeholder={t("board.search.placeholder")}
           className="h-9 w-72 pl-9 pr-9"
         />
         {hasValue ? (
           <button
             type="button"
             onClick={handleClear}
-            aria-label="Clear search"
+            aria-label={t("board.search.clear")}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
           >
             <X className="h-3.5 w-3.5" />
@@ -138,7 +146,7 @@ function SearchTrigger({ board }: { board: PipelineBoardState }) {
       variant="ghost"
       size="icon"
       onClick={() => setExpanded(true)}
-      aria-label="Open search"
+      aria-label={t("board.search.open")}
       className={cn("h-9 w-9", hasValue && "bg-accent text-accent-foreground")}
     >
       <Search className="h-4 w-4" />

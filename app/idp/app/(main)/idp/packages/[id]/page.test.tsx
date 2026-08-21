@@ -175,35 +175,35 @@ describe("PackageDetailPage summary collapse", () => {
       expect(screen.getByText("Ready")).toBeInTheDocument()
       expect(screen.getByText("Not started")).toBeInTheDocument()
     })
-    expect(screen.getByRole("link", { name: /open verification workspace/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /download zip/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /show structure/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /start verification/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /reprocess/i })).toBeInTheDocument()
-    expect(screen.getByText("Actions")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /otwórz obszar weryfikacji/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /pobierz zip/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /pokaż strukturę/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /rozpocznij weryfikację/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /przetwórz ponownie/i })).toBeInTheDocument()
+    expect(screen.getByText("Akcje")).toBeInTheDocument()
     expect(await screen.findByText("1070021484")).toBeInTheDocument()
-    expect(screen.getByText("Uploaded")).toBeInTheDocument()
+    expect(screen.getByText("Wgrano")).toBeInTheDocument()
     expect(screen.getByText("HASH123")).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: "Collapse package summary" }))
+    fireEvent.click(screen.getByRole("button", { name: "Zwiń podsumowanie paczki" }))
 
     expect(screen.getByText("Ready")).toBeInTheDocument()
     expect(screen.getByText("Not started")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: /open verification workspace/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /download zip/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /show structure/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /start verification/i })).toBeInTheDocument()
-    expect(screen.queryByText("Actions")).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /otwórz obszar weryfikacji/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /pobierz zip/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /pokaż strukturę/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /rozpocznij weryfikację/i })).toBeInTheDocument()
+    expect(screen.queryByText("Akcje")).not.toBeInTheDocument()
     expect(screen.queryByText("1070021484")).not.toBeInTheDocument()
-    expect(screen.queryByText("Uploaded")).not.toBeInTheDocument()
+    expect(screen.queryByText("Wgrano")).not.toBeInTheDocument()
     expect(screen.queryByText("HASH123")).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: "Expand package summary" }))
+    fireEvent.click(screen.getByRole("button", { name: "Rozwiń podsumowanie paczki" }))
 
     expect(screen.getByText("1070021484")).toBeInTheDocument()
-    expect(screen.getByText("Uploaded")).toBeInTheDocument()
+    expect(screen.getByText("Wgrano")).toBeInTheDocument()
     expect(screen.getByText("HASH123")).toBeInTheDocument()
-    expect(screen.getByText("Actions")).toBeInTheDocument()
+    expect(screen.getByText("Akcje")).toBeInTheDocument()
   })
 
   it("refreshes available actions when package transitions change", async () => {
@@ -228,17 +228,21 @@ describe("PackageDetailPage summary collapse", () => {
       </Wrapper>,
     )
 
-    expect(await screen.findByRole("button", { name: /start verification/i })).toBeInTheDocument()
+    expect(
+      await screen.findByRole("button", { name: /rozpocznij weryfikację/i }),
+    ).toBeInTheDocument()
 
     transitions = {
       transitions: ["reset_verification", "reprocess"],
     }
-    fireEvent.click(screen.getByRole("button", { name: /refresh now/i }))
+    fireEvent.click(screen.getByRole("button", { name: /odśwież teraz/i }))
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /reset verification/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /zresetuj weryfikację/i })).toBeInTheDocument()
     })
-    expect(screen.queryByRole("button", { name: /start verification/i })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: /rozpocznij weryfikację/i }),
+    ).not.toBeInTheDocument()
   })
 
   it("refreshes actions when package workflow state changes outside the current user action", async () => {
@@ -271,8 +275,8 @@ describe("PackageDetailPage summary collapse", () => {
 
     await waitFor(() => {
       expect(screen.getByText("In verification")).toBeInTheDocument()
-      expect(screen.getByRole("button", { name: /cancel verification/i })).toBeInTheDocument()
-      expect(screen.getByRole("button", { name: /finish verification/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /anuluj weryfikację/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /zakończ weryfikację/i })).toBeInTheDocument()
     })
 
     details = makePackageDetails({
@@ -289,9 +293,9 @@ describe("PackageDetailPage summary collapse", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Not started")).toBeInTheDocument()
-      expect(screen.getByRole("button", { name: /start verification/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /rozpocznij weryfikację/i })).toBeInTheDocument()
     })
-    expect(screen.queryByRole("button", { name: /cancel verification/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: /finish verification/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /anuluj weryfikację/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /zakończ weryfikację/i })).not.toBeInTheDocument()
   })
 })

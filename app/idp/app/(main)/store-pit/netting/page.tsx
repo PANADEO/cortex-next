@@ -20,8 +20,10 @@ import {
 } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
+import type { TFunction } from "i18next"
 import { SearchX, Table2 } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 const PAGE_SIZE = 15
 
@@ -32,77 +34,85 @@ function clientAccent(client: string): string {
   return meta ? ACCENT_BADGE[meta.accent] : "border-border bg-muted text-muted-foreground"
 }
 
-const columns: ColumnDef<NettingRow, unknown>[] = [
-  {
-    accessorKey: "parcel",
-    header: "Parcel / reference",
-    cell: ({ row }) => (
-      <div className="min-w-0">
-        <span className="block truncate font-mono text-xs font-medium">{row.original.parcel}</span>
-        <span className="block truncate font-mono text-[10px] text-muted-foreground">
-          {row.original.reference}
+function buildColumns(t: TFunction<"store-pit">): ColumnDef<NettingRow, unknown>[] {
+  return [
+    {
+      accessorKey: "parcel",
+      header: t("fields.parcelReference"),
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <span className="block truncate font-mono text-xs font-medium">
+            {row.original.parcel}
+          </span>
+          <span className="block truncate font-mono text-[10px] text-muted-foreground">
+            {row.original.reference}
+          </span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "client",
+      header: t("fields.client"),
+      size: 130,
+      cell: ({ row }) => (
+        <Badge variant="outline" className={cn("font-medium", clientAccent(row.original.client))}>
+          {row.original.client}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "country",
+      header: t("fields.country"),
+      size: 90,
+      cell: ({ row }) => (
+        <span className="text-xs tabular-nums text-muted-foreground">{row.original.country}</span>
+      ),
+    },
+    {
+      accessorKey: "matchedService",
+      header: t("netting.columns.matchedService"),
+      cell: ({ row }) => (
+        <span className="block truncate text-xs">{row.original.matchedService}</span>
+      ),
+    },
+    {
+      accessorKey: "discount",
+      header: t("fields.discount"),
+      size: 100,
+      cell: ({ row }) => (
+        <span className="text-xs tabular-nums text-destructive">{eur(row.original.discount)}</span>
+      ),
+    },
+    {
+      accessorKey: "before",
+      header: t("netting.columns.freightBefore"),
+      size: 120,
+      cell: ({ row }) => (
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {eur(row.original.before)}
         </span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "client",
-    header: "Client",
-    size: 130,
-    cell: ({ row }) => (
-      <Badge variant="outline" className={cn("font-medium", clientAccent(row.original.client))}>
-        {row.original.client}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "country",
-    header: "Country",
-    size: 90,
-    cell: ({ row }) => (
-      <span className="text-xs tabular-nums text-muted-foreground">{row.original.country}</span>
-    ),
-  },
-  {
-    accessorKey: "matchedService",
-    header: "Matched service",
-    cell: ({ row }) => (
-      <span className="block truncate text-xs">{row.original.matchedService}</span>
-    ),
-  },
-  {
-    accessorKey: "discount",
-    header: "Discount",
-    size: 100,
-    cell: ({ row }) => (
-      <span className="text-xs tabular-nums text-destructive">{eur(row.original.discount)}</span>
-    ),
-  },
-  {
-    accessorKey: "before",
-    header: "Freight before",
-    size: 120,
-    cell: ({ row }) => (
-      <span className="text-xs tabular-nums text-muted-foreground">{eur(row.original.before)}</span>
-    ),
-  },
-  {
-    accessorKey: "after",
-    header: "Freight after",
-    size: 120,
-    cell: ({ row }) => (
-      <span className="text-xs font-medium tabular-nums">{eur(row.original.after)}</span>
-    ),
-  },
-]
+      ),
+    },
+    {
+      accessorKey: "after",
+      header: t("netting.columns.freightAfter"),
+      size: 120,
+      cell: ({ row }) => (
+        <span className="text-xs font-medium tabular-nums">{eur(row.original.after)}</span>
+      ),
+    },
+  ]
+}
 
 export default function NettingPage() {
+  const { t } = useTranslation("store-pit")
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState("")
   const [country, setCountry] = useState<string>("all")
   const [matched, setMatched] = useState<string>("all")
 
   const resetPage = () => setPage(0)
+  const columns = useMemo(() => buildColumns(t), [t])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -122,30 +132,40 @@ export default function NettingPage() {
   return (
     <>
       <PageHeader
-        title="Netting"
-        description="ShopDelivery -0.50 discounts matched to parcels and netted against freight."
+        title={t("netting.title")}
+        description={t("netting.description")}
         actions={
           <span className="text-xs text-muted-foreground">
-            {count(NETTING_SUMMARY.matched)} of {count(NETTING_SUMMARY.rows)} matched
+            {t("netting.matchedCount", {
+              matched: count(NETTING_SUMMARY.matched),
+              rows: count(NETTING_SUMMARY.rows),
+            })}
           </span>
         }
       />
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <DataCard label="Discount lines" value={count(NETTING_SUMMARY.rows)} />
-          <DataCard label="Matched" value={count(NETTING_SUMMARY.matched)} tone="success" />
+          <DataCard label={t("netting.cards.discountLines")} value={count(NETTING_SUMMARY.rows)} />
           <DataCard
-            label="Unmatched"
+            label={t("netting.cards.matched")}
+            value={count(NETTING_SUMMARY.matched)}
+            tone="success"
+          />
+          <DataCard
+            label={t("netting.cards.unmatched")}
             value={count(NETTING_SUMMARY.unmatched)}
             tone={NETTING_SUMMARY.unmatched > 0 ? "warning" : "success"}
           />
-          <DataCard label="Discount total" value={eur(NETTING_SUMMARY.discountTotal)} />
+          <DataCard
+            label={t("netting.cards.discountTotal")}
+            value={eur(NETTING_SUMMARY.discountTotal)}
+          />
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <Input
-            placeholder="Search parcel, reference..."
+            placeholder={t("netting.searchPlaceholder")}
             value={search}
             onChange={(e) => {
               resetPage()
@@ -161,10 +181,10 @@ export default function NettingPage() {
             }}
           >
             <SelectTrigger className="h-9 w-[130px]">
-              <SelectValue placeholder="Country" />
+              <SelectValue placeholder={t("fields.country")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All countries</SelectItem>
+              <SelectItem value="all">{t("netting.filters.allCountries")}</SelectItem>
               {COUNTRIES.map((c) => (
                 <SelectItem key={c} value={c}>
                   {c}
@@ -180,11 +200,11 @@ export default function NettingPage() {
             }}
           >
             <SelectTrigger className="h-9 w-[130px]">
-              <SelectValue placeholder="Matched" />
+              <SelectValue placeholder={t("netting.filters.matched")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="Yes">Matched</SelectItem>
+              <SelectItem value="all">{t("netting.filters.all")}</SelectItem>
+              <SelectItem value="Yes">{t("netting.filters.matchedOnly")}</SelectItem>
             </SelectContent>
           </Select>
           {filtersDirty ? (
@@ -199,11 +219,14 @@ export default function NettingPage() {
                 setMatched("all")
               }}
             >
-              Reset
+              {t("actions.reset")}
             </Button>
           ) : null}
           <div className="ml-auto text-xs text-muted-foreground">
-            {count(total)} of {count(NETTING_SUMMARY.rows)}
+            {t("netting.shownCount", {
+              shown: count(total),
+              total: count(NETTING_SUMMARY.rows),
+            })}
           </div>
         </div>
 
@@ -214,8 +237,8 @@ export default function NettingPage() {
           emptyState={
             <EmptyState
               icon={SearchX}
-              title="No lines match"
-              description="Clear the filters to see all netting lines."
+              title={t("netting.emptyTitle")}
+              description={t("netting.emptyDescription")}
             />
           }
         />
@@ -224,8 +247,7 @@ export default function NettingPage() {
 
         <p className="flex items-center gap-2 text-[11px] text-muted-foreground">
           <Table2 className="h-3.5 w-3.5" />
-          Each matched discount reduces that parcel&apos;s GLS freight before the per-client mark-up
-          is applied, so the saving is passed through correctly.
+          {t("netting.footnote")}
         </p>
       </div>
     </>

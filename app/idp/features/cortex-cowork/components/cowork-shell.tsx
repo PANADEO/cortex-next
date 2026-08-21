@@ -1,5 +1,7 @@
 "use client"
 
+import { formatDayMonthTime } from "@/lib/i18n/formats"
+import { useLocaleStore } from "@/lib/i18n/locale-store"
 import { useCoworkSessionStore } from "@/lib/stores/cortex-cowork-session-store"
 import { useShellUser } from "@cortex/api"
 import { DEFAULT_COWORK_PROJECT_ID } from "@cortex/types"
@@ -31,17 +33,9 @@ import { DisclosureChevron } from "./disclosure"
 // the `dark` class re-derives all shadcn tokens for this subtree. No portaled
 // primitives (Select/Dialog) are used inside, so nothing escapes the scope.
 
-function formatWhen(iso: string): string {
-  return new Date(iso).toLocaleString("pl-PL", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
-
 function SessionRows({ projectId }: { projectId: string }) {
   const { t } = useTranslation("cortex-cowork")
+  const locale = useLocaleStore((s) => s.locale)
   const sessions = useCoworkSessions(projectId)
   const { remove } = useCoworkSessionActions(projectId)
   const activeSessionId = useCoworkSessionStore((s) => s.sessionIds[projectId] ?? null)
@@ -76,9 +70,11 @@ function SessionRows({ projectId }: { projectId: string }) {
               type="button"
               onClick={() => setSessionId(projectId, session.id)}
               className="min-w-0 flex-1 truncate px-3 py-1.5 text-left text-xs"
-              title={t("sidebar.sessionTitle", { when: formatWhen(session.createdAt) })}
+              title={t("sidebar.sessionTitle", {
+                when: formatDayMonthTime(session.createdAt, locale),
+              })}
             >
-              {formatWhen(session.createdAt)}
+              {formatDayMonthTime(session.createdAt, locale)}
               <span className="ml-1.5 text-muted-foreground">
                 {t("sidebar.messageCount", { n: session.messageCount })}
                 {session.artifactCount > 0
@@ -211,7 +207,7 @@ function MyInstructions() {
 }
 
 export function CoworkShell({ children }: { children: ReactNode }) {
-  const { t } = useTranslation("cortex-cowork")
+  const { t } = useTranslation(["cortex-cowork", "common"])
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -233,7 +229,7 @@ export function CoworkShell({ children }: { children: ReactNode }) {
         <div className="flex items-center gap-2 px-4 pb-2 pt-4">
           <Link
             href="/"
-            aria-label={t("sidebar.backToHubAria")}
+            aria-label={t("common:nav.backToHub")}
             className="flex items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-80"
           >
             <Image

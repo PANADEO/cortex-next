@@ -19,14 +19,19 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 
 const FIELDS: readonly FieldSpec<FormValues>[] = [
-  { name: "name", label: "Name", span: 2 },
-  { name: "street", label: "Street", span: 2 },
-  { name: "postal_code", label: "Postal code", span: 1 },
-  { name: "city", label: "City", span: 1 },
-  { name: "country_code", label: "Country code", span: 1, uppercase: true },
-  { name: "vat_id", label: "VAT ID", span: 1 },
-  { name: "eori", label: "EORI", span: 1 },
-  { name: "partner_id", label: "Partner ID", span: 1 },
+  { name: "name", labelKey: "transportOrders.fields.name", span: 2 },
+  { name: "street", labelKey: "transportOrders.fields.street", span: 2 },
+  { name: "postal_code", labelKey: "transportOrders.fields.postalCode", span: 1 },
+  { name: "city", labelKey: "transportOrders.fields.city", span: 1 },
+  {
+    name: "country_code",
+    labelKey: "transportOrders.fields.countryCode",
+    span: 1,
+    uppercase: true,
+  },
+  { name: "vat_id", labelKey: "transportOrders.fields.vatId", span: 1 },
+  { name: "eori", labelKey: "transportOrders.fields.eori", span: 1 },
+  { name: "partner_id", labelKey: "transportOrders.fields.partnerId", span: 1 },
 ]
 
 function toDefaults(party: Party | null): FormValues {

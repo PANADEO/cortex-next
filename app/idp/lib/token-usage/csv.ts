@@ -4,6 +4,7 @@
 // zapytanie do cortex-proxy tylko po to, żeby zbudować plik, byłoby czystym
 // marnotrawstwem cudzego serwisu.
 
+import type { TFunction } from "i18next"
 import type { UsageDetailRow, UsageGroup, UsageReport } from "./aggregate"
 
 /**
@@ -53,18 +54,25 @@ function formatShare(share: number): string {
  * `dimensionLabel` to nagłówek pierwszej kolumny — dla wymiaru użytkownika
  * brzmi "Użytkownik", nigdy "E-mail": X-User-ID to dowolny string od dowolnego
  * konsumenta proxy, nie gwarantowany adres pocztowy.
+ *
+ * `t` przychodzi parametrem, bo to nie jest komponent: plik ma pozostać czysty
+ * i testowalny, a język wybiera ekran, z którego kliknięto eksport.
  */
-export function buildGroupCsv(groups: readonly UsageGroup[], dimensionLabel: string): string {
+export function buildGroupCsv(
+  groups: readonly UsageGroup[],
+  dimensionLabel: string,
+  t: TFunction<"token-usage">,
+): string {
   const header = [
     dimensionLabel,
-    "Tokeny łącznie",
-    "Tokeny żądań",
-    "Tokeny odpowiedzi",
-    "Tokeny rozumowania",
-    "Tokeny z cache",
-    "Liczba żądań",
-    "Liczba użytkowników",
-    "Udział procentowy",
+    t("export.columns.totalTokens"),
+    t("export.columns.requestTokens"),
+    t("export.columns.responseTokens"),
+    t("export.columns.reasoningTokens"),
+    t("export.columns.cachedTokens"),
+    t("export.columns.requestCount"),
+    t("export.columns.userCount"),
+    t("export.columns.share"),
   ]
 
   const rows = groups.map((group) => [
@@ -82,18 +90,21 @@ export function buildGroupCsv(groups: readonly UsageGroup[], dimensionLabel: str
   return toCsv([header, ...rows])
 }
 
-export function buildDetailCsv(rows: readonly UsageDetailRow[]): string {
+export function buildDetailCsv(
+  rows: readonly UsageDetailRow[],
+  t: TFunction<"token-usage">,
+): string {
   const header = [
-    "Użytkownik",
-    "Aplikacja",
-    "Zakres",
-    "Model",
-    "Tokeny łącznie",
-    "Tokeny żądań",
-    "Tokeny odpowiedzi",
-    "Tokeny rozumowania",
-    "Tokeny z cache",
-    "Liczba żądań",
+    t("export.columns.user"),
+    t("export.columns.app"),
+    t("export.columns.scope"),
+    t("export.columns.model"),
+    t("export.columns.totalTokens"),
+    t("export.columns.requestTokens"),
+    t("export.columns.responseTokens"),
+    t("export.columns.reasoningTokens"),
+    t("export.columns.cachedTokens"),
+    t("export.columns.requestCount"),
   ]
 
   const body = rows.map((row) => [
@@ -116,17 +127,20 @@ export function buildDetailCsv(rows: readonly UsageDetailRow[]): string {
  * JSON szczegółowy. Niesie zakres dat i jawną notę o jakości danych — plik
  * bywa przekazywany dalej bez ekranu, na którym ta nota jest widoczna, a bez
  * niej łatwo wziąć te liczby za rozliczenie co do tokena (patrz 1.4 projektu).
+ *
+ * NAZWY PÓL zostają polskie i nietłumaczone — to kontrakt danych, po którym
+ * ktoś już parsuje pobrane pliki, a nie napis na ekranie. Tłumaczona jest
+ * wyłącznie treść noty, bo ona jest zdaniem dla człowieka.
  */
 export function buildDetailJson(
   report: UsageReport,
   range: { start: string; end: string },
+  t: TFunction<"token-usage">,
 ): string {
   return JSON.stringify(
     {
       zakres: { od: range.start, do: range.end, strefa: "Europe/Warsaw (cortex-proxy)" },
-      uwaga:
-        "Część wartości to szacunki: gdy odpowiedź dostawcy nie zawierała bloku usage, " +
-        "cortex-proxy zapisuje przybliżoną liczbę tokenów policzoną z treści żądania.",
+      uwaga: t("export.dataQualityNote"),
       podsumowanie: report.totals,
       uzytkownicy: report.byUser,
       modele: report.byModel,

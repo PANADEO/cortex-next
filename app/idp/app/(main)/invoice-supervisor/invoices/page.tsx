@@ -4,7 +4,7 @@ import { invoiceSupervisorColumns } from "@/components/invoice-supervisor/invoic
 import { InvoiceSupervisorFormDialog } from "@/components/invoice-supervisor/invoice-form-dialog"
 import { InvoiceSupervisorImportDialog } from "@/components/invoice-supervisor/invoice-import-dialog"
 import { useInvoiceSupervisorInvoices } from "@/lib/invoice-supervisor/hooks"
-import { INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS } from "@/lib/invoice-supervisor/types"
+import { INVOICE_SUPERVISOR_INVOICE_STATUS_LABEL_KEYS } from "@/lib/invoice-supervisor/types"
 import {
   DataTable,
   EmptyState,
@@ -62,11 +62,13 @@ export default function InvoiceSupervisorInvoicesPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("invoices.allStatuses")}</SelectItem>
-              {Object.entries(INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
+              {Object.entries(INVOICE_SUPERVISOR_INVOICE_STATUS_LABEL_KEYS).map(
+                ([value, labelKey]) => (
+                  <SelectItem key={value} value={value}>
+                    {t(labelKey)}
+                  </SelectItem>
+                ),
+              )}
             </SelectContent>
           </Select>
           <div className="ml-auto text-xs text-muted-foreground">

@@ -139,6 +139,6 @@ describe("ClassificationWorkspacePage — feature flag gating", () => {
     )
 
     expect(notFound).not.toHaveBeenCalled()
-    expect(container.textContent).toMatch(/loading classification/i)
+    expect(container.textContent).toMatch(/wczytywanie klasyfikacji/i)
   })
 })

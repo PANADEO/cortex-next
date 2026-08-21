@@ -22,7 +22,10 @@ import {
 import { getAiToolDefinition, type AiToolDefinition } from "@/lib/ai-tools/registry"
 import { useAiToolText } from "@/lib/ai-tools/tool-text"
 import i18n from "@/lib/i18n"
+import type { Locale } from "@/lib/i18n/config"
 import { SOURCE_LOCALE } from "@/lib/i18n/config"
+import { formatDayMonthTime, formatNumber } from "@/lib/i18n/formats"
+import { useLocaleStore } from "@/lib/i18n/locale-store"
 import {
   Alert,
   AlertDescription,
@@ -180,7 +183,7 @@ function tOutsideReact(key: string): string {
 }
 
 export function AiToolWorkspace({ toolId }: AiToolWorkspaceProps) {
-  const { t } = useTranslation("ai-tools")
+  const { t } = useTranslation(["ai-tools", "common"])
   const tool = getAiToolDefinition(toolId)
   const queryClient = useQueryClient()
   const [result, setResult] = useState<AiToolGenerateResponse | null>(null)
@@ -204,7 +207,7 @@ export function AiToolWorkspace({ toolId }: AiToolWorkspaceProps) {
           description={t("workspace.unknownBody")}
           action={
             <Button asChild variant="outline" size="sm">
-              <Link href="/">{t("shared.backToHub")}</Link>
+              <Link href="/">{t("common:nav.backToHub")}</Link>
             </Button>
           }
         />
@@ -317,6 +320,7 @@ interface HistoryPanelProps {
 
 function HistoryPanel({ error, isLoading, items, onRefresh, onSelect }: HistoryPanelProps) {
   const { t } = useTranslation("ai-tools")
+  const locale = useLocaleStore((s) => s.locale)
 
   return (
     <Card className="overflow-hidden rounded-lg shadow-none">
@@ -354,11 +358,11 @@ function HistoryPanel({ error, isLoading, items, onRefresh, onSelect }: HistoryP
             <div key={item.id} className="rounded-lg border border-border bg-background p-3">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className="h-5 text-[10px]">
-                  {formatHistoryDate(item.createdAt)}
+                  {formatHistoryDate(item.createdAt, locale)}
                 </Badge>
                 {item.tokensUsed ? (
                   <Badge variant="outline" className="h-5 text-[10px]">
-                    {t("shared.tokens", { value: item.tokensUsed.toLocaleString() })}
+                    {t("shared.tokens", { value: formatNumber(item.tokensUsed, locale) })}
                   </Badge>
                 ) : null}
                 {item.hasImage ? (
@@ -392,15 +396,16 @@ function createPreview(value: string): string {
   return `${normalized.slice(0, 177)}…`
 }
 
-function formatHistoryDate(value: string): string {
+/**
+ * `locale` parametrem, bo to nie komponent — dokładnie tak, jak `t` w fabrykach
+ * kolumn. Osłona przed niepoprawną datą ZOSTAJE tutaj, a nie wędruje do
+ * wspólnego modułu: `value` przychodzi z historii zapisanej przez inny serwis,
+ * więc to ten wywołujący ma nieufne wejście, nie formatowanie jako takie.
+ */
+function formatHistoryDate(value: string, locale: Locale): string {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString("pl-PL", {
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "2-digit",
-  })
+  return formatDayMonthTime(date, locale)
 }
 
 interface ToolFormContext {
@@ -1181,6 +1186,7 @@ interface ResultPanelProps {
 
 function ResultPanel({ content, error, isGenerating, model, title, tokensUsed }: ResultPanelProps) {
   const { t } = useTranslation("ai-tools")
+  const locale = useLocaleStore((s) => s.locale)
 
   const handleCopy = async () => {
     if (!content) return
@@ -1206,7 +1212,7 @@ function ResultPanel({ content, error, isGenerating, model, title, tokensUsed }:
             ) : null}
             {tokensUsed ? (
               <Badge variant="outline" className="h-5 text-[10px]">
-                {t("shared.tokens", { value: tokensUsed.toLocaleString() })}
+                {t("shared.tokens", { value: formatNumber(tokensUsed, locale) })}
               </Badge>
             ) : null}
           </div>

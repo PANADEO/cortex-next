@@ -10,6 +10,7 @@ import { Button, Input, Label, Textarea } from "@cortex/ui"
 import { formatRelative } from "@cortex/utils"
 import { Check, Loader2, Sparkles } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 const MAX_AI_CONTEXT = 4000
@@ -45,6 +46,7 @@ export function PackageMetadataEditors({
 }
 
 function CustomStatusField({ packageId, initial }: { packageId: string; initial: string | null }) {
+  const { t } = useTranslation("idp")
   const [value, setValue] = useState(initial ?? "")
   const [savedValue, setSavedValue] = useState(initial ?? "")
   const mutate = useSetCustomStatus(packageId)
@@ -64,7 +66,7 @@ function CustomStatusField({ packageId, initial }: { packageId: string; initial:
       const next = normalized ?? ""
       setValue(next)
       setSavedValue(next)
-      toast.success("Custom status saved")
+      toast.success(t("packages.metadata.customStatusSaved"))
     } catch (err) {
       toastApiError(err)
     }
@@ -73,19 +75,19 @@ function CustomStatusField({ packageId, initial }: { packageId: string; initial:
   return (
     <div className="space-y-2">
       <Label htmlFor={`custom-status-${packageId}`} className="text-xs">
-        Custom status
+        {t("packages.metadata.customStatusLabel")}
       </Label>
       <div className="flex gap-2">
         <Input
           id={`custom-status-${packageId}`}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="e.g. manual-review"
+          placeholder={t("packages.metadata.customStatusPlaceholder")}
           maxLength={120}
           className="h-9 flex-1"
         />
         <Button size="sm" onClick={handleSave} disabled={!dirty || mutate.isPending}>
-          <span className="sr-only">Save custom status</span>
+          <span className="sr-only">{t("packages.metadata.saveCustomStatus")}</span>
           {mutate.isPending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
@@ -104,6 +106,7 @@ function AdditionalAiContextField({
   packageId: string
   initial: string | null
 }) {
+  const { t } = useTranslation("idp")
   const [value, setValue] = useState(initial ?? "")
   const [savedValue, setSavedValue] = useState(initial ?? "")
   const mutate = useSetAdditionalAiContext(packageId)
@@ -123,7 +126,7 @@ function AdditionalAiContextField({
       const next = normalized ?? ""
       setValue(next)
       setSavedValue(next)
-      toast.success("AI context saved")
+      toast.success(t("packages.metadata.aiContextSaved"))
     } catch (err) {
       toastApiError(err)
     }
@@ -133,20 +136,20 @@ function AdditionalAiContextField({
     <div className="space-y-2">
       <Label htmlFor={`ai-context-${packageId}`} className="flex items-center gap-1.5 text-xs">
         <Sparkles className="h-3 w-3 text-muted-foreground" />
-        Additional AI context
+        {t("packages.metadata.aiContextLabel")}
       </Label>
       <Textarea
         id={`ai-context-${packageId}`}
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="e.g. 'Invoices from DHL — totals in EUR, VAT included.'"
+        placeholder={t("packages.metadata.aiContextPlaceholder")}
         rows={4}
         maxLength={MAX_AI_CONTEXT}
         className="resize-none"
       />
       <div className="flex items-center justify-between gap-2">
         <p className="text-[10px] text-muted-foreground">
-          Used by AI on next re-process. {value.length} / {MAX_AI_CONTEXT}
+          {t("packages.metadata.aiContextHint", { used: value.length, max: MAX_AI_CONTEXT })}
         </p>
         <Button size="sm" onClick={handleSave} disabled={!dirty || mutate.isPending}>
           {mutate.isPending ? (
@@ -154,7 +157,7 @@ function AdditionalAiContextField({
           ) : (
             <Check className="mr-1.5 h-3.5 w-3.5" />
           )}
-          Save context
+          {t("packages.metadata.saveAiContext")}
         </Button>
       </div>
     </div>
@@ -170,6 +173,7 @@ function UserNotesField({
   initial: string | null
   lastUpdated: string | null
 }) {
+  const { t } = useTranslation("idp")
   const [value, setValue] = useState(initial ?? "")
   const [savedValue, setSavedValue] = useState(initial ?? "")
   const mutate = useSetUserNotes(packageId)
@@ -189,7 +193,7 @@ function UserNotesField({
       const next = normalized ?? ""
       setValue(next)
       setSavedValue(next)
-      toast.success("Notes saved")
+      toast.success(t("packages.metadata.notesSaved"))
     } catch (err) {
       toastApiError(err)
     }
@@ -198,19 +202,21 @@ function UserNotesField({
   return (
     <div className="space-y-2">
       <Label htmlFor={`user-notes-${packageId}`} className="text-xs">
-        Notes
+        {t("packages.metadata.notesLabel")}
       </Label>
       <Textarea
         id={`user-notes-${packageId}`}
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Private notes about this package…"
+        placeholder={t("packages.metadata.notesPlaceholder")}
         rows={3}
         className="resize-none"
       />
       <div className="flex items-center justify-between gap-2">
         <p className="text-[10px] text-muted-foreground">
-          {lastUpdated ? `Last updated ${formatRelative(lastUpdated)}` : ""}
+          {lastUpdated
+            ? t("packages.metadata.lastUpdated", { when: formatRelative(lastUpdated) })
+            : ""}
         </p>
         <Button size="sm" onClick={handleSave} disabled={!dirty || mutate.isPending}>
           {mutate.isPending ? (
@@ -218,7 +224,7 @@ function UserNotesField({
           ) : (
             <Check className="mr-1.5 h-3.5 w-3.5" />
           )}
-          Save notes
+          {t("packages.metadata.saveNotes")}
         </Button>
       </div>
     </div>

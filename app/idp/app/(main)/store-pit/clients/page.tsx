@@ -7,14 +7,21 @@ import { Badge, Card, CardContent, PageHeader } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { ArrowUpRight } from "lucide-react"
 import Link from "next/link"
+import { useTranslation } from "react-i18next"
 
 export default function ClientsPage() {
+  const { t } = useTranslation("store-pit")
+
   return (
     <>
       <PageHeader
-        title="Clients"
-        description="Per-client settlement - the view each brand receives."
-        actions={<span className="text-xs text-muted-foreground">4 clients</span>}
+        title={t("clients.title")}
+        description={t("clients.description")}
+        actions={
+          <span className="text-xs text-muted-foreground">
+            {t("clients.count", { n: Object.keys(CLIENT_META).length })}
+          </span>
+        }
       />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
@@ -38,20 +45,20 @@ export default function ClientsPage() {
                         {eur(summary?.spTotal ?? 0)}
                       </div>
                       <div className="mt-0.5 text-xs text-muted-foreground">
-                        {meta.pricingBasis}
+                        {t(meta.pricingBasisKey)}
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 border-t border-border/60 pt-2 text-xs">
                       <div>
-                        <div className="text-muted-foreground">Parcels</div>
+                        <div className="text-muted-foreground">{t("fields.parcels")}</div>
                         <div className="font-medium tabular-nums">{count(summary?.qty ?? 0)}</div>
                       </div>
                       <div>
-                        <div className="text-muted-foreground">GLS cost</div>
+                        <div className="text-muted-foreground">{t("fields.glsCost")}</div>
                         <div className="tabular-nums">{eur(summary?.glsTotal ?? 0)}</div>
                       </div>
                       <div>
-                        <div className="text-muted-foreground">Margin</div>
+                        <div className="text-muted-foreground">{t("fields.margin")}</div>
                         <div className="tabular-nums text-success-foreground">
                           {signedEur(margin)}
                         </div>
@@ -66,8 +73,8 @@ export default function ClientsPage() {
 
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Settlement summary</h2>
-            <span className="text-xs text-muted-foreground">GLS cost - Store-Pit price</span>
+            <h2 className="text-sm font-semibold">{t("clients.summaryTitle")}</h2>
+            <span className="text-xs text-muted-foreground">{t("clients.summaryNote")}</span>
           </div>
           <Card>
             <CardContent className="p-0">
@@ -75,12 +82,16 @@ export default function ClientsPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-muted/40">
                     <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                      <th className="px-4 py-2.5 font-medium">Client</th>
-                      <th className="px-3 py-2.5 font-medium">Pricing rule</th>
-                      <th className="px-3 py-2.5 text-right font-medium">Parcels</th>
-                      <th className="px-3 py-2.5 text-right font-medium">GLS cost</th>
-                      <th className="px-3 py-2.5 text-right font-medium">Store-Pit price</th>
-                      <th className="px-4 py-2.5 text-right font-medium">Margin</th>
+                      <th className="px-4 py-2.5 font-medium">{t("fields.client")}</th>
+                      <th className="px-3 py-2.5 font-medium">
+                        {t("clients.columns.pricingRule")}
+                      </th>
+                      <th className="px-3 py-2.5 text-right font-medium">{t("fields.parcels")}</th>
+                      <th className="px-3 py-2.5 text-right font-medium">{t("fields.glsCost")}</th>
+                      <th className="px-3 py-2.5 text-right font-medium">
+                        {t("fields.storePitPrice")}
+                      </th>
+                      <th className="px-4 py-2.5 text-right font-medium">{t("fields.margin")}</th>
                       <th className="w-8 px-2 py-2.5" />
                     </tr>
                   </thead>
@@ -112,7 +123,7 @@ export default function ClientsPage() {
                             </Link>
                           </td>
                           <td className="px-3 py-3 text-xs text-muted-foreground">
-                            {meta?.pricingRule}
+                            {meta ? t(meta.pricingRuleKey) : null}
                           </td>
                           <td className="px-3 py-3 text-right tabular-nums">{count(c.qty)}</td>
                           <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">
@@ -139,7 +150,7 @@ export default function ClientsPage() {
                   <tfoot>
                     <tr className="bg-muted/40 font-semibold">
                       <td className="px-4 py-3" colSpan={2}>
-                        Grand total
+                        {t("fields.grandTotal")}
                       </td>
                       <td className="px-3 py-3 text-right tabular-nums">
                         {count(GRAND_TOTAL.qty)}

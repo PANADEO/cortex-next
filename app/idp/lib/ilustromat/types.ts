@@ -27,17 +27,11 @@ export interface FrameTemplate {
   createdBy: string
 }
 
-export const LOGO_POSITION_LABELS: Record<LogoPosition, string> = {
-  "bottom-right": "Logo z prawej (domyślnie)",
-  "bottom-left": "Logo z lewej",
-}
+// Kolejność opcji w kreatorze szablonu — pierwsza pozycja jest domyślna.
+// Napisy żyją w przestrzeni `ilustromat` (`options.logoPosition.<value>`,
+// `options.layout.<value>`, `options.textAlign.<value>`).
+export const LOGO_POSITIONS: readonly LogoPosition[] = ["bottom-right", "bottom-left"]
 
-export const FRAME_LAYOUT_LABELS: Record<FrameLayout, string> = {
-  "image-top": "Obraz u góry, tekst pod nim (domyślnie)",
-  "image-bottom": "Tekst u góry, obraz pod nim",
-}
+export const FRAME_LAYOUTS: readonly FrameLayout[] = ["image-top", "image-bottom"]
 
-export const TEXT_ALIGN_LABELS: Record<TextAlign, string> = {
-  left: "Do lewej (domyślnie)",
-  center: "Wyśrodkowany",
-}
+export const TEXT_ALIGNS: readonly TextAlign[] = ["left", "center"]

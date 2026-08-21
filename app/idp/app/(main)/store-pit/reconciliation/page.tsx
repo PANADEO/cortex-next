@@ -16,6 +16,7 @@ import {
 } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { AlertTriangle } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 function formatCheckValue(check: string, value: number | string | null): string {
   if (value === null) return "-"
@@ -26,35 +27,46 @@ function formatCheckValue(check: string, value: number | string | null): string 
 }
 
 export default function ReconciliationPage() {
+  const { t } = useTranslation("store-pit")
+
   return (
     <>
       <PageHeader
-        title="Reconciliation"
-        description="Cross-checks tying the extracted CSV detail to the PDF invoice summary."
+        title={t("reconciliation.title")}
+        description={t("reconciliation.description")}
         actions={
           <Badge
             variant="outline"
             className="border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
           >
-            Variance 0.00
+            {t("reconciliation.varianceBadge", { value: "0.00" })}
           </Badge>
         }
       />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <DataCard label="CSV net total" value={eur(INVOICE.pdfNetTotal)} />
-          <DataCard label="PDF net total" value={eur(INVOICE.pdfNetTotal)} />
-          <DataCard label="Variance" value="0.00" tone="success" />
-          <DataCard label="PDF VAT" value={eur(INVOICE.pdfVat)} />
-          <DataCard label="PDF gross total" value={eur(INVOICE.pdfGrossTotal)} />
+          <DataCard
+            label={t("reconciliation.cards.csvNetTotal")}
+            value={eur(INVOICE.pdfNetTotal)}
+          />
+          <DataCard
+            label={t("reconciliation.cards.pdfNetTotal")}
+            value={eur(INVOICE.pdfNetTotal)}
+          />
+          <DataCard label={t("fields.variance")} value="0.00" tone="success" />
+          <DataCard label={t("reconciliation.cards.pdfVat")} value={eur(INVOICE.pdfVat)} />
+          <DataCard
+            label={t("reconciliation.cards.pdfGrossTotal")}
+            value={eur(INVOICE.pdfGrossTotal)}
+          />
         </section>
 
         <Tabs defaultValue="checks">
           <TabsList>
-            <TabsTrigger value="checks">Checks</TabsTrigger>
-            <TabsTrigger value="services">Service summary</TabsTrigger>
-            <TabsTrigger value="charges">Invoice charges</TabsTrigger>
+            <TabsTrigger value="checks">{t("reconciliation.tabs.checks")}</TabsTrigger>
+            <TabsTrigger value="services">{t("reconciliation.tabs.services")}</TabsTrigger>
+            <TabsTrigger value="charges">{t("reconciliation.tabs.charges")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="checks" className="mt-4">
@@ -64,10 +76,16 @@ export default function ReconciliationPage() {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/40">
                       <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                        <th className="px-4 py-2.5 font-medium">Check</th>
-                        <th className="px-3 py-2.5 text-right font-medium">Value</th>
-                        <th className="px-3 py-2.5 font-medium">Note</th>
-                        <th className="px-4 py-2.5 font-medium">Status</th>
+                        <th className="px-4 py-2.5 font-medium">
+                          {t("reconciliation.checks.check")}
+                        </th>
+                        <th className="px-3 py-2.5 text-right font-medium">
+                          {t("reconciliation.checks.value")}
+                        </th>
+                        <th className="px-3 py-2.5 font-medium">
+                          {t("reconciliation.checks.note")}
+                        </th>
+                        <th className="px-4 py-2.5 font-medium">{t("fields.status")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -88,7 +106,7 @@ export default function ReconciliationPage() {
                               variant="outline"
                               className="border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
                             >
-                              OK
+                              {t("status.ok")}
                             </Badge>
                           </td>
                         </tr>
@@ -107,12 +125,22 @@ export default function ReconciliationPage() {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/40">
                       <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                        <th className="px-4 py-2.5 font-medium">Service</th>
-                        <th className="px-3 py-2.5 text-right font-medium">CSV rows</th>
-                        <th className="px-3 py-2.5 text-right font-medium">CSV amount</th>
-                        <th className="px-3 py-2.5 text-right font-medium">Weight (kg)</th>
-                        <th className="px-3 py-2.5 text-right font-medium">PDF amount</th>
-                        <th className="px-4 py-2.5 text-right font-medium">Variance</th>
+                        <th className="px-4 py-2.5 font-medium">{t("fields.service")}</th>
+                        <th className="px-3 py-2.5 text-right font-medium">
+                          {t("reconciliation.services.csvRows")}
+                        </th>
+                        <th className="px-3 py-2.5 text-right font-medium">
+                          {t("reconciliation.services.csvAmount")}
+                        </th>
+                        <th className="px-3 py-2.5 text-right font-medium">
+                          {t("reconciliation.services.weightKg")}
+                        </th>
+                        <th className="px-3 py-2.5 text-right font-medium">
+                          {t("reconciliation.services.pdfAmount")}
+                        </th>
+                        <th className="px-4 py-2.5 text-right font-medium">
+                          {t("fields.variance")}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -155,8 +183,7 @@ export default function ReconciliationPage() {
                           colSpan={6}
                           className="px-4 py-2.5 text-[11px] italic text-muted-foreground"
                         >
-                          Residual variances on toll and sorting surcharges reflect GLS per-unit
-                          rounding - immaterial to client settlement.
+                          {t("reconciliation.services.footnote")}
                         </td>
                       </tr>
                     </tfoot>
@@ -168,19 +195,22 @@ export default function ReconciliationPage() {
 
           <TabsContent value="charges" className="mt-4">
             <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Invoice-level charges (energy surcharges, service flat fees, pre-financing) are
-                split out from parcel lines before service classification.
-              </p>
+              <p className="text-xs text-muted-foreground">{t("reconciliation.charges.intro")}</p>
               <Card>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-muted/40">
                         <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                          <th className="px-4 py-2.5 font-medium">Article no.</th>
-                          <th className="px-3 py-2.5 font-medium">Description</th>
-                          <th className="px-4 py-2.5 text-right font-medium">Amount</th>
+                          <th className="px-4 py-2.5 font-medium">
+                            {t("reconciliation.charges.articleNo")}
+                          </th>
+                          <th className="px-3 py-2.5 font-medium">
+                            {t("reconciliation.charges.description")}
+                          </th>
+                          <th className="px-4 py-2.5 text-right font-medium">
+                            {t("reconciliation.charges.amount")}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>

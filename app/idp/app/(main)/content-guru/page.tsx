@@ -28,7 +28,7 @@ import type {
 import { ContentStatusBadge, renderHighlightedContent } from "@/features/content-guru/utils"
 import { MAX_COMBINATIONS } from "@/lib/content-guru/job-limits"
 import { META_DESCRIPTION_MAX_CHARS } from "@/lib/content-guru/mini-generators"
-import { toastApiError } from "@cortex/api"
+import { apiErrorMessage } from "@/lib/i18n/api-error"
 import {
   Button,
   Card,
@@ -222,7 +222,7 @@ export default function ContentGuruPage() {
       })
       setKeywordPhrase(response.keywordPhrase)
     } catch (error) {
-      toastApiError(error, t("generate.errors.keywordPhraseFailed"))
+      toast.error(apiErrorMessage(t, error, t("generate.errors.keywordPhraseFailed")))
     }
   }
 
@@ -238,7 +238,7 @@ export default function ContentGuruPage() {
       })
       setMetaDescription(response.metaDescription)
     } catch (error) {
-      toastApiError(error, t("generate.errors.metaDescriptionFailed"))
+      toast.error(apiErrorMessage(t, error, t("generate.errors.metaDescriptionFailed")))
     }
   }
 
@@ -277,7 +277,10 @@ export default function ContentGuruPage() {
         toast.success(t("generate.toasts.done"))
       }
     } catch (error) {
-      toastApiError(error, t("generate.errors.generateFailed"))
+      // apiErrorMessage, a nie ogólny toast błędu API: route odpowiada
+      // `messageKey`, gdy zniknął konkretny szablon/profil — sam zapas nie
+      // powiedziałby, CZEGO brakuje (tak samo jak w handleSubmitJob niżej).
+      toast.error(apiErrorMessage(t, error, t("generate.errors.generateFailed")))
     }
   }
 
@@ -301,7 +304,7 @@ export default function ContentGuruPage() {
       setActiveJobMode(mode)
       toast.success(t("generate.toasts.jobStarted"))
     } catch (error) {
-      toastApiError(error, t("generate.errors.jobStartFailed"))
+      toast.error(apiErrorMessage(t, error, t("generate.errors.jobStartFailed")))
     }
   }
 
@@ -459,18 +462,10 @@ export default function ContentGuruPage() {
                           : "text-xs text-muted-foreground"
                       }
                     >
-                      {activeTopics.length}{" "}
-                      {t(
-                        activeTopics.length === 1
-                          ? "generate.package.topicOne"
-                          : "generate.package.topicMany",
-                      )}{" "}
-                      × {packageTemplateIds.length}{" "}
-                      {t(
-                        packageTemplateIds.length === 1
-                          ? "generate.package.templateOne"
-                          : "generate.package.templateMany",
-                      )}{" "}
+                      {t("generate.package.topicCount", { count: activeTopics.length })} ×{" "}
+                      {t("generate.package.templateCount", {
+                        count: packageTemplateIds.length,
+                      })}{" "}
                       = {packageCombinations}{" "}
                       {t(
                         packageCombinations === 1
@@ -483,12 +478,7 @@ export default function ContentGuruPage() {
                     </p>
                   ) : (
                     <p className="text-xs text-muted-foreground">
-                      {activeTopics.length}{" "}
-                      {t(
-                        activeTopics.length === 1
-                          ? "generate.batch.activeTopicsOne"
-                          : "generate.batch.activeTopicsMany",
-                      )}
+                      {t("generate.batch.activeTopicCount", { count: activeTopics.length })}
                     </p>
                   )}
                 </div>

@@ -26,9 +26,14 @@ export default function OknaCzasoweDashboardPage() {
     try {
       const result = await runScan.mutateAsync()
       toast.success(
+        // Dwie liczby w jednym zdaniu, a i18next umie odmienić tylko jedną:
+        // `count` odmienia człon o filmach, drugi człon przychodzi gotowy
+        // z osobnego klucza mnogiego i wchodzi w {{availabilities}}.
         t("scan.success", {
-          films: result.log.filmsScanned,
-          newAvailabilities: result.log.newAvailabilities,
+          count: result.log.filmsScanned,
+          availabilities: t("scan.newAvailabilities", {
+            count: result.log.newAvailabilities,
+          }),
         }),
       )
     } catch (error) {

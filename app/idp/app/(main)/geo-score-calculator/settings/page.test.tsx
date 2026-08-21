@@ -106,6 +106,28 @@ describe("GeoScoreCalculatorSettingsPage", () => {
     )
   })
 
+  /**
+   * Komunikat walidacji jedzie ze schematu KLUCZEM (config-schema.ts żyje na
+   * poziomie modułu, więc `t` tam nie istnieje). Ten test jest dowodem, że
+   * klucz zamienia się na ekranie w ZDANIE z wstawionym wzorcem — literówka
+   * w kluczu wystawiłaby użytkownikowi surowe „settings.validation.*", a
+   * poprzedni test (na samym `message`) i tak by przeszedł.
+   */
+  it("niepoprawny wzorzec regex pokazuje przetłumaczone zdanie z tym wzorcem, nie klucz", async () => {
+    const user = userEvent.setup()
+    render(<GeoScoreCalculatorSettingsPage />)
+
+    await user.click(screen.getByRole("button", { name: /Zaawansowane/ }))
+    await user.type(
+      screen.getByPlaceholderText("np. ^[\\s]*-\\s+ — Enter, aby dodać"),
+      "(unclosed{Enter}",
+    )
+    await user.click(screen.getByRole("button", { name: /Zapisz/ }))
+
+    expect(await screen.findByText("Nieprawidłowy wzorzec regex: (unclosed")).toBeInTheDocument()
+    expect(updateMutateAsync).not.toHaveBeenCalled()
+  })
+
   it("Przywróć domyślne NIE woła resetu bez potwierdzenia w AlertDialog", async () => {
     const user = userEvent.setup()
     render(<GeoScoreCalculatorSettingsPage />)

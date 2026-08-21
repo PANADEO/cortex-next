@@ -11,9 +11,9 @@ import type {
   InvoiceSupervisorMessageTemplate,
 } from "@/lib/invoice-supervisor/types"
 import {
-  INVOICE_SUPERVISOR_CHANNEL_LABELS,
-  INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS,
-  INVOICE_SUPERVISOR_TEMPLATE_VARIABLES,
+  INVOICE_SUPERVISOR_CHANNEL_LABEL_KEYS,
+  INVOICE_SUPERVISOR_ESCALATION_STAGE_LABEL_KEYS,
+  INVOICE_SUPERVISOR_TEMPLATE_VARIABLE_LABEL_KEYS,
 } from "@/lib/invoice-supervisor/types"
 import {
   AlertDialog,
@@ -130,8 +130,8 @@ export function InvoiceSupervisorTemplateEditorDialog({
       <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {toneName} · {INVOICE_SUPERVISOR_CHANNEL_LABELS[channel]} ·{" "}
-            {INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS[stage]}
+            {toneName} · {t(INVOICE_SUPERVISOR_CHANNEL_LABEL_KEYS[channel])} ·{" "}
+            {t(INVOICE_SUPERVISOR_ESCALATION_STAGE_LABEL_KEYS[stage])}
           </DialogTitle>
           <DialogDescription>
             {existingTemplate
@@ -158,18 +158,21 @@ export function InvoiceSupervisorTemplateEditorDialog({
               <div>
                 <Label className="mb-2 block">{t("templateEditor.variablesLabel")}</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(INVOICE_SUPERVISOR_TEMPLATE_VARIABLES).map(([key, label]) => (
-                    <label key={key} className="flex min-w-0 items-start gap-2 text-sm">
-                      <Checkbox
-                        checked={selectedVars.includes(key)}
-                        onCheckedChange={(c) => toggleVar(key, c === true)}
-                        className="mt-0.5 shrink-0"
-                      />
-                      <span className="min-w-0 break-words leading-snug">
-                        <span>@{key}</span> <span className="text-muted-foreground">({label})</span>
-                      </span>
-                    </label>
-                  ))}
+                  {Object.entries(INVOICE_SUPERVISOR_TEMPLATE_VARIABLE_LABEL_KEYS).map(
+                    ([key, labelKey]) => (
+                      <label key={key} className="flex min-w-0 items-start gap-2 text-sm">
+                        <Checkbox
+                          checked={selectedVars.includes(key)}
+                          onCheckedChange={(c) => toggleVar(key, c === true)}
+                          className="mt-0.5 shrink-0"
+                        />
+                        <span className="min-w-0 break-words leading-snug">
+                          <span>@{key}</span>{" "}
+                          <span className="text-muted-foreground">({t(labelKey)})</span>
+                        </span>
+                      </label>
+                    ),
+                  )}
                 </div>
               </div>
 

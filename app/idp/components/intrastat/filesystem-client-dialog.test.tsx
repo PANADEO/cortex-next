@@ -49,9 +49,9 @@ describe("FilesystemClientDialog", () => {
       <FilesystemClientDialog client={null} open onOpenChange={onOpenChange} onSaved={onSaved} />,
     )
 
-    await user.type(screen.getByLabelText("Client"), "Jabil")
-    await user.type(screen.getByLabelText("Mounted folder"), "jabil-share")
-    await user.click(screen.getByRole("button", { name: "Save" }))
+    await user.type(screen.getByLabelText("Klient"), "Jabil")
+    await user.type(screen.getByLabelText("Podpięty folder"), "jabil-share")
+    await user.click(screen.getByRole("button", { name: "Zapisz" }))
 
     await waitFor(() => {
       expect(mocks.createClient).toHaveBeenCalledWith({
@@ -67,13 +67,13 @@ describe("FilesystemClientDialog", () => {
     const user = userEvent.setup()
     render(<FilesystemClientDialog client={null} open onOpenChange={vi.fn()} onSaved={vi.fn()} />)
 
-    await user.type(screen.getByLabelText("Client"), "Jabil")
-    await user.type(screen.getByLabelText("Mounted folder"), "clients/jabil")
-    await user.click(screen.getByRole("button", { name: "Save" }))
+    await user.type(screen.getByLabelText("Klient"), "Jabil")
+    await user.type(screen.getByLabelText("Podpięty folder"), "clients/jabil")
+    await user.click(screen.getByRole("button", { name: "Zapisz" }))
 
     expect(mocks.createClient).not.toHaveBeenCalled()
     expect(mocks.toastError).toHaveBeenCalledWith(
-      "Enter one mounted folder name without slashes or parent paths",
+      "Podaj jedną nazwę podpiętego folderu, bez ukośników i ścieżek nadrzędnych",
     )
   })
 
@@ -101,10 +101,10 @@ describe("FilesystemClientDialog", () => {
       />,
     )
 
-    const clientInput = screen.getByLabelText("Client")
+    const clientInput = screen.getByLabelText("Klient")
     await user.clear(clientInput)
     await user.type(clientInput, "Jabil Poland")
-    await user.click(screen.getByRole("button", { name: "Save" }))
+    await user.click(screen.getByRole("button", { name: "Zapisz" }))
 
     await waitFor(() => {
       expect(mocks.updateClient).toHaveBeenCalledWith({

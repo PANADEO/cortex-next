@@ -6,6 +6,7 @@ import type { AuditEntry, PipelineStep } from "@/features/store-pit/types"
 import { Badge, Card, CardContent, DataCard, PageHeader } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { CheckCircle2, Layers, Package, TrendingUp } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 type Layer = PipelineStep["layer"]
 
@@ -16,11 +17,11 @@ const LAYER_BADGE: Record<Layer, string> = {
   output: "border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300",
 }
 
-const LAYER_LABEL: Record<Layer, string> = {
-  input: "Input",
-  idp: "IDP",
-  engine: "Engine",
-  output: "Output",
+const LAYER_LABEL_KEY: Record<Layer, string> = {
+  input: "layers.input",
+  idp: "layers.idp",
+  engine: "layers.engine",
+  output: "layers.output",
 }
 
 const TIMESTAMPS = [
@@ -51,24 +52,31 @@ const ENTRIES: EnrichedEntry[] = PIPELINE.map((step, i) => ({
 }))
 
 export default function AuditLogPage() {
+  const { t } = useTranslation("store-pit")
+
   return (
     <>
       <PageHeader
-        title="Audit log"
-        description={`Processing run for GLS invoice ${INVOICE.glsInvoiceNo}.`}
+        title={t("auditLog.title")}
+        description={t("auditLog.description", { invoice: INVOICE.glsInvoiceNo })}
         actions={
           <Badge variant="outline" className="font-mono text-xs">
-            8 steps · completed
+            {t("auditLog.stepsBadge", { n: ENTRIES.length })}
           </Badge>
         }
       />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <DataCard label="Run status" value="Completed" tone="success" icon={CheckCircle2} />
-          <DataCard label="Steps" value="8 / 8" icon={Layers} />
-          <DataCard label="Rows processed" value={count(3299)} icon={Package} />
-          <DataCard label="Variance" value="0.00" tone="success" icon={TrendingUp} />
+          <DataCard
+            label={t("auditLog.cards.runStatus")}
+            value={t("status.completed")}
+            tone="success"
+            icon={CheckCircle2}
+          />
+          <DataCard label={t("auditLog.cards.steps")} value="8 / 8" icon={Layers} />
+          <DataCard label={t("auditLog.cards.rowsProcessed")} value={count(3299)} icon={Package} />
+          <DataCard label={t("fields.variance")} value="0.00" tone="success" icon={TrendingUp} />
         </section>
 
         <Card>
@@ -77,62 +85,66 @@ export default function AuditLogPage() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/40">
                   <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                    <th className="px-4 py-2.5 font-medium">Step</th>
-                    <th className="px-3 py-2.5 font-medium">Detail</th>
-                    <th className="px-3 py-2.5 font-medium">Layer</th>
-                    <th className="px-3 py-2.5 text-right font-medium">Rows</th>
-                    <th className="px-3 py-2.5 text-right font-medium">Duration</th>
-                    <th className="px-3 py-2.5 font-medium">Finished at</th>
-                    <th className="px-4 py-2.5 font-medium">Status</th>
+                    <th className="px-4 py-2.5 font-medium">{t("auditLog.columns.step")}</th>
+                    <th className="px-3 py-2.5 font-medium">{t("auditLog.columns.detail")}</th>
+                    <th className="px-3 py-2.5 font-medium">{t("auditLog.columns.layer")}</th>
+                    <th className="px-3 py-2.5 text-right font-medium">
+                      {t("auditLog.columns.rows")}
+                    </th>
+                    <th className="px-3 py-2.5 text-right font-medium">
+                      {t("auditLog.columns.duration")}
+                    </th>
+                    <th className="px-3 py-2.5 font-medium">{t("auditLog.columns.finishedAt")}</th>
+                    <th className="px-4 py-2.5 font-medium">{t("fields.status")}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {ENTRIES.map((entry) => (
-                    <tr
-                      key={entry.step}
-                      className="border-b border-border/60 last:border-0 hover:bg-muted/40"
-                    >
-                      <td className="px-4 py-3 text-xs font-medium">{entry.step}</td>
-                      <td className="max-w-[240px] px-3 py-3 text-xs text-muted-foreground">
-                        {entry.detail}
-                      </td>
-                      <td className="px-3 py-3">
-                        <Badge
-                          variant="outline"
-                          className={cn("text-xs", LAYER_BADGE[entry.layer])}
-                        >
-                          {LAYER_LABEL[entry.layer]}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-3 text-right text-xs tabular-nums">
-                        {count(entry.rows)}
-                      </td>
-                      <td className="px-3 py-3 text-right text-xs tabular-nums">
-                        {entry.duration}
-                      </td>
-                      <td className="px-3 py-3 font-mono text-xs text-muted-foreground">
-                        {entry.finishedAt}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge
-                          variant="outline"
-                          className="border-emerald-500/30 bg-emerald-500/15 text-xs text-emerald-700 dark:text-emerald-300"
-                        >
-                          OK
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
+                  {ENTRIES.map((entry) => {
+                    const layerLabelKey = LAYER_LABEL_KEY[entry.layer]
+                    return (
+                      <tr
+                        key={entry.step}
+                        className="border-b border-border/60 last:border-0 hover:bg-muted/40"
+                      >
+                        <td className="px-4 py-3 text-xs font-medium">{entry.step}</td>
+                        <td className="max-w-[240px] px-3 py-3 text-xs text-muted-foreground">
+                          {entry.detail}
+                        </td>
+                        <td className="px-3 py-3">
+                          <Badge
+                            variant="outline"
+                            className={cn("text-xs", LAYER_BADGE[entry.layer])}
+                          >
+                            {layerLabelKey ? t(layerLabelKey) : null}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-3 text-right text-xs tabular-nums">
+                          {count(entry.rows)}
+                        </td>
+                        <td className="px-3 py-3 text-right text-xs tabular-nums">
+                          {entry.duration}
+                        </td>
+                        <td className="px-3 py-3 font-mono text-xs text-muted-foreground">
+                          {entry.finishedAt}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge
+                            variant="outline"
+                            className="border-emerald-500/30 bg-emerald-500/15 text-xs text-emerald-700 dark:text-emerald-300"
+                          >
+                            {t("status.ok")}
+                          </Badge>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
           </CardContent>
         </Card>
 
-        <p className="text-[11px] text-muted-foreground">
-          This log is an immutable record of each processing stage - the neutral decision-trail
-          Store-Pit keeps per invoice.
-        </p>
+        <p className="text-[11px] text-muted-foreground">{t("auditLog.footnote")}</p>
       </div>
     </>
   )

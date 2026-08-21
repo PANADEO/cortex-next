@@ -1,6 +1,6 @@
 import { resolveTileColor } from "@/features/system-config/colors"
 import { resolveApplicationIcon } from "@/features/system-config/icons"
-import { SOURCE_LOCALE } from "@/lib/i18n/config"
+import { tileName } from "@/lib/i18n/tile-names"
 import type { Tile, TileCategoryDepartment, TileCategoryFunctional } from "@/lib/tiles"
 import type { HubTile } from "@cortex/api"
 import type { TFunction } from "i18next"
@@ -27,43 +27,13 @@ import type { TFunction } from "i18next"
  * `Tile.external` to i tak tylko boolean (otwórz w nowej karcie / nie), bez
  * trzeciej opcji na "osadzony".
  */
-/**
- * Tłumaczenie nazwy i opisu kafelka.
- *
- * Katalog huba idzie Z BAZY (`applications.name/description`), więc żadna
- * biblioteka i18n go nie obejmuje — to dane instancji, nie napisy w kodzie.
- *
- * W JĘZYKU ŹRÓDŁOWYM WYGRYWA BAZA, i to jest sedno tej funkcji. Pierwsza
- * wersja nakładała tłumaczenie także na polski, przez co **zmiana nazwy
- * kafelka przez administratora była niewidoczna** — plik w repo przykrywał
- * to, co admin przed chwilą wpisał w panelu. Sprzeczne z zasadą fazy K
- * (manifest podaje wartość POCZĄTKOWĄ, właścicielem w runtime jest admin)
- * i wprost z tym, o co prosił Alex.
- *
- * W pozostałych językach tłumaczenie wygrywa, a brak klucza spada na wartość
- * z bazy — czyli kafelek założony w panelu pokaże swoją polską nazwę zamiast
- * surowego klucza. Ograniczenie znane i widoczne; znosi je dopiero pole na
- * tłumaczenie w ustawieniach kafelka (§Otwarte projektu i18n).
- */
-function translated(
-  t: TFunction<"tiles">,
-  locale: string,
-  code: string,
-  field: "label" | "description",
-  fromDatabase: string,
-): string {
-  if (locale === SOURCE_LOCALE) return fromDatabase
-  const value = t(`${code}.${field}`, { defaultValue: "" })
-  return value || fromDatabase
-}
-
 export function hubApplicationToTile(row: HubTile, t: TFunction<"tiles">, locale: string): Tile {
   const { iconBg, iconFg } = resolveTileColor(row.color)
 
   return {
     id: row.code,
-    label: translated(t, locale, row.code, "label", row.name),
-    description: translated(t, locale, row.code, "description", row.description ?? ""),
+    label: tileName(t, locale, row.code, "label", row.name),
+    description: tileName(t, locale, row.code, "description", row.description ?? ""),
     // Niezmiennik kształtu w bazie (`applications_kind_shape`) gwarantuje
     // route dla native i url dla pozostałych — fallback tylko dla typów.
     href: (row.kind === "native" ? row.route : row.url) ?? "#",

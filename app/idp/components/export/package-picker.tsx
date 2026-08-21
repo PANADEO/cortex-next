@@ -17,13 +17,14 @@ import {
 import { cn, formatRelative } from "@cortex/utils"
 import { CheckCircle2, Loader2, PlayCircle, Search } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 type Readiness = "verified" | "ready" | "all"
 
-const READINESS_FILTERS: ReadonlyArray<{ value: Readiness; label: string }> = [
-  { value: "verified", label: "Verified only" },
-  { value: "ready", label: "Ready + verified" },
-  { value: "all", label: "All" },
+const READINESS_FILTERS: ReadonlyArray<{ value: Readiness; labelKey: string }> = [
+  { value: "verified", labelKey: "export.picker.readinessVerified" },
+  { value: "ready", labelKey: "export.picker.readinessReady" },
+  { value: "all", labelKey: "export.picker.readinessAll" },
 ]
 
 function isReady(pkg: PackageReadModel): boolean {
@@ -45,6 +46,7 @@ interface PackagePickerProps {
 }
 
 export function PackagePicker({ state }: PackagePickerProps) {
+  const { t } = useTranslation("idp")
   const [search, setSearch] = useState("")
   const [readiness, setReadiness] = useState<Readiness>("verified")
 
@@ -89,13 +91,11 @@ export function PackagePicker({ state }: PackagePickerProps) {
       <div className="flex flex-col gap-3 border-b border-border px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold">Select packages</h3>
-            <p className="text-[11px] text-muted-foreground">
-              Pick which packages get exported in this batch.
-            </p>
+            <h3 className="text-sm font-semibold">{t("export.picker.title")}</h3>
+            <p className="text-[11px] text-muted-foreground">{t("export.picker.subtitle")}</p>
           </div>
           <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-            {state.selectedPackageIds.size} selected
+            {t("export.picker.selected", { n: state.selectedPackageIds.size })}
           </span>
         </div>
 
@@ -105,7 +105,7 @@ export function PackagePicker({ state }: PackagePickerProps) {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search packages…"
+              placeholder={t("export.picker.searchPlaceholder")}
               className="h-8 pl-8 text-xs"
             />
           </div>
@@ -116,7 +116,7 @@ export function PackagePicker({ state }: PackagePickerProps) {
             <SelectContent>
               {READINESS_FILTERS.map((f) => (
                 <SelectItem key={f.value} value={f.value}>
-                  {f.label}
+                  {t(f.labelKey)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -129,11 +129,11 @@ export function PackagePicker({ state }: PackagePickerProps) {
           <Checkbox
             checked={allVisibleSelected}
             onCheckedChange={toggleAllVisible}
-            aria-label="Select all visible"
+            aria-label={t("export.picker.selectAllVisible")}
             disabled={filtered.length === 0}
           />
           <span className="text-[11px] text-muted-foreground">
-            {filtered.length} packages match
+            {t("export.picker.matchCount", { count: filtered.length })}
           </span>
         </div>
         {state.selectedPackageIds.size > 0 ? (
@@ -144,7 +144,7 @@ export function PackagePicker({ state }: PackagePickerProps) {
             className="h-7 text-[11px]"
             onClick={state.clearPackages}
           >
-            Clear
+            {t("export.picker.clear")}
           </Button>
         ) : null}
       </div>
@@ -154,11 +154,11 @@ export function PackagePicker({ state }: PackagePickerProps) {
           {isLoading ? (
             <li className="flex items-center justify-center px-4 py-6 text-xs text-muted-foreground">
               <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-              Loading…
+              {t("export.picker.loading")}
             </li>
           ) : filtered.length === 0 ? (
             <li className="px-4 py-6 text-center text-xs text-muted-foreground">
-              Nothing matches current filters.
+              {t("export.picker.empty")}
             </li>
           ) : (
             filtered.map((pkg) => (
@@ -185,6 +185,7 @@ function PackageRow({
   checked: boolean
   onToggle: () => void
 }) {
+  const { t } = useTranslation("idp")
   const verified = isVerified(pkg)
   return (
     <li
@@ -198,13 +199,13 @@ function PackageRow({
         checked={checked}
         onCheckedChange={onToggle}
         onClick={(e) => e.stopPropagation()}
-        aria-label={`Select ${pkg.package_name ?? pkg.file_name}`}
+        aria-label={t("export.picker.selectRow", { name: pkg.package_name ?? pkg.file_name })}
       />
       <div className="min-w-0 flex-1">
         <p className="truncate text-xs font-medium">{pkg.package_name ?? pkg.file_name}</p>
         <p className="truncate text-[10px] text-muted-foreground">
           {pkg.package_name ? `${pkg.file_name} · ` : ""}
-          {formatRelative(pkg.created_date)} · {pkg.assignee ?? "unassigned"}
+          {formatRelative(pkg.created_date)} · {pkg.assignee ?? t("export.picker.unassigned")}
         </p>
       </div>
       <span
@@ -216,7 +217,7 @@ function PackageRow({
         )}
       >
         {verified ? <CheckCircle2 className="h-3 w-3" /> : <PlayCircle className="h-3 w-3" />}
-        {verified ? "Verified" : "Ready"}
+        {verified ? t("export.picker.verified") : t("export.picker.ready")}
       </span>
     </li>
   )

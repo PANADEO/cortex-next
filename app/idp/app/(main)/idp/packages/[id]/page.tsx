@@ -11,6 +11,8 @@ import { PackageRulesPanel } from "@/components/rules/package-rules-panel"
 import { SourceMaterialsPanel } from "@/components/source-materials-panel"
 import { TransportOrdersPanel } from "@/components/transport-orders/transport-orders-panel"
 import { downloadBlob } from "@/lib/download"
+import { formatNumber } from "@/lib/i18n/formats"
+import { useLocaleStore } from "@/lib/i18n/locale-store"
 import { useAiNotificationsReadStore } from "@/lib/stores/ai-notifications-read-store"
 import {
   endpoints,
@@ -66,6 +68,7 @@ import {
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 const TAB_PANEL_CLASS =
@@ -74,19 +77,20 @@ const TAB_PANEL_CLASS =
 const TAB_PANEL_CLASS_SOURCE =
   "mt-2 data-[state=active]:md:flex md:min-h-0 md:flex-1 md:flex-col md:overflow-hidden"
 
-const READ_ONLY_ACTION_HELP = "This action is available for the assignee or IDP admin."
-
-const TRANSITION_LABELS: Record<PackageTransition, string> = {
-  start_verification: "Start verification",
-  cancel_verification: "Cancel verification",
-  unlock_verification: "Unlock package",
-  finish_verification: "Finish verification",
-  reset_verification: "Reset verification",
-  reprocess: "Reprocess",
+const TRANSITION_LABEL_KEY: Record<PackageTransition, string> = {
+  start_verification: "packages.detail.transitions.start_verification",
+  cancel_verification: "packages.detail.transitions.cancel_verification",
+  unlock_verification: "packages.detail.transitions.unlock_verification",
+  finish_verification: "packages.detail.transitions.finish_verification",
+  reset_verification: "packages.detail.transitions.reset_verification",
+  reprocess: "packages.detail.transitions.reprocess",
 }
 
 export default function PackageDetailPage() {
+  const { t } = useTranslation("idp")
+  const readOnlyActionHelp = t("packages.detail.readOnlyActionHelp")
   const params = useParams<{ id: string }>()
+  const locale = useLocaleStore((s) => s.locale)
   const id = params?.id ?? ""
   const me = useMe()
 
@@ -156,7 +160,7 @@ export default function PackageDetailPage() {
       const blob = await endpoints.packages.download(pkg.id)
       const fileName = pkg.file_name.endsWith(".zip") ? pkg.file_name : `${pkg.file_name}.zip`
       downloadBlob(blob, fileName)
-      toast.success("ZIP download started")
+      toast.success(t("packages.detail.zipStarted"))
     } catch (err) {
       toastApiError(err)
     } finally {
@@ -164,13 +168,13 @@ export default function PackageDetailPage() {
     }
   }
 
-  const handleTransition = async (t: PackageTransition) => {
-    if (t === "reprocess") {
+  const handleTransition = async (transition: PackageTransition) => {
+    if (transition === "reprocess") {
       setReprocessOpen(true)
       return
     }
     try {
-      switch (t) {
+      switch (transition) {
         case "start_verification":
           await start.mutateAsync()
           break
@@ -187,7 +191,9 @@ export default function PackageDetailPage() {
           await reset.mutateAsync()
           break
       }
-      toast.success(TRANSITION_LABELS[t] + " succeeded")
+      toast.success(
+        t("packages.detail.transitionSucceeded", { label: t(TRANSITION_LABEL_KEY[transition]) }),
+      )
     } catch (err) {
       toastApiError(err)
     }
@@ -207,7 +213,7 @@ export default function PackageDetailPage() {
             className={!pkg.analysis_result ? "pointer-events-none opacity-50" : ""}
           >
             <Maximize2 className="mr-1.5 h-4 w-4" />
-            Open verification workspace
+            {t("packages.detail.openVerification")}
           </Link>
         </Button>
         <Button variant="outline" size="sm" onClick={handleDownloadZip} disabled={zipDownloading}>
@@ -216,7 +222,7 @@ export default function PackageDetailPage() {
           ) : (
             <FileArchive className="mr-1.5 h-4 w-4" />
           )}
-          Download ZIP
+          {t("packages.detail.downloadZip")}
         </Button>
         <Button
           variant="outline"
@@ -225,7 +231,7 @@ export default function PackageDetailPage() {
           disabled={!pkg.analysis_result}
         >
           <Braces className="mr-1.5 h-4 w-4" />
-          Show structure
+          {t("packages.detail.showStructure")}
         </Button>
         {transitions.isLoading ? (
           <Skeleton className={layout === "row" ? "h-8 w-32" : "h-9 w-full"} />
@@ -240,12 +246,12 @@ export default function PackageDetailPage() {
                         ? "px-2 text-xs text-muted-foreground"
                         : "text-xs text-muted-foreground"
                     }
-                    title={READ_ONLY_ACTION_HELP}
+                    title={readOnlyActionHelp}
                   >
-                    Read-only verification.
+                    {t("packages.detail.readOnlyVerification")}
                   </span>
                 </TooltipTrigger>
-                <TooltipContent>{READ_ONLY_ACTION_HELP}</TooltipContent>
+                <TooltipContent>{readOnlyActionHelp}</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           ) : (
@@ -256,28 +262,29 @@ export default function PackageDetailPage() {
                   : "text-xs text-muted-foreground"
               }
             >
-              No transitions available.
+              {t("packages.detail.noTransitions")}
             </span>
           )
         ) : (
-          transitions.data?.transitions.map((t) => {
-            const isPrimary = t === "finish_verification" || t === "start_verification"
+          transitions.data?.transitions.map((transition) => {
+            const isPrimary =
+              transition === "finish_verification" || transition === "start_verification"
             const isPending =
-              (start.isPending && t === "start_verification") ||
-              (finish.isPending && t === "finish_verification") ||
-              (cancel.isPending && t === "cancel_verification") ||
-              (unlock.isPending && t === "unlock_verification") ||
-              (reset.isPending && t === "reset_verification")
+              (start.isPending && transition === "start_verification") ||
+              (finish.isPending && transition === "finish_verification") ||
+              (cancel.isPending && transition === "cancel_verification") ||
+              (unlock.isPending && transition === "unlock_verification") ||
+              (reset.isPending && transition === "reset_verification")
             return (
               <Button
-                key={t}
+                key={transition}
                 variant={isPrimary ? "default" : "outline"}
                 size="sm"
-                onClick={() => handleTransition(t)}
+                onClick={() => handleTransition(transition)}
                 disabled={transitionPending}
               >
                 {isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-                {TRANSITION_LABELS[t]}
+                {t(TRANSITION_LABEL_KEY[transition])}
               </Button>
             )
           })
@@ -289,7 +296,7 @@ export default function PackageDetailPage() {
   return (
     <>
       <PageHeader
-        title={pkg?.package_name ?? pkg?.file_name ?? "Loading…"}
+        title={pkg?.package_name ?? pkg?.file_name ?? t("packages.detail.loadingTitle")}
         {...(pkg?.package_name ? { description: pkg.file_name } : {})}
         actions={
           <>
@@ -308,7 +315,7 @@ export default function PackageDetailPage() {
             ) : null}
             <Button variant="outline" size="sm" asChild>
               <Link href="/idp/packages">
-                <ArrowLeft className="mr-1 h-4 w-4" /> Back
+                <ArrowLeft className="mr-1 h-4 w-4" /> {t("packages.detail.back")}
               </Link>
             </Button>
           </>
@@ -317,7 +324,7 @@ export default function PackageDetailPage() {
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6 md:min-h-0">
         {detail.isLoading ? (
-          <LoadingState label="Loading package details…" />
+          <LoadingState label={t("packages.detail.loadingDetails")} />
         ) : pkg ? (
           <>
             <section
@@ -351,7 +358,8 @@ export default function PackageDetailPage() {
                       ) : null}
                       {pkg.assignee ? (
                         <span className="min-w-0 text-xs text-muted-foreground">
-                          Assigned to <span className="font-mono">{pkg.assignee}</span>
+                          {t("packages.detail.assignedTo")}{" "}
+                          <span className="font-mono">{pkg.assignee}</span>
                         </span>
                       ) : null}
                     </div>
@@ -363,8 +371,8 @@ export default function PackageDetailPage() {
                           variant="outline"
                           size="icon"
                           className="h-8 w-8"
-                          aria-label="Expand package summary"
-                          title="Expand package summary"
+                          aria-label={t("packages.detail.expandSummary")}
+                          title={t("packages.detail.expandSummary")}
                           onClick={() => setSummaryCollapsed(false)}
                         >
                           <ChevronDown className="h-4 w-4" />
@@ -380,19 +388,25 @@ export default function PackageDetailPage() {
                       ) : null}
                       <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                         <span>
-                          <span className="text-muted-foreground/70">Uploaded</span>{" "}
+                          <span className="text-muted-foreground/70">
+                            {t("packages.detail.uploadedLabel")}
+                          </span>{" "}
                           <span className="text-foreground">
                             {formatAbsolute(pkg.created_date)}
                           </span>
                         </span>
                         {pkg.uploaded_by ? (
                           <span>
-                            <span className="text-muted-foreground/70">by</span>{" "}
+                            <span className="text-muted-foreground/70">
+                              {t("packages.detail.byLabel")}
+                            </span>{" "}
                             <span className="font-mono text-foreground">{pkg.uploaded_by}</span>
                           </span>
                         ) : null}
                         <span className="min-w-0 truncate">
-                          <span className="text-muted-foreground/70">Hash</span>{" "}
+                          <span className="text-muted-foreground/70">
+                            {t("packages.detail.hashLabel")}
+                          </span>{" "}
                           <span className="font-mono text-foreground">{pkg.file_hash}</span>
                         </span>
                       </p>
@@ -406,14 +420,14 @@ export default function PackageDetailPage() {
                   <CardContent className="space-y-2 p-5">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Actions
+                        {t("packages.detail.actionsTitle")}
                       </p>
                       <Button
                         variant="outline"
                         size="icon"
                         className="h-8 w-8"
-                        aria-label="Collapse package summary"
-                        title="Collapse package summary"
+                        aria-label={t("packages.detail.collapseSummary")}
+                        title={t("packages.detail.collapseSummary")}
                         onClick={() => setSummaryCollapsed(true)}
                       >
                         <ChevronUp className="h-4 w-4" />
@@ -434,13 +448,13 @@ export default function PackageDetailPage() {
               className="md:flex md:min-h-0 md:flex-1 md:flex-col"
             >
               <TabsList className="md:shrink-0">
-                <TabsTrigger value="transport">Transport orders</TabsTrigger>
-                <TabsTrigger value="metadata">Metadata</TabsTrigger>
-                <TabsTrigger value="analysis">Analysis result</TabsTrigger>
+                <TabsTrigger value="transport">{t("packages.detail.tabs.transport")}</TabsTrigger>
+                <TabsTrigger value="metadata">{t("packages.detail.tabs.metadata")}</TabsTrigger>
+                <TabsTrigger value="analysis">{t("packages.detail.tabs.analysis")}</TabsTrigger>
                 <AiNotificationsTabTrigger packageId={pkg.id} />
-                <TabsTrigger value="rules">Rules</TabsTrigger>
-                <TabsTrigger value="actions">Action log</TabsTrigger>
-                <TabsTrigger value="source">Source materials</TabsTrigger>
+                <TabsTrigger value="rules">{t("packages.detail.tabs.rules")}</TabsTrigger>
+                <TabsTrigger value="actions">{t("packages.detail.tabs.actions")}</TabsTrigger>
+                <TabsTrigger value="source">{t("packages.detail.tabs.source")}</TabsTrigger>
               </TabsList>
               <TabsContent value="transport" className={TAB_PANEL_CLASS}>
                 <TransportOrdersPanel packageId={pkg.id} canEdit={canEdit} />
@@ -449,13 +463,17 @@ export default function PackageDetailPage() {
                 <Card>
                   <CardContent className="p-5">
                     <dl className="grid grid-cols-[8rem_1fr] gap-y-1 text-sm">
-                      <dt className="text-muted-foreground">Uploaded at</dt>
+                      <dt className="text-muted-foreground">
+                        {t("packages.detail.meta.uploadedAt")}
+                      </dt>
                       <dd>{formatAbsolute(pkg.created_date)}</dd>
-                      <dt className="text-muted-foreground">Size</dt>
+                      <dt className="text-muted-foreground">{t("packages.detail.meta.size")}</dt>
                       <dd>{formatFileSizeMb(pkg.file_size_mb)}</dd>
-                      <dt className="text-muted-foreground">Tokens</dt>
-                      <dd>{pkg.total_tokens?.toLocaleString() ?? "—"}</dd>
-                      <dt className="text-muted-foreground">LLM cost</dt>
+                      <dt className="text-muted-foreground">{t("packages.detail.meta.tokens")}</dt>
+                      <dd>
+                        {pkg.total_tokens != null ? formatNumber(pkg.total_tokens, locale) : "—"}
+                      </dd>
+                      <dt className="text-muted-foreground">{t("packages.detail.meta.llmCost")}</dt>
                       <dd>{formatMoney(pkg.total_cost_usd, { currency: "USD" })}</dd>
                     </dl>
                     <Separator className="my-4" />
@@ -473,15 +491,15 @@ export default function PackageDetailPage() {
                 <div className="space-y-3">
                   {isActiveVerification && !canEdit ? (
                     <p className="text-xs text-muted-foreground">
-                      Read-only. Only the current assignee ({pkg.assignee}) can edit.
+                      {t("packages.detail.analysisReadOnly", { assignee: pkg.assignee })}
                     </p>
                   ) : null}
                   {pkg.analysis_result ? (
                     canEdit ? (
                       <JsonEditor
                         value={pkg.verified_result ?? pkg.analysis_result}
-                        saveLabel="Save verified result"
-                        disabledReason="Field-level edits go through transport-order endpoints; full-document save is pending backend support."
+                        saveLabel={t("packages.detail.analysisSaveLabel")}
+                        disabledReason={t("packages.detail.analysisDisabledReason")}
                       />
                     ) : (
                       <JsonViewer
@@ -491,7 +509,7 @@ export default function PackageDetailPage() {
                     )
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      Analysis result not available yet.
+                      {t("packages.detail.analysisNotAvailable")}
                     </p>
                   )}
                 </div>
@@ -515,7 +533,7 @@ export default function PackageDetailPage() {
             </Tabs>
           </>
         ) : (
-          <p className="text-sm text-muted-foreground">Package not found.</p>
+          <p className="text-sm text-muted-foreground">{t("packages.detail.notFound")}</p>
         )}
       </div>
       {pkg ? (
@@ -524,16 +542,14 @@ export default function PackageDetailPage() {
       <Dialog open={structureOpen} onOpenChange={setStructureOpen}>
         <DialogContent className="max-h-[85vh] max-w-3xl overflow-hidden">
           <DialogHeader>
-            <DialogTitle>Analysis structure</DialogTitle>
-            <DialogDescription>
-              Raw extracted JSON. Field-level edits happen via the Transport orders tab.
-            </DialogDescription>
+            <DialogTitle>{t("packages.detail.structureTitle")}</DialogTitle>
+            <DialogDescription>{t("packages.detail.structureDescription")}</DialogDescription>
           </DialogHeader>
           <div className="max-h-[65vh] overflow-auto rounded-md border border-border bg-muted/20 p-3">
             {pkg?.analysis_result ? (
               <JsonViewer data={pkg.verified_result ?? pkg.analysis_result} initialDepth={3} />
             ) : (
-              <p className="text-sm text-muted-foreground">No analysis result available.</p>
+              <p className="text-sm text-muted-foreground">{t("packages.detail.structureEmpty")}</p>
             )}
           </div>
         </DialogContent>

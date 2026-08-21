@@ -6,9 +6,11 @@ import { Button } from "@cortex/ui"
 import { Loader2, Upload } from "lucide-react"
 import type { ChangeEvent } from "react"
 import { useRef } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 export function IdpBasicUploadPackageButton() {
+  const { t } = useTranslation("idp-basic")
   const inputRef = useRef<HTMLInputElement>(null)
   const uploadPackage = useIdpBasicUploadPackage()
 
@@ -18,15 +20,15 @@ export function IdpBasicUploadPackageButton() {
     if (!file) return
 
     if (!file.name.toLowerCase().endsWith(".zip")) {
-      toast.error("Choose a ZIP file")
+      toast.error(t("errors.onlyZipFilesSupported"))
       return
     }
 
     try {
       const uploaded = await uploadPackage.mutateAsync(file)
-      toast.success(`Uploaded ${uploaded.document_count} document(s)`)
+      toast.success(t("toast.uploaded", { count: uploaded.document_count }))
     } catch (error) {
-      toast.error(formatIdpBasicError(error, "ZIP upload failed"))
+      toast.error(formatIdpBasicError(error, t("errors.zipUploadFailed")))
     }
   }
 
@@ -51,7 +53,7 @@ export function IdpBasicUploadPackageButton() {
         ) : (
           <Upload className="mr-2 h-4 w-4" />
         )}
-        Upload ZIP
+        {t("upload.zipTrigger")}
       </Button>
     </>
   )

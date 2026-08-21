@@ -1,6 +1,6 @@
 "use client"
 
-import { useTranslation } from "react-i18next"
+import { Trans, useTranslation } from "react-i18next"
 
 import { Button } from "@cortex/ui"
 import { ShieldAlert } from "lucide-react"
@@ -49,9 +49,18 @@ export function AccessDeniedScreen({ email, reason }: AccessDeniedScreenProps) {
             <p className="text-sm leading-relaxed text-muted-foreground">{t("gate.deniedBody")}</p>
           ) : (
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Twoje konto{" "}
-              {email ? <span className="font-medium text-foreground">{email}</span> : null} nie ma
-              uprawnień do tej aplikacji. Skontaktuj się z administratorem.
+              {email ? (
+                <Trans
+                  t={t}
+                  i18nKey="gate.deniedBodyForAccount"
+                  values={{ email }}
+                  components={{
+                    account: <span className="font-medium text-foreground" />,
+                  }}
+                />
+              ) : (
+                t("gate.deniedBodyNoAccount")
+              )}
             </p>
           )}
         </div>

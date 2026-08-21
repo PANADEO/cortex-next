@@ -11,9 +11,14 @@ export interface Rgb {
 const HEX_PATTERN = /^#[0-9a-f]{6}$/i
 
 export class InvalidColorError extends Error {
+  /** Odrzucona wartość — pole STRUKTURALNE, żeby kontroler mógł ją wstawić do
+   *  przetłumaczonego zdania zamiast przepuszczać `message` na ekran. */
+  readonly value: string
+
   constructor(value: string) {
     super(`Kolor musi być w formacie #RRGGBB, otrzymano: ${value}`)
     this.name = "InvalidColorError"
+    this.value = value
   }
 }
 

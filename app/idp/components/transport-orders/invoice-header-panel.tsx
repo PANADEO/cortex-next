@@ -5,6 +5,7 @@ import { Button } from "@cortex/ui"
 import { cn, formatRoute } from "@cortex/utils"
 import { Building2, ChevronDown, ChevronRight, FileText, Truck, User } from "lucide-react"
 import { Fragment, useState, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 
 interface Props {
   order: TransportOrder
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function InvoiceHeaderPanel({ order, invoice }: Props) {
+  const { t } = useTranslation("idp")
   const [open, setOpen] = useState(false)
 
   const dispatchToDestination = formatRoute(
@@ -19,7 +21,9 @@ export function InvoiceHeaderPanel({ order, invoice }: Props) {
     invoice.country_of_destination ?? order.country_of_destination,
   )
   const summaryBits = [
-    invoice.invoice_number ? `Invoice ${invoice.invoice_number}` : null,
+    invoice.invoice_number
+      ? t("transportOrders.invoiceLabel", { number: invoice.invoice_number })
+      : null,
     invoice.invoice_date,
     invoice.invoice_currency,
     dispatchToDestination,
@@ -44,23 +48,39 @@ export function InvoiceHeaderPanel({ order, invoice }: Props) {
       >
         <Chevron className="h-4 w-4 shrink-0 text-muted-foreground" />
         <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <span className="text-xs font-semibold">Header data</span>
+        <span className="text-xs font-semibold">{t("transportOrders.header.title")}</span>
         <span className="truncate text-xs font-normal text-muted-foreground">
-          {summaryBits.length > 0 ? summaryBits.join(" · ") : "No header data"}
+          {summaryBits.length > 0 ? summaryBits.join(" · ") : t("transportOrders.header.noData")}
         </span>
       </Button>
       {open ? (
         <div id="invoice-header-panel-content" className="grid gap-3 px-3 pb-3 pt-1 md:grid-cols-2">
-          <PartySection icon={Building2} label="Seller" party={order.seller} />
-          <PartySection icon={User} label="Buyer" party={order.buyer} />
+          <PartySection
+            icon={Building2}
+            label={t("transportOrders.parties.seller")}
+            party={order.seller}
+          />
+          <PartySection
+            icon={User}
+            label={t("transportOrders.parties.buyer")}
+            party={order.buyer}
+          />
           <InvoiceMetaSection invoice={invoice} dispatchToDestination={dispatchToDestination} />
           {showConsignorConsignee ? (
             <div className="grid gap-3 md:col-span-2 md:grid-cols-2">
               {consignorDiffers ? (
-                <PartySection icon={Truck} label="Consignor" party={order.consignor} />
+                <PartySection
+                  icon={Truck}
+                  label={t("transportOrders.parties.consignor")}
+                  party={order.consignor}
+                />
               ) : null}
               {consigneeDiffers ? (
-                <PartySection icon={Truck} label="Consignee" party={order.consignee} />
+                <PartySection
+                  icon={Truck}
+                  label={t("transportOrders.parties.consignee")}
+                  party={order.consignee}
+                />
               ) : null}
             </div>
           ) : null}
@@ -77,6 +97,7 @@ interface PartySectionProps {
 }
 
 function PartySection({ icon: Icon, label, party }: PartySectionProps) {
+  const { t } = useTranslation("idp")
   return (
     <section className="rounded-md border border-border bg-background p-3">
       <header className="mb-2 flex items-center gap-1.5">
@@ -85,13 +106,18 @@ function PartySection({ icon: Icon, label, party }: PartySectionProps) {
       </header>
       {party ? (
         <dl className="grid grid-cols-[5rem_1fr] gap-x-3 gap-y-0.5 text-xs">
-          <Row label="Name" value={party.name} />
-          <Row label="VAT ID" value={party.vat_id} emphasize />
-          <Row label="Street" value={party.street} />
-          <Row label="City" value={formatCity(party.postal_code, party.city, party.country_code)} />
+          <Row label={t("transportOrders.fields.name")} value={party.name} />
+          <Row label={t("transportOrders.fields.vatId")} value={party.vat_id} emphasize />
+          <Row label={t("transportOrders.fields.street")} value={party.street} />
+          <Row
+            label={t("transportOrders.fields.city")}
+            value={formatCity(party.postal_code, party.city, party.country_code)}
+          />
         </dl>
       ) : (
-        <p className="text-xs italic text-muted-foreground">Not provided</p>
+        <p className="text-xs italic text-muted-foreground">
+          {t("transportOrders.header.notProvided")}
+        </p>
       )}
     </section>
   )
@@ -103,17 +129,20 @@ interface InvoiceMetaSectionProps {
 }
 
 function InvoiceMetaSection({ invoice, dispatchToDestination }: InvoiceMetaSectionProps) {
+  const { t } = useTranslation("idp")
   return (
     <section className="rounded-md border border-border bg-background p-3 md:col-span-2">
       <header className="mb-2 flex items-center gap-1.5">
         <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-        <h3 className="text-[11px] font-semibold uppercase tracking-wide">Invoice</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-wide">
+          {t("transportOrders.header.invoiceSection")}
+        </h3>
       </header>
       <dl className="grid grid-cols-[6rem_1fr] gap-x-3 gap-y-0.5 text-xs sm:grid-cols-[6rem_1fr_6rem_1fr]">
-        <Row label="Number" value={invoice.invoice_number} />
-        <Row label="Date" value={invoice.invoice_date} />
-        <Row label="Currency" value={invoice.invoice_currency} />
-        <Row label="Route" value={dispatchToDestination} />
+        <Row label={t("transportOrders.header.rowNumber")} value={invoice.invoice_number} />
+        <Row label={t("transportOrders.header.rowDate")} value={invoice.invoice_date} />
+        <Row label={t("transportOrders.fields.currency")} value={invoice.invoice_currency} />
+        <Row label={t("transportOrders.header.rowRoute")} value={dispatchToDestination} />
         <Row label="Incoterms" value={formatIncoterms(invoice.delivery_terms)} />
       </dl>
     </section>

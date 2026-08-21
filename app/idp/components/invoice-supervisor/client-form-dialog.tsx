@@ -5,7 +5,7 @@ import {
   useInvoiceSupervisorUpdateClient,
 } from "@/lib/invoice-supervisor/hooks"
 import {
-  INVOICE_SUPERVISOR_CLIENT_TYPE_LABELS,
+  INVOICE_SUPERVISOR_CLIENT_TYPE_LABEL_KEYS,
   type InvoiceSupervisorClient,
 } from "@/lib/invoice-supervisor/types"
 import {
@@ -43,7 +43,9 @@ const clientFormSchema = z.object({
 
 type ClientFormValues = z.infer<typeof clientFormSchema>
 
-const CLIENT_TYPE_OPTIONS = Object.entries(INVOICE_SUPERVISOR_CLIENT_TYPE_LABELS) as Array<
+// Druga para [wartość, KLUCZ tłumaczenia] — nie napis, z tego samego powodu co
+// komunikaty walidacji wyżej: lista żyje na poziomie modułu, `t` woła render.
+const CLIENT_TYPE_OPTIONS = Object.entries(INVOICE_SUPERVISOR_CLIENT_TYPE_LABEL_KEYS) as Array<
   [ClientFormValues["type"], string]
 >
 
@@ -140,9 +142,9 @@ export function InvoiceSupervisorClientFormDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {CLIENT_TYPE_OPTIONS.map(([value, label]) => (
+                {CLIENT_TYPE_OPTIONS.map(([value, labelKey]) => (
                   <SelectItem key={value} value={value}>
-                    {label}
+                    {t(labelKey)}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -143,8 +143,8 @@ function ConnectorForm({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="mcp">MCP server</SelectItem>
-                        <SelectItem value="cli">CLI tool</SelectItem>
+                        <SelectItem value="mcp">{t("connectorEditor.kindMcp")}</SelectItem>
+                        <SelectItem value="cli">{t("connectorEditor.kindCli")}</SelectItem>
                       </SelectContent>
                     </Select>
                   )}

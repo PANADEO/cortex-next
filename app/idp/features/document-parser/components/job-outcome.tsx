@@ -5,7 +5,7 @@ import { formatFileSizeBytes } from "@cortex/utils"
 import { Download, TriangleAlert } from "lucide-react"
 import Link from "next/link"
 import { useTranslation } from "react-i18next"
-import { errorMessageFor, STATUS_BADGE_VARIANT, STATUS_LABELS } from "../status"
+import { errorMessageFor, STATUS_BADGE_VARIANT, STATUS_LABEL_KEYS } from "../status"
 import type { DocumentParserJob } from "../types"
 import { DocumentParserMarkdown } from "./markdown"
 
@@ -40,7 +40,7 @@ export function JobOutcome({ job, detailsHref, previewOnly = false }: JobOutcome
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <span className="truncate text-sm font-medium">{job.fileName}</span>
-        <Badge variant={STATUS_BADGE_VARIANT[job.status]}>{STATUS_LABELS[job.status]}</Badge>
+        <Badge variant={STATUS_BADGE_VARIANT[job.status]}>{t(STATUS_LABEL_KEYS[job.status])}</Badge>
         <span className="text-xs text-muted-foreground">
           {formatFileSizeBytes(job.fileSizeBytes)}
         </span>
@@ -54,7 +54,7 @@ export function JobOutcome({ job, detailsHref, previewOnly = false }: JobOutcome
 
       {job.status === "error" &&
         (() => {
-          const { title, hint } = errorMessageFor(job.errorCode, job.errorMessage)
+          const { title, hint } = errorMessageFor(t, job.errorCode, job.errorMessage)
           return <ErrorState title={title} message={hint} />
         })()}
 
@@ -63,12 +63,7 @@ export function JobOutcome({ job, detailsHref, previewOnly = false }: JobOutcome
           {job.truncated ? (
             <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
               <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>
-                {t("outcome.truncated", {
-                  pages: job.pageCount,
-                  unit: t(job.pageCount === 1 ? "outcome.pageOne" : "outcome.pageMany"),
-                })}
-              </span>
+              <span>{t("outcome.truncated", { count: job.pageCount })}</span>
             </div>
           ) : null}
 

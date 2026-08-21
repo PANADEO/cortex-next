@@ -13,6 +13,7 @@ import {
   PlayCircle,
   UserCheck,
 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 type Tone = "default" | "info" | "success" | "warning" | "destructive"
 
@@ -39,12 +40,13 @@ interface BoardStatsProps {
 }
 
 export function BoardStats({ board }: BoardStatsProps) {
+  const { t } = useTranslation("idp")
   return (
     <section className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4">
       {BOARD_COLUMNS.map((meta) => (
         <DataCard
           key={meta.id}
-          label={meta.label}
+          label={t(`board.columns.${meta.id}.label`)}
           value={board.counts[meta.id]}
           icon={STAGE_ICON[meta.id]}
           isLoading={board.isLoading}
@@ -52,7 +54,7 @@ export function BoardStats({ board }: BoardStatsProps) {
         />
       ))}
       <DataCard
-        label="Errors"
+        label={t("board.stats.errors")}
         value={board.errorCount}
         icon={AlertTriangle}
         isLoading={board.isLoading}

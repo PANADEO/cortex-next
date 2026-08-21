@@ -6,6 +6,7 @@ import { Badge, Card, CardContent, LoadingState } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import type { LucideIcon } from "lucide-react"
 import { AlertTriangle, CheckCircle2, Info, Sparkles } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 type Severity = "info" | "warning"
 
@@ -13,21 +14,23 @@ interface AiNotification {
   id: string
   severity: Severity
   title: string
-  sourceField?: string
+  /** SAM NUMER faktury, nie gotowa etykieta — napis powstaje przy renderze. */
+  invoiceNumber?: string
 }
 
+// `countKey` to KLUCZ przestrzeni `idp`, nie napis — mapa żyje poza komponentem.
 const SEVERITY_META: Record<
   Severity,
-  { label: string; icon: LucideIcon; tone: string; badge: string }
+  { countKey: string; icon: LucideIcon; tone: string; badge: string }
 > = {
   info: {
-    label: "Info",
+    countKey: "aiNotifications.noteCount",
     icon: Info,
     tone: "text-sky-700 dark:text-sky-300",
     badge: "bg-sky-500/15 text-sky-800 dark:text-sky-200 border-sky-500/30",
   },
   warning: {
-    label: "Warning",
+    countKey: "aiNotifications.warningCount",
     icon: AlertTriangle,
     tone: "text-amber-700 dark:text-amber-300",
     badge: "bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-500/30",
@@ -40,7 +43,7 @@ export function buildNotifications(invoices: readonly Invoice[]): AiNotification
   for (const inv of invoices) {
     const base = (id: string, severity: Severity, title: string): AiNotification =>
       multiInvoice
-        ? { id, severity, title, sourceField: `Invoice ${inv.invoice_number ?? inv.id}` }
+        ? { id, severity, title, invoiceNumber: inv.invoice_number ?? inv.id }
         : { id, severity, title }
     inv.warnings.forEach((text, i) => {
       items.push(base(`${inv.id}-w-${i}`, "warning", text))
@@ -81,6 +84,7 @@ interface AiNotificationsPanelProps {
 }
 
 export function AiNotificationsPanel({ packageId }: AiNotificationsPanelProps) {
+  const { t } = useTranslation("idp")
   const { data, isLoading } = usePackageTransportOrders(packageId, { polling: false })
 
   if (isLoading) return <LoadingState variant="skeleton" rows={3} />
@@ -92,7 +96,7 @@ export function AiNotificationsPanel({ packageId }: AiNotificationsPanelProps) {
       <Card>
         <CardContent className="flex items-center gap-2 p-5 text-sm text-muted-foreground">
           <Sparkles className="h-4 w-4" />
-          Analysis hasn’t run yet — AI notifications will appear here after extraction.
+          {t("aiNotifications.notRun")}
         </CardContent>
       </Card>
     )
@@ -106,7 +110,7 @@ export function AiNotificationsPanel({ packageId }: AiNotificationsPanelProps) {
       <Card>
         <CardContent className="flex items-center gap-2 p-5 text-sm text-emerald-700 dark:text-emerald-300">
           <CheckCircle2 className="h-4 w-4" />
-          AI didn’t flag anything on this extraction.
+          {t("aiNotifications.nothingFlagged")}
         </CardContent>
       </Card>
     )
@@ -121,7 +125,7 @@ export function AiNotificationsPanel({ packageId }: AiNotificationsPanelProps) {
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-semibold">
-              AI flagged {items.length} observation{items.length === 1 ? "" : "s"}
+              {t("aiNotifications.flagged", { count: items.length })}
             </h3>
           </div>
           <div className="flex items-center gap-1.5 text-[11px]">
@@ -141,18 +145,19 @@ export function AiNotificationsPanel({ packageId }: AiNotificationsPanelProps) {
 }
 
 function SeverityChip({ severity, count }: { severity: Severity; count: number }) {
+  const { t } = useTranslation("idp")
   const meta = SEVERITY_META[severity]
   const Icon = meta.icon
   return (
     <Badge variant="outline" className={cn("gap-1", meta.badge)}>
       <Icon className="h-3 w-3" />
-      {count} {meta.label.toLowerCase()}
-      {count === 1 ? "" : "s"}
+      {t(meta.countKey, { count })}
     </Badge>
   )
 }
 
 function NotificationRow({ notification }: { notification: AiNotification }) {
+  const { t } = useTranslation("idp")
   const meta = SEVERITY_META[notification.severity]
   const Icon = meta.icon
   return (
@@ -161,9 +166,9 @@ function NotificationRow({ notification }: { notification: AiNotification }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <p className="text-sm font-medium">{notification.title}</p>
-          {notification.sourceField ? (
+          {notification.invoiceNumber ? (
             <span className="font-mono text-[10px] text-muted-foreground">
-              {notification.sourceField}
+              {t("transportOrders.invoiceLabel", { number: notification.invoiceNumber })}
             </span>
           ) : null}
         </div>

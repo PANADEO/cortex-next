@@ -4,7 +4,7 @@ import {
   formatInvoiceSupervisorCurrency,
   formatInvoiceSupervisorDate,
   INVOICE_SUPERVISOR_INVOICE_STATUS_COLORS,
-  INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS,
+  INVOICE_SUPERVISOR_INVOICE_STATUS_LABEL_KEYS,
   type InvoiceSupervisorInvoice,
 } from "@/lib/invoice-supervisor/types"
 import { Badge, Button } from "@cortex/ui"
@@ -54,7 +54,7 @@ export function invoiceSupervisorColumns(
             variant="secondary"
             className={cn("border-0", INVOICE_SUPERVISOR_INVOICE_STATUS_COLORS[status])}
           >
-            {INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS[status] ?? status}
+            {t(INVOICE_SUPERVISOR_INVOICE_STATUS_LABEL_KEYS[status] ?? status)}
           </Badge>
         )
       },

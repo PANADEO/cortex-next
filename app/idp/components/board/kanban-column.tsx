@@ -3,6 +3,7 @@
 import type { BoardCard, BoardColumnMeta } from "@/lib/board/pipeline"
 import { cn } from "@cortex/utils"
 import { Inbox } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { KanbanCard } from "./kanban-card"
 
 interface KanbanColumnProps {
@@ -11,6 +12,7 @@ interface KanbanColumnProps {
 }
 
 export function KanbanColumn({ meta, cards }: KanbanColumnProps) {
+  const { t } = useTranslation("idp")
   return (
     <section
       className={cn(
@@ -27,9 +29,11 @@ export function KanbanColumn({ meta, cards }: KanbanColumnProps) {
       >
         <div className="min-w-0">
           <h2 className={cn("text-sm font-semibold leading-none", meta.headerText)}>
-            {meta.label}
+            {t(`board.columns.${meta.id}.label`)}
           </h2>
-          <p className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">{meta.description}</p>
+          <p className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">
+            {t(`board.columns.${meta.id}.description`)}
+          </p>
         </div>
         <span
           className={cn(
@@ -44,7 +48,7 @@ export function KanbanColumn({ meta, cards }: KanbanColumnProps) {
       {cards.length === 0 ? (
         <div className="flex min-h-[120px] flex-1 flex-col items-center justify-center gap-1 px-3 py-10 text-center text-xs text-muted-foreground">
           <Inbox className="h-4 w-4 opacity-50" />
-          <span>No packages here</span>
+          <span>{t("board.column.empty")}</span>
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2">

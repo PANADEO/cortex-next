@@ -20,17 +20,22 @@ import { useQuery } from "@tanstack/react-query"
 import { ChevronDown, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
+
+/** Osobny komponent, bo `loading` w `dynamic()` stoi poza drzewem Reacta
+ *  i nie wolno tam wołać hooka. */
+function ViewerLoading() {
+  const { t } = useTranslation("idp")
+  return (
+    <div className="flex min-h-[320px] items-center justify-center rounded-md border border-border bg-muted/30 text-xs text-muted-foreground">
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("sourceMaterials.loadingViewer")}
+    </div>
+  )
+}
 
 const DocumentViewer = dynamic(
   () => import("@cortex/ui/components/document-viewer").then((m) => m.DocumentViewer),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex min-h-[320px] items-center justify-center rounded-md border border-border bg-muted/30 text-xs text-muted-foreground">
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading viewer…
-      </div>
-    ),
-  },
+  { ssr: false, loading: () => <ViewerLoading /> },
 )
 
 interface SourceMaterialsPanelProps {
@@ -38,6 +43,7 @@ interface SourceMaterialsPanelProps {
 }
 
 export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
+  const { t } = useTranslation("idp")
   const files = usePackageSourceFiles(packageId)
   const activePath = useSourceMaterialSelectionStore((s) => s.activePath)
   const activePage = useSourceMaterialSelectionStore((s) => s.activePage)
@@ -87,9 +93,9 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
     trigger?.scrollIntoView?.({ behavior: "smooth", block: "nearest", inline: "nearest" })
   }, [activePath])
 
-  if (files.isLoading) return <LoadingState label="Loading source files…" />
+  if (files.isLoading) return <LoadingState label={t("sourceMaterials.loadingFiles")} />
   if (items.length === 0) {
-    return <p className="text-sm text-muted-foreground">No source files for this package.</p>
+    return <p className="text-sm text-muted-foreground">{t("sourceMaterials.empty")}</p>
   }
 
   const active = items.find((f) => f.path === activePath) ?? items[0]!
@@ -129,7 +135,7 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
             <button
               type="button"
               onClick={() => handleScrollBy(-200)}
-              aria-label="Scroll tabs left"
+              aria-label={t("sourceMaterials.scrollLeft")}
               className="flex h-8 w-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -162,7 +168,7 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
             <button
               type="button"
               onClick={() => handleScrollBy(200)}
-              aria-label="Scroll tabs right"
+              aria-label={t("sourceMaterials.scrollRight")}
               className="flex h-8 w-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
             >
               <ChevronRight className="h-4 w-4" />
@@ -176,7 +182,7 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 shrink-0"
-                  aria-label="Show all files"
+                  aria-label={t("sourceMaterials.showAllFiles")}
                 >
                   <ChevronDown className="h-4 w-4" />
                 </Button>
@@ -206,11 +212,11 @@ export function SourceMaterialsPanel({ packageId }: SourceMaterialsPanelProps) {
 
       {hasSourceSelection ? (
         <div className="shrink-0 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-          Source selected
+          {t("sourceMaterials.selected")}
           {selectionLabel ? ` — ${selectionLabel}` : ""}
-          {isPdfSelection && activePage ? ` · page ${activePage}` : ""}
+          {isPdfSelection && activePage ? ` · ${t("sourceMaterials.page", { n: activePage })}` : ""}
           {isPdfSelection && highlightBoxes.length > 0
-            ? ` · ${highlightBoxes.length} highlight${highlightBoxes.length > 1 ? "s" : ""}`
+            ? ` · ${t("sourceMaterials.highlights", { count: highlightBoxes.length })}`
             : ""}
         </div>
       ) : null}
@@ -241,6 +247,7 @@ function SourceFileBody({
   highlightBoxes: NormalizedHighlightBox[]
   spreadsheetSearchTerms: SpreadsheetSearchTerm[]
 }) {
+  const { t } = useTranslation("idp")
   const previewable = canPreviewInline(file.file_name, file.media_type, file.preview_kind)
   const content = useQuery({
     queryKey: ["idp", "packages", "source-file", packageId, file.path],
@@ -252,16 +259,17 @@ function SourceFileBody({
   if (!previewable) {
     return (
       <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
-        No inline preview. Download via the export actions above.
+        {t("sourceMaterials.noInlinePreview")}
       </div>
     )
   }
 
-  if (content.isLoading) return <LoadingState label={`Loading ${file.file_name}…`} />
+  if (content.isLoading)
+    return <LoadingState label={t("sourceMaterials.loadingFile", { name: file.file_name })} />
   if (content.error || !content.data) {
     return (
       <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-        Failed to load file.
+        {t("sourceMaterials.loadFailed")}
       </div>
     )
   }

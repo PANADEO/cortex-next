@@ -10,7 +10,8 @@ import {
   FileText,
   FileX,
 } from "lucide-react"
-import { DOC_MODE_COLOR, DOC_MODE_LABEL, DOC_TYPE_LABEL } from "./labels"
+import { useTranslation } from "react-i18next"
+import { DOC_MODE_COLOR, DOC_MODE_LABEL_KEY, DOC_TYPE_LABEL_KEY } from "./labels"
 
 interface DocumentTreeProps {
   documents: DirtyDocument[]
@@ -33,11 +34,16 @@ function confidenceTone(confidence: number | null): string {
 }
 
 export function DocumentTree({ documents, selectedId, onSelect, draftLookup }: DocumentTreeProps) {
+  const { t } = useTranslation("idp")
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
-        <span>Documents · {documents.length}</span>
-        <span>{documents.filter((d) => d.human_reviewed).length} reviewed</span>
+        <span>{t("classification.tree.documents", { n: documents.length })}</span>
+        <span>
+          {t("classification.tree.reviewed", {
+            n: documents.filter((d) => d.human_reviewed).length,
+          })}
+        </span>
       </div>
       <ScrollArea className="flex-1">
         <ul className="divide-y divide-border">
@@ -76,13 +82,13 @@ export function DocumentTree({ documents, selectedId, onSelect, draftLookup }: D
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Badge variant="outline" className="text-[10px] font-normal">
-                        {DOC_TYPE_LABEL[doc.doc_type]}
+                        {t(DOC_TYPE_LABEL_KEY[doc.doc_type])}
                       </Badge>
                       <Badge
                         variant="outline"
                         className={`text-[10px] font-normal ${DOC_MODE_COLOR[doc.mode]}`}
                       >
-                        {DOC_MODE_LABEL[doc.mode]}
+                        {t(DOC_MODE_LABEL_KEY[doc.mode])}
                       </Badge>
                       {doc.confidence !== null ? (
                         <span className={`text-[10px] ${confidenceTone(doc.confidence)}`}>

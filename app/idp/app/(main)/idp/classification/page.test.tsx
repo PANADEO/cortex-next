@@ -117,7 +117,7 @@ describe("ClassificationPage — feature flag gating", () => {
     )
 
     expect(notFound).not.toHaveBeenCalled()
-    expect(container.textContent).toMatch(/loading classification/i)
+    expect(container.textContent).toMatch(/wczytywanie klasyfikacji/i)
   })
 
   it("renders the page (not 404, not loading) when flag is on", async () => {
@@ -134,7 +134,7 @@ describe("ClassificationPage — feature flag gating", () => {
     )
 
     await waitFor(() => {
-      expect(container.textContent).toContain("Classification")
+      expect(container.textContent).toContain("Klasyfikacja")
     })
     expect(notFound).not.toHaveBeenCalled()
   })

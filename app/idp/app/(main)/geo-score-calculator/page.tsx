@@ -17,19 +17,6 @@ function countWords(text: string): number {
   return trimmed ? trimmed.split(/\s+/).length : 0
 }
 
-// Polska odmiana rzeczownika „słowo" ma trzy formy, więc licznik wybiera KLUCZ,
-// a nie gotowy napis — sam wybór formy jest regułą języka źródłowego i zostaje
-// w kodzie; w tłumaczeniach z jedną formą mnogą `wordsFew` i `wordsMany` będą
-// po prostu identyczne.
-function wordLabelKey(count: number): string {
-  if (count === 1) return "calculator.wordsOne"
-  const lastDigit = count % 10
-  const lastTwo = count % 100
-  if (lastDigit >= 2 && lastDigit <= 4 && !(lastTwo >= 12 && lastTwo <= 14))
-    return "calculator.wordsFew"
-  return "calculator.wordsMany"
-}
-
 export default function GeoScoreCalculatorPage() {
   const { t } = useTranslation("geo-score-calculator")
   const [text, setText] = useState("")
@@ -79,8 +66,8 @@ export default function GeoScoreCalculatorPage() {
               <div className="flex items-center justify-between">
                 <Label htmlFor="geo-score-text">{t("calculator.textLabel")}</Label>
                 <span className="text-xs text-muted-foreground">
-                  {wordCount} {t(wordLabelKey(wordCount))} · {text.length}/{TEXT_MAX_CHARS}{" "}
-                  {t("calculator.charsSuffix")}
+                  {wordCount} {t("calculator.words", { count: wordCount })} · {text.length}/
+                  {TEXT_MAX_CHARS} {t("calculator.charsSuffix")}
                 </span>
               </div>
               <Textarea

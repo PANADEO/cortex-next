@@ -32,106 +32,111 @@ import {
 } from "@cortex/ui"
 import { formatAbsolute } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
+import type { TFunction } from "i18next"
 import { AlertTriangle, FileCheck2, Search } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 const PAGE_SIZE = 20
 
-const STATUS_OPTIONS: Array<{ value: IdpBasicPackageStatus | "all"; label: string }> = [
-  { value: "all", label: "All statuses" },
-  { value: "queued", label: "Queued" },
-  { value: "processing", label: "Processing" },
-  { value: "ready", label: "Ready" },
-  { value: "needs_review", label: "Needs review" },
-  { value: "failed", label: "Failed" },
+const STATUS_OPTIONS: Array<IdpBasicPackageStatus | "all"> = [
+  "all",
+  "queued",
+  "processing",
+  "ready",
+  "needs_review",
+  "failed",
 ]
 
-const columns: ColumnDef<IdpBasicResultSummary>[] = [
-  {
-    accessorKey: "reference_number",
-    header: "Reference",
-    size: 340,
-    cell: ({ row }) => (
-      <div className="min-w-0">
-        <Link
-          href={`/idp-basic/results/${row.original.id}`}
-          className="block truncate font-medium hover:underline"
-        >
-          {row.original.reference_number ?? "No reference"}
-        </Link>
-        <p className="truncate text-xs text-muted-foreground">{row.original.subject}</p>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "document_count",
-    header: "Documents",
-    size: 100,
-    cell: ({ row }) => <span className="whitespace-nowrap">{row.original.document_count}</span>,
-  },
-  {
-    accessorKey: "document_types",
-    header: "Detected types",
-    size: 230,
-    cell: ({ row }) => {
-      const [primaryType, ...additionalTypes] = row.original.document_types
-      return (
-        <div className="flex max-w-full flex-nowrap gap-1.5 overflow-hidden">
-          {primaryType ? (
-            <>
-              <Badge variant="secondary" className="whitespace-nowrap">
-                {getIdpBasicDocumentTypeLabel(primaryType)}
-              </Badge>
-              {additionalTypes.length > 0 ? (
-                <Badge variant="outline" className="whitespace-nowrap">
-                  +{additionalTypes.length}
-                </Badge>
-              ) : null}
-            </>
-          ) : (
-            <span className="text-xs text-muted-foreground">—</span>
-          )}
+function buildResultColumns(t: TFunction<"idp-basic">): ColumnDef<IdpBasicResultSummary>[] {
+  return [
+    {
+      accessorKey: "reference_number",
+      header: t("results.columnReference"),
+      size: 340,
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <Link
+            href={`/idp-basic/results/${row.original.id}`}
+            className="block truncate font-medium hover:underline"
+          >
+            {row.original.reference_number ?? t("results.noReference")}
+          </Link>
+          <p className="truncate text-xs text-muted-foreground">{row.original.subject}</p>
         </div>
-      )
+      ),
     },
-  },
-  {
-    accessorKey: "completeness_status",
-    header: "Completeness",
-    size: 150,
-    cell: ({ row }) => <IdpBasicCompletenessBadge status={row.original.completeness_status} />,
-  },
-  {
-    accessorKey: "received_at",
-    header: "Mail date",
-    size: 170,
-    cell: ({ row }) => (
-      <span className="whitespace-nowrap">
-        {row.original.received_at ? formatAbsolute(row.original.received_at) : "—"}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "sender",
-    header: "Sender",
-    size: 170,
-    cell: ({ row }) => (
-      <span className="block max-w-[160px] truncate whitespace-nowrap">
-        {row.original.sender || "—"}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Processing",
-    size: 150,
-    cell: ({ row }) => <ResultStatusCell result={row.original} />,
-  },
-]
+    {
+      accessorKey: "document_count",
+      header: t("results.columnDocuments"),
+      size: 100,
+      cell: ({ row }) => <span className="whitespace-nowrap">{row.original.document_count}</span>,
+    },
+    {
+      accessorKey: "document_types",
+      header: t("results.columnDetectedTypes"),
+      size: 230,
+      cell: ({ row }) => {
+        const [primaryType, ...additionalTypes] = row.original.document_types
+        return (
+          <div className="flex max-w-full flex-nowrap gap-1.5 overflow-hidden">
+            {primaryType ? (
+              <>
+                <Badge variant="secondary" className="whitespace-nowrap">
+                  {getIdpBasicDocumentTypeLabel(t, primaryType)}
+                </Badge>
+                {additionalTypes.length > 0 ? (
+                  <Badge variant="outline" className="whitespace-nowrap">
+                    +{additionalTypes.length}
+                  </Badge>
+                ) : null}
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground">—</span>
+            )}
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "completeness_status",
+      header: t("results.columnCompleteness"),
+      size: 150,
+      cell: ({ row }) => <IdpBasicCompletenessBadge status={row.original.completeness_status} />,
+    },
+    {
+      accessorKey: "received_at",
+      header: t("results.columnMailDate"),
+      size: 170,
+      cell: ({ row }) => (
+        <span className="whitespace-nowrap">
+          {row.original.received_at ? formatAbsolute(row.original.received_at) : "—"}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "sender",
+      header: t("results.columnSender"),
+      size: 170,
+      cell: ({ row }) => (
+        <span className="block max-w-[160px] truncate whitespace-nowrap">
+          {row.original.sender || "—"}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: t("results.columnProcessing"),
+      size: 150,
+      cell: ({ row }) => <ResultStatusCell result={row.original} />,
+    },
+  ]
+}
 
 function ResultStatusCell({ result }: { result: IdpBasicResultSummary }) {
+  const { t } = useTranslation("idp-basic")
   if (result.status !== "needs_review" || result.alerts.length === 0) {
     return <IdpBasicStatusBadge status={result.status} />
   }
@@ -150,11 +155,13 @@ function ResultStatusCell({ result }: { result: IdpBasicResultSummary }) {
           className="max-w-80 border bg-popover p-3 text-popover-foreground shadow-lg"
         >
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase text-muted-foreground">Alerts</p>
+            <p className="text-xs font-semibold uppercase text-muted-foreground">
+              {t("results.alerts")}
+            </p>
             <ul className="space-y-1.5">
               {result.alerts.map((alert) => (
                 <li key={alert} className="text-sm leading-snug">
-                  {formatIdpBasicDisplayText(alert)}
+                  {formatIdpBasicDisplayText(t, alert)}
                 </li>
               ))}
             </ul>
@@ -166,6 +173,7 @@ function ResultStatusCell({ result }: { result: IdpBasicResultSummary }) {
 }
 
 export default function IdpBasicResultsPage() {
+  const { t } = useTranslation("idp-basic")
   const router = useRouter()
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState("")
@@ -180,6 +188,7 @@ export default function IdpBasicResultsPage() {
     date_from: dateFrom,
     date_to: dateTo,
   })
+  const columns = useMemo(() => buildResultColumns(t), [t])
   const items = useMemo(() => results.data?.items ?? [], [results.data?.items])
   const total = results.data?.total ?? 0
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -190,8 +199,8 @@ export default function IdpBasicResultsPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <PageHeader
-        title="Results"
-        description="Detected references from emails and ZIP packages, without manual data edits."
+        title={t("results.title")}
+        description={t("results.description")}
         actions={
           <div className="flex items-center gap-2">
             <IdpBasicCsvDownloadButton
@@ -202,7 +211,7 @@ export default function IdpBasicResultsPage() {
                 date_from: dateFrom,
                 date_to: dateTo,
               }}
-              contextLabel={hasFilters ? "Filtered packages" : "All packages"}
+              contextLabel={hasFilters ? t("packages.scopeFiltered") : t("packages.scopeAll")}
               disabled={results.isPending && items.length === 0}
             />
             <IdpBasicUploadPackageButton />
@@ -215,7 +224,7 @@ export default function IdpBasicResultsPage() {
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search reference, email, or file..."
+              placeholder={t("results.searchPlaceholder")}
               value={search}
               onChange={(event) => {
                 resetPage()
@@ -232,18 +241,18 @@ export default function IdpBasicResultsPage() {
             }}
           >
             <SelectTrigger className="h-9 w-[210px]">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={t("filters.status")} />
             </SelectTrigger>
             <SelectContent>
               {STATUS_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.value === "all" ? option.label : getIdpBasicStatusLabel(option.value)}
+                <SelectItem key={option} value={option}>
+                  {option === "all" ? t("status.all") : getIdpBasicStatusLabel(t, option)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <div className="ml-auto text-xs text-muted-foreground">
-            {results.isFetching ? "Refreshing..." : `${total} total`}
+            {results.isFetching ? t("state.refreshing") : t("state.total", { total })}
           </div>
         </div>
 
@@ -271,7 +280,7 @@ export default function IdpBasicResultsPage() {
                 setDateTo("")
               }}
             >
-              Reset filters
+              {t("actions.resetFilters")}
             </Button>
           ) : null}
         </div>
@@ -289,12 +298,10 @@ export default function IdpBasicResultsPage() {
           emptyState={
             <EmptyState
               icon={results.error ? AlertTriangle : FileCheck2}
-              title={results.error ? "Failed to load results" : "No results yet"}
-              description={
-                results.error
-                  ? "Refresh the page or check the IDP Basic backend."
-                  : "Mailbox imports and ZIP uploads will appear here after processing."
-              }
+              title={t(results.error ? "results.errorTitle" : "results.emptyTitle")}
+              description={t(
+                results.error ? "results.errorDescription" : "results.emptyDescription",
+              )}
             />
           }
         />

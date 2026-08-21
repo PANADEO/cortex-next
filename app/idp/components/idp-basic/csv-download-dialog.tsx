@@ -22,6 +22,7 @@ import {
 } from "@cortex/ui"
 import { Download, Loader2 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 interface IdpBasicCsvDownloadButtonProps {
@@ -35,13 +36,13 @@ interface IdpBasicCsvDownloadButtonProps {
 type CsvExportRange = "table" | "custom"
 type CsvCustomStatus = NonNullable<IdpBasicCsvExportFilters["status"]>
 
-const STATUS_OPTIONS: Array<{ value: CsvCustomStatus; label: string }> = [
-  { value: "all", label: "All statuses" },
-  { value: "queued", label: "Queued" },
-  { value: "processing", label: "Processing" },
-  { value: "ready", label: "Ready" },
-  { value: "needs_review", label: "Needs review" },
-  { value: "failed", label: "Failed" },
+const STATUS_OPTIONS: Array<{ value: CsvCustomStatus; labelKey: string }> = [
+  { value: "all", labelKey: "status.all" },
+  { value: "queued", labelKey: "status.queued" },
+  { value: "processing", labelKey: "status.processing" },
+  { value: "ready", labelKey: "status.ready" },
+  { value: "needs_review", labelKey: "status.needsReview" },
+  { value: "failed", labelKey: "status.failed" },
 ]
 
 export function IdpBasicCsvDownloadButton({
@@ -51,6 +52,7 @@ export function IdpBasicCsvDownloadButton({
   contextLabel,
   disabled,
 }: IdpBasicCsvDownloadButtonProps) {
+  const { t } = useTranslation(["idp-basic", "common"])
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [range, setRange] = useState<CsvExportRange>("table")
@@ -61,10 +63,9 @@ export function IdpBasicCsvDownloadButton({
   const exportCsv = useIdpBasicExportCsv()
   const availableColumns = columns.data?.columns ?? []
   const selectedIds = useMemo(() => [...selected], [selected])
-  const customScopeLabel = source === "files" ? "Custom file range" : "Custom package range"
+  const customScopeLabel = t(source === "files" ? "csv.customFileRange" : "csv.customPackageRange")
   const tableScopeLabel =
-    contextLabel ??
-    (source === "files" ? "Files matching the table" : "Packages matching the table")
+    contextLabel ?? t(source === "files" ? "csv.filesMatchingTable" : "csv.packagesMatchingTable")
 
   useEffect(() => {
     if (!open || !columns.data) return
@@ -103,10 +104,10 @@ export function IdpBasicCsvDownloadButton({
         ...(range === "table" && packageIds ? { package_ids: packageIds } : {}),
       })
       downloadBlob(result.blob, result.filename)
-      toast.success("CSV downloaded")
+      toast.success(t("toast.csvDownloaded"))
       setOpen(false)
     } catch (error) {
-      toast.error(formatIdpBasicError(error, "CSV download failed"))
+      toast.error(formatIdpBasicError(error, t("errors.csvDownloadFailed")))
     }
   }
 
@@ -114,20 +115,18 @@ export function IdpBasicCsvDownloadButton({
     <Dialog open={open} onOpenChange={setOpen}>
       <Button variant="outline" size="sm" disabled={disabled} onClick={() => setOpen(true)}>
         <Download className="mr-2 h-4 w-4" />
-        Download CSV
+        {t("csv.trigger")}
       </Button>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Download CSV</DialogTitle>
-          <DialogDescription>
-            Choose columns for this export. The selection is saved for the next CSV download.
-          </DialogDescription>
+          <DialogTitle>{t("csv.dialogTitle")}</DialogTitle>
+          <DialogDescription>{t("csv.dialogDescription")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              CSV download scope
+              {t("csv.scopeLabel")}
             </p>
             <div className="grid grid-cols-2 gap-2">
               <Button
@@ -137,7 +136,7 @@ export function IdpBasicCsvDownloadButton({
                 onClick={() => setRange("table")}
                 aria-pressed={range === "table"}
               >
-                Table scope
+                {t("csv.tableScope")}
               </Button>
               <Button
                 type="button"
@@ -146,7 +145,7 @@ export function IdpBasicCsvDownloadButton({
                 onClick={() => setRange("custom")}
                 aria-pressed={range === "custom"}
               >
-                Custom range
+                {t("csv.customRange")}
               </Button>
             </div>
           </div>
@@ -158,7 +157,7 @@ export function IdpBasicCsvDownloadButton({
                   htmlFor="idp-basic-csv-date-from"
                   className="text-[10px] uppercase tracking-wide text-muted-foreground"
                 >
-                  From
+                  {t("csv.from")}
                 </Label>
                 <Input
                   id="idp-basic-csv-date-from"
@@ -173,7 +172,7 @@ export function IdpBasicCsvDownloadButton({
                   htmlFor="idp-basic-csv-date-to"
                   className="text-[10px] uppercase tracking-wide text-muted-foreground"
                 >
-                  To
+                  {t("csv.to")}
                 </Label>
                 <Input
                   id="idp-basic-csv-date-to"
@@ -188,19 +187,19 @@ export function IdpBasicCsvDownloadButton({
                   htmlFor="idp-basic-csv-status"
                   className="text-[10px] uppercase tracking-wide text-muted-foreground"
                 >
-                  Status
+                  {t("filters.status")}
                 </Label>
                 <Select
                   value={customStatus}
                   onValueChange={(value) => setCustomStatus(value as CsvCustomStatus)}
                 >
                   <SelectTrigger id="idp-basic-csv-status" className="h-9">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t("filters.status")} />
                   </SelectTrigger>
                   <SelectContent>
                     {STATUS_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        {t(option.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -212,23 +211,26 @@ export function IdpBasicCsvDownloadButton({
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{range === "table" ? tableScopeLabel : customScopeLabel}</span>
             <span>
-              {selected.size}/{availableColumns.length} columns selected
+              {t("csv.columnsSelected", {
+                selected: selected.size,
+                total: availableColumns.length,
+              })}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             <Button type="button" variant="ghost" size="sm" onClick={selectAll}>
-              Select all
+              {t("csv.selectAll")}
             </Button>
             <Button type="button" variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
-              Clear
+              {t("csv.clear")}
             </Button>
           </div>
 
           <div className="max-h-[360px] overflow-y-auto rounded-md border border-border">
             {columns.isPending ? (
               <div className="flex h-28 items-center justify-center text-sm text-muted-foreground">
-                Loading columns...
+                {t("csv.loadingColumns")}
               </div>
             ) : (
               <div className="grid gap-1 p-2 sm:grid-cols-2">
@@ -252,7 +254,7 @@ export function IdpBasicCsvDownloadButton({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)} disabled={exportCsv.isPending}>
-            Cancel
+            {t("common:actions.cancel")}
           </Button>
           <Button onClick={runDownload} disabled={selected.size === 0 || exportCsv.isPending}>
             {exportCsv.isPending ? (
@@ -260,7 +262,7 @@ export function IdpBasicCsvDownloadButton({
             ) : (
               <Download className="mr-2 h-4 w-4" />
             )}
-            Download
+            {t("csv.download")}
           </Button>
         </DialogFooter>
       </DialogContent>

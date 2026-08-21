@@ -85,13 +85,13 @@ describe("IntrastatSettingsPage", () => {
 
     expect(screen.getAllByText("Delta")).toHaveLength(2)
     expect(screen.getAllByText("Flex")).toHaveLength(2)
-    expect(screen.getByText("Ready")).toBeInTheDocument()
-    expect(screen.getByText("Missing")).toBeInTheDocument()
-    expect(screen.getAllByRole("button", { name: "Browse" })).toHaveLength(2)
-    expect(screen.queryByRole("button", { name: "Add client" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument()
+    expect(screen.getByText("Gotowy")).toBeInTheDocument()
+    expect(screen.getByText("Brak")).toBeInTheDocument()
+    expect(screen.getAllByRole("button", { name: "Przeglądaj" })).toHaveLength(2)
+    expect(screen.queryByRole("button", { name: "Dodaj klienta" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Edytuj" })).not.toBeInTheDocument()
     expect(
-      screen.queryByRole("button", { name: "Delete client folder mapping" }),
+      screen.queryByRole("button", { name: "Usuń mapowanie folderu klienta" }),
     ).not.toBeInTheDocument()
     expect(mocks.previewQuery).toMatchObject({ client_id: "delta-id", path: "" })
   })
@@ -100,7 +100,7 @@ describe("IntrastatSettingsPage", () => {
     const user = userEvent.setup()
     render(<IntrastatSettingsPage />)
 
-    await user.click(screen.getAllByRole("button", { name: "Browse" })[1]!)
+    await user.click(screen.getAllByRole("button", { name: "Przeglądaj" })[1]!)
 
     expect(mocks.previewQuery).toMatchObject({ client_id: "flex-id", path: "" })
     expect(screen.getByText("Flex — Flex")).toBeInTheDocument()
@@ -112,17 +112,17 @@ describe("IntrastatSettingsPage", () => {
 
     render(<IntrastatSettingsPage />)
 
-    expect(screen.getByRole("button", { name: "Add client" })).toBeInTheDocument()
-    expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(2)
+    expect(screen.getByRole("button", { name: "Dodaj klienta" })).toBeInTheDocument()
+    expect(screen.getAllByRole("button", { name: "Edytuj" })).toHaveLength(2)
     const deleteButtons = screen.getAllByRole("button", {
-      name: "Delete client folder mapping",
+      name: "Usuń mapowanie folderu klienta",
     })
     expect(deleteButtons).toHaveLength(2)
 
     await user.click(deleteButtons[0]!)
 
     expect(
-      screen.getByText(/The mounted folder and all files inside it remain unchanged/),
+      screen.getByText(/Podpięty folder i wszystkie pliki w środku zostają nietknięte/),
     ).toBeInTheDocument()
   })
 })

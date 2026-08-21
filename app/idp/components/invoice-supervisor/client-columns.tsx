@@ -2,7 +2,7 @@
 
 import {
   formatInvoiceSupervisorMultiCurrency,
-  INVOICE_SUPERVISOR_CLIENT_TYPE_LABELS,
+  INVOICE_SUPERVISOR_CLIENT_TYPE_LABEL_KEYS,
   type InvoiceSupervisorClientType,
   type InvoiceSupervisorClientWithExposure,
 } from "@/lib/invoice-supervisor/types"
@@ -11,11 +11,13 @@ import type { ColumnDef } from "@tanstack/react-table"
 import type { TFunction } from "i18next"
 import { Eye } from "lucide-react"
 import Link from "next/link"
+import { useTranslation } from "react-i18next"
 
 export function InvoiceSupervisorClientTypeBadge({ type }: { type: InvoiceSupervisorClientType }) {
+  const { t } = useTranslation("invoice-supervisor")
   return (
     <Badge variant={type === "vip" ? "default" : "secondary"}>
-      {INVOICE_SUPERVISOR_CLIENT_TYPE_LABELS[type] ?? type}
+      {t(INVOICE_SUPERVISOR_CLIENT_TYPE_LABEL_KEYS[type] ?? type)}
     </Badge>
   )
 }

@@ -7,16 +7,24 @@ import { canPreviewInline, cn, formatFileSizeBytes, getFileTypeIcon } from "@cor
 import { FileX, Loader2 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
+
+// Osobny komponent, a nie anonimowa strzałka w `loading`, bo napis jest
+// tłumaczony, a hook wolno wołać wyłącznie z ciała komponentu.
+function DocumentViewerLoading() {
+  const { t } = useTranslation("intrastat")
+  return (
+    <div className="flex min-h-[320px] items-center justify-center rounded-md border border-border bg-muted/30 text-xs text-muted-foreground">
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("documents.loadingViewer")}
+    </div>
+  )
+}
 
 const DocumentViewer = dynamic(
   () => import("@cortex/ui/components/document-viewer").then((m) => m.DocumentViewer),
   {
     ssr: false,
-    loading: () => (
-      <div className="flex min-h-[320px] items-center justify-center rounded-md border border-border bg-muted/30 text-xs text-muted-foreground">
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading viewer...
-      </div>
-    ),
+    loading: () => <DocumentViewerLoading />,
   },
 )
 
@@ -33,6 +41,7 @@ export function IntrastatDocumentPreviewPanel({
   selectedSourceFile,
   className,
 }: IntrastatDocumentPreviewPanelProps) {
+  const { t } = useTranslation("intrastat")
   const [activeId, setActiveId] = useState(documents[0]?.id ?? "")
   const selectedFileName = useMemo(
     () => (selectedSourceFile ? baseName(selectedSourceFile) : null),
@@ -74,7 +83,7 @@ export function IntrastatDocumentPreviewPanel({
           className,
         )}
       >
-        Choose a batch to preview documents.
+        {t("documents.chooseBatch")}
       </div>
     )
   }
@@ -87,7 +96,7 @@ export function IntrastatDocumentPreviewPanel({
           className,
         )}
       >
-        No documents in this batch.
+        {t("documents.emptyBatch")}
       </div>
     )
   }
@@ -103,9 +112,11 @@ export function IntrastatDocumentPreviewPanel({
       <div className="shrink-0 border-b border-border px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold">Documents</h2>
+            <h2 className="text-sm font-semibold">{t("documents.title")}</h2>
             <p className="truncate text-xs text-muted-foreground">
-              {selectedFileName ? `Source: ${selectedFileName}` : "Select a line or document"}
+              {selectedFileName
+                ? t("documents.source", { fileName: selectedFileName })
+                : t("documents.selectHint")}
             </p>
           </div>
           <Badge variant="secondary">{documents.length}</Badge>
@@ -147,18 +158,17 @@ export function IntrastatDocumentPreviewPanel({
           <div className="flex h-full items-center justify-center">
             <div className="flex max-w-sm flex-col items-center gap-2 rounded-lg border border-dashed border-border bg-background/70 px-6 py-10 text-center">
               <FileX className="h-8 w-8 text-muted-foreground" />
-              <p className="text-sm font-medium">No inline preview</p>
+              <p className="text-sm font-medium">{t("documents.noInlinePreview")}</p>
               <p className="text-xs text-muted-foreground">
-                {active.media_type} files are attached to the batch, but only PDF documents render
-                inline here.
+                {t("documents.noInlinePreviewBody", { mediaType: active.media_type })}
               </p>
             </div>
           </div>
         ) : content.isLoading ? (
-          <LoadingState label={`Loading ${active.file_name}...`} />
+          <LoadingState label={t("documents.loadingFile", { fileName: active.file_name })} />
         ) : content.error || !content.data ? (
           <div className="flex h-full items-center justify-center rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-            Failed to load document preview.
+            {t("documents.loadFailed")}
           </div>
         ) : (
           <DocumentViewer

@@ -11,8 +11,8 @@ import type {
   InvoiceSupervisorEscalationStage,
 } from "@/lib/invoice-supervisor/types"
 import {
-  INVOICE_SUPERVISOR_CHANNEL_LABELS,
-  INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS,
+  INVOICE_SUPERVISOR_CHANNEL_LABEL_KEYS,
+  INVOICE_SUPERVISOR_ESCALATION_STAGE_LABEL_KEYS,
 } from "@/lib/invoice-supervisor/types"
 import {
   Card,
@@ -117,7 +117,7 @@ export default function InvoiceSupervisorTemplatesPage() {
                               key={channel}
                               className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground"
                             >
-                              {INVOICE_SUPERVISOR_CHANNEL_LABELS[channel]}
+                              {t(INVOICE_SUPERVISOR_CHANNEL_LABEL_KEYS[channel])}
                             </th>
                           ))}
                         </tr>
@@ -126,7 +126,7 @@ export default function InvoiceSupervisorTemplatesPage() {
                         {STAGES.map((stage) => (
                           <tr key={stage} className="border-b border-border last:border-b-0">
                             <td className="px-4 py-3 font-medium">
-                              {INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS[stage]}
+                              {t(INVOICE_SUPERVISOR_ESCALATION_STAGE_LABEL_KEYS[stage])}
                             </td>
                             {CHANNELS.map((channel) => {
                               const entry = tone.channels[channel]?.[stage]

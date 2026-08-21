@@ -1,3 +1,4 @@
+import i18n from "@/lib/i18n"
 import type {
   InvoiceSupervisorBulkApproveResult,
   InvoiceSupervisorClient,
@@ -32,13 +33,24 @@ type InvoiceSupervisorErrorBody = {
   detail?: unknown
 }
 
+/** Napis w języku wybranym w tej chwili. Klient HTTP jest wołany spoza
+ *  komponentu, więc `t` nie ma skąd przyjść z kontekstu Reacta — bierzemy je
+ *  z jedynej instancji i18next, wzorem `lib/breadcrumbs.ts`. */
+function translate(key: string, options?: Record<string, unknown>): string {
+  return i18n.t(key, { ns: "invoice-supervisor", ...options })
+}
+
 // Overrides for backend error_code values (see backend src/shared/error_codes.py)
 // that need friendlier client-facing copy than the backend's own formatted
 // message. Anything not listed here falls back to the backend's message
 // field, which is already a formatted sentence (see BusinessError handler
 // in backend src/main.py) — just not translated.
-const INVOICE_SUPERVISOR_ERROR_MESSAGES: Record<string, string> = {
-  BULK_APPROVAL_NOT_ALLOWED: "Wezwania do zapłaty wymagają pojedynczej akceptacji (ESC-003)",
+//
+// Wartości to KLUCZE tłumaczeń, nie napisy: mapa jest stałą modułu, a więc
+// powstaje ZANIM użytkownik wybierze język — gotowy napis zamroziłby się na
+// języku startowym.
+const INVOICE_SUPERVISOR_ERROR_MESSAGE_KEYS: Record<string, string> = {
+  BULK_APPROVAL_NOT_ALLOWED: "errors.bulkApprovalNotAllowed",
 }
 
 class InvoiceSupervisorApiError extends Error {
@@ -102,10 +114,11 @@ async function invoiceSupervisorErrorFromResponse(
   const backendMessage =
     (typeof body?.message === "string" ? body.message : null) ??
     (typeof body?.detail === "string" ? body.detail : null)
+  const messageKey = errorCode ? INVOICE_SUPERVISOR_ERROR_MESSAGE_KEYS[errorCode] : undefined
   const message =
-    (errorCode ? INVOICE_SUPERVISOR_ERROR_MESSAGES[errorCode] : undefined) ??
+    (messageKey ? translate(messageKey) : undefined) ??
     backendMessage ??
-    `Invoice Supervisor request failed: ${response.status}`
+    translate("errors.requestFailed", { status: response.status })
 
   return new InvoiceSupervisorApiError(response.status, message, errorCode)
 }

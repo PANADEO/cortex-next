@@ -2,16 +2,22 @@
 
 import type { IntrastatDeclarationLine } from "@/lib/intrastat/types"
 import { Badge } from "@cortex/ui"
+import { useTranslation } from "react-i18next"
 
 export function IntrastatCorrectionInfo({ line }: { line: IntrastatDeclarationLine }) {
+  const { t } = useTranslation("intrastat")
+
   if (line.document_type === "invoice") return null
 
-  const documentLabel = line.document_type === "physical_return" ? "Physical return" : "Correction"
+  const documentLabel =
+    line.document_type === "physical_return"
+      ? t("correction.physicalReturn")
+      : t("correction.correction")
   const sideLabel =
     line.correction_side === "before"
-      ? "Before correction"
+      ? t("correction.beforeCorrection")
       : line.correction_side === "after"
-        ? "After correction"
+        ? t("correction.afterCorrection")
         : null
 
   return (
@@ -30,19 +36,20 @@ export function IntrastatCorrectionInfo({ line }: { line: IntrastatDeclarationLi
         ) : null}
         {line.is_excluded ? (
           <Badge variant="outline" className="px-1.5 py-0 text-[10px] text-muted-foreground">
-            Historical / excluded
+            {t("correction.historicalExcluded")}
           </Badge>
         ) : null}
       </div>
       {line.corrected_invoice_number ? (
         <p className="truncate text-[11px] text-muted-foreground">
-          Corrects: <span className="font-mono">{line.corrected_invoice_number}</span>
+          {t("correction.corrects")}{" "}
+          <span className="font-mono">{line.corrected_invoice_number}</span>
           {line.corrected_invoice_date ? ` · ${line.corrected_invoice_date}` : ""}
         </p>
       ) : null}
       {line.correction_reason ? (
         <p className="truncate text-[11px] text-muted-foreground" title={line.correction_reason}>
-          Reason: {line.correction_reason}
+          {t("correction.reason", { reason: line.correction_reason })}
         </p>
       ) : null}
     </div>

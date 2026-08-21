@@ -65,8 +65,8 @@ describe("IntrastatResourcesPage", () => {
     render(<IntrastatResourcesPage />)
 
     expect(screen.getByText("VA10363N")).toBeInTheDocument()
-    expect(screen.getByText(/Manual changes can be replaced/)).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "Add CN code" })).not.toBeInTheDocument()
+    expect(screen.getByText(/Ręczne zmiany może nadpisać/)).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Dodaj kod CN" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Upload CN XLSX" })).not.toBeInTheDocument()
   })
 
@@ -75,8 +75,8 @@ describe("IntrastatResourcesPage", () => {
 
     render(<IntrastatResourcesPage />)
 
-    expect(screen.getByRole("button", { name: "Add CN code" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Dodaj kod CN" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Upload CN XLSX" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Edytuj" })).toBeInTheDocument()
   })
 })

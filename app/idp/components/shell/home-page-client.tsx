@@ -5,6 +5,7 @@ import type { TileHrefOverrides } from "@/lib/tiles"
 import { useAuthorizedApps, useMe } from "@cortex/api"
 import { useSearchParams } from "next/navigation"
 import { Suspense } from "react"
+import { useTranslation } from "react-i18next"
 import { HubGate } from "./app-gate"
 import { AuthedHome } from "./authed-home"
 import { LandingHero } from "./landing-hero"
@@ -23,7 +24,8 @@ export function HomePageClient({ tileHrefOverrides }: HomePageClientProps) {
 
 function HomeShell({ tileHrefOverrides }: HomePageClientProps) {
   const searchParams = useSearchParams()
-  const authErrorMessage = getAuthErrorMessage(searchParams)
+  const { t } = useTranslation("shell")
+  const authErrorMessage = getAuthErrorMessage(searchParams, t)
 
   if (authErrorMessage) return <LandingHero authErrorMessage={authErrorMessage} />
 

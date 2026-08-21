@@ -2,7 +2,7 @@
 
 import { useInvoiceSupervisorForceClientEscalation } from "@/lib/invoice-supervisor/hooks"
 import {
-  INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS,
+  INVOICE_SUPERVISOR_ESCALATION_STAGE_LABEL_KEYS,
   type InvoiceSupervisorEscalationStage,
 } from "@/lib/invoice-supervisor/types"
 import {
@@ -63,7 +63,7 @@ export function InvoiceSupervisorClientEscalationSection({
       </CardHeader>
       <CardContent>
         <p className="mb-3 text-sm text-muted-foreground">
-          {t("escalation.description", { n: openInvoiceCount, client: clientName })}
+          {t("escalation.description", { count: openInvoiceCount, client: clientName })}
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Select
@@ -74,11 +74,13 @@ export function InvoiceSupervisorClientEscalationSection({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
+              {Object.entries(INVOICE_SUPERVISOR_ESCALATION_STAGE_LABEL_KEYS).map(
+                ([value, labelKey]) => (
+                  <SelectItem key={value} value={value}>
+                    {t(labelKey)}
+                  </SelectItem>
+                ),
+              )}
             </SelectContent>
           </Select>
           <AlertDialog>
@@ -87,15 +89,15 @@ export function InvoiceSupervisorClientEscalationSection({
                 variant="outline"
                 className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-500/40 dark:text-amber-400"
               >
-                {t("escalation.trigger", { n: openInvoiceCount })}
+                {t("escalation.trigger", { count: openInvoiceCount })}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>
                   {t("escalation.confirmTitle", {
-                    n: openInvoiceCount,
-                    stage: INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS[stage],
+                    count: openInvoiceCount,
+                    stage: t(INVOICE_SUPERVISOR_ESCALATION_STAGE_LABEL_KEYS[stage]),
                   })}
                 </AlertDialogTitle>
                 <AlertDialogDescription>

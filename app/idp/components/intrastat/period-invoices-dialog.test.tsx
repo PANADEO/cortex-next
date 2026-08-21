@@ -50,15 +50,15 @@ describe("IntrastatPeriodInvoicesDialog", () => {
       />,
     )
 
-    await user.click(screen.getByRole("button", { name: "Open invoices for Somfy / Lipiec 2026" }))
+    await user.click(screen.getByRole("button", { name: "Otwórz faktury dla Somfy / Lipiec 2026" }))
 
     expect(
-      screen.getByText("2 invoices in this period. Choose a file to open its preview."),
+      screen.getByText("Faktur w tym okresie: 2. Wybierz plik, żeby zobaczyć podgląd."),
     ).toBeInTheDocument()
     expect(screen.getByText("FV-1001.pdf")).toBeInTheDocument()
     expect(screen.getByText("FV-2002.pdf")).toBeInTheDocument()
 
-    await user.type(screen.getByPlaceholderText("Search invoice file..."), "2002")
+    await user.type(screen.getByPlaceholderText("Szukaj pliku faktury…"), "2002")
 
     expect(screen.queryByText("FV-1001.pdf")).not.toBeInTheDocument()
     expect(screen.getByText("FV-2002.pdf")).toBeInTheDocument()
@@ -76,8 +76,8 @@ describe("IntrastatPeriodInvoicesDialog", () => {
       />,
     )
 
-    await user.click(screen.getByRole("button", { name: "Open invoices for Somfy / Lipiec 2026" }))
-    await user.click(screen.getByRole("button", { name: "FV-2002.pdf Preview" }))
+    await user.click(screen.getByRole("button", { name: "Otwórz faktury dla Somfy / Lipiec 2026" }))
+    await user.click(screen.getByRole("button", { name: "FV-2002.pdf Podgląd" }))
 
     expect(onInvoiceSelect).toHaveBeenCalledWith("FV-2002.pdf")
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()

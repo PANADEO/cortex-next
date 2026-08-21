@@ -30,26 +30,27 @@ import {
 } from "@cortex/ui"
 import { formatAbsolute } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
+import type { TFunction } from "i18next"
 import { Database, FileSpreadsheet, Search } from "lucide-react"
 import Link from "next/link"
 import { useCallback, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 const PAGE_SIZE = 20
-const STATUS_OPTIONS: Array<{ value: IntrastatBatchStatus | "all"; label: string }> = [
-  { value: "all", label: "All statuses" },
-  { value: "queued", label: "Queued" },
-  { value: "processing", label: "Processing" },
-  { value: "ready", label: "Ready" },
-  { value: "needs_review", label: "Needs review" },
-  { value: "failed", label: "Failed" },
+// Same wartości: etykiety statusów biorą się z `getIntrastatStatusLabel`, więc
+// trzymanie ich drugi raz tutaj rozjeżdżałoby się przy pierwszej zmianie.
+const STATUS_OPTIONS: Array<IntrastatBatchStatus | "all"> = [
+  "all",
+  "queued",
+  "processing",
+  "ready",
+  "needs_review",
+  "failed",
 ]
-const KIND_OPTIONS: Array<{ value: IntrastatTransactionKind | "all"; label: string }> = [
-  { value: "all", label: "WNT and WDT" },
-  { value: "WNT", label: "WNT" },
-  { value: "WDT", label: "WDT" },
-]
+const KIND_OPTIONS: Array<IntrastatTransactionKind | "all"> = ["all", "WNT", "WDT"]
 
 interface BatchColumnsOptions {
+  t: TFunction<["intrastat", "common"]>
   selection: {
     selected: Set<string>
     allSelectedOnPage: boolean
@@ -60,7 +61,7 @@ interface BatchColumnsOptions {
 }
 
 function batchColumns(options: BatchColumnsOptions): ColumnDef<IntrastatBatchSummary>[] {
-  const { selection } = options
+  const { t, selection } = options
 
   return [
     {
@@ -76,7 +77,7 @@ function batchColumns(options: BatchColumnsOptions): ColumnDef<IntrastatBatchSum
                 : false
           }
           onCheckedChange={() => selection.toggleAll()}
-          aria-label="Select visible batches"
+          aria-label={t("batches.selectVisible")}
         />
       ),
       cell: ({ row }) => (
@@ -84,13 +85,13 @@ function batchColumns(options: BatchColumnsOptions): ColumnDef<IntrastatBatchSum
           checked={selection.selected.has(row.original.id)}
           onCheckedChange={() => selection.toggleRow(row.original.id)}
           onClick={(event) => event.stopPropagation()}
-          aria-label={`Select ${row.original.name}`}
+          aria-label={t("batches.selectRow", { name: row.original.name })}
         />
       ),
     },
     {
       accessorKey: "name",
-      header: "Batch",
+      header: t("batches.columnBatch"),
       size: 320,
       cell: ({ row }) => (
         <div className="min-w-0">
@@ -106,41 +107,41 @@ function batchColumns(options: BatchColumnsOptions): ColumnDef<IntrastatBatchSum
     },
     {
       accessorKey: "client_name",
-      header: "Client",
+      header: t("batches.columnClient"),
       size: 180,
       cell: ({ row }) => (
         <span className="block max-w-[180px] truncate text-muted-foreground">
-          {row.original.client_name ?? "No client"}
+          {row.original.client_name ?? t("batches.noClient")}
         </span>
       ),
     },
     {
       accessorKey: "transaction_kind",
-      header: "Type",
+      header: t("batches.columnType"),
       size: 90,
       cell: ({ row }) => <IntrastatKindBadge kind={row.original.transaction_kind} />,
     },
     {
       accessorKey: "line_count",
-      header: "Lines",
+      header: t("batches.columnLines"),
       size: 90,
       cell: ({ row }) => <span className="whitespace-nowrap">{row.original.line_count}</span>,
     },
     {
       accessorKey: "alert_count",
-      header: "Alerts",
+      header: t("batches.columnAlerts"),
       size: 90,
       cell: ({ row }) => <span className="whitespace-nowrap">{row.original.alert_count}</span>,
     },
     {
       accessorKey: "status",
-      header: "Status",
+      header: t("batches.columnStatus"),
       size: 150,
       cell: ({ row }) => <IntrastatStatusBadge status={row.original.status} />,
     },
     {
       accessorKey: "updated_at",
-      header: "Updated",
+      header: t("batches.columnUpdated"),
       size: 170,
       cell: ({ row }) => (
         <span className="whitespace-nowrap text-muted-foreground">
@@ -158,7 +159,9 @@ function batchColumns(options: BatchColumnsOptions): ColumnDef<IntrastatBatchSum
           onClick={(event) => event.stopPropagation()}
         >
           <Button asChild size="sm" variant="outline">
-            <Link href={`/intrastat/review?batch=${row.original.id}`}>Review</Link>
+            <Link href={`/intrastat/review?batch=${row.original.id}`}>
+              {t("batches.reviewAction")}
+            </Link>
           </Button>
           <IntrastatExportButtons batchId={row.original.id} />
           <IntrastatDeleteBatchButton
@@ -174,6 +177,7 @@ function batchColumns(options: BatchColumnsOptions): ColumnDef<IntrastatBatchSum
 }
 
 export default function IntrastatBatchesPage() {
+  const { t } = useTranslation(["intrastat", "common"])
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState<IntrastatBatchStatus | "all">("all")
@@ -228,6 +232,7 @@ export default function IntrastatBatchesPage() {
   const columns = useMemo(
     () =>
       batchColumns({
+        t,
         selection: {
           selected: selectedIds,
           allSelectedOnPage,
@@ -236,20 +241,20 @@ export default function IntrastatBatchesPage() {
           toggleAll,
         },
       }),
-    [selectedIds, allSelectedOnPage, partiallySelectedOnPage, toggleRow, toggleAll],
+    [t, selectedIds, allSelectedOnPage, partiallySelectedOnPage, toggleRow, toggleAll],
   )
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <PageHeader
-        title="Intrastat Batches"
-        description="WNT/WDT imports from manual ZIP upload and watched folders."
+        title={t("batches.title")}
+        description={t("batches.description")}
         actions={
           <>
             <Button asChild size="sm" variant="outline">
               <Link href="/intrastat/resources">
                 <Database className="mr-2 h-4 w-4" />
-                CN Code Database
+                {t("batches.cnDatabase")}
               </Link>
             </Button>
             <IntrastatUploadBatchButton />
@@ -262,7 +267,7 @@ export default function IntrastatBatchesPage() {
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search batch..."
+              placeholder={t("batches.searchPlaceholder")}
               value={search}
               onChange={(event) => {
                 resetPage()
@@ -279,12 +284,12 @@ export default function IntrastatBatchesPage() {
             }}
           >
             <SelectTrigger className="h-9 w-[190px]">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={t("batches.statusPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {STATUS_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.value === "all" ? option.label : getIntrastatStatusLabel(option.value)}
+                <SelectItem key={option} value={option}>
+                  {option === "all" ? t("batches.allStatuses") : getIntrastatStatusLabel(t, option)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -297,12 +302,12 @@ export default function IntrastatBatchesPage() {
             }}
           >
             <SelectTrigger className="h-9 w-[160px]">
-              <SelectValue placeholder="Type" />
+              <SelectValue placeholder={t("batches.kindPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {KIND_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
+                <SelectItem key={option} value={option}>
+                  {option === "all" ? t("batches.kindAll") : option}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -315,10 +320,10 @@ export default function IntrastatBatchesPage() {
             }}
           >
             <SelectTrigger className="h-9 w-[190px]">
-              <SelectValue placeholder="Client" />
+              <SelectValue placeholder={t("batches.clientPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All clients</SelectItem>
+              <SelectItem value="all">{t("batches.allClients")}</SelectItem>
               {(filterOptions.data?.clients ?? []).map((client) => (
                 <SelectItem key={client} value={client}>
                   {client}
@@ -334,10 +339,10 @@ export default function IntrastatBatchesPage() {
             }}
           >
             <SelectTrigger className="h-9 w-[190px]">
-              <SelectValue placeholder="Month" />
+              <SelectValue placeholder={t("batches.monthPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All months</SelectItem>
+              <SelectItem value="all">{t("batches.allMonths")}</SelectItem>
               {(filterOptions.data?.months ?? []).map((month) => (
                 <SelectItem key={month} value={month}>
                   {month}
@@ -346,23 +351,21 @@ export default function IntrastatBatchesPage() {
             </SelectContent>
           </Select>
           <div className="ml-auto text-xs text-muted-foreground">
-            {batches.isFetching ? "Refreshing..." : `${total} total`}
+            {batches.isFetching ? t("batches.refreshing") : t("batches.total", { count: total })}
           </div>
         </div>
 
         {selectionCount > 0 ? (
           <div className="flex items-center justify-between rounded-md border border-border bg-muted/50 px-3 py-2 text-sm">
-            <span>
-              <strong>{selectionCount}</strong> selected
-            </span>
+            <span>{t("batches.selectedCount", { count: selectionCount })}</span>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={clearSelection}>
-                Clear
+                {t("batches.clearSelection")}
               </Button>
               <IntrastatExportButtons
                 batchIds={selectedBatchIds}
-                exportLabel="Export selected"
-                auditLabel="Audit selected"
+                exportLabel={t("exports.exportSelected")}
+                auditLabel={t("exports.auditSelected")}
               />
             </div>
           </div>
@@ -378,8 +381,8 @@ export default function IntrastatBatchesPage() {
           emptyState={
             <EmptyState
               icon={FileSpreadsheet}
-              title="No Intrastat batches"
-              description="Upload a WNT/WDT ZIP or import batches from the watched folder."
+              title={t("batches.emptyTitle")}
+              description={t("batches.emptyDescription")}
             />
           }
         />

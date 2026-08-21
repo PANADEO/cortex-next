@@ -98,7 +98,9 @@ describe("TransportOrdersPanel", () => {
       </Wrapper>,
     )
 
-    expect(await screen.findByRole("heading", { name: /transport order to-1/i })).not.toBeNull()
+    expect(
+      await screen.findByRole("heading", { name: /zlecenie transportowe to-1/i }),
+    ).not.toBeNull()
 
     await waitFor(() => {
       expect(screen.queryByRole("heading", { name: /sad \/ huzar/i })).toBeNull()
@@ -132,8 +134,8 @@ describe("TransportOrdersPanel", () => {
     expect(await screen.findByRole("tab", { name: /to-1/i })).not.toBeNull()
     const secondOrderTab = await screen.findByRole("tab", { name: /to-2/i })
 
-    expect(screen.queryByRole("heading", { name: /transport order to-1/i })).toBeNull()
-    expect(screen.queryByRole("heading", { name: /transport order to-2/i })).toBeNull()
+    expect(screen.queryByRole("heading", { name: /zlecenie transportowe to-1/i })).toBeNull()
+    expect(screen.queryByRole("heading", { name: /zlecenie transportowe to-2/i })).toBeNull()
     expect(within(screen.getByRole("tabpanel")).getByText("TO-1")).not.toBeNull()
 
     await user.click(secondOrderTab)
@@ -141,8 +143,8 @@ describe("TransportOrdersPanel", () => {
     await waitFor(() => {
       expect(within(screen.getByRole("tabpanel")).getByText("TO-2")).not.toBeNull()
     })
-    expect(screen.queryByRole("heading", { name: /transport order to-1/i })).toBeNull()
-    expect(screen.queryByRole("heading", { name: /transport order to-2/i })).toBeNull()
+    expect(screen.queryByRole("heading", { name: /zlecenie transportowe to-1/i })).toBeNull()
+    expect(screen.queryByRole("heading", { name: /zlecenie transportowe to-2/i })).toBeNull()
   })
 
   it.each(sadContextTemplateNames)(

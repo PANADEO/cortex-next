@@ -1,14 +1,11 @@
 "use client"
 
 import { IntrastatMatchBadge, getIntrastatMatchLabel } from "@/components/intrastat/status"
-import type { IntrastatCnMatchStatus, IntrastatDeclarationLine } from "@/lib/intrastat/types"
+import type { IntrastatDeclarationLine } from "@/lib/intrastat/types"
 import { Popover, PopoverContent, PopoverTrigger, Separator } from "@cortex/ui"
 import { cn } from "@cortex/utils"
-
-interface MatchAlgorithmDetails {
-  clientRule: string
-  technicalMethod: string
-}
+import type { TFunction } from "i18next"
+import { useTranslation } from "react-i18next"
 
 interface MatchField {
   label: string
@@ -16,59 +13,10 @@ interface MatchField {
   note?: string
 }
 
-const MATCH_ALGORITHM_DETAILS: Record<IntrastatCnMatchStatus, MatchAlgorithmDetails> = {
-  exact: {
-    clientRule: "The client instruction says CN is tied to the product index in the database.",
-    technicalMethod:
-      "The system normalized the invoice index and found the same normalized index in the CN database. It accepts the match only when the matched database rows resolve to one CN code.",
-  },
-  prefix_unique: {
-    clientRule:
-      "The client instruction says that if there is no identical index, the closest corresponding database index should be used.",
-    technicalMethod:
-      "The system first checks the strongest shared prefix. If that fails, it checks text similarity between normalized indexes. The closest candidate is accepted only when it resolves to one CN code.",
-  },
-  description_match: {
-    clientRule:
-      "The client instruction says that if no index and no invoice CN can be used, CN should be matched from the invoice description to the closest database description.",
-    technicalMethod:
-      "The system compares the invoice line description with CN database descriptions using text similarity. It accepts the top description group only when it resolves to one CN code.",
-  },
-  semantic_match: {
-    clientRule:
-      "The client instruction says that if no index and no invoice CN can be used, CN should be matched from the invoice description to the closest database description.",
-    technicalMethod:
-      "The system uses description embeddings as a technical way to find the closest database description. A candidate is accepted only when it is above the configured threshold and is not too close to a competing CN code.",
-  },
-  invoice_cn: {
-    clientRule:
-      "The client instruction says that if no database index can be matched, the CN code shown on the invoice should be used.",
-    technicalMethod:
-      "The system normalizes the invoice CN and uses the first 8 digits after exact and closest-index database matching did not produce a CN code.",
-  },
-  manual: {
-    clientRule:
-      "The client instruction allows missing or uncertain CN data to be completed in the system and reused later.",
-    technicalMethod:
-      "A reviewer manually changed the CN fields. The automatic match status is replaced by a human-reviewed decision.",
-  },
-  ambiguous: {
-    clientRule:
-      "The client instruction requires using a closest index or closest description, but only when it can be assigned confidently.",
-    technicalMethod:
-      "Several candidates matched with different CN codes, so the system did not choose one automatically. The line remains for review.",
-  },
-  unmatched: {
-    clientRule:
-      "The client instruction says that if no similar index, invoice CN, or similar description is available, the CN field should remain empty.",
-    technicalMethod:
-      "Exact index, closest index, invoice CN, closest description, and semantic description checks did not produce an accepted CN code.",
-  },
-}
-
 export function IntrastatMatchDetailsPopover({ line }: { line: IntrastatDeclarationLine }) {
-  const details = MATCH_ALGORITHM_DETAILS[line.cn_match_status]
-  const fields = getMatchedFields(line)
+  const { t } = useTranslation("intrastat")
+  const label = getIntrastatMatchLabel(t, line.cn_match_status)
+  const fields = getMatchedFields(t, line)
 
   return (
     <Popover>
@@ -76,7 +24,7 @@ export function IntrastatMatchDetailsPopover({ line }: { line: IntrastatDeclarat
         <button
           type="button"
           className="inline-flex rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          aria-label={`Show ${getIntrastatMatchLabel(line.cn_match_status)} match details`}
+          aria-label={t("matchDetails.showDetails", { label })}
         >
           <IntrastatMatchBadge status={line.cn_match_status} confidence={line.match_confidence} />
         </button>
@@ -87,17 +35,17 @@ export function IntrastatMatchDetailsPopover({ line }: { line: IntrastatDeclarat
       >
         <div className="space-y-3 p-4">
           <div className="space-y-1">
-            <p className="text-sm font-semibold">
-              {getIntrastatMatchLabel(line.cn_match_status)} match
+            <p className="text-sm font-semibold">{t("matchDetails.heading", { label })}</p>
+            <p className="text-xs leading-5 text-muted-foreground">
+              {t(`matchDetails.clientRule.${line.cn_match_status}`)}
             </p>
-            <p className="text-xs leading-5 text-muted-foreground">{details.clientRule}</p>
           </div>
 
           <Separator />
 
           <section className="space-y-2">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Matched fields
+              {t("matchDetails.matchedFields")}
             </p>
             <dl className="space-y-2">
               {fields.map((field) => (
@@ -127,11 +75,13 @@ export function IntrastatMatchDetailsPopover({ line }: { line: IntrastatDeclarat
 
           <section className="space-y-2">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Technical method
+              {t("matchDetails.technicalMethodTitle")}
             </p>
-            <p className="text-xs leading-5 text-muted-foreground">{details.technicalMethod}</p>
+            <p className="text-xs leading-5 text-muted-foreground">
+              {t(`matchDetails.technicalMethod.${line.cn_match_status}`)}
+            </p>
             <div className="grid grid-cols-[112px_minmax(0,1fr)] gap-2 text-xs">
-              <span className="text-muted-foreground">Match fragment</span>
+              <span className="text-muted-foreground">{t("matchDetails.matchFragment")}</span>
               <span className="min-w-0 truncate font-mono">{line.matched_fragment || "—"}</span>
             </div>
           </section>
@@ -140,17 +90,16 @@ export function IntrastatMatchDetailsPopover({ line }: { line: IntrastatDeclarat
 
           <section className="space-y-2">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Confidence
+              {t("matchDetails.confidence")}
             </p>
             <div className="grid grid-cols-[148px_minmax(0,1fr)] gap-2 text-xs">
-              <span className="text-muted-foreground">CN match confidence</span>
+              <span className="text-muted-foreground">{t("matchDetails.cnMatchConfidence")}</span>
               <span>{formatConfidence(line.match_confidence)}</span>
-              <span className="text-muted-foreground">Overall line confidence</span>
+              <span className="text-muted-foreground">{t("matchDetails.overallConfidence")}</span>
               <span>{formatConfidence(line.confidence)}</span>
             </div>
             <p className="text-[11px] leading-4 text-muted-foreground">
-              Overall line confidence uses the lower of document extraction confidence and CN match
-              confidence.
+              {t("matchDetails.confidenceHint")}
             </p>
           </section>
 
@@ -159,9 +108,9 @@ export function IntrastatMatchDetailsPopover({ line }: { line: IntrastatDeclarat
               <Separator />
               <section className="space-y-2">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Review alerts
+                  {t("matchDetails.reviewAlerts")}
                 </p>
-                <p className="text-xs font-medium">{formatReviewCount(line.alerts.length)}</p>
+                <p className="text-xs font-medium">{formatReviewCount(t, line.alerts.length)}</p>
                 <ul className="space-y-1 text-xs leading-5 text-muted-foreground">
                   {line.alerts.map((alert) => (
                     <li key={alert}>{alert}</li>
@@ -176,70 +125,70 @@ export function IntrastatMatchDetailsPopover({ line }: { line: IntrastatDeclarat
   )
 }
 
-function getMatchedFields(line: IntrastatDeclarationLine): MatchField[] {
+function getMatchedFields(t: TFunction<"intrastat">, line: IntrastatDeclarationLine): MatchField[] {
   switch (line.cn_match_status) {
     case "exact":
       return [
-        { label: "Invoice index", value: line.item_index },
-        { label: "Resource index", value: line.matched_index },
-        { label: "Export CN", value: line.cn_code },
+        { label: t("matchDetails.fields.invoiceIndex"), value: line.item_index },
+        { label: t("matchDetails.fields.resourceIndex"), value: line.matched_index },
+        { label: t("matchDetails.fields.exportCn"), value: line.cn_code },
       ]
     case "prefix_unique":
       return [
-        { label: "Invoice index", value: line.item_index },
+        { label: t("matchDetails.fields.invoiceIndex"), value: line.item_index },
         {
-          label: "Matched prefix",
+          label: t("matchDetails.fields.matchedPrefix"),
           value: line.matched_fragment,
-          note: "Common normalized prefix used to select the resource row.",
+          note: t("matchDetails.notes.matchedPrefix"),
         },
-        { label: "Resource index", value: line.matched_index },
-        { label: "Export CN", value: line.cn_code },
+        { label: t("matchDetails.fields.resourceIndex"), value: line.matched_index },
+        { label: t("matchDetails.fields.exportCn"), value: line.cn_code },
       ]
     case "description_match":
       return [
         {
-          label: "Description",
+          label: t("matchDetails.fields.description"),
           value: line.description,
-          note: "Compared against CN resource descriptions.",
+          note: t("matchDetails.notes.descriptionMatch"),
         },
-        { label: "Resource index", value: line.matched_index },
-        { label: "Export CN", value: line.cn_code },
+        { label: t("matchDetails.fields.resourceIndex"), value: line.matched_index },
+        { label: t("matchDetails.fields.exportCn"), value: line.cn_code },
       ]
     case "semantic_match":
       return [
         {
-          label: "Description",
+          label: t("matchDetails.fields.description"),
           value: line.description,
-          note: "Embedded and compared against CN resource embedding text.",
+          note: t("matchDetails.notes.semanticMatch"),
         },
-        { label: "Resource index", value: line.matched_index },
-        { label: "Export CN", value: line.cn_code },
+        { label: t("matchDetails.fields.resourceIndex"), value: line.matched_index },
+        { label: t("matchDetails.fields.exportCn"), value: line.cn_code },
       ]
     case "invoice_cn":
       return [
-        { label: "Invoice CN", value: line.cn_code },
-        { label: "Export CN", value: line.cn_code },
+        { label: t("matchDetails.fields.invoiceCn"), value: line.cn_code },
+        { label: t("matchDetails.fields.exportCn"), value: line.cn_code },
       ]
     case "manual":
       return [
-        { label: "Reviewer CN", value: line.cn_code },
-        { label: "Description", value: line.description },
+        { label: t("matchDetails.fields.reviewerCn"), value: line.cn_code },
+        { label: t("matchDetails.fields.description"), value: line.description },
       ]
     case "ambiguous":
       return [
-        { label: "Invoice index", value: line.item_index },
-        { label: "Description", value: line.description },
+        { label: t("matchDetails.fields.invoiceIndex"), value: line.item_index },
+        { label: t("matchDetails.fields.description"), value: line.description },
         {
-          label: "Candidate hint",
+          label: t("matchDetails.fields.candidateHint"),
           value: line.matched_fragment,
-          note: "The system kept this hint but did not choose a CN code.",
+          note: t("matchDetails.notes.candidateHint"),
         },
       ]
     case "unmatched":
       return [
-        { label: "Invoice index", value: line.item_index },
-        { label: "Description", value: line.description },
-        { label: "Export CN", value: line.cn_code },
+        { label: t("matchDetails.fields.invoiceIndex"), value: line.item_index },
+        { label: t("matchDetails.fields.description"), value: line.description },
+        { label: t("matchDetails.fields.exportCn"), value: line.cn_code },
       ]
   }
 }
@@ -249,6 +198,8 @@ function formatConfidence(value: number | null): string {
   return `${Math.round(value * 100)}%`
 }
 
-function formatReviewCount(count: number): string {
-  return count === 1 ? "1 field requires review" : `${count} fields require review`
+export function formatReviewCount(t: TFunction<"intrastat">, count: number): string {
+  return count === 1
+    ? t("alerts.oneFieldRequiresReview")
+    : t("alerts.manyFieldsRequireReview", { count })
 }

@@ -22,11 +22,13 @@ import { formatAbsolute } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
 import { AlertTriangle, Database, GitBranch, Pencil, Plus, Search } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 const PAGE_SIZE = 50
 const CN_EDITOR_APP_CODE = "intrastat-cn-editor"
 
 export default function IntrastatResourcesPage() {
+  const { t } = useTranslation(["intrastat", "common"])
   const access = useAuthorizedApps()
   const canEdit = access.apps.includes(CN_EDITOR_APP_CODE)
   const resource = useIntrastatCnResource()
@@ -46,7 +48,7 @@ export default function IntrastatResourcesPage() {
     () => [
       {
         accessorKey: "index_value",
-        header: "Item index",
+        header: t("resources.columnIndex"),
         size: 220,
         cell: ({ row }) => (
           <span className="font-mono font-medium">{row.original.index_value}</span>
@@ -54,13 +56,13 @@ export default function IntrastatResourcesPage() {
       },
       {
         accessorKey: "cn8",
-        header: "CN code",
+        header: t("resources.columnCn8"),
         size: 140,
         cell: ({ row }) => <span className="font-mono">{row.original.cn8 ?? "—"}</span>,
       },
       {
         accessorKey: "cn",
-        header: "Additional CN",
+        header: t("resources.columnCn"),
         size: 160,
         cell: ({ row }) => (
           <span className="font-mono text-muted-foreground">{row.original.cn ?? "—"}</span>
@@ -68,7 +70,7 @@ export default function IntrastatResourcesPage() {
       },
       {
         accessorKey: "description",
-        header: "Description",
+        header: t("resources.columnDescription"),
         cell: ({ row }) => row.original.description ?? "—",
       },
       ...(canEdit
@@ -88,7 +90,7 @@ export default function IntrastatResourcesPage() {
                     }}
                   >
                     <Pencil className="mr-2 h-4 w-4" />
-                    Edit
+                    {t("common:actions.edit")}
                   </Button>
                 </div>
               ),
@@ -96,14 +98,14 @@ export default function IntrastatResourcesPage() {
           ]
         : []),
     ],
-    [canEdit],
+    [canEdit, t],
   )
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <PageHeader
-        title="CN Code Database"
-        description="Active CN reference used for Intrastat matching."
+        title={t("resources.title")}
+        description={t("resources.description")}
         actions={
           <>
             <IntrastatResourceDownloadButton disabled={!resource.data?.id} />
@@ -118,7 +120,7 @@ export default function IntrastatResourcesPage() {
                   }}
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Add CN code
+                  {t("resources.addCnCode")}
                 </Button>
               </>
             ) : null}
@@ -129,28 +131,25 @@ export default function IntrastatResourcesPage() {
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-8 py-6">
         <Alert className="shrink-0 border-amber-500/60 bg-amber-500/10">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertTitle>Manual changes can be replaced by the next XLSX upload</AlertTitle>
-          <AlertDescription>
-            If a manually added or edited row is not present in the next uploaded CN workbook, that
-            change will be removed from the active database.
-          </AlertDescription>
+          <AlertTitle>{t("resources.warningTitle")}</AlertTitle>
+          <AlertDescription>{t("resources.warningBody")}</AlertDescription>
         </Alert>
 
         <div className="grid shrink-0 gap-4 md:grid-cols-2">
           <DataCard
-            label="Active rows"
+            label={t("resources.activeRows")}
             value={String(resource.data?.row_count ?? 0)}
-            description={resource.data?.file_name ?? "No CN resource uploaded"}
+            description={resource.data?.file_name ?? t("resources.noResourceUploaded")}
             icon={Database}
             tone={resource.data?.row_count ? "success" : "warning"}
           />
           <DataCard
-            label="Active version"
+            label={t("resources.activeVersion")}
             value={resource.data?.id ? resource.data.id.slice(0, 8) : "—"}
             description={
               resource.data?.created_at
                 ? formatAbsolute(resource.data.created_at)
-                : "No active version"
+                : t("resources.noActiveVersion")
             }
             icon={GitBranch}
           />
@@ -161,7 +160,7 @@ export default function IntrastatResourcesPage() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="h-9 w-80 pl-9"
-              placeholder="Search index, CN code or description..."
+              placeholder={t("resources.searchPlaceholder")}
               value={search}
               onChange={(event) => {
                 setPage(0)
@@ -170,7 +169,7 @@ export default function IntrastatResourcesPage() {
             />
           </div>
           <span className="ml-auto text-xs text-muted-foreground">
-            {rows.isFetching ? "Refreshing..." : `${total} total`}
+            {rows.isFetching ? t("resources.refreshing") : t("resources.total", { count: total })}
           </span>
         </div>
 
@@ -185,8 +184,8 @@ export default function IntrastatResourcesPage() {
           emptyState={
             <EmptyState
               icon={Database}
-              title="No CN codes"
-              description={search ? "No rows match this search." : "Upload a CN workbook to begin."}
+              title={t("resources.emptyTitle")}
+              description={search ? t("resources.emptySearch") : t("resources.emptyUpload")}
             />
           }
         />

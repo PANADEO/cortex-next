@@ -5,9 +5,11 @@ import { useIntrastatUploadCnResource } from "@/lib/intrastat/hooks"
 import { Button } from "@cortex/ui"
 import { Database, Loader2 } from "lucide-react"
 import { useRef, type ChangeEvent } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 export function IntrastatResourceUploadButton() {
+  const { t } = useTranslation("intrastat")
   const inputRef = useRef<HTMLInputElement>(null)
   const upload = useIntrastatUploadCnResource()
 
@@ -17,18 +19,22 @@ export function IntrastatResourceUploadButton() {
     if (!file) return
 
     if (!file.name.toLowerCase().endsWith(".xlsx")) {
-      toast.error("Choose an XLSX resource file")
+      toast.error(t("cnResource.invalidXlsx"))
       return
     }
 
     try {
       const result = await upload.mutateAsync(file)
-      const embeddingText = result.embedding_count
-        ? ` and ${result.embedding_count} embedding(s)`
-        : ""
-      toast.success(`Loaded ${result.row_count} CN resource row(s)${embeddingText}`)
+      toast.success(
+        result.embedding_count
+          ? t("cnResource.uploadSuccessWithEmbeddings", {
+              rows: result.row_count,
+              embeddings: result.embedding_count,
+            })
+          : t("cnResource.uploadSuccess", { rows: result.row_count }),
+      )
     } catch (error) {
-      toast.error(formatIntrastatError(error, "CN resource upload failed"))
+      toast.error(formatIntrastatError(error, t("cnResource.uploadFailed")))
     }
   }
 
@@ -52,7 +58,7 @@ export function IntrastatResourceUploadButton() {
         ) : (
           <Database className="mr-2 h-4 w-4" />
         )}
-        Upload CN XLSX
+        {t("cnResource.uploadButton")}
       </Button>
     </>
   )
