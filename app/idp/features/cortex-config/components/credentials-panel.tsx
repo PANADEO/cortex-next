@@ -14,6 +14,7 @@ import {
 } from "@cortex/ui"
 import { ChevronDown, ChevronRight, KeyRound, Plus, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { useCredentialPaths, useDeleteCredential, useSetCredential } from "../hooks/use-governance"
 
 // A credential path is "key/subkey[/...]". The tree groups by the first
@@ -47,6 +48,7 @@ function TreeNode({
   depth: number
   onDelete: (path: string) => void
 }) {
+  const { t } = useTranslation("cortex-config")
   const [open, setOpen] = useState(true)
   const childKeys = Object.keys(node.children).sort()
   const hasChildren = childKeys.length > 0
@@ -60,7 +62,7 @@ function TreeNode({
             type="button"
             onClick={() => setOpen((prev) => !prev)}
             className="text-muted-foreground"
-            aria-label={open ? "Zwiń" : "Rozwiń"}
+            aria-label={open ? t("credentials.collapse") : t("credentials.expand")}
           >
             {open ? (
               <ChevronDown className="h-3.5 w-3.5" />
@@ -75,12 +77,12 @@ function TreeNode({
         {leafPath ? (
           <>
             <Badge variant="secondary" className="ml-1">
-              ustawiony
+              {t("credentials.setBadge")}
             </Badge>
             <button
               type="button"
               className="ml-1 text-muted-foreground hover:text-destructive"
-              aria-label={`Usuń ${leafPath}`}
+              aria-label={t("credentials.deleteAria", { path: leafPath })}
               onClick={() => onDelete(leafPath)}
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -101,6 +103,7 @@ function TreeNode({
 }
 
 export function CredentialsPanel() {
+  const { t } = useTranslation(["cortex-config", "common"])
   const credentials = useCredentialPaths()
   const setCredential = useSetCredential()
   const deleteCredential = useDeleteCredential()
@@ -128,17 +131,14 @@ export function CredentialsPanel() {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Credential store</CardTitle>
-        <CardDescription>
-          Sekrety dla connectorów i kluczy modeli (drzewo key/subkey). Wartości są zapisywane po
-          stronie serwera i nigdy nie wracają do przeglądarki - można je tylko nadpisać.
-        </CardDescription>
+        <CardTitle className="text-base">{t("credentials.title")}</CardTitle>
+        <CardDescription>{t("credentials.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {credentials.isPending ? (
-          <LoadingState label="Wczytywanie..." />
+          <LoadingState label={t("common:state.loading")} />
         ) : rootKeys.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Brak zapisanych sekretów.</p>
+          <p className="text-sm text-muted-foreground">{t("credentials.empty")}</p>
         ) : (
           <div className="rounded-md border p-2">
             {rootKeys.map((key) => {
@@ -150,7 +150,7 @@ export function CredentialsPanel() {
                   node={node}
                   depth={0}
                   onDelete={(target) => {
-                    if (window.confirm(`Usunąć sekret "${target}"?`))
+                    if (window.confirm(t("credentials.deleteConfirm", { path: target })))
                       deleteCredential.mutate(target)
                   }}
                 />
@@ -162,7 +162,7 @@ export function CredentialsPanel() {
         <form onSubmit={handleAdd} className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto]">
           <div>
             <Label htmlFor="cred-path" className="text-xs">
-              Ścieżka (key/subkey)
+              {t("credentials.pathLabel")}
             </Label>
             <Input
               id="cred-path"
@@ -174,13 +174,13 @@ export function CredentialsPanel() {
           </div>
           <div>
             <Label htmlFor="cred-value" className="text-xs">
-              Wartość
+              {t("credentials.valueLabel")}
             </Label>
             <Input
               id="cred-value"
               type="password"
               className="mt-1 font-mono text-xs"
-              placeholder="sekret..."
+              placeholder={t("credentials.valuePlaceholder")}
               value={value}
               onChange={(event) => setValue(event.target.value)}
             />
@@ -188,7 +188,7 @@ export function CredentialsPanel() {
           <div className="flex items-end">
             <Button type="submit" variant="outline" disabled={setCredential.isPending}>
               <Plus className="mr-1.5 h-4 w-4" />
-              Zapisz
+              {t("common:actions.save")}
             </Button>
           </div>
         </form>

@@ -18,6 +18,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import { useCoworkSessionActions, useCoworkSessions } from "../hooks/use-cowork-sessions"
 import { useMyInstructions, useSaveMyInstructions } from "../hooks/use-my-instructions"
 import { useCoworkProjectTiles } from "../hooks/use-project-tiles"
@@ -40,6 +41,7 @@ function formatWhen(iso: string): string {
 }
 
 function SessionRows({ projectId }: { projectId: string }) {
+  const { t } = useTranslation("cortex-cowork")
   const sessions = useCoworkSessions(projectId)
   const { remove } = useCoworkSessionActions(projectId)
   const activeSessionId = useCoworkSessionStore((s) => s.sessionIds[projectId] ?? null)
@@ -50,12 +52,12 @@ function SessionRows({ projectId }: { projectId: string }) {
     return (
       <div className="flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground">
         <Loader2 className="h-3 w-3 animate-spin" />
-        Wczytywanie sesji...
+        {t("sidebar.loadingSessions")}
       </div>
     )
   }
   if (list.length === 0) {
-    return <p className="px-3 py-1.5 text-xs text-muted-foreground/70">Brak sesji</p>
+    return <p className="px-3 py-1.5 text-xs text-muted-foreground/70">{t("sidebar.noSessions")}</p>
   }
 
   return (
@@ -74,20 +76,22 @@ function SessionRows({ projectId }: { projectId: string }) {
               type="button"
               onClick={() => setSessionId(projectId, session.id)}
               className="min-w-0 flex-1 truncate px-3 py-1.5 text-left text-xs"
-              title={`Sesja z ${formatWhen(session.createdAt)}`}
+              title={t("sidebar.sessionTitle", { when: formatWhen(session.createdAt) })}
             >
               {formatWhen(session.createdAt)}
               <span className="ml-1.5 text-muted-foreground">
-                · {session.messageCount} wiad.
-                {session.artifactCount > 0 ? ` · ${session.artifactCount} art.` : ""}
+                {t("sidebar.messageCount", { n: session.messageCount })}
+                {session.artifactCount > 0
+                  ? ` ${t("sidebar.artifactCount", { n: session.artifactCount })}`
+                  : ""}
               </span>
             </button>
             <button
               type="button"
-              aria-label="Usuń sesję"
+              aria-label={t("sidebar.deleteSessionAria")}
               className="hidden shrink-0 rounded p-1 text-muted-foreground hover:text-destructive group-hover:block"
               onClick={() => {
-                if (window.confirm("Usunąć tę sesję? Skasuje transkrypt i artefakty z sandboxa.")) {
+                if (window.confirm(t("sidebar.deleteSessionConfirm"))) {
                   remove.mutate(session.id)
                 }
               }}
@@ -140,6 +144,7 @@ function ProjectRow({
  * Dialog - a portal would escape this shell's scoped `.dark` subtree).
  */
 function MyInstructions() {
+  const { t } = useTranslation(["cortex-cowork", "common"])
   const [open, setOpen] = useState(false)
   const query = useMyInstructions(open)
   const save = useSaveMyInstructions()
@@ -159,7 +164,7 @@ function MyInstructions() {
         className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground"
       >
         <NotebookPen className="h-3.5 w-3.5 shrink-0" />
-        Moje instrukcje
+        {t("sidebar.myInstructions")}
         <DisclosureChevron open={open} className="ml-auto" />
       </button>
       {open ? (
@@ -169,12 +174,12 @@ function MyInstructions() {
             value={draft ?? ""}
             onChange={(event) => setDraft(event.target.value)}
             disabled={query.isPending}
-            placeholder={"np. Zwracaj się do mnie po imieniu.\nRaporty zawsze z sekcją TL;DR."}
+            placeholder={t("sidebar.myInstructionsPlaceholder")}
             className="text-xs"
           />
           <div className="flex items-center justify-between gap-2">
             <p className="text-[10px] leading-tight text-muted-foreground/70">
-              Prywatna warstwa AGENTS.md - doklejana do każdej Twojej sesji.
+              {t("sidebar.myInstructionsHint")}
             </p>
             <Button
               size="sm"
@@ -196,7 +201,7 @@ function MyInstructions() {
               ) : saved ? (
                 <Check className="h-3 w-3" />
               ) : null}
-              {saved ? "Zapisano" : "Zapisz"}
+              {saved ? t("sidebar.saved") : t("common:actions.save")}
             </Button>
           </div>
         </div>
@@ -206,6 +211,7 @@ function MyInstructions() {
 }
 
 export function CoworkShell({ children }: { children: ReactNode }) {
+  const { t } = useTranslation("cortex-cowork")
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -227,7 +233,7 @@ export function CoworkShell({ children }: { children: ReactNode }) {
         <div className="flex items-center gap-2 px-4 pb-2 pt-4">
           <Link
             href="/"
-            aria-label="Powrót do Cortex360 hub"
+            aria-label={t("sidebar.backToHubAria")}
             className="flex items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-80"
           >
             <Image
@@ -253,7 +259,7 @@ export function CoworkShell({ children }: { children: ReactNode }) {
             ) : (
               <SquarePen className="h-3.5 w-3.5" />
             )}
-            Nowa sesja
+            {t("sidebar.newSession")}
           </button>
           <Link
             href="/cortex-cowork/skills"
@@ -265,13 +271,13 @@ export function CoworkShell({ children }: { children: ReactNode }) {
             )}
           >
             <BookOpen className="h-3.5 w-3.5" />
-            Biblioteka skilli
+            {t("sidebar.skillsLibrary")}
           </Link>
         </div>
 
         <div className="mt-4 min-h-0 flex-1 overflow-y-auto px-2 pb-2">
           <p className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">
-            Projekty
+            {t("sidebar.projects")}
           </p>
           <div className="space-y-0.5">
             {projects.map((project) => (
@@ -285,7 +291,9 @@ export function CoworkShell({ children }: { children: ReactNode }) {
               />
             ))}
             {projects.length === 0 ? (
-              <p className="px-3 py-1.5 text-xs text-muted-foreground/70">Brak projektów</p>
+              <p className="px-3 py-1.5 text-xs text-muted-foreground/70">
+                {t("sidebar.noProjects")}
+              </p>
             ) : null}
           </div>
         </div>

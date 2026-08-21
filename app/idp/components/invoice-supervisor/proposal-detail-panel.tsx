@@ -32,6 +32,7 @@ import {
 import { cn } from "@cortex/utils"
 import { CheckCircle2, Inbox, Pencil, Save, Sparkles, XCircle } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 
 interface InvoiceSupervisorProposalDetailPanelProps {
   proposal: InvoiceSupervisorProposal | null
@@ -40,11 +41,13 @@ interface InvoiceSupervisorProposalDetailPanelProps {
 export function InvoiceSupervisorProposalDetailPanel({
   proposal,
 }: InvoiceSupervisorProposalDetailPanelProps) {
+  const { t } = useTranslation("invoice-supervisor")
+
   if (!proposal) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
         <Inbox className="size-10" />
-        <p className="text-sm">Zaznacz propozycję z listy, aby zobaczyć jej treść.</p>
+        <p className="text-sm">{t("proposal.emptySelection")}</p>
       </div>
     )
   }
@@ -55,6 +58,7 @@ export function InvoiceSupervisorProposalDetailPanel({
 }
 
 function ProposalDetailBody({ proposal }: { proposal: InvoiceSupervisorProposal }) {
+  const { t } = useTranslation(["invoice-supervisor", "common"])
   const [isEditing, setIsEditing] = useState(false)
   const [subject, setSubject] = useState(proposal.proposal_subject ?? "")
   const [content, setContent] = useState(proposal.proposal_content ?? "")
@@ -90,8 +94,8 @@ function ProposalDetailBody({ proposal }: { proposal: InvoiceSupervisorProposal 
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {proposal.invoice_number} ·{" "}
-            {formatInvoiceSupervisorCurrency(proposal.amount, proposal.currency)} · termin{" "}
-            {formatInvoiceSupervisorDate(proposal.due_date)} ·{" "}
+            {formatInvoiceSupervisorCurrency(proposal.amount, proposal.currency)} ·{" "}
+            {t("proposal.dueLabel")} {formatInvoiceSupervisorDate(proposal.due_date)} ·{" "}
             {INVOICE_SUPERVISOR_CHANNEL_LABELS[proposal.channel]}
           </p>
         </div>
@@ -107,7 +111,9 @@ function ProposalDetailBody({ proposal }: { proposal: InvoiceSupervisorProposal 
       <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
         {canEditSubject && (
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Temat</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              {t("proposal.subjectLabel")}
+            </label>
             <Input
               value={subject}
               disabled={!isEditing}
@@ -116,7 +122,9 @@ function ProposalDetailBody({ proposal }: { proposal: InvoiceSupervisorProposal 
           </div>
         )}
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Treść wiadomości</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            {t("proposal.contentLabel")}
+          </label>
           <Textarea
             value={content}
             disabled={!isEditing}
@@ -135,10 +143,10 @@ function ProposalDetailBody({ proposal }: { proposal: InvoiceSupervisorProposal 
             <>
               <Button size="sm" onClick={handleSave} disabled={edit.isPending}>
                 <Save className="size-4" />
-                Zapisz
+                {t("common:actions.save")}
               </Button>
               <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>
-                Anuluj
+                {t("common:actions.cancel")}
               </Button>
             </>
           ) : (
@@ -149,7 +157,7 @@ function ProposalDetailBody({ proposal }: { proposal: InvoiceSupervisorProposal 
               disabled={proposal.status !== "pending" && proposal.status !== "edited"}
             >
               <Pencil className="size-4" />
-              Edytuj
+              {t("common:actions.edit")}
             </Button>
           )}
         </div>
@@ -164,29 +172,30 @@ function ProposalDetailBody({ proposal }: { proposal: InvoiceSupervisorProposal 
               className="text-destructive hover:text-destructive"
             >
               <XCircle className="size-4" />
-              Odrzuć
+              {t("proposal.reject")}
             </Button>
             {isPaymentDemand ? (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button size="sm">
                     <CheckCircle2 className="size-4" />
-                    Zatwierdź wezwanie
+                    {t("proposal.approveDemand")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Zatwierdzić wezwanie do zapłaty?</AlertDialogTitle>
+                    <AlertDialogTitle>{t("proposal.approveDemandTitle")}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      To formalny krok windykacyjny dla {proposal.client_name} (
-                      {proposal.invoice_number}). Wezwania do zapłaty zawsze wymagają pojedynczego,
-                      świadomego zatwierdzenia.
+                      {t("proposal.approveDemandDescription", {
+                        client: proposal.client_name,
+                        invoice: proposal.invoice_number,
+                      })}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Anuluj</AlertDialogCancel>
+                    <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
                     <AlertDialogAction onClick={() => approve.mutate(proposal.id)}>
-                      Zatwierdź
+                      {t("proposal.approve")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -198,15 +207,15 @@ function ProposalDetailBody({ proposal }: { proposal: InvoiceSupervisorProposal 
                 disabled={approve.isPending}
               >
                 <CheckCircle2 className="size-4" />
-                Zatwierdź
+                {t("proposal.approve")}
               </Button>
             )}
           </div>
         ) : (
           <span className="text-sm text-muted-foreground">
-            {proposal.status === "sent" && "Wysłano"}
-            {proposal.status === "approved" && "Zatwierdzona, oczekuje na wysyłkę"}
-            {proposal.status === "rejected" && "Odrzucona"}
+            {proposal.status === "sent" && t("proposal.statusSent")}
+            {proposal.status === "approved" && t("proposal.statusApproved")}
+            {proposal.status === "rejected" && t("proposal.statusRejected")}
             {proposal.reviewed_at && ` · ${formatInvoiceSupervisorDateTime(proposal.reviewed_at)}`}
           </span>
         )}

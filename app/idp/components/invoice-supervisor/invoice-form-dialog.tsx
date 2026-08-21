@@ -16,18 +16,22 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus } from "lucide-react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { z } from "zod"
 import { InvoiceSupervisorFormField } from "./invoice-form-field"
 
+// Komunikaty walidacji są KLUCZAMI i18n, nie gotowym tekstem: schemat żyje na
+// poziomie modułu, więc `t` jeszcze nie istnieje. Tłumaczy je miejsce, które je
+// renderuje (patrz `fieldError` niżej).
 const schema = z
   .object({
-    invoice_number: z.string().min(1, "Numer faktury jest wymagany"),
-    client_name: z.string().min(1, "Nazwa klienta jest wymagana"),
-    issue_date: z.string().min(1, "Data wystawienia jest wymagana"),
-    due_date: z.string().min(1, "Termin płatności jest wymagany"),
-    amount: z.coerce.number().positive("Kwota musi być większa od 0"),
+    invoice_number: z.string().min(1, "validation.invoiceNumberRequired"),
+    client_name: z.string().min(1, "validation.invoiceClientNameRequired"),
+    issue_date: z.string().min(1, "validation.issueDateRequired"),
+    due_date: z.string().min(1, "validation.dueDateRequired"),
+    amount: z.coerce.number().positive("validation.amountPositive"),
     currency: z.string().min(3).max(3),
-    seller_name: z.string().min(1, "Sprzedawca jest wymagany"),
+    seller_name: z.string().min(1, "validation.sellerRequired"),
     bank_account: z.string().optional(),
   })
   .superRefine((data, ctx) => {
@@ -35,7 +39,7 @@ const schema = z
       ctx.addIssue({
         code: "custom",
         path: ["due_date"],
-        message: "Termin musi być po dacie wystawienia",
+        message: "validation.dueDateAfterIssue",
       })
     }
   })
@@ -44,6 +48,7 @@ type FormInput = z.input<typeof schema>
 type FormValues = z.output<typeof schema>
 
 export function InvoiceSupervisorFormDialog() {
+  const { t } = useTranslation(["invoice-supervisor", "common"])
   const [open, setOpen] = useState(false)
   const createInvoice = useInvoiceSupervisorCreateInvoice()
   const {
@@ -55,6 +60,8 @@ export function InvoiceSupervisorFormDialog() {
     resolver: zodResolver(schema),
     defaultValues: { currency: "PLN" },
   })
+
+  const fieldError = (message: string | undefined) => (message ? t(message) : undefined)
 
   function onSubmit(values: FormValues) {
     // Build the payload explicitly rather than passing `values` straight
@@ -84,48 +91,67 @@ export function InvoiceSupervisorFormDialog() {
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="h-4 w-4" />
-          Nowa faktura
+          {t("invoiceForm.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nowa faktura</DialogTitle>
-          <DialogDescription>
-            Wprowadź dane faktury. Klient zostanie utworzony automatycznie, jeśli nie istnieje.
-          </DialogDescription>
+          <DialogTitle>{t("invoiceForm.title")}</DialogTitle>
+          <DialogDescription>{t("invoiceForm.description")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <InvoiceSupervisorFormField label="Numer faktury" error={errors.invoice_number?.message}>
+          <InvoiceSupervisorFormField
+            label={t("invoiceForm.invoiceNumberLabel")}
+            error={fieldError(errors.invoice_number?.message)}
+          >
             <Input {...register("invoice_number")} placeholder="FV/2026/07/001" />
           </InvoiceSupervisorFormField>
-          <InvoiceSupervisorFormField label="Klient" error={errors.client_name?.message}>
-            <Input {...register("client_name")} placeholder="ACME Sp. z o.o." />
+          <InvoiceSupervisorFormField
+            label={t("invoiceForm.clientLabel")}
+            error={fieldError(errors.client_name?.message)}
+          >
+            <Input {...register("client_name")} placeholder={t("invoiceForm.clientPlaceholder")} />
           </InvoiceSupervisorFormField>
           <div className="grid grid-cols-2 gap-3">
-            <InvoiceSupervisorFormField label="Data wystawienia" error={errors.issue_date?.message}>
+            <InvoiceSupervisorFormField
+              label={t("invoiceForm.issueDateLabel")}
+              error={fieldError(errors.issue_date?.message)}
+            >
               <Input type="date" {...register("issue_date")} />
             </InvoiceSupervisorFormField>
-            <InvoiceSupervisorFormField label="Termin płatności" error={errors.due_date?.message}>
+            <InvoiceSupervisorFormField
+              label={t("invoiceForm.dueDateLabel")}
+              error={fieldError(errors.due_date?.message)}
+            >
               <Input type="date" {...register("due_date")} />
             </InvoiceSupervisorFormField>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <InvoiceSupervisorFormField label="Kwota" error={errors.amount?.message}>
+            <InvoiceSupervisorFormField
+              label={t("invoiceForm.amountLabel")}
+              error={fieldError(errors.amount?.message)}
+            >
               <Input type="number" step="0.01" {...register("amount")} />
             </InvoiceSupervisorFormField>
-            <InvoiceSupervisorFormField label="Waluta" error={errors.currency?.message}>
+            <InvoiceSupervisorFormField
+              label={t("invoiceForm.currencyLabel")}
+              error={fieldError(errors.currency?.message)}
+            >
               <Input {...register("currency")} maxLength={3} />
             </InvoiceSupervisorFormField>
           </div>
-          <InvoiceSupervisorFormField label="Sprzedawca" error={errors.seller_name?.message}>
+          <InvoiceSupervisorFormField
+            label={t("invoiceForm.sellerLabel")}
+            error={fieldError(errors.seller_name?.message)}
+          >
             <Input {...register("seller_name")} />
           </InvoiceSupervisorFormField>
-          <InvoiceSupervisorFormField label="Numer konta (opcjonalnie)">
+          <InvoiceSupervisorFormField label={t("invoiceForm.bankAccountLabel")}>
             <Input {...register("bank_account")} />
           </InvoiceSupervisorFormField>
           <DialogFooter>
             <Button type="submit" disabled={createInvoice.isPending}>
-              Zapisz
+              {t("common:actions.save")}
             </Button>
           </DialogFooter>
         </form>

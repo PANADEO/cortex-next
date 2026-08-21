@@ -25,10 +25,12 @@ import {
 } from "@cortex/ui"
 import { Film as FilmIcon, Plus } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { buildFilmsColumns } from "./columns"
 
 export default function OknaCzasoweFilmsPage() {
+  const { t } = useTranslation(["okna-czasowe", "common"])
   const filmsQuery = useFilms()
   const createFilm = useCreateFilm()
   const updateFilm = useUpdateFilm()
@@ -52,13 +54,13 @@ export default function OknaCzasoweFilmsPage() {
     try {
       if (editingFilm) {
         await updateFilm.mutateAsync({ id: editingFilm.id, body: input })
-        toast.success("Film zaktualizowany")
+        toast.success(t("films.updated"))
       } else {
         await createFilm.mutateAsync(input)
-        toast.success("Film dodany")
+        toast.success(t("films.created"))
       }
     } catch (error) {
-      toastApiError(error, "Nie udało się zapisać filmu")
+      toastApiError(error, t("films.saveFailed"))
       throw error
     }
   }
@@ -67,26 +69,26 @@ export default function OknaCzasoweFilmsPage() {
     if (!deletingFilm) return
     try {
       await deleteFilm.mutateAsync(deletingFilm.id)
-      toast.success("Film usunięty")
+      toast.success(t("films.deleted"))
     } catch (error) {
-      toastApiError(error, "Nie udało się usunąć filmu")
+      toastApiError(error, t("films.deleteFailed"))
     } finally {
       setDeletingFilm(null)
     }
   }
 
-  const columns = buildFilmsColumns({ onEdit: openEditForm, onDelete: setDeletingFilm })
+  const columns = buildFilmsColumns({ t, onEdit: openEditForm, onDelete: setDeletingFilm })
   const films = filmsQuery.data ?? []
 
   return (
     <>
       <PageHeader
-        title="Filmy"
-        description="Baza filmów śledzonych w rejestrze okien czasowych — tytuł, rok i tytuły zagraniczne używane do wyszukiwania w JustWatch."
+        title={t("films.title")}
+        description={t("films.description")}
         actions={
           <Button size="sm" onClick={openCreateForm}>
             <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Dodaj film
+            {t("films.add")}
           </Button>
         }
       />
@@ -95,12 +97,12 @@ export default function OknaCzasoweFilmsPage() {
         {!filmsQuery.isLoading && films.length === 0 ? (
           <EmptyState
             icon={FilmIcon}
-            title="Brak filmów"
-            description="Dodaj pierwszy film, żeby zacząć codzienne śledzenie dostępności na Rakuten TV PL."
+            title={t("films.emptyTitle")}
+            description={t("films.emptyDescription")}
             action={
               <Button size="sm" onClick={openCreateForm}>
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
-                Dodaj film
+                {t("films.add")}
               </Button>
             }
           />
@@ -129,15 +131,17 @@ export default function OknaCzasoweFilmsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Usunąć „{deletingFilm?.title}”?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Historia skanów tego filmu zostanie zachowana, ale film zniknie z listy śledzonych.
-            </AlertDialogDescription>
+            <AlertDialogTitle>
+              {t("films.deleteTitle", { title: deletingFilm?.title ?? "" })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>{t("films.deleteDescription")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteFilm.isPending}>Anuluj</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteFilm.isPending}>
+              {t("common:actions.cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDelete} disabled={deleteFilm.isPending}>
-              Usuń
+              {t("common:actions.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

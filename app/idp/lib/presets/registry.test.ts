@@ -1,13 +1,16 @@
 // @vitest-environment jsdom
 import { HUB_LAYOUTS } from "@/components/shell/hub/registry"
 import { describe, expect, it } from "vitest"
+
+/** Atrapa `t` — ten test sprawdza KSZTAŁT listy wyboru, nie tłumaczenia. */
+const identity = (key: string) => key
 import tailwind from "../../../../tailwind.config"
 import { migrateLegacySkin, usePresetStore } from "./preset-store"
 import {
   DEFAULT_PRESET,
   INSTANCE_DEFAULT_ID,
   PRESETS,
-  PRESET_CHOICES,
+  presetChoices,
   isPresetId,
   presetChoiceToStored,
   resolvePresetId,
@@ -117,7 +120,7 @@ describe("pozycja „domyślny instancji” w przełączniku", () => {
   })
 
   it("lista dla przełącznika to „dziedzicz” plus każdy preset", () => {
-    expect(PRESET_CHOICES.map((choice) => choice.id)).toEqual([
+    expect(presetChoices(identity).map((choice) => choice.id)).toEqual([
       INSTANCE_DEFAULT_ID,
       ...Object.keys(PRESETS),
     ])
@@ -134,7 +137,7 @@ describe("pozycja „domyślny instancji” w przełączniku", () => {
    * więc bada powrót, a nie stan początkowy.
    */
   it("każdy wybór z przełącznika wraca ze store'a jako ten sam wybór", () => {
-    for (const choice of [...PRESET_CHOICES, ...PRESET_CHOICES]) {
+    for (const choice of [...presetChoices(identity), ...presetChoices(identity)]) {
       usePresetStore.getState().setPreset(presetChoiceToStored(choice.id))
       expect(storedToPresetChoice(usePresetStore.getState().preset)).toBe(choice.id)
     }

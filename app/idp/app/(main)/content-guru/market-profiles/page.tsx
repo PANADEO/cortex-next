@@ -39,6 +39,7 @@ import { formatAbsolute } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
 import { LineChart, Pencil, Plus, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 const NEW_PROFILE_SENTINEL = "__new__"
@@ -66,6 +67,7 @@ const EMPTY_DRAFT: MarketProfileDraft = {
 }
 
 export default function ContentGuruMarketProfilesPage() {
+  const { t } = useTranslation(["content-guru", "common"])
   const profilesQuery = useMyMarketProfiles()
   const createProfile = useCreateMarketProfile()
   const updateProfile = useUpdateMarketProfile()
@@ -86,9 +88,9 @@ export default function ContentGuruMarketProfilesPage() {
     () =>
       marketProfileToMarkdown({
         ...draft,
-        profileName: draft.profileName || "(nienazwany profil)",
+        profileName: draft.profileName || t("marketProfiles.unnamedProfile"),
       }),
-    [draft],
+    [draft, t],
   )
 
   function openNew() {
@@ -117,14 +119,14 @@ export default function ContentGuruMarketProfilesPage() {
     try {
       if (isNew) {
         await createProfile.mutateAsync(draft)
-        toast.success(`Utworzono profil "${draft.profileName}"`)
+        toast.success(t("marketProfiles.toasts.created", { name: draft.profileName }))
       } else if (editedId) {
         await updateProfile.mutateAsync({ id: editedId, body: draft })
-        toast.success("Zapisano zmiany w profilu")
+        toast.success(t("marketProfiles.toasts.saved"))
       }
       closeEditor()
     } catch (error) {
-      toastApiError(error, "Nie udało się zapisać profilu rynku")
+      toastApiError(error, t("marketProfiles.errors.saveFailed"))
     }
   }
 
@@ -132,19 +134,19 @@ export default function ContentGuruMarketProfilesPage() {
     if (!profileToDelete) return
     try {
       await deleteProfile.mutateAsync(profileToDelete.id)
-      toast.success(`Usunięto profil "${profileToDelete.profileName}"`)
+      toast.success(t("marketProfiles.toasts.deleted", { name: profileToDelete.profileName }))
     } catch (error) {
-      toastApiError(error, "Nie udało się usunąć profilu")
+      toastApiError(error, t("marketProfiles.errors.deleteFailed"))
     } finally {
       setProfileToDelete(null)
     }
   }
 
   const columns: ColumnDef<MarketProfileDto, unknown>[] = [
-    { accessorKey: "profileName", header: "Nazwa profilu", enableSorting: true },
+    { accessorKey: "profileName", header: t("marketProfiles.columns.name"), enableSorting: true },
     {
       accessorKey: "updatedAt",
-      header: "Data edycji",
+      header: t("marketProfiles.columns.updatedAt"),
       enableSorting: true,
       cell: ({ row }) => formatAbsolute(row.original.updatedAt),
     },
@@ -157,7 +159,7 @@ export default function ContentGuruMarketProfilesPage() {
             size="icon"
             variant="ghost"
             onClick={() => openEdit(row.original)}
-            aria-label={`Edytuj profil ${row.original.profileName}`}
+            aria-label={t("marketProfiles.a11y.edit", { name: row.original.profileName })}
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -165,7 +167,7 @@ export default function ContentGuruMarketProfilesPage() {
             size="icon"
             variant="ghost"
             onClick={() => setProfileToDelete(row.original)}
-            aria-label={`Usuń profil ${row.original.profileName}`}
+            aria-label={t("marketProfiles.a11y.delete", { name: row.original.profileName })}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -177,32 +179,32 @@ export default function ContentGuruMarketProfilesPage() {
   return (
     <>
       <PageHeader
-        title="Profile rynku"
-        description="Kontekst rynku wstrzykiwany do promptu przy generowaniu — widoczny wyłącznie dla Ciebie."
+        title={t("marketProfiles.title")}
+        description={t("marketProfiles.description")}
         actions={
           <Button size="sm" onClick={openNew}>
             <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Nowy profil
+            {t("marketProfiles.newButton")}
           </Button>
         }
       />
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         {profilesQuery.isLoading ? (
-          <LoadingState label="Wczytywanie profili…" />
+          <LoadingState label={t("marketProfiles.loading")} />
         ) : (
           <CortexDataGrid
             columns={columns}
             data={profiles}
             bordered
             searchable
-            searchPlaceholder="Szukaj po nazwie…"
+            searchPlaceholder={t("marketProfiles.searchPlaceholder")}
             getRowId={(row) => row.id}
             emptyState={
               <EmptyState
                 icon={LineChart}
-                title="Brak profili rynku"
-                description="Dodaj pierwszy profil, żeby móc go wybrać na ekranie generowania."
+                title={t("marketProfiles.empty.title")}
+                description={t("marketProfiles.empty.description")}
               />
             }
           />
@@ -213,14 +215,16 @@ export default function ContentGuruMarketProfilesPage() {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>
-              {isNew ? "Nowy profil rynku" : `Edycja: ${draft.profileName}`}
+              {isNew
+                ? t("marketProfiles.dialog.newTitle")
+                : t("marketProfiles.dialog.editTitle", { name: draft.profileName })}
             </DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="market-profile-name">Nazwa profilu</Label>
+                <Label htmlFor="market-profile-name">{t("marketProfiles.form.name")}</Label>
                 <Input
                   id="market-profile-name"
                   value={draft.profileName}
@@ -228,7 +232,9 @@ export default function ContentGuruMarketProfilesPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="market-profile-description">Opis</Label>
+                <Label htmlFor="market-profile-description">
+                  {t("marketProfiles.form.description")}
+                </Label>
                 <Textarea
                   id="market-profile-description"
                   rows={3}
@@ -237,7 +243,9 @@ export default function ContentGuruMarketProfilesPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="market-profile-size-trends">Wielkość rynku i trendy</Label>
+                <Label htmlFor="market-profile-size-trends">
+                  {t("marketProfiles.form.sizeTrends")}
+                </Label>
                 <Textarea
                   id="market-profile-size-trends"
                   rows={3}
@@ -246,7 +254,7 @@ export default function ContentGuruMarketProfilesPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="market-profile-personas">Persony</Label>
+                <Label htmlFor="market-profile-personas">{t("marketProfiles.form.personas")}</Label>
                 <Textarea
                   id="market-profile-personas"
                   rows={3}
@@ -255,7 +263,7 @@ export default function ContentGuruMarketProfilesPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="market-profile-problems">Problemy</Label>
+                <Label htmlFor="market-profile-problems">{t("marketProfiles.form.problems")}</Label>
                 <Textarea
                   id="market-profile-problems"
                   rows={3}
@@ -264,7 +272,7 @@ export default function ContentGuruMarketProfilesPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="market-profile-needs">Potrzeby</Label>
+                <Label htmlFor="market-profile-needs">{t("marketProfiles.form.needs")}</Label>
                 <Textarea
                   id="market-profile-needs"
                   rows={3}
@@ -273,7 +281,7 @@ export default function ContentGuruMarketProfilesPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="market-profile-plans">Plany</Label>
+                <Label htmlFor="market-profile-plans">{t("marketProfiles.form.plans")}</Label>
                 <Textarea
                   id="market-profile-plans"
                   rows={3}
@@ -284,7 +292,7 @@ export default function ContentGuruMarketProfilesPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label>Podgląd — dokładnie to, co trafia do promptu</Label>
+              <Label>{t("marketProfiles.previewLabel")}</Label>
               <Card className="flex-1">
                 <CardContent className="pt-6">
                   <ContentGuruMarkdownPreview content={previewMarkdown} />
@@ -295,7 +303,7 @@ export default function ContentGuruMarketProfilesPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={closeEditor}>
-              Anuluj
+              {t("common:actions.cancel")}
             </Button>
             <Button
               onClick={handleSave}
@@ -303,7 +311,7 @@ export default function ContentGuruMarketProfilesPage() {
                 !draft.profileName.trim() || createProfile.isPending || updateProfile.isPending
               }
             >
-              Zapisz profil
+              {t("marketProfiles.saveButton")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -315,16 +323,17 @@ export default function ContentGuruMarketProfilesPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Usunąć profil {profileToDelete?.profileName}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("marketProfiles.deleteDialog.title", { name: profileToDelete?.profileName ?? "" })}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Treści wygenerowane z jego użyciem w przeszłości zostają w archiwum bez zmian. Tej
-              operacji nie da się cofnąć.
+              {t("marketProfiles.deleteDialog.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleteProfile.isPending}>
-              Usuń
+              {t("common:actions.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

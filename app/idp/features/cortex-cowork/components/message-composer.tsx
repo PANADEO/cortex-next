@@ -3,6 +3,7 @@
 import { Button, Textarea } from "@cortex/ui"
 import { ArrowUp, FileText, Loader2, Paperclip } from "lucide-react"
 import { useRef, type ClipboardEvent, type KeyboardEvent } from "react"
+import { useTranslation } from "react-i18next"
 import type { CoworkInputFile, CoworkSessionUsage } from "../types"
 import { ContextMeter } from "./context-meter"
 
@@ -43,6 +44,7 @@ export function MessageComposer({
   isUploading = false,
   inputFiles = [],
 }: MessageComposerProps) {
+  const { t } = useTranslation("cortex-cowork")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   function handleSend() {
@@ -88,7 +90,7 @@ export function MessageComposer({
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
-        placeholder="Poproś o raport, eksport albo kolejny krok..."
+        placeholder={t("composer.placeholder")}
         disabled={disabled}
         rows={2}
         className="min-h-[44px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
@@ -114,8 +116,8 @@ export function MessageComposer({
                 className="h-7 w-7 rounded-full text-muted-foreground"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                aria-label="Dodaj pliki do sesji"
-                title="Dodaj pliki (albo wklej / upuść je tutaj)"
+                aria-label={t("composer.attachAria")}
+                title={t("composer.attachTitle")}
               >
                 {isUploading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -125,9 +127,7 @@ export function MessageComposer({
               </Button>
             </>
           ) : null}
-          <span className="text-[11px] text-muted-foreground">
-            Enter wysyła · Shift+Enter nowa linia
-          </span>
+          <span className="text-[11px] text-muted-foreground">{t("composer.hint")}</span>
         </div>
         <div className="flex items-center gap-3">
           {usage ? <ContextMeter usage={usage} /> : null}
@@ -136,7 +136,7 @@ export function MessageComposer({
             disabled={disabled || !value.trim()}
             size="icon"
             className="h-8 w-8 rounded-full"
-            aria-label="Wyślij wiadomość"
+            aria-label={t("composer.sendAria")}
           >
             {disabled ? (
               <Loader2 className="h-4 w-4 animate-spin" />

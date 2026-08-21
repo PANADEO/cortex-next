@@ -15,6 +15,7 @@ import {
 } from "@cortex/ui"
 import { MessagesSquare, Pencil, Plus, Trash2 } from "lucide-react"
 import Link from "next/link"
+import { useTranslation } from "react-i18next"
 import { useDeleteProject, useGovernanceConfig, useUpdateProject } from "../hooks/use-governance"
 import { AccessDeniedState } from "./config-screen"
 
@@ -36,6 +37,7 @@ function ProjectCard({
   onDelete: () => void
   onToggle: (enabled: boolean) => void
 }) {
+  const { t } = useTranslation(["cortex-config", "common"])
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -47,7 +49,7 @@ function ProjectCard({
           <Switch
             checked={project.enabled}
             onCheckedChange={onToggle}
-            aria-label={`Aktywność kafelka ${project.name}`}
+            aria-label={t("projects.toggleAria", { name: project.name })}
           />
         </div>
       </CardHeader>
@@ -65,20 +67,22 @@ function ProjectCard({
           ))}
           <Badge variant="outline">{project.sandbox.mode === "docker" ? "docker" : "local"}</Badge>
           {compositionCount(project) > 0 ? (
-            <Badge variant="outline">klocki: {compositionCount(project)}</Badge>
+            <Badge variant="outline">
+              {t("projects.blocksBadge", { n: compositionCount(project) })}
+            </Badge>
           ) : null}
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline" size="sm">
             <Link href={`/cortex-cowork/chat?project=${encodeURIComponent(project.id)}`}>
               <MessagesSquare className="mr-1.5 h-3.5 w-3.5" />
-              Otwórz chat
+              {t("projects.openChat")}
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link href={`/cortex-config/projects/${encodeURIComponent(project.id)}`}>
               <Pencil className="mr-1.5 h-3.5 w-3.5" />
-              Edytuj
+              {t("common:actions.edit")}
             </Link>
           </Button>
           <Button
@@ -88,7 +92,7 @@ function ProjectCard({
             onClick={onDelete}
           >
             <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-            Usuń
+            {t("common:actions.delete")}
           </Button>
         </div>
       </CardContent>
@@ -97,12 +101,13 @@ function ProjectCard({
 }
 
 export function ProjectsPanel() {
+  const { t } = useTranslation("cortex-config")
   const governance = useGovernanceConfig()
   const updateProject = useUpdateProject()
   const deleteProject = useDeleteProject()
 
   if (governance.isPending) {
-    return <LoadingState label="Wczytywanie konfiguracji..." />
+    return <LoadingState label={t("state.loadingConfig")} />
   }
   if (governance.isError) return <AccessDeniedState />
 
@@ -110,9 +115,7 @@ export function ProjectsPanel() {
   const projects = [...config.projects].sort((a, b) => a.name.localeCompare(b.name))
 
   const handleDelete = (project: CoworkProjectConfig) => {
-    if (
-      !window.confirm(`Usunąć projekt "${project.name}"? Sesje i artefakty pozostaną na dysku.`)
-    ) {
+    if (!window.confirm(t("projects.deleteConfirm", { name: project.name }))) {
       return
     }
     deleteProject.mutate(project.id)
@@ -121,14 +124,11 @@ export function ProjectsPanel() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Kafelki agentowe (task-chat) konfigurowane centralnie - każdy projekt to osobny kafelek na
-          hubie z własnym modelem, klockami i sandboxem.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("projects.intro")}</p>
         <Button asChild>
           <Link href="/cortex-config/projects/new">
             <Plus className="mr-1.5 h-4 w-4" />
-            Nowy projekt
+            {t("projects.new")}
           </Link>
         </Button>
       </div>
@@ -136,8 +136,8 @@ export function ProjectsPanel() {
       {projects.length === 0 ? (
         <EmptyState
           icon={MessagesSquare}
-          title="Brak projektów"
-          description="Utwórz pierwszy kafelek agentowy dla działu."
+          title={t("projects.emptyTitle")}
+          description={t("projects.emptyDescription")}
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

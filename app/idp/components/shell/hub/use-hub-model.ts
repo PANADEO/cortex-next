@@ -35,9 +35,10 @@ function categoryIdsForView(view: HeroView): readonly string[] {
     : DEPARTMENT_CATEGORIES.map((c) => c.id)
 }
 
-function categoryLabel(view: HeroView, id: string): string {
+function categoryLabel(view: HeroView, id: string, t: (key: string) => string): string {
   const source = view === "functional" ? FUNCTIONAL_CATEGORIES : DEPARTMENT_CATEGORIES
-  return source.find((c) => c.id === id)?.label ?? id
+  const key = source.find((c) => c.id === id)?.labelKey
+  return key ? t(key) : id
 }
 
 function tileBelongsTo(view: HeroView, tile: Tile, categoryId: string): boolean {
@@ -64,6 +65,7 @@ export function useHubModel(tileHrefOverrides?: TileHrefOverrides | undefined): 
   // aplikacji — patrz `hub-tile.ts`. Hook musi tu być, bo `t` zmienia
   // tożsamość przy zmianie języka i to ono przelicza `useMemo` niżej.
   const { t: tTiles } = useTranslation("tiles")
+  const { t: tCommon } = useTranslation("common")
   const locale = useLocaleStore((s) => s.locale)
 
   const tiles = useMemo(() => {
@@ -110,7 +112,7 @@ export function useHubModel(tileHrefOverrides?: TileHrefOverrides | undefined): 
     return categoryIdsForView(view)
       .map((id) => ({
         id,
-        label: categoryLabel(view, id),
+        label: categoryLabel(view, id, tCommon),
         count: searchedTiles.filter((t) => tileBelongsTo(view, t, id)).length,
       }))
       .filter((c) => c.count > 0)
@@ -146,10 +148,10 @@ export function useHubModel(tileHrefOverrides?: TileHrefOverrides | undefined): 
   // jest tu nullowalne, inaczej niż na `main`, skąd ten kod przyszedł.
   const categoryTagFor = (tile: Tile): string => {
     if (view === "functional") {
-      return tile.categoryFunctional ? categoryLabel(view, tile.categoryFunctional) : ""
+      return tile.categoryFunctional ? categoryLabel(view, tile.categoryFunctional, tCommon) : ""
     }
     const first = tile.categoryDepartment[0]
-    return first ? categoryLabel(view, first) : ""
+    return first ? categoryLabel(view, first, tCommon) : ""
   }
 
   // Katalog jeszcze nie wrócił z GET /api/hub/tiles — bez tego pierwszy render

@@ -16,6 +16,7 @@ import {
   RadioGroupItem,
 } from "@cortex/ui"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 
 /**
  * „Instancja nie narzuca wyglądu" jako pozycja listy. NIE jest to preset i nie
@@ -26,24 +27,33 @@ import { useState } from "react"
  */
 const NONE = "none"
 
-const NONE_OPTION = {
-  id: NONE,
-  label: "Bez narzucania",
-  description: "Każdy użytkownik zostaje przy swoim wyborze; nowi widzą wygląd domyślny.",
-  swatch: ["#a3a3a3", "#a3a3a3", "#a3a3a3"] as readonly string[],
+const NONE_SWATCH = ["#a3a3a3", "#a3a3a3", "#a3a3a3"] as readonly string[]
+
+/** Etykiety presetów przychodzą z rejestru wyglądów i nie należą do tej
+ *  przestrzeni; przetłumaczyć trzeba wyłącznie pozycję „bez narzucania”, stąd
+ *  lista budowana w renderze, a nie na poziomie modułu (tam nie ma `t`). */
+function useAppearanceOptions() {
+  const { t } = useTranslation("system-config")
+  const { t: tCommon } = useTranslation("common")
+  return [
+    {
+      id: NONE,
+      label: t("appearance.noneLabel"),
+      description: t("appearance.noneDescription"),
+      swatch: NONE_SWATCH,
+    },
+    ...Object.values(PRESETS).map(({ id, label, descriptionKey, swatch }) => ({
+      id,
+      label,
+      description: tCommon(descriptionKey),
+      swatch: swatch as readonly string[],
+    })),
+  ]
 }
 
-const OPTIONS = [
-  NONE_OPTION,
-  ...Object.values(PRESETS).map(({ id, label, description, swatch }) => ({
-    id,
-    label,
-    description,
-    swatch: swatch as readonly string[],
-  })),
-]
-
 export default function SystemConfigAppearancePage() {
+  const { t } = useTranslation(["system-config", "common"])
+  const options = useAppearanceOptions()
   const appearanceQuery = useInstanceAppearance()
   const setAppearance = useSetInstanceAppearance()
   // `null` dopóki nie znamy zapisanej wartości — inaczej pierwszy render
@@ -78,40 +88,35 @@ export default function SystemConfigAppearancePage() {
         // więc administrator zapisałby zmianę i nie zobaczył jej u siebie.
         window.location.reload()
       },
-      onError: (error) => toastApiError(error, "Nie udało się zapisać wyglądu instancji"),
+      onError: (error) => toastApiError(error, t("appearance.saveFailed")),
     })
   }
 
   return (
     <>
-      <PageHeader
-        title="Wygląd"
-        description="Domyślny wygląd tej instancji. Użytkownik może go nadpisać własnym wyborem w nagłówku."
-      />
+      <PageHeader title={t("appearance.title")} description={t("appearance.description")} />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
         {appearanceQuery.isLoading ? (
           <LoadingState variant="skeleton" rows={4} />
         ) : appearanceQuery.isError ? (
           <ErrorState
-            title="Nie udało się wczytać ustawienia"
-            message="Spróbuj odświeżyć stronę. Jeśli problem się powtarza, skontaktuj się z administratorem."
+            title={t("appearance.loadFailedTitle")}
+            message={t("appearance.loadFailedBody")}
           />
         ) : (
           <>
             {unknownStored ? (
               <Alert>
-                <AlertTitle>Nieznany preset w bazie</AlertTitle>
+                <AlertTitle>{t("appearance.unknownPresetTitle")}</AlertTitle>
                 <AlertDescription>
-                  Zapisana wartość „{saved}” nie odpowiada żadnemu presetowi w tej wersji aplikacji.
-                  Instancja zachowuje się jak bez ustawienia. Zapisanie czegokolwiek poniżej ją
-                  nadpisze.
+                  {t("appearance.unknownPresetBody", { value: saved })}
                 </AlertDescription>
               </Alert>
             ) : null}
 
             <RadioGroup value={selected} onValueChange={setChoice} className="max-w-2xl gap-3">
-              {OPTIONS.map((option) => (
+              {options.map((option) => (
                 <Label
                   key={option.id}
                   htmlFor={`preset-${option.id}`}
@@ -137,10 +142,10 @@ export default function SystemConfigAppearancePage() {
 
             <div className="flex items-center gap-3">
               <Button onClick={save} disabled={setAppearance.isPending || !canSave}>
-                Zapisz
+                {t("common:actions.save")}
               </Button>
               {canSave ? null : (
-                <span className="text-xs text-muted-foreground">Brak zmian do zapisania.</span>
+                <span className="text-xs text-muted-foreground">{t("appearance.noChanges")}</span>
               )}
             </div>
           </>

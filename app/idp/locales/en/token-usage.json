@@ -1,1 +1,138 @@
-{}
+{
+  "page": {
+    "title": "Token Reporting",
+    "description": "Token usage and request counts going through cortex-proxy"
+  },
+  "tabs": {
+    "users": "Users",
+    "models": "Models",
+    "apps": "Applications",
+    "scopes": "Scopes",
+    "details": "Details"
+  },
+  "columns": {
+    "user": "User",
+    "app": "Application",
+    "scope": "Scope",
+    "model": "Model",
+    "totalTokens": "Tokens",
+    "reasoningTokens": "Reasoning",
+    "requestCount": "Requests",
+    "userCount": "Users",
+    "share": "Share"
+  },
+  "panel": {
+    "usersTitle": "Usage by user",
+    "modelsTitle": "Usage by model",
+    "appsTitle": "Usage by application",
+    "scopesTitle": "Usage by scope",
+    "barMeta": "{{requests}} requests",
+    "truncated": "The bar list shows the top {{shown}} of {{total}} entries. The table below has them all."
+  },
+  "filter": {
+    "startLabel": "Start date",
+    "endLabel": "End date",
+    "submit": "Show report",
+    "hint": "The range includes both dates and is counted in the cortex-proxy time zone (Europe/Warsaw, CET/CEST). Maximum range length: {{days}} days.",
+    "presets": {
+      "current-month": "This month",
+      "last-7-days": "Last 7 days",
+      "last-30-days": "Last 30 days"
+    }
+  },
+  "detail": {
+    "modelLabel": "Model",
+    "allModels": "All models",
+    "scopeLabel": "Scope",
+    "allScopes": "All scopes",
+    "searchPlaceholder": "Search details..."
+  },
+  "actions": {
+    "downloadCsv": "Download CSV",
+    "downloadJson": "Download JSON"
+  },
+  "empty": {
+    "noDataTitle": "No data in this period",
+    "noDataDescription": "cortex-proxy recorded no requests in the selected date range.",
+    "noMatchTitle": "No data for the selected filters",
+    "noMatchDescription": "Change the model or scope, or widen the date range."
+  },
+  "errors": {
+    "generic": {
+      "title": "Could not load the report",
+      "message": "Please try again in a moment."
+    },
+    "cortex-proxy-not-configured": {
+      "title": "Report is not configured",
+      "message": "This instance has no cortex-proxy admin key set (CORTEX_PROXY_ADMIN_API_KEY). That is a configuration task for the instance administrator — all other applications keep working."
+    },
+    "cortex-proxy-unauthorized": {
+      "title": "cortex-proxy rejected the admin key",
+      "message": "The key is set, but cortex-proxy does not accept it. Most common cause: CORTEX_PROXY_API_KEY was entered instead of CORTEX_PROXY_ADMIN_API_KEY — these are two different secrets."
+    },
+    "cortex-proxy-unreachable": {
+      "title": "cortex-proxy is not responding",
+      "message": "Could not connect to cortex-proxy. Please try again in a moment."
+    },
+    "cortex-proxy-error": {
+      "title": "Unexpected cortex-proxy response",
+      "message": "cortex-proxy replied in a way we cannot read."
+    },
+    "invalid-format": {
+      "title": "Invalid date range",
+      "message": "Dates must use the YYYY-MM-DD format."
+    },
+    "invalid-date": {
+      "title": "Invalid date",
+      "message": "That date does not exist in the calendar."
+    },
+    "reversed-range": {
+      "title": "Invalid date range",
+      "message": "The start date cannot be later than the end date."
+    },
+    "range-too-long": {
+      "title": "Range is too long",
+      "message": "Pick a shorter period — the report covers at most one quarter."
+    }
+  },
+  "dataQuality": {
+    "title": "How to read these numbers",
+    "estimates": "Some values are estimates, not readings from the provider API. When a model response carries no usage block, cortex-proxy stores a token count approximated from the request body. The report therefore shows the scale of usage, not a token-exact bill.",
+    "coverage": "The report covers all traffic passing through cortex-proxy, including systems outside Cortex360. The “User” column holds the identifier sent by the calling system — usually an e-mail address, but that is not guaranteed."
+  },
+  "metrics": {
+    "totalTokens": {
+      "label": "Total tokens",
+      "description": "{{request}} in requests, {{response}} in responses"
+    },
+    "requestCount": {
+      "label": "Requests",
+      "description": "Including failed requests, which consumed no tokens"
+    },
+    "activeUsers": {
+      "label": "Active users",
+      "description": "With non-zero token usage",
+      "withIdle": "{{total}} visible, including users with no usage"
+    },
+    "averagePerUser": {
+      "label": "Average per user",
+      "description": "Averaged over active users"
+    },
+    "reasoningTokens": {
+      "label": "Reasoning tokens",
+      "description": "Reported separately by reasoning models"
+    },
+    "cachedTokens": {
+      "label": "Cached tokens",
+      "description": "Some requests served from the provider cache"
+    },
+    "models": {
+      "label": "Models",
+      "top": "Most used: {{model}}"
+    },
+    "apps": {
+      "label": "Applications",
+      "top": "Most used: {{app}}"
+    }
+  }
+}

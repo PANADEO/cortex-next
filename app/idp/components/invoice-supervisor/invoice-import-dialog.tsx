@@ -13,8 +13,10 @@ import {
 } from "@cortex/ui"
 import { Loader2, Upload } from "lucide-react"
 import { useRef, useState, type ChangeEvent } from "react"
+import { useTranslation } from "react-i18next"
 
 export function InvoiceSupervisorImportDialog() {
+  const { t } = useTranslation("invoice-supervisor")
   const [open, setOpen] = useState(false)
   const [result, setResult] = useState<InvoiceSupervisorImportResult | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -38,16 +40,13 @@ export function InvoiceSupervisorImportDialog() {
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
           <Upload className="h-4 w-4" />
-          Import CSV/Excel
+          {t("import.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Import faktur</DialogTitle>
-          <DialogDescription>
-            Plik CSV lub Excel z kolumnami: numer faktury, klient, data wystawienia, termin
-            płatności, kwota, sprzedawca.
-          </DialogDescription>
+          <DialogTitle>{t("import.title")}</DialogTitle>
+          <DialogDescription>{t("import.description")}</DialogDescription>
         </DialogHeader>
         <input
           ref={inputRef}
@@ -67,27 +66,27 @@ export function InvoiceSupervisorImportDialog() {
           ) : (
             <Upload className="h-4 w-4" />
           )}
-          Wybierz plik
+          {t("import.pickFile")}
         </Button>
         {result ? (
           <div className="space-y-2 text-sm">
             <p>
-              Zaimportowano: <strong>{result.summary.imported}</strong> · Błędy:{" "}
-              {result.summary.errors} · Konflikty: {result.summary.conflicts}
+              {t("import.imported")} <strong>{result.summary.imported}</strong> ·{" "}
+              {t("import.errors")} {result.summary.errors} · {t("import.conflicts")}{" "}
+              {result.summary.conflicts}
             </p>
             {result.errors.length > 0 ? (
               <ul className="max-h-32 space-y-1 overflow-y-auto rounded-md border border-border p-2 text-destructive">
                 {result.errors.map((error, index) => (
                   <li key={`${error.row_number}-${index}`}>
-                    Wiersz {error.row_number}: {error.message}
+                    {t("import.errorRow", { row: error.row_number, message: error.message })}
                   </li>
                 ))}
               </ul>
             ) : null}
             {result.conflicts.length > 0 ? (
               <p className="text-warning-foreground">
-                {result.conflicts.length} konfliktów numerów faktur — obsługa rozstrzygania w
-                kolejnej iteracji.
+                {t("import.conflictsNote", { n: result.conflicts.length })}
               </p>
             ) : null}
           </div>

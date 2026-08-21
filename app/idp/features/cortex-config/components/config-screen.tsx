@@ -4,10 +4,12 @@ import { Button, ErrorState } from "@cortex/ui"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import type { ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 
 /** The one access-denied state for every cortex-config admin surface. */
-export function AccessDeniedState({ title = "Brak dostępu do konfiguracji" }: { title?: string }) {
-  return <ErrorState title={title} message="Panel Cortex Config wymaga uprawnień administratora." />
+export function AccessDeniedState({ title }: { title?: string }) {
+  const { t } = useTranslation("cortex-config")
+  return <ErrorState title={title ?? t("access.title")} message={t("access.message")} />
 }
 
 interface ConfigScreenProps {
@@ -35,6 +37,7 @@ export function ConfigScreen({
   actions,
   children,
 }: ConfigScreenProps) {
+  const { t } = useTranslation("common")
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="border-b border-border px-6 pb-4 pt-5">
@@ -58,7 +61,7 @@ export function ConfigScreen({
               {save ? (
                 <>
                   <Button asChild type="button" variant="outline">
-                    <Link href={backHref}>Anuluj</Link>
+                    <Link href={backHref}>{t("actions.cancel")}</Link>
                   </Button>
                   <Button type="submit" disabled={save.isSaving}>
                     {save.isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

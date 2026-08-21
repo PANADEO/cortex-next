@@ -36,9 +36,11 @@ import { ChevronLeft, FileSearch, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 export default function GeoScoreCalculatorHistoryDetailPage() {
+  const { t } = useTranslation(["geo-score-calculator", "common"])
   const params = useParams<{ id: string }>()
   const router = useRouter()
   const calculationQuery = useGeoScoreCalculation(params.id ?? null)
@@ -51,10 +53,10 @@ export default function GeoScoreCalculatorHistoryDetailPage() {
     if (!calculation) return
     try {
       await deleteCalculation.mutateAsync(calculation.id)
-      toast.success("Usunięto analizę z historii")
+      toast.success(t("detail.deleted"))
       router.push("/geo-score-calculator/history")
     } catch (error) {
-      toastApiError(error, "Nie udało się usunąć analizy")
+      toastApiError(error, t("detail.errors.deleteFailed"))
     } finally {
       setIsDeleteOpen(false)
     }
@@ -63,18 +65,18 @@ export default function GeoScoreCalculatorHistoryDetailPage() {
   return (
     <>
       <PageHeader
-        title="Szczegóły analizy"
+        title={t("detail.title")}
         description={
           calculation
-            ? `Zapisano ${formatAbsolute(calculation.createdAt)}`
-            : "Pełny wynik i konfiguracja użyta do jego policzenia."
+            ? t("detail.savedAt", { date: formatAbsolute(calculation.createdAt) })
+            : t("detail.description")
         }
         actions={
           <div className="flex items-center gap-2">
             <Button size="sm" variant="ghost" asChild>
               <Link href="/geo-score-calculator/history">
                 <ChevronLeft className="mr-1.5 h-3.5 w-3.5" />
-                Historia
+                {t("detail.backToHistory")}
               </Link>
             </Button>
             <Button
@@ -84,7 +86,7 @@ export default function GeoScoreCalculatorHistoryDetailPage() {
               onClick={() => setIsDeleteOpen(true)}
             >
               <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-              Usuń
+              {t("common:actions.delete")}
             </Button>
           </div>
         }
@@ -92,12 +94,12 @@ export default function GeoScoreCalculatorHistoryDetailPage() {
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
         {calculationQuery.isLoading ? (
-          <LoadingState label="Wczytywanie analizy…" />
+          <LoadingState label={t("detail.loading")} />
         ) : calculationQuery.isError || !calculation ? (
           <EmptyState
             icon={FileSearch}
-            title="Nie znaleziono analizy"
-            description="Analiza nie istnieje albo nie masz do niej dostępu."
+            title={t("detail.notFoundTitle")}
+            description={t("detail.notFoundDescription")}
           />
         ) : (
           <>
@@ -105,11 +107,8 @@ export default function GeoScoreCalculatorHistoryDetailPage() {
 
             <Card>
               <CardContent className="flex flex-col gap-2 pt-6">
-                <Label>Konfiguracja użyta do tego wyniku</Label>
-                <p className="text-xs text-muted-foreground">
-                  Migawka wag, benchmarków, progów ocen i list słów obowiązujących w momencie tej
-                  analizy — kolejne zmiany w Ustawieniach nie zmieniają już policzonego wyniku.
-                </p>
+                <Label>{t("detail.configLabel")}</Label>
+                <p className="text-xs text-muted-foreground">{t("detail.configHint")}</p>
                 <JsonViewer data={calculation.configSnapshot} initialDepth={1} />
               </CardContent>
             </Card>
@@ -120,15 +119,13 @@ export default function GeoScoreCalculatorHistoryDetailPage() {
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Usunąć tę analizę?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Ta operacja jest nieodwracalna — analiza zniknie z historii na stałe.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("detail.deleteConfirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("detail.deleteConfirmBody")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleteCalculation.isPending}>
-              Usuń
+              {t("common:actions.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

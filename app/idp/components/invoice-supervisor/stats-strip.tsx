@@ -6,8 +6,10 @@ import { Skeleton } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { AlertCircle, CalendarClock, Receipt, TrendingDown } from "lucide-react"
 import type { ElementType } from "react"
+import { useTranslation } from "react-i18next"
 
 export function InvoiceSupervisorStatsStrip() {
+  const { t } = useTranslation("invoice-supervisor")
   const { data, isLoading, isError } = useInvoiceSupervisorDashboardSummary()
   const overdueCount =
     (data?.status_counts?.overdue ?? 0) + (data?.status_counts?.partially_paid ?? 0)
@@ -17,14 +19,14 @@ export function InvoiceSupervisorStatsStrip() {
     <div className="grid shrink-0 grid-cols-2 divide-x divide-border border-b border-border sm:grid-cols-4">
       <StatItem
         icon={Receipt}
-        label="Faktury niezapłacone"
+        label={t("stats.unpaidInvoices")}
         value={data ? data.total_invoices - paidCount : undefined}
         isLoading={isLoading}
         isError={isError}
       />
       <StatItem
         icon={TrendingDown}
-        label="Łączna kwota po terminie"
+        label={t("stats.totalOverdueAmount")}
         value={
           data
             ? formatInvoiceSupervisorMultiCurrency(
@@ -39,7 +41,7 @@ export function InvoiceSupervisorStatsStrip() {
       />
       <StatItem
         icon={AlertCircle}
-        label="Po terminie"
+        label={t("stats.overdueCount")}
         value={overdueCount}
         isLoading={isLoading}
         isError={isError}
@@ -47,7 +49,7 @@ export function InvoiceSupervisorStatsStrip() {
       />
       <StatItem
         icon={CalendarClock}
-        label="Termin dzisiaj"
+        label={t("stats.dueToday")}
         value={data?.due_today.length}
         isLoading={isLoading}
         isError={isError}
@@ -72,6 +74,8 @@ function StatItem({
   isError?: boolean
   tone?: "destructive" | "warning"
 }) {
+  const { t } = useTranslation("invoice-supervisor")
+
   return (
     <div className="flex items-center gap-2.5 px-4 py-2.5">
       <Icon
@@ -91,7 +95,7 @@ function StatItem({
         ) : isError ? (
           <div
             className="truncate text-sm font-semibold text-destructive"
-            title="Nie udało się wczytać"
+            title={t("stats.loadFailed")}
           >
             —
           </div>

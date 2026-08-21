@@ -18,13 +18,14 @@ import {
   UserMenu,
 } from "@cortex/ui"
 import { cva } from "class-variance-authority"
+import { useTranslation } from "react-i18next"
 import { Bell, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Fragment, useEffect, useState } from "react"
 import { useResolvedBreadcrumbs } from "../lib/breadcrumbs"
 import { usePreset, usePresetStore } from "../lib/presets/preset-store"
-import { PRESET_CHOICES, presetChoiceToStored, storedToPresetChoice } from "../lib/presets/registry"
+import { presetChoices, presetChoiceToStored, storedToPresetChoice } from "../lib/presets/registry"
 import { useSidebarStore } from "../lib/stores/sidebar-store"
 import { useThemeStore } from "../lib/stores/theme-store"
 import { CommandPalette } from "./command-palette"
@@ -83,6 +84,7 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
   const persistPreferences = useSetUserPreferences()
   const shellUser = useShellUser()
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const { t: tCommon } = useTranslation("common")
 
   const trail = useResolvedBreadcrumbs(pathname)
 
@@ -170,7 +172,7 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
               chodzi już `ThemeToggle`. Uzasadnienie propsów w `shell-header.tsx`. */}
           <SkinToggle
             skin={storedToPresetChoice(storedPreset)}
-            options={PRESET_CHOICES}
+            options={presetChoices(tCommon)}
             onSkinChange={(choice) => setPreset(presetChoiceToStored(choice))}
           />
           <ThemeToggle

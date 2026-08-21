@@ -42,18 +42,22 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { z } from "zod"
 
+// Komunikaty walidacji są KLUCZAMI i18n, nie gotowym tekstem: schematy żyją na
+// poziomie modułu, więc `t` jeszcze nie istnieje. Tłumaczy je miejsce, które je
+// renderuje (patrz `fieldError` niżej).
 const paymentSchema = z.object({
-  amount: z.coerce.number().positive("Kwota musi być większa od 0"),
-  paymentDate: z.string().min(1, "Data wpłaty jest wymagana"),
+  amount: z.coerce.number().positive("validation.amountPositive"),
+  paymentDate: z.string().min(1, "validation.paymentDateRequired"),
   note: z.string().optional(),
 })
 type PaymentFormInput = z.input<typeof paymentSchema>
 type PaymentFormValues = z.output<typeof paymentSchema>
 
 const disputeSchema = z.object({
-  note: z.string().min(1, "Powód sporu jest wymagany"),
+  note: z.string().min(1, "validation.disputeReasonRequired"),
 })
 type DisputeFormInput = z.input<typeof disputeSchema>
 type DisputeFormValues = z.output<typeof disputeSchema>
@@ -67,6 +71,7 @@ function todayIsoDate(): string {
 }
 
 export default function InvoiceSupervisorInvoiceDetailPage() {
+  const { t } = useTranslation("invoice-supervisor")
   const params = useParams<{ id: string }>()
   const invoiceId = Number(params?.id)
 
@@ -86,6 +91,8 @@ export default function InvoiceSupervisorInvoiceDetailPage() {
   const disputeForm = useForm<DisputeFormInput, unknown, DisputeFormValues>({
     resolver: zodResolver(disputeSchema),
   })
+
+  const fieldError = (message: string | undefined) => (message ? t(message) : undefined)
 
   function onSubmitPayment(values: PaymentFormValues) {
     // Build the payload explicitly — zod's `.optional()` types `note` as
@@ -115,21 +122,21 @@ export default function InvoiceSupervisorInvoiceDetailPage() {
   if (!Number.isFinite(invoiceId)) {
     return (
       <ErrorState
-        title="Nieprawidłowy identyfikator faktury"
-        message="Nie można odnaleźć podanej faktury."
+        title={t("invoiceDetail.invalidIdTitle")}
+        message={t("invoiceDetail.invalidIdMessage")}
       />
     )
   }
 
   if (invoiceQuery.isPending) {
-    return <LoadingState label="Wczytywanie faktury…" />
+    return <LoadingState label={t("invoiceDetail.loading")} />
   }
 
   if (invoiceQuery.error || !invoiceQuery.data) {
     return (
       <ErrorState
-        title="Nie znaleziono faktury"
-        message="Nie udało się wczytać wybranej faktury."
+        title={t("invoiceDetail.notFoundTitle")}
+        message={t("invoiceDetail.notFoundMessage")}
         onRetry={() => invoiceQuery.refetch()}
       />
     )
@@ -143,12 +150,12 @@ export default function InvoiceSupervisorInvoiceDetailPage() {
     <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader
         title={invoice.invoice_number}
-        description="Szczegóły faktury, historia wpłat i status sporu."
+        description={t("invoiceDetail.description")}
         actions={
           <Button asChild variant="outline" size="sm">
             <Link href="/invoice-supervisor/invoices">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Wróć do listy
+              {t("actions.backToList")}
             </Link>
           </Button>
         }
@@ -168,7 +175,7 @@ export default function InvoiceSupervisorInvoiceDetailPage() {
           <div className="flex gap-2">
             {invoice.status === "disputed" ? (
               <Button variant="outline" size="sm" onClick={() => clearDispute.mutate()}>
-                Wyczyść spór
+                {t("invoiceDetail.clearDispute")}
               </Button>
             ) : invoice.status === "overdue" ? (
               <Dialog
@@ -181,23 +188,23 @@ export default function InvoiceSupervisorInvoiceDetailPage() {
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
                     <ShieldAlert className="h-4 w-4" />
-                    Oznacz jako sporną
+                    {t("invoiceDetail.markDisputed")}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Oznacz fakturę jako sporną</DialogTitle>
+                    <DialogTitle>{t("invoiceDetail.markDisputedTitle")}</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={disputeForm.handleSubmit(onSubmitDispute)} className="space-y-3">
                     <InvoiceSupervisorFormField
-                      label="Powód sporu"
-                      error={disputeForm.formState.errors.note?.message}
+                      label={t("invoiceDetail.disputeReasonLabel")}
+                      error={fieldError(disputeForm.formState.errors.note?.message)}
                     >
                       <Textarea rows={3} {...disputeForm.register("note")} />
                     </InvoiceSupervisorFormField>
                     <DialogFooter>
                       <Button type="submit" disabled={markDisputed.isPending}>
-                        Potwierdź
+                        {t("invoiceDetail.confirmDispute")}
                       </Button>
                     </DialogFooter>
                   </form>
@@ -213,33 +220,33 @@ export default function InvoiceSupervisorInvoiceDetailPage() {
                 }}
               >
                 <DialogTrigger asChild>
-                  <Button size="sm">Zarejestruj wpłatę</Button>
+                  <Button size="sm">{t("invoiceDetail.registerPayment")}</Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Zarejestruj wpłatę</DialogTitle>
+                    <DialogTitle>{t("invoiceDetail.registerPaymentTitle")}</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={paymentForm.handleSubmit(onSubmitPayment)} className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <InvoiceSupervisorFormField
-                        label="Kwota"
-                        error={paymentForm.formState.errors.amount?.message}
+                        label={t("invoiceDetail.amountLabel")}
+                        error={fieldError(paymentForm.formState.errors.amount?.message)}
                       >
                         <Input type="number" step="0.01" {...paymentForm.register("amount")} />
                       </InvoiceSupervisorFormField>
                       <InvoiceSupervisorFormField
-                        label="Data wpłaty"
-                        error={paymentForm.formState.errors.paymentDate?.message}
+                        label={t("invoiceDetail.paymentDateLabel")}
+                        error={fieldError(paymentForm.formState.errors.paymentDate?.message)}
                       >
                         <Input type="date" {...paymentForm.register("paymentDate")} />
                       </InvoiceSupervisorFormField>
                     </div>
-                    <InvoiceSupervisorFormField label="Notatka (opcjonalnie)">
+                    <InvoiceSupervisorFormField label={t("invoiceDetail.noteLabel")}>
                       <Input {...paymentForm.register("note")} />
                     </InvoiceSupervisorFormField>
                     <DialogFooter>
                       <Button type="submit" disabled={registerPayment.isPending}>
-                        Zapisz wpłatę
+                        {t("invoiceDetail.savePayment")}
                       </Button>
                     </DialogFooter>
                   </form>
@@ -251,26 +258,26 @@ export default function InvoiceSupervisorInvoiceDetailPage() {
 
         {invoice.dispute_note ? (
           <div className="rounded-lg border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-800 dark:border-purple-500/30 dark:bg-purple-500/10 dark:text-purple-300">
-            <strong>Notatka sporu:</strong> {invoice.dispute_note}
+            <strong>{t("invoiceDetail.disputeNoteLabel")}</strong> {invoice.dispute_note}
           </div>
         ) : null}
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <DataCard
-            label="Kwota"
+            label={t("invoiceDetail.cardAmount")}
             value={formatInvoiceSupervisorCurrency(invoice.amount, invoice.currency)}
           />
           <DataCard
-            label="Zapłacono"
+            label={t("invoiceDetail.cardPaid")}
             value={formatInvoiceSupervisorCurrency(invoice.paid_amount, invoice.currency)}
           />
           <DataCard
-            label="Pozostało"
+            label={t("invoiceDetail.cardRemaining")}
             value={formatInvoiceSupervisorCurrency(remaining, invoice.currency)}
             tone={remaining > 0 ? "warning" : "default"}
           />
           <DataCard
-            label="Termin płatności"
+            label={t("invoiceDetail.cardDueDate")}
             value={formatInvoiceSupervisorDate(invoice.due_date)}
           />
         </section>
@@ -278,29 +285,33 @@ export default function InvoiceSupervisorInvoiceDetailPage() {
         <div className="grid gap-4 lg:grid-cols-3">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Szczegóły</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {t("invoiceDetail.detailsCard")}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <DetailRow
-                label="Data wystawienia"
+                label={t("invoiceDetail.issueDate")}
                 value={formatInvoiceSupervisorDate(invoice.issue_date)}
               />
-              <DetailRow label="Sprzedawca" value={invoice.seller_name} />
+              <DetailRow label={t("invoiceDetail.seller")} value={invoice.seller_name} />
               {invoice.bank_account ? (
-                <DetailRow label="Numer konta" value={invoice.bank_account} />
+                <DetailRow label={t("invoiceDetail.bankAccount")} value={invoice.bank_account} />
               ) : null}
             </CardContent>
           </Card>
 
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Historia wpłat</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {t("invoiceDetail.paymentsCard")}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {paymentsQuery.isError ? (
                 <ErrorState
-                  title="Nie udało się wczytać historii wpłat"
-                  message="Sprawdź połączenie z backendem i spróbuj ponownie."
+                  title={t("invoiceDetail.paymentsErrorTitle")}
+                  message={t("errors.backendMessage")}
                   onRetry={() => paymentsQuery.refetch()}
                   className="border-none bg-transparent"
                 />
@@ -324,7 +335,7 @@ export default function InvoiceSupervisorInvoiceDetailPage() {
                 </ul>
               ) : (
                 <EmptyState
-                  title="Brak zarejestrowanych wpłat."
+                  title={t("invoiceDetail.paymentsEmpty")}
                   className="border-none bg-transparent py-6"
                 />
               )}

@@ -2,6 +2,7 @@
 
 import { FileText, FolderOpen } from "lucide-react"
 import { useState, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import type { CoworkArtifact, CoworkInputFile, CoworkSkillSummary } from "../types"
 import { ArtifactRow } from "./artifact-row"
 import { DisclosureChevron } from "./disclosure"
@@ -61,17 +62,18 @@ export function SessionPanels({
   downloadHref,
   onExport,
 }: SessionPanelsProps) {
+  const { t } = useTranslation("cortex-cowork")
   return (
     <div className="pointer-events-none absolute right-4 top-3 z-20 flex w-80 flex-col gap-2">
       <FloatingPanel
-        title="Artefakty"
+        title={t("panels.artifacts")}
         meta={<span className="tabular-nums">{artifacts.length}</span>}
         defaultOpen={artifacts.length > 0}
       >
         {artifacts.length === 0 ? (
           <div className="flex items-center gap-2 px-3 py-3 text-xs text-muted-foreground">
             <FolderOpen className="h-3.5 w-3.5" />
-            {sessionId ? "Poproś o raport - pojawi się tutaj." : "Wystartuj sesję, aby zacząć."}
+            {sessionId ? t("panels.artifactsEmpty") : t("panels.artifactsNoSession")}
           </div>
         ) : (
           <div className="space-y-2 p-2">
@@ -88,11 +90,11 @@ export function SessionPanels({
       </FloatingPanel>
 
       <FloatingPanel
-        title="Zasoby sesji"
+        title={t("panels.resources")}
         meta={<span className="tabular-nums">{skills.length + inputFiles.length}</span>}
       >
         {skills.length === 0 ? (
-          <p className="px-3 py-3 text-xs text-muted-foreground">Brak skilli w tej sesji.</p>
+          <p className="px-3 py-3 text-xs text-muted-foreground">{t("panels.skillsEmpty")}</p>
         ) : (
           <ul className="space-y-1.5 p-3">
             {skills.map((skill) => (
@@ -106,7 +108,7 @@ export function SessionPanels({
         {inputFiles.length > 0 ? (
           <div className="border-t border-border/60 p-3">
             <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              Pliki wejściowe
+              {t("panels.inputFiles")}
             </p>
             <ul className="space-y-1">
               {inputFiles.map((file) => (

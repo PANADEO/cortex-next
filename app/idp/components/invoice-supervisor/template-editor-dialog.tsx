@@ -39,6 +39,7 @@ import {
 } from "@cortex/ui"
 import { Sparkles, Trash2 } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 
 interface Props {
   open: boolean
@@ -72,6 +73,7 @@ export function InvoiceSupervisorTemplateEditorDialog({
   stage,
   existingTemplate,
 }: Props) {
+  const { t } = useTranslation(["invoice-supervisor", "common"])
   const [selectedVars, setSelectedVars] = useState<string[]>(DEFAULT_VARIABLES)
   const [extraHint, setExtraHint] = useState("")
   const [subject, setSubject] = useState(existingTemplate?.subject ?? "")
@@ -133,8 +135,8 @@ export function InvoiceSupervisorTemplateEditorDialog({
           </DialogTitle>
           <DialogDescription>
             {existingTemplate
-              ? "Edytuj zapisaną treść bezpośrednio albo wygeneruj ją ponownie z AI. Przy wysyłce system wyłącznie podstawia wartości zmiennych — bez kolejnych wywołań AI."
-              : "Brak zapisanego szablonu dla tej kombinacji. Wygeneruj treść z AI (tylko raz, teraz), a następnie zapisz."}
+              ? t("templateEditor.descriptionExisting")
+              : t("templateEditor.descriptionNew")}
           </DialogDescription>
         </DialogHeader>
 
@@ -147,14 +149,14 @@ export function InvoiceSupervisorTemplateEditorDialog({
               onClick={() => setShowGenerator(true)}
             >
               <Sparkles className="size-4" />
-              Wygeneruj ponownie z AI
+              {t("templateEditor.regenerate")}
             </Button>
           )}
 
           {showGenerator && (
             <div className="space-y-4 rounded-lg border p-4">
               <div>
-                <Label className="mb-2 block">Zmienne do uwzględnienia</Label>
+                <Label className="mb-2 block">{t("templateEditor.variablesLabel")}</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {Object.entries(INVOICE_SUPERVISOR_TEMPLATE_VARIABLES).map(([key, label]) => (
                     <label key={key} className="flex min-w-0 items-start gap-2 text-sm">
@@ -172,7 +174,7 @@ export function InvoiceSupervisorTemplateEditorDialog({
               </div>
 
               <div className="space-y-1">
-                <Label>Dodatkowe wskazówki (opcjonalnie)</Label>
+                <Label>{t("templateEditor.extraHintLabel")}</Label>
                 <Textarea
                   value={extraHint}
                   onChange={(e) => setExtraHint(e.target.value)}
@@ -187,7 +189,9 @@ export function InvoiceSupervisorTemplateEditorDialog({
                 className="w-full"
               >
                 <Sparkles className="size-4" />
-                {generateDraft.isPending ? "Generowanie…" : "Generuj treść"}
+                {generateDraft.isPending
+                  ? t("templateEditor.generating")
+                  : t("templateEditor.generate")}
               </Button>
             </div>
           )}
@@ -196,12 +200,12 @@ export function InvoiceSupervisorTemplateEditorDialog({
             <div className="space-y-3 rounded-lg border p-4">
               {channel === "email" && (
                 <div className="space-y-1">
-                  <Label>Temat</Label>
+                  <Label>{t("templateEditor.subjectLabel")}</Label>
                   <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
                 </div>
               )}
               <div className="space-y-1">
-                <Label>Treść (edytowalna)</Label>
+                <Label>{t("templateEditor.bodyLabel")}</Label>
                 <Textarea
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
@@ -219,20 +223,21 @@ export function InvoiceSupervisorTemplateEditorDialog({
               <AlertDialogTrigger asChild>
                 <Button type="button" variant="destructive" disabled={deleteTemplate.isPending}>
                   <Trash2 className="size-4" />
-                  Usuń szablon
+                  {t("templateEditor.delete")}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Usunąć ten szablon?</AlertDialogTitle>
+                  <AlertDialogTitle>{t("templateEditor.deleteTitle")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Ta kombinacja tonu, kanału i etapu ponownie zablokuje generowanie propozycji,
-                    dopóki nie zapiszesz nowego szablonu.
+                    {t("templateEditor.deleteDescription")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Anuluj</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>Usuń</AlertDialogAction>
+                  <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>
+                    {t("common:actions.delete")}
+                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -240,7 +245,9 @@ export function InvoiceSupervisorTemplateEditorDialog({
             <span />
           )}
           <Button onClick={handleSave} disabled={!body || saveTemplate.isPending}>
-            {existingTemplate ? "Zapisz zmiany" : "Zapisz jako szablon"}
+            {existingTemplate
+              ? t("templateEditor.saveChanges")
+              : t("templateEditor.saveAsTemplate")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -4,6 +4,7 @@ import { Badge, Button } from "@cortex/ui"
 import type { LucideIcon } from "lucide-react"
 import { Check, Copy, Download, FileSpreadsheet, FileText, Loader2, Share2 } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import type { CoworkArtifact } from "../types"
 
 const ICON_BY_MIME: Record<string, LucideIcon> = {
@@ -24,6 +25,7 @@ interface ArtifactRowProps {
 }
 
 export function ArtifactRow({ artifact, downloadHref, onExport }: ArtifactRowProps) {
+  const { t } = useTranslation("cortex-cowork")
   const Icon = ICON_BY_MIME[artifact.mimeType] ?? FileText
   const [exporting, setExporting] = useState(false)
   const [exportedPath, setExportedPath] = useState<string | null>(null)
@@ -38,7 +40,7 @@ export function ArtifactRow({ artifact, downloadHref, onExport }: ArtifactRowPro
       const result = await onExport()
       setExportedPath(result.displayPath)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Export failed")
+      setError(err instanceof Error ? err.message : t("artifacts.exportFailed"))
     } finally {
       setExporting(false)
     }
@@ -74,8 +76,8 @@ export function ArtifactRow({ artifact, downloadHref, onExport }: ArtifactRowPro
             size="icon"
             onClick={handleExport}
             disabled={exporting}
-            aria-label={`Export ${artifact.filename} to share`}
-            title="Wyślij na dysk sieciowy"
+            aria-label={t("artifacts.exportAria", { filename: artifact.filename })}
+            title={t("artifacts.exportTitle")}
           >
             {exporting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -84,7 +86,12 @@ export function ArtifactRow({ artifact, downloadHref, onExport }: ArtifactRowPro
             )}
           </Button>
         ) : null}
-        <Button variant="outline" size="icon" asChild aria-label={`Download ${artifact.filename}`}>
+        <Button
+          variant="outline"
+          size="icon"
+          asChild
+          aria-label={t("artifacts.downloadAria", { filename: artifact.filename })}
+        >
           <a href={downloadHref} download={artifact.filename}>
             <Download className="h-4 w-4" />
           </a>
@@ -102,7 +109,7 @@ export function ArtifactRow({ artifact, downloadHref, onExport }: ArtifactRowPro
             type="button"
             onClick={handleCopy}
             className="shrink-0 text-muted-foreground hover:text-foreground"
-            aria-label="Kopiuj ścieżkę"
+            aria-label={t("artifacts.copyPathAria")}
           >
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           </button>

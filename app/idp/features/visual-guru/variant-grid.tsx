@@ -8,6 +8,7 @@
 import { Button, Dialog, DialogContent, DialogHeader, DialogTitle } from "@cortex/ui"
 import { Download, FolderDown } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import type { GeneratedVariantDto } from "./types"
 import { dataUrlToBytes, downloadZip, extensionFromDataUrl } from "./zip"
 
@@ -26,6 +27,7 @@ function downloadDataUrl(dataUrl: string, fileName: string): void {
 }
 
 export function VariantGrid({ variants, fileNamePrefix }: VariantGridProps) {
+  const { t } = useTranslation("visual-guru")
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
   const previewVariant = variants.find((variant) => variant.variantIndex === previewIndex)
 
@@ -48,12 +50,12 @@ export function VariantGrid({ variants, fileNamePrefix }: VariantGridProps) {
             type="button"
             onClick={() => setPreviewIndex(variant.variantIndex)}
             className="overflow-hidden rounded-md ring-1 ring-border transition hover:ring-primary/50"
-            aria-label={`Podgląd wariantu ${variant.variantIndex + 1}`}
+            aria-label={t("variants.previewAria", { index: variant.variantIndex + 1 })}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={variant.dataUrl}
-              alt={`Wariant ${variant.variantIndex + 1}`}
+              alt={t("variants.variantLabel", { index: variant.variantIndex + 1 })}
               className="h-auto w-full"
             />
           </button>
@@ -75,12 +77,12 @@ export function VariantGrid({ variants, fileNamePrefix }: VariantGridProps) {
             }
           >
             <Download className="mr-2 h-4 w-4" />
-            Wariant {variant.variantIndex + 1}
+            {t("variants.variantLabel", { index: variant.variantIndex + 1 })}
           </Button>
         ))}
         <Button type="button" variant="outline" size="sm" onClick={handleDownloadAll}>
           <FolderDown className="mr-2 h-4 w-4" />
-          Pobierz wszystkie (ZIP)
+          {t("variants.downloadAll")}
         </Button>
       </div>
 
@@ -88,14 +90,16 @@ export function VariantGrid({ variants, fileNamePrefix }: VariantGridProps) {
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {previewVariant ? `Wariant ${previewVariant.variantIndex + 1}` : "Podgląd"}
+              {previewVariant
+                ? t("variants.variantLabel", { index: previewVariant.variantIndex + 1 })
+                : t("variants.previewTitle")}
             </DialogTitle>
           </DialogHeader>
           {previewVariant ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={previewVariant.dataUrl}
-              alt={`Wariant ${previewVariant.variantIndex + 1}`}
+              alt={t("variants.variantLabel", { index: previewVariant.variantIndex + 1 })}
               className="h-auto w-full rounded-md"
             />
           ) : null}

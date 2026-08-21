@@ -1,1 +1,71 @@
-{}
+{
+  "upload": {
+    "title": "Document Parser",
+    "description": "Upload a document (PDF, Office file or image) — a vision model will extract its full, structured content as Markdown.",
+    "uploaderDescription": "Allowed formats: {{formats}}. Size limit: {{maxMb}} MB.",
+    "submitButton": "Upload and process",
+    "submitting": "Uploading…",
+    "loadingJob": "Loading job state…",
+    "uploadAnother": "Upload another document",
+    "errors": {
+      "submitFailed": "Could not send the document for processing"
+    }
+  },
+  "outcome": {
+    "queued": "The job is waiting in the queue…",
+    "processing": "Processing the document — conversion, page rendering and extraction by the vision model…",
+    "truncated": "The document has more pages than the processing limit — the result covers only the first {{pages}} {{unit}}.",
+    "pageOne": "page",
+    "pageMany": "pages",
+    "downloadButton": "Download Markdown",
+    "viewFullButton": "See the full result",
+    "fields": {
+      "pages": "Pages",
+      "images": "Images",
+      "model": "Model",
+      "elapsed": "Processing time"
+    }
+  },
+  "history": {
+    "title": "History",
+    "description": "Document extraction jobs you uploaded — status, metadata and result.",
+    "loading": "Loading history…",
+    "searchPlaceholder": "Search by file name…",
+    "columns": {
+      "fileName": "File",
+      "status": "Status",
+      "fileSize": "Size",
+      "pages": "Pages",
+      "elapsed": "Processing time",
+      "createdAt": "Date"
+    },
+    "filters": {
+      "statusLabel": "Status",
+      "allStatuses": "All statuses"
+    },
+    "a11y": {
+      "viewDetails": "See details: {{fileName}}"
+    },
+    "empty": {
+      "title": "No jobs",
+      "description": "Upload your first document on the upload screen — it will appear here once processing finishes."
+    }
+  },
+  "detail": {
+    "title": "Job details",
+    "description": "The full extraction result, metadata and (for failed jobs) the complete message.",
+    "backToHistory": "History",
+    "loading": "Loading the job…",
+    "promptLabel": "Prompt used for extraction",
+    "promptHint": "One built-in prompt for every job in this version of the module — useful when judging the quality of the result above.",
+    "notFound": {
+      "title": "Job not found",
+      "description": "The job does not exist or you do not have access to it."
+    },
+    "fields": {
+      "createdAt": "Uploaded",
+      "startedAt": "Started",
+      "completedAt": "Finished"
+    }
+  }
+}

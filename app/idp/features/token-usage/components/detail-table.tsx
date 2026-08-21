@@ -15,6 +15,7 @@ import {
 import type { ColumnDef } from "@tanstack/react-table"
 import { Download, Inbox } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
   ALL_OPTION,
   NO_FILTERS,
@@ -33,41 +34,48 @@ interface DetailTableProps {
   range: UsageDateRange
 }
 
-const columns: ColumnDef<UsageDetailRow, unknown>[] = [
-  { accessorKey: "user", header: "Użytkownik", enableSorting: true },
-  { accessorKey: "app", header: "Aplikacja", enableSorting: true },
-  { accessorKey: "scope", header: "Zakres", enableSorting: true },
-  { accessorKey: "model", header: "Model", enableSorting: true },
-  {
-    accessorKey: "totalTokens",
-    header: "Tokeny",
-    enableSorting: true,
-    cell: ({ row }) => (
-      <span className="tabular-nums">{formatNumber(row.original.totalTokens)}</span>
-    ),
-  },
-  {
-    accessorKey: "reasoningTokens",
-    header: "Rozumowanie",
-    enableSorting: true,
-    cell: ({ row }) => (
-      <span className="tabular-nums text-muted-foreground">
-        {formatNumber(row.original.reasoningTokens)}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "requestCount",
-    header: "Żądania",
-    enableSorting: true,
-    cell: ({ row }) => (
-      <span className="tabular-nums">{formatNumber(row.original.requestCount)}</span>
-    ),
-  },
-]
-
 export function DetailTable({ report, range }: DetailTableProps) {
+  const { t } = useTranslation("token-usage")
   const [filters, setFilters] = useState<DetailFilters>(NO_FILTERS)
+
+  // Nagłówki idą przez `t`, więc definicja kolumn nie może już być stałą
+  // modułu. `useMemo` po `t` zachowuje jej dotychczasową stabilność między
+  // renderami — inaczej grid dostawałby nową tablicę przy każdym z nich.
+  const columns: ColumnDef<UsageDetailRow, unknown>[] = useMemo(
+    () => [
+      { accessorKey: "user", header: t("columns.user"), enableSorting: true },
+      { accessorKey: "app", header: t("columns.app"), enableSorting: true },
+      { accessorKey: "scope", header: t("columns.scope"), enableSorting: true },
+      { accessorKey: "model", header: t("columns.model"), enableSorting: true },
+      {
+        accessorKey: "totalTokens",
+        header: t("columns.totalTokens"),
+        enableSorting: true,
+        cell: ({ row }) => (
+          <span className="tabular-nums">{formatNumber(row.original.totalTokens)}</span>
+        ),
+      },
+      {
+        accessorKey: "reasoningTokens",
+        header: t("columns.reasoningTokens"),
+        enableSorting: true,
+        cell: ({ row }) => (
+          <span className="tabular-nums text-muted-foreground">
+            {formatNumber(row.original.reasoningTokens)}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "requestCount",
+        header: t("columns.requestCount"),
+        enableSorting: true,
+        cell: ({ row }) => (
+          <span className="tabular-nums">{formatNumber(row.original.requestCount)}</span>
+        ),
+      },
+    ],
+    [t],
+  )
 
   const models = useMemo(
     () => availableModels(report.rows, filters.scope),
@@ -92,13 +100,13 @@ export function DetailTable({ report, range }: DetailTableProps) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1.5">
-            <Label htmlFor="token-usage-model">Model</Label>
+            <Label htmlFor="token-usage-model">{t("detail.modelLabel")}</Label>
             <Select value={filters.model} onValueChange={(model) => update("model", model)}>
               <SelectTrigger id="token-usage-model" className="w-64">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL_OPTION}>Wszystkie modele</SelectItem>
+                <SelectItem value={ALL_OPTION}>{t("detail.allModels")}</SelectItem>
                 {models.map((model) => (
                   <SelectItem key={model} value={model}>
                     {model}
@@ -108,13 +116,13 @@ export function DetailTable({ report, range }: DetailTableProps) {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="token-usage-scope">Zakres</Label>
+            <Label htmlFor="token-usage-scope">{t("detail.scopeLabel")}</Label>
             <Select value={filters.scope} onValueChange={(scope) => update("scope", scope)}>
               <SelectTrigger id="token-usage-scope" className="w-64">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL_OPTION}>Wszystkie zakresy</SelectItem>
+                <SelectItem value={ALL_OPTION}>{t("detail.allScopes")}</SelectItem>
                 {scopes.map((scope) => (
                   <SelectItem key={scope} value={scope}>
                     {scope}
@@ -138,7 +146,7 @@ export function DetailTable({ report, range }: DetailTableProps) {
             }
           >
             <Download className="mr-2 h-3.5 w-3.5" />
-            Pobierz CSV
+            {t("actions.downloadCsv")}
           </Button>
           <Button
             variant="outline"
@@ -152,7 +160,7 @@ export function DetailTable({ report, range }: DetailTableProps) {
             }
           >
             <Download className="mr-2 h-3.5 w-3.5" />
-            Pobierz JSON
+            {t("actions.downloadJson")}
           </Button>
         </div>
       </div>
@@ -162,12 +170,12 @@ export function DetailTable({ report, range }: DetailTableProps) {
         data={rows}
         bordered
         searchable
-        searchPlaceholder="Szukaj w szczegółach..."
+        searchPlaceholder={t("detail.searchPlaceholder")}
         emptyState={
           <EmptyState
             icon={Inbox}
-            title="Brak danych dla wybranych filtrów"
-            description="Zmień model lub zakres, albo poszerz przedział dat."
+            title={t("empty.noMatchTitle")}
+            description={t("empty.noMatchDescription")}
           />
         }
       />

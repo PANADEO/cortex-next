@@ -96,26 +96,29 @@ function aiToolTile(tool: AiToolDefinition): Tile {
   }
 }
 
+/** Etykiety trzymają KLUCZ tłumaczenia z przestrzeni `common`, nie napis:
+ *  ta sama lista karmi zakładki huba i formularz Aplikacji, więc napis
+ *  wpisany tutaj byłby polski w obu miejscach niezależnie od języka. */
 export const FUNCTIONAL_CATEGORIES: ReadonlyArray<{
   id: TileCategoryFunctional
-  label: string
+  labelKey: string
 }> = [
-  { id: "content-generation", label: "Generowanie treści" },
-  { id: "agents", label: "Agenci" },
-  { id: "research", label: "Badania" },
-  { id: "misc", label: "Różne" },
-  { id: "admin-system", label: "Admin & System" },
+  { id: "content-generation", labelKey: "categories.functional.content-generation" },
+  { id: "agents", labelKey: "categories.functional.agents" },
+  { id: "research", labelKey: "categories.functional.research" },
+  { id: "misc", labelKey: "categories.functional.misc" },
+  { id: "admin-system", labelKey: "categories.functional.admin-system" },
 ]
 
 export const DEPARTMENT_CATEGORIES: ReadonlyArray<{
   id: TileCategoryDepartment
-  label: string
+  labelKey: string
 }> = [
-  { id: "operations", label: "Operacje" },
-  { id: "marketing", label: "Marketing" },
-  { id: "finance", label: "Finanse" },
-  { id: "it", label: "IT" },
-  { id: "hr", label: "HR" },
+  { id: "operations", labelKey: "categories.department.operations" },
+  { id: "marketing", labelKey: "categories.department.marketing" },
+  { id: "finance", labelKey: "categories.department.finance" },
+  { id: "it", labelKey: "categories.department.it" },
+  { id: "hr", labelKey: "categories.department.hr" },
 ]
 
 /**

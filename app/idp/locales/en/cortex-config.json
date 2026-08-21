@@ -1,1 +1,260 @@
-{}
+{
+  "access": {
+    "title": "No access to configuration",
+    "catalogTitle": "No access to the catalog",
+    "message": "The Cortex Config panel requires administrator permissions."
+  },
+  "state": {
+    "loadingConfig": "Loading configuration...",
+    "loadingCatalog": "Loading catalog..."
+  },
+  "nav": {
+    "backToCatalog": "Resource catalog",
+    "backToGovernance": "Roles and access",
+    "backToProjects": "Projects"
+  },
+  "fields": {
+    "id": "Identifier",
+    "name": "Name",
+    "description": "Description",
+    "type": "Type",
+    "department": "Department",
+    "active": "Enabled"
+  },
+  "pages": {
+    "projects": {
+      "title": "Agent projects",
+      "description": "Task-chat tiles configured centrally: model, skills per role, sandbox and artifact export."
+    },
+    "catalog": {
+      "title": "Resource catalog",
+      "description": "A department tree of skills, connectors and secrets - built centrally, picked in projects as building blocks."
+    },
+    "agents": {
+      "description": "Hierarchical agent instructions: organization → departments → tile → user. You edit the admin layers here."
+    },
+    "credentials": {
+      "title": "Secrets",
+      "description": "Credential store: a key/subkey tree per department. Values are write-only - consumed through references in connectors and models."
+    },
+    "governance": {
+      "title": "Roles and access",
+      "description": "Roles as access gates, user assignments and panel administrators."
+    }
+  },
+  "projects": {
+    "intro": "Agent tiles (task-chat) configured centrally - every project is a separate hub tile with its own model, building blocks and sandbox.",
+    "new": "New project",
+    "emptyTitle": "No projects",
+    "emptyDescription": "Create the first agent tile for your department.",
+    "toggleAria": "Tile {{name}} enabled",
+    "blocksBadge": "blocks: {{n}}",
+    "openChat": "Open chat",
+    "deleteConfirm": "Delete project \"{{name}}\"? Sessions and artifacts will stay on disk."
+  },
+  "catalog": {
+    "departmentsTitle": "Departments",
+    "departmentsDescription": "The organization tree - paths like finance/controlling. Resources (skills, connectors, secrets) are assigned to departments, and projects pick branches.",
+    "skillCountShort": "· {{n}} sk.",
+    "removeDepartmentAria": "Remove department {{name}}",
+    "departmentPlaceholder": "finance/controlling",
+    "addDepartment": "Department",
+    "sourcesTitle": "Skill sources",
+    "sourcesDescription": "A folder on disk → a department. Scanned into the catalog.",
+    "addSource": "Source",
+    "sourcesEmpty": "No sources.",
+    "editSourceAria": "Edit source {{name}}",
+    "deleteSourceAria": "Delete source {{name}}",
+    "detectedSkills": "Detected skills: {{list}}",
+    "none": "none",
+    "connectorsTitle": "Connectors",
+    "connectorsDescription": "MCP and CLI per department. Secrets as credential refs.",
+    "addConnector": "Connector",
+    "connectorsEmpty": "No connectors.",
+    "disabledBadge": "disabled",
+    "editConnectorAria": "Edit connector {{name}}",
+    "deleteConnectorAria": "Delete connector {{name}}"
+  },
+  "credentials": {
+    "title": "Credential store",
+    "description": "Secrets for connectors and model keys (a key/subkey tree). Values are stored server-side and never come back to the browser - you can only overwrite them.",
+    "empty": "No secrets stored.",
+    "setBadge": "set",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "deleteAria": "Delete {{path}}",
+    "deleteConfirm": "Delete secret \"{{path}}\"?",
+    "pathLabel": "Path (key/subkey)",
+    "valueLabel": "Value",
+    "valuePlaceholder": "secret..."
+  },
+  "governance": {
+    "openModeTitle": "Open mode:",
+    "openModeBody": "nobody has a role assigned yet, so every user sees all tiles. Governance switches on with the first role assignment.",
+    "rolesTitle": "Roles (access gates)",
+    "rolesDescription": "Who can open project tiles",
+    "addRole": "Role",
+    "rolesEmpty": "No roles.",
+    "editRoleAria": "Edit role {{name}}",
+    "deleteRoleAria": "Delete role {{name}}",
+    "usersTitle": "Users",
+    "usersDescription": "Email → role assignments (central)",
+    "addAssignment": "Assign",
+    "usersEmpty": "No assignments (open mode).",
+    "editAssignmentAria": "Edit assignment for {{email}}",
+    "deleteAssignmentAria": "Delete assignment for {{email}}",
+    "adminsTitle": "Administrators",
+    "adminsDescription": "Who can open this panel. An empty list = anyone signed in (bootstrap mode).",
+    "bootstrapBadge": "bootstrap mode",
+    "deleteAdminAria": "Remove administrator {{email}}",
+    "adminPlaceholder": "admin@company.com",
+    "add": "Add"
+  },
+  "grant": {
+    "branchesLabel": "Branches (whole department)",
+    "leavesLabel": "Individual resources",
+    "coveredByBranch": "covered by branch"
+  },
+  "pickers": {
+    "selectDepartment": "Choose a department",
+    "noDepartments": "No departments.",
+    "newPathPlaceholder": "new/path"
+  },
+  "agents": {
+    "orgTitle": "Organization rules",
+    "orgDescription": "The global layer - it reaches every agent on the platform, before the department layers.",
+    "orgPlaceholder": "e.g. Answer in English. Do not share personal data.\nName artifacts using the YYYYMMDD_name convention.",
+    "deptTitle": "Department rules",
+    "deptDescription": "A tile pinned to a department inherits the layers along its path: e.g. \"finance/controlling\" gets the \"finance\" rules, then \"finance/controlling\".",
+    "noDepartments": "No departments - add them in the resource catalog.",
+    "deptPlaceholder": "Rules inherited by tiles of the {{department}} department...",
+    "saved": "Saved",
+    "save": "Save AGENTS.md",
+    "order": "Composition order: organization → departments (along the path) → tile instructions → user note."
+  },
+  "connectorEditor": {
+    "notFoundTitle": "Connector not found",
+    "notFoundMessage": "There is no connector \"{{id}}\".",
+    "editTitle": "Edit connector: {{name}}",
+    "newTitle": "New connector",
+    "description": "An agent tool: an MCP server or a CLI, with secrets passed by reference.",
+    "identitySection": "Identity",
+    "connectionSection": "Connection",
+    "connectionDescription": "Secret values never reach the configuration - only references to paths in Secrets.",
+    "serverUrl": "Server URL",
+    "toolPath": "Path to the tool",
+    "refsHeaders": "Headers",
+    "refsEnvVars": "Environment variables",
+    "refsLabel": "{{kind}} → secret reference (name=path, one per line)",
+    "refsPlaceholderMcp": "Authorization=finance/jira/token",
+    "refsPlaceholderCli": "API_TOKEN=finance/token",
+    "baseArgs": "Fixed arguments (optional)"
+  },
+  "sourceEditor": {
+    "notFoundTitle": "Skill source not found",
+    "notFoundMessage": "There is no source \"{{id}}\".",
+    "editTitle": "Edit source: {{name}}",
+    "newTitle": "New skill source",
+    "description": "A folder on disk scanned into the catalog; the skills land under the chosen department.",
+    "folderLabel": "Folder on disk (absolute)",
+    "folderPlaceholder": "/mnt/skills/finance"
+  },
+  "roleEditor": {
+    "notFoundTitle": "Role not found",
+    "notFoundMessage": "There is no role \"{{id}}\".",
+    "editTitle": "Edit role: {{name}}",
+    "newTitle": "New role",
+    "description": "A role is an access gate - it decides who sees and opens tiles. The content is defined by the project's building blocks."
+  },
+  "assignmentEditor": {
+    "editTitle": "User roles: {{email}}",
+    "newTitle": "Assign roles",
+    "description": "A central email → role assignment; the first assignment turns open mode off.",
+    "emailLabel": "User email",
+    "emailPlaceholder": "user@company.com",
+    "rolesLabel": "Roles",
+    "rolesEmpty": "Create a role first."
+  },
+  "projectEditor": {
+    "tabs": {
+      "basics": "Basics",
+      "access": "Access",
+      "model": "Model",
+      "blocks": "Building blocks",
+      "briefs": "Briefs",
+      "agent": "Agent and sandbox",
+      "export": "Export"
+    },
+    "icons": {
+      "bot": "Bot",
+      "messages-square": "Chat",
+      "file-text": "Document",
+      "file-spreadsheet": "Spreadsheet",
+      "search": "Magnifier",
+      "sparkles": "Sparkles",
+      "table": "Table"
+    },
+    "notFoundTitle": "Project not found",
+    "notFoundMessage": "There is no project \"{{id}}\".",
+    "editTitle": "Edit project: {{name}}",
+    "newTitle": "New project",
+    "description": "A task-chat tile: model, access, building blocks from the catalog and a sandbox.",
+    "saveChanges": "Save changes",
+    "createProject": "Create project",
+    "identityTitle": "Tile identity",
+    "identityDescription": "What the user sees on the hub.",
+    "slugLabel": "Identifier (slug)",
+    "slugPlaceholder": "e.g. financial-reports",
+    "descriptionLabel": "Description (shown on the tile)",
+    "iconLabel": "Icon",
+    "enabledLabel": "Tile enabled",
+    "accessTitle": "Roles with access",
+    "accessDescription": "A role is a gate: it decides who sees and opens the tile. The content is defined by the project's building blocks.",
+    "rolesEmpty": "No roles defined - add them on the Roles and access tab.",
+    "modelTitle": "Language model",
+    "modelDescription": "Every turn goes through cortex-proxy - the server takes the gateway address from its own environment (CORTEX_PROXY_URL), so a project moves between instances without edits. Here you only pick the model.",
+    "modelLabel": "Model",
+    "modelPlaceholder": "e.g. anthropic/claude-sonnet-4.6",
+    "apiKeyLabel": "API key (a reference from Secrets, e.g. shared/llm/cortex-proxy)",
+    "apiKeyPlaceholder": "empty = cortex-proxy does not verify the client key",
+    "skillsTitle": "Skills",
+    "skillsDescription": "Build the project toolkit from catalog building blocks. A department branch pulls in every resource under it.",
+    "skillsEmpty": "The skill catalog is empty.",
+    "connectorsTitle": "Connectors",
+    "connectorsDescription": "MCP and CLI that the agent gets as tools.",
+    "connectorsEmpty": "The connector catalog is empty.",
+    "secretsTitle": "Secrets (data zones)",
+    "secretsDescription": "A project may use only secrets from the granted branches/paths. This is the technical boundary between data zones.",
+    "secretsEmpty": "No secrets stored.",
+    "briefsTitle": "Starter cards (briefs)",
+    "briefsDescription": "Ready-made jobs shown in an empty chat - clicking one fills the message box. The hint tells the user what they need to supply (e.g. a file with a transcript).",
+    "briefsEmpty": "No briefs - the user will see an empty chat with no prompts.",
+    "briefTitleLabel": "Card title",
+    "briefTitlePlaceholder": "e.g. Status pack from a transcript",
+    "briefHintLabel": "Hint (what the user needs)",
+    "briefHintPlaceholder": "e.g. attach a file with the transcript",
+    "briefPromptLabel": "Prompt (goes into the composer)",
+    "briefPromptPlaceholder": "e.g. Build a status pack from the uploaded meeting transcript.",
+    "removeBrief": "Remove card",
+    "addBrief": "Add card",
+    "agentTitle": "Agent instructions",
+    "agentDescription": "The tile inherits AGENTS.md: organization rules, then department rules along the department path, then the instructions below, and finally the user's private note.",
+    "departmentLabel": "Tile department (AGENTS.md inheritance)",
+    "departmentPlaceholder": "None - organization rules only",
+    "systemPromptLabel": "Extra instructions (system prompt)",
+    "systemPromptPlaceholder": "e.g. Answer in English. Format reports to the department standard.",
+    "sandboxTitle": "Sandbox",
+    "sandboxDescription": "Where the agent does its work and which host paths it can see.",
+    "sandboxModeLabel": "Mode",
+    "sandboxLocal": "Local (directory isolation, runs on the host)",
+    "sandboxDocker": "Docker (hard isolation, paths as bind mounts)",
+    "sandboxPathsLabel": "Paths available in the sandbox (one per line, :ro suffix = read only)",
+    "sandboxPathsPlaceholder": "/mnt/dept-finance/data:ro\n/mnt/shared/templates",
+    "exportTitle": "Artifact export",
+    "exportDescription": "An optional network share where the user drops a session file with one click.",
+    "exportDirLabel": "Target folder (on the server)",
+    "exportDirPlaceholder": "/mnt/dept-finance/artifacts",
+    "exportDisplayLabel": "Path shown to users",
+    "exportDisplayPlaceholder": "\\\\nas\\finance\\artifacts"
+  }
+}

@@ -19,7 +19,10 @@ import {
   buildTransformPrompt,
   type PromptPair,
 } from "@/lib/ai-tools/prompts"
-import { getAiToolDefinition } from "@/lib/ai-tools/registry"
+import { getAiToolDefinition, type AiToolDefinition } from "@/lib/ai-tools/registry"
+import { useAiToolText } from "@/lib/ai-tools/tool-text"
+import i18n from "@/lib/i18n"
+import { SOURCE_LOCALE } from "@/lib/i18n/config"
 import {
   Alert,
   AlertDescription,
@@ -56,6 +59,7 @@ import {
 import Link from "next/link"
 import type { ChangeEvent, ReactNode } from "react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 interface AiToolWorkspaceProps {
@@ -75,13 +79,85 @@ interface ChatMessage {
   content: string
 }
 
+/**
+ * Listy wyboru trzymają w stanie KLUCZ tłumaczenia, nie widoczny napis.
+ *
+ * Powód jest dwojaki. Po pierwsze, wartość opcji jedzie wprost do promptu
+ * (`prompts.ts`), a prompt jest instrukcją dla modelu, nie tekstem interfejsu —
+ * przełączenie języka nie ma prawa zmienić treści zapytania. Po drugie, gdyby
+ * w stanie siedział przetłumaczony napis, zmiana języka w trakcie sesji
+ * zostawiłaby `value`, którego nie ma już wśród opcji, i lista pokazałaby się
+ * pusta. Napis do modelu bierze się więc z `useSourceText()`, a napis na ekran
+ * ze zwykłego `t()`.
+ */
+const HIGHLIGHT_TARGETS = [
+  "keyConcepts",
+  "arguments",
+  "risks",
+  "datesNumbers",
+  "entities",
+  "custom",
+] as const
+const HIGHLIGHT_STYLES = ["listAndMarks", "listOnly", "review"] as const
+const TRANSFORMATIONS = [
+  "simplify",
+  "formalize",
+  "business",
+  "expert",
+  "friendly",
+  "shorten",
+  "expand",
+] as const
+const TRANSFORM_AUDIENCES = [
+  "businessClient",
+  "internalTeam",
+  "industryExpert",
+  "nonTechnical",
+  "board",
+  "student",
+] as const
+const TRANSFORM_COMPLEXITIES = ["verySimple", "simple", "medium", "advanced"] as const
+const TRANSFORM_TONES = ["professional", "neutral", "friendly", "assertive", "calm"] as const
 const ANALYSIS_AREAS = [
-  "sentyment",
-  "tematy",
-  "styl",
-  "czytelność",
-  "słowa kluczowe",
-  "struktura",
+  "sentiment",
+  "topics",
+  "style",
+  "readability",
+  "keywords",
+  "structure",
+] as const
+const SUMMARY_TYPES = [
+  "executive",
+  "keyPoints",
+  "faq",
+  "oneSentence",
+  "nonTechnical",
+  "abstract",
+] as const
+const SUMMARY_LENGTHS = ["veryShort", "short", "medium", "detailed"] as const
+const SUMMARY_FOCUSES = ["decisions", "facts", "arguments", "risks", "actions"] as const
+const SUMMARY_AUDIENCES = ["manager", "expert", "client", "operations", "child"] as const
+const SUMMARY_TONES = ["neutral", "formal", "friendly", "popularScience"] as const
+const LINKEDIN_POST_TYPES = [
+  "opinion",
+  "caseStudy",
+  "tips",
+  "educational",
+  "announcement",
+  "question",
+] as const
+const LINKEDIN_AUDIENCES = ["managers", "founders", "itSpecialists", "hr", "general"] as const
+const LINKEDIN_TONES = ["factual", "expert", "friendly", "inspiring", "assertive"] as const
+const LINKEDIN_LENGTHS = ["short", "medium", "long"] as const
+const PRESENTATION_TYPES = ["business", "educational", "marketing", "technical", "general"] as const
+const INVOICE_ANALYSIS_TYPES = [
+  "full",
+  "basic",
+  "lineItems",
+  "parties",
+  "paymentTerms",
+  "taxes",
+  "validation",
 ] as const
 
 const PUBLIC_BASE_PATH = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH)
@@ -96,7 +172,15 @@ const PDF_INVOICE_JPEG_QUALITY = 0.86
 const AI_TOOL_MAX_DATA_URL_LENGTH = 15_500_000
 const FIELD_LABEL_CLASS = "text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
 
+/** Napisy dla funkcji spoza Reacta (render PDF, odczyt pliku) — te wyjątki
+ *  rzucane są poza komponentem, a ich treść ląduje w toaście u użytkownika,
+ *  więc muszą być przetłumaczone mimo braku dostępu do `useTranslation()`. */
+function tOutsideReact(key: string): string {
+  return String(i18n.t(key, { ns: "ai-tools" }))
+}
+
 export function AiToolWorkspace({ toolId }: AiToolWorkspaceProps) {
+  const { t } = useTranslation("ai-tools")
   const tool = getAiToolDefinition(toolId)
   const queryClient = useQueryClient()
   const [result, setResult] = useState<AiToolGenerateResponse | null>(null)
@@ -105,7 +189,7 @@ export function AiToolWorkspace({ toolId }: AiToolWorkspaceProps) {
   const historyQuery = useQuery({
     enabled: Boolean(tool),
     queryFn: () => {
-      if (!tool) throw new Error("Nieznane narzędzie")
+      if (!tool) throw new Error(t("workspace.unknownTitle"))
       return getAiToolHistory(tool.id)
     },
     queryKey: tool ? aiToolHistoryQueryKey(tool.id) : ["ai-tools", "history", "unknown"],
@@ -116,11 +200,11 @@ export function AiToolWorkspace({ toolId }: AiToolWorkspaceProps) {
       <div className="flex min-h-0 flex-1 items-center justify-center p-8">
         <EmptyState
           icon={Sparkles}
-          title="Nieznane narzędzie"
-          description="Ten adres nie odpowiada żadnej aplikacji AI Tools."
+          title={t("workspace.unknownTitle")}
+          description={t("workspace.unknownBody")}
           action={
             <Button asChild variant="outline" size="sm">
-              <Link href="/">Wróć do huba</Link>
+              <Link href="/">{t("shared.backToHub")}</Link>
             </Button>
           }
         />
@@ -145,15 +229,13 @@ export function AiToolWorkspace({ toolId }: AiToolWorkspaceProps) {
       const response = await generateAiToolContent(request)
       setResult(response)
       void queryClient.invalidateQueries({ queryKey: aiToolHistoryQueryKey(tool.id) })
-      toast.success("Wynik wygenerowany")
+      toast.success(t("shared.generateSuccess"))
       return response
     } catch (generationError) {
       const message =
-        generationError instanceof Error
-          ? generationError.message
-          : "Nie udało się wygenerować wyniku"
+        generationError instanceof Error ? generationError.message : t("shared.generateFailed")
       setError(message)
-      toast.error("Generowanie nie powiodło się")
+      toast.error(t("shared.generateToastError"))
       return null
     } finally {
       setIsGenerating(false)
@@ -168,18 +250,7 @@ export function AiToolWorkspace({ toolId }: AiToolWorkspaceProps) {
   return (
     <AiToolGate toolId={tool.id}>
       <div className="flex min-h-0 flex-1 flex-col">
-        <PageHeader
-          title={tool.label}
-          description={tool.description}
-          actions={
-            <Button asChild variant="outline" size="sm">
-              <Link href="/">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Aplikacje
-              </Link>
-            </Button>
-          }
-        />
+        <ToolHeader tool={tool} />
 
         <div className="mx-auto grid min-h-0 w-full max-w-[1360px] flex-1 gap-4 px-8 py-6 xl:grid-cols-[minmax(420px,0.95fr)_minmax(520px,1.05fr)]">
           <div className="min-w-0 space-y-4">
@@ -205,11 +276,34 @@ export function AiToolWorkspace({ toolId }: AiToolWorkspaceProps) {
             isGenerating={isGenerating}
             model={result?.model}
             tokensUsed={result?.tokensUsed}
-            title="Wynik"
+            title={t("result.title")}
           />
         </div>
       </div>
     </AiToolGate>
+  )
+}
+
+/** Nagłówek strony narzędzia. Osobny komponent, bo nazwa i opis idą przez
+ *  przestrzeń `tiles` (patrz `lib/ai-tools/tool-text.ts`), a hook nie ma prawa
+ *  stać za wczesnym powrotem dla nieznanego `toolId`. */
+function ToolHeader({ tool }: { tool: AiToolDefinition }) {
+  const { t } = useTranslation("ai-tools")
+  const text = useAiToolText(tool)
+
+  return (
+    <PageHeader
+      title={text.label}
+      description={text.description}
+      actions={
+        <Button asChild variant="outline" size="sm">
+          <Link href="/">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {t("workspace.backToApps")}
+          </Link>
+        </Button>
+      }
+    />
   )
 }
 
@@ -222,10 +316,12 @@ interface HistoryPanelProps {
 }
 
 function HistoryPanel({ error, isLoading, items, onRefresh, onSelect }: HistoryPanelProps) {
+  const { t } = useTranslation("ai-tools")
+
   return (
     <Card className="overflow-hidden rounded-lg shadow-none">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border bg-muted/20 px-4 py-3">
-        <CardTitle className="text-sm font-semibold">Historia</CardTitle>
+        <CardTitle className="text-sm font-semibold">{t("history.title")}</CardTitle>
         <Button
           type="button"
           size="sm"
@@ -235,23 +331,23 @@ function HistoryPanel({ error, isLoading, items, onRefresh, onSelect }: HistoryP
           disabled={isLoading}
         >
           <RefreshCcw className={cn("mr-1.5 h-3.5 w-3.5", isLoading && "animate-spin")} />
-          Odśwież
+          {t("history.refresh")}
         </Button>
       </CardHeader>
       <CardContent className="space-y-3 p-4">
         {error ? (
           <Alert variant="destructive" className="rounded-lg">
-            <AlertDescription>Nie udało się pobrać historii.</AlertDescription>
+            <AlertDescription>{t("history.loadFailed")}</AlertDescription>
           </Alert>
         ) : null}
         {isLoading ? (
           <div className="flex min-h-[120px] items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Wczytywanie historii…
+            {t("history.loading")}
           </div>
         ) : items.length === 0 && !error ? (
           <div className="flex min-h-[120px] items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
-            Brak historii dla tej aplikacji.
+            {t("history.empty")}
           </div>
         ) : (
           items.map((item) => (
@@ -262,12 +358,12 @@ function HistoryPanel({ error, isLoading, items, onRefresh, onSelect }: HistoryP
                 </Badge>
                 {item.tokensUsed ? (
                   <Badge variant="outline" className="h-5 text-[10px]">
-                    ~{item.tokensUsed.toLocaleString()} tokenów
+                    {t("shared.tokens", { value: item.tokensUsed.toLocaleString() })}
                   </Badge>
                 ) : null}
                 {item.hasImage ? (
                   <Badge variant="outline" className="h-5 text-[10px]">
-                    plik
+                    {t("history.fileBadge")}
                   </Badge>
                 ) : null}
               </div>
@@ -279,7 +375,7 @@ function HistoryPanel({ error, isLoading, items, onRefresh, onSelect }: HistoryP
               </p>
               <div className="mt-3 flex justify-end">
                 <Button type="button" size="sm" variant="outline" onClick={() => onSelect(item)}>
-                  Pokaż
+                  {t("history.show")}
                 </Button>
               </div>
             </div>
@@ -337,24 +433,26 @@ function renderToolForm(toolId: AiToolId, context: ToolFormContext) {
 }
 
 function HighlighterForm({ isGenerating, onGenerate }: ToolFormContext) {
+  const { t } = useTranslation("ai-tools")
+  const src = useSourceText()
   const [text, setText] = useState("")
-  const [target, setTarget] = useState("Kluczowe pojęcia i decyzje")
-  const [style, setStyle] = useState("lista + oznaczenia w tekście")
+  const [target, setTarget] = useState<string>("keyConcepts")
+  const [style, setStyle] = useState<string>("listAndMarks")
   const [maxHighlights, setMaxHighlights] = useState(8)
   const [contextWords, setContextWords] = useState(4)
 
   return (
     <ToolFormCard
-      title="Analiza fragmentów"
-      description="Najlepsze do ofert, notatek, regulaminów i długich maili."
+      title={t("highlighter.title")}
+      description={t("highlighter.description")}
       isGenerating={isGenerating}
       canSubmit={text.trim().length > 0}
       onSubmit={() =>
         onGenerate(
           buildHighlightPrompt({
             text,
-            target,
-            style,
+            target: src(`highlighter.targetOptions.${target}`),
+            style: src(`highlighter.styleOptions.${style}`),
             maxHighlights,
             contextWords,
           }),
@@ -362,41 +460,34 @@ function HighlighterForm({ isGenerating, onGenerate }: ToolFormContext) {
       }
     >
       <TextAreaField
-        label="Tekst do analizy"
+        label={t("highlighter.textLabel")}
         value={text}
         onChange={setText}
-        placeholder="Wklej tekst, w którym mam znaleźć najważniejsze fragmenty…"
+        placeholder={t("highlighter.textPlaceholder")}
         minHeight="min-h-[260px]"
       />
       <SelectField
-        label="Cel analizy"
+        label={t("highlighter.targetLabel")}
         value={target}
         onChange={setTarget}
-        options={[
-          "Kluczowe pojęcia i decyzje",
-          "Argumenty i dowody",
-          "Ryzyka i niepewności",
-          "Daty, liczby i zobowiązania",
-          "Nazwy własne i podmioty",
-          "Własne kryterium z tekstu",
-        ]}
+        options={toOptions(t, "highlighter.targetOptions", HIGHLIGHT_TARGETS)}
       />
       <SelectField
-        label="Format wyniku"
+        label={t("highlighter.styleLabel")}
         value={style}
         onChange={setStyle}
-        options={["lista + oznaczenia w tekście", "tylko lista fragmentów", "wersja do review"]}
+        options={toOptions(t, "highlighter.styleOptions", HIGHLIGHT_STYLES)}
       />
       <div className="grid gap-3 sm:grid-cols-2">
         <NumberField
-          label="Maks. fragmentów"
+          label={t("highlighter.maxHighlightsLabel")}
           value={maxHighlights}
           min={1}
           max={20}
           onChange={setMaxHighlights}
         />
         <NumberField
-          label="Słów kontekstu"
+          label={t("highlighter.contextWordsLabel")}
           value={contextWords}
           min={0}
           max={12}
@@ -408,29 +499,31 @@ function HighlighterForm({ isGenerating, onGenerate }: ToolFormContext) {
 }
 
 function TransformerForm({ isGenerating, onGenerate }: ToolFormContext) {
+  const { t } = useTranslation("ai-tools")
+  const src = useSourceText()
   const [text, setText] = useState("")
-  const [transformation, setTransformation] = useState("Uproszczenie języka")
-  const [audience, setAudience] = useState("Klient biznesowy")
-  const [complexity, setComplexity] = useState("Prosty")
-  const [tone, setTone] = useState("Profesjonalny")
+  const [transformation, setTransformation] = useState<string>("simplify")
+  const [audience, setAudience] = useState<string>("businessClient")
+  const [complexity, setComplexity] = useState<string>("simple")
+  const [tone, setTone] = useState<string>("professional")
   const [preserveMeaning, setPreserveMeaning] = useState(true)
   const [fixGrammar, setFixGrammar] = useState(true)
   const [improveStructure, setImproveStructure] = useState(true)
 
   return (
     <ToolFormCard
-      title="Przepisanie tekstu"
-      description="Zachowuje sens, ale dopasowuje język do odbiorcy i zastosowania."
+      title={t("transformer.title")}
+      description={t("transformer.description")}
       isGenerating={isGenerating}
       canSubmit={text.trim().length > 0}
       onSubmit={() =>
         onGenerate(
           buildTransformPrompt({
             text,
-            transformation,
-            audience,
-            complexity,
-            tone,
+            transformation: src(`transformer.transformationOptions.${transformation}`),
+            audience: src(`transformer.audienceOptions.${audience}`),
+            complexity: src(`transformer.complexityOptions.${complexity}`),
+            tone: src(`transformer.toneOptions.${tone}`),
             preserveMeaning,
             fixGrammar,
             improveStructure,
@@ -439,70 +532,55 @@ function TransformerForm({ isGenerating, onGenerate }: ToolFormContext) {
       }
     >
       <TextAreaField
-        label="Tekst źródłowy"
+        label={t("transformer.textLabel")}
         value={text}
         onChange={setText}
-        placeholder="Wklej tekst do przepisania…"
+        placeholder={t("transformer.textPlaceholder")}
         minHeight="min-h-[240px]"
       />
       <div className="grid gap-3 sm:grid-cols-2">
         <SelectField
-          label="Transformacja"
+          label={t("transformer.transformationLabel")}
           value={transformation}
           onChange={setTransformation}
-          options={[
-            "Uproszczenie języka",
-            "Formalizacja",
-            "Styl biznesowy",
-            "Styl ekspercki",
-            "Styl przyjazny",
-            "Skrócenie",
-            "Rozwinięcie",
-          ]}
+          options={toOptions(t, "transformer.transformationOptions", TRANSFORMATIONS)}
         />
         <SelectField
-          label="Odbiorca"
+          label={t("transformer.audienceLabel")}
           value={audience}
           onChange={setAudience}
-          options={[
-            "Klient biznesowy",
-            "Zespół wewnętrzny",
-            "Ekspert branżowy",
-            "Osoba nietechniczna",
-            "Zarząd",
-            "Student",
-          ]}
+          options={toOptions(t, "transformer.audienceOptions", TRANSFORM_AUDIENCES)}
         />
         <SelectField
-          label="Poziom języka"
+          label={t("transformer.complexityLabel")}
           value={complexity}
           onChange={setComplexity}
-          options={["Bardzo prosty", "Prosty", "Średni", "Zaawansowany"]}
+          options={toOptions(t, "transformer.complexityOptions", TRANSFORM_COMPLEXITIES)}
         />
         <SelectField
-          label="Ton"
+          label={t("transformer.toneLabel")}
           value={tone}
           onChange={setTone}
-          options={["Profesjonalny", "Neutralny", "Przyjazny", "Stanowczy", "Spokojny"]}
+          options={toOptions(t, "transformer.toneOptions", TRANSFORM_TONES)}
         />
       </div>
       <CheckboxGrid
         items={[
           {
             id: "preserve",
-            label: "Zachowaj dokładne znaczenie",
+            label: t("transformer.preserveMeaning"),
             checked: preserveMeaning,
             onChange: setPreserveMeaning,
           },
           {
             id: "grammar",
-            label: "Popraw gramatykę",
+            label: t("transformer.fixGrammar"),
             checked: fixGrammar,
             onChange: setFixGrammar,
           },
           {
             id: "structure",
-            label: "Popraw strukturę",
+            label: t("transformer.improveStructure"),
             checked: improveStructure,
             onChange: setImproveStructure,
           },
@@ -513,12 +591,14 @@ function TransformerForm({ isGenerating, onGenerate }: ToolFormContext) {
 }
 
 function AnalyzerForm({ isGenerating, onGenerate }: ToolFormContext) {
+  const { t } = useTranslation("ai-tools")
+  const src = useSourceText()
   const [text, setText] = useState("")
   const [areas, setAreas] = useState<readonly string[]>([
-    "sentyment",
-    "tematy",
-    "styl",
-    "czytelność",
+    "sentiment",
+    "topics",
+    "style",
+    "readability",
   ])
 
   const toggleArea = (area: string, checked: boolean) => {
@@ -531,27 +611,34 @@ function AnalyzerForm({ isGenerating, onGenerate }: ToolFormContext) {
 
   return (
     <ToolFormCard
-      title="Diagnoza tekstu"
-      description="Zwraca ocenę jakościową, dowody z tekstu i rekomendacje poprawek."
+      title={t("analyzer.title")}
+      description={t("analyzer.description")}
       isGenerating={isGenerating}
       canSubmit={text.trim().length > 0 && areas.length > 0}
-      onSubmit={() => onGenerate(buildAnalyzePrompt({ text, areas }))}
+      onSubmit={() =>
+        onGenerate(
+          buildAnalyzePrompt({
+            text,
+            areas: areas.map((area) => src(`analyzer.areaOptions.${area}`)),
+          }),
+        )
+      }
     >
       <TextAreaField
-        label="Tekst do analizy"
+        label={t("analyzer.textLabel")}
         value={text}
         onChange={setText}
-        placeholder="Wklej artykuł, ofertę, email albo notatkę…"
+        placeholder={t("analyzer.textPlaceholder")}
         minHeight="min-h-[260px]"
       />
       <div className="space-y-1.5">
-        <Label className={FIELD_LABEL_CLASS}>Zakres analizy</Label>
+        <Label className={FIELD_LABEL_CLASS}>{t("analyzer.areasLabel")}</Label>
         <div className="grid gap-2 sm:grid-cols-2">
           {ANALYSIS_AREAS.map((area) => (
             <CheckboxRow
               key={area}
               id={`area-${area}`}
-              label={area}
+              label={t(`analyzer.areaOptions.${area}`)}
               checked={areas.includes(area)}
               onChange={(checked) => toggleArea(area, checked)}
             />
@@ -563,12 +650,14 @@ function AnalyzerForm({ isGenerating, onGenerate }: ToolFormContext) {
 }
 
 function SummarizerForm({ isGenerating, onGenerate }: ToolFormContext) {
+  const { t } = useTranslation("ai-tools")
+  const src = useSourceText()
   const [text, setText] = useState("")
-  const [summaryType, setSummaryType] = useState("Streszczenie wykonawcze")
-  const [length, setLength] = useState("Krótko, 120-200 słów")
-  const [focus, setFocus] = useState("Decyzje i rekomendacje")
-  const [audience, setAudience] = useState("Menedżer")
-  const [tone, setTone] = useState("Neutralny")
+  const [summaryType, setSummaryType] = useState<string>("executive")
+  const [length, setLength] = useState<string>("short")
+  const [focus, setFocus] = useState<string>("decisions")
+  const [audience, setAudience] = useState<string>("manager")
+  const [tone, setTone] = useState<string>("neutral")
 
   const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -578,17 +667,26 @@ function SummarizerForm({ isGenerating, onGenerate }: ToolFormContext) {
 
   return (
     <ToolFormCard
-      title="Streszczenie"
-      description="Stawia na decyzje, nie tylko krótszą wersję źródła."
+      title={t("summarizer.title")}
+      description={t("summarizer.description")}
       isGenerating={isGenerating}
       canSubmit={text.trim().length > 0}
       onSubmit={() =>
-        onGenerate(buildSummarizePrompt({ text, summaryType, length, focus, audience, tone }))
+        onGenerate(
+          buildSummarizePrompt({
+            text,
+            summaryType: src(`summarizer.typeOptions.${summaryType}`),
+            length: src(`summarizer.lengthOptions.${length}`),
+            focus: src(`summarizer.focusOptions.${focus}`),
+            audience: src(`summarizer.audienceOptions.${audience}`),
+            tone: src(`summarizer.toneOptions.${tone}`),
+          }),
+        )
       }
     >
       <div className="space-y-1.5">
         <Label htmlFor="summary-file" className={FIELD_LABEL_CLASS}>
-          Plik tekstowy
+          {t("summarizer.fileLabel")}
         </Label>
         <Input
           id="summary-file"
@@ -599,72 +697,56 @@ function SummarizerForm({ isGenerating, onGenerate }: ToolFormContext) {
         />
       </div>
       <TextAreaField
-        label="Tekst"
+        label={t("summarizer.textLabel")}
         value={text}
         onChange={setText}
-        placeholder="Wklej tekst albo wgraj plik .txt/.md…"
+        placeholder={t("summarizer.textPlaceholder")}
         minHeight="min-h-[240px]"
       />
       <div className="grid gap-3 sm:grid-cols-2">
         <SelectField
-          label="Typ"
+          label={t("summarizer.typeLabel")}
           value={summaryType}
           onChange={setSummaryType}
-          options={[
-            "Streszczenie wykonawcze",
-            "Kluczowe punkty",
-            "FAQ",
-            "Jednozdaniowe",
-            "Dla osoby nietechnicznej",
-            "Abstrakt",
-          ]}
+          options={toOptions(t, "summarizer.typeOptions", SUMMARY_TYPES)}
         />
         <SelectField
-          label="Długość"
+          label={t("summarizer.lengthLabel")}
           value={length}
           onChange={setLength}
-          options={[
-            "Bardzo krótko, 50-100 słów",
-            "Krótko, 120-200 słów",
-            "Średnio, 250-400 słów",
-            "Szczegółowo, 500-700 słów",
-          ]}
+          options={toOptions(t, "summarizer.lengthOptions", SUMMARY_LENGTHS)}
         />
         <SelectField
-          label="Priorytet"
+          label={t("summarizer.focusLabel")}
           value={focus}
           onChange={setFocus}
-          options={[
-            "Decyzje i rekomendacje",
-            "Fakty i dane",
-            "Argumenty",
-            "Ryzyka",
-            "Działania do wykonania",
-          ]}
+          options={toOptions(t, "summarizer.focusOptions", SUMMARY_FOCUSES)}
         />
         <SelectField
-          label="Odbiorca"
+          label={t("summarizer.audienceLabel")}
           value={audience}
           onChange={setAudience}
-          options={["Menedżer", "Ekspert", "Klient", "Zespół operacyjny", "Dziecko"]}
+          options={toOptions(t, "summarizer.audienceOptions", SUMMARY_AUDIENCES)}
         />
       </div>
       <SelectField
-        label="Ton"
+        label={t("summarizer.toneLabel")}
         value={tone}
         onChange={setTone}
-        options={["Neutralny", "Formalny", "Przyjazny", "Popularnonaukowy"]}
+        options={toOptions(t, "summarizer.toneOptions", SUMMARY_TONES)}
       />
     </ToolFormCard>
   )
 }
 
 function LinkedinForm({ isGenerating, onGenerate }: ToolFormContext) {
+  const { t } = useTranslation("ai-tools")
+  const src = useSourceText()
   const [topic, setTopic] = useState("")
-  const [postType, setPostType] = useState("Profesjonalna opinia")
-  const [tone, setTone] = useState("Rzeczowy")
-  const [length, setLength] = useState("Średni")
-  const [audience, setAudience] = useState("Menedżerowie")
+  const [postType, setPostType] = useState<string>("opinion")
+  const [tone, setTone] = useState<string>("factual")
+  const [length, setLength] = useState<string>("medium")
+  const [audience, setAudience] = useState<string>("managers")
   const [keywords, setKeywords] = useState("")
   const [context, setContext] = useState("")
   const [includeHashtags, setIncludeHashtags] = useState(true)
@@ -672,18 +754,18 @@ function LinkedinForm({ isGenerating, onGenerate }: ToolFormContext) {
 
   return (
     <ToolFormCard
-      title="Post LinkedIn"
-      description="Daje gotowy draft oraz alternatywne hooki zamiast jednego sztywnego posta."
+      title={t("linkedin.title")}
+      description={t("linkedin.description")}
       isGenerating={isGenerating}
       canSubmit={topic.trim().length > 0}
       onSubmit={() =>
         onGenerate(
           buildLinkedinPrompt({
             topic,
-            postType,
-            tone,
-            length,
-            audience,
+            postType: src(`linkedin.postTypeOptions.${postType}`),
+            tone: src(`linkedin.toneOptions.${tone}`),
+            length: src(`linkedin.lengthOptions.${length}`),
+            audience: src(`linkedin.audienceOptions.${audience}`),
             keywords,
             context,
             includeHashtags,
@@ -694,68 +776,61 @@ function LinkedinForm({ isGenerating, onGenerate }: ToolFormContext) {
       }
     >
       <InputField
-        label="Temat"
+        label={t("linkedin.topicLabel")}
         value={topic}
         onChange={setTopic}
-        placeholder="np. Dlaczego AI w firmie powinno zaczynać się od procesów"
+        placeholder={t("linkedin.topicPlaceholder")}
       />
       <div className="grid gap-3 sm:grid-cols-2">
         <SelectField
-          label="Typ posta"
+          label={t("linkedin.postTypeLabel")}
           value={postType}
           onChange={setPostType}
-          options={[
-            "Profesjonalna opinia",
-            "Case study",
-            "Porady i wskazówki",
-            "Edukacyjny",
-            "Ogłoszenie",
-            "Pytanie do społeczności",
-          ]}
+          options={toOptions(t, "linkedin.postTypeOptions", LINKEDIN_POST_TYPES)}
         />
         <SelectField
-          label="Odbiorcy"
+          label={t("linkedin.audienceLabel")}
           value={audience}
           onChange={setAudience}
-          options={["Menedżerowie", "Przedsiębiorcy", "Specjaliści IT", "HR", "Ogólna"]}
+          options={toOptions(t, "linkedin.audienceOptions", LINKEDIN_AUDIENCES)}
         />
         <SelectField
-          label="Ton"
+          label={t("linkedin.toneLabel")}
           value={tone}
           onChange={setTone}
-          options={["Rzeczowy", "Ekspercki", "Przyjazny", "Inspirujący", "Stanowczy"]}
+          options={toOptions(t, "linkedin.toneOptions", LINKEDIN_TONES)}
         />
         <SelectField
-          label="Długość"
+          label={t("linkedin.lengthLabel")}
           value={length}
           onChange={setLength}
-          options={["Krótki", "Średni", "Długi"]}
+          options={toOptions(t, "linkedin.lengthOptions", LINKEDIN_LENGTHS)}
         />
       </div>
       <InputField
-        label="Słowa kluczowe"
+        label={t("linkedin.keywordsLabel")}
         value={keywords}
         onChange={setKeywords}
-        placeholder="AI, automatyzacja, compliance…"
+        placeholder={t("linkedin.keywordsPlaceholder")}
       />
       <TextAreaField
-        label="Kontekst"
+        label={t("linkedin.contextLabel")}
         value={context}
         onChange={setContext}
-        placeholder="Dodaj własny przykład, obserwację albo dane…"
+        placeholder={t("linkedin.contextPlaceholder")}
         minHeight="min-h-[120px]"
       />
       <CheckboxGrid
         items={[
           {
             id: "hashtags",
-            label: "Dodaj hashtagi",
+            label: t("linkedin.includeHashtags"),
             checked: includeHashtags,
             onChange: setIncludeHashtags,
           },
           {
             id: "cta",
-            label: "Dodaj CTA",
+            label: t("linkedin.includeCta"),
             checked: includeCta,
             onChange: setIncludeCta,
           },
@@ -766,17 +841,21 @@ function LinkedinForm({ isGenerating, onGenerate }: ToolFormContext) {
 }
 
 function PresentationForm({ isGenerating, onGenerate }: ToolFormContext) {
+  const { t } = useTranslation("ai-tools")
+  const src = useSourceText()
   const [topic, setTopic] = useState("")
   const [sourceText, setSourceText] = useState("")
   const [slideCount, setSlideCount] = useState(8)
-  const [presentationType, setPresentationType] = useState("Biznesowa")
-  const [visualStyle, setVisualStyle] = useState("Nowoczesny, oszczędny, czytelny")
+  const [presentationType, setPresentationType] = useState<string>("business")
+  // Pole swobodne, więc w stanie siedzi gotowy napis, a nie klucz — wartość
+  // początkowa jest w języku interfejsu z chwili wejścia na ekran.
+  const [visualStyle, setVisualStyle] = useState(() => t("presentation.visualStyleDefault"))
   const [includeCharts, setIncludeCharts] = useState(false)
 
   return (
     <ToolFormCard
-      title="Plan prezentacji"
-      description="Tworzy strukturę, cel każdego slajdu i eksportowy szkielet HTML."
+      title={t("presentation.title")}
+      description={t("presentation.description")}
       isGenerating={isGenerating}
       canSubmit={topic.trim().length > 0}
       onSubmit={() =>
@@ -785,7 +864,7 @@ function PresentationForm({ isGenerating, onGenerate }: ToolFormContext) {
             topic,
             sourceText,
             slideCount,
-            presentationType,
+            presentationType: src(`presentation.typeOptions.${presentationType}`),
             visualStyle,
             includeCharts,
           }),
@@ -793,42 +872,42 @@ function PresentationForm({ isGenerating, onGenerate }: ToolFormContext) {
       }
     >
       <InputField
-        label="Temat"
+        label={t("presentation.topicLabel")}
         value={topic}
         onChange={setTopic}
-        placeholder="np. Automatyzacja faktur w operacjach międzynarodowych"
+        placeholder={t("presentation.topicPlaceholder")}
       />
       <div className="grid gap-3 sm:grid-cols-2">
         <NumberField
-          label="Liczba slajdów"
+          label={t("presentation.slideCountLabel")}
           value={slideCount}
           min={3}
           max={20}
           onChange={setSlideCount}
         />
         <SelectField
-          label="Typ"
+          label={t("presentation.typeLabel")}
           value={presentationType}
           onChange={setPresentationType}
-          options={["Biznesowa", "Edukacyjna", "Marketingowa", "Techniczna", "Ogólna"]}
+          options={toOptions(t, "presentation.typeOptions", PRESENTATION_TYPES)}
         />
       </div>
       <InputField
-        label="Styl wizualny"
+        label={t("presentation.visualStyleLabel")}
         value={visualStyle}
         onChange={setVisualStyle}
-        placeholder="np. korporacyjny, techniczny, minimalistyczny"
+        placeholder={t("presentation.visualStylePlaceholder")}
       />
       <TextAreaField
-        label="Materiał źródłowy"
+        label={t("presentation.sourceLabel")}
         value={sourceText}
         onChange={setSourceText}
-        placeholder="Opcjonalnie wklej notatki, brief lub artykuł…"
+        placeholder={t("presentation.sourcePlaceholder")}
         minHeight="min-h-[180px]"
       />
       <CheckboxRow
         id="presentation-charts"
-        label="Zaproponuj wykresy tam, gdzie mają sens"
+        label={t("presentation.includeCharts")}
         checked={includeCharts}
         onChange={setIncludeCharts}
       />
@@ -837,11 +916,13 @@ function PresentationForm({ isGenerating, onGenerate }: ToolFormContext) {
 }
 
 function InvoiceForm({ isGenerating, onGenerate }: ToolFormContext) {
+  const { t } = useTranslation("ai-tools")
+  const src = useSourceText()
   const [fileName, setFileName] = useState("")
   const [image, setImage] = useState<{ dataUrl: string; mimeType: string } | undefined>()
   const [sourceNote, setSourceNote] = useState("")
   const [isPreparingFile, setIsPreparingFile] = useState(false)
-  const [analysisType, setAnalysisType] = useState("Pełna analiza faktury")
+  const [analysisType, setAnalysisType] = useState<string>("full")
   const [includeJson, setIncludeJson] = useState(true)
   const [includeRisks, setIncludeRisks] = useState(true)
 
@@ -857,7 +938,7 @@ function InvoiceForm({ isGenerating, onGenerate }: ToolFormContext) {
       if (file.type.startsWith("image/")) {
         const dataUrl = await readFileAsDataUrl(file)
         setImage({ dataUrl, mimeType: file.type })
-        setSourceNote(`plik graficzny ${file.name}`)
+        setSourceNote(t("invoice.sourceImage", { name: file.name }))
         return
       }
 
@@ -866,16 +947,19 @@ function InvoiceForm({ isGenerating, onGenerate }: ToolFormContext) {
         const rendered = await renderPdfFileAsInvoiceImage(file)
         setImage({ dataUrl: rendered.dataUrl, mimeType: rendered.mimeType })
         setSourceNote(
-          `PDF ${file.name}, wyrenderowano ${rendered.renderedPages} z ${rendered.pageCount} stron do jednego obrazu`,
+          t("invoice.sourcePdf", {
+            name: file.name,
+            rendered: rendered.renderedPages,
+            total: rendered.pageCount,
+          }),
         )
-        toast.success("PDF przygotowany do analizy")
+        toast.success(t("invoice.pdfReady"))
         return
       }
 
-      toast.error("Wgraj obraz albo PDF faktury")
+      toast.error(t("invoice.unsupportedFile"))
     } catch (fileError) {
-      const message =
-        fileError instanceof Error ? fileError.message : "Nie udało się przygotować pliku"
+      const message = fileError instanceof Error ? fileError.message : t("invoice.prepareFailed")
       toast.error(message)
     } finally {
       setIsPreparingFile(false)
@@ -884,28 +968,30 @@ function InvoiceForm({ isGenerating, onGenerate }: ToolFormContext) {
 
   return (
     <ToolFormCard
-      title="Analiza faktury"
-      description="Zwraca dane faktury, niepewności OCR/vision i kontrolę formalną."
+      title={t("invoice.title")}
+      description={t("invoice.description")}
       isGenerating={isGenerating || isPreparingFile}
       canSubmit={Boolean(image) && !isPreparingFile}
       onSubmit={() => {
         const options: GenerationOptions = image ? { image } : {}
         return onGenerate(
-          buildInvoicePrompt({ analysisType, includeJson, includeRisks, sourceNote }),
+          buildInvoicePrompt({
+            analysisType: src(`invoice.analysisTypeOptions.${analysisType}`),
+            includeJson,
+            includeRisks,
+            sourceNote,
+          }),
           options,
         )
       }}
     >
       <Alert className="rounded-lg border-border bg-muted/20">
         <FileImage className="h-4 w-4" />
-        <AlertDescription>
-          Obrazy trafiają bezpośrednio do analizy. PDF jest renderowany lokalnie do obrazu przed
-          wysłaniem przez Cortex Proxy.
-        </AlertDescription>
+        <AlertDescription>{t("invoice.notice")}</AlertDescription>
       </Alert>
       <div className="space-y-1.5">
         <Label htmlFor="invoice-image" className={FIELD_LABEL_CLASS}>
-          Plik faktury
+          {t("invoice.fileLabel")}
         </Label>
         <Input
           id="invoice-image"
@@ -917,37 +1003,30 @@ function InvoiceForm({ isGenerating, onGenerate }: ToolFormContext) {
         />
         {fileName ? (
           <p className="text-xs text-muted-foreground">
-            {isPreparingFile ? "Przygotowuję: " : "Wybrano: "}
-            {fileName}
+            {isPreparingFile
+              ? t("invoice.preparingFile", { name: fileName })
+              : t("invoice.selectedFile", { name: fileName })}
           </p>
         ) : null}
         {sourceNote ? <p className="text-xs text-muted-foreground">{sourceNote}</p> : null}
       </div>
       <SelectField
-        label="Typ analizy"
+        label={t("invoice.analysisTypeLabel")}
         value={analysisType}
         onChange={setAnalysisType}
-        options={[
-          "Pełna analiza faktury",
-          "Podstawowe dane faktury",
-          "Pozycje i kwoty",
-          "Dane kontrahentów",
-          "Terminy płatności",
-          "Podatki i VAT",
-          "Sprawdzenie poprawności",
-        ]}
+        options={toOptions(t, "invoice.analysisTypeOptions", INVOICE_ANALYSIS_TYPES)}
       />
       <CheckboxGrid
         items={[
           {
             id: "json",
-            label: "Dołącz dane JSON",
+            label: t("invoice.includeJson"),
             checked: includeJson,
             onChange: setIncludeJson,
           },
           {
             id: "risks",
-            label: "Dołącz kontrolę ryzyk",
+            label: t("invoice.includeRisks"),
             checked: includeRisks,
             onChange: setIncludeRisks,
           },
@@ -958,9 +1037,12 @@ function InvoiceForm({ isGenerating, onGenerate }: ToolFormContext) {
 }
 
 function ChatForm({ isGenerating, onGenerate }: ToolFormContext) {
+  const { t } = useTranslation("ai-tools")
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [prompt, setPrompt] = useState("")
 
+  // Etykiety ról i nagłówki sekcji poniżej są częścią PROMPTU, nie interfejsu —
+  // zostają po polsku razem z resztą instrukcji z `lib/ai-tools/prompts.ts`.
   const conversation = useMemo(
     () =>
       messages
@@ -991,14 +1073,12 @@ function ChatForm({ isGenerating, onGenerate }: ToolFormContext) {
   return (
     <Card className="overflow-hidden rounded-lg shadow-none">
       <CardHeader className="border-b border-border bg-muted/20 px-4 py-3">
-        <CardTitle className="text-sm font-semibold">Rozmowa</CardTitle>
+        <CardTitle className="text-sm font-semibold">{t("chat.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 p-4">
         <div className="min-h-[220px] space-y-3 rounded-lg border border-border bg-muted/20 p-3">
           {messages.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Zadaj pytanie lub wklej tekst do przeredagowania.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("chat.empty")}</p>
           ) : (
             messages.map((message, index) => (
               <div
@@ -1018,7 +1098,7 @@ function ChatForm({ isGenerating, onGenerate }: ToolFormContext) {
         <Textarea
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
-          placeholder="Napisz wiadomość…"
+          placeholder={t("chat.placeholder")}
           className="min-h-[130px] text-sm"
         />
         <div className="flex justify-end gap-2 border-t border-border pt-4">
@@ -1029,7 +1109,7 @@ function ChatForm({ isGenerating, onGenerate }: ToolFormContext) {
             onClick={() => setMessages([])}
             disabled={messages.length === 0 || isGenerating}
           >
-            Nowa rozmowa
+            {t("chat.newConversation")}
           </Button>
           <Button
             type="button"
@@ -1042,7 +1122,7 @@ function ChatForm({ isGenerating, onGenerate }: ToolFormContext) {
             ) : (
               <Send className="mr-1.5 h-3.5 w-3.5" />
             )}
-            Wyślij
+            {t("chat.send")}
           </Button>
         </div>
       </CardContent>
@@ -1067,6 +1147,8 @@ function ToolFormCard({
   canSubmit,
   onSubmit,
 }: ToolFormCardProps) {
+  const { t } = useTranslation("ai-tools")
+
   return (
     <Card className="overflow-hidden rounded-lg shadow-none">
       <CardHeader className="border-b border-border bg-muted/20 px-4 py-3">
@@ -1081,7 +1163,7 @@ function ToolFormCard({
           ) : (
             <Sparkles className="mr-1.5 h-3.5 w-3.5" />
           )}
-          Generuj
+          {t("shared.generate")}
         </Button>
       </div>
     </Card>
@@ -1098,10 +1180,12 @@ interface ResultPanelProps {
 }
 
 function ResultPanel({ content, error, isGenerating, model, title, tokensUsed }: ResultPanelProps) {
+  const { t } = useTranslation("ai-tools")
+
   const handleCopy = async () => {
     if (!content) return
     await navigator.clipboard.writeText(content)
-    toast.success("Skopiowano wynik")
+    toast.success(t("result.copied"))
   }
 
   const handleDownload = () => {
@@ -1122,7 +1206,7 @@ function ResultPanel({ content, error, isGenerating, model, title, tokensUsed }:
             ) : null}
             {tokensUsed ? (
               <Badge variant="outline" className="h-5 text-[10px]">
-                ~{tokensUsed.toLocaleString()} tokenów
+                {t("shared.tokens", { value: tokensUsed.toLocaleString() })}
               </Badge>
             ) : null}
           </div>
@@ -1137,7 +1221,7 @@ function ResultPanel({ content, error, isGenerating, model, title, tokensUsed }:
             disabled={!content}
           >
             <Clipboard className="mr-1.5 h-3.5 w-3.5" />
-            Kopiuj
+            {t("result.copy")}
           </Button>
           <Button
             type="button"
@@ -1148,7 +1232,7 @@ function ResultPanel({ content, error, isGenerating, model, title, tokensUsed }:
             disabled={!content}
           >
             <Download className="mr-1.5 h-3.5 w-3.5" />
-            Pobierz
+            {t("result.download")}
           </Button>
         </div>
       </CardHeader>
@@ -1161,7 +1245,7 @@ function ResultPanel({ content, error, isGenerating, model, title, tokensUsed }:
         {isGenerating ? (
           <div className="flex min-h-[360px] items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Generowanie wyniku przez Cortex Proxy…
+            {t("result.generating")}
           </div>
         ) : content ? (
           <div className="max-h-[70vh] overflow-auto rounded-lg border border-border bg-muted/20 p-4">
@@ -1171,7 +1255,7 @@ function ResultPanel({ content, error, isGenerating, model, title, tokensUsed }:
           </div>
         ) : (
           <div className="flex min-h-[360px] items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
-            Wynik pojawi się tutaj po wygenerowaniu.
+            {t("result.placeholder")}
           </div>
         )}
       </CardContent>
@@ -1232,10 +1316,17 @@ function TextAreaField({
   )
 }
 
+interface SelectOption {
+  /** Klucz tłumaczenia — stabilny między językami, więc przełączenie języka
+   *  nie gubi zaznaczenia. Do promptu idzie przez `useSourceText()`. */
+  value: string
+  label: string
+}
+
 interface SelectFieldProps {
   label: string
   onChange: (value: string) => void
-  options: readonly string[]
+  options: readonly SelectOption[]
   value: string
 }
 
@@ -1249,14 +1340,33 @@ function SelectField({ label, onChange, options, value }: SelectFieldProps) {
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (
-            <SelectItem key={option} value={option}>
-              {option}
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
     </div>
   )
+}
+
+/** Opcje listy wyboru z jednej gałęzi przestrzeni `ai-tools`. */
+function toOptions(
+  t: (key: string) => string,
+  prefix: string,
+  keys: readonly string[],
+): readonly SelectOption[] {
+  return keys.map((key) => ({ value: key, label: t(`${prefix}.${key}`) }))
+}
+
+/** Napis w języku ŹRÓDŁOWYM — to on jedzie do modelu. Patrz komentarz przy
+ *  listach kluczy na górze pliku. */
+function useSourceText(): (key: string) => string {
+  const { i18n: instance } = useTranslation("ai-tools")
+  return useMemo(() => {
+    const fixed = instance.getFixedT(SOURCE_LOCALE, "ai-tools")
+    return (key: string) => String(fixed(key))
+  }, [instance])
 }
 
 interface NumberFieldProps {
@@ -1344,9 +1454,9 @@ function readFileAsDataUrl(file: File): Promise<string> {
     const reader = new FileReader()
     reader.onload = () => {
       if (typeof reader.result === "string") resolve(reader.result)
-      else reject(new Error("Nie udało się odczytać pliku"))
+      else reject(new Error(tOutsideReact("errors.readFile")))
     }
-    reader.onerror = () => reject(new Error("Nie udało się odczytać pliku"))
+    reader.onerror = () => reject(new Error(tOutsideReact("errors.readFile")))
     reader.readAsDataURL(file)
   })
 }
@@ -1388,7 +1498,7 @@ async function renderPdfFileAsInvoiceImage(file: File): Promise<RenderedInvoiceP
       const viewport = page.getViewport({ scale })
       const canvas = document.createElement("canvas")
       const ctx = canvas.getContext("2d")
-      if (!ctx) throw new Error("Nie udało się przygotować obrazu PDF")
+      if (!ctx) throw new Error(tOutsideReact("errors.pdfRender"))
 
       canvas.width = Math.ceil(viewport.width)
       canvas.height = Math.ceil(viewport.height)
@@ -1398,7 +1508,7 @@ async function renderPdfFileAsInvoiceImage(file: File): Promise<RenderedInvoiceP
 
     const dataUrl = mergeInvoicePdfPages(canvases)
     if (dataUrl.length > AI_TOOL_MAX_DATA_URL_LENGTH) {
-      throw new Error("PDF jest zbyt duży do jednorazowej analizy. Spróbuj krótszego pliku.")
+      throw new Error(tOutsideReact("errors.pdfTooLarge"))
     }
 
     return {
@@ -1419,7 +1529,7 @@ function mergeInvoicePdfPages(canvases: readonly HTMLCanvasElement[]): string {
     Math.max(0, canvases.length - 1) * PDF_INVOICE_PAGE_GAP
   const merged = document.createElement("canvas")
   const ctx = merged.getContext("2d")
-  if (!ctx) throw new Error("Nie udało się połączyć stron PDF")
+  if (!ctx) throw new Error(tOutsideReact("errors.pdfMerge"))
 
   merged.width = width
   merged.height = height

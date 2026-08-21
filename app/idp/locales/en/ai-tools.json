@@ -1,1 +1,279 @@
-{}
+{
+  "gate": {
+    "checking": "Checking access…",
+    "deniedTitle": "No access to AI Tools",
+    "deniedBody": "Your account does not have this application enabled. Please contact your instance administrator."
+  },
+  "shared": {
+    "backToHub": "Back to hub",
+    "generate": "Generate",
+    "generateSuccess": "Result generated",
+    "generateFailed": "Could not generate the result",
+    "generateToastError": "Generation failed",
+    "tokens": "~{{value}} tokens"
+  },
+  "dashboard": {
+    "subtitle": "AI tools running through Cortex Proxy; permissions come from System Configuration.",
+    "emptyTitle": "No AI mini-apps enabled for you",
+    "emptyBody": "An administrator has to assign at least one AI Tools application.",
+    "quickStart": "quick start",
+    "open": "Open"
+  },
+  "categories": {
+    "text": "Text",
+    "content": "Content",
+    "documents": "Documents",
+    "assistants": "Assistants"
+  },
+  "workspace": {
+    "unknownTitle": "Unknown tool",
+    "unknownBody": "This address does not match any AI Tools application.",
+    "backToApps": "Applications"
+  },
+  "history": {
+    "title": "History",
+    "refresh": "Refresh",
+    "loadFailed": "Could not load the history.",
+    "loading": "Loading history…",
+    "empty": "No history for this application yet.",
+    "fileBadge": "file",
+    "show": "Show"
+  },
+  "result": {
+    "title": "Result",
+    "copy": "Copy",
+    "download": "Download",
+    "copied": "Result copied",
+    "generating": "Generating the result through Cortex Proxy…",
+    "placeholder": "The result will appear here once generated."
+  },
+  "highlighter": {
+    "title": "Passage analysis",
+    "description": "Best for proposals, notes, terms and conditions and long emails.",
+    "textLabel": "Text to analyse",
+    "textPlaceholder": "Paste the text whose key passages you want found…",
+    "targetLabel": "Analysis goal",
+    "targetOptions": {
+      "keyConcepts": "Key concepts and decisions",
+      "arguments": "Arguments and evidence",
+      "risks": "Risks and uncertainties",
+      "datesNumbers": "Dates, figures, commitments",
+      "entities": "Names and entities",
+      "custom": "Own criterion from the text"
+    },
+    "styleLabel": "Result format",
+    "styleOptions": {
+      "listAndMarks": "list + marks in the text",
+      "listOnly": "list of passages only",
+      "review": "review-ready version"
+    },
+    "maxHighlightsLabel": "Max passages",
+    "contextWordsLabel": "Context words"
+  },
+  "transformer": {
+    "title": "Text rewrite",
+    "description": "Keeps the meaning while adapting the language to the reader and the purpose.",
+    "textLabel": "Source text",
+    "textPlaceholder": "Paste the text to rewrite…",
+    "transformationLabel": "Transformation",
+    "transformationOptions": {
+      "simplify": "Plainer language",
+      "formalize": "More formal",
+      "business": "Business style",
+      "expert": "Expert style",
+      "friendly": "Friendly style",
+      "shorten": "Shorten",
+      "expand": "Expand"
+    },
+    "audienceLabel": "Reader",
+    "audienceOptions": {
+      "businessClient": "Business client",
+      "internalTeam": "Internal team",
+      "industryExpert": "Industry expert",
+      "nonTechnical": "Non-technical reader",
+      "board": "Board",
+      "student": "Student"
+    },
+    "complexityLabel": "Language level",
+    "complexityOptions": {
+      "verySimple": "Very simple",
+      "simple": "Simple",
+      "medium": "Intermediate",
+      "advanced": "Advanced"
+    },
+    "toneLabel": "Tone",
+    "toneOptions": {
+      "professional": "Professional",
+      "neutral": "Neutral",
+      "friendly": "Friendly",
+      "assertive": "Assertive",
+      "calm": "Calm"
+    },
+    "preserveMeaning": "Keep the exact meaning",
+    "fixGrammar": "Fix grammar",
+    "improveStructure": "Improve structure"
+  },
+  "analyzer": {
+    "title": "Text diagnosis",
+    "description": "Returns a quality verdict, evidence from the text and suggested fixes.",
+    "textLabel": "Text to analyse",
+    "textPlaceholder": "Paste an article, a proposal, an email or a note…",
+    "areasLabel": "Analysis scope",
+    "areaOptions": {
+      "sentiment": "sentiment",
+      "topics": "topics",
+      "style": "style",
+      "readability": "readability",
+      "keywords": "keywords",
+      "structure": "structure"
+    }
+  },
+  "summarizer": {
+    "title": "Summary",
+    "description": "Aims at decisions, not merely a shorter version of the source.",
+    "fileLabel": "Text file",
+    "textLabel": "Text",
+    "textPlaceholder": "Paste the text or upload a .txt/.md file…",
+    "typeLabel": "Type",
+    "typeOptions": {
+      "executive": "Executive summary",
+      "keyPoints": "Key points",
+      "faq": "FAQ",
+      "oneSentence": "One sentence",
+      "nonTechnical": "For a non-technical reader",
+      "abstract": "Abstract"
+    },
+    "lengthLabel": "Length",
+    "lengthOptions": {
+      "veryShort": "Very short, 50-100 words",
+      "short": "Short, 120-200 words",
+      "medium": "Medium, 250-400 words",
+      "detailed": "Detailed, 500-700 words"
+    },
+    "focusLabel": "Priority",
+    "focusOptions": {
+      "decisions": "Decisions and recommendations",
+      "facts": "Facts and figures",
+      "arguments": "Arguments",
+      "risks": "Risks",
+      "actions": "Action items"
+    },
+    "audienceLabel": "Reader",
+    "audienceOptions": {
+      "manager": "Manager",
+      "expert": "Expert",
+      "client": "Client",
+      "operations": "Operations team",
+      "child": "A child"
+    },
+    "toneLabel": "Tone",
+    "toneOptions": {
+      "neutral": "Neutral",
+      "formal": "Formal",
+      "friendly": "Friendly",
+      "popularScience": "Popular science"
+    }
+  },
+  "linkedin": {
+    "title": "LinkedIn post",
+    "description": "Gives you a ready draft plus alternative hooks instead of one rigid post.",
+    "topicLabel": "Topic",
+    "topicPlaceholder": "e.g. Why AI in a company should start with processes",
+    "postTypeLabel": "Post type",
+    "postTypeOptions": {
+      "opinion": "Professional opinion",
+      "caseStudy": "Case study",
+      "tips": "Tips and advice",
+      "educational": "Educational",
+      "announcement": "Announcement",
+      "question": "Question to the community"
+    },
+    "audienceLabel": "Audience",
+    "audienceOptions": {
+      "managers": "Managers",
+      "founders": "Founders",
+      "itSpecialists": "IT specialists",
+      "hr": "HR",
+      "general": "General"
+    },
+    "toneLabel": "Tone",
+    "toneOptions": {
+      "factual": "Matter-of-fact",
+      "expert": "Expert",
+      "friendly": "Friendly",
+      "inspiring": "Inspiring",
+      "assertive": "Assertive"
+    },
+    "lengthLabel": "Length",
+    "lengthOptions": {
+      "short": "Short",
+      "medium": "Medium",
+      "long": "Long"
+    },
+    "keywordsLabel": "Keywords",
+    "keywordsPlaceholder": "AI, automation, compliance…",
+    "contextLabel": "Context",
+    "contextPlaceholder": "Add your own example, observation or data…",
+    "includeHashtags": "Add hashtags",
+    "includeCta": "Add a CTA"
+  },
+  "presentation": {
+    "title": "Presentation outline",
+    "description": "Builds the structure, the purpose of every slide and an HTML export skeleton.",
+    "topicLabel": "Topic",
+    "topicPlaceholder": "e.g. Invoice automation in cross-border operations",
+    "slideCountLabel": "Slide count",
+    "typeLabel": "Type",
+    "typeOptions": {
+      "business": "Business",
+      "educational": "Educational",
+      "marketing": "Marketing",
+      "technical": "Technical",
+      "general": "General"
+    },
+    "visualStyleLabel": "Visual style",
+    "visualStylePlaceholder": "e.g. corporate, technical, minimalist",
+    "visualStyleDefault": "Modern, restrained, readable",
+    "sourceLabel": "Source material",
+    "sourcePlaceholder": "Optionally paste notes, a brief or an article…",
+    "includeCharts": "Suggest charts wherever they make sense"
+  },
+  "invoice": {
+    "title": "Invoice analysis",
+    "description": "Returns invoice data, OCR/vision uncertainties and a formal check.",
+    "notice": "Images go straight to the analysis. A PDF is rendered locally into an image before it is sent through Cortex Proxy.",
+    "fileLabel": "Invoice file",
+    "preparingFile": "Preparing: {{name}}",
+    "selectedFile": "Selected: {{name}}",
+    "sourceImage": "image file {{name}}",
+    "sourcePdf": "PDF {{name}}, {{rendered}} of {{total}} pages rendered into a single image",
+    "pdfReady": "PDF ready for analysis",
+    "unsupportedFile": "Upload an image or a PDF of the invoice",
+    "prepareFailed": "Could not prepare the file",
+    "analysisTypeLabel": "Analysis type",
+    "analysisTypeOptions": {
+      "full": "Full invoice analysis",
+      "basic": "Basic invoice data",
+      "lineItems": "Line items and amounts",
+      "parties": "Counterparty details",
+      "paymentTerms": "Payment terms",
+      "taxes": "Taxes and VAT",
+      "validation": "Correctness check"
+    },
+    "includeJson": "Include JSON data",
+    "includeRisks": "Include risk check"
+  },
+  "chat": {
+    "title": "Conversation",
+    "empty": "Ask a question or paste a text to be reworked.",
+    "placeholder": "Write a message…",
+    "newConversation": "New conversation",
+    "send": "Send"
+  },
+  "errors": {
+    "readFile": "Could not read the file",
+    "pdfRender": "Could not prepare the PDF image",
+    "pdfTooLarge": "This PDF is too large for a single analysis. Try a shorter file.",
+    "pdfMerge": "Could not merge the PDF pages"
+  }
+}

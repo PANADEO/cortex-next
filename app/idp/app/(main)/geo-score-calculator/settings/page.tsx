@@ -12,24 +12,23 @@
 import { GeoScoreSettingsForm } from "@/features/geo-score-calculator/components/settings-form"
 import { useGeoScoreConfig } from "@/features/geo-score-calculator/hooks"
 import { ErrorState, LoadingState, PageHeader } from "@cortex/ui"
+import { useTranslation } from "react-i18next"
 
 export default function GeoScoreCalculatorSettingsPage() {
+  const { t } = useTranslation("geo-score-calculator")
   const configQuery = useGeoScoreConfig()
 
   return (
     <>
-      <PageHeader
-        title="Ustawienia"
-        description="Wagi wymiarów, benchmarki, progi ocen i listy słów — wspólna konfiguracja kalkulatora dla całej instancji."
-      />
+      <PageHeader title={t("settings.title")} description={t("settings.description")} />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
         {configQuery.isLoading ? (
           <LoadingState variant="skeleton" rows={6} />
         ) : configQuery.isError || !configQuery.data ? (
           <ErrorState
-            title="Nie udało się wczytać ustawień"
-            message="Spróbuj odświeżyć stronę. Jeśli problem się powtarza, skontaktuj się z administratorem."
+            title={t("settings.loadErrorTitle")}
+            message={t("settings.loadErrorMessage")}
           />
         ) : (
           <GeoScoreSettingsForm config={configQuery.data} />

@@ -1,3 +1,5 @@
+"use client"
+
 // Utility wspólne dla ekranu generowania (page.tsx, wszystkie trzy tryby) —
 // wydzielone z page.tsx w Round C, bo tryb "Kilka"/"Pakiet"
 // (generation-job-card.tsx) potrzebuje DOKŁADNIE tego samego podświetlania,
@@ -7,6 +9,7 @@
 import { Badge } from "@cortex/ui"
 import { AlertTriangle } from "lucide-react"
 import { Fragment, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import type { ContentGuruGenerationStatus } from "./types"
 
 /**
@@ -18,6 +21,8 @@ import type { ContentGuruGenerationStatus } from "./types"
  * emerald nie rozjeżdżała się między ekranami tego samego modułu.
  */
 export function ContentStatusBadge({ status }: { status: ContentGuruGenerationStatus }) {
+  const { t } = useTranslation("content-guru")
+
   if (status === "done-with-warnings") {
     return (
       <Badge
@@ -25,7 +30,7 @@ export function ContentStatusBadge({ status }: { status: ContentGuruGenerationSt
         className="gap-1 border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300"
       >
         <AlertTriangle className="h-3 w-3" />
-        Zawiera zakazane frazy
+        {t("status.withWarnings")}
       </Badge>
     )
   }
@@ -34,7 +39,7 @@ export function ContentStatusBadge({ status }: { status: ContentGuruGenerationSt
       variant="outline"
       className="border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
     >
-      Gotowe
+      {t("status.done")}
     </Badge>
   )
 }

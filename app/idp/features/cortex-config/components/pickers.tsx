@@ -5,6 +5,7 @@ import { Button, Checkbox, Input, Popover, PopoverContent, PopoverTrigger } from
 import { cn } from "@cortex/utils"
 import { Check, ChevronsUpDown, CornerDownRight, Plus } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 
 // Reusable department-tree selectors for cortex-config forms. Departments are
 // slash paths ("finanse/kontroling"); lexicographic sort puts parents before
@@ -22,6 +23,7 @@ interface DepartmentSelectProps {
   departments: string[]
   value: string
   onChange: (next: string) => void
+  /** Defaults to the "choose a department" prompt from the cortex-config namespace. */
   placeholder?: string
   /** Allows typing a brand-new path (created implicitly on save). */
   allowCreate?: boolean
@@ -32,9 +34,10 @@ export function DepartmentSelect({
   departments,
   value,
   onChange,
-  placeholder = "Wybierz departament",
+  placeholder,
   allowCreate = true,
 }: DepartmentSelectProps) {
+  const { t } = useTranslation("cortex-config")
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState("")
   const sorted = [...departments].sort()
@@ -58,7 +61,9 @@ export function DepartmentSelect({
           {value ? (
             <span className="font-mono text-xs">{value}</span>
           ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
+            <span className="text-muted-foreground">
+              {placeholder ?? t("pickers.selectDepartment")}
+            </span>
           )}
           <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
         </Button>
@@ -66,7 +71,9 @@ export function DepartmentSelect({
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1" align="start">
         <div className="max-h-56 overflow-y-auto">
           {sorted.length === 0 ? (
-            <p className="px-2 py-1.5 text-xs text-muted-foreground">Brak departamentów.</p>
+            <p className="px-2 py-1.5 text-xs text-muted-foreground">
+              {t("pickers.noDepartments")}
+            </p>
           ) : (
             sorted.map((dept) => (
               <button
@@ -99,7 +106,7 @@ export function DepartmentSelect({
             <Input
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder="nowa/sciezka"
+              placeholder={t("pickers.newPathPlaceholder")}
               className="h-7 font-mono text-xs"
             />
             <Button
@@ -124,6 +131,7 @@ interface DepartmentTreeCheckListProps {
   onChange: (next: string[]) => void
   /** Optional per-department meta (e.g. resource count) rendered right-aligned. */
   meta?: (dept: string) => string | null
+  /** Defaults to the "no departments" empty state from the cortex-config namespace. */
   emptyText?: string
 }
 
@@ -133,11 +141,14 @@ export function DepartmentTreeCheckList({
   value,
   onChange,
   meta,
-  emptyText = "Brak departamentów.",
+  emptyText,
 }: DepartmentTreeCheckListProps) {
+  const { t } = useTranslation("cortex-config")
   const sorted = [...departments].sort()
   if (sorted.length === 0) {
-    return <p className="text-sm text-muted-foreground">{emptyText}</p>
+    return (
+      <p className="text-sm text-muted-foreground">{emptyText ?? t("pickers.noDepartments")}</p>
+    )
   }
   return (
     <div className="rounded-md border">

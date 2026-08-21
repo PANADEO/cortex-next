@@ -13,7 +13,7 @@ import {
   useUpdateApplication,
 } from "@/features/system-config/hooks"
 import { resolveApplicationIcon } from "@/features/system-config/icons"
-import { KIND_LABELS } from "@/features/system-config/kinds"
+import { KIND_LABEL_KEYS } from "@/features/system-config/kinds"
 import type { Application, ApplicationInput, RoleSummary } from "@/features/system-config/types"
 import { usePreset } from "@/lib/presets/preset-store"
 import { presetUsesApplicationColor } from "@/lib/presets/registry"
@@ -63,6 +63,7 @@ import dynamic from "next/dynamic"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { systemConfigTile } from "../../manifest"
 
@@ -102,6 +103,7 @@ function IconPickerPlaceholder({
   value: string
   onActivate: () => void
 }) {
+  const { t } = useTranslation("system-config")
   const Icon = resolveApplicationIcon(value)
   return (
     <Button
@@ -112,7 +114,7 @@ function IconPickerPlaceholder({
       onClick={onActivate}
     >
       <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-      <span className="truncate">{value || "Wybierz ikonę"}</span>
+      <span className="truncate">{value || t("applications.form.iconPlaceholder")}</span>
     </Button>
   )
 }
@@ -258,6 +260,7 @@ function toInput(code: string, form: FormState): ApplicationInput {
 }
 
 export default function ApplicationDetailPage() {
+  const { t } = useTranslation(["system-config", "common"])
   const params = useParams<{ code: string }>()
   const code = decodeURIComponent(params.code)
   const router = useRouter()
@@ -335,7 +338,7 @@ export default function ApplicationDetailPage() {
   const scopeColumns = useMemo<ColumnDef<RoleSummary, unknown>[]>(() => {
     const roleColumn: ColumnDef<RoleSummary, unknown> = {
       id: "role",
-      header: "Rola",
+      header: t("applications.detail.scopeRoleColumn"),
       cell: ({ row }) => (
         <div className="grid gap-0.5">
           <span className="font-medium">{row.original.name}</span>
@@ -374,14 +377,14 @@ export default function ApplicationDetailPage() {
     )
 
     return [roleColumn, ...columns]
-  }, [applicationScopesQuery.data, scopeGrants])
+  }, [applicationScopesQuery.data, scopeGrants, t])
 
   if (applicationsQuery.isLoading) {
     return (
       <>
-        <PageHeader title="Aplikacja" />
+        <PageHeader title={t("applications.detail.fallbackTitle")} />
         <div className="px-8 py-6">
-          <LoadingState label="Wczytywanie aplikacji…" />
+          <LoadingState label={t("applications.loading")} />
         </div>
       </>
     )
@@ -390,15 +393,17 @@ export default function ApplicationDetailPage() {
   if (!application || !form) {
     return (
       <>
-        <PageHeader title="Aplikacja" />
+        <PageHeader title={t("applications.detail.fallbackTitle")} />
         <div className="px-8 py-6">
           <EmptyState
             icon={LayoutDashboard}
-            title="Nie ma aplikacji o tym kodzie"
-            description={`Kod ${code} nie występuje w rejestrze aplikacji.`}
+            title={t("applications.detail.notFoundTitle")}
+            description={t("applications.detail.notFoundDescription", { code })}
             action={
               <Button size="sm" variant="outline" asChild>
-                <Link href="/system-config/applications">Wróć do listy</Link>
+                <Link href="/system-config/applications">
+                  {t("applications.detail.backToList")}
+                </Link>
               </Button>
             }
           />
@@ -451,9 +456,9 @@ export default function ApplicationDetailPage() {
     if (!application || !form) return
     try {
       await updateApplication.mutateAsync({ id: application.id, body: toInput(code, form) })
-      toast.success("Zapisano dane aplikacji")
+      toast.success(t("applications.detail.toast.detailsSaved"))
     } catch (error) {
-      toastApiError(error, "Nie udało się zapisać aplikacji")
+      toastApiError(error, t("applications.detail.errors.saveFailed"))
     }
   }
 
@@ -461,13 +466,13 @@ export default function ApplicationDetailPage() {
     if (!application) return
     try {
       await setApplicationRoles.mutateAsync({ id: application.id, roleIds: grantedRoleIds })
-      toast.success("Zapisano uprawnienia")
+      toast.success(t("applications.detail.toast.permissionsSaved"))
     } catch (error) {
       // Serwer odrzucił zapis (np. 409 samo-zablokowanie), więc granty zostały
       // po staremu — checkboxy muszą wrócić do stanu z serwera. Bez tego ekran
       // pokazuje odznaczoną rolę, której nikt nie odebrał.
       setSelectedRoleIds(applicationRolesQuery.data?.roleIds ?? [])
-      toastApiError(error, "Nie udało się zapisać uprawnień")
+      toastApiError(error, t("applications.detail.errors.permissionsSaveFailed"))
     }
   }
 
@@ -506,7 +511,7 @@ export default function ApplicationDetailPage() {
           }),
         ),
       )
-      toast.success("Zapisano zakresy")
+      toast.success(t("applications.detail.toast.scopesSaved"))
     } catch (error) {
       // Błąd częściowy (jedna kolumna 409, inna 200) cofa lokalny stan do
       // prawdy serwera dla WSZYSTKICH kolumn, wzorem handleSavePermissions —
@@ -514,7 +519,7 @@ export default function ApplicationDetailPage() {
       setScopeGrants(
         Object.fromEntries(serverGrants.map((grant) => [grant.scopeId, grant.roleIds])),
       )
-      toastApiError(error, "Nie udało się zapisać zakresów")
+      toastApiError(error, t("applications.detail.errors.scopesSaveFailed"))
     } finally {
       setIsSavingScopes(false)
     }
@@ -524,10 +529,10 @@ export default function ApplicationDetailPage() {
     if (!application) return
     try {
       await deleteApplication.mutateAsync(application.id)
-      toast.success(`Usunięto aplikację ${application.name}`)
+      toast.success(t("applications.detail.toast.deleted", { name: application.name }))
       router.push("/system-config/applications")
     } catch (error) {
-      toastApiError(error, "Nie udało się usunąć aplikacji")
+      toastApiError(error, t("applications.detail.errors.deleteFailed"))
     } finally {
       setIsDeleteOpen(false)
     }
@@ -537,13 +542,13 @@ export default function ApplicationDetailPage() {
     <>
       <PageHeader
         title={application.name}
-        description={`Kod uprawnienia: ${code}`}
+        description={t("applications.detail.entitlementCodeCaption", { code })}
         actions={
           <div className="flex items-center gap-2">
             <Button size="sm" variant="ghost" asChild>
               <Link href="/system-config/applications">
                 <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
-                Aplikacje
+                {t("applications.detail.backLink")}
               </Link>
             </Button>
             <Button
@@ -553,7 +558,7 @@ export default function ApplicationDetailPage() {
               onClick={() => setIsDeleteOpen(true)}
             >
               <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-              Usuń
+              {t("common:actions.delete")}
             </Button>
           </div>
         }
@@ -563,40 +568,33 @@ export default function ApplicationDetailPage() {
         {isSelfManaged ? (
           <Alert>
             <ShieldAlert className="h-4 w-4" />
-            <AlertTitle>To jest aplikacja, z której właśnie korzystasz</AlertTitle>
-            <AlertDescription>
-              Nie da się zmienić kodu, typu ani adresu tej aplikacji, ani jej wyłączyć czy usunąć.
-              To po tym kodzie bramka sprawdza dostęp do Konfiguracji Systemu, a typ i adres opisują
-              sam ten moduł — taka zmiana albo odcięłaby od niego wszystkich administratorów
-              (łącznie z Tobą), albo wyprowadziłaby administrację poza tę aplikację, i dałoby się to
-              cofnąć tylko ręcznie w bazie danych. Serwer odrzuca te operacje niezależnie od tego,
-              co wyśle przeglądarka.
-            </AlertDescription>
+            <AlertTitle>{t("applications.detail.selfManagedTitle")}</AlertTitle>
+            <AlertDescription>{t("applications.detail.selfManagedBody")}</AlertDescription>
           </Alert>
         ) : null}
 
         <Tabs value={tab} onValueChange={setTab} className="flex flex-1 flex-col gap-4">
           <TabsList className="self-start">
-            <TabsTrigger value="basics">Podstawowe dane</TabsTrigger>
-            <TabsTrigger value="permissions">Uprawnienia</TabsTrigger>
-            <TabsTrigger value="scopes">Zakresy</TabsTrigger>
+            <TabsTrigger value="basics">{t("applications.detail.tabBasics")}</TabsTrigger>
+            <TabsTrigger value="permissions">{t("applications.detail.tabPermissions")}</TabsTrigger>
+            <TabsTrigger value="scopes">{t("applications.detail.tabScopes")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basics" className="flex flex-col gap-4">
-            <p className="text-xs text-muted-foreground">Opis aplikacji w rejestrze instancji.</p>
+            <p className="text-xs text-muted-foreground">{t("applications.detail.basicsIntro")}</p>
 
             <div className="grid gap-4 rounded-lg border border-border p-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-1.5">
-                  <Label htmlFor="code">Kod uprawnienia</Label>
+                  <Label htmlFor="code">{t("applications.form.entitlementCodeLabel")}</Label>
                   <Input id="code" value={code} disabled />
                   <span className="text-xs text-muted-foreground">
-                    Kodu nie da się zmienić po utworzeniu aplikacji.
+                    {t("applications.detail.codeLockedHint")}
                   </span>
                 </div>
 
                 <div className="grid gap-1.5">
-                  <Label htmlFor="name">Nazwa</Label>
+                  <Label htmlFor="name">{t("applications.form.nameLabel")}</Label>
                   <Input
                     id="name"
                     value={form.name}
@@ -606,7 +604,7 @@ export default function ApplicationDetailPage() {
               </div>
 
               <div className="grid gap-1.5">
-                <Label htmlFor="description">Opis</Label>
+                <Label htmlFor="description">{t("applications.form.descriptionLabel")}</Label>
                 <Input
                   id="description"
                   value={form.description}
@@ -615,7 +613,7 @@ export default function ApplicationDetailPage() {
               </div>
 
               <div className="grid gap-1.5">
-                <Label htmlFor="icon">Ikona</Label>
+                <Label htmlFor="icon">{t("applications.form.iconLabel")}</Label>
                 {isIconPickerActive ? (
                   <IconPicker
                     id="icon"
@@ -633,15 +631,15 @@ export default function ApplicationDetailPage() {
               </div>
 
               <div className="grid gap-1.5">
-                <Label id="color-label">Kolor</Label>
+                <Label id="color-label">{t("applications.form.colorLabel")}</Label>
                 <div className="flex flex-wrap gap-2" role="group" aria-labelledby="color-label">
                   {TILE_COLOR_OPTIONS.map((option) => (
                     <button
                       key={option.value}
                       type="button"
                       aria-pressed={form.color === option.value}
-                      aria-label={option.label}
-                      title={option.label}
+                      aria-label={t(option.labelKey)}
+                      title={t(option.labelKey)}
                       onClick={() => update("color", option.value)}
                       className={cn(
                         "flex h-8 w-8 items-center justify-center rounded-full transition-all",
@@ -659,7 +657,7 @@ export default function ApplicationDetailPage() {
                   ))}
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  Kolor ikony kafelka na hubie. Bez wyboru kafelek dostaje neutralny kolor domyślny.
+                  {t("applications.form.colorHint")}
                 </span>
                 {/* Wygląd, który tej palety nie czyta (dziś: Domino, D6 — trzy
                     akcenty z kategorii funkcjonalnej), zostawiał tu w pełni
@@ -677,11 +675,7 @@ export default function ApplicationDetailPage() {
                 {isColorInertHere ? (
                   <span className="flex items-start gap-1.5 text-xs text-muted-foreground">
                     <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                    <span>
-                      Wygląd „{preset.label}” tej palety nie używa — kafelki na hubie dostają jeden
-                      z trzech akcentów wyglądu, dobierany po kategorii funkcjonalnej. Wybór zapisze
-                      się i zadziała w wyglądach, które paletę czytają.
-                    </span>
+                    <span>{t("applications.form.colorInertNotice", { preset: preset.label })}</span>
                   </span>
                 ) : null}
               </div>
@@ -693,23 +687,25 @@ export default function ApplicationDetailPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-1.5">
                   <Label id="categoryDepartment-label" htmlFor="categoryDepartment">
-                    Kategoria
+                    {t("applications.form.categoryDepartmentLabel")}
                   </Label>
                   <ClosedListMultiSelect
                     id="categoryDepartment"
                     labelledBy="categoryDepartment-label"
                     value={form.categoryDepartment}
-                    options={DEPARTMENT_CATEGORIES}
-                    placeholder="Brak"
+                    options={DEPARTMENT_CATEGORIES.map((c) => ({ id: c.id, label: t(`common:${c.labelKey}`) }))}
+                    placeholder={t("applications.form.categoryDepartmentPlaceholder")}
                     onChange={(next) => update("categoryDepartment", next)}
                   />
                   <span className="text-xs text-muted-foreground">
-                    Można wybrać kilka. Decyduje o zakładce „Działy” na hubie.
+                    {t("applications.form.categoryDepartmentHint")}
                   </span>
                 </div>
 
                 <div className="grid gap-1.5">
-                  <Label htmlFor="categoryFunctional">Kategoria funkcjonalna</Label>
+                  <Label htmlFor="categoryFunctional">
+                    {t("applications.form.categoryFunctionalLabel")}
+                  </Label>
                   <Select
                     value={form.categoryFunctional}
                     onValueChange={(value) => update("categoryFunctional", value)}
@@ -718,22 +714,24 @@ export default function ApplicationDetailPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NO_FUNCTIONAL_CATEGORY}>Brak</SelectItem>
+                      <SelectItem value={NO_FUNCTIONAL_CATEGORY}>
+                        {t("applications.form.categoryFunctionalNone")}
+                      </SelectItem>
                       {FUNCTIONAL_CATEGORIES.map((option) => (
                         <SelectItem key={option.id} value={option.id}>
-                          {option.label}
+                          {t(`common:${option.labelKey}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <span className="text-xs text-muted-foreground">
-                    Jedna wartość. Decyduje o zakładce „Funkcje” na hubie.
+                    {t("applications.form.categoryFunctionalHint")}
                   </span>
                 </div>
               </div>
 
               <div className="grid gap-1.5">
-                <Label htmlFor="kind">Typ aplikacji</Label>
+                <Label htmlFor="kind">{t("applications.form.kindDetailLabel")}</Label>
                 <Select
                   value={form.kind}
                   disabled={isSelfManaged || isNativeLocked}
@@ -745,22 +743,21 @@ export default function ApplicationDetailPage() {
                   <SelectContent>
                     {TileKindSchema.options.map((kind) => (
                       <SelectItem key={kind} value={kind}>
-                        {KIND_LABELS[kind]}
+                        {t(KIND_LABEL_KEYS[kind])}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {isNativeLocked && !isSelfManaged ? (
                   <span className="text-xs text-muted-foreground">
-                    Kafelek natywny — typ i ścieżka są ustalane wyłącznie przez aktywację
-                    zarejestrowanego manifestu, nie da się ich tu zmienić.
+                    {t("applications.form.nativeLockedHint")}
                   </span>
                 ) : null}
               </div>
 
               {form.kind === "native" ? (
                 <div className="grid gap-1.5">
-                  <Label htmlFor="route">Ścieżka w aplikacji</Label>
+                  <Label htmlFor="route">{t("applications.form.routeLabel")}</Label>
                   <Input
                     id="route"
                     value={form.route}
@@ -769,13 +766,13 @@ export default function ApplicationDetailPage() {
                     placeholder="/raportowanie-tokenow"
                   />
                   <span className="text-xs text-muted-foreground">
-                    Ścieżka wewnątrz tej aplikacji, zaczynająca się od pojedynczego ukośnika.
+                    {t("applications.form.routeHint")}
                   </span>
                 </div>
               ) : (
                 <>
                   <div className="grid gap-1.5">
-                    <Label htmlFor="url">Adres zewnętrzny</Label>
+                    <Label htmlFor="url">{t("applications.form.urlLabel")}</Label>
                     <Input
                       id="url"
                       value={form.url}
@@ -784,12 +781,12 @@ export default function ApplicationDetailPage() {
                       placeholder="https://chat.example.com"
                     />
                     <span className="text-xs text-muted-foreground">
-                      Dozwolone wyłącznie adresy http:// i https://.
+                      {t("applications.form.urlHint")}
                     </span>
                   </div>
 
                   <div className="grid gap-1.5">
-                    <Label htmlFor="target">Otwieranie</Label>
+                    <Label htmlFor="target">{t("applications.form.targetLabel")}</Label>
                     <Select
                       value={form.target}
                       onValueChange={(value) => update("target", value as FormState["target"])}
@@ -798,9 +795,11 @@ export default function ApplicationDetailPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={NO_TARGET}>Domyślne</SelectItem>
-                        <SelectItem value="_self">To samo okno</SelectItem>
-                        <SelectItem value="_blank">Nowa karta</SelectItem>
+                        <SelectItem value={NO_TARGET}>
+                          {t("applications.form.targetDefault")}
+                        </SelectItem>
+                        <SelectItem value="_self">{t("applications.form.targetSelf")}</SelectItem>
+                        <SelectItem value="_blank">{t("applications.form.targetBlank")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -814,7 +813,7 @@ export default function ApplicationDetailPage() {
                   disabled={isSelfManaged}
                   onCheckedChange={(checked) => update("isActive", checked)}
                 />
-                <Label htmlFor="isActive">Aplikacja aktywna</Label>
+                <Label htmlFor="isActive">{t("applications.form.isActiveLabel")}</Label>
               </div>
 
               <div className="flex items-center gap-2">
@@ -823,12 +822,10 @@ export default function ApplicationDetailPage() {
                   checked={form.showOnHub}
                   onCheckedChange={handleShowOnHubChange}
                 />
-                <Label htmlFor="showOnHub">Widoczna na stronie głównej (hub)</Label>
+                <Label htmlFor="showOnHub">{t("applications.form.showOnHubLabel")}</Label>
               </div>
               <span className="text-xs text-muted-foreground">
-                Osobny przełącznik od „Aplikacja aktywna” (D1): „aktywna” decyduje o uprawnieniu,
-                ten przełącznik wyłącznie o tym, czy kafelek renderuje się na hubie. Wyłączenie nie
-                odbiera nikomu dostępu — tylko chowa kartę.
+                {t("applications.form.showOnHubHint")}
               </span>
 
               {/* Kolejność nie jest już edytowalna tutaj — patrz tryb zmiany
@@ -839,7 +836,7 @@ export default function ApplicationDetailPage() {
 
               <div className="flex justify-end">
                 <Button onClick={handleSaveDetails} disabled={updateApplication.isPending}>
-                  Zapisz dane
+                  {t("applications.detail.saveBasics")}
                 </Button>
               </div>
             </div>
@@ -847,16 +844,15 @@ export default function ApplicationDetailPage() {
 
           <TabsContent value="permissions" className="flex flex-col gap-4">
             <p className="text-xs text-muted-foreground">
-              Role, które mają dostęp do tej aplikacji. Uprawnienia nadaje się rolom, nie
-              użytkownikom.
+              {t("applications.detail.permissionsIntro")}
             </p>
 
             <div className="grid gap-4 rounded-lg border border-border p-4">
               {rolesQuery.isLoading || applicationRolesQuery.isLoading ? (
-                <LoadingState label="Wczytywanie uprawnień…" />
+                <LoadingState label={t("applications.detail.permissionsLoading")} />
               ) : roles.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Nie zdefiniowano jeszcze żadnej roli, więc nie ma komu nadać dostępu.
+                  {t("applications.detail.noRolesForAccess")}
                 </p>
               ) : (
                 <>
@@ -885,7 +881,7 @@ export default function ApplicationDetailPage() {
                       onClick={handleSavePermissions}
                       disabled={setApplicationRoles.isPending}
                     >
-                      Zapisz uprawnienia
+                      {t("applications.detail.savePermissions")}
                     </Button>
                   </div>
                 </>
@@ -894,27 +890,20 @@ export default function ApplicationDetailPage() {
           </TabsContent>
 
           <TabsContent value="scopes" className="flex flex-col gap-4">
-            <p className="text-xs text-muted-foreground">
-              Granularne uprawnienia w środku tej aplikacji — konkretne akcje, nie sam dostęp do
-              kafelka.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("applications.detail.scopesIntro")}</p>
 
             <div className="grid gap-4 rounded-lg border border-border p-4">
               {applicationScopesQuery.isLoading ||
               applicationScopeGrantsQuery.isLoading ||
               rolesQuery.isLoading ? (
-                <LoadingState label="Wczytywanie zakresów…" />
+                <LoadingState label={t("applications.detail.scopesLoading")} />
               ) : scopes.length === 0 ? (
                 // D8/D9: świadoma, centralna decyzja tego modułu — katalog zakresów
                 // powstaje w kodzie modułu (seed), nie tutaj. Zero create/delete.
-                <p className="text-sm text-muted-foreground">
-                  Ta aplikacja nie definiuje żadnych zakresów granularnych. Zakresy powstają w
-                  kodzie modułu (razem z sekcją, którą chronią) — nie da się ich dodać z tego
-                  panelu.
-                </p>
+                <p className="text-sm text-muted-foreground">{t("applications.detail.noScopes")}</p>
               ) : roles.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Nie zdefiniowano jeszcze żadnej roli, więc nie ma komu nadać zakresu.
+                  {t("applications.detail.noRolesForScopes")}
                 </p>
               ) : (
                 <>
@@ -926,7 +915,7 @@ export default function ApplicationDetailPage() {
                   />
                   <div className="flex justify-end">
                     <Button onClick={handleSaveScopes} disabled={isSavingScopes}>
-                      Zapisz zakresy
+                      {t("applications.detail.saveScopes")}
                     </Button>
                   </div>
                 </>
@@ -939,15 +928,17 @@ export default function ApplicationDetailPage() {
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Usunąć aplikację {application.name}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("applications.detail.deleteConfirmTitle", { name: application.name })}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Razem z aplikacją znikną wszystkie granty ról do niej. Tej operacji nie da się cofnąć.
+              {t("applications.detail.deleteConfirmBody")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleteApplication.isPending}>
-              Usuń
+              {t("common:actions.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -956,17 +947,18 @@ export default function ApplicationDetailPage() {
       <AlertDialog open={isHideFromHubWarningOpen} onOpenChange={setIsHideFromHubWarningOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Schować {application.name} z hubu?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("applications.detail.hideConfirmTitle", { name: application.name })}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Ten kafelek jest dziś widoczny na stronie głównej. Po zapisaniu zniknie z hubu KAŻDEGO
-              użytkownika, który dziś go widzi — uprawnienia (kto ma dostęp) się nie zmieniają,
-              tylko karta przestaje się renderować. Dopiero po kliknięciu „Zapisz dane” zmiana staje
-              się realna.
+              {t("applications.detail.hideConfirmBody")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Anuluj</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmHideFromHub}>Schowaj z hubu</AlertDialogAction>
+            <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmHideFromHub}>
+              {t("applications.detail.hideConfirmAction")}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

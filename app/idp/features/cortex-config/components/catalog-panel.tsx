@@ -14,6 +14,7 @@ import {
 import { Folder, Pencil, Plug, Plus, Trash2, X } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
   useCatalog,
   useUpdateConnectors,
@@ -26,15 +27,16 @@ import { AccessDeniedState } from "./config-screen"
 // and connectors edited on dedicated screens under /cortex-config/catalog/*.
 
 export function CatalogPanel() {
+  const { t } = useTranslation("cortex-config")
   const catalog = useCatalog()
   const updateDepartments = useUpdateDepartments()
   const updateSources = useUpdateSkillSources()
   const updateConnectors = useUpdateConnectors()
   const [deptInput, setDeptInput] = useState("")
 
-  if (catalog.isPending) return <LoadingState label="Wczytywanie katalogu..." />
+  if (catalog.isPending) return <LoadingState label={t("state.loadingCatalog")} />
   if (catalog.isError || !catalog.data) {
-    return <AccessDeniedState title="Brak dostępu do katalogu" />
+    return <AccessDeniedState title={t("access.catalogTitle")} />
   }
 
   const { departments, skills, skillSources, connectors } = catalog.data
@@ -44,21 +46,20 @@ export function CatalogPanel() {
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Departamenty</CardTitle>
-          <CardDescription>
-            Drzewo organizacyjne - ścieżki jak finanse/kontroling. Zasoby (skille, konektory,
-            sekrety) przypisuje się do departamentów, a projekty wybierają gałęzie.
-          </CardDescription>
+          <CardTitle className="text-base">{t("catalog.departmentsTitle")}</CardTitle>
+          <CardDescription>{t("catalog.departmentsDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-1.5">
             {departments.map((dept) => (
               <Badge key={dept} variant="secondary" className="gap-1 font-mono">
                 {dept}
-                <span className="text-muted-foreground">· {skillCountByDept(dept)} sk.</span>
+                <span className="text-muted-foreground">
+                  {t("catalog.skillCountShort", { n: skillCountByDept(dept) })}
+                </span>
                 <button
                   type="button"
-                  aria-label={`Usuń departament ${dept}`}
+                  aria-label={t("catalog.removeDepartmentAria", { name: dept })}
                   className="ml-1 text-muted-foreground hover:text-destructive"
                   onClick={() => updateDepartments.mutate(departments.filter((d) => d !== dept))}
                 >
@@ -81,12 +82,12 @@ export function CatalogPanel() {
             <Input
               value={deptInput}
               onChange={(event) => setDeptInput(event.target.value)}
-              placeholder="finanse/kontroling"
+              placeholder={t("catalog.departmentPlaceholder")}
               className="font-mono text-xs"
             />
             <Button type="submit" variant="outline" disabled={updateDepartments.isPending}>
               <Plus className="mr-1.5 h-4 w-4" />
-              Departament
+              {t("catalog.addDepartment")}
             </Button>
           </form>
         </CardContent>
@@ -96,22 +97,20 @@ export function CatalogPanel() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-base">Źródła skilli</CardTitle>
-              <CardDescription>
-                Folder na dysku → departament. Skanowany do katalogu.
-              </CardDescription>
+              <CardTitle className="text-base">{t("catalog.sourcesTitle")}</CardTitle>
+              <CardDescription>{t("catalog.sourcesDescription")}</CardDescription>
             </div>
             <Button asChild size="sm">
               <Link href="/cortex-config/catalog/sources/new">
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
-                Źródło
+                {t("catalog.addSource")}
               </Link>
             </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-2">
           {skillSources.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Brak źródeł.</p>
+            <p className="text-sm text-muted-foreground">{t("catalog.sourcesEmpty")}</p>
           ) : (
             skillSources.map((source) => (
               <div
@@ -133,7 +132,7 @@ export function CatalogPanel() {
                     asChild
                     variant="ghost"
                     size="sm"
-                    aria-label={`Edytuj źródło ${source.name}`}
+                    aria-label={t("catalog.editSourceAria", { name: source.name })}
                   >
                     <Link href={`/cortex-config/catalog/sources/${encodeURIComponent(source.id)}`}>
                       <Pencil className="h-3.5 w-3.5" />
@@ -143,7 +142,7 @@ export function CatalogPanel() {
                     variant="ghost"
                     size="sm"
                     className="text-destructive hover:text-destructive"
-                    aria-label={`Usuń źródło ${source.name}`}
+                    aria-label={t("catalog.deleteSourceAria", { name: source.name })}
                     onClick={() =>
                       updateSources.mutate(skillSources.filter((s) => s.id !== source.id))
                     }
@@ -155,7 +154,9 @@ export function CatalogPanel() {
             ))
           )}
           <p className="pt-1 text-xs text-muted-foreground">
-            Wykryte skille: {skills.map((s) => s.name).join(", ") || "brak"}
+            {t("catalog.detectedSkills", {
+              list: skills.map((s) => s.name).join(", ") || t("catalog.none"),
+            })}
           </p>
         </CardContent>
       </Card>
@@ -164,22 +165,20 @@ export function CatalogPanel() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-base">Konektory</CardTitle>
-              <CardDescription>
-                MCP i CLI per departament. Sekrety jako credential ref.
-              </CardDescription>
+              <CardTitle className="text-base">{t("catalog.connectorsTitle")}</CardTitle>
+              <CardDescription>{t("catalog.connectorsDescription")}</CardDescription>
             </div>
             <Button asChild size="sm">
               <Link href="/cortex-config/catalog/connectors/new">
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
-                Konektor
+                {t("catalog.addConnector")}
               </Link>
             </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-2">
           {connectors.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Brak konektorów.</p>
+            <p className="text-sm text-muted-foreground">{t("catalog.connectorsEmpty")}</p>
           ) : (
             connectors.map((connector) => (
               <div
@@ -193,14 +192,16 @@ export function CatalogPanel() {
                   <Badge variant="secondary" className="font-mono">
                     {connector.department}
                   </Badge>
-                  {!connector.enabled ? <Badge variant="outline">wyłączony</Badge> : null}
+                  {!connector.enabled ? (
+                    <Badge variant="outline">{t("catalog.disabledBadge")}</Badge>
+                  ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <Button
                     asChild
                     variant="ghost"
                     size="sm"
-                    aria-label={`Edytuj konektor ${connector.name}`}
+                    aria-label={t("catalog.editConnectorAria", { name: connector.name })}
                   >
                     <Link
                       href={`/cortex-config/catalog/connectors/${encodeURIComponent(connector.id)}`}
@@ -212,7 +213,7 @@ export function CatalogPanel() {
                     variant="ghost"
                     size="sm"
                     className="text-destructive hover:text-destructive"
-                    aria-label={`Usuń konektor ${connector.name}`}
+                    aria-label={t("catalog.deleteConnectorAria", { name: connector.name })}
                     onClick={() =>
                       updateConnectors.mutate(connectors.filter((c) => c.id !== connector.id))
                     }

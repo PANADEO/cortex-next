@@ -14,6 +14,7 @@ import {
 } from "@cortex/ui"
 import { Check, Loader2 } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { useCatalog, useGovernanceConfig, useUpdateGovernance } from "../hooks/use-governance"
 import { AccessDeniedState } from "./config-screen"
 
@@ -24,11 +25,12 @@ import { AccessDeniedState } from "./config-screen"
 
 /** Data-loading host: resolves governance + departments before the form mounts. */
 export function AgentsPanel() {
+  const { t } = useTranslation("cortex-config")
   const governance = useGovernanceConfig()
   const catalog = useCatalog()
 
   if (governance.isPending || catalog.isPending) {
-    return <LoadingState label="Wczytywanie konfiguracji..." />
+    return <LoadingState label={t("state.loadingConfig")} />
   }
   if (governance.isError || catalog.isError || !catalog.data) return <AccessDeniedState />
 
@@ -47,6 +49,7 @@ function AgentsForm({
   initial: CoworkAgentsInstructions
   departments: string[]
 }) {
+  const { t } = useTranslation("cortex-config")
   const update = useUpdateGovernance()
   const [global, setGlobal] = useState(initial.global ?? "")
   const [byDepartment, setByDepartment] = useState<Record<string, string>>(initial.departments)
@@ -68,37 +71,27 @@ function AgentsForm({
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Zasady organizacji</CardTitle>
-          <CardDescription>
-            Warstwa globalna - trafia do każdego agenta na platformie, przed warstwami działów.
-          </CardDescription>
+          <CardTitle className="text-base">{t("agents.orgTitle")}</CardTitle>
+          <CardDescription>{t("agents.orgDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Textarea
             rows={6}
             value={global}
             onChange={(event) => setGlobal(event.target.value)}
-            placeholder={
-              "np. Odpowiadaj po polsku. Nie udostępniaj danych osobowych.\nArtefakty nazywaj wg konwencji RRRRMMDD_nazwa."
-            }
+            placeholder={t("agents.orgPlaceholder")}
           />
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Zasady działów</CardTitle>
-          <CardDescription>
-            Kafelek przypięty do departamentu dziedziczy warstwy po ścieżce: np.
-            &quot;finanse/kontroling&quot; dostaje zasady &quot;finanse&quot;, potem
-            &quot;finanse/kontroling&quot;.
-          </CardDescription>
+          <CardTitle className="text-base">{t("agents.deptTitle")}</CardTitle>
+          <CardDescription>{t("agents.deptDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {sortedDepartments.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Brak departamentów - dodaj je w Katalogu zasobów.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("agents.noDepartments")}</p>
           ) : (
             sortedDepartments.map((department) => (
               <div key={department}>
@@ -116,7 +109,7 @@ function AgentsForm({
                       [department]: event.target.value,
                     }))
                   }
-                  placeholder={`Zasady dziedziczone przez kafelki działu ${department}...`}
+                  placeholder={t("agents.deptPlaceholder", { department })}
                 />
               </div>
             ))
@@ -131,12 +124,9 @@ function AgentsForm({
           ) : saved ? (
             <Check className="h-4 w-4" />
           ) : null}
-          {saved ? "Zapisano" : "Zapisz AGENTS.md"}
+          {saved ? t("agents.saved") : t("agents.save")}
         </Button>
-        <p className="text-xs text-muted-foreground">
-          Kolejność składania: organizacja → działy (po ścieżce) → instrukcje kafelka → notka
-          użytkownika.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("agents.order")}</p>
       </div>
     </div>
   )

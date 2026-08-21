@@ -9,6 +9,7 @@ import { toastApiError } from "@cortex/api"
 import { Button, Card, CardContent, Label, PageHeader, Textarea } from "@cortex/ui"
 import { ArrowLeft, Sparkles } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 function countWords(text: string): number {
@@ -16,15 +17,21 @@ function countWords(text: string): number {
   return trimmed ? trimmed.split(/\s+/).length : 0
 }
 
-function wordLabel(count: number): string {
-  if (count === 1) return "słowo"
+// Polska odmiana rzeczownika „słowo" ma trzy formy, więc licznik wybiera KLUCZ,
+// a nie gotowy napis — sam wybór formy jest regułą języka źródłowego i zostaje
+// w kodzie; w tłumaczeniach z jedną formą mnogą `wordsFew` i `wordsMany` będą
+// po prostu identyczne.
+function wordLabelKey(count: number): string {
+  if (count === 1) return "calculator.wordsOne"
   const lastDigit = count % 10
   const lastTwo = count % 100
-  if (lastDigit >= 2 && lastDigit <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return "słowa"
-  return "słów"
+  if (lastDigit >= 2 && lastDigit <= 4 && !(lastTwo >= 12 && lastTwo <= 14))
+    return "calculator.wordsFew"
+  return "calculator.wordsMany"
 }
 
 export default function GeoScoreCalculatorPage() {
+  const { t } = useTranslation("geo-score-calculator")
   const [text, setText] = useState("")
   const [analyzedText, setAnalyzedText] = useState("")
   const [result, setResult] = useState<AnalyzeGeoScoreResponseDto | null>(null)
@@ -36,7 +43,7 @@ export default function GeoScoreCalculatorPage() {
 
   async function handleAnalyze() {
     if (!text.trim()) {
-      toast.error("Wpisz tekst do analizy")
+      toast.error(t("calculator.errors.emptyText"))
       return
     }
 
@@ -49,7 +56,7 @@ export default function GeoScoreCalculatorPage() {
       setAnalyzedText(text)
       setResult(response)
     } catch (error) {
-      toastApiError(error, "Nie udało się przeanalizować tekstu")
+      toastApiError(error, t("calculator.errors.analyzeFailed"))
     }
   }
 
@@ -63,19 +70,17 @@ export default function GeoScoreCalculatorPage() {
 
   return (
     <>
-      <PageHeader
-        title="Kalkulator GEO Score"
-        description="Ocenia teksty prasowe pod kątem optymalizacji dla generatywnych silników AI — cztery ważone wymiary: dane liczbowe, czasowniki akcji, struktura, obiektywność."
-      />
+      <PageHeader title={t("calculator.title")} description={t("calculator.description")} />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
         {!result ? (
           <Card>
             <CardContent className="flex flex-col gap-4 pt-6">
               <div className="flex items-center justify-between">
-                <Label htmlFor="geo-score-text">Tekst do analizy</Label>
+                <Label htmlFor="geo-score-text">{t("calculator.textLabel")}</Label>
                 <span className="text-xs text-muted-foreground">
-                  {wordCount} {wordLabel(wordCount)} · {text.length}/{TEXT_MAX_CHARS} znaków
+                  {wordCount} {t(wordLabelKey(wordCount))} · {text.length}/{TEXT_MAX_CHARS}{" "}
+                  {t("calculator.charsSuffix")}
                 </span>
               </div>
               <Textarea
@@ -83,7 +88,7 @@ export default function GeoScoreCalculatorPage() {
                 rows={18}
                 value={text}
                 maxLength={TEXT_MAX_CHARS}
-                placeholder="Wklej treść artykułu prasowego do oceny pod kątem optymalizacji dla generatywnych silników AI…"
+                placeholder={t("calculator.textPlaceholder")}
                 onChange={(event) => setText(event.target.value)}
               />
               <div className="flex flex-wrap gap-2">
@@ -93,11 +98,11 @@ export default function GeoScoreCalculatorPage() {
                   disabled={analyze.isPending || !text.trim()}
                 >
                   <Sparkles className="mr-2 h-4 w-4" />
-                  {analyze.isPending ? "Analizuję…" : "Analizuj"}
+                  {analyze.isPending ? t("calculator.analyzing") : t("calculator.analyze")}
                 </Button>
                 {!text.trim() ? (
                   <Button type="button" variant="outline" onClick={loadExample}>
-                    Wczytaj przykład
+                    {t("calculator.loadExample")}
                   </Button>
                 ) : null}
               </div>
@@ -111,7 +116,7 @@ export default function GeoScoreCalculatorPage() {
             headerActions={
               <Button type="button" variant="outline" onClick={handleEditAgain}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Edytuj ponownie
+                {t("calculator.editAgain")}
               </Button>
             }
           />

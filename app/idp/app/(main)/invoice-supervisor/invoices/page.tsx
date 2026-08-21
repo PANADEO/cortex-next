@@ -19,8 +19,10 @@ import {
 } from "@cortex/ui"
 import { Receipt, Search } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 export default function InvoiceSupervisorInvoicesPage() {
+  const { t } = useTranslation("invoice-supervisor")
   const [query, setQuery] = useState("")
   const [status, setStatus] = useState<string>("all")
 
@@ -28,13 +30,13 @@ export default function InvoiceSupervisorInvoicesPage() {
     ...(query ? { query } : {}),
     ...(status !== "all" ? { status } : {}),
   })
-  const columns = useMemo(() => invoiceSupervisorColumns(), [])
+  const columns = useMemo(() => invoiceSupervisorColumns(t), [t])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <PageHeader
-        title="Faktury"
-        description="Przegląd, wystawianie i import faktur nadzorowanych przez system."
+        title={t("invoices.title")}
+        description={t("invoices.description")}
         actions={
           <div className="flex items-center gap-2">
             <InvoiceSupervisorImportDialog />
@@ -48,7 +50,7 @@ export default function InvoiceSupervisorInvoicesPage() {
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Szukaj numeru faktury lub klienta…"
+              placeholder={t("invoices.searchPlaceholder")}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="h-9 w-80 pl-9"
@@ -56,10 +58,10 @@ export default function InvoiceSupervisorInvoicesPage() {
           </div>
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger className="h-9 w-[220px]">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={t("invoices.statusPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Wszystkie statusy</SelectItem>
+              <SelectItem value="all">{t("invoices.allStatuses")}</SelectItem>
               {Object.entries(INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS).map(([value, label]) => (
                 <SelectItem key={value} value={value}>
                   {label}
@@ -68,14 +70,16 @@ export default function InvoiceSupervisorInvoicesPage() {
             </SelectContent>
           </Select>
           <div className="ml-auto text-xs text-muted-foreground">
-            {invoices.isFetching ? "Odświeżanie…" : `${invoices.data?.length ?? 0} faktur`}
+            {invoices.isFetching
+              ? t("invoices.refreshing")
+              : t("invoices.count", { n: invoices.data?.length ?? 0 })}
           </div>
         </div>
 
         {invoices.isError ? (
           <ErrorState
-            title="Nie udało się wczytać faktur"
-            message="Sprawdź połączenie z backendem i spróbuj ponownie."
+            title={t("invoices.loadErrorTitle")}
+            message={t("errors.backendMessage")}
             onRetry={() => invoices.refetch()}
           />
         ) : (
@@ -89,8 +93,8 @@ export default function InvoiceSupervisorInvoicesPage() {
             emptyState={
               <EmptyState
                 icon={Receipt}
-                title="Brak faktur"
-                description="Brak faktur spełniających kryteria wyszukiwania."
+                title={t("invoices.emptyTitle")}
+                description={t("invoices.emptyDescription")}
               />
             }
           />

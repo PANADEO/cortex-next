@@ -20,14 +20,18 @@ import { ChevronLeft, FileX } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useMemo } from "react"
+import { useTranslation } from "react-i18next"
 
-const GENERATION_MODE_LABEL: Record<string, string> = {
-  single: "Pojedyncza",
-  batch: "Kilka",
-  package: "Pakiet",
+// Tryb zapisany w metadanych to identyfikator, nie napis — mapa wskazuje
+// klucz tłumaczenia, a nieznana wartość zostaje pokazana surowo.
+const GENERATION_MODE_KEY: Record<string, string> = {
+  single: "modes.single",
+  batch: "modes.batch",
+  package: "modes.package",
 }
 
 export default function ContentGuruHistoryDetailPage() {
+  const { t } = useTranslation("content-guru")
   const params = useParams<{ id: string }>()
   const entryQuery = useArchiveEntry(params.id ?? null)
   // Profile są per-user i już listowane gdzie indziej w module — reużywamy
@@ -63,13 +67,13 @@ export default function ContentGuruHistoryDetailPage() {
   return (
     <>
       <PageHeader
-        title="Szczegóły treści"
-        description="Pełna wygenerowana treść, metadane generacji i (jeśli wystąpiły) zakazane frazy."
+        title={t("detail.title")}
+        description={t("detail.description")}
         actions={
           <Button size="sm" variant="outline" asChild>
             <Link href="/content-guru/history">
               <ChevronLeft className="mr-1.5 h-3.5 w-3.5" />
-              Historia
+              {t("detail.backToHistory")}
             </Link>
           </Button>
         }
@@ -77,12 +81,12 @@ export default function ContentGuruHistoryDetailPage() {
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
         {entryQuery.isLoading ? (
-          <LoadingState label="Wczytywanie wpisu…" />
+          <LoadingState label={t("detail.loading")} />
         ) : entryQuery.isError || !entry ? (
           <EmptyState
             icon={FileX}
-            title="Nie znaleziono wpisu"
-            description="Wpis nie istnieje albo nie masz do niego dostępu."
+            title={t("detail.notFound.title")}
+            description={t("detail.notFound.description")}
           />
         ) : (
           <>
@@ -98,8 +102,7 @@ export default function ContentGuruHistoryDetailPage() {
 
                 {entry.status === "done-with-warnings" ? (
                   <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-                    Treść zawiera frazy z listy zakazanych fraz mimo automatycznej próby poprawy —
-                    zaznaczone poniżej.
+                    {t("detail.forbiddenWarning")}
                   </div>
                 ) : null}
 
@@ -114,52 +117,62 @@ export default function ContentGuruHistoryDetailPage() {
 
             <dl className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-3">
               <div>
-                <dt className="font-medium text-foreground">Wygenerowano</dt>
+                <dt className="font-medium text-foreground">{t("detail.fields.createdAt")}</dt>
                 <dd>{formatAbsolute(entry.createdAt)}</dd>
               </div>
               <div>
-                <dt className="font-medium text-foreground">Temat</dt>
+                <dt className="font-medium text-foreground">{t("detail.fields.topic")}</dt>
                 <dd>{entry.topic ?? "—"}</dd>
               </div>
               <div>
-                <dt className="font-medium text-foreground">Grupa docelowa</dt>
+                <dt className="font-medium text-foreground">{t("detail.fields.targetAudience")}</dt>
                 <dd>{entry.targetAudience ?? "—"}</dd>
               </div>
               <div>
-                <dt className="font-medium text-foreground">Tryb generowania</dt>
+                <dt className="font-medium text-foreground">{t("detail.fields.generationMode")}</dt>
                 <dd>
-                  {generationMode ? (GENERATION_MODE_LABEL[generationMode] ?? generationMode) : "—"}
+                  {generationMode
+                    ? GENERATION_MODE_KEY[generationMode]
+                      ? t(GENERATION_MODE_KEY[generationMode]!)
+                      : generationMode
+                    : "—"}
                 </dd>
               </div>
               <div>
-                <dt className="font-medium text-foreground">Profil klienta</dt>
+                <dt className="font-medium text-foreground">{t("detail.fields.clientProfile")}</dt>
                 <dd>{clientProfileName ?? "—"}</dd>
               </div>
               <div>
-                <dt className="font-medium text-foreground">Profil rynku</dt>
+                <dt className="font-medium text-foreground">{t("detail.fields.marketProfile")}</dt>
                 <dd>{marketProfileName ?? "—"}</dd>
               </div>
               {entry.keywordPhrase ? (
                 <div>
-                  <dt className="font-medium text-foreground">Fraza kluczowa SEO</dt>
+                  <dt className="font-medium text-foreground">
+                    {t("detail.fields.keywordPhrase")}
+                  </dt>
                   <dd>{entry.keywordPhrase}</dd>
                 </div>
               ) : null}
               {entry.metaDescription ? (
                 <div>
-                  <dt className="font-medium text-foreground">Meta description</dt>
+                  <dt className="font-medium text-foreground">
+                    {t("detail.fields.metaDescription")}
+                  </dt>
                   <dd>{entry.metaDescription}</dd>
                 </div>
               ) : null}
               {jobId ? (
                 <div>
-                  <dt className="font-medium text-foreground">Zadanie (batch/pakiet)</dt>
+                  <dt className="font-medium text-foreground">{t("detail.fields.jobId")}</dt>
                   <dd className="font-mono">{jobId}</dd>
                 </div>
               ) : null}
               {entry.additionalInfo ? (
                 <div className="sm:col-span-3">
-                  <dt className="font-medium text-foreground">Dodatkowe informacje</dt>
+                  <dt className="font-medium text-foreground">
+                    {t("detail.fields.additionalInfo")}
+                  </dt>
                   <dd>{entry.additionalInfo}</dd>
                 </div>
               ) : null}

@@ -3,6 +3,7 @@
 import { MAX_RANGE_DAYS, parseDateRange } from "@/lib/token-usage/range"
 import { Button, Input, Label } from "@cortex/ui"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { PRESETS } from "../presets"
 import type { UsageDateRange } from "../types"
 
@@ -24,6 +25,7 @@ interface DateRangeFilterProps {
  * blokada w formularzu nie zatrzymuje żądania wysłanego curlem.
  */
 export function DateRangeFilter({ value, onChange, isLoading }: DateRangeFilterProps) {
+  const { t } = useTranslation("token-usage")
   const [draft, setDraft] = useState<UsageDateRange>(value)
 
   const parsed = parseDateRange(draft.start, draft.end)
@@ -39,7 +41,7 @@ export function DateRangeFilter({ value, onChange, isLoading }: DateRangeFilterP
     <div className="space-y-3 rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="token-usage-start">Data początkowa</Label>
+          <Label htmlFor="token-usage-start">{t("filter.startLabel")}</Label>
           <Input
             id="token-usage-start"
             type="date"
@@ -49,7 +51,7 @@ export function DateRangeFilter({ value, onChange, isLoading }: DateRangeFilterP
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="token-usage-end">Data końcowa</Label>
+          <Label htmlFor="token-usage-end">{t("filter.endLabel")}</Label>
           <Input
             id="token-usage-end"
             type="date"
@@ -62,7 +64,7 @@ export function DateRangeFilter({ value, onChange, isLoading }: DateRangeFilterP
           onClick={() => parsed.ok && onChange(parsed.range)}
           disabled={!parsed.ok || !isDirty || isLoading}
         >
-          Pokaż raport
+          {t("filter.submit")}
         </Button>
         <div className="flex flex-wrap gap-2">
           {PRESETS.map((preset) => (
@@ -73,7 +75,7 @@ export function DateRangeFilter({ value, onChange, isLoading }: DateRangeFilterP
               onClick={() => applyPreset(preset.build)}
               disabled={isLoading}
             >
-              {preset.label}
+              {t(`filter.presets.${preset.id}`, { defaultValue: preset.label })}
             </Button>
           ))}
         </div>
@@ -84,11 +86,13 @@ export function DateRangeFilter({ value, onChange, isLoading }: DateRangeFilterP
         // parsowane i tam `end` jest inkluzywny. Bez tego liczby wyglądałyby
         // na przesunięte o dzień dla kogoś w innej strefie.
         <p className="text-xs text-muted-foreground">
-          Zakres obejmuje obie daty włącznie, liczony w strefie cortex-proxy (Europe/Warsaw,
-          CET/CEST). Maksymalna długość zakresu: {MAX_RANGE_DAYS} dni.
+          {t("filter.hint", { days: MAX_RANGE_DAYS })}
         </p>
       ) : (
-        <p className="text-xs text-destructive">{parsed.message}</p>
+        // `parseDateRange` niesie własny komunikat po polsku (lib/, jeszcze
+        // nieprzetłumaczona) — bierzemy z niego tylko KOD i tłumaczymy go tym
+        // samym słownikiem, którym ekran opisuje błędy z route'a.
+        <p className="text-xs text-destructive">{t(`errors.${parsed.code}.message`)}</p>
       )}
     </div>
   )

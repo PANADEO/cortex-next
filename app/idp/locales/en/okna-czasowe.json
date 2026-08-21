@@ -1,1 +1,94 @@
-{}
+{
+  "scan": {
+    "run": "Scan now",
+    "success": "Scan finished: {{films}} films, {{newAvailabilities}} new availabilities.",
+    "failed": "Scan failed"
+  },
+  "dashboard": {
+    "title": "Release windows — Dashboard",
+    "description": "Tracking when films show up on Rakuten TV PL, based on daily JustWatch scans.",
+    "cardTrackedFilms": "Films tracked",
+    "cardAvailableNow": "Available now (Rakuten PL)",
+    "cardLastScan": "Last scan",
+    "emptyTitle": "No films yet",
+    "emptyDescription": "Add your first films on the Films tab to start tracking.",
+    "columns": {
+      "film": "Film",
+      "available": "On Rakuten PL now?",
+      "availableYes": "Available",
+      "availableNo": "None",
+      "offerType": "Offer type",
+      "price": "Price",
+      "firstSeenAvailable": "Since"
+    }
+  },
+  "data": {
+    "title": "Data",
+    "description": "Full scan history — one row per film per scan day.",
+    "exportCsv": "Export CSV",
+    "emptyTitle": "No data",
+    "emptyDescription": "Run the first scan from the Dashboard to collect historical data.",
+    "columns": {
+      "film": "Film",
+      "scannedAt": "Scan date",
+      "available": "Available",
+      "availableYes": "Yes",
+      "availableNo": "No",
+      "offerType": "Offer type",
+      "price": "Price",
+      "matchedTitle": "Matched title",
+      "matchedTitleAmbiguous": "{{title}} (uncertain)"
+    }
+  },
+  "films": {
+    "title": "Films",
+    "description": "The films tracked in the release-window register — title, year and the foreign titles used to search JustWatch.",
+    "add": "Add film",
+    "emptyTitle": "No films",
+    "emptyDescription": "Add the first film to start tracking daily availability on Rakuten TV PL.",
+    "created": "Film added",
+    "updated": "Film updated",
+    "deleted": "Film deleted",
+    "saveFailed": "Could not save the film",
+    "deleteFailed": "Could not delete the film",
+    "deleteTitle": "Delete “{{title}}”?",
+    "deleteDescription": "The scan history of this film is kept, but the film disappears from the tracked list.",
+    "columns": {
+      "title": "Title",
+      "foreignTitles": "Foreign titles",
+      "edit": "Edit film",
+      "delete": "Delete film"
+    }
+  },
+  "log": {
+    "title": "Log",
+    "description": "Scanner run history — when it ran, how many films, what changed, which errors.",
+    "cronTitle": "Scheduling a daily scan",
+    "cronIntro": "This scan checks every tracked film for availability on Rakuten TV PL through the public JustWatch GraphQL API and writes one entry per day. To collect data for the whole project period (about 6 months), run it once a day from cron on a machine that can reach the deployed frontend instance:",
+    "cronComment": "every day at 06:00",
+    "cronHost": "production-host",
+    "localDev": "Locally / dev: <cmd>npm run okna-czasowe:scan</cmd> (targets <url>http://localhost:3000</url> by default). The script calls the same endpoint as the “Scan now” button — <endpoint>POST /api/okna-czasowe/scan</endpoint>.",
+    "emptyTitle": "No runs yet",
+    "emptyDescription": "The log fills up after the first scan — manual or from cron.",
+    "columns": {
+      "startedAt": "Start",
+      "finishedAt": "End",
+      "filmsScanned": "Films",
+      "newAvailabilities": "New availabilities",
+      "changesDetected": "Changes",
+      "errors": "Errors"
+    }
+  },
+  "form": {
+    "createTitle": "New film",
+    "editTitle": "Edit film",
+    "titleLabel": "Title",
+    "yearLabel": "Year",
+    "tmdbIdLabel": "TMDB ID (optional)",
+    "foreignTitlesLabel": "Foreign / localized titles",
+    "addForeignTitle": "Add title",
+    "noForeignTitles": "No extra titles — the search will use the main title only.",
+    "foreignTitlePlaceholder": "e.g. the original title or one in another language",
+    "removeForeignTitle": "Remove title"
+  }
+}

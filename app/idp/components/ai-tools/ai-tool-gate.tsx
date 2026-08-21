@@ -6,6 +6,7 @@ import { Button, EmptyState, LoadingState } from "@cortex/ui"
 import { LockKeyhole } from "lucide-react"
 import Link from "next/link"
 import type { ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 
 interface AiToolGateProps {
   children: ReactNode
@@ -13,9 +14,10 @@ interface AiToolGateProps {
 }
 
 export function AiToolGate({ children, toolId }: AiToolGateProps) {
+  const { t } = useTranslation("ai-tools")
   const authorized = useAuthorizedApps()
 
-  if (authorized.isLoading) return <LoadingState label="Sprawdzanie dostępu…" />
+  if (authorized.isLoading) return <LoadingState label={t("gate.checking")} />
 
   const allowed = toolId
     ? canAccessAiTool(authorized.apps, toolId)
@@ -27,11 +29,11 @@ export function AiToolGate({ children, toolId }: AiToolGateProps) {
     <div className="flex min-h-0 flex-1 items-center justify-center p-8">
       <EmptyState
         icon={LockKeyhole}
-        title="Brak dostępu do AI Tools"
-        description="Twoje konto nie ma włączonej tej aplikacji. Skontaktuj się z administratorem instancji."
+        title={t("gate.deniedTitle")}
+        description={t("gate.deniedBody")}
         action={
           <Button asChild variant="outline" size="sm">
-            <Link href="/">Wróć do huba</Link>
+            <Link href="/">{t("shared.backToHub")}</Link>
           </Button>
         }
       />

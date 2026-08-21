@@ -1,5 +1,9 @@
 {
-  "language": { "label": "Language", "pl": "Polski", "en": "English" },
+  "language": {
+    "label": "Language",
+    "pl": "Polski",
+    "en": "English"
+  },
   "footer": {
     "version": "Version",
     "time": "Time",
@@ -17,5 +21,32 @@
     "close": "Close",
     "retry": "Try again"
   },
-  "state": { "loading": "Loading…", "empty": "No data", "error": "Something went wrong" }
+  "state": {
+    "loading": "Loading…",
+    "empty": "No data",
+    "error": "Something went wrong"
+  },
+  "categories": {
+    "functional": {
+      "content-generation": "Content generation",
+      "agents": "Agents",
+      "research": "Research",
+      "misc": "Miscellaneous",
+      "admin-system": "Admin & System"
+    },
+    "department": {
+      "operations": "Operations",
+      "marketing": "Marketing",
+      "finance": "Finance",
+      "it": "IT",
+      "hr": "HR"
+    }
+  },
+  "presets": {
+    "instanceDefault": "Instance default",
+    "instanceDefaultHint": "The look configured for this instance.",
+    "dominoDescription": "Paper and ink, hard edges.",
+    "neutralDescription": "Monochrome shadcn defaults.",
+    "customsDescription": "Hi-vis orange and duty green."
+  }
 }

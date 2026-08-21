@@ -14,6 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2, Plus, X } from "lucide-react"
 import { useEffect } from "react"
 import { useFieldArray, useForm } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import {
   EMPTY_FILM_FORM_VALUES,
   filmFormSchema,
@@ -47,6 +48,7 @@ export function FilmFormDialog({
   isSaving = false,
   onSubmit,
 }: FilmFormDialogProps) {
+  const { t } = useTranslation(["okna-czasowe", "common"])
   const form = useForm<FilmFormValues>({
     resolver: zodResolver(filmFormSchema),
     defaultValues: film ? filmToFormValues(film) : EMPTY_FILM_FORM_VALUES,
@@ -69,12 +71,12 @@ export function FilmFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{film ? "Edytuj film" : "Nowy film"}</DialogTitle>
+          <DialogTitle>{film ? t("form.editTitle") : t("form.createTitle")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="grid grid-cols-[1fr_7rem] gap-3">
             <div>
-              <Label htmlFor="film-title">Tytuł</Label>
+              <Label htmlFor="film-title">{t("form.titleLabel")}</Label>
               <Input id="film-title" className="mt-1" {...form.register("title")} />
               {form.formState.errors.title ? (
                 <p className="mt-1 text-xs text-destructive">
@@ -83,7 +85,7 @@ export function FilmFormDialog({
               ) : null}
             </div>
             <div>
-              <Label htmlFor="film-year">Rok</Label>
+              <Label htmlFor="film-year">{t("form.yearLabel")}</Label>
               <Input id="film-year" type="number" className="mt-1" {...form.register("year")} />
               {form.formState.errors.year ? (
                 <p className="mt-1 text-xs text-destructive">
@@ -94,13 +96,13 @@ export function FilmFormDialog({
           </div>
 
           <div>
-            <Label htmlFor="film-tmdb-id">TMDB ID (opcjonalnie)</Label>
+            <Label htmlFor="film-tmdb-id">{t("form.tmdbIdLabel")}</Label>
             <Input id="film-tmdb-id" className="mt-1" {...form.register("tmdbId")} />
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Tytuły zagraniczne / lokalizowane</Label>
+              <Label>{t("form.foreignTitlesLabel")}</Label>
               <Button
                 type="button"
                 variant="outline"
@@ -108,26 +110,24 @@ export function FilmFormDialog({
                 onClick={() => append({ value: "" })}
               >
                 <Plus className="mr-1 h-3.5 w-3.5" />
-                Dodaj tytuł
+                {t("form.addForeignTitle")}
               </Button>
             </div>
             {fields.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                Brak dodatkowych tytułów — wyszukiwanie użyje tylko tytułu głównego.
-              </p>
+              <p className="text-xs text-muted-foreground">{t("form.noForeignTitles")}</p>
             ) : (
               <div className="space-y-2">
                 {fields.map((field, index) => (
                   <div key={field.id} className="flex items-center gap-2">
                     <Input
                       {...form.register(`foreignTitles.${index}.value` as const)}
-                      placeholder="np. tytuł oryginalny lub w innym języku"
+                      placeholder={t("form.foreignTitlePlaceholder")}
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      aria-label="Usuń tytuł"
+                      aria-label={t("form.removeForeignTitle")}
                       onClick={() => remove(index)}
                     >
                       <X className="h-3.5 w-3.5" />
@@ -140,11 +140,11 @@ export function FilmFormDialog({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Anuluj
+              {t("common:actions.cancel")}
             </Button>
             <Button type="submit" disabled={isSaving}>
               {isSaving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-              Zapisz
+              {t("common:actions.save")}
             </Button>
           </DialogFooter>
         </form>

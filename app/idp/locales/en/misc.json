@@ -1,1 +1,8 @@
-{}
+{
+  "nav": {
+    "backToHub": "Back to the Cortex360 hub"
+  },
+  "export": {
+    "emailDefaultBody": "The export is attached."
+  }
+}

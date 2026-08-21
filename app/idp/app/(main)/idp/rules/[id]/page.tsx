@@ -67,6 +67,7 @@ import {
 import Link from "next/link"
 import { useParams, useSearchParams } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 interface PreviewRow {
@@ -77,6 +78,7 @@ interface PreviewRow {
 }
 
 export default function RuleEditorPage() {
+  const { t } = useTranslation("idp")
   const params = useParams<{ id: string }>()
   const id = params.id
   const search = useSearchParams()
@@ -162,9 +164,14 @@ export default function RuleEditorPage() {
     return nl !== v.nl_definition || pythonCode !== v.python_code
   }, [rule, nl, pythonCode])
 
-  if (isLoading) return <LoadingState label="Ładuję regułę…" />
+  if (isLoading) return <LoadingState label={t("rules.editor.loading")} />
   if (error || !rule) {
-    return <ErrorState title="Nie znaleziono reguły" message="Mogła zostać usunięta." />
+    return (
+      <ErrorState
+        title={t("rules.editor.notFoundTitle")}
+        message={t("rules.editor.notFoundMessage")}
+      />
+    )
   }
 
   const triggerExplain = (text: string) => {
@@ -188,7 +195,7 @@ export default function RuleEditorPage() {
 
   const runCompile = () => {
     if (!nl.trim()) {
-      toast.error("Najpierw dodaj definicję w naturalnym języku.")
+      toast.error(t("rules.toasts.needNlDefinition"))
       return
     }
     compile.mutate(
@@ -203,7 +210,7 @@ export default function RuleEditorPage() {
           setOutputColumns(res.output_columns)
           setShowPython(true)
           if (res.warnings.length) toast.warning(res.warnings.join("; "))
-          else toast.success("Skompilowano. Przejdź do zakładki Symulacja, żeby przetestować.")
+          else toast.success(t("rules.toasts.compiled"))
         },
         onError: (err) => toastApiError(err),
       },
@@ -212,11 +219,11 @@ export default function RuleEditorPage() {
 
   const runPreview = () => {
     if (!samplePackageId) {
-      toast.error("Wybierz paczkę próbną.")
+      toast.error(t("rules.toasts.needSamplePackage"))
       return
     }
     if (!pythonCode.trim()) {
-      toast.error("Najpierw skompiluj regułę (zakładka Definicja).")
+      toast.error(t("rules.toasts.needCompileForPreview"))
       return
     }
     preview.mutate(
@@ -247,7 +254,7 @@ export default function RuleEditorPage() {
         status,
       },
       {
-        onSuccess: () => toast.success("Metadane reguły zapisane."),
+        onSuccess: () => toast.success(t("rules.toasts.metadataSaved")),
         onError: (err) => toastApiError(err),
       },
     )
@@ -255,7 +262,7 @@ export default function RuleEditorPage() {
 
   const persistVersion = () => {
     if (!pythonCode.trim()) {
-      toast.error("Najpierw skompiluj regułę.")
+      toast.error(t("rules.toasts.needCompileForSave"))
       return
     }
     saveVersion.mutate(
@@ -267,7 +274,7 @@ export default function RuleEditorPage() {
       },
       {
         onSuccess: (v) => {
-          toast.success(`Zapisano jako v${v.version}`)
+          toast.success(t("rules.toasts.versionSaved", { version: v.version }))
           setVersionNotes("")
         },
         onError: (err) => toastApiError(err),
@@ -282,7 +289,7 @@ export default function RuleEditorPage() {
           <Button asChild variant="ghost" size="sm" className="-ml-2">
             <Link href="/idp/rules">
               <ArrowLeft className="mr-1.5 h-4 w-4" />
-              Wstecz
+              {t("rules.editor.back")}
             </Link>
           </Button>
           <Input
@@ -304,7 +311,7 @@ export default function RuleEditorPage() {
             ) : (
               <Save className="mr-1.5 h-3.5 w-3.5" />
             )}
-            Zapisz metadane
+            {t("rules.editor.saveMetadata")}
           </Button>
           <Button
             size="sm"
@@ -316,7 +323,7 @@ export default function RuleEditorPage() {
             ) : (
               <GitBranch className="mr-1.5 h-3.5 w-3.5" />
             )}
-            Zapisz jako v{(rule.versions[0]?.version ?? 0) + 1}
+            {t("rules.editor.saveAsVersion", { version: (rule.versions[0]?.version ?? 0) + 1 })}
           </Button>
         </div>
       </header>
@@ -326,7 +333,7 @@ export default function RuleEditorPage() {
           <CardContent className="grid gap-3 p-4 md:grid-cols-4">
             <div className="space-y-1">
               <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Kategoria
+                {t("rules.editor.categoryLabel")}
               </Label>
               <Select value={category} onValueChange={(v) => setCategory(v as RuleCategory)}>
                 <SelectTrigger className="h-9">
@@ -343,7 +350,7 @@ export default function RuleEditorPage() {
             </div>
             <div className="space-y-1">
               <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Status
+                {t("rules.editor.statusLabel")}
               </Label>
               <Select value={status} onValueChange={(v) => setStatus(v as RuleStatus)}>
                 <SelectTrigger className="h-9">
@@ -360,7 +367,7 @@ export default function RuleEditorPage() {
             </div>
             <div className="space-y-1">
               <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Domyślny trigger
+                {t("rules.editor.triggerLabel")}
               </Label>
               <Select value={trigger} onValueChange={(v) => setTrigger(v as RuleTrigger)}>
                 <SelectTrigger className="h-9">
@@ -377,13 +384,13 @@ export default function RuleEditorPage() {
             </div>
             <div className="space-y-1">
               <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Opis
+                {t("rules.editor.descriptionLabel")}
               </Label>
               <Input
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="h-9"
-                placeholder="Krótkie podsumowanie"
+                placeholder={t("rules.editor.descriptionPlaceholder")}
               />
             </div>
           </CardContent>
@@ -393,15 +400,15 @@ export default function RuleEditorPage() {
           <TabsList className="self-start">
             <TabsTrigger value="definition">
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-              Definicja
+              {t("rules.editor.tabDefinition")}
             </TabsTrigger>
             <TabsTrigger value="simulation">
               <PlayCircle className="mr-1.5 h-3.5 w-3.5" />
-              Symulacja
+              {t("rules.editor.tabSimulation")}
             </TabsTrigger>
             <TabsTrigger value="versions">
               <GitBranch className="mr-1.5 h-3.5 w-3.5" />
-              Wersje
+              {t("rules.editor.tabVersions")}
             </TabsTrigger>
           </TabsList>
 
@@ -411,7 +418,7 @@ export default function RuleEditorPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm">
                     <Sparkles className="mr-1.5 inline h-4 w-4 text-primary" />
-                    Reguła w naturalnym języku
+                    {t("rules.definition.title")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-1 flex-col gap-3">
@@ -423,20 +430,17 @@ export default function RuleEditorPage() {
                     }}
                     onBlur={() => triggerExplain(nl)}
                     rows={10}
-                    placeholder={
-                      "Opisz transformację po polsku lub angielsku.\n\n" +
-                      "Przykład: 'Rozdziel koszt frachtu z transport_info.cost\nproporcjonalnie do wagi netto każdej pozycji faktury.'"
-                    }
+                    placeholder={t("rules.definition.nlPlaceholder")}
                     className="font-sans text-sm"
                   />
                   <div className="space-y-1">
                     <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      Notatka do wersji (opcjonalne)
+                      {t("rules.definition.versionNotesLabel")}
                     </Label>
                     <Input
                       value={versionNotes}
                       onChange={(e) => setVersionNotes(e.target.value)}
-                      placeholder="Co się zmieniło w tej wersji?"
+                      placeholder={t("rules.definition.versionNotesPlaceholder")}
                       className="h-8"
                     />
                   </div>
@@ -452,14 +456,14 @@ export default function RuleEditorPage() {
                       <ChevronRight className="h-3 w-3" />
                     )}
                     <Code2 className="h-3 w-3" />
-                    Zaawansowane — wygenerowany Python
+                    {t("rules.definition.advancedToggle")}
                   </button>
 
                   {showPython ? (
                     <div className="space-y-2 rounded-md border border-border bg-muted/20 p-2">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                          Skompilowany kod (tylko do odczytu)
+                          {t("rules.definition.compiledCodeLabel")}
                         </span>
                         <Button
                           size="sm"
@@ -473,14 +477,14 @@ export default function RuleEditorPage() {
                           ) : (
                             <Code2 className="mr-1 h-3 w-3" />
                           )}
-                          Kompiluj ponownie
+                          {t("rules.definition.recompile")}
                         </Button>
                       </div>
                       <Textarea
                         readOnly
                         value={pythonCode}
                         rows={10}
-                        placeholder="# Kliknij 'Kompiluj ponownie', żeby wygenerować Python z definicji."
+                        placeholder={t("rules.definition.pythonPlaceholder")}
                         className="font-mono text-[11px]"
                       />
                       {outputColumns.length > 0 ? (
@@ -502,12 +506,12 @@ export default function RuleEditorPage() {
                 <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm">
                     <Lightbulb className="mr-1.5 inline h-4 w-4 text-amber-500" />
-                    Co AI rozumie
+                    {t("rules.explanation.title")}
                   </CardTitle>
                   {explain.isPending ? (
                     <span className="inline-flex items-center text-[11px] text-muted-foreground">
                       <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                      Analizuję…
+                      {t("rules.explanation.analyzing")}
                     </span>
                   ) : null}
                 </CardHeader>
@@ -527,12 +531,12 @@ export default function RuleEditorPage() {
               <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm">
                   <PlayCircle className="mr-1.5 inline h-4 w-4 text-primary" />
-                  Symulacja na danych
+                  {t("rules.simulation.title")}
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Select value={samplePackageId} onValueChange={setSamplePackageId}>
                     <SelectTrigger className="h-8 w-[220px] text-xs">
-                      <SelectValue placeholder="Wybierz paczkę…" />
+                      <SelectValue placeholder={t("rules.simulation.packagePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       {(packagesQuery.data?.items ?? []).map((p) => (
@@ -552,7 +556,7 @@ export default function RuleEditorPage() {
                     ) : (
                       <PlayCircle className="mr-1.5 h-3.5 w-3.5" />
                     )}
-                    Testowy przebieg
+                    {t("rules.simulation.run")}
                   </Button>
                 </div>
               </CardHeader>
@@ -560,18 +564,20 @@ export default function RuleEditorPage() {
                 {!pythonCode ? (
                   <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
                     <CircleHelp className="h-8 w-8" />
-                    <p>Najpierw skompiluj regułę w zakładce Definicja.</p>
+                    <p>{t("rules.simulation.needCompile")}</p>
                   </div>
                 ) : previewRows.length === 0 ? (
                   <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                    Wybierz paczkę i kliknij „Testowy przebieg”, żeby zobaczyć przed/po.
+                    {t("rules.simulation.pickPackage")}
                   </div>
                 ) : (
                   <ScrollArea className="h-full">
                     <div className="space-y-3">
                       {previewMeta?.added.length ? (
                         <div className="text-xs">
-                          <span className="text-muted-foreground">Nowe kolumny:</span>{" "}
+                          <span className="text-muted-foreground">
+                            {t("rules.simulation.newColumns")}
+                          </span>{" "}
                           {previewMeta.added.map((c) => (
                             <Badge key={c} variant="outline" className="mr-1 font-mono text-[10px]">
                               {c}
@@ -592,10 +598,10 @@ export default function RuleEditorPage() {
                       <table className="w-full text-xs">
                         <thead className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
                           <tr>
-                            <th className="px-2 py-1.5">Linia</th>
-                            <th className="px-2 py-1.5">Pole</th>
-                            <th className="px-2 py-1.5">Przed</th>
-                            <th className="px-2 py-1.5">Po</th>
+                            <th className="px-2 py-1.5">{t("rules.simulation.columnLine")}</th>
+                            <th className="px-2 py-1.5">{t("rules.simulation.columnField")}</th>
+                            <th className="px-2 py-1.5">{t("rules.simulation.columnBefore")}</th>
+                            <th className="px-2 py-1.5">{t("rules.simulation.columnAfter")}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
@@ -636,14 +642,12 @@ export default function RuleEditorPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm">
                   <GitBranch className="mr-1.5 inline h-4 w-4" />
-                  Historia wersji
+                  {t("rules.versions.title")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {rule.versions.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    Jeszcze brak wersji. Skompiluj i zapisz pierwszą.
-                  </p>
+                  <p className="text-xs text-muted-foreground">{t("rules.versions.empty")}</p>
                 ) : (
                   <ul className="space-y-2">
                     {rule.versions.map((v) => (
@@ -660,7 +664,8 @@ export default function RuleEditorPage() {
                             </Badge>
                             {v.version === rule.current_version ? (
                               <span className="inline-flex items-center text-[11px] text-emerald-600">
-                                <CheckCircle2 className="mr-1 h-3 w-3" /> aktualna
+                                <CheckCircle2 className="mr-1 h-3 w-3" />{" "}
+                                {t("rules.versions.current")}
                               </span>
                             ) : null}
                             <span className="text-[11px] text-muted-foreground">
@@ -683,10 +688,10 @@ export default function RuleEditorPage() {
                             setOutputColumns(v.output_columns)
                             setTab("definition")
                             triggerExplain(v.nl_definition)
-                            toast.success(`Załadowano v${v.version}`)
+                            toast.success(t("rules.toasts.versionLoaded", { version: v.version }))
                           }}
                         >
-                          Załaduj
+                          {t("rules.versions.load")}
                         </Button>
                       </li>
                     ))}
@@ -710,14 +715,13 @@ function ExplanationPanel({
   pending: boolean
   hasNl: boolean
 }) {
+  const { t } = useTranslation("idp")
+
   if (!hasNl) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-muted-foreground">
         <Lightbulb className="h-8 w-8 text-muted-foreground/60" />
-        <p className="max-w-sm">
-          Zacznij pisać regułę po lewej. AI w locie podsumuje co robi i zaproponuje przykład na
-          konkretnych liczbach.
-        </p>
+        <p className="max-w-sm">{t("rules.explanation.emptyHint")}</p>
       </div>
     )
   }
@@ -725,7 +729,7 @@ function ExplanationPanel({
   if (!data) {
     return (
       <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-        {pending ? "Analizuję…" : "Wpisz przynajmniej kilka słów."}
+        {pending ? t("rules.explanation.analyzing") : t("rules.explanation.tooShort")}
       </div>
     )
   }
@@ -751,7 +755,7 @@ function ExplanationPanel({
         {data.worked_example ? (
           <div className="space-y-1">
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Przykład na liczbach
+              {t("rules.explanation.workedExample")}
             </span>
             <p className="rounded-md border border-border bg-background/60 px-3 py-2 text-sm">
               {data.worked_example}
@@ -762,7 +766,7 @@ function ExplanationPanel({
         {data.affected_columns.length > 0 ? (
           <div className="space-y-1">
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Kolumny które się pojawią / zmienią
+              {t("rules.explanation.affectedColumns")}
             </span>
             <div className="flex flex-wrap gap-1.5">
               {data.affected_columns.map((c) => (
@@ -777,7 +781,7 @@ function ExplanationPanel({
         {data.concerns.length > 0 ? (
           <div className="space-y-1">
             <span className="text-[10px] uppercase tracking-wide text-amber-700">
-              Założenia / uwagi
+              {t("rules.explanation.concerns")}
             </span>
             <ul className="space-y-1 rounded-md border border-amber-500/20 bg-amber-500/5 p-2 text-xs">
               {data.concerns.map((c, i) => (
@@ -793,7 +797,7 @@ function ExplanationPanel({
         {data.clarifying_questions.length > 0 ? (
           <div className="space-y-1">
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Pytania doprecyzowujące
+              {t("rules.explanation.clarifyingQuestions")}
             </span>
             <ul className="space-y-1 text-xs">
               {data.clarifying_questions.map((q, i) => (

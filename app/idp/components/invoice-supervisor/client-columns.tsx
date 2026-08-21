@@ -8,6 +8,7 @@ import {
 } from "@/lib/invoice-supervisor/types"
 import { Badge, Button } from "@cortex/ui"
 import type { ColumnDef } from "@tanstack/react-table"
+import type { TFunction } from "i18next"
 import { Eye } from "lucide-react"
 import Link from "next/link"
 
@@ -19,14 +20,13 @@ export function InvoiceSupervisorClientTypeBadge({ type }: { type: InvoiceSuperv
   )
 }
 
-export function invoiceSupervisorClientColumns(): ColumnDef<
-  InvoiceSupervisorClientWithExposure,
-  unknown
->[] {
+export function invoiceSupervisorClientColumns(
+  t: TFunction<"invoice-supervisor">,
+): ColumnDef<InvoiceSupervisorClientWithExposure, unknown>[] {
   return [
     {
       accessorKey: "name",
-      header: "Nazwa",
+      header: t("columns.clientName"),
       cell: ({ row }) => (
         <Link
           href={`/invoice-supervisor/clients/${row.original.id}`}
@@ -38,18 +38,18 @@ export function invoiceSupervisorClientColumns(): ColumnDef<
     },
     {
       accessorKey: "type",
-      header: "Typ",
+      header: t("columns.clientType"),
       size: 100,
       cell: ({ row }) => <InvoiceSupervisorClientTypeBadge type={row.original.type} />,
     },
     {
       accessorKey: "email",
-      header: "E-mail",
+      header: t("columns.email"),
       cell: ({ row }) => row.original.email ?? "—",
     },
     {
       accessorKey: "total_outstanding",
-      header: "Należność",
+      header: t("columns.outstanding"),
       size: 140,
       cell: ({ row }) => (
         <span
@@ -66,7 +66,7 @@ export function invoiceSupervisorClientColumns(): ColumnDef<
     },
     {
       accessorKey: "invoice_count",
-      header: "Faktur",
+      header: t("columns.invoiceCount"),
       size: 90,
       cell: ({ row }) => row.original.invoice_count,
     },
@@ -81,7 +81,7 @@ export function invoiceSupervisorClientColumns(): ColumnDef<
           className="h-8 w-8"
           asChild
           onClick={(event) => event.stopPropagation()}
-          aria-label={`Zobacz szczegóły klienta ${row.original.name}`}
+          aria-label={t("columns.viewClientAria", { name: row.original.name })}
         >
           <Link href={`/invoice-supervisor/clients/${row.original.id}`}>
             <Eye className="h-4 w-4" />

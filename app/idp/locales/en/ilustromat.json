@@ -1,1 +1,130 @@
-{}
+{
+  "generation": {
+    "description": "A branded illustration for a LinkedIn post. Text and frame are applied deterministically, so fixing the title does not require a new generation.",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Transfer pricing changes in 2027",
+    "subtitleLabel": "Subtitle",
+    "subtitlePlaceholder": "What you need to know before the rules take effect",
+    "ideaLabel": "Illustration idea (optional)",
+    "ideaPlaceholder": "E.g. a bridge joining two banks as a metaphor for agreement",
+    "styleLabel": "Style",
+    "formatLabel": "Format",
+    "formatFrozen": "The new format will apply to the next generation — the current backgrounds have different proportions.",
+    "templateLabel": "Brand template",
+    "templatePlaceholder": "Choose a template",
+    "variantsLabel": "Number of variants",
+    "generate": "Generate",
+    "generating": "Generating..."
+  },
+  "assist": {
+    "polish": "Refine",
+    "rephrase": "Rephrase",
+    "propose": "Suggest",
+    "pending": "Working…",
+    "undo": "Undo",
+    "undoHelp": "Restores the text from before the last AI change.",
+    "helpPolish": "Improves the wording without changing the meaning or the topic.",
+    "helpRephrase": "Same meaning, different angle. Each further click proposes something other than the versions already shown.",
+    "helpProposeSubtitle": "Proposes a line based on the post title.",
+    "helpProposeIdea": "Invents an illustration idea from the title and subtitle. Each further click gives a new idea."
+  },
+  "result": {
+    "emptyTitle": "No graphics generated yet",
+    "emptyDescription": "Fill in the title and click Generate. The variants will already carry the brand frame.",
+    "variantAlt": "Variant {{index}}",
+    "selected": "Selected graphic",
+    "download": "Download PNG",
+    "regenerate": "Generate again",
+    "model": "Model:",
+    "format": "Format:",
+    "template": "Template:",
+    "prompt": "Prompt:"
+  },
+  "history": {
+    "title": "This session's history",
+    "note": "The history lives only in this browser tab — refreshing the page clears it.",
+    "restore": "Restore"
+  },
+  "options": {
+    "style": {
+      "photorealistic": "Photorealistic",
+      "flat": "Illustration",
+      "isometric": "Isometric",
+      "comic": "Comic",
+      "abstract": "Abstract"
+    },
+    "format": {
+      "square": "Square 1200×1200 (feed)",
+      "portrait": "Portrait 1080×1350 (4:5)",
+      "link": "Landscape 1200×627 (link/cover, 1.91:1)"
+    },
+    "logoPosition": {
+      "bottom-right": "Logo on the right (default)",
+      "bottom-left": "Logo on the left"
+    },
+    "layout": {
+      "image-top": "Image on top, text below (default)",
+      "image-bottom": "Text on top, image below"
+    },
+    "textAlign": {
+      "left": "Left (default)",
+      "center": "Centred"
+    },
+    "font": {
+      "noto-sans": "Noto Sans (library, default)"
+    }
+  },
+  "templates": {
+    "title": "Brand templates",
+    "description": "Font, colours, logo and frame geometry. The preview renders with the same function as the finished graphic.",
+    "newTemplate": "New template",
+    "defaultName": "New template",
+    "editing": "Editing: {{id}}",
+    "newAction": "New",
+    "nameLabel": "Name",
+    "colorBgLabel": "Background colour",
+    "colorTextLabel": "Text colour",
+    "colorAccentLabel": "Accent colour",
+    "contrastTitle": "Low contrast",
+    "contrastBody": "Text-to-background contrast is {{ratio}}:1, below the WCAG AA threshold (4.5:1). The text may be unreadable.",
+    "fontLabel": "Font",
+    "websiteLabel": "Website text in the bar",
+    "logoPositionLabel": "Logo position",
+    "layoutLabel": "Layout",
+    "textAlignLabel": "Text alignment",
+    "cornerRadiusLabel": "Corner radius: {{value}} px",
+    "minImageAreaLabel": "Minimum image area height: {{value}}%",
+    "save": "Save template",
+    "afterSaveHint": "You can upload a custom font and logo once the template is saved.",
+    "fontRegularLabel": "Custom font (regular)",
+    "fontRegularHint": "A TTF/OTF file. A font without the full set of Polish characters will be rejected.",
+    "fontBoldLabel": "Custom font (bold)",
+    "fontBoldHint": "The bold face — used for the graphic title.",
+    "logoLabel": "Logo",
+    "logoHint": "PNG, JPG or SVG — normalised to PNG with transparency.",
+    "previewTitle": "Live preview",
+    "previewAlt": "Template preview",
+    "previewPending": "Rendering preview...",
+    "listTitle": "Existing templates",
+    "active": "Active",
+    "inactive": "Disabled",
+    "duplicate": "Duplicate",
+    "disable": "Disable",
+    "enable": "Enable"
+  },
+  "toasts": {
+    "recomposeFailed": "Could not re-render the graphic",
+    "titleRequired": "A title is required",
+    "templateRequired": "Choose a brand template",
+    "generateFailed": "Could not generate the variants",
+    "needTitleFirst": "Enter the post title first",
+    "needTextFirst": "Enter some text first",
+    "assistFailed": "Could not prepare the text",
+    "fontUploaded": "Font uploaded: {{family}}",
+    "assetUploaded": "File uploaded to the template",
+    "uploadFailed": "Could not upload the file",
+    "created": "Template {{name}} created",
+    "saved": "Template changes saved",
+    "saveFailed": "Could not save the template"
+  }
+}

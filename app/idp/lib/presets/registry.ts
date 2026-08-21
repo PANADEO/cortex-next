@@ -56,8 +56,11 @@ export interface PresetVariants {
 
 export interface Preset {
   id: PresetId
+  /** Nazwa własna wyglądu — NIE tłumaczona, tak samo w każdym języku. */
   label: string
-  description: string
+  /** KLUCZ z przestrzeni `common`, nie napis: opis presetu pokazuje się
+   *  w przełączniku w nagłówku i na ekranie Wygląd, więc musi iść za językiem. */
+  descriptionKey: string
   /** Klasa nakładana na `<html>`; `""` znaczy „tokeny bazowe z `:root`",
    *  bo skin domyślny nie ma i nie ma mieć własnej klasy. */
   skin: string
@@ -91,7 +94,7 @@ export const PRESETS: Readonly<Record<PresetId, Preset>> = {
   neutral: {
     id: "neutral",
     label: "Neutral",
-    description: "Monochrome shadcn defaults.",
+    descriptionKey: "presets.neutralDescription",
     skin: "",
     hubLayout: "classic",
     variants: { tabs: "underline", tile: "card", shell: "plain" },
@@ -100,7 +103,7 @@ export const PRESETS: Readonly<Record<PresetId, Preset>> = {
   customs: {
     id: "customs",
     label: "Customs",
-    description: "Hi-vis orange + duty-green.",
+    descriptionKey: "presets.customsDescription",
     skin: "skin-customs",
     hubLayout: "classic",
     variants: { tabs: "underline", tile: "card", shell: "plain" },
@@ -109,7 +112,7 @@ export const PRESETS: Readonly<Record<PresetId, Preset>> = {
   domino: {
     id: "domino",
     label: "Domino",
-    description: "Papier i atrament, twarde krawędzie.",
+    descriptionKey: "presets.dominoDescription",
     skin: "skin-domino",
     hubLayout: "masthead",
     variants: { tabs: "folder", tile: "chiclet", shell: "ruled" },
@@ -178,8 +181,8 @@ export type PresetChoiceId = PresetId | typeof INSTANCE_DEFAULT_ID
 
 export interface PresetChoice {
   id: PresetChoiceId
-  label: string
-  description: string
+  labelKey: string
+  descriptionKey: string
   swatch: readonly [string, string, string]
 }
 
@@ -188,22 +191,44 @@ export interface PresetChoice {
  *  nie poda presetu instancji. */
 const INSTANCE_DEFAULT_CHOICE: PresetChoice = {
   id: INSTANCE_DEFAULT_ID,
-  label: "Domyślny instancji",
-  description: "Wygląd ustawiony dla tej instancji.",
+  labelKey: "presets.instanceDefault",
+  descriptionKey: "presets.instanceDefaultHint",
   swatch: ["#a3a3a3", "#a3a3a3", "#a3a3a3"],
 }
 
-/** Lista dla przełącznika presetów z E4 — pozycja „dziedzicz" na początku,
- *  potem presety w kolejności z rejestru. */
-export const PRESET_CHOICES: readonly PresetChoice[] = [
-  INSTANCE_DEFAULT_CHOICE,
-  ...Object.values(PRESETS).map(({ id, label, description, swatch }) => ({
-    id,
-    label,
-    description,
-    swatch,
-  })),
-]
+/**
+ * Lista dla przełącznika presetów z E4 — pozycja „dziedzicz" na początku,
+ * potem presety w kolejności z rejestru.
+ *
+ * FUNKCJA, NIE STAŁA, bo etykiety muszą iść za językiem. Stała policzona przy
+ * imporcie zamroziłaby napisy z języka, który akurat był aktywny w chwili
+ * załadowania modułu — czyli przełącznik pokazywałby polskie opisy po
+ * przełączeniu na angielski, i to tylko czasem, zależnie od kolejności
+ * importów. `t` podaje wołający, więc lista nie musi nic wiedzieć o i18n.
+ */
+export function presetChoices(
+  t: (key: string) => string,
+): readonly {
+  id: PresetChoiceId
+  label: string
+  description: string
+  swatch: readonly [string, string, string]
+}[] {
+  return [
+    {
+      id: INSTANCE_DEFAULT_CHOICE.id,
+      label: t(INSTANCE_DEFAULT_CHOICE.labelKey),
+      description: t(INSTANCE_DEFAULT_CHOICE.descriptionKey),
+      swatch: INSTANCE_DEFAULT_CHOICE.swatch,
+    },
+    ...Object.values(PRESETS).map(({ id, label, descriptionKey, swatch }) => ({
+      id: id as PresetChoiceId,
+      label,
+      description: t(descriptionKey),
+      swatch,
+    })),
+  ]
+}
 
 /** Wybór z przełącznika → wartość dla `setPreset()`. */
 export function presetChoiceToStored(choice: PresetChoiceId): PresetId | null {

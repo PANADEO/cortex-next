@@ -27,6 +27,7 @@ import {
 import { cn } from "@cortex/utils"
 import { Check, FileText, Pencil, Plus } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 
 const CHANNELS: InvoiceSupervisorChannel[] = ["email", "sms"]
 const STAGES: InvoiceSupervisorEscalationStage[] = [
@@ -45,6 +46,7 @@ interface DialogTarget {
 }
 
 export default function InvoiceSupervisorTemplatesPage() {
+  const { t } = useTranslation(["invoice-supervisor", "common"])
   const coverageQuery = useInvoiceSupervisorTemplateCoverage()
   const templatesQuery = useInvoiceSupervisorTemplates()
   const tonesQuery = useInvoiceSupervisorTones()
@@ -78,25 +80,22 @@ export default function InvoiceSupervisorTemplatesPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <PageHeader
-        title="Szablony"
-        description="Macierz pokrycia: dla każdej kombinacji Ton × Kanał × Etap eskalacji musi istnieć zapisany szablon, inaczej generowanie propozycji jest zablokowane (nigdy nie ma fallbacku na żywe wywołanie AI)."
-      />
+      <PageHeader title={t("templates.title")} description={t("templates.description")} />
 
       <div className="px-8 py-6">
         {isLoading ? (
-          <LoadingState label="Ładowanie macierzy pokrycia..." />
+          <LoadingState label={t("templates.loading")} />
         ) : isError ? (
           <ErrorState
-            title="Nie udało się wczytać szablonów"
-            message="Sprawdź połączenie z backendem i spróbuj ponownie."
+            title={t("templates.loadErrorTitle")}
+            message={t("errors.backendMessage")}
             onRetry={() => refetch()}
           />
         ) : toneEntries.length === 0 ? (
           <EmptyState
             icon={FileText}
-            title="Brak tonów"
-            description="Dodaj ton komunikacji w polityce, aby zobaczyć macierz szablonów."
+            title={t("templates.emptyTitle")}
+            description={t("templates.emptyDescription")}
           />
         ) : (
           <div className="space-y-4">
@@ -111,7 +110,7 @@ export default function InvoiceSupervisorTemplatesPage() {
                       <thead className="bg-muted/40">
                         <tr className="border-b border-border">
                           <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-                            Etap eskalacji
+                            {t("templates.stageColumn")}
                           </th>
                           {CHANNELS.map((channel) => (
                             <th
@@ -159,7 +158,7 @@ export default function InvoiceSupervisorTemplatesPage() {
                                     ) : (
                                       <Plus className="size-3.5" />
                                     )}
-                                    {exists ? "Gotowe" : "Utwórz"}
+                                    {exists ? t("templates.ready") : t("common:actions.create")}
                                     {exists && <Pencil className="size-3 opacity-60" />}
                                   </button>
                                 </td>

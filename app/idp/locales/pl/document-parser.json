@@ -1,3 +1,118 @@
 {
-  "_ctx": {}
+  "upload": {
+    "title": "Parser Dokumentów",
+    "description": "Wgraj dokument (PDF, plik Office albo obraz) — model wizyjny wyciągnie z niego pełną, ustrukturyzowaną treść w formacie Markdown.",
+    "uploaderDescription": "Dozwolone formaty: {{formats}}. Limit rozmiaru: {{maxMb}} MB.",
+    "submitButton": "Wgraj i przetwórz",
+    "submitting": "Wysyłanie…",
+    "loadingJob": "Wczytywanie stanu zadania…",
+    "uploadAnother": "Wgraj kolejny dokument",
+    "errors": {
+      "submitFailed": "Nie udało się wysłać dokumentu do przetworzenia"
+    }
+  },
+  "outcome": {
+    "queued": "Zadanie czeka w kolejce…",
+    "processing": "Trwa przetwarzanie dokumentu — konwersja, render stron i ekstrakcja przez model wizyjny…",
+    "truncated": "Dokument ma więcej stron niż limit przetwarzania — wynik obejmuje tylko pierwsze {{pages}} {{unit}}.",
+    "pageOne": "stronę",
+    "pageMany": "stron",
+    "downloadButton": "Pobierz Markdown",
+    "viewFullButton": "Zobacz pełny wynik",
+    "fields": {
+      "pages": "Strony",
+      "images": "Obrazy",
+      "model": "Model",
+      "elapsed": "Czas przetwarzania"
+    }
+  },
+  "history": {
+    "title": "Historia",
+    "description": "Zadania ekstrakcji dokumentów, które wgrałeś — status, metadane i wynik.",
+    "loading": "Wczytywanie historii…",
+    "searchPlaceholder": "Szukaj po nazwie pliku…",
+    "columns": {
+      "fileName": "Plik",
+      "status": "Status",
+      "fileSize": "Rozmiar",
+      "pages": "Strony",
+      "elapsed": "Czas przetwarzania",
+      "createdAt": "Data"
+    },
+    "filters": {
+      "statusLabel": "Status",
+      "allStatuses": "Wszystkie statusy"
+    },
+    "a11y": {
+      "viewDetails": "Zobacz szczegóły: {{fileName}}"
+    },
+    "empty": {
+      "title": "Brak zadań",
+      "description": "Wgraj pierwszy dokument na ekranie uploadu — pojawi się tutaj po zakończeniu przetwarzania."
+    }
+  },
+  "detail": {
+    "title": "Szczegóły zadania",
+    "description": "Pełny wynik ekstrakcji, metadane i (dla zadań zakończonych błędem) pełny komunikat.",
+    "backToHistory": "Historia",
+    "loading": "Wczytywanie zadania…",
+    "promptLabel": "Prompt użyty do ekstrakcji",
+    "promptHint": "Jeden, wbudowany prompt dla wszystkich zadań w tej wersji modułu — przydatny przy ocenie jakości wyniku powyżej.",
+    "notFound": {
+      "title": "Nie znaleziono zadania",
+      "description": "Zadanie nie istnieje albo nie masz do niego dostępu."
+    },
+    "fields": {
+      "createdAt": "Wgrano",
+      "startedAt": "Rozpoczęto",
+      "completedAt": "Zakończono"
+    }
+  },
+  "_ctx": {
+    "upload.title": "nagłówek ekranu; nazwa kafelka wyciągającego treść z dokumentów; maks. 24 zn.",
+    "upload.description": "opis; podtytuł ekranu uploadu — co kafelek robi z wgranym plikiem",
+    "upload.uploaderDescription": "opis; pod polem wyboru pliku, {{formats}} = lista rozszerzeń WIELKIMI literami, {{maxMb}} = limit w megabajtach",
+    "upload.submitButton": "przycisk główny; wysyła wybrany plik do przetworzenia; maks. 22 zn.",
+    "upload.submitting": "stan pośredni; napis na przycisku, gdy plik jest wysyłany; maks. 16 zn.",
+    "upload.loadingJob": "stan pośredni; trwa pobieranie stanu świeżo założonego zadania",
+    "upload.uploadAnother": "przycisk; czyści ekran i pozwala wgrać następny plik; maks. 26 zn.",
+    "upload.errors.submitFailed": "komunikat błędu; wysłanie pliku na serwer się nie powiodło",
+    "outcome.queued": "stan pośredni; zadanie przyjęte, ale jeszcze nie zaczęło się przetwarzać",
+    "outcome.processing": "stan pośredni; trwa konwersja i ekstrakcja treści przez model wizyjny",
+    "outcome.truncated": "opis; ostrzeżenie, że dokument przekroczył limit stron i wynik jest niepełny, {{pages}} = liczba przetworzonych stron, {{unit}} = rzeczownik „strona” w odpowiedniej formie",
+    "outcome.pageOne": "wartość; rzeczownik po liczbie 1 w ostrzeżeniu o obcięciu; maks. 12 zn.",
+    "outcome.pageMany": "wartość; rzeczownik po liczbie innej niż 1 w ostrzeżeniu o obcięciu; maks. 12 zn.",
+    "outcome.downloadButton": "przycisk; zapisuje wynik ekstrakcji jako plik .md na dysku; maks. 22 zn.",
+    "outcome.viewFullButton": "przycisk; z ekranu uploadu przechodzi do pełnych szczegółów zadania; maks. 24 zn.",
+    "outcome.fields.pages": "etykieta; opisuje liczbę przetworzonych stron w liście metadanych; maks. 12 zn.",
+    "outcome.fields.images": "etykieta; opisuje liczbę obrazów znalezionych w dokumencie; maks. 12 zn.",
+    "outcome.fields.model": "etykieta; opisuje użyty model wizyjny; maks. 10 zn.",
+    "outcome.fields.elapsed": "etykieta; opisuje czas przetwarzania w sekundach; maks. 20 zn.",
+    "history.title": "nagłówek ekranu; lista zadań ekstrakcji bieżącego użytkownika; maks. 16 zn.",
+    "history.description": "opis; podtytuł ekranu historii — widać wyłącznie własne zadania",
+    "history.loading": "stan pośredni; trwa pobieranie listy zadań",
+    "history.searchPlaceholder": "placeholder pola wyszukiwania nad tabelą; szuka po nazwie wgranego pliku",
+    "history.columns.fileName": "nagłówek kolumny tabeli; nazwa wgranego pliku; maks. 10 zn.",
+    "history.columns.status": "nagłówek kolumny tabeli; maks. 12 zn.",
+    "history.columns.fileSize": "nagłówek kolumny tabeli; rozmiar pliku; maks. 12 zn.",
+    "history.columns.pages": "nagłówek kolumny tabeli; liczba przetworzonych stron; maks. 12 zn.",
+    "history.columns.elapsed": "nagłówek kolumny tabeli; czas przetwarzania w sekundach; maks. 20 zn.",
+    "history.columns.createdAt": "nagłówek kolumny tabeli; data wgrania pliku; maks. 10 zn.",
+    "history.filters.statusLabel": "etykieta listy wyboru nad tabelą; filtr statusu zadania; maks. 12 zn.",
+    "history.filters.allStatuses": "opcja listy wyboru; filtr statusu wyłączony, widać wszystkie zadania; maks. 22 zn.",
+    "history.a11y.viewDetails": "etykieta a11y; ukryta, opisuje przycisk otwierający szczegóły zadania, {{fileName}} = nazwa pliku",
+    "history.empty.title": "stan pusty; użytkownik nie wgrał jeszcze żadnego dokumentu, NIE błąd; maks. 16 zn.",
+    "history.empty.description": "stan pusty; kieruje na ekran uploadu",
+    "detail.title": "nagłówek ekranu; szczegóły jednego zadania ekstrakcji; maks. 24 zn.",
+    "detail.description": "opis; podtytuł ekranu szczegółów zadania",
+    "detail.backToHistory": "przycisk; wraca na listę zadań; maks. 14 zn.",
+    "detail.loading": "stan pośredni; trwa pobieranie zadania",
+    "detail.promptLabel": "etykieta; nad podglądem promptu wysłanego do modelu wizyjnego; maks. 30 zn.",
+    "detail.promptHint": "opis; wyjaśnia, że prompt jest jeden dla całego modułu i służy do oceny jakości wyniku",
+    "detail.notFound.title": "stan pusty; zadania nie ma albo należy do kogoś innego, NIE błąd aplikacji; maks. 26 zn.",
+    "detail.notFound.description": "stan pusty; nie zdradza, czy zadanie istnieje u innego użytkownika",
+    "detail.fields.createdAt": "etykieta; opisuje datę wgrania pliku w liście metadanych; maks. 12 zn.",
+    "detail.fields.startedAt": "etykieta; opisuje moment rozpoczęcia przetwarzania; maks. 14 zn.",
+    "detail.fields.completedAt": "etykieta; opisuje moment zakończenia przetwarzania; maks. 14 zn."
+  }
 }

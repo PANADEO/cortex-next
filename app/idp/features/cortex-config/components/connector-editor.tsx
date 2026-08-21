@@ -21,6 +21,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
 import { Controller, useForm } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { useCatalog, useUpdateConnectors } from "../hooks/use-governance"
 import {
   connectorFormSchema,
@@ -37,19 +38,23 @@ const BACK_HREF = "/cortex-config/catalog"
 
 /** Full-screen editor for one catalog connector (MCP server or CLI tool). */
 export function ConnectorEditorScreen({ connectorId }: { connectorId?: string | undefined }) {
+  const { t } = useTranslation("cortex-config")
   const catalog = useCatalog()
   const updateConnectors = useUpdateConnectors()
   const router = useRouter()
 
-  if (catalog.isPending) return <LoadingState label="Wczytywanie katalogu..." />
+  if (catalog.isPending) return <LoadingState label={t("state.loadingCatalog")} />
   if (catalog.isError || !catalog.data)
-    return <AccessDeniedState title="Brak dostępu do katalogu" />
+    return <AccessDeniedState title={t("access.catalogTitle")} />
 
   const { connectors, departments } = catalog.data
   const connector = connectorId ? connectors.find((c) => c.id === connectorId) : undefined
   if (connectorId && !connector) {
     return (
-      <ErrorState title="Nie znaleziono konektora" message={`Brak konektora "${connectorId}".`} />
+      <ErrorState
+        title={t("connectorEditor.notFoundTitle")}
+        message={t("connectorEditor.notFoundMessage", { id: connectorId })}
+      />
     )
   }
 
@@ -82,6 +87,7 @@ function ConnectorForm({
   isSaving: boolean
   onSubmit: (values: ConnectorFormValues) => Promise<void>
 }) {
+  const { t } = useTranslation(["cortex-config", "common"])
   const form = useForm<ConnectorFormValues>({
     resolver: zodResolver(connectorFormSchema),
     defaultValues,
@@ -101,29 +107,33 @@ function ConnectorForm({
     <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
       <ConfigScreen
         backHref={BACK_HREF}
-        backLabel="Katalog zasobów"
-        title={editing ? `Edytuj konektor: ${defaultValues.name}` : "Nowy konektor"}
-        description="Narzędzie agenta: serwer MCP albo CLI, z sekretami przez referencje."
-        save={{ isSaving, label: "Zapisz" }}
+        backLabel={t("nav.backToCatalog")}
+        title={
+          editing
+            ? t("connectorEditor.editTitle", { name: defaultValues.name })
+            : t("connectorEditor.newTitle")
+        }
+        description={t("connectorEditor.description")}
+        save={{ isSaving, label: t("common:actions.save") }}
       >
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Identyfikacja</CardTitle>
+              <CardTitle className="text-base">{t("connectorEditor.identitySection")}</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <Label htmlFor="conn-id">Identyfikator</Label>
+                <Label htmlFor="conn-id">{t("fields.id")}</Label>
                 <Input id="conn-id" className="mt-1" disabled={editing} {...form.register("id")} />
                 <FieldError message={form.formState.errors.id?.message} />
               </div>
               <div>
-                <Label htmlFor="conn-name">Nazwa</Label>
+                <Label htmlFor="conn-name">{t("fields.name")}</Label>
                 <Input id="conn-name" className="mt-1" {...form.register("name")} />
                 <FieldError message={form.formState.errors.name?.message} />
               </div>
               <div>
-                <Label>Typ</Label>
+                <Label>{t("fields.type")}</Label>
                 <Controller
                   control={form.control}
                   name="type"
@@ -141,7 +151,7 @@ function ConnectorForm({
                 />
               </div>
               <div>
-                <Label>Departament</Label>
+                <Label>{t("fields.department")}</Label>
                 <div className="mt-1">
                   <Controller
                     control={form.control}
@@ -169,23 +179,20 @@ function ConnectorForm({
                     />
                   )}
                 />
-                <Label htmlFor="conn-enabled">Aktywny</Label>
+                <Label htmlFor="conn-enabled">{t("fields.active")}</Label>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Połączenie</CardTitle>
-              <CardDescription>
-                Wartości sekretów nigdy nie trafiają do konfiguracji - tylko referencje do ścieżek w
-                Sekretach.
-              </CardDescription>
+              <CardTitle className="text-base">{t("connectorEditor.connectionSection")}</CardTitle>
+              <CardDescription>{t("connectorEditor.connectionDescription")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="conn-target">
-                  {type === "mcp" ? "URL serwera" : "Ścieżka do narzędzia"}
+                  {type === "mcp" ? t("connectorEditor.serverUrl") : t("connectorEditor.toolPath")}
                 </Label>
                 <Input
                   id="conn-target"
@@ -199,22 +206,28 @@ function ConnectorForm({
               </div>
               <div>
                 <Label htmlFor="conn-refs">
-                  {type === "mcp" ? "Nagłówki" : "Zmienne środowiskowe"} → referencja sekretu
-                  (nazwa=ścieżka, jedna na linię)
+                  {t("connectorEditor.refsLabel", {
+                    kind:
+                      type === "mcp"
+                        ? t("connectorEditor.refsHeaders")
+                        : t("connectorEditor.refsEnvVars"),
+                  })}
                 </Label>
                 <Textarea
                   id="conn-refs"
                   className="mt-1 font-mono text-xs"
                   rows={3}
                   placeholder={
-                    type === "mcp" ? "Authorization=finanse/jira/token" : "API_TOKEN=finanse/token"
+                    type === "mcp"
+                      ? t("connectorEditor.refsPlaceholderMcp")
+                      : t("connectorEditor.refsPlaceholderCli")
                   }
                   {...form.register("credentialRefs")}
                 />
               </div>
               {type === "cli" ? (
                 <div>
-                  <Label htmlFor="conn-args">Stałe argumenty (opcjonalne)</Label>
+                  <Label htmlFor="conn-args">{t("connectorEditor.baseArgs")}</Label>
                   <Input
                     id="conn-args"
                     className="mt-1 font-mono text-xs"

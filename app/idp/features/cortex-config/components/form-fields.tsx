@@ -4,6 +4,7 @@ import { grantMatches, secretPathGranted } from "@cortex/types"
 import { Checkbox } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { useController, type Control, type FieldValues, type Path } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { DepartmentTreeCheckList } from "./pickers"
 
 // Small form primitives shared by the cortex-config editor screens.
@@ -54,6 +55,7 @@ export function GrantPicker({
   onLeafChange,
   leafEmptyText,
 }: GrantPickerProps) {
+  const { t } = useTranslation("cortex-config")
   const groups = new Map<string, GrantLeaf[]>()
   for (const leaf of leaves) {
     const key = leaf.department ?? ""
@@ -67,7 +69,7 @@ export function GrantPicker({
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <div>
         <p className="mb-1.5 text-xs font-medium text-muted-foreground">
-          Gałęzie (cały departament)
+          {t("grant.branchesLabel")}
         </p>
         <DepartmentTreeCheckList
           departments={departments}
@@ -76,7 +78,7 @@ export function GrantPicker({
         />
       </div>
       <div>
-        <p className="mb-1.5 text-xs font-medium text-muted-foreground">Pojedyncze zasoby</p>
+        <p className="mb-1.5 text-xs font-medium text-muted-foreground">{t("grant.leavesLabel")}</p>
         {leaves.length === 0 ? (
           <p className="text-sm text-muted-foreground">{leafEmptyText}</p>
         ) : (
@@ -112,7 +114,7 @@ export function GrantPicker({
                         <span className="min-w-0 truncate">{leaf.label}</span>
                         {covered ? (
                           <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
-                            objęty gałęzią
+                            {t("grant.coveredByBranch")}
                           </span>
                         ) : null}
                       </label>

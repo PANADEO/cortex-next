@@ -4,6 +4,7 @@ import { cn } from "@cortex/utils"
 import { motion, useReducedMotion } from "framer-motion"
 import { AlertTriangle, Brain, CheckCircle2, Sparkles, Wrench } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import type { AgentActivityStep } from "../types"
 import { CollapseRegion, DisclosureChevron } from "./disclosure"
 
@@ -41,47 +42,56 @@ function WorkingGlyph({ className }: { className?: string }) {
   )
 }
 
-/** Claude-Code-style cycling verb, derived from what the agent is doing now. */
-function workingLabel(steps: AgentActivityStep[]): string {
+/**
+ * Claude-Code-style cycling verb, derived from what the agent is doing now.
+ * Zwraca KLUCZ, nie napis - `t()` żyje w komponencie, bo tylko tam odświeża
+ * się po przełączeniu języka.
+ */
+function workingLabelKey(steps: AgentActivityStep[]): { key: string; tool: string } {
   const last = steps.at(-1)
-  if (!last) return "Rozkręcam sandboxa…"
+  if (!last) return { key: "activity.working.starting", tool: "" }
   switch (last.kind) {
     case "thinking":
     case "thinking_start":
-      return "Myślę…"
+      return { key: "activity.working.thinking", tool: "" }
     case "assistant":
-      return "Formułuję odpowiedź…"
+      return { key: "activity.working.answering", tool: "" }
     case "tool_start": {
       const tool = (last.tool ?? "").toLowerCase()
-      if (tool.includes("web_search")) return "Szukam w sieci…"
-      if (tool.includes("generate_image")) return "Generuję obraz…"
-      if (tool.includes("activate_skill")) return "Sięgam po skill…"
-      if (tool.includes("write") || tool.includes("edit")) return "Piszę plik…"
-      if (tool.includes("read") || tool.includes("list")) return "Czytam workspace…"
+      if (tool.includes("web_search")) return { key: "activity.working.webSearch", tool: "" }
+      if (tool.includes("generate_image")) return { key: "activity.working.image", tool: "" }
+      if (tool.includes("activate_skill")) return { key: "activity.working.skill", tool: "" }
+      if (tool.includes("write") || tool.includes("edit"))
+        return { key: "activity.working.write", tool: "" }
+      if (tool.includes("read") || tool.includes("list"))
+        return { key: "activity.working.read", tool: "" }
       if (tool.includes("bash") || tool.includes("exec") || tool.includes("run"))
-        return "Wykonuję polecenie…"
-      return `Używam: ${last.tool ?? "narzędzia"}…`
+        return { key: "activity.working.exec", tool: "" }
+      return { key: "activity.working.tool", tool: last.tool ?? "" }
     }
     case "tool_end":
-      return "Ogarniam wynik…"
+      return { key: "activity.working.toolDone", tool: "" }
     case "lifecycle":
-      return "Pracuję w sandboxie…"
+      return { key: "activity.working.lifecycle", tool: "" }
   }
 }
 
-function stepLabel(step: AgentActivityStep): string {
+/** Jak wyżej: klucz plus podstawienia, tłumaczone dopiero w komponencie. */
+function stepLabelKey(step: AgentActivityStep): { key: string; tool: string } {
   switch (step.kind) {
     case "thinking":
     case "thinking_start":
-      return "Thinking"
+      return { key: "activity.step.thinking", tool: "" }
     case "tool_start":
-      return `Tool: ${step.tool ?? "?"}`
+      return { key: "activity.step.tool", tool: step.tool ?? "?" }
     case "tool_end":
-      return `Tool done: ${step.tool ?? "?"}`
+      return { key: "activity.step.toolDone", tool: step.tool ?? "?" }
     case "lifecycle":
-      return step.text === "run_start" ? "Run started" : (step.text ?? "Lifecycle")
+      return step.text === "run_start"
+        ? { key: "activity.step.runStarted", tool: "" }
+        : { key: "activity.step.lifecycle", tool: "" }
     case "assistant":
-      return "Assistant"
+      return { key: "activity.step.assistant", tool: "" }
   }
 }
 
@@ -112,9 +122,11 @@ function StepIcon({ step, active }: { step: AgentActivityStep; active: boolean }
 }
 
 function ActivityStepRow({ step, active }: { step: AgentActivityStep; active: boolean }) {
+  const { t } = useTranslation("cortex-cowork")
   const [open, setOpen] = useState(false)
   const reducedMotion = useReducedMotion()
   const drilldown = stepDrilldown(step)
+  const label = stepLabelKey(step)
 
   return (
     <motion.div
@@ -141,7 +153,7 @@ function ActivityStepRow({ step, active }: { step: AgentActivityStep; active: bo
               : "text-muted-foreground",
           )}
         >
-          {stepLabel(step)}
+          {t(label.key, { tool: label.tool })}
           {active ? "…" : ""}
         </span>
         {drilldown ? (
@@ -185,6 +197,11 @@ interface LiveActivityProps {
 
 /** Live block rendered under the chat while a turn is running. */
 export function LiveAgentActivity({ steps, liveText }: LiveActivityProps) {
+  const { t } = useTranslation("cortex-cowork")
+  const working = workingLabelKey(steps)
+  const workingText = t(working.key, {
+    tool: working.tool || t("activity.working.toolFallback"),
+  })
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
@@ -194,11 +211,8 @@ export function LiveAgentActivity({ steps, liveText }: LiveActivityProps) {
     >
       <div className="mb-1.5 flex items-center gap-2 text-xs font-medium">
         <WorkingGlyph />
-        <span
-          key={workingLabel(steps)}
-          className={cn(SHIMMER_TEXT, "motion-reduce:text-muted-foreground")}
-        >
-          {workingLabel(steps)}
+        <span key={workingText} className={cn(SHIMMER_TEXT, "motion-reduce:text-muted-foreground")}>
+          {workingText}
         </span>
       </div>
       {steps.length > 0 ? <AgentActivityList steps={steps} live /> : null}
@@ -220,6 +234,7 @@ interface ActivityTrailProps {
 
 /** Collapsed work-trail panel attached to a finished assistant message. */
 export function AgentActivityTrail({ steps }: ActivityTrailProps) {
+  const { t } = useTranslation("cortex-cowork")
   const [open, setOpen] = useState(false)
   const stepCount = steps.filter((step) => step.kind !== "thinking_start").length
   if (stepCount === 0) return null
@@ -232,7 +247,7 @@ export function AgentActivityTrail({ steps }: ActivityTrailProps) {
         className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         <DisclosureChevron open={open} />
-        Przebieg pracy agenta ({stepCount} kroków)
+        {t("activity.trail", { n: stepCount })}
       </button>
       <CollapseRegion open={open}>
         <div className="mt-1.5">

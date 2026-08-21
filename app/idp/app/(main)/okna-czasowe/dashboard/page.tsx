@@ -7,33 +7,40 @@ import { useSnapshots } from "@/features/okna-czasowe/hooks/use-snapshots"
 import { toastApiError } from "@cortex/api"
 import { Button, DataCard, DataTable, EmptyState, PageHeader } from "@cortex/ui"
 import { Clapperboard, Film as FilmIcon, Loader2, RefreshCw, ScanSearch } from "lucide-react"
+import { useMemo } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import { dashboardColumns } from "./columns"
+import { buildDashboardColumns } from "./columns"
 
 export default function OknaCzasoweDashboardPage() {
+  const { t } = useTranslation("okna-czasowe")
   const filmsQuery = useFilms()
   const snapshotsQuery = useSnapshots()
   const runScan = useRunScan()
 
   const summary = buildDashboardSummary(filmsQuery.data ?? [], snapshotsQuery.data ?? [])
   const isLoading = filmsQuery.isLoading || snapshotsQuery.isLoading
+  const columns = useMemo(() => buildDashboardColumns(t), [t])
 
   async function handleScan() {
     try {
       const result = await runScan.mutateAsync()
       toast.success(
-        `Skan zakończony: ${result.log.filmsScanned} filmów, ${result.log.newAvailabilities} nowych dostępności.`,
+        t("scan.success", {
+          films: result.log.filmsScanned,
+          newAvailabilities: result.log.newAvailabilities,
+        }),
       )
     } catch (error) {
-      toastApiError(error, "Skan nie powiódł się")
+      toastApiError(error, t("scan.failed"))
     }
   }
 
   return (
     <>
       <PageHeader
-        title="Okna czasowe — Dashboard"
-        description="Śledzenie od kiedy filmy pojawiają się na Rakuten TV PL, na podstawie codziennych skanów JustWatch."
+        title={t("dashboard.title")}
+        description={t("dashboard.description")}
         actions={
           <Button size="sm" onClick={handleScan} disabled={runScan.isPending}>
             {runScan.isPending ? (
@@ -41,7 +48,7 @@ export default function OknaCzasoweDashboardPage() {
             ) : (
               <ScanSearch className="mr-1.5 h-3.5 w-3.5" />
             )}
-            Skanuj teraz
+            {t("scan.run")}
           </Button>
         }
       />
@@ -49,20 +56,20 @@ export default function OknaCzasoweDashboardPage() {
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
         <div className="grid gap-4 sm:grid-cols-3">
           <DataCard
-            label="Filmy śledzone"
+            label={t("dashboard.cardTrackedFilms")}
             value={summary.totalFilms}
             icon={FilmIcon}
             isLoading={isLoading}
           />
           <DataCard
-            label="Dostępne teraz (Rakuten PL)"
+            label={t("dashboard.cardAvailableNow")}
             value={summary.availableNow}
             icon={Clapperboard}
             tone={summary.availableNow > 0 ? "success" : "default"}
             isLoading={isLoading}
           />
           <DataCard
-            label="Ostatni skan"
+            label={t("dashboard.cardLastScan")}
             value={formatDateTime(summary.lastScanAt)}
             icon={RefreshCw}
             isLoading={isLoading}
@@ -71,12 +78,12 @@ export default function OknaCzasoweDashboardPage() {
 
         {!isLoading && summary.rows.length === 0 ? (
           <EmptyState
-            title="Brak filmów w bazie"
-            description="Dodaj pierwsze filmy w zakładce Filmy, żeby zacząć śledzenie."
+            title={t("dashboard.emptyTitle")}
+            description={t("dashboard.emptyDescription")}
           />
         ) : (
           <DataTable
-            columns={dashboardColumns}
+            columns={columns}
             data={summary.rows}
             isLoading={isLoading}
             bordered

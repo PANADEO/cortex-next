@@ -14,11 +14,13 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { ChevronRight, ImageOff, Images } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useMemo } from "react"
+import { useTranslation } from "react-i18next"
 
 // Referencja stabilna między renderami — wzorem document-parser/history/page.tsx.
 const EMPTY_ITEMS: GenerationListItemDto[] = []
 
 export default function VisualGuruHistoryPage() {
+  const { t } = useTranslation("visual-guru")
   const router = useRouter()
   const historyQuery = useHistory()
   const items = historyQuery.data ?? EMPTY_ITEMS
@@ -45,7 +47,7 @@ export default function VisualGuruHistoryPage() {
       },
       {
         accessorKey: "prompt",
-        header: "Prompt",
+        header: t("history.columns.prompt"),
         enableSorting: true,
         cell: ({ row }) => (
           <span className="block max-w-md truncate" title={row.original.prompt}>
@@ -53,23 +55,23 @@ export default function VisualGuruHistoryPage() {
           </span>
         ),
       },
-      { accessorKey: "model", header: "Model", enableSorting: true },
-      { accessorKey: "variantCount", header: "Warianty", enableSorting: true },
+      { accessorKey: "model", header: t("history.columns.model"), enableSorting: true },
+      { accessorKey: "variantCount", header: t("history.columns.variants"), enableSorting: true },
       {
         id: "hadReferenceImage",
-        header: "Obraz referencyjny",
+        header: t("history.columns.referenceImage"),
         enableSorting: true,
         accessorFn: (row) => row.hadReferenceImage,
         cell: ({ row }) =>
           row.original.hadReferenceImage ? (
-            <Badge variant="secondary">Użyto</Badge>
+            <Badge variant="secondary">{t("history.referenceUsed")}</Badge>
           ) : (
             <span className="text-xs text-muted-foreground">—</span>
           ),
       },
       {
         accessorKey: "createdAt",
-        header: "Data",
+        header: t("history.columns.date"),
         enableSorting: true,
         cell: ({ row }) => formatAbsolute(row.original.createdAt),
       },
@@ -81,7 +83,9 @@ export default function VisualGuruHistoryPage() {
             <Button
               size="icon"
               variant="ghost"
-              aria-label={`Zobacz szczegóły generacji z ${formatAbsolute(row.original.createdAt)}`}
+              aria-label={t("history.columns.viewDetailsAria", {
+                date: formatAbsolute(row.original.createdAt),
+              })}
               onClick={() => router.push(`/visual-guru/history/${row.original.id}`)}
             >
               <ChevronRight className="h-4 w-4" />
@@ -90,32 +94,29 @@ export default function VisualGuruHistoryPage() {
         ),
       },
     ],
-    [router],
+    [router, t],
   )
 
   return (
     <>
-      <PageHeader
-        title="Archiwum"
-        description="Wszystkie generacje, które wykonałeś — prompt, warianty i metadane."
-      />
+      <PageHeader title={t("history.title")} description={t("history.description")} />
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         {historyQuery.isLoading ? (
-          <LoadingState label="Wczytywanie archiwum…" />
+          <LoadingState label={t("history.loading")} />
         ) : (
           <CortexDataGrid
             columns={columns}
             data={items}
             bordered
             searchable
-            searchPlaceholder="Szukaj po treści promptu…"
+            searchPlaceholder={t("history.searchPlaceholder")}
             getRowId={(row) => row.id}
             emptyState={
               <EmptyState
                 icon={Images}
-                title="Brak generacji"
-                description="Wygeneruj pierwszy obraz na ekranie Generatora — pojawi się tutaj automatycznie."
+                title={t("history.emptyTitle")}
+                description={t("history.emptyDescription")}
               />
             }
           />

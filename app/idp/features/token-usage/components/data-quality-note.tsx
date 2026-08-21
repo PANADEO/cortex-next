@@ -2,6 +2,7 @@
 
 import { Alert, AlertDescription, AlertTitle } from "@cortex/ui"
 import { Info } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 /**
  * Jawna nota o jakości danych (projekt 1.4). NIE jest ozdobą i nie wolno jej
@@ -17,21 +18,15 @@ import { Info } from "lucide-react"
  *    kilkanaście repozytoriów, a wymiary source_app/scope wypełnia wołający.
  */
 export function DataQualityNote() {
+  const { t } = useTranslation("token-usage")
+
   return (
     <Alert>
       <Info className="h-4 w-4" />
-      <AlertTitle>Jak czytać te liczby</AlertTitle>
+      <AlertTitle>{t("dataQuality.title")}</AlertTitle>
       <AlertDescription className="space-y-1 text-sm">
-        <p>
-          Część wartości to szacunki, nie odczyt z API dostawcy. Gdy odpowiedź modelu nie zawiera
-          bloku danych o zużyciu, cortex-proxy zapisuje liczbę tokenów przybliżoną na podstawie
-          treści żądania. Raport pokazuje więc skalę zużycia, a nie rozliczenie co do tokena.
-        </p>
-        <p>
-          Zestawienie obejmuje cały ruch przechodzący przez cortex-proxy, także z systemów spoza
-          Cortex360. Kolumna &bdquo;Użytkownik&rdquo; zawiera identyfikator przysłany przez system
-          wołający — najczęściej adres e-mail, ale nie jest to gwarantowane.
-        </p>
+        <p>{t("dataQuality.estimates")}</p>
+        <p>{t("dataQuality.coverage")}</p>
       </AlertDescription>
     </Alert>
   )

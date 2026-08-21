@@ -28,12 +28,16 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Pencil, Plus } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { z } from "zod"
 
+// Komunikaty walidacji są KLUCZAMI i18n, nie gotowym tekstem: schemat żyje na
+// poziomie modułu, więc `t` jeszcze nie istnieje. Tłumaczy je miejsce, które je
+// renderuje (patrz `fieldError` niżej).
 const clientFormSchema = z.object({
-  name: z.string().min(1, "Nazwa jest wymagana"),
+  name: z.string().min(1, "validation.clientNameRequired"),
   type: z.enum(["nowy", "stały", "vip"]),
-  email: z.string().email("Nieprawidłowy adres e-mail").optional().or(z.literal("")),
+  email: z.string().email("validation.clientEmailInvalid").optional().or(z.literal("")),
   phone: z.string().optional(),
 })
 
@@ -60,6 +64,7 @@ interface InvoiceSupervisorClientFormDialogProps {
 export function InvoiceSupervisorClientFormDialog({
   client,
 }: InvoiceSupervisorClientFormDialogProps) {
+  const { t } = useTranslation(["invoice-supervisor", "common"])
   const isEdit = client != null
   const [open, setOpen] = useState(false)
   const createClient = useInvoiceSupervisorCreateClient()
@@ -82,6 +87,8 @@ export function InvoiceSupervisorClientFormDialog({
     if (open) reset(defaultValuesFor(client))
   }, [open, client, reset])
 
+  const fieldError = (message: string | undefined) => (message ? t(message) : undefined)
+
   function onSubmit(values: ClientFormValues) {
     mutation.mutate(
       {
@@ -100,27 +107,31 @@ export function InvoiceSupervisorClientFormDialog({
         {isEdit ? (
           <Button variant="outline" size="sm">
             <Pencil className="mr-2 h-4 w-4" />
-            Edytuj
+            {t("common:actions.edit")}
           </Button>
         ) : (
           <Button size="sm">
             <Plus className="mr-2 h-4 w-4" />
-            Nowy klient
+            {t("clientForm.newClient")}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edytuj klienta" : "Nowy klient"}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? t("clientForm.editTitle") : t("clientForm.newClient")}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <div className="space-y-1">
-            <Label htmlFor="invoice-supervisor-client-name">Nazwa</Label>
+            <Label htmlFor="invoice-supervisor-client-name">{t("clientForm.nameLabel")}</Label>
             <Input id="invoice-supervisor-client-name" {...register("name")} />
-            {errors.name ? <p className="text-xs text-destructive">{errors.name.message}</p> : null}
+            {errors.name ? (
+              <p className="text-xs text-destructive">{fieldError(errors.name.message)}</p>
+            ) : null}
           </div>
           <div className="space-y-1">
-            <Label htmlFor="invoice-supervisor-client-type">Typ</Label>
+            <Label htmlFor="invoice-supervisor-client-type">{t("clientForm.typeLabel")}</Label>
             <Select
               value={watch("type")}
               onValueChange={(value) => setValue("type", value as ClientFormValues["type"])}
@@ -139,14 +150,14 @@ export function InvoiceSupervisorClientFormDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label htmlFor="invoice-supervisor-client-email">E-mail</Label>
+              <Label htmlFor="invoice-supervisor-client-email">{t("clientForm.emailLabel")}</Label>
               <Input id="invoice-supervisor-client-email" {...register("email")} />
               {errors.email ? (
-                <p className="text-xs text-destructive">{errors.email.message}</p>
+                <p className="text-xs text-destructive">{fieldError(errors.email.message)}</p>
               ) : null}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="invoice-supervisor-client-phone">Telefon</Label>
+              <Label htmlFor="invoice-supervisor-client-phone">{t("clientForm.phoneLabel")}</Label>
               <Input
                 id="invoice-supervisor-client-phone"
                 {...register("phone")}
@@ -156,7 +167,7 @@ export function InvoiceSupervisorClientFormDialog({
           </div>
           <DialogFooter>
             <Button type="submit" disabled={mutation.isPending}>
-              Zapisz
+              {t("common:actions.save")}
             </Button>
           </DialogFooter>
         </form>

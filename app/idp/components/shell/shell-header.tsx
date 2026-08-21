@@ -1,11 +1,12 @@
 "use client"
 
 import { usePreset, usePresetStore } from "@/lib/presets/preset-store"
-import { PRESET_CHOICES, presetChoiceToStored, storedToPresetChoice } from "@/lib/presets/registry"
+import { presetChoices, presetChoiceToStored, storedToPresetChoice } from "@/lib/presets/registry"
 import { useThemeStore } from "@/lib/stores/theme-store"
 import { useSetUserPreferences, useShellUser } from "@cortex/api"
 import { SkinToggle, ThemeToggle, UserMenu } from "@cortex/ui"
 import { cva } from "class-variance-authority"
+import { useTranslation } from "react-i18next"
 import Image from "next/image"
 
 /**
@@ -47,6 +48,7 @@ export function ShellHeader() {
   // Tu odwrotnie niż przy przełączniku wyżej: kształt idzie za tym, co
   // użytkownik REALNIE widzi, więc rozwiązany preset, nie sam wybór.
   const variant = usePreset().variants.shell
+  const { t: tCommon } = useTranslation("common")
 
   return (
     <header className={shellBar({ variant })}>
@@ -72,7 +74,7 @@ export function ShellHeader() {
               wygrać. */}
           <SkinToggle
             skin={storedToPresetChoice(storedPreset)}
-            options={PRESET_CHOICES}
+            options={presetChoices(tCommon)}
             onSkinChange={(choice) => setPreset(presetChoiceToStored(choice))}
           />
           <ThemeToggle

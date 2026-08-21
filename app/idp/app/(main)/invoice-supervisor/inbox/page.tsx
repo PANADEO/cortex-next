@@ -26,8 +26,10 @@ import {
 } from "@cortex/ui"
 import { CheckCircle2, Inbox as InboxIcon, RefreshCw, XCircle } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 export default function InvoiceSupervisorInboxPage() {
+  const { t } = useTranslation(["invoice-supervisor", "common"])
   const { data: proposals, isLoading, isError, refetch } = useInvoiceSupervisorPendingProposals()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -66,9 +68,12 @@ export default function InvoiceSupervisorInboxPage() {
   return (
     <div className="flex h-full flex-col">
       <header className="flex flex-wrap items-center gap-2 border-b border-border bg-background px-6 py-2.5">
-        <h1 className="min-w-0 truncate text-base font-semibold tracking-tight">Skrzynka</h1>
+        <h1 className="min-w-0 truncate text-base font-semibold tracking-tight">
+          {t("inbox.title")}
+        </h1>
         <span className="text-sm text-muted-foreground">
-          Propozycje przypomnień oczekujące na przegląd{proposals ? ` · ${proposals.length}` : ""}
+          {t("inbox.subtitle")}
+          {proposals ? ` · ${proposals.length}` : ""}
         </span>
         <Button
           variant="outline"
@@ -78,7 +83,7 @@ export default function InvoiceSupervisorInboxPage() {
           disabled={generate.isPending}
         >
           <RefreshCw className={generate.isPending ? "size-4 animate-spin" : "size-4"} />
-          Odśwież
+          {t("inbox.refresh")}
         </Button>
       </header>
 
@@ -86,7 +91,9 @@ export default function InvoiceSupervisorInboxPage() {
 
       {selectedIdsArray.length > 0 && (
         <div className="flex items-center gap-3 border-b border-border bg-muted/50 px-6 py-2.5">
-          <span className="text-sm font-medium">Zaznaczono: {selectedIdsArray.length}</span>
+          <span className="text-sm font-medium">
+            {t("inbox.selectedCount", { n: selectedIdsArray.length })}
+          </span>
           <div className="ml-auto flex gap-2">
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -96,21 +103,20 @@ export default function InvoiceSupervisorInboxPage() {
                   className="text-destructive hover:text-destructive"
                 >
                   <XCircle className="size-4" />
-                  Odrzuć zaznaczone
+                  {t("inbox.rejectSelected")}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>
-                    Odrzucić {selectedIdsArray.length} propozycji?
+                    {t("inbox.rejectConfirmTitle", { n: selectedIdsArray.length })}
                   </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Ta akcja nie wyśle żadnej wiadomości i można ją cofnąć wygenerowaniem propozycji
-                    ponownie.
+                    {t("inbox.rejectConfirmDescription")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Anuluj</AlertDialogCancel>
+                  <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => {
                       bulkReject.mutate(selectedIdsArray, {
@@ -118,7 +124,7 @@ export default function InvoiceSupervisorInboxPage() {
                       })
                     }}
                   >
-                    Odrzuć
+                    {t("inbox.reject")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -127,21 +133,20 @@ export default function InvoiceSupervisorInboxPage() {
               <AlertDialogTrigger asChild>
                 <Button size="sm">
                   <CheckCircle2 className="size-4" />
-                  Zatwierdź zaznaczone
+                  {t("inbox.approveSelected")}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>
-                    Zatwierdzić {selectedIdsArray.length} propozycji?
+                    {t("inbox.approveConfirmTitle", { n: selectedIdsArray.length })}
                   </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Wysyłka trafi do kolejki i zostanie zrealizowana automatycznie. Wezwania do
-                    zapłaty w zaznaczeniu zostaną pominięte — wymagają pojedynczej akceptacji.
+                    {t("inbox.approveConfirmDescription")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Anuluj</AlertDialogCancel>
+                  <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => {
                       bulkApprove.mutate(selectedIdsArray, {
@@ -149,7 +154,7 @@ export default function InvoiceSupervisorInboxPage() {
                       })
                     }}
                   >
-                    Zatwierdź
+                    {t("inbox.approve")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -165,10 +170,10 @@ export default function InvoiceSupervisorInboxPage() {
               <Checkbox
                 checked={allSelected ? true : someSelected ? "indeterminate" : false}
                 onCheckedChange={(checked) => toggleSelectAll(checked === true)}
-                aria-label="Zaznacz wszystkie"
+                aria-label={t("inbox.selectAllAria")}
               />
               <span className="text-muted-foreground">
-                {allSelected ? "Odznacz wszystkie" : "Zaznacz wszystkie"}
+                {allSelected ? t("inbox.deselectAll") : t("inbox.selectAll")}
               </span>
             </label>
           )}
@@ -182,8 +187,8 @@ export default function InvoiceSupervisorInboxPage() {
             ) : isError ? (
               <div className="p-4">
                 <ErrorState
-                  title="Nie udało się wczytać propozycji"
-                  message="Sprawdź połączenie z backendem i spróbuj ponownie."
+                  title={t("inbox.loadErrorTitle")}
+                  message={t("errors.backendMessage")}
                   onRetry={() => refetch()}
                 />
               </div>
@@ -201,7 +206,7 @@ export default function InvoiceSupervisorInboxPage() {
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center text-muted-foreground">
                 <InboxIcon className="size-10" />
-                <p className="text-sm">Brak oczekujących propozycji. Wszystko na bieżąco.</p>
+                <p className="text-sm">{t("inbox.empty")}</p>
               </div>
             )}
           </div>

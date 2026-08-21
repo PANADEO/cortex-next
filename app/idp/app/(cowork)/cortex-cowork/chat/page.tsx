@@ -15,8 +15,10 @@ import {
 import { ErrorState } from "@cortex/ui"
 import { useSearchParams } from "next/navigation"
 import { Suspense } from "react"
+import { useTranslation } from "react-i18next"
 
 function CortexCoworkChat() {
+  const { t } = useTranslation("cortex-cowork")
   const searchParams = useSearchParams()
   const projectId = searchParams.get("project") ?? DEFAULT_COWORK_PROJECT_ID
   const { projects } = useCoworkProjectTiles()
@@ -35,11 +37,7 @@ function CortexCoworkChat() {
   if (error) {
     return (
       <div className="p-8">
-        <ErrorState
-          title="Nie udało się wystartować sesji sandboxa"
-          message={error.message}
-          onRetry={retry}
-        />
+        <ErrorState title={t("chat.sessionErrorTitle")} message={error.message} onRetry={retry} />
       </div>
     )
   }

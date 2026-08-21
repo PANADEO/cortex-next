@@ -24,15 +24,16 @@ import {
   PageHeader,
 } from "@cortex/ui"
 import { Mail } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 // Notification log status isn't in the shared domain types (kept generic
 // there as `string`) — labels/colors are page-local, same convention as
 // INVOICE_SUPERVISOR_ESCALATION_STAGE_COLORS in lib/invoice-supervisor/types.ts.
-const NOTIFICATION_STATUS_LABELS: Record<string, string> = {
-  sent: "Wysłano",
-  delivered: "Dostarczono",
-  bounced: "Odrzucono",
-  failed: "Błąd",
+const NOTIFICATION_STATUS_KEYS: Record<string, string> = {
+  sent: "statuses.sent",
+  delivered: "statuses.delivered",
+  bounced: "statuses.bounced",
+  failed: "statuses.failed",
 }
 
 const NOTIFICATION_STATUS_CLASSES: Record<string, string> = {
@@ -49,45 +50,46 @@ function formatSentAt(value: string | null): string {
 }
 
 function NotificationStatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation("invoice-supervisor")
+  const labelKey = NOTIFICATION_STATUS_KEYS[status]
+
   return (
     <Badge
       variant="outline"
       className={NOTIFICATION_STATUS_CLASSES[status] ?? NOTIFICATION_STATUS_FALLBACK_CLASS}
     >
-      {NOTIFICATION_STATUS_LABELS[status] ?? status}
+      {labelKey ? t(labelKey) : status}
     </Badge>
   )
 }
 
 export default function InvoiceSupervisorNotificationsPage() {
+  const { t } = useTranslation("invoice-supervisor")
   const { data: log, isLoading, isError, refetch } = useInvoiceSupervisorNotificationLog()
   const { data: failed } = useInvoiceSupervisorFailedTasks()
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <PageHeader
-        title="Historia wysyłek"
-        description="Pełny log audytowy każdej wysłanej wiadomości (AI-005)."
-      />
+      <PageHeader title={t("notifications.title")} description={t("notifications.description")} />
 
       <div className="space-y-4 px-8 py-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Wysłane</CardTitle>
+            <CardTitle className="text-base">{t("notifications.sentCard")}</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <LoadingState variant="skeleton" rows={5} />
             ) : isError ? (
               <ErrorState
-                title="Nie udało się wczytać historii wysyłek"
-                message="Sprawdź połączenie z backendem i spróbuj ponownie."
+                title={t("notifications.loadErrorTitle")}
+                message={t("errors.backendMessage")}
                 onRetry={() => refetch()}
               />
             ) : log && log.length > 0 ? (
               <NotificationLogTable entries={log} />
             ) : (
-              <EmptyState icon={Mail} title="Brak zarejestrowanych wysyłek" />
+              <EmptyState icon={Mail} title={t("notifications.emptyTitle")} />
             )}
           </CardContent>
         </Card>
@@ -95,14 +97,11 @@ export default function InvoiceSupervisorNotificationsPage() {
         {failed && failed.length > 0 ? (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Nieudane próby wysyłki</CardTitle>
+              <CardTitle className="text-base">{t("notifications.failedCard")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <FailedTasksTable tasks={failed} />
-              <p className="text-xs text-muted-foreground">
-                Najczęstsza przyczyna: klient nie ma zapisanego adresu e-mail/telefonu. Uzupełnij
-                dane kontaktowe w sekcji Klienci, a następnie zatwierdź propozycję ponownie.
-              </p>
+              <p className="text-xs text-muted-foreground">{t("notifications.failedHint")}</p>
             </CardContent>
           </Card>
         ) : null}
@@ -112,34 +111,36 @@ export default function InvoiceSupervisorNotificationsPage() {
 }
 
 function NotificationLogTable({ entries }: { entries: InvoiceSupervisorNotificationLogEntry[] }) {
+  const { t } = useTranslation("invoice-supervisor")
+
   return (
     <div className="overflow-x-auto rounded-md border border-border">
       <table className="w-full text-sm">
         <thead className="bg-muted/40">
           <tr className="border-b border-border">
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-              Data wysyłki
+              {t("notifications.colSentAt")}
             </th>
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-              Faktura
+              {t("notifications.colInvoice")}
             </th>
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-              Klient
+              {t("notifications.colClient")}
             </th>
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-              Kanał
+              {t("notifications.colChannel")}
             </th>
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-              Adresat
+              {t("notifications.colRecipient")}
             </th>
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-              Dostawca
+              {t("notifications.colProvider")}
             </th>
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-              Status
+              {t("notifications.colStatus")}
             </th>
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-              ID wiadomości
+              {t("notifications.colMessageId")}
             </th>
           </tr>
         </thead>
@@ -179,25 +180,27 @@ function NotificationLogTable({ entries }: { entries: InvoiceSupervisorNotificat
 }
 
 function FailedTasksTable({ tasks }: { tasks: InvoiceSupervisorFailedTask[] }) {
+  const { t } = useTranslation("invoice-supervisor")
+
   return (
     <div className="overflow-x-auto rounded-md border border-border">
       <table className="w-full text-sm">
         <thead className="bg-muted/40">
           <tr className="border-b border-border">
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-              Data błędu
+              {t("notifications.colErrorAt")}
             </th>
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-              Faktura
+              {t("notifications.colInvoice")}
             </th>
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-              Kanał
+              {t("notifications.colChannel")}
             </th>
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-              Błąd
+              {t("notifications.colError")}
             </th>
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-              Liczba prób
+              {t("notifications.colRetries")}
             </th>
           </tr>
         </thead>

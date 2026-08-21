@@ -11,6 +11,7 @@
 
 import { Button, Checkbox, Input } from "@cortex/ui"
 import { Plus, X } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 export interface TopicRow {
   id: string
@@ -30,6 +31,8 @@ interface TopicTableProps {
 }
 
 export function TopicTable({ rows, onChange }: TopicTableProps) {
+  const { t } = useTranslation("content-guru")
+
   function updateRow(id: string, patch: Partial<TopicRow>) {
     onChange(rows.map((row) => (row.id === id ? { ...row, ...patch } : row)))
   }
@@ -49,12 +52,12 @@ export function TopicTable({ rows, onChange }: TopicTableProps) {
           <Checkbox
             checked={row.active}
             onCheckedChange={(checked) => updateRow(row.id, { active: checked === true })}
-            aria-label={`Temat ${index + 1} aktywny`}
+            aria-label={t("topicTable.a11y.active", { index: index + 1 })}
           />
           <Input
             value={row.topic}
             maxLength={TOPIC_MAX}
-            placeholder={`Temat ${index + 1}`}
+            placeholder={t("topicTable.topicPlaceholder", { index: index + 1 })}
             onChange={(event) => updateRow(row.id, { topic: event.target.value })}
             className="flex-1"
           />
@@ -64,7 +67,7 @@ export function TopicTable({ rows, onChange }: TopicTableProps) {
             size="icon"
             onClick={() => removeRow(row.id)}
             disabled={rows.length <= 1}
-            aria-label={`Usuń temat ${index + 1}`}
+            aria-label={t("topicTable.a11y.remove", { index: index + 1 })}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -72,7 +75,7 @@ export function TopicTable({ rows, onChange }: TopicTableProps) {
       ))}
       <Button type="button" variant="outline" size="sm" onClick={addRow} className="self-start">
         <Plus className="mr-2 h-4 w-4" />
-        Dodaj temat
+        {t("topicTable.addButton")}
       </Button>
     </div>
   )

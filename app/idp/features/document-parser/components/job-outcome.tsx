@@ -4,6 +4,7 @@ import { Badge, Button, ErrorState, LoadingState } from "@cortex/ui"
 import { formatFileSizeBytes } from "@cortex/utils"
 import { Download, TriangleAlert } from "lucide-react"
 import Link from "next/link"
+import { useTranslation } from "react-i18next"
 import { errorMessageFor, STATUS_BADGE_VARIANT, STATUS_LABELS } from "../status"
 import type { DocumentParserJob } from "../types"
 import { DocumentParserMarkdown } from "./markdown"
@@ -33,6 +34,8 @@ interface JobOutcomeProps {
 }
 
 export function JobOutcome({ job, detailsHref, previewOnly = false }: JobOutcomeProps) {
+  const { t } = useTranslation("document-parser")
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -45,11 +48,7 @@ export function JobOutcome({ job, detailsHref, previewOnly = false }: JobOutcome
 
       {(job.status === "queued" || job.status === "processing") && (
         <LoadingState
-          label={
-            job.status === "queued"
-              ? "Zadanie czeka w kolejce…"
-              : "Trwa przetwarzanie dokumentu — konwersja, render stron i ekstrakcja przez model wizyjny…"
-          }
+          label={job.status === "queued" ? t("outcome.queued") : t("outcome.processing")}
         />
       )}
 
@@ -65,8 +64,10 @@ export function JobOutcome({ job, detailsHref, previewOnly = false }: JobOutcome
             <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
               <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span>
-                Dokument ma więcej stron niż limit przetwarzania — wynik obejmuje tylko pierwsze{" "}
-                {job.pageCount} {job.pageCount === 1 ? "stronę" : "stron"}.
+                {t("outcome.truncated", {
+                  pages: job.pageCount,
+                  unit: t(job.pageCount === 1 ? "outcome.pageOne" : "outcome.pageMany"),
+                })}
               </span>
             </div>
           ) : null}
@@ -83,22 +84,22 @@ export function JobOutcome({ job, detailsHref, previewOnly = false }: JobOutcome
 
           <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground sm:grid-cols-4">
             <div>
-              <dt className="font-medium text-foreground">Strony</dt>
+              <dt className="font-medium text-foreground">{t("outcome.fields.pages")}</dt>
               <dd>{job.pageCount}</dd>
             </div>
             <div>
-              <dt className="font-medium text-foreground">Obrazy</dt>
+              <dt className="font-medium text-foreground">{t("outcome.fields.images")}</dt>
               <dd>{job.imageCount}</dd>
             </div>
             <div>
-              <dt className="font-medium text-foreground">Model</dt>
+              <dt className="font-medium text-foreground">{t("outcome.fields.model")}</dt>
               {/* `|| "—"`, nie `??`: backend zwraca "" (nie null), gdy żaden
                   model wizyjny nie został rozwiązany (DOCUMENT_PARSER_VISION_MODEL
                   nieustawione, D7/Q3) — potwierdzone realnym round-tripem. */}
               <dd className="truncate">{job.model || "—"}</dd>
             </div>
             <div>
-              <dt className="font-medium text-foreground">Czas przetwarzania</dt>
+              <dt className="font-medium text-foreground">{t("outcome.fields.elapsed")}</dt>
               <dd>{job.elapsedSeconds != null ? `${job.elapsedSeconds.toFixed(1)} s` : "—"}</dd>
             </div>
           </dl>
@@ -106,11 +107,11 @@ export function JobOutcome({ job, detailsHref, previewOnly = false }: JobOutcome
           <div className="flex flex-wrap gap-2">
             <Button type="button" size="sm" onClick={() => downloadMarkdown(job)}>
               <Download className="mr-1.5 h-3.5 w-3.5" />
-              Pobierz Markdown
+              {t("outcome.downloadButton")}
             </Button>
             {detailsHref ? (
               <Button type="button" size="sm" variant="outline" asChild>
-                <Link href={detailsHref}>Zobacz pełny wynik</Link>
+                <Link href={detailsHref}>{t("outcome.viewFullButton")}</Link>
               </Button>
             ) : null}
           </div>

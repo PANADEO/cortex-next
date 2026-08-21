@@ -36,6 +36,7 @@ import {
 } from "@cortex/ui"
 import { Sparkles } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { useGenerateTopics } from "../hooks"
 
 const TRANSCRIPT_MAX = 20000
@@ -55,6 +56,7 @@ export function TopicGeneratorDialog({
   allowMultiple,
   onInsert,
 }: TopicGeneratorDialogProps) {
+  const { t } = useTranslation(["content-guru", "common"])
   const [transcript, setTranscript] = useState("")
   const [topicCount, setTopicCount] = useState(TOPIC_COUNT_DEFAULT)
   const [candidates, setCandidates] = useState<string[]>([])
@@ -85,7 +87,7 @@ export function TopicGeneratorDialog({
       setCandidates(response.topics)
       setSelected(new Set())
     } catch (error) {
-      toastApiError(error, "Nie udało się wygenerować tematów")
+      toastApiError(error, t("topicGenerator.errors.generateFailed"))
     }
   }
 
@@ -111,17 +113,19 @@ export function TopicGeneratorDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>Generator tematów</DialogTitle>
+          <DialogTitle>{t("topicGenerator.title")}</DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="topic-generator-transcript">Transkrypcja</Label>
+            <Label htmlFor="topic-generator-transcript">
+              {t("topicGenerator.transcriptLabel")}
+            </Label>
             <Textarea
               id="topic-generator-transcript"
               rows={8}
               maxLength={TRANSCRIPT_MAX}
-              placeholder="Wklej transkrypcję rozmowy lub notatkę, z której model wyciągnie tematy"
+              placeholder={t("topicGenerator.transcriptPlaceholder")}
               value={transcript}
               onChange={(event) => setTranscript(event.target.value)}
             />
@@ -129,7 +133,7 @@ export function TopicGeneratorDialog({
 
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="topic-generator-count">Orientacyjna liczba tematów</Label>
+              <Label htmlFor="topic-generator-count">{t("topicGenerator.countLabel")}</Label>
               <span className="text-xs text-muted-foreground">{topicCount}</span>
             </div>
             <Slider
@@ -149,7 +153,9 @@ export function TopicGeneratorDialog({
             disabled={!transcript.trim() || !model || generateTopics.isPending}
           >
             <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-            {generateTopics.isPending ? "Generowanie…" : "Generuj tematy"}
+            {generateTopics.isPending
+              ? t("topicGenerator.generating")
+              : t("topicGenerator.generateButton")}
           </Button>
 
           {generateTopics.isPending ? (
@@ -178,10 +184,10 @@ export function TopicGeneratorDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
-            Anuluj
+            {t("common:actions.cancel")}
           </Button>
           <Button onClick={handleInsert} disabled={selected.size === 0}>
-            Wstaw wybrane ({selected.size})
+            {t("topicGenerator.insertButton", { selected: selected.size })}
           </Button>
         </DialogFooter>
       </DialogContent>

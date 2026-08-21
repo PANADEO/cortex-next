@@ -22,25 +22,33 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { ChevronRight, FileSearch } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
-const STATUS_FILTER_OPTIONS: Array<{ value: JobStatus | "all"; label: string }> = [
-  { value: "all", label: "Wszystkie statusy" },
-  { value: "queued", label: STATUS_LABELS.queued },
-  { value: "processing", label: STATUS_LABELS.processing },
-  { value: "done", label: STATUS_LABELS.done },
-  { value: "error", label: STATUS_LABELS.error },
-]
+// Etykieta opcji "wszystkie" przechodzi przez `t()`, więc lista powstaje w
+// komponencie. Nazwy samych stanów wciąż biorą się ze `status.ts` — ten plik
+// nie jest częścią tej migracji (patrz raport).
+const STATUS_FILTER_VALUES = ["all", "queued", "processing", "done", "error"] as const
 
 // Referencja stabilna między renderami — inaczej `jobsQuery.data ?? []`
 // tworzyłby nową tablicę za każdym razem, unieważniając poniższy useMemo.
 const EMPTY_JOBS: DocumentParserJob[] = []
 
 export default function DocumentParserHistoryPage() {
+  const { t } = useTranslation("document-parser")
   const router = useRouter()
   const jobsQuery = useMyJobs()
   const [statusFilter, setStatusFilter] = useState<JobStatus | "all">("all")
 
   const jobs = jobsQuery.data ?? EMPTY_JOBS
+
+  const statusFilterOptions: Array<{ value: JobStatus | "all"; label: string }> = useMemo(
+    () =>
+      STATUS_FILTER_VALUES.map((value) => ({
+        value,
+        label: value === "all" ? t("history.filters.allStatuses") : STATUS_LABELS[value],
+      })),
+    [t],
+  )
   const filtered = useMemo(
     () => (statusFilter === "all" ? jobs : jobs.filter((job) => job.status === statusFilter)),
     [jobs, statusFilter],
@@ -48,10 +56,10 @@ export default function DocumentParserHistoryPage() {
 
   const columns: ColumnDef<DocumentParserJob, unknown>[] = useMemo(
     () => [
-      { accessorKey: "fileName", header: "Plik", enableSorting: true },
+      { accessorKey: "fileName", header: t("history.columns.fileName"), enableSorting: true },
       {
         accessorKey: "status",
-        header: "Status",
+        header: t("history.columns.status"),
         enableSorting: true,
         cell: ({ row }) => (
           <Badge variant={STATUS_BADGE_VARIANT[row.original.status]}>
@@ -61,26 +69,26 @@ export default function DocumentParserHistoryPage() {
       },
       {
         accessorKey: "fileSizeBytes",
-        header: "Rozmiar",
+        header: t("history.columns.fileSize"),
         enableSorting: true,
         cell: ({ row }) => formatFileSizeBytes(row.original.fileSizeBytes),
       },
       {
         accessorKey: "pageCount",
-        header: "Strony",
+        header: t("history.columns.pages"),
         enableSorting: true,
         cell: ({ row }) => (row.original.status === "done" ? row.original.pageCount : "—"),
       },
       {
         accessorKey: "elapsedSeconds",
-        header: "Czas przetwarzania",
+        header: t("history.columns.elapsed"),
         enableSorting: true,
         cell: ({ row }) =>
           row.original.elapsedSeconds != null ? `${row.original.elapsedSeconds.toFixed(1)} s` : "—",
       },
       {
         accessorKey: "createdAt",
-        header: "Data",
+        header: t("history.columns.createdAt"),
         enableSorting: true,
         cell: ({ row }) => formatAbsolute(row.original.createdAt),
       },
@@ -92,7 +100,7 @@ export default function DocumentParserHistoryPage() {
             <Button
               size="icon"
               variant="ghost"
-              aria-label={`Zobacz szczegóły: ${row.original.fileName}`}
+              aria-label={t("history.a11y.viewDetails", { fileName: row.original.fileName })}
               onClick={() => router.push(`/document-parser/history/${row.original.id}`)}
             >
               <ChevronRight className="h-4 w-4" />
@@ -101,20 +109,17 @@ export default function DocumentParserHistoryPage() {
         ),
       },
     ],
-    [router],
+    [router, t],
   )
 
   return (
     <>
-      <PageHeader
-        title="Historia"
-        description="Zadania ekstrakcji dokumentów, które wgrałeś — status, metadane i wynik."
-      />
+      <PageHeader title={t("history.title")} description={t("history.description")} />
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         <div className="flex items-center gap-2">
           <Label htmlFor="document-parser-status-filter" className="text-xs text-muted-foreground">
-            Status
+            {t("history.filters.statusLabel")}
           </Label>
           <Select
             value={statusFilter}
@@ -124,7 +129,7 @@ export default function DocumentParserHistoryPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {STATUS_FILTER_OPTIONS.map((option) => (
+              {statusFilterOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
@@ -134,20 +139,20 @@ export default function DocumentParserHistoryPage() {
         </div>
 
         {jobsQuery.isLoading ? (
-          <LoadingState label="Wczytywanie historii…" />
+          <LoadingState label={t("history.loading")} />
         ) : (
           <CortexDataGrid
             columns={columns}
             data={filtered}
             bordered
             searchable
-            searchPlaceholder="Szukaj po nazwie pliku…"
+            searchPlaceholder={t("history.searchPlaceholder")}
             getRowId={(row) => row.id}
             emptyState={
               <EmptyState
                 icon={FileSearch}
-                title="Brak zadań"
-                description="Wgraj pierwszy dokument na ekranie uploadu — pojawi się tutaj po zakończeniu przetwarzania."
+                title={t("history.empty.title")}
+                description={t("history.empty.description")}
               />
             }
           />

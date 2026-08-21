@@ -39,6 +39,7 @@ import { formatAbsolute } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Building2, Pencil, Plus, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 const NEW_PROFILE_SENTINEL = "__new__"
@@ -68,6 +69,7 @@ const EMPTY_DRAFT: ClientProfileDraft = {
 }
 
 export default function ContentGuruClientProfilesPage() {
+  const { t } = useTranslation(["content-guru", "common"])
   const profilesQuery = useMyClientProfiles()
   const createProfile = useCreateClientProfile()
   const updateProfile = useUpdateClientProfile()
@@ -89,9 +91,9 @@ export default function ContentGuruClientProfilesPage() {
     () =>
       clientProfileToMarkdown({
         ...draft,
-        profileName: draft.profileName || "(nienazwany profil)",
+        profileName: draft.profileName || t("clientProfiles.unnamedProfile"),
       }),
-    [draft],
+    [draft, t],
   )
 
   function openNew() {
@@ -120,14 +122,14 @@ export default function ContentGuruClientProfilesPage() {
     try {
       if (isNew) {
         await createProfile.mutateAsync(draft)
-        toast.success(`Utworzono profil "${draft.profileName}"`)
+        toast.success(t("clientProfiles.toasts.created", { name: draft.profileName }))
       } else if (editedId) {
         await updateProfile.mutateAsync({ id: editedId, body: draft })
-        toast.success("Zapisano zmiany w profilu")
+        toast.success(t("clientProfiles.toasts.saved"))
       }
       closeEditor()
     } catch (error) {
-      toastApiError(error, "Nie udało się zapisać profilu klienta")
+      toastApiError(error, t("clientProfiles.errors.saveFailed"))
     }
   }
 
@@ -135,19 +137,19 @@ export default function ContentGuruClientProfilesPage() {
     if (!profileToDelete) return
     try {
       await deleteProfile.mutateAsync(profileToDelete.id)
-      toast.success(`Usunięto profil "${profileToDelete.profileName}"`)
+      toast.success(t("clientProfiles.toasts.deleted", { name: profileToDelete.profileName }))
     } catch (error) {
-      toastApiError(error, "Nie udało się usunąć profilu")
+      toastApiError(error, t("clientProfiles.errors.deleteFailed"))
     } finally {
       setProfileToDelete(null)
     }
   }
 
   const columns: ColumnDef<ClientProfileDto, unknown>[] = [
-    { accessorKey: "profileName", header: "Nazwa profilu", enableSorting: true },
+    { accessorKey: "profileName", header: t("clientProfiles.columns.name"), enableSorting: true },
     {
       accessorKey: "updatedAt",
-      header: "Data edycji",
+      header: t("clientProfiles.columns.updatedAt"),
       enableSorting: true,
       cell: ({ row }) => formatAbsolute(row.original.updatedAt),
     },
@@ -160,7 +162,7 @@ export default function ContentGuruClientProfilesPage() {
             size="icon"
             variant="ghost"
             onClick={() => openEdit(row.original)}
-            aria-label={`Edytuj profil ${row.original.profileName}`}
+            aria-label={t("clientProfiles.a11y.edit", { name: row.original.profileName })}
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -168,7 +170,7 @@ export default function ContentGuruClientProfilesPage() {
             size="icon"
             variant="ghost"
             onClick={() => setProfileToDelete(row.original)}
-            aria-label={`Usuń profil ${row.original.profileName}`}
+            aria-label={t("clientProfiles.a11y.delete", { name: row.original.profileName })}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -180,32 +182,32 @@ export default function ContentGuruClientProfilesPage() {
   return (
     <>
       <PageHeader
-        title="Profile klienta"
-        description="Kontekst klienta wstrzykiwany do promptu przy generowaniu — widoczny wyłącznie dla Ciebie."
+        title={t("clientProfiles.title")}
+        description={t("clientProfiles.description")}
         actions={
           <Button size="sm" onClick={openNew}>
             <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Nowy profil
+            {t("clientProfiles.newButton")}
           </Button>
         }
       />
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         {profilesQuery.isLoading ? (
-          <LoadingState label="Wczytywanie profili…" />
+          <LoadingState label={t("clientProfiles.loading")} />
         ) : (
           <CortexDataGrid
             columns={columns}
             data={profiles}
             bordered
             searchable
-            searchPlaceholder="Szukaj po nazwie…"
+            searchPlaceholder={t("clientProfiles.searchPlaceholder")}
             getRowId={(row) => row.id}
             emptyState={
               <EmptyState
                 icon={Building2}
-                title="Brak profili klienta"
-                description="Dodaj pierwszy profil, żeby móc go wybrać na ekranie generowania."
+                title={t("clientProfiles.empty.title")}
+                description={t("clientProfiles.empty.description")}
               />
             }
           />
@@ -216,14 +218,16 @@ export default function ContentGuruClientProfilesPage() {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>
-              {isNew ? "Nowy profil klienta" : `Edycja: ${draft.profileName}`}
+              {isNew
+                ? t("clientProfiles.dialog.newTitle")
+                : t("clientProfiles.dialog.editTitle", { name: draft.profileName })}
             </DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="client-profile-name">Nazwa profilu</Label>
+                <Label htmlFor="client-profile-name">{t("clientProfiles.form.name")}</Label>
                 <Input
                   id="client-profile-name"
                   value={draft.profileName}
@@ -231,7 +235,7 @@ export default function ContentGuruClientProfilesPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="client-profile-history">Historia</Label>
+                <Label htmlFor="client-profile-history">{t("clientProfiles.form.history")}</Label>
                 <Textarea
                   id="client-profile-history"
                   rows={3}
@@ -240,7 +244,9 @@ export default function ContentGuruClientProfilesPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="client-profile-description">Opis</Label>
+                <Label htmlFor="client-profile-description">
+                  {t("clientProfiles.form.description")}
+                </Label>
                 <Textarea
                   id="client-profile-description"
                   rows={3}
@@ -249,7 +255,7 @@ export default function ContentGuruClientProfilesPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="client-profile-products">Produkty</Label>
+                <Label htmlFor="client-profile-products">{t("clientProfiles.form.products")}</Label>
                 <Textarea
                   id="client-profile-products"
                   rows={3}
@@ -258,7 +264,7 @@ export default function ContentGuruClientProfilesPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="client-profile-offer">Oferta</Label>
+                <Label htmlFor="client-profile-offer">{t("clientProfiles.form.offer")}</Label>
                 <Textarea
                   id="client-profile-offer"
                   rows={3}
@@ -267,7 +273,9 @@ export default function ContentGuruClientProfilesPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="client-profile-use-cases">Przypadki użycia</Label>
+                <Label htmlFor="client-profile-use-cases">
+                  {t("clientProfiles.form.useCases")}
+                </Label>
                 <Textarea
                   id="client-profile-use-cases"
                   rows={3}
@@ -276,7 +284,9 @@ export default function ContentGuruClientProfilesPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="client-profile-experience">Doświadczenie</Label>
+                <Label htmlFor="client-profile-experience">
+                  {t("clientProfiles.form.experience")}
+                </Label>
                 <Textarea
                   id="client-profile-experience"
                   rows={3}
@@ -287,7 +297,7 @@ export default function ContentGuruClientProfilesPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label>Podgląd — dokładnie to, co trafia do promptu</Label>
+              <Label>{t("clientProfiles.previewLabel")}</Label>
               <Card className="flex-1">
                 <CardContent className="pt-6">
                   <ContentGuruMarkdownPreview content={previewMarkdown} />
@@ -298,7 +308,7 @@ export default function ContentGuruClientProfilesPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={closeEditor}>
-              Anuluj
+              {t("common:actions.cancel")}
             </Button>
             <Button
               onClick={handleSave}
@@ -306,7 +316,7 @@ export default function ContentGuruClientProfilesPage() {
                 !draft.profileName.trim() || createProfile.isPending || updateProfile.isPending
               }
             >
-              Zapisz profil
+              {t("clientProfiles.saveButton")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -318,16 +328,17 @@ export default function ContentGuruClientProfilesPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Usunąć profil {profileToDelete?.profileName}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("clientProfiles.deleteDialog.title", { name: profileToDelete?.profileName ?? "" })}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Treści wygenerowane z jego użyciem w przeszłości zostają w archiwum bez zmian. Tej
-              operacji nie da się cofnąć.
+              {t("clientProfiles.deleteDialog.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleteProfile.isPending}>
-              Usuń
+              {t("common:actions.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

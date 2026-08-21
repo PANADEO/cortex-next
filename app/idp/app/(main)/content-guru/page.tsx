@@ -51,6 +51,7 @@ import {
 } from "@cortex/ui"
 import { Sparkles } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 // Referencje stabilne między renderami — inaczej `query.data ?? []` tworzyłby
@@ -71,6 +72,7 @@ const NO_PROFILE = "__none__"
 type GenerationTab = "single" | GenerationJobMode
 
 export default function ContentGuruPage() {
+  const { t } = useTranslation("content-guru")
   const configQuery = useContentGuruConfig()
   const templatesQuery = useTemplates()
   const clientProfilesQuery = useMyClientProfiles()
@@ -220,7 +222,7 @@ export default function ContentGuruPage() {
       })
       setKeywordPhrase(response.keywordPhrase)
     } catch (error) {
-      toastApiError(error, "Nie udało się wygenerować frazy kluczowej")
+      toastApiError(error, t("generate.errors.keywordPhraseFailed"))
     }
   }
 
@@ -236,7 +238,7 @@ export default function ContentGuruPage() {
       })
       setMetaDescription(response.metaDescription)
     } catch (error) {
-      toastApiError(error, "Nie udało się wygenerować meta description")
+      toastApiError(error, t("generate.errors.metaDescriptionFailed"))
     }
   }
 
@@ -270,12 +272,12 @@ export default function ContentGuruPage() {
       })
       setResult(response)
       if (response.status === "done-with-warnings") {
-        toast.warning("Treść wygenerowana — zawiera zakazane frazy, sprawdź podświetlenia")
+        toast.warning(t("generate.toasts.doneWithWarnings"))
       } else {
-        toast.success("Treść wygenerowana i zapisana w archiwum")
+        toast.success(t("generate.toasts.done"))
       }
     } catch (error) {
-      toastApiError(error, "Nie udało się wygenerować treści")
+      toastApiError(error, t("generate.errors.generateFailed"))
     }
   }
 
@@ -297,9 +299,9 @@ export default function ContentGuruPage() {
       })
       setActiveJobId(response.jobId)
       setActiveJobMode(mode)
-      toast.success("Generowanie uruchomione — postęp pojawi się poniżej.")
+      toast.success(t("generate.toasts.jobStarted"))
     } catch (error) {
-      toastApiError(error, "Nie udało się uruchomić generowania")
+      toastApiError(error, t("generate.errors.jobStartFailed"))
     }
   }
 
@@ -307,10 +309,7 @@ export default function ContentGuruPage() {
 
   return (
     <>
-      <PageHeader
-        title="Content Guru"
-        description="Generowanie roboczych treści marketingowych, produktowych i rekrutacyjnych — z realną walidacją zakazanych fraz."
-      />
+      <PageHeader title="Content Guru" description={t("generate.description")} />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
         <Tabs
@@ -319,9 +318,9 @@ export default function ContentGuruPage() {
           className="w-full"
         >
           <TabsList>
-            <TabsTrigger value="single">Pojedyncza</TabsTrigger>
-            <TabsTrigger value="batch">Kilka</TabsTrigger>
-            <TabsTrigger value="package">Pakiet</TabsTrigger>
+            <TabsTrigger value="single">{t("modes.single")}</TabsTrigger>
+            <TabsTrigger value="batch">{t("modes.batch")}</TabsTrigger>
+            <TabsTrigger value="package">{t("modes.package")}</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -330,7 +329,9 @@ export default function ContentGuruPage() {
             <CardContent className="flex flex-col gap-4 pt-6">
               {activeTab === "package" ? (
                 <div className="flex flex-col gap-2">
-                  <Label>Szablony ({packageTemplateIds.length} wybrane)</Label>
+                  <Label>
+                    {t("generate.packageTemplatesLabel", { selected: packageTemplateIds.length })}
+                  </Label>
                   {templatesQuery.isPending ? (
                     <Skeleton className="h-32 w-full" />
                   ) : (
@@ -355,13 +356,15 @@ export default function ContentGuruPage() {
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="content-guru-template-category">Kategoria szablonu</Label>
+                    <Label htmlFor="content-guru-template-category">
+                      {t("generate.templateCategoryLabel")}
+                    </Label>
                     {templatesQuery.isPending ? (
                       <Skeleton className="h-9 w-full" />
                     ) : (
                       <Select value={templateCategory} onValueChange={setTemplateCategory}>
                         <SelectTrigger id="content-guru-template-category">
-                          <SelectValue placeholder="Wybierz kategorię" />
+                          <SelectValue placeholder={t("generate.templateCategoryPlaceholder")} />
                         </SelectTrigger>
                         <SelectContent>
                           {templateCategories.map((category) => (
@@ -374,14 +377,14 @@ export default function ContentGuruPage() {
                     )}
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="content-guru-template">Szablon</Label>
+                    <Label htmlFor="content-guru-template">{t("generate.templateLabel")}</Label>
                     <Select
                       value={templateId}
                       onValueChange={setTemplateId}
                       disabled={!templateCategory}
                     >
                       <SelectTrigger id="content-guru-template">
-                        <SelectValue placeholder="Wybierz szablon" />
+                        <SelectValue placeholder={t("generate.templatePlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
                         {templatesInCategory.map((template) => (
@@ -396,9 +399,9 @@ export default function ContentGuruPage() {
               )}
               {!templatesQuery.isPending && templates.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  Brak szablonów — dodaj pierwszy na ekranie{" "}
+                  {t("generate.noTemplatesHint")}{" "}
                   <a href="/content-guru/templates" className="underline underline-offset-2">
-                    Szablony
+                    {t("generate.noTemplatesLink")}
                   </a>
                   .
                 </p>
@@ -407,7 +410,7 @@ export default function ContentGuruPage() {
               {activeTab === "single" ? (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="content-guru-topic">Temat</Label>
+                    <Label htmlFor="content-guru-topic">{t("generate.topicLabel")}</Label>
                     <span className="text-xs text-muted-foreground">
                       {topic.length}/{TOPIC_MAX}
                     </span>
@@ -417,7 +420,7 @@ export default function ContentGuruPage() {
                       id="content-guru-topic"
                       value={topic}
                       maxLength={TOPIC_MAX}
-                      placeholder="Np. otwieramy rekrutację na stanowisko Senior .NET Developer"
+                      placeholder={t("generate.topicPlaceholder")}
                       onChange={(event) => setTopic(event.target.value)}
                       className="flex-1"
                     />
@@ -425,26 +428,26 @@ export default function ContentGuruPage() {
                       type="button"
                       variant="outline"
                       onClick={() => setTopicGeneratorOpen(true)}
-                      title="Generator tematów"
+                      title={t("topicGenerator.title")}
                     >
                       <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                      Generator tematów
+                      {t("topicGenerator.title")}
                     </Button>
                   </div>
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <Label>Tematy</Label>
+                    <Label>{t("generate.topicsLabel")}</Label>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => setTopicGeneratorOpen(true)}
-                      title="Generator tematów"
+                      title={t("topicGenerator.title")}
                     >
                       <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                      Generator tematów
+                      {t("topicGenerator.title")}
                     </Button>
                   </div>
                   <TopicTable rows={topicRows} onChange={setTopicRows} />
@@ -456,18 +459,36 @@ export default function ContentGuruPage() {
                           : "text-xs text-muted-foreground"
                       }
                     >
-                      {activeTopics.length} {activeTopics.length === 1 ? "temat" : "tematy"} ×{" "}
-                      {packageTemplateIds.length}{" "}
-                      {packageTemplateIds.length === 1 ? "szablon" : "szablony"} ={" "}
-                      {packageCombinations} {packageCombinations === 1 ? "treść" : "treści"}
+                      {activeTopics.length}{" "}
+                      {t(
+                        activeTopics.length === 1
+                          ? "generate.package.topicOne"
+                          : "generate.package.topicMany",
+                      )}{" "}
+                      × {packageTemplateIds.length}{" "}
+                      {t(
+                        packageTemplateIds.length === 1
+                          ? "generate.package.templateOne"
+                          : "generate.package.templateMany",
+                      )}{" "}
+                      = {packageCombinations}{" "}
+                      {t(
+                        packageCombinations === 1
+                          ? "generate.package.contentOne"
+                          : "generate.package.contentMany",
+                      )}
                       {packageOverLimit
-                        ? ` — przekroczono limit ${MAX_COMBINATIONS} kombinacji. Zmniejsz liczbę tematów lub szablonów.`
+                        ? ` — ${t("generate.package.overLimit", { max: MAX_COMBINATIONS })}`
                         : ""}
                     </p>
                   ) : (
                     <p className="text-xs text-muted-foreground">
                       {activeTopics.length}{" "}
-                      {activeTopics.length === 1 ? "aktywny temat" : "aktywnych tematów"}
+                      {t(
+                        activeTopics.length === 1
+                          ? "generate.batch.activeTopicsOne"
+                          : "generate.batch.activeTopicsMany",
+                      )}
                     </p>
                   )}
                 </div>
@@ -475,7 +496,7 @@ export default function ContentGuruPage() {
 
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="content-guru-audience">Grupa docelowa</Label>
+                  <Label htmlFor="content-guru-audience">{t("generate.audienceLabel")}</Label>
                   <span className="text-xs text-muted-foreground">
                     {targetAudience.length}/{AUDIENCE_MAX}
                   </span>
@@ -484,14 +505,16 @@ export default function ContentGuruPage() {
                   id="content-guru-audience"
                   value={targetAudience}
                   maxLength={AUDIENCE_MAX}
-                  placeholder="Np. kandydaci z doświadczeniem w fintech"
+                  placeholder={t("generate.audiencePlaceholder")}
                   onChange={(event) => setTargetAudience(event.target.value)}
                 />
               </div>
 
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="content-guru-additional">Dodatkowe informacje</Label>
+                  <Label htmlFor="content-guru-additional">
+                    {t("generate.additionalInfoLabel")}
+                  </Label>
                   <span className="text-xs text-muted-foreground">
                     {additionalInfo.length}/{ADDITIONAL_INFO_MAX}
                   </span>
@@ -501,23 +524,24 @@ export default function ContentGuruPage() {
                   value={additionalInfo}
                   maxLength={ADDITIONAL_INFO_MAX}
                   rows={4}
-                  placeholder="Kontekst, który model powinien uwzględnić"
+                  placeholder={t("generate.additionalInfoPlaceholder")}
                   onChange={(event) => setAdditionalInfo(event.target.value)}
                 />
               </div>
 
               <div className="flex flex-col gap-3 rounded-md border border-border p-3">
                 <Label className="text-xs text-muted-foreground">
-                  SEO i metadane {activeTab !== "single" ? "(używane w trybie Pojedyncza)" : ""}
+                  {t("generate.seo.sectionLabel")}{" "}
+                  {activeTab !== "single" ? t("generate.seo.singleOnlyHint") : ""}
                 </Label>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="content-guru-keyword">Fraza kluczowa SEO</Label>
+                  <Label htmlFor="content-guru-keyword">{t("generate.seo.keywordLabel")}</Label>
                   <div className="flex gap-2">
                     <Input
                       id="content-guru-keyword"
                       value={keywordPhrase}
                       maxLength={200}
-                      placeholder="Np. automatyzacja procesów finansowych"
+                      placeholder={t("generate.seo.keywordPlaceholder")}
                       onChange={(event) => setKeywordPhrase(event.target.value)}
                       className="flex-1"
                     />
@@ -527,8 +551,8 @@ export default function ContentGuruPage() {
                       size="icon"
                       onClick={handleGenerateKeywordPhrase}
                       disabled={!seoSourceTopic.trim() || !model || generateKeywordPhrase.isPending}
-                      title="Generuj frazę kluczową"
-                      aria-label="Generuj frazę kluczową"
+                      title={t("generate.seo.keywordGenerate")}
+                      aria-label={t("generate.seo.keywordGenerate")}
                     >
                       <Sparkles className="h-4 w-4" />
                     </Button>
@@ -536,7 +560,7 @@ export default function ContentGuruPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="content-guru-meta">Meta description</Label>
+                    <Label htmlFor="content-guru-meta">{t("generate.seo.metaLabel")}</Label>
                     <span
                       className={
                         metaDescription.length > META_DESCRIPTION_MAX_CHARS
@@ -553,7 +577,7 @@ export default function ContentGuruPage() {
                       value={metaDescription}
                       maxLength={META_DESCRIPTION_MAX_CHARS}
                       rows={2}
-                      placeholder="Krótki opis zachęcający do kliknięcia"
+                      placeholder={t("generate.seo.metaPlaceholder")}
                       onChange={(event) => setMetaDescription(event.target.value)}
                       className="flex-1"
                     />
@@ -565,8 +589,8 @@ export default function ContentGuruPage() {
                       disabled={
                         !seoSourceTopic.trim() || !model || generateMetaDescriptionMini.isPending
                       }
-                      title="Generuj meta description"
-                      aria-label="Generuj meta description"
+                      title={t("generate.seo.metaGenerate")}
+                      aria-label={t("generate.seo.metaGenerate")}
                     >
                       <Sparkles className="h-4 w-4" />
                     </Button>
@@ -575,13 +599,13 @@ export default function ContentGuruPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="content-guru-model">Model</Label>
+                <Label htmlFor="content-guru-model">{t("generate.modelLabel")}</Label>
                 {configQuery.isPending ? (
                   <Skeleton className="h-9 w-full" />
                 ) : (
                   <Select value={model} onValueChange={setModel}>
                     <SelectTrigger id="content-guru-model">
-                      <SelectValue placeholder="Wybierz model" />
+                      <SelectValue placeholder={t("generate.modelPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       {models.map((option) => (
@@ -596,13 +620,15 @@ export default function ContentGuruPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="content-guru-client-profile">Profil klienta (opcjonalnie)</Label>
+                  <Label htmlFor="content-guru-client-profile">
+                    {t("generate.clientProfileLabel")}
+                  </Label>
                   <Select value={clientProfileId} onValueChange={setClientProfileId}>
                     <SelectTrigger id="content-guru-client-profile">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NO_PROFILE}>Brak profilu</SelectItem>
+                      <SelectItem value={NO_PROFILE}>{t("generate.noProfileOption")}</SelectItem>
                       {clientProfiles.map((profile) => (
                         <SelectItem key={profile.id} value={profile.id}>
                           {profile.profileName}
@@ -612,13 +638,15 @@ export default function ContentGuruPage() {
                   </Select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="content-guru-market-profile">Profil rynku (opcjonalnie)</Label>
+                  <Label htmlFor="content-guru-market-profile">
+                    {t("generate.marketProfileLabel")}
+                  </Label>
                   <Select value={marketProfileId} onValueChange={setMarketProfileId}>
                     <SelectTrigger id="content-guru-market-profile">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NO_PROFILE}>Brak profilu</SelectItem>
+                      <SelectItem value={NO_PROFILE}>{t("generate.noProfileOption")}</SelectItem>
                       {marketProfiles.map((profile) => (
                         <SelectItem key={profile.id} value={profile.id}>
                           {profile.profileName}
@@ -632,7 +660,9 @@ export default function ContentGuruPage() {
               {activeTab === "single" ? (
                 <Button type="button" onClick={handleGenerateSingle} disabled={!canSubmitSingle}>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  {generate.isPending ? "Generowanie..." : "Generuj"}
+                  {generate.isPending
+                    ? t("generate.generatingButton")
+                    : t("generate.generateButton")}
                 </Button>
               ) : (
                 <Button
@@ -641,7 +671,9 @@ export default function ContentGuruPage() {
                   disabled={activeTab === "batch" ? !canSubmitBatch : !canSubmitPackage}
                 >
                   <Sparkles className="mr-2 h-4 w-4" />
-                  {createJob.isPending ? "Uruchamianie..." : "Generuj"}
+                  {createJob.isPending
+                    ? t("generate.startingButton")
+                    : t("generate.generateButton")}
                 </Button>
               )}
             </CardContent>
@@ -658,8 +690,8 @@ export default function ContentGuruPage() {
                 ) : !result ? (
                   <EmptyState
                     icon={Sparkles}
-                    title="Brak wygenerowanej treści"
-                    description="Wybierz szablon i wypełnij temat, następnie kliknij Generuj."
+                    title={t("generate.empty.title")}
+                    description={t("generate.empty.description")}
                   />
                 ) : (
                   <>
@@ -670,8 +702,7 @@ export default function ContentGuruPage() {
 
                     {result.status === "done-with-warnings" ? (
                       <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-                        Treść zawiera frazy z Twojej listy zakazanych fraz mimo automatycznej próby
-                        poprawy — zaznaczone poniżej. Popraw ręcznie przed użyciem.
+                        {t("warnings.forbiddenPhrases")}
                       </div>
                     ) : null}
 
@@ -679,9 +710,7 @@ export default function ContentGuruPage() {
                       {renderHighlightedContent(result.content, result.matchedForbiddenPhrases)}
                     </div>
 
-                    <p className="text-xs text-muted-foreground">
-                      Zapisano w archiwum Content Guru.
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t("generate.savedToArchive")}</p>
                   </>
                 )
               ) : showJobCard ? (
@@ -693,11 +722,11 @@ export default function ContentGuruPage() {
               ) : (
                 <EmptyState
                   icon={Sparkles}
-                  title="Brak uruchomionego zadania"
+                  title={t("generate.jobEmpty.title")}
                   description={
                     activeTab === "batch"
-                      ? "Wybierz szablon, dodaj tematy i kliknij Generuj."
-                      : "Wybierz szablony, dodaj tematy i kliknij Generuj."
+                      ? t("generate.jobEmpty.batchDescription")
+                      : t("generate.jobEmpty.packageDescription")
                   }
                 />
               )}

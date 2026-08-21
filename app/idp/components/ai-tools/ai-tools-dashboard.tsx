@@ -4,16 +4,29 @@ import { AiToolGate } from "@/components/ai-tools/ai-tool-gate"
 import {
   AI_TOOL_CATEGORIES,
   getVisibleAiTools,
+  type AiToolCategory,
   type AiToolDefinition,
 } from "@/lib/ai-tools/registry"
+import { useAiToolText } from "@/lib/ai-tools/tool-text"
 import { useAuthorizedApps } from "@cortex/api"
 import { Badge, Button, Card, CardContent, EmptyState, PageHeader } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { ArrowRight, LockKeyhole, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { useMemo } from "react"
+import { useTranslation } from "react-i18next"
+
+/** Kategoria jest jednocześnie kluczem filtrowania w rejestrze, więc do
+ *  tłumaczenia idzie osobna mapa zamiast podmiany wartości w `registry.ts`. */
+const CATEGORY_KEYS: Record<AiToolCategory, string> = {
+  Tekst: "text",
+  Treści: "content",
+  Dokumenty: "documents",
+  Asystenci: "assistants",
+}
 
 export function AiToolsDashboard() {
+  const { t } = useTranslation("ai-tools")
   const authorized = useAuthorizedApps()
   const visibleTools = useMemo(() => getVisibleAiTools(authorized.apps), [authorized.apps])
   const featuredTools = visibleTools.filter((tool) => tool.isFeatured)
@@ -21,10 +34,7 @@ export function AiToolsDashboard() {
   return (
     <AiToolGate>
       <div className="flex min-h-0 flex-1 flex-col">
-        <PageHeader
-          title="AI Tools"
-          description="Narzędzia AI działające przez Cortex Proxy; uprawnienia z Konfiguracji Systemu."
-        />
+        <PageHeader title="AI Tools" description={t("dashboard.subtitle")} />
 
         <div className="flex flex-1 flex-col gap-6 px-8 py-6">
           {featuredTools.length > 0 ? (
@@ -38,8 +48,8 @@ export function AiToolsDashboard() {
           {visibleTools.length === 0 ? (
             <EmptyState
               icon={LockKeyhole}
-              title="Nie masz włączonych mini-aplikacji AI"
-              description="Administrator musi przypisać co najmniej jedną aplikację AI Tools."
+              title={t("dashboard.emptyTitle")}
+              description={t("dashboard.emptyBody")}
             />
           ) : (
             <div className="space-y-6">
@@ -50,7 +60,9 @@ export function AiToolsDashboard() {
                 return (
                   <section key={category} className="space-y-3">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-sm font-semibold">{category}</h2>
+                      <h2 className="text-sm font-semibold">
+                        {t(`categories.${CATEGORY_KEYS[category]}`)}
+                      </h2>
                       <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
                         {tools.length}
                       </Badge>
@@ -77,6 +89,8 @@ interface ToolCardProps {
 }
 
 function ToolCard({ tool, featured = false }: ToolCardProps) {
+  const { t } = useTranslation("ai-tools")
+  const text = useAiToolText(tool)
   const Icon = tool.icon
 
   return (
@@ -88,14 +102,14 @@ function ToolCard({ tool, featured = false }: ToolCardProps) {
           </div>
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-sm font-semibold">{tool.label}</h3>
+              <h3 className="text-sm font-semibold">{text.label}</h3>
               {featured ? (
                 <Badge variant="outline" className="h-5 px-1.5 text-[10px]">
-                  szybki start
+                  {t("dashboard.quickStart")}
                 </Badge>
               ) : null}
             </div>
-            <p className="text-sm leading-5 text-muted-foreground">{tool.description}</p>
+            <p className="text-sm leading-5 text-muted-foreground">{text.description}</p>
           </div>
         </div>
 
@@ -106,7 +120,7 @@ function ToolCard({ tool, featured = false }: ToolCardProps) {
           </div>
           <Button asChild size="sm" variant={featured ? "default" : "outline"}>
             <Link href={`/ai-tools/${tool.id}`}>
-              Otwórz
+              {t("dashboard.open")}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>

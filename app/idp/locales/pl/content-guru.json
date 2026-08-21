@@ -1,3 +1,560 @@
 {
-  "_ctx": {}
+  "modes": {
+    "single": "Pojedyncza",
+    "batch": "Kilka",
+    "package": "Pakiet"
+  },
+  "status": {
+    "done": "Gotowe",
+    "withWarnings": "Zawiera zakazane frazy"
+  },
+  "warnings": {
+    "forbiddenPhrases": "Treść zawiera frazy z Twojej listy zakazanych fraz mimo automatycznej próby poprawy — zaznaczone poniżej. Popraw ręcznie przed użyciem."
+  },
+  "generate": {
+    "description": "Generowanie roboczych treści marketingowych, produktowych i rekrutacyjnych — z realną walidacją zakazanych fraz.",
+    "packageTemplatesLabel": "Szablony ({{selected}} wybrane)",
+    "templateCategoryLabel": "Kategoria szablonu",
+    "templateCategoryPlaceholder": "Wybierz kategorię",
+    "templateLabel": "Szablon",
+    "templatePlaceholder": "Wybierz szablon",
+    "noTemplatesHint": "Brak szablonów — dodaj pierwszy na ekranie",
+    "noTemplatesLink": "Szablony",
+    "topicLabel": "Temat",
+    "topicPlaceholder": "Np. otwieramy rekrutację na stanowisko Senior .NET Developer",
+    "topicsLabel": "Tematy",
+    "audienceLabel": "Grupa docelowa",
+    "audiencePlaceholder": "Np. kandydaci z doświadczeniem w fintech",
+    "additionalInfoLabel": "Dodatkowe informacje",
+    "additionalInfoPlaceholder": "Kontekst, który model powinien uwzględnić",
+    "modelLabel": "Model",
+    "modelPlaceholder": "Wybierz model",
+    "clientProfileLabel": "Profil klienta (opcjonalnie)",
+    "marketProfileLabel": "Profil rynku (opcjonalnie)",
+    "noProfileOption": "Brak profilu",
+    "generateButton": "Generuj",
+    "generatingButton": "Generowanie...",
+    "startingButton": "Uruchamianie...",
+    "savedToArchive": "Zapisano w archiwum Content Guru.",
+    "seo": {
+      "sectionLabel": "SEO i metadane",
+      "singleOnlyHint": "(używane w trybie Pojedyncza)",
+      "keywordLabel": "Fraza kluczowa SEO",
+      "keywordPlaceholder": "Np. automatyzacja procesów finansowych",
+      "keywordGenerate": "Generuj frazę kluczową",
+      "metaLabel": "Meta description",
+      "metaPlaceholder": "Krótki opis zachęcający do kliknięcia",
+      "metaGenerate": "Generuj meta description"
+    },
+    "batch": {
+      "activeTopicsOne": "aktywny temat",
+      "activeTopicsMany": "aktywnych tematów"
+    },
+    "package": {
+      "topicOne": "temat",
+      "topicMany": "tematy",
+      "templateOne": "szablon",
+      "templateMany": "szablony",
+      "contentOne": "treść",
+      "contentMany": "treści",
+      "overLimit": "przekroczono limit {{max}} kombinacji. Zmniejsz liczbę tematów lub szablonów."
+    },
+    "empty": {
+      "title": "Brak wygenerowanej treści",
+      "description": "Wybierz szablon i wypełnij temat, następnie kliknij Generuj."
+    },
+    "jobEmpty": {
+      "title": "Brak uruchomionego zadania",
+      "batchDescription": "Wybierz szablon, dodaj tematy i kliknij Generuj.",
+      "packageDescription": "Wybierz szablony, dodaj tematy i kliknij Generuj."
+    },
+    "toasts": {
+      "done": "Treść wygenerowana i zapisana w archiwum",
+      "doneWithWarnings": "Treść wygenerowana — zawiera zakazane frazy, sprawdź podświetlenia",
+      "jobStarted": "Generowanie uruchomione — postęp pojawi się poniżej."
+    },
+    "errors": {
+      "keywordPhraseFailed": "Nie udało się wygenerować frazy kluczowej",
+      "metaDescriptionFailed": "Nie udało się wygenerować meta description",
+      "generateFailed": "Nie udało się wygenerować treści",
+      "jobStartFailed": "Nie udało się uruchomić generowania"
+    }
+  },
+  "topicTable": {
+    "topicPlaceholder": "Temat {{index}}",
+    "addButton": "Dodaj temat",
+    "a11y": {
+      "active": "Temat {{index}} aktywny",
+      "remove": "Usuń temat {{index}}"
+    }
+  },
+  "topicGenerator": {
+    "title": "Generator tematów",
+    "transcriptLabel": "Transkrypcja",
+    "transcriptPlaceholder": "Wklej transkrypcję rozmowy lub notatkę, z której model wyciągnie tematy",
+    "countLabel": "Orientacyjna liczba tematów",
+    "generateButton": "Generuj tematy",
+    "generating": "Generowanie…",
+    "insertButton": "Wstaw wybrane ({{selected}})",
+    "errors": {
+      "generateFailed": "Nie udało się wygenerować tematów"
+    }
+  },
+  "job": {
+    "itemStatus": {
+      "pending": "Oczekuje",
+      "running": "Generowanie...",
+      "done": "Gotowe",
+      "withWarnings": "Zakazane frazy",
+      "error": "Błąd"
+    },
+    "summary": {
+      "running": "Generowanie w toku — {{finished}}/{{total}} gotowych.",
+      "done": "Ukończono — {{total}}/{{total}} treści wygenerowanych i zapisanych w archiwum.",
+      "doneWithErrors": "Ukończono z błędami — {{failed}} z {{total}} pozycji się nie powiodło."
+    },
+    "matrixHeader": "Temat \\ Szablon",
+    "itemErrorFallback": "Generowanie tej pozycji się nie powiodło."
+  },
+  "clientProfiles": {
+    "title": "Profile klienta",
+    "description": "Kontekst klienta wstrzykiwany do promptu przy generowaniu — widoczny wyłącznie dla Ciebie.",
+    "newButton": "Nowy profil",
+    "loading": "Wczytywanie profili…",
+    "searchPlaceholder": "Szukaj po nazwie…",
+    "unnamedProfile": "(nienazwany profil)",
+    "previewLabel": "Podgląd — dokładnie to, co trafia do promptu",
+    "saveButton": "Zapisz profil",
+    "columns": {
+      "name": "Nazwa profilu",
+      "updatedAt": "Data edycji"
+    },
+    "a11y": {
+      "edit": "Edytuj profil {{name}}",
+      "delete": "Usuń profil {{name}}"
+    },
+    "empty": {
+      "title": "Brak profili klienta",
+      "description": "Dodaj pierwszy profil, żeby móc go wybrać na ekranie generowania."
+    },
+    "dialog": {
+      "newTitle": "Nowy profil klienta",
+      "editTitle": "Edycja: {{name}}"
+    },
+    "form": {
+      "name": "Nazwa profilu",
+      "history": "Historia",
+      "description": "Opis",
+      "products": "Produkty",
+      "offer": "Oferta",
+      "useCases": "Przypadki użycia",
+      "experience": "Doświadczenie"
+    },
+    "deleteDialog": {
+      "title": "Usunąć profil {{name}}?",
+      "description": "Treści wygenerowane z jego użyciem w przeszłości zostają w archiwum bez zmian. Tej operacji nie da się cofnąć."
+    },
+    "toasts": {
+      "created": "Utworzono profil \"{{name}}\"",
+      "saved": "Zapisano zmiany w profilu",
+      "deleted": "Usunięto profil \"{{name}}\""
+    },
+    "errors": {
+      "saveFailed": "Nie udało się zapisać profilu klienta",
+      "deleteFailed": "Nie udało się usunąć profilu"
+    }
+  },
+  "marketProfiles": {
+    "title": "Profile rynku",
+    "description": "Kontekst rynku wstrzykiwany do promptu przy generowaniu — widoczny wyłącznie dla Ciebie.",
+    "newButton": "Nowy profil",
+    "loading": "Wczytywanie profili…",
+    "searchPlaceholder": "Szukaj po nazwie…",
+    "unnamedProfile": "(nienazwany profil)",
+    "previewLabel": "Podgląd — dokładnie to, co trafia do promptu",
+    "saveButton": "Zapisz profil",
+    "columns": {
+      "name": "Nazwa profilu",
+      "updatedAt": "Data edycji"
+    },
+    "a11y": {
+      "edit": "Edytuj profil {{name}}",
+      "delete": "Usuń profil {{name}}"
+    },
+    "empty": {
+      "title": "Brak profili rynku",
+      "description": "Dodaj pierwszy profil, żeby móc go wybrać na ekranie generowania."
+    },
+    "dialog": {
+      "newTitle": "Nowy profil rynku",
+      "editTitle": "Edycja: {{name}}"
+    },
+    "form": {
+      "name": "Nazwa profilu",
+      "description": "Opis",
+      "sizeTrends": "Wielkość rynku i trendy",
+      "personas": "Persony",
+      "problems": "Problemy",
+      "needs": "Potrzeby",
+      "plans": "Plany"
+    },
+    "deleteDialog": {
+      "title": "Usunąć profil {{name}}?",
+      "description": "Treści wygenerowane z jego użyciem w przeszłości zostają w archiwum bez zmian. Tej operacji nie da się cofnąć."
+    },
+    "toasts": {
+      "created": "Utworzono profil \"{{name}}\"",
+      "saved": "Zapisano zmiany w profilu",
+      "deleted": "Usunięto profil \"{{name}}\""
+    },
+    "errors": {
+      "saveFailed": "Nie udało się zapisać profilu rynku",
+      "deleteFailed": "Nie udało się usunąć profilu"
+    }
+  },
+  "templates": {
+    "title": "Szablony",
+    "description": "Prompty treści współdzielone przez wszystkich użytkowników Content Guru.",
+    "newButton": "Nowy szablon",
+    "loading": "Wczytywanie szablonów…",
+    "searchPlaceholder": "Szukaj po nazwie…",
+    "saveButton": "Zapisz szablon",
+    "columns": {
+      "category": "Kategoria",
+      "name": "Nazwa",
+      "updatedAt": "Data edycji"
+    },
+    "filters": {
+      "categoryLabel": "Kategoria",
+      "allCategories": "Wszystkie kategorie"
+    },
+    "actions": {
+      "importJson": "Importuj JSON",
+      "exportCategory": "Eksportuj kategorię",
+      "duplicate": "Duplikuj",
+      "exportJson": "Eksportuj JSON"
+    },
+    "a11y": {
+      "edit": "Edytuj szablon {{name}}",
+      "more": "Więcej akcji dla {{name}}"
+    },
+    "empty": {
+      "title": "Brak szablonów",
+      "description": "Dodaj pierwszy szablon, żeby można go było wybrać na ekranie generowania."
+    },
+    "dialog": {
+      "newTitle": "Nowy szablon",
+      "editTitle": "Edycja: {{name}}"
+    },
+    "form": {
+      "name": "Nazwa",
+      "category": "Kategoria",
+      "content": "Treść promptu"
+    },
+    "test": {
+      "title": "Testuj generację",
+      "hint": "Jednorazowe wywołanie modelu z bieżącą (możliwie niezapisaną) treścią szablonu i przykładowym tematem. Nic nie zapisuje się w archiwum ani na liście szablonów.",
+      "topicLabel": "Temat testowy (opcjonalnie)",
+      "topicPlaceholder": "Przykładowy temat testowy",
+      "modelLabel": "Model",
+      "modelPlaceholder": "Wybierz model",
+      "runButton": "Testuj generację",
+      "running": "Generowanie…"
+    },
+    "deleteDialog": {
+      "title": "Usunąć szablon {{name}}?",
+      "description": "Szablon zniknie z listy wyboru na ekranie generowania. Treści wygenerowane z jego użyciem w przeszłości zostają w archiwum bez zmian. Tej operacji nie da się cofnąć."
+    },
+    "toasts": {
+      "created": "Utworzono szablon \"{{name}}\"",
+      "saved": "Zapisano zmiany w szablonie",
+      "deleted": "Usunięto szablon \"{{name}}\"",
+      "duplicated": "Utworzono kopię: \"{{name}}\"",
+      "imported": "Zaimportowano {{succeeded}} z {{total}} szablonów",
+      "testWithWarnings": "Testowa generacja zawiera zakazane frazy z Twojej listy"
+    },
+    "errors": {
+      "saveFailed": "Nie udało się zapisać szablonu",
+      "deleteFailed": "Nie udało się usunąć szablonu",
+      "duplicateFailed": "Nie udało się zduplikować szablonu",
+      "testFailed": "Nie udało się przeprowadzić testowej generacji",
+      "importInvalid": "Plik nie zawiera poprawnych szablonów (wymagane pola: name, category, content)",
+      "importReadFailed": "Nie udało się odczytać pliku JSON"
+    }
+  },
+  "history": {
+    "title": "Historia",
+    "description": "Wygenerowane treści — status, temat i pełny wynik dla każdej z nich.",
+    "loading": "Wczytywanie archiwum…",
+    "searchPlaceholder": "Szukaj po temacie, typie lub modelu…",
+    "columns": {
+      "createdAt": "Data",
+      "contentType": "Typ treści",
+      "topic": "Temat",
+      "status": "Status",
+      "model": "Model"
+    },
+    "filters": {
+      "statusLabel": "Status",
+      "allStatuses": "Wszystkie statusy",
+      "statusDone": "Gotowe",
+      "statusWithWarnings": "Zakazane frazy",
+      "contentTypeLabel": "Typ treści",
+      "allContentTypes": "Wszystkie typy"
+    },
+    "a11y": {
+      "viewDetails": "Zobacz szczegóły treści z {{date}}"
+    },
+    "empty": {
+      "title": "Brak wpisów w archiwum",
+      "description": "Wygeneruj pierwszą treść na ekranie Generowanie — pojawi się tutaj automatycznie."
+    }
+  },
+  "detail": {
+    "title": "Szczegóły treści",
+    "description": "Pełna wygenerowana treść, metadane generacji i (jeśli wystąpiły) zakazane frazy.",
+    "backToHistory": "Historia",
+    "loading": "Wczytywanie wpisu…",
+    "forbiddenWarning": "Treść zawiera frazy z listy zakazanych fraz mimo automatycznej próby poprawy — zaznaczone poniżej.",
+    "notFound": {
+      "title": "Nie znaleziono wpisu",
+      "description": "Wpis nie istnieje albo nie masz do niego dostępu."
+    },
+    "fields": {
+      "createdAt": "Wygenerowano",
+      "topic": "Temat",
+      "targetAudience": "Grupa docelowa",
+      "generationMode": "Tryb generowania",
+      "clientProfile": "Profil klienta",
+      "marketProfile": "Profil rynku",
+      "keywordPhrase": "Fraza kluczowa SEO",
+      "metaDescription": "Meta description",
+      "jobId": "Zadanie (batch/pakiet)",
+      "additionalInfo": "Dodatkowe informacje"
+    }
+  },
+  "_ctx": {
+    "modes.single": "etykieta trybu generowania; zakładka na ekranie generowania i wartość w szczegółach wpisu; JEDNA treść naraz; maks. 14 zn.",
+    "modes.batch": "etykieta trybu generowania; zakładka i wartość w szczegółach; wiele tematów × JEDEN szablon; maks. 14 zn.",
+    "modes.package": "etykieta trybu generowania; zakładka i wartość w szczegółach; wiele tematów × wiele szablonów; maks. 14 zn.",
+    "status.done": "wartość; badge statusu wygenerowanej treści — bez zakazanych fraz; maks. 14 zn.",
+    "status.withWarnings": "wartość; badge statusu wygenerowanej treści — znaleziono zakazane frazy; maks. 26 zn.",
+    "warnings.forbiddenPhrases": "opis; banner ostrzegawczy nad treścią, gdy model nie usunął zakazanych fraz; wymaga ręcznej poprawki od użytkownika",
+    "generate.description": "opis; podtytuł ekranu generowania pod nazwą kafelka Content Guru",
+    "generate.packageTemplatesLabel": "etykieta; nad listą checkboxów szablonów w trybie Pakiet; {{selected}} = liczba zaznaczonych",
+    "generate.templateCategoryLabel": "etykieta pola; lista wyboru kategorii szablonu, zawęża listę szablonów obok; maks. 22 zn.",
+    "generate.templateCategoryPlaceholder": "placeholder listy wyboru; kategoria szablonu jeszcze nie wybrana",
+    "generate.templateLabel": "etykieta pola; lista wyboru pojedynczego szablonu w wybranej kategorii; maks. 14 zn.",
+    "generate.templatePlaceholder": "placeholder listy wyboru; szablon jeszcze nie wybrany",
+    "generate.noTemplatesHint": "opis; ostrzeżenie pod pustą listą szablonów, kończy się linkiem do ekranu Szablony (bez kropki na końcu)",
+    "generate.noTemplatesLink": "etykieta linku; kończy zdanie z noTemplatesHint, prowadzi na ekran Szablony; maks. 14 zn.",
+    "generate.topicLabel": "etykieta pola; temat pojedynczej generowanej treści; maks. 12 zn.",
+    "generate.topicPlaceholder": "placeholder pola; przykład tematu treści rekrutacyjnej",
+    "generate.topicsLabel": "etykieta; nad tabelą tematów w trybach Kilka i Pakiet; maks. 12 zn.",
+    "generate.audienceLabel": "etykieta pola; grupa odbiorców, dla której model pisze treść; maks. 18 zn.",
+    "generate.audiencePlaceholder": "placeholder pola; przykład grupy odbiorców",
+    "generate.additionalInfoLabel": "etykieta pola; dodatkowy kontekst dla modelu; maks. 24 zn.",
+    "generate.additionalInfoPlaceholder": "placeholder pola wielolinijkowego; dodatkowy kontekst dla modelu",
+    "generate.modelLabel": "etykieta pola; lista wyboru modelu LLM; maks. 10 zn.",
+    "generate.modelPlaceholder": "placeholder listy wyboru; model jeszcze nie wybrany",
+    "generate.clientProfileLabel": "etykieta pola; lista wyboru profilu klienta, pole NIEOBOWIĄZKOWE; maks. 30 zn.",
+    "generate.marketProfileLabel": "etykieta pola; lista wyboru profilu rynku, pole NIEOBOWIĄZKOWE; maks. 30 zn.",
+    "generate.noProfileOption": "opcja listy wyboru; brak wybranego profilu klienta albo rynku; maks. 16 zn.",
+    "generate.generateButton": "przycisk główny; uruchamia generowanie treści; maks. 12 zn.",
+    "generate.generatingButton": "stan pośredni; napis na przycisku, gdy trwa generowanie pojedynczej treści; maks. 18 zn.",
+    "generate.startingButton": "stan pośredni; napis na przycisku, gdy trwa zakładanie zadania wsadowego; maks. 18 zn.",
+    "generate.savedToArchive": "opis; potwierdzenie pod wynikiem, że treść trafiła do archiwum",
+    "generate.seo.sectionLabel": "etykieta; nagłówek ramki z polami SEO; maks. 20 zn.",
+    "generate.seo.singleOnlyHint": "opis; dopisek po nagłówku SEO w trybach Kilka i Pakiet — te pola działają tylko w trybie Pojedyncza; W NAWIASIE",
+    "generate.seo.keywordLabel": "etykieta pola; główna fraza kluczowa SEO dla treści; maks. 22 zn.",
+    "generate.seo.keywordPlaceholder": "placeholder pola; przykład frazy kluczowej",
+    "generate.seo.keywordGenerate": "etykieta a11y; jest też tooltipem przycisku z ikoną, który proponuje frazę kluczową; maks. 26 zn.",
+    "generate.seo.metaLabel": "etykieta pola; opis meta description strony; termin SEO — zwykle zostaje po angielsku; maks. 20 zn.",
+    "generate.seo.metaPlaceholder": "placeholder pola wielolinijkowego; czym ma być meta description",
+    "generate.seo.metaGenerate": "etykieta a11y; jest też tooltipem przycisku z ikoną, który proponuje meta description; maks. 26 zn.",
+    "generate.batch.activeTopicsOne": "wartość; rzeczownik po liczbie 1 w podsumowaniu tabeli tematów („1 aktywny temat”); maks. 18 zn.",
+    "generate.batch.activeTopicsMany": "wartość; rzeczownik po liczbie innej niż 1 („5 aktywnych tematów”); maks. 22 zn.",
+    "generate.package.topicOne": "wartość; rzeczownik po liczbie 1 w liczniku kombinacji („1 temat × …”); maks. 12 zn.",
+    "generate.package.topicMany": "wartość; rzeczownik po liczbie innej niż 1 w liczniku kombinacji; maks. 12 zn.",
+    "generate.package.templateOne": "wartość; rzeczownik po liczbie 1 w liczniku kombinacji („… × 1 szablon”); maks. 14 zn.",
+    "generate.package.templateMany": "wartość; rzeczownik po liczbie innej niż 1 w liczniku kombinacji; maks. 14 zn.",
+    "generate.package.contentOne": "wartość; rzeczownik po liczbie 1 w liczniku kombinacji („= 1 treść”); maks. 12 zn.",
+    "generate.package.contentMany": "wartość; rzeczownik po liczbie innej niż 1 w liczniku kombinacji; maks. 12 zn.",
+    "generate.package.overLimit": "komunikat błędu; doklejany po liczniku kombinacji, gdy iloczyn tematów i szablonów przekracza {{max}}",
+    "generate.empty.title": "stan pusty; prawa kolumna trybu Pojedyncza przed pierwszym generowaniem; maks. 30 zn.",
+    "generate.empty.description": "stan pusty; instrukcja, co zrobić, żeby zobaczyć wynik",
+    "generate.jobEmpty.title": "stan pusty; prawa kolumna trybów Kilka i Pakiet, gdy nie uruchomiono zadania; maks. 30 zn.",
+    "generate.jobEmpty.batchDescription": "stan pusty; instrukcja dla trybu Kilka — JEDEN szablon, wiele tematów",
+    "generate.jobEmpty.packageDescription": "stan pusty; instrukcja dla trybu Pakiet — WIELE szablonów, wiele tematów",
+    "generate.toasts.done": "komunikat sukcesu; treść wygenerowana bez zakazanych fraz i zapisana",
+    "generate.toasts.doneWithWarnings": "komunikat ostrzegawczy; treść powstała, ale zawiera zakazane frazy do sprawdzenia",
+    "generate.toasts.jobStarted": "komunikat sukcesu; zadanie wsadowe przyjęte, postęp widać w karcie poniżej formularza",
+    "generate.errors.keywordPhraseFailed": "komunikat błędu; wywołanie modelu proponującego frazę kluczową się nie powiodło",
+    "generate.errors.metaDescriptionFailed": "komunikat błędu; wywołanie modelu proponującego meta description się nie powiodło",
+    "generate.errors.generateFailed": "komunikat błędu; generowanie pojedynczej treści się nie powiodło",
+    "generate.errors.jobStartFailed": "komunikat błędu; nie udało się założyć zadania wsadowego",
+    "topicTable.topicPlaceholder": "placeholder pola; wiersz tabeli tematów, {{index}} = numer wiersza liczony od 1; maks. 14 zn.",
+    "topicTable.addButton": "przycisk; dokłada pusty wiersz do tabeli tematów; maks. 16 zn.",
+    "topicTable.a11y.active": "etykieta a11y; ukryta, opisuje checkbox włączający temat w danym wierszu",
+    "topicTable.a11y.remove": "etykieta a11y; ukryta, opisuje przycisk kasujący wiersz tabeli tematów",
+    "topicGenerator.title": "tytuł okna; jest też etykietą i tooltipem przycisku otwierającego narzędzie proponujące tematy z transkrypcji; maks. 20 zn.",
+    "topicGenerator.transcriptLabel": "etykieta pola; tekst źródłowy, z którego model wyciąga tematy; maks. 16 zn.",
+    "topicGenerator.transcriptPlaceholder": "placeholder pola; wklejany tekst źródłowy",
+    "topicGenerator.countLabel": "etykieta suwaka; ORIENTACYJNA liczba tematów do zaproponowania; maks. 30 zn.",
+    "topicGenerator.generateButton": "przycisk; prosi model o listę propozycji tematów; maks. 18 zn.",
+    "topicGenerator.generating": "stan pośredni; napis na przycisku, gdy model proponuje tematy; maks. 18 zn.",
+    "topicGenerator.insertButton": "przycisk główny okna; przenosi zaznaczone tematy do formularza, {{selected}} = ile zaznaczono; maks. 22 zn.",
+    "topicGenerator.errors.generateFailed": "komunikat błędu; wywołanie modelu proponującego tematy się nie powiodło",
+    "job.itemStatus.pending": "wartość; badge pozycji zadania wsadowego — czeka w kolejce; maks. 14 zn.",
+    "job.itemStatus.running": "stan pośredni; badge pozycji zadania wsadowego — właśnie się generuje; maks. 16 zn.",
+    "job.itemStatus.done": "wartość; badge pozycji zadania wsadowego — gotowa, bez zakazanych fraz; maks. 12 zn.",
+    "job.itemStatus.withWarnings": "wartość; badge pozycji zadania wsadowego — gotowa, ale z zakazanymi frazami; maks. 18 zn.",
+    "job.itemStatus.error": "komunikat błędu; badge pozycji zadania wsadowego, której nie udało się wygenerować; maks. 10 zn.",
+    "job.summary.running": "stan pośredni; podsumowanie nad listą pozycji zadania, {{finished}} z {{total}} gotowych",
+    "job.summary.done": "komunikat sukcesu; podsumowanie zadania wsadowego zakończonego w całości",
+    "job.summary.doneWithErrors": "komunikat błędu; podsumowanie zadania, w którym {{failed}} z {{total}} pozycji się nie udało",
+    "job.matrixHeader": "nagłówek kolumny tabeli; róg macierzy tryb Pakiet — wiersze to tematy, kolumny to szablony; maks. 20 zn.",
+    "job.itemErrorFallback": "komunikat błędu; zapas w oknie pozycji zadania, gdy serwer nie podał powodu",
+    "clientProfiles.title": "nagłówek ekranu; lista profili klienta bieżącego użytkownika; maks. 20 zn.",
+    "clientProfiles.description": "opis; podtytuł ekranu — profile są prywatne i trafiają do promptu",
+    "clientProfiles.newButton": "przycisk; otwiera okno nowego profilu klienta; maks. 14 zn.",
+    "clientProfiles.loading": "stan pośredni; trwa pobieranie listy profili",
+    "clientProfiles.searchPlaceholder": "placeholder pola wyszukiwania nad tabelą; szuka po nazwie profilu",
+    "clientProfiles.unnamedProfile": "wartość; zastępuje nazwę w podglądzie promptu, dopóki użytkownik jej nie wpisał; W NAWIASIE",
+    "clientProfiles.previewLabel": "etykieta; nad podglądem Markdown, który jest DOKŁADNIE tym, co trafia do promptu",
+    "clientProfiles.saveButton": "przycisk; zapisuje profil i zamyka okno; maks. 16 zn.",
+    "clientProfiles.columns.name": "nagłówek kolumny tabeli; maks. 20 zn.",
+    "clientProfiles.columns.updatedAt": "nagłówek kolumny tabeli; data ostatniej zmiany; maks. 16 zn.",
+    "clientProfiles.a11y.edit": "etykieta a11y; ukryta, opisuje przycisk edycji w wierszu tabeli",
+    "clientProfiles.a11y.delete": "etykieta a11y; ukryta, opisuje przycisk usuwania w wierszu tabeli",
+    "clientProfiles.empty.title": "stan pusty; brak zapisanych profili klienta, NIE błąd; maks. 26 zn.",
+    "clientProfiles.empty.description": "stan pusty; zachęta do dodania pierwszego profilu",
+    "clientProfiles.dialog.newTitle": "tytuł okna; zakładanie nowego profilu klienta; maks. 26 zn.",
+    "clientProfiles.dialog.editTitle": "tytuł okna; edycja istniejącego profilu, {{name}} = nazwa profilu",
+    "clientProfiles.form.name": "etykieta pola; nazwa profilu widoczna na listach wyboru; maks. 20 zn.",
+    "clientProfiles.form.history": "etykieta pola wielolinijkowego; historia firmy klienta; maks. 16 zn.",
+    "clientProfiles.form.description": "etykieta pola wielolinijkowego; ogólny opis klienta; maks. 12 zn.",
+    "clientProfiles.form.products": "etykieta pola wielolinijkowego; produkty klienta; maks. 14 zn.",
+    "clientProfiles.form.offer": "etykieta pola wielolinijkowego; oferta klienta; maks. 14 zn.",
+    "clientProfiles.form.useCases": "etykieta pola wielolinijkowego; przykłady zastosowań produktów klienta; maks. 22 zn.",
+    "clientProfiles.form.experience": "etykieta pola wielolinijkowego; doświadczenie i referencje klienta; maks. 18 zn.",
+    "clientProfiles.deleteDialog.title": "tytuł okna; potwierdzenie usunięcia profilu, operacja NIEODWRACALNA, {{name}} = nazwa",
+    "clientProfiles.deleteDialog.description": "opis; wyjaśnia, że archiwum zostaje nietknięte, a usunięcia nie da się cofnąć",
+    "clientProfiles.toasts.created": "komunikat sukcesu; profil klienta założony, {{name}} = nazwa w cudzysłowie",
+    "clientProfiles.toasts.saved": "komunikat sukcesu; zmiany w profilu zapisane",
+    "clientProfiles.toasts.deleted": "komunikat sukcesu; profil usunięty, {{name}} = nazwa w cudzysłowie",
+    "clientProfiles.errors.saveFailed": "komunikat błędu; zapis profilu klienta się nie powiódł",
+    "clientProfiles.errors.deleteFailed": "komunikat błędu; usunięcie profilu się nie powiodło",
+    "marketProfiles.title": "nagłówek ekranu; lista profili rynku bieżącego użytkownika; maks. 20 zn.",
+    "marketProfiles.description": "opis; podtytuł ekranu — profile są prywatne i trafiają do promptu",
+    "marketProfiles.newButton": "przycisk; otwiera okno nowego profilu rynku; maks. 14 zn.",
+    "marketProfiles.loading": "stan pośredni; trwa pobieranie listy profili",
+    "marketProfiles.searchPlaceholder": "placeholder pola wyszukiwania nad tabelą; szuka po nazwie profilu",
+    "marketProfiles.unnamedProfile": "wartość; zastępuje nazwę w podglądzie promptu, dopóki użytkownik jej nie wpisał; W NAWIASIE",
+    "marketProfiles.previewLabel": "etykieta; nad podglądem Markdown, który jest DOKŁADNIE tym, co trafia do promptu",
+    "marketProfiles.saveButton": "przycisk; zapisuje profil i zamyka okno; maks. 16 zn.",
+    "marketProfiles.columns.name": "nagłówek kolumny tabeli; maks. 20 zn.",
+    "marketProfiles.columns.updatedAt": "nagłówek kolumny tabeli; data ostatniej zmiany; maks. 16 zn.",
+    "marketProfiles.a11y.edit": "etykieta a11y; ukryta, opisuje przycisk edycji w wierszu tabeli",
+    "marketProfiles.a11y.delete": "etykieta a11y; ukryta, opisuje przycisk usuwania w wierszu tabeli",
+    "marketProfiles.empty.title": "stan pusty; brak zapisanych profili rynku, NIE błąd; maks. 26 zn.",
+    "marketProfiles.empty.description": "stan pusty; zachęta do dodania pierwszego profilu",
+    "marketProfiles.dialog.newTitle": "tytuł okna; zakładanie nowego profilu rynku; maks. 26 zn.",
+    "marketProfiles.dialog.editTitle": "tytuł okna; edycja istniejącego profilu, {{name}} = nazwa profilu",
+    "marketProfiles.form.name": "etykieta pola; nazwa profilu widoczna na listach wyboru; maks. 20 zn.",
+    "marketProfiles.form.description": "etykieta pola wielolinijkowego; ogólny opis rynku; maks. 12 zn.",
+    "marketProfiles.form.sizeTrends": "etykieta pola wielolinijkowego; wielkość rynku i panujące na nim trendy; maks. 30 zn.",
+    "marketProfiles.form.personas": "etykieta pola wielolinijkowego; persony odbiorców na tym rynku; maks. 14 zn.",
+    "marketProfiles.form.problems": "etykieta pola wielolinijkowego; problemy odbiorców; maks. 14 zn.",
+    "marketProfiles.form.needs": "etykieta pola wielolinijkowego; potrzeby odbiorców; maks. 14 zn.",
+    "marketProfiles.form.plans": "etykieta pola wielolinijkowego; plany odbiorców na przyszłość; maks. 12 zn.",
+    "marketProfiles.deleteDialog.title": "tytuł okna; potwierdzenie usunięcia profilu, operacja NIEODWRACALNA, {{name}} = nazwa",
+    "marketProfiles.deleteDialog.description": "opis; wyjaśnia, że archiwum zostaje nietknięte, a usunięcia nie da się cofnąć",
+    "marketProfiles.toasts.created": "komunikat sukcesu; profil rynku założony, {{name}} = nazwa w cudzysłowie",
+    "marketProfiles.toasts.saved": "komunikat sukcesu; zmiany w profilu zapisane",
+    "marketProfiles.toasts.deleted": "komunikat sukcesu; profil usunięty, {{name}} = nazwa w cudzysłowie",
+    "marketProfiles.errors.saveFailed": "komunikat błędu; zapis profilu rynku się nie powiódł",
+    "marketProfiles.errors.deleteFailed": "komunikat błędu; usunięcie profilu się nie powiodło",
+    "templates.title": "nagłówek ekranu; lista szablonów promptów WSPÓLNYCH dla całej instancji; maks. 16 zn.",
+    "templates.description": "opis; podtytuł ekranu — szablony widzą wszyscy użytkownicy Content Guru",
+    "templates.newButton": "przycisk; otwiera okno nowego szablonu; maks. 16 zn.",
+    "templates.loading": "stan pośredni; trwa pobieranie listy szablonów",
+    "templates.searchPlaceholder": "placeholder pola wyszukiwania nad tabelą; szuka po nazwie szablonu",
+    "templates.saveButton": "przycisk; zapisuje szablon i zamyka okno; maks. 18 zn.",
+    "templates.columns.category": "nagłówek kolumny tabeli; maks. 14 zn.",
+    "templates.columns.name": "nagłówek kolumny tabeli; maks. 12 zn.",
+    "templates.columns.updatedAt": "nagłówek kolumny tabeli; data ostatniej zmiany; maks. 16 zn.",
+    "templates.filters.categoryLabel": "etykieta listy wyboru nad tabelą; zawęża listę szablonów do jednej kategorii; maks. 14 zn.",
+    "templates.filters.allCategories": "opcja listy wyboru; filtr kategorii wyłączony, widać wszystkie szablony; maks. 24 zn.",
+    "templates.actions.importJson": "przycisk; wczytuje szablony z pliku JSON; maks. 18 zn.",
+    "templates.actions.exportCategory": "przycisk; zapisuje wszystkie szablony z wybranej kategorii do pliku JSON; maks. 22 zn.",
+    "templates.actions.duplicate": "pozycja menu wiersza tabeli; zakłada kopię szablonu; maks. 14 zn.",
+    "templates.actions.exportJson": "pozycja menu wiersza tabeli; zapisuje jeden szablon do pliku JSON; maks. 18 zn.",
+    "templates.a11y.edit": "etykieta a11y; ukryta, opisuje przycisk otwierający edycję szablonu",
+    "templates.a11y.more": "etykieta a11y; ukryta, opisuje przycisk otwierający menu akcji wiersza",
+    "templates.empty.title": "stan pusty; brak szablonów w instancji, NIE błąd; maks. 20 zn.",
+    "templates.empty.description": "stan pusty; zachęta do dodania pierwszego szablonu",
+    "templates.dialog.newTitle": "tytuł okna; zakładanie nowego szablonu; maks. 20 zn.",
+    "templates.dialog.editTitle": "tytuł okna; edycja istniejącego szablonu, {{name}} = nazwa szablonu",
+    "templates.form.name": "etykieta pola; nazwa szablonu widoczna na listach wyboru; maks. 12 zn.",
+    "templates.form.category": "etykieta pola; kategoria grupująca szablony; maks. 14 zn.",
+    "templates.form.content": "etykieta pola wielolinijkowego; treść promptu wysyłanego do modelu; maks. 18 zn.",
+    "templates.test.title": "etykieta; nagłówek ramki z próbnym uruchomieniem szablonu; maks. 20 zn.",
+    "templates.test.hint": "opis; wyjaśnia, że próbne uruchomienie niczego nie zapisuje",
+    "templates.test.topicLabel": "etykieta pola; temat użyty w próbnym uruchomieniu, pole NIEOBOWIĄZKOWE; maks. 30 zn.",
+    "templates.test.topicPlaceholder": "placeholder pola; przykładowy temat do testu",
+    "templates.test.modelLabel": "etykieta pola; lista wyboru modelu LLM do próbnego uruchomienia; maks. 10 zn.",
+    "templates.test.modelPlaceholder": "placeholder listy wyboru; model jeszcze nie wybrany",
+    "templates.test.runButton": "przycisk; uruchamia próbną generację z bieżącą treścią szablonu; maks. 20 zn.",
+    "templates.test.running": "stan pośredni; napis na przycisku, gdy trwa próbna generacja; maks. 18 zn.",
+    "templates.deleteDialog.title": "tytuł okna; potwierdzenie usunięcia szablonu, operacja NIEODWRACALNA, {{name}} = nazwa",
+    "templates.deleteDialog.description": "opis; wyjaśnia, że szablon zniknie z list wyboru, a archiwum zostaje nietknięte",
+    "templates.toasts.created": "komunikat sukcesu; szablon założony, {{name}} = nazwa w cudzysłowie",
+    "templates.toasts.saved": "komunikat sukcesu; zmiany w szablonie zapisane",
+    "templates.toasts.deleted": "komunikat sukcesu; szablon usunięty, {{name}} = nazwa w cudzysłowie",
+    "templates.toasts.duplicated": "komunikat sukcesu; powstała kopia szablonu, {{name}} = nazwa kopii w cudzysłowie",
+    "templates.toasts.imported": "komunikat sukcesu; {{succeeded}} z {{total}} szablonów z pliku udało się dodać",
+    "templates.toasts.testWithWarnings": "komunikat ostrzegawczy; próbna generacja zawiera zakazane frazy",
+    "templates.errors.saveFailed": "komunikat błędu; zapis szablonu się nie powiódł",
+    "templates.errors.deleteFailed": "komunikat błędu; usunięcie szablonu się nie powiodło",
+    "templates.errors.duplicateFailed": "komunikat błędu; utworzenie kopii szablonu się nie powiodło",
+    "templates.errors.testFailed": "komunikat błędu; próbne uruchomienie szablonu się nie powiodło",
+    "templates.errors.importInvalid": "komunikat błędu; wczytany plik JSON nie ma wymaganych pól — nazwy pól są TECHNICZNE, nie tłumaczyć",
+    "templates.errors.importReadFailed": "komunikat błędu; pliku JSON nie dało się odczytać ani sparsować",
+    "history.title": "nagłówek ekranu; archiwum treści wygenerowanych przez bieżącego użytkownika; maks. 16 zn.",
+    "history.description": "opis; podtytuł ekranu archiwum",
+    "history.loading": "stan pośredni; trwa pobieranie archiwum",
+    "history.searchPlaceholder": "placeholder pola wyszukiwania nad tabelą; szuka po kolumnach widocznych w tabeli",
+    "history.columns.createdAt": "nagłówek kolumny tabeli; data wygenerowania; maks. 10 zn.",
+    "history.columns.contentType": "nagłówek kolumny tabeli; kategoria i nazwa szablonu; maks. 16 zn.",
+    "history.columns.topic": "nagłówek kolumny tabeli; maks. 12 zn.",
+    "history.columns.status": "nagłówek kolumny tabeli; maks. 12 zn.",
+    "history.columns.model": "nagłówek kolumny tabeli; użyty model LLM; maks. 10 zn.",
+    "history.filters.statusLabel": "etykieta listy wyboru nad tabelą; filtr statusu wpisu; maks. 12 zn.",
+    "history.filters.allStatuses": "opcja listy wyboru; filtr statusu wyłączony; maks. 22 zn.",
+    "history.filters.statusDone": "opcja listy wyboru; filtr statusu — tylko treści bez zakazanych fraz; maks. 14 zn.",
+    "history.filters.statusWithWarnings": "opcja listy wyboru; filtr statusu — tylko treści z zakazanymi frazami; maks. 20 zn.",
+    "history.filters.contentTypeLabel": "etykieta listy wyboru nad tabelą; filtr typu treści; maks. 16 zn.",
+    "history.filters.allContentTypes": "opcja listy wyboru; filtr typu treści wyłączony; maks. 20 zn.",
+    "history.a11y.viewDetails": "etykieta a11y; ukryta, opisuje przycisk otwierający szczegóły wpisu, {{date}} = data wpisu",
+    "history.empty.title": "stan pusty; archiwum bez wpisów, NIE błąd; maks. 30 zn.",
+    "history.empty.description": "stan pusty; wyjaśnia, że wpisy powstają automatycznie przy generowaniu",
+    "detail.title": "nagłówek ekranu; szczegóły jednego wpisu archiwum; maks. 22 zn.",
+    "detail.description": "opis; podtytuł ekranu szczegółów wpisu",
+    "detail.backToHistory": "przycisk; wraca na listę archiwum; maks. 14 zn.",
+    "detail.loading": "stan pośredni; trwa pobieranie wpisu archiwum",
+    "detail.forbiddenWarning": "opis; banner ostrzegawczy nad archiwalną treścią, która zawiera zakazane frazy",
+    "detail.notFound.title": "stan pusty; wpisu nie ma albo należy do kogoś innego, NIE błąd aplikacji; maks. 26 zn.",
+    "detail.notFound.description": "stan pusty; nie zdradza, czy wpis istnieje u innego użytkownika",
+    "detail.fields.createdAt": "etykieta; opisuje datę wygenerowania w liście metadanych; maks. 16 zn.",
+    "detail.fields.topic": "etykieta; opisuje temat w liście metadanych; maks. 12 zn.",
+    "detail.fields.targetAudience": "etykieta; opisuje grupę odbiorców w liście metadanych; maks. 18 zn.",
+    "detail.fields.generationMode": "etykieta; opisuje tryb generowania w liście metadanych; maks. 20 zn.",
+    "detail.fields.clientProfile": "etykieta; opisuje użyty profil klienta w liście metadanych; maks. 18 zn.",
+    "detail.fields.marketProfile": "etykieta; opisuje użyty profil rynku w liście metadanych; maks. 18 zn.",
+    "detail.fields.keywordPhrase": "etykieta; opisuje frazę kluczową SEO w liście metadanych; maks. 22 zn.",
+    "detail.fields.metaDescription": "etykieta; opisuje meta description w liście metadanych; termin SEO; maks. 20 zn.",
+    "detail.fields.jobId": "etykieta; opisuje identyfikator zadania wsadowego; słowa w nawiasie to nazwy trybów; maks. 26 zn.",
+    "detail.fields.additionalInfo": "etykieta; opisuje dodatkowy kontekst w liście metadanych; maks. 24 zn."
+  }
 }

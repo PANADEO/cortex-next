@@ -5,6 +5,7 @@ import {
   useInvoiceSupervisorPolicies,
   useInvoiceSupervisorSetDefaultPolicy,
 } from "@/lib/invoice-supervisor/hooks"
+import type { InvoiceSupervisorRestrictiveness } from "@/lib/invoice-supervisor/types"
 import {
   Badge,
   Button,
@@ -18,33 +19,44 @@ import {
   PageHeader,
 } from "@cortex/ui"
 import { Mail, MessageSquare, ScrollText, Star } from "lucide-react"
+import { useTranslation } from "react-i18next"
+
+// Poziomy restrykcyjności przychodzą z backendu jako DANE po polsku; mapa
+// zamienia je na klucz napisu, żeby na ekranie stał tekst w języku interfejsu.
+const RESTRICTIVENESS_KEYS: Record<InvoiceSupervisorRestrictiveness, string> = {
+  mała: "restrictiveness.low",
+  średnia: "restrictiveness.medium",
+  duża: "restrictiveness.high",
+  surowa: "restrictiveness.strict",
+}
 
 export default function InvoiceSupervisorPoliciesPage() {
+  const { t } = useTranslation("invoice-supervisor")
   const { data: policies, isLoading, isError, refetch } = useInvoiceSupervisorPolicies()
   const setDefault = useInvoiceSupervisorSetDefaultPolicy()
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader
-        title="Polityki"
-        description="Restrykcyjność (kiedy/jak mocno przypominać) i ton (jak brzmi) to niezależne wymiary."
+        title={t("policies.title")}
+        description={t("policies.description")}
         actions={<InvoiceSupervisorPolicyFormDialog />}
       />
 
       <div className="px-8 py-6">
         {isLoading ? (
-          <LoadingState label="Ładowanie polityk..." />
+          <LoadingState label={t("policies.loading")} />
         ) : isError ? (
           <ErrorState
-            title="Nie udało się wczytać polityk"
-            message="Sprawdź połączenie z backendem i spróbuj ponownie."
+            title={t("policies.loadErrorTitle")}
+            message={t("errors.backendMessage")}
             onRetry={() => refetch()}
           />
         ) : !policies || policies.length === 0 ? (
           <EmptyState
             icon={ScrollText}
-            title="Brak polityk"
-            description="Utwórz pierwszą politykę, aby zdefiniować restrykcyjność i ton komunikacji."
+            title={t("policies.emptyTitle")}
+            description={t("policies.emptyDescription")}
           />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -55,22 +67,24 @@ export default function InvoiceSupervisorPoliciesPage() {
                   {policy.is_default && (
                     <Badge className="gap-1">
                       <Star className="size-3" />
-                      Domyślna
+                      {t("policies.defaultBadge")}
                     </Badge>
                   )}
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Restrykcyjność</span>
-                    <Badge variant="secondary">{policy.restrictiveness}</Badge>
+                    <span className="text-muted-foreground">{t("policies.restrictiveness")}</span>
+                    <Badge variant="secondary">
+                      {t(RESTRICTIVENESS_KEYS[policy.restrictiveness])}
+                    </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Ton</span>
+                    <span className="text-muted-foreground">{t("policies.tone")}</span>
                     <span>{policy.tone_name ?? "—"}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Klient</span>
-                    <span>{policy.client_name ?? "globalna"}</span>
+                    <span className="text-muted-foreground">{t("policies.client")}</span>
+                    <span>{policy.client_name ?? t("policies.global")}</span>
                   </div>
                   <div className="flex items-center gap-3 pt-1">
                     {policy.enable_email && <Mail className="size-4 text-muted-foreground" />}
@@ -86,7 +100,7 @@ export default function InvoiceSupervisorPoliciesPage() {
                       disabled={setDefault.isPending}
                       onClick={() => setDefault.mutate(policy.id)}
                     >
-                      Ustaw jako domyślną
+                      {t("policies.setDefault")}
                     </Button>
                   )}
                 </CardContent>

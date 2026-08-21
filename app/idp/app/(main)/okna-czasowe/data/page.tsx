@@ -6,15 +6,18 @@ import { useSnapshots } from "@/features/okna-czasowe/hooks/use-snapshots"
 import { Button, DataTable, EmptyState, PageHeader } from "@cortex/ui"
 import { Database, FileDown } from "lucide-react"
 import { useMemo } from "react"
-import { snapshotColumns, type SnapshotRow } from "./columns"
+import { useTranslation } from "react-i18next"
+import { buildSnapshotColumns, type SnapshotRow } from "./columns"
 
 export default function OknaCzasoweDataPage() {
+  const { t } = useTranslation("okna-czasowe")
   const filmsQuery = useFilms()
   const snapshotsQuery = useSnapshots()
 
   const films = filmsQuery.data
   const snapshots = snapshotsQuery.data
   const isLoading = filmsQuery.isLoading || snapshotsQuery.isLoading
+  const columns = useMemo(() => buildSnapshotColumns(t), [t])
 
   const rows: SnapshotRow[] = useMemo(() => {
     const filmList = films ?? []
@@ -33,12 +36,12 @@ export default function OknaCzasoweDataPage() {
   return (
     <>
       <PageHeader
-        title="Dane"
-        description="Pełna historia skanów — każdy wiersz to jeden film w jednym dniu skanowania."
+        title={t("data.title")}
+        description={t("data.description")}
         actions={
           <Button size="sm" variant="outline" onClick={handleExport} disabled={rows.length === 0}>
             <FileDown className="mr-1.5 h-3.5 w-3.5" />
-            Eksportuj CSV
+            {t("data.exportCsv")}
           </Button>
         }
       />
@@ -47,12 +50,12 @@ export default function OknaCzasoweDataPage() {
         {!isLoading && rows.length === 0 ? (
           <EmptyState
             icon={Database}
-            title="Brak danych"
-            description="Uruchom pierwszy skan z poziomu Dashboardu, żeby zebrać dane historyczne."
+            title={t("data.emptyTitle")}
+            description={t("data.emptyDescription")}
           />
         ) : (
           <DataTable
-            columns={snapshotColumns}
+            columns={columns}
             data={rows}
             isLoading={isLoading}
             bordered

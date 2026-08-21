@@ -55,6 +55,7 @@ import {
   Wand2,
 } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 /** Rekompozycja jest tania (bez AI), ale nie darmowa — debounce trzyma ją
@@ -76,13 +77,6 @@ const EMPTY_ASSIST_STATE: AssistState = {
   idea: { undo: null, seen: [] },
 }
 
-const ASSIST_HELP: Record<AssistModeDto, string> = {
-  polish: "Poprawia sformułowanie, nie zmienia sensu ani tematu.",
-  rephrase:
-    "Ten sam sens, inne ujęcie. Każde kolejne kliknięcie proponuje coś innego niż wersje pokazane wcześniej.",
-  propose: "Wymyśla treść na podstawie tytułu. Każde kolejne kliknięcie daje nową propozycję.",
-}
-
 function AssistButton({
   label,
   icon: Icon,
@@ -98,6 +92,8 @@ function AssistButton({
   pending: boolean
   onClick: () => void
 }) {
+  const { t } = useTranslation("ilustromat")
+
   return (
     <Button
       type="button"
@@ -108,28 +104,31 @@ function AssistButton({
       onClick={onClick}
     >
       <Icon className="mr-2 h-4 w-4" />
-      {pending ? "Chwileczkę…" : label}
+      {pending ? t("assist.pending") : label}
     </Button>
   )
 }
 
 function UndoButton({ disabled, onClick }: { disabled: boolean; onClick: () => void }) {
+  const { t } = useTranslation("ilustromat")
+
   return (
     <Button
       type="button"
       variant="ghost"
       size="sm"
-      title="Przywraca tekst sprzed ostatniej zmiany AI."
+      title={t("assist.undoHelp")}
       disabled={disabled}
       onClick={onClick}
     >
       <Undo2 className="mr-2 h-4 w-4" />
-      Cofnij
+      {t("assist.undo")}
     </Button>
   )
 }
 
 export default function GenerationPage() {
+  const { t } = useTranslation("ilustromat")
   const templatesQuery = useFrameTemplates(true)
   const generate = useGenerate()
   const compose = useCompose()
@@ -188,7 +187,7 @@ export default function GenerationPage() {
           background: selectedVariant.background,
         })
         .then(setRecomposed)
-        .catch((error) => toastApiError(error, "Nie udało się przeliczyć kafelka"))
+        .catch((error) => toastApiError(error, t("toasts.recomposeFailed")))
     }, RECOMPOSE_DEBOUNCE_MS)
 
     return () => {
@@ -199,11 +198,11 @@ export default function GenerationPage() {
 
   async function handleGenerate() {
     if (!title.trim()) {
-      toast.error("Tytuł jest wymagany")
+      toast.error(t("toasts.titleRequired"))
       return
     }
     if (!templateId) {
-      toast.error("Wybierz szablon marki")
+      toast.error(t("toasts.templateRequired"))
       return
     }
 
@@ -239,7 +238,7 @@ export default function GenerationPage() {
       lastComposedRef.current = `${title}|${subtitle}|0|${entry.id}`
       setHistory((current) => [entry, ...current].slice(0, 10))
     } catch (error) {
-      toastApiError(error, "Nie udało się wygenerować wariantów")
+      toastApiError(error, t("toasts.generateFailed"))
     }
   }
 
@@ -253,7 +252,7 @@ export default function GenerationPage() {
   async function runAssist(field: AssistFieldDto, mode: AssistModeDto) {
     const current = fieldValue[field]
     if (mode === "propose" ? !title.trim() : !current.trim()) {
-      toast.error(mode === "propose" ? "Najpierw wpisz tytuł posta" : "Najpierw wpisz tekst")
+      toast.error(mode === "propose" ? t("toasts.needTitleFirst") : t("toasts.needTextFirst"))
       return
     }
     // "Dopracuj" ma dać tę samą, najlepszą wersję za każdym razem, więc listy
@@ -280,7 +279,7 @@ export default function GenerationPage() {
         },
       }))
     } catch (error) {
-      toastApiError(error, "Nie udało się przygotować tekstu")
+      toastApiError(error, t("toasts.assistFailed"))
     }
   }
 
@@ -320,10 +319,7 @@ export default function GenerationPage() {
 
   return (
     <>
-      <PageHeader
-        title="Ilustromat"
-        description="Brandowana ilustracja do posta LinkedIn. Tekst i ramka nakładane są deterministycznie, więc poprawka tytułu nie wymaga nowej generacji."
-      />
+      <PageHeader title="Ilustromat" description={t("generation.description")} />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
@@ -331,7 +327,7 @@ export default function GenerationPage() {
             <CardContent className="flex flex-col gap-4 pt-6">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="ilustromat-title">Tytuł</Label>
+                  <Label htmlFor="ilustromat-title">{t("generation.titleLabel")}</Label>
                   <span className="text-xs text-muted-foreground">
                     {title.length}/{TITLE_MAX_CHARS}
                   </span>
@@ -340,22 +336,22 @@ export default function GenerationPage() {
                   id="ilustromat-title"
                   value={title}
                   maxLength={TITLE_MAX_CHARS}
-                  placeholder="Zmiany w cenach transferowych 2027"
+                  placeholder={t("generation.titlePlaceholder")}
                   onChange={(event) => setTitle(event.target.value)}
                 />
                 <div className="flex flex-wrap gap-2">
                   <AssistButton
-                    label="Dopracuj"
+                    label={t("assist.polish")}
                     icon={Wand2}
-                    help={ASSIST_HELP.polish}
+                    help={t("assist.helpPolish")}
                     disabled={!title.trim() || assist.isPending}
                     pending={isAssistPending("title", "polish")}
                     onClick={() => runAssist("title", "polish")}
                   />
                   <AssistButton
-                    label="Inna wersja"
+                    label={t("assist.rephrase")}
                     icon={Shuffle}
-                    help={ASSIST_HELP.rephrase}
+                    help={t("assist.helpRephrase")}
                     disabled={!title.trim() || assist.isPending}
                     pending={isAssistPending("title", "rephrase")}
                     onClick={() => runAssist("title", "rephrase")}
@@ -368,7 +364,7 @@ export default function GenerationPage() {
 
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="ilustromat-subtitle">Podtytuł</Label>
+                  <Label htmlFor="ilustromat-subtitle">{t("generation.subtitleLabel")}</Label>
                   <span className="text-xs text-muted-foreground">
                     {subtitle.length}/{SUBTITLE_MAX_CHARS}
                   </span>
@@ -377,7 +373,7 @@ export default function GenerationPage() {
                   id="ilustromat-subtitle"
                   value={subtitle}
                   maxLength={SUBTITLE_MAX_CHARS}
-                  placeholder="Co musisz wiedzieć zanim przepisy wejdą w życie"
+                  placeholder={t("generation.subtitlePlaceholder")}
                   onChange={(event) => setSubtitle(event.target.value)}
                 />
                 {/* Podtytuł jest opcjonalny i najczęściej startuje pusty — wtedy
@@ -386,17 +382,17 @@ export default function GenerationPage() {
                   {subtitle.trim() ? (
                     <>
                       <AssistButton
-                        label="Dopracuj"
+                        label={t("assist.polish")}
                         icon={Wand2}
-                        help={ASSIST_HELP.polish}
+                        help={t("assist.helpPolish")}
                         disabled={assist.isPending}
                         pending={isAssistPending("subtitle", "polish")}
                         onClick={() => runAssist("subtitle", "polish")}
                       />
                       <AssistButton
-                        label="Inna wersja"
+                        label={t("assist.rephrase")}
                         icon={Shuffle}
-                        help={ASSIST_HELP.rephrase}
+                        help={t("assist.helpRephrase")}
                         disabled={assist.isPending}
                         pending={isAssistPending("subtitle", "rephrase")}
                         onClick={() => runAssist("subtitle", "rephrase")}
@@ -404,9 +400,9 @@ export default function GenerationPage() {
                     </>
                   ) : (
                     <AssistButton
-                      label="Podpowiedz"
+                      label={t("assist.propose")}
                       icon={Lightbulb}
-                      help="Proponuje hasło na podstawie tytułu posta."
+                      help={t("assist.helpProposeSubtitle")}
                       disabled={!title.trim() || assist.isPending}
                       pending={isAssistPending("subtitle", "propose")}
                       onClick={() => runAssist("subtitle", "propose")}
@@ -422,19 +418,19 @@ export default function GenerationPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="ilustromat-idea">Pomysł na ilustrację (opcjonalnie)</Label>
+                <Label htmlFor="ilustromat-idea">{t("generation.ideaLabel")}</Label>
                 <Textarea
                   id="ilustromat-idea"
                   value={idea}
                   rows={3}
-                  placeholder="Np. most łączący dwa brzegi jako metafora porozumienia"
+                  placeholder={t("generation.ideaPlaceholder")}
                   onChange={(event) => setIdea(event.target.value)}
                 />
                 <div className="flex flex-wrap gap-2">
                   <AssistButton
-                    label="Podpowiedz"
+                    label={t("assist.propose")}
                     icon={Lightbulb}
-                    help="Wymyśla pomysł na ilustrację z tytułu i podtytułu. Każde kolejne kliknięcie daje nowy pomysł."
+                    help={t("assist.helpProposeIdea")}
                     disabled={!title.trim() || assist.isPending}
                     pending={isAssistPending("idea", "propose")}
                     onClick={() => runAssist("idea", "propose")}
@@ -446,7 +442,7 @@ export default function GenerationPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="ilustromat-style">Styl</Label>
+                <Label htmlFor="ilustromat-style">{t("generation.styleLabel")}</Label>
                 <Select value={styleKey} onValueChange={setStyleKey}>
                   <SelectTrigger id="ilustromat-style">
                     <SelectValue />
@@ -454,7 +450,7 @@ export default function GenerationPage() {
                   <SelectContent>
                     {STYLES.map((style) => (
                       <SelectItem key={style.key} value={style.key}>
-                        {style.label}
+                        {t(`options.style.${style.key}`, { defaultValue: style.label })}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -462,7 +458,7 @@ export default function GenerationPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="ilustromat-format">Format</Label>
+                <Label htmlFor="ilustromat-format">{t("generation.formatLabel")}</Label>
                 <Select value={formatKey} onValueChange={setFormatKey}>
                   <SelectTrigger id="ilustromat-format">
                     <SelectValue />
@@ -470,24 +466,21 @@ export default function GenerationPage() {
                   <SelectContent>
                     {FORMATS.map((format) => (
                       <SelectItem key={format.key} value={format.key}>
-                        {format.label}
+                        {t(`options.format.${format.key}`, { defaultValue: format.label })}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {formatChanged ? (
-                  <p className="text-xs text-muted-foreground">
-                    Nowy format zostanie użyty przy kolejnej generacji — bieżące tła mają inne
-                    proporcje.
-                  </p>
+                  <p className="text-xs text-muted-foreground">{t("generation.formatFrozen")}</p>
                 ) : null}
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="ilustromat-template">Szablon marki</Label>
+                <Label htmlFor="ilustromat-template">{t("generation.templateLabel")}</Label>
                 <Select value={templateId} onValueChange={setTemplateId}>
                   <SelectTrigger id="ilustromat-template">
-                    <SelectValue placeholder="Wybierz szablon" />
+                    <SelectValue placeholder={t("generation.templatePlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {templates.map((template) => (
@@ -500,7 +493,7 @@ export default function GenerationPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label>Liczba wariantów</Label>
+                <Label>{t("generation.variantsLabel")}</Label>
                 <RadioGroup
                   className="flex gap-4"
                   value={String(variants)}
@@ -523,7 +516,7 @@ export default function GenerationPage() {
                 disabled={generate.isPending || templates.length === 0}
               >
                 <Sparkles className="mr-2 h-4 w-4" />
-                {generate.isPending ? "Generowanie..." : "Generuj"}
+                {generate.isPending ? t("generation.generating") : t("generation.generate")}
               </Button>
             </CardContent>
           </Card>
@@ -539,8 +532,8 @@ export default function GenerationPage() {
               ) : !result ? (
                 <EmptyState
                   icon={ImageIcon}
-                  title="Brak wygenerowanych kafelków"
-                  description="Wypełnij tytuł i kliknij Generuj. Warianty pojawią się już z nałożoną ramką marki."
+                  title={t("result.emptyTitle")}
+                  description={t("result.emptyDescription")}
                 />
               ) : (
                 <>
@@ -558,13 +551,13 @@ export default function GenerationPage() {
                             ? "overflow-hidden rounded-md ring-2 ring-primary"
                             : "overflow-hidden rounded-md ring-1 ring-border hover:ring-primary/50"
                         }
-                        aria-label={`Wariant ${index + 1}`}
+                        aria-label={t("result.variantAlt", { index: index + 1 })}
                         aria-pressed={index === selectedIndex}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={toPngDataUrl(variant.composed)}
-                          alt={`Wariant ${index + 1}`}
+                          alt={t("result.variantAlt", { index: index + 1 })}
                           className="h-auto w-full"
                         />
                       </button>
@@ -573,17 +566,17 @@ export default function GenerationPage() {
 
                   {previewUrl ? (
                     <div className="flex flex-col gap-3">
-                      <Label>Wybrany kafelek</Label>
+                      <Label>{t("result.selected")}</Label>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={previewUrl}
-                        alt="Wybrany kafelek"
+                        alt={t("result.selected")}
                         className="h-auto w-full rounded-md border border-border"
                       />
                       <div className="flex flex-wrap gap-2">
                         <Button type="button" onClick={download}>
                           <Download className="mr-2 h-4 w-4" />
-                          Pobierz PNG
+                          {t("result.download")}
                         </Button>
                         <Button
                           type="button"
@@ -591,24 +584,24 @@ export default function GenerationPage() {
                           onClick={handleGenerate}
                           disabled={generate.isPending}
                         >
-                          Wygeneruj ponownie
+                          {t("result.regenerate")}
                         </Button>
                       </div>
                       <dl className="grid gap-1 text-xs text-muted-foreground">
                         <div className="flex gap-2">
-                          <dt className="font-medium">Model:</dt>
+                          <dt className="font-medium">{t("result.model")}</dt>
                           <dd>{result.model}</dd>
                         </div>
                         <div className="flex gap-2">
-                          <dt className="font-medium">Format:</dt>
+                          <dt className="font-medium">{t("result.format")}</dt>
                           <dd>{frozenFormatKey}</dd>
                         </div>
                         <div className="flex gap-2">
-                          <dt className="font-medium">Szablon:</dt>
+                          <dt className="font-medium">{t("result.template")}</dt>
                           <dd>{result.templateId}</dd>
                         </div>
                         <div className="flex flex-col gap-1">
-                          <dt className="font-medium">Prompt:</dt>
+                          <dt className="font-medium">{t("result.prompt")}</dt>
                           <dd className="break-words">{result.prompt}</dd>
                         </div>
                       </dl>
@@ -625,17 +618,15 @@ export default function GenerationPage() {
             <CardContent className="flex flex-col gap-3 pt-6">
               <div className="flex items-center gap-2">
                 <History className="h-4 w-4 text-muted-foreground" />
-                <Label>Historia tej sesji</Label>
+                <Label>{t("history.title")}</Label>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Historia żyje wyłącznie w tej karcie przeglądarki — odświeżenie strony ją czyści.
-              </p>
+              <p className="text-xs text-muted-foreground">{t("history.note")}</p>
               <ul className="flex flex-col gap-2">
                 {history.map((entry) => (
                   <li key={entry.id} className="flex items-center justify-between gap-4">
                     <span className="truncate text-sm">{entry.title}</span>
                     <Button type="button" variant="ghost" size="sm" onClick={() => restore(entry)}>
-                      Przywróć
+                      {t("history.restore")}
                     </Button>
                   </li>
                 ))}

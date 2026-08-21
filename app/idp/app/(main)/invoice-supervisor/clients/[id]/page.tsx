@@ -32,10 +32,12 @@ import {
 } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
+import type { TFunction } from "i18next"
 import { AlertTriangle, ArrowLeft, Eye, Receipt, Wallet } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useMemo } from "react"
+import { useTranslation } from "react-i18next"
 
 // Mirrors the escalation section's definition of "open" — statuses that still represent
 // money owed, as opposed to paid/disputed which are settled or on hold.
@@ -47,11 +49,13 @@ const OPEN_INVOICE_STATUSES = new Set([
   "partially_paid",
 ])
 
-function clientInvoiceColumns(): ColumnDef<InvoiceSupervisorInvoice, unknown>[] {
+function clientInvoiceColumns(
+  t: TFunction<"invoice-supervisor">,
+): ColumnDef<InvoiceSupervisorInvoice, unknown>[] {
   return [
     {
       accessorKey: "invoice_number",
-      header: "Numer faktury",
+      header: t("columns.invoiceNumber"),
       cell: ({ row }) => (
         <Link
           href={`/invoice-supervisor/invoices/${row.original.id}`}
@@ -63,20 +67,20 @@ function clientInvoiceColumns(): ColumnDef<InvoiceSupervisorInvoice, unknown>[] 
     },
     {
       accessorKey: "amount",
-      header: "Kwota",
+      header: t("columns.amount"),
       size: 140,
       cell: ({ row }) =>
         formatInvoiceSupervisorCurrency(row.original.amount, row.original.currency),
     },
     {
       accessorKey: "due_date",
-      header: "Termin",
+      header: t("columns.dueDate"),
       size: 120,
       cell: ({ row }) => formatInvoiceSupervisorDate(row.original.due_date),
     },
     {
       accessorKey: "status",
-      header: "Status",
+      header: t("columns.status"),
       size: 170,
       cell: ({ row }) => (
         <Badge
@@ -98,7 +102,7 @@ function clientInvoiceColumns(): ColumnDef<InvoiceSupervisorInvoice, unknown>[] 
           className="h-8 w-8"
           asChild
           onClick={(event) => event.stopPropagation()}
-          aria-label={`Zobacz szczegóły faktury ${row.original.invoice_number}`}
+          aria-label={t("columns.viewInvoiceAria", { number: row.original.invoice_number })}
         >
           <Link href={`/invoice-supervisor/invoices/${row.original.id}`}>
             <Eye className="h-4 w-4" />
@@ -110,6 +114,7 @@ function clientInvoiceColumns(): ColumnDef<InvoiceSupervisorInvoice, unknown>[] 
 }
 
 export default function InvoiceSupervisorClientDetailPage() {
+  const { t } = useTranslation("invoice-supervisor")
   const params = useParams<{ id: string }>()
   const clientId = Number(params?.id ?? "")
 
@@ -121,14 +126,14 @@ export default function InvoiceSupervisorClientDetailPage() {
     () => invoices.data?.filter((invoice) => OPEN_INVOICE_STATUSES.has(invoice.status)).length ?? 0,
     [invoices.data],
   )
-  const invoiceColumns = useMemo(() => clientInvoiceColumns(), [])
+  const invoiceColumns = useMemo(() => clientInvoiceColumns(t), [t])
 
-  if (client.isPending && !client.data) return <LoadingState label="Ładowanie klienta…" />
+  if (client.isPending && !client.data) return <LoadingState label={t("clientDetail.loading")} />
   if (client.error || !client.data) {
     return (
       <ErrorState
-        title="Nie znaleziono klienta"
-        message="Wybrany klient nie istnieje lub nie udało się go wczytać."
+        title={t("clientDetail.notFoundTitle")}
+        message={t("clientDetail.notFoundMessage")}
       />
     )
   }
@@ -139,14 +144,14 @@ export default function InvoiceSupervisorClientDetailPage() {
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <PageHeader
         title={data.name}
-        description="Ekspozycja należności, eskalacja i historia faktur klienta."
+        description={t("clientDetail.description")}
         actions={
           <>
             <InvoiceSupervisorClientFormDialog client={data} />
             <Button variant="outline" size="sm" asChild>
               <Link href="/invoice-supervisor/clients">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Wróć do listy
+                {t("actions.backToList")}
               </Link>
             </Button>
           </>
@@ -157,22 +162,24 @@ export default function InvoiceSupervisorClientDetailPage() {
         <div className="flex flex-wrap items-center gap-2">
           <InvoiceSupervisorClientTypeBadge type={data.type} />
           <span className="text-sm text-muted-foreground">
-            {data.email ?? "brak e-maila"} · {data.phone ?? "brak telefonu"}
-            {data.assigned_to ? ` · opiekun: ${data.assigned_to}` : ""}
+            {data.email ?? t("clientDetail.noEmail")} · {data.phone ?? t("clientDetail.noPhone")}
+            {data.assigned_to
+              ? ` · ${t("clientDetail.assignedTo", { name: data.assigned_to })}`
+              : ""}
           </span>
         </div>
 
         {exposure.isError ? (
           <ErrorState
-            title="Nie udało się wczytać ekspozycji klienta"
-            message="Sprawdź połączenie z backendem i spróbuj ponownie."
+            title={t("clientDetail.exposureErrorTitle")}
+            message={t("errors.backendMessage")}
             onRetry={() => exposure.refetch()}
           />
         ) : null}
 
         <section className="grid gap-4 sm:grid-cols-3">
           <DataCard
-            label="Należność łączna"
+            label={t("clientDetail.totalOutstanding")}
             value={
               exposure.isError
                 ? "—"
@@ -186,13 +193,13 @@ export default function InvoiceSupervisorClientDetailPage() {
             isLoading={exposure.isLoading}
           />
           <DataCard
-            label="Niezapłacone faktury"
+            label={t("clientDetail.unpaidInvoices")}
             value={exposure.isError ? "—" : (exposure.data?.invoice_count ?? 0)}
             icon={Receipt}
             isLoading={exposure.isLoading}
           />
           <DataCard
-            label="Po terminie"
+            label={t("clientDetail.overdue")}
             value={exposure.isError ? "—" : (exposure.data?.overdue_count ?? 0)}
             icon={AlertTriangle}
             tone={exposure.data && exposure.data.overdue_count > 0 ? "warning" : "default"}
@@ -208,13 +215,13 @@ export default function InvoiceSupervisorClientDetailPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Faktury</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("clientDetail.invoicesCard")}</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {invoices.isError ? (
               <ErrorState
-                title="Nie udało się wczytać faktur"
-                message="Sprawdź połączenie z backendem i spróbuj ponownie."
+                title={t("invoices.loadErrorTitle")}
+                message={t("errors.backendMessage")}
                 onRetry={() => invoices.refetch()}
                 className="border-none"
               />
@@ -227,8 +234,8 @@ export default function InvoiceSupervisorClientDetailPage() {
                 emptyState={
                   <EmptyState
                     icon={Receipt}
-                    title="Brak faktur"
-                    description="Ten klient nie ma jeszcze żadnych faktur."
+                    title={t("invoices.emptyTitle")}
+                    description={t("clientDetail.invoicesEmptyDescription")}
                   />
                 }
               />

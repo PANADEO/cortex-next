@@ -25,20 +25,34 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus } from "lucide-react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { z } from "zod"
 
+// Komunikat walidacji jest KLUCZEM i18n, nie gotowym tekstem — schemat żyje na
+// poziomie modułu, więc `t` jeszcze nie istnieje.
 const schema = z.object({
-  name: z.string().min(3, "Nazwa musi mieć min. 3 znaki"),
+  name: z.string().min(3, "validation.policyNameMin"),
   restrictiveness: z.enum(["mała", "średnia", "duża", "surowa"]),
   tone_id: z.coerce.number().optional(),
   enable_email: z.boolean(),
   enable_sms: z.boolean(),
 })
 
+// Wartości poziomów zostają po polsku — to DANE wysyłane do backendu, nie napis.
+// Napis widoczny dla użytkownika bierze się z klucza obok. Kolejność kluczy jest
+// kolejnością opcji na liście.
+const RESTRICTIVENESS_KEYS: Record<FormInput["restrictiveness"], string> = {
+  mała: "restrictiveness.low",
+  średnia: "restrictiveness.medium",
+  duża: "restrictiveness.high",
+  surowa: "restrictiveness.strict",
+}
+
 type FormInput = z.input<typeof schema>
 type FormValues = z.output<typeof schema>
 
 export function InvoiceSupervisorPolicyFormDialog() {
+  const { t } = useTranslation(["invoice-supervisor", "common"])
   const [open, setOpen] = useState(false)
   const { data: tones } = useInvoiceSupervisorTones()
   const createPolicy = useInvoiceSupervisorCreatePolicy()
@@ -71,22 +85,26 @@ export function InvoiceSupervisorPolicyFormDialog() {
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="size-4" />
-          Nowa polityka
+          {t("policyForm.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nowa polityka</DialogTitle>
+          <DialogTitle>{t("policyForm.title")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <div className="space-y-1">
-            <Label>Nazwa</Label>
+            <Label>{t("policyForm.nameLabel")}</Label>
             <Input {...register("name")} />
-            {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+            {errors.name && (
+              <p className="text-xs text-destructive">
+                {errors.name.message ? t(errors.name.message) : null}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1">
-            <Label>Restrykcyjność (jak często/mocno przypominać)</Label>
+            <Label>{t("policyForm.restrictivenessLabel")}</Label>
             <Select
               value={watch("restrictiveness")}
               onValueChange={(v) => setValue("restrictiveness", v as FormInput["restrictiveness"])}
@@ -95,22 +113,23 @@ export function InvoiceSupervisorPolicyFormDialog() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="mała">Mała</SelectItem>
-                <SelectItem value="średnia">Średnia</SelectItem>
-                <SelectItem value="duża">Duża</SelectItem>
-                <SelectItem value="surowa">Surowa</SelectItem>
+                {Object.entries(RESTRICTIVENESS_KEYS).map(([value, labelKey]) => (
+                  <SelectItem key={value} value={value}>
+                    {t(labelKey)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-1">
-            <Label>Ton (jak brzmi wiadomość) — niezależny od restrykcyjności</Label>
+            <Label>{t("policyForm.toneLabel")}</Label>
             <Select
               value={String(watch("tone_id") ?? "")}
               onValueChange={(v) => setValue("tone_id", Number(v))}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Wybierz ton" />
+                <SelectValue placeholder={t("policyForm.tonePlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {tones?.map((tone) => (
@@ -123,7 +142,7 @@ export function InvoiceSupervisorPolicyFormDialog() {
           </div>
 
           <div className="flex items-center justify-between rounded-lg border p-3">
-            <Label htmlFor="enable_email">Kanał e-mail</Label>
+            <Label htmlFor="enable_email">{t("policyForm.emailChannel")}</Label>
             <Switch
               id="enable_email"
               checked={watch("enable_email")}
@@ -131,7 +150,7 @@ export function InvoiceSupervisorPolicyFormDialog() {
             />
           </div>
           <div className="flex items-center justify-between rounded-lg border p-3">
-            <Label htmlFor="enable_sms">Kanał SMS</Label>
+            <Label htmlFor="enable_sms">{t("policyForm.smsChannel")}</Label>
             <Switch
               id="enable_sms"
               checked={watch("enable_sms")}
@@ -141,7 +160,7 @@ export function InvoiceSupervisorPolicyFormDialog() {
 
           <DialogFooter>
             <Button type="submit" disabled={createPolicy.isPending}>
-              Zapisz
+              {t("common:actions.save")}
             </Button>
           </DialogFooter>
         </form>

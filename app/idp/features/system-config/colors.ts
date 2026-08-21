@@ -51,22 +51,24 @@ const TILE_COLORS: Record<string, TileColorClasses> = {
   blue: { iconBg: "bg-blue-200 dark:bg-blue-900/40", iconFg: "text-blue-700 dark:text-blue-300" },
 }
 
-/** Podpowiedzi dla palety swatchy w formularzu Aplikacja (etykieta PL +
- *  klasy do podglądu) — kolejność jak w tabeli D2 (paleta zweryfikowana). */
+/** Podpowiedzi dla palety swatchy w formularzu Aplikacja (KLUCZ etykiety w
+ *  przestrzeni `system-config` + klasy do podglądu) — kolejność jak w tabeli D2
+ *  (paleta zweryfikowana). Klucz, nie gotowy napis: ten moduł nie jest
+ *  komponentem, więc nie ma skąd wziąć `t`. */
 export const TILE_COLOR_OPTIONS: ReadonlyArray<
-  { value: string; label: string } & TileColorClasses
+  { value: string; labelKey: string } & TileColorClasses
 > = [
-  { value: "rose", label: "Różowy", ...TILE_COLORS.rose! },
-  { value: "sky", label: "Błękitny", ...TILE_COLORS.sky! },
-  { value: "cyan", label: "Cyjan", ...TILE_COLORS.cyan! },
-  { value: "indigo", label: "Indygo", ...TILE_COLORS.indigo! },
-  { value: "amber", label: "Bursztynowy", ...TILE_COLORS.amber! },
-  { value: "emerald", label: "Szmaragdowy", ...TILE_COLORS.emerald! },
-  { value: "violet", label: "Fioletowy", ...TILE_COLORS.violet! },
-  { value: "slate", label: "Szary", ...TILE_COLORS.slate! },
-  { value: "teal", label: "Morski", ...TILE_COLORS.teal! },
-  { value: "orange", label: "Pomarańczowy", ...TILE_COLORS.orange! },
-  { value: "blue", label: "Niebieski", ...TILE_COLORS.blue! },
+  { value: "rose", labelKey: "applications.color.rose", ...TILE_COLORS.rose! },
+  { value: "sky", labelKey: "applications.color.sky", ...TILE_COLORS.sky! },
+  { value: "cyan", labelKey: "applications.color.cyan", ...TILE_COLORS.cyan! },
+  { value: "indigo", labelKey: "applications.color.indigo", ...TILE_COLORS.indigo! },
+  { value: "amber", labelKey: "applications.color.amber", ...TILE_COLORS.amber! },
+  { value: "emerald", labelKey: "applications.color.emerald", ...TILE_COLORS.emerald! },
+  { value: "violet", labelKey: "applications.color.violet", ...TILE_COLORS.violet! },
+  { value: "slate", labelKey: "applications.color.slate", ...TILE_COLORS.slate! },
+  { value: "teal", labelKey: "applications.color.teal", ...TILE_COLORS.teal! },
+  { value: "orange", labelKey: "applications.color.orange", ...TILE_COLORS.orange! },
+  { value: "blue", labelKey: "applications.color.blue", ...TILE_COLORS.blue! },
 ]
 
 /** `applications.color` -> para klas ikony kafelka, z fallbackiem na

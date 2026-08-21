@@ -34,6 +34,7 @@ import {
 } from "@cortex/ui"
 import { Download, FileDown, Loader2, Send } from "lucide-react"
 import { type FormEvent, useEffect, useId, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 interface ExportMenuProps {
@@ -47,8 +48,6 @@ const FORMAT_EXTENSION: Record<string, string> = {
   xml: "xml",
   json: "json",
 }
-
-const DEFAULT_EMAIL_BODY = "W załączniku eksport."
 
 interface EmailDraft {
   templateName: string
@@ -81,6 +80,7 @@ function getDefaultEmailTemplate(
 }
 
 export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
+  const { t } = useTranslation("misc")
   const templates = useExportTemplates()
   const me = useMe()
   const [downloading, setDownloading] = useState<string | null>(null)
@@ -119,7 +119,7 @@ export function ExportMenu({ packageId, fileName }: ExportMenuProps) {
       format: template.format,
       toEmail: defaultEmailRecipient,
       subject: `Export ${template.display_name}`,
-      body: DEFAULT_EMAIL_BODY,
+      body: t("export.emailDefaultBody"),
     })
   }
 

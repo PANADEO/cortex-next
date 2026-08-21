@@ -2,6 +2,7 @@
 
 import { DataCard } from "@cortex/ui"
 import { Activity, Boxes, Brain, Layers, Send, Users } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { formatNumber } from "../format"
 import type { UsageTotals } from "../types"
 
@@ -10,60 +11,71 @@ import type { UsageTotals } from "../types"
  * rozumowania, których tamten w ogóle nie pokazywał.
  */
 export function MetricsBar({ totals }: { totals: UsageTotals }) {
+  const { t } = useTranslation(["token-usage", "common"])
+
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       <DataCard
-        label="Tokeny łącznie"
+        label={t("metrics.totalTokens.label")}
         value={formatNumber(totals.totalTokens)}
-        description={`${formatNumber(totals.requestTokens)} w żądaniach, ${formatNumber(totals.responseTokens)} w odpowiedziach`}
+        description={t("metrics.totalTokens.description", {
+          request: formatNumber(totals.requestTokens),
+          response: formatNumber(totals.responseTokens),
+        })}
         icon={Layers}
       />
       <DataCard
-        label="Liczba żądań"
+        label={t("metrics.requestCount.label")}
         value={formatNumber(totals.requestCount)}
         // Nieudane żądania liczą się do request_count, ale mają zera w tokenach
         // (proxy.go:463-465, 498-500) — bez tej noty średnia wygląda na błąd.
-        description="Wliczając żądania nieudane, które nie zużyły tokenów"
+        description={t("metrics.requestCount.description")}
         icon={Send}
       />
       <DataCard
-        label="Aktywni użytkownicy"
+        label={t("metrics.activeUsers.label")}
         value={formatNumber(totals.activeUsers)}
         description={
           totals.userCount > totals.activeUsers
-            ? `${formatNumber(totals.userCount)} widocznych, w tym bez zużycia`
-            : "Z niezerowym zużyciem tokenów"
+            ? t("metrics.activeUsers.withIdle", { total: formatNumber(totals.userCount) })
+            : t("metrics.activeUsers.description")
         }
         icon={Users}
       />
       <DataCard
-        label="Średnia na użytkownika"
+        label={t("metrics.averagePerUser.label")}
         value={formatNumber(totals.averageTokensPerActiveUser)}
-        description="Liczona po aktywnych użytkownikach"
+        description={t("metrics.averagePerUser.description")}
         icon={Activity}
       />
       <DataCard
-        label="Tokeny rozumowania"
+        label={t("metrics.reasoningTokens.label")}
         value={formatNumber(totals.reasoningTokens)}
-        description="Raportowane osobno przez modele reasoningowe"
+        description={t("metrics.reasoningTokens.description")}
         icon={Brain}
       />
       <DataCard
-        label="Tokeny z cache"
+        label={t("metrics.cachedTokens.label")}
         value={formatNumber(totals.cachedTokens)}
-        description="Część żądań obsłużona z pamięci podręcznej dostawcy"
+        description={t("metrics.cachedTokens.description")}
         icon={Boxes}
       />
       <DataCard
-        label="Modele"
+        label={t("metrics.models.label")}
         value={formatNumber(totals.modelCount)}
-        description={totals.topModel ? `Najczęstszy: ${totals.topModel}` : "Brak danych"}
+        description={
+          totals.topModel
+            ? t("metrics.models.top", { model: totals.topModel })
+            : t("common:state.empty")
+        }
         icon={Boxes}
       />
       <DataCard
-        label="Aplikacje"
+        label={t("metrics.apps.label")}
         value={formatNumber(totals.appCount)}
-        description={totals.topApp ? `Najczęstsza: ${totals.topApp}` : "Brak danych"}
+        description={
+          totals.topApp ? t("metrics.apps.top", { app: totals.topApp }) : t("common:state.empty")
+        }
         icon={Layers}
       />
     </div>

@@ -1,1 +1,68 @@
-{}
+{
+  "rules": {
+    "editor": {
+      "loading": "Loading rule…",
+      "notFoundTitle": "Rule not found",
+      "notFoundMessage": "It may have been deleted.",
+      "back": "Back",
+      "saveMetadata": "Save metadata",
+      "saveAsVersion": "Save as v{{version}}",
+      "categoryLabel": "Category",
+      "statusLabel": "Status",
+      "triggerLabel": "Default trigger",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Short summary",
+      "tabDefinition": "Definition",
+      "tabSimulation": "Simulation",
+      "tabVersions": "Versions"
+    },
+    "toasts": {
+      "needNlDefinition": "Write the plain-language definition first.",
+      "compiled": "Compiled. Open the Simulation tab to try it out.",
+      "needSamplePackage": "Pick a sample package.",
+      "needCompileForPreview": "Compile the rule first (Definition tab).",
+      "metadataSaved": "Rule metadata saved.",
+      "needCompileForSave": "Compile the rule first.",
+      "versionSaved": "Saved as v{{version}}",
+      "versionLoaded": "Loaded v{{version}}"
+    },
+    "definition": {
+      "title": "Rule in plain language",
+      "nlPlaceholder": "Describe the transformation in English or Polish.\n\nExample: 'Split the freight cost from transport_info.cost\nin proportion to the net weight of each invoice line.'",
+      "versionNotesLabel": "Version note (optional)",
+      "versionNotesPlaceholder": "What changed in this version?",
+      "advancedToggle": "Advanced — generated Python",
+      "compiledCodeLabel": "Compiled code (read-only)",
+      "recompile": "Recompile",
+      "pythonPlaceholder": "# Click 'Recompile' to generate Python from the definition."
+    },
+    "explanation": {
+      "title": "What the AI understands",
+      "analyzing": "Analysing…",
+      "emptyHint": "Start writing the rule on the left. The AI summarises what it does as you type and proposes an example on concrete numbers.",
+      "tooShort": "Type at least a few words.",
+      "workedExample": "Worked example",
+      "affectedColumns": "Columns added / changed",
+      "concerns": "Assumptions / caveats",
+      "clarifyingQuestions": "Clarifying questions"
+    },
+    "simulation": {
+      "title": "Simulation on real data",
+      "packagePlaceholder": "Pick a package…",
+      "run": "Test run",
+      "needCompile": "Compile the rule on the Definition tab first.",
+      "pickPackage": "Pick a package and click “Test run” to see before/after.",
+      "newColumns": "New columns:",
+      "columnLine": "Line",
+      "columnField": "Field",
+      "columnBefore": "Before",
+      "columnAfter": "After"
+    },
+    "versions": {
+      "title": "Version history",
+      "empty": "No versions yet. Compile and save the first one.",
+      "current": "current",
+      "load": "Load"
+    }
+  }
+}

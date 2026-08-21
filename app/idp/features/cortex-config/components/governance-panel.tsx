@@ -15,6 +15,7 @@ import {
 import { Pencil, Plus, ShieldCheck, Trash2, UserPlus } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { useGovernanceConfig, useUpdateGovernance } from "../hooks/use-governance"
 import { AccessDeniedState } from "./config-screen"
 
@@ -67,11 +68,12 @@ function EntityRow({
 }
 
 export function GovernancePanel() {
+  const { t } = useTranslation("cortex-config")
   const governance = useGovernanceConfig()
   const updateGovernance = useUpdateGovernance()
   const [adminInput, setAdminInput] = useState("")
 
-  if (governance.isPending) return <LoadingState label="Wczytywanie konfiguracji..." />
+  if (governance.isPending) return <LoadingState label={t("state.loadingConfig")} />
   if (governance.isError) return <AccessDeniedState />
 
   const config: CoworkGovernanceConfig = governance.data
@@ -88,8 +90,7 @@ export function GovernancePanel() {
     <div className="space-y-4">
       {openMode ? (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
-          <strong>Tryb otwarty:</strong> nikt nie ma jeszcze przypisanej roli, więc każdy użytkownik
-          widzi wszystkie kafelki. Governance włączy się przy pierwszym przypisaniu roli.
+          <strong>{t("governance.openModeTitle")}</strong> {t("governance.openModeBody")}
         </div>
       ) : null}
 
@@ -98,20 +99,20 @@ export function GovernancePanel() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">Role (bramki dostępu)</CardTitle>
-                <CardDescription>Kto może otwierać kafelki projektów</CardDescription>
+                <CardTitle className="text-base">{t("governance.rolesTitle")}</CardTitle>
+                <CardDescription>{t("governance.rolesDescription")}</CardDescription>
               </div>
               <Button asChild size="sm">
                 <Link href="/cortex-config/governance/roles/new">
                   <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  Rola
+                  {t("governance.addRole")}
                 </Link>
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-2">
             {config.roles.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Brak ról.</p>
+              <p className="text-sm text-muted-foreground">{t("governance.rolesEmpty")}</p>
             ) : (
               config.roles.map((role) => (
                 <EntityRow
@@ -119,9 +120,9 @@ export function GovernancePanel() {
                   name={role.name}
                   badges={[role.id]}
                   editHref={`/cortex-config/governance/roles/${encodeURIComponent(role.id)}`}
-                  editAriaLabel={`Edytuj rolę ${role.name}`}
+                  editAriaLabel={t("governance.editRoleAria", { name: role.name })}
                   onDelete={() => saveRoles(config.roles.filter((r) => r.id !== role.id))}
-                  deleteAriaLabel={`Usuń rolę ${role.name}`}
+                  deleteAriaLabel={t("governance.deleteRoleAria", { name: role.name })}
                 />
               ))
             )}
@@ -132,20 +133,20 @@ export function GovernancePanel() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">Użytkownicy</CardTitle>
-                <CardDescription>Przypisania email → role (centralne)</CardDescription>
+                <CardTitle className="text-base">{t("governance.usersTitle")}</CardTitle>
+                <CardDescription>{t("governance.usersDescription")}</CardDescription>
               </div>
               <Button asChild size="sm">
                 <Link href="/cortex-config/governance/users/new">
                   <UserPlus className="mr-1.5 h-3.5 w-3.5" />
-                  Przypisz
+                  {t("governance.addAssignment")}
                 </Link>
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-2">
             {Object.keys(config.userAssignments).length === 0 ? (
-              <p className="text-sm text-muted-foreground">Brak przypisań (tryb otwarty).</p>
+              <p className="text-sm text-muted-foreground">{t("governance.usersEmpty")}</p>
             ) : (
               Object.entries(config.userAssignments).map(([email, roleIds]) => (
                 <EntityRow
@@ -153,13 +154,13 @@ export function GovernancePanel() {
                   name={email}
                   badges={roleIds}
                   editHref={`/cortex-config/governance/users/${encodeURIComponent(email)}`}
-                  editAriaLabel={`Edytuj przypisanie ${email}`}
+                  editAriaLabel={t("governance.editAssignmentAria", { email })}
                   onDelete={() => {
                     const next = { ...config.userAssignments }
                     delete next[email]
                     saveAssignments(next)
                   }}
-                  deleteAriaLabel={`Usuń przypisanie ${email}`}
+                  deleteAriaLabel={t("governance.deleteAssignmentAria", { email })}
                 />
               ))
             )}
@@ -169,10 +170,8 @@ export function GovernancePanel() {
         <Card className="xl:col-span-2">
           <CardHeader className="pb-3">
             <div>
-              <CardTitle className="text-base">Administratorzy</CardTitle>
-              <CardDescription>
-                Kto może otwierać ten panel. Pusta lista = każdy zalogowany (tryb bootstrap).
-              </CardDescription>
+              <CardTitle className="text-base">{t("governance.adminsTitle")}</CardTitle>
+              <CardDescription>{t("governance.adminsDescription")}</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -180,7 +179,7 @@ export function GovernancePanel() {
               {config.adminEmails.length === 0 ? (
                 <Badge variant="outline">
                   <ShieldCheck className="mr-1 h-3 w-3" />
-                  tryb bootstrap
+                  {t("governance.bootstrapBadge")}
                 </Badge>
               ) : (
                 config.adminEmails.map((email) => (
@@ -189,7 +188,7 @@ export function GovernancePanel() {
                     <button
                       type="button"
                       className="ml-1 text-muted-foreground hover:text-destructive"
-                      aria-label={`Usuń administratora ${email}`}
+                      aria-label={t("governance.deleteAdminAria", { email })}
                       onClick={() =>
                         updateGovernance.mutate({
                           adminEmails: config.adminEmails.filter((admin) => admin !== email),
@@ -217,11 +216,11 @@ export function GovernancePanel() {
               <Input
                 value={adminInput}
                 onChange={(event) => setAdminInput(event.target.value)}
-                placeholder="admin@firma.pl"
+                placeholder={t("governance.adminPlaceholder")}
                 type="email"
               />
               <Button type="submit" variant="outline" disabled={updateGovernance.isPending}>
-                Dodaj
+                {t("governance.add")}
               </Button>
             </form>
           </CardContent>

@@ -49,6 +49,7 @@ import {
 } from "@cortex/ui"
 import { AlertTriangle, Copy, Plus } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 /** Sentinel dla szablonu, który jeszcze nie istnieje w bazie — musi zgadzać
@@ -56,8 +57,9 @@ import { toast } from "sonner"
 const NEW_TEMPLATE_ID = "nowy"
 const PREVIEW_DEBOUNCE_MS = 350
 
-const EMPTY_DRAFT: FrameTemplateInputDto = {
-  name: "Nowy szablon",
+/** Nazwa jest POZA tą stałą, bo jako jedyne pole draftu jest napisem dla
+ *  użytkownika — wstawia ją `t()` już w komponencie. */
+const EMPTY_DRAFT: Omit<FrameTemplateInputDto, "name"> = {
   colorBg: "#5B3DA8",
   colorText: "#FFFFFF",
   colorAccent: "#FF8C42",
@@ -91,6 +93,7 @@ function toDraft(template: FrameTemplateDto): FrameTemplateInputDto {
 }
 
 export default function TemplatesPage() {
+  const { t } = useTranslation(["ilustromat", "common"])
   const templatesQuery = useFrameTemplates()
   const createTemplate = useCreateTemplate()
   const updateTemplate = useUpdateTemplate()
@@ -100,7 +103,10 @@ export default function TemplatesPage() {
   const uploadTemplateAsset = useUploadTemplateAsset()
 
   const [editedId, setEditedId] = useState<string>(NEW_TEMPLATE_ID)
-  const [draft, setDraft] = useState<FrameTemplateInputDto>(EMPTY_DRAFT)
+  const [draft, setDraft] = useState<FrameTemplateInputDto>(() => ({
+    ...EMPTY_DRAFT,
+    name: t("templates.defaultName"),
+  }))
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null)
 
   const templates = templatesQuery.data ?? []
@@ -139,7 +145,7 @@ export default function TemplatesPage() {
 
   function startNew() {
     setEditedId(NEW_TEMPLATE_ID)
-    setDraft(EMPTY_DRAFT)
+    setDraft({ ...EMPTY_DRAFT, name: t("templates.defaultName") })
   }
 
   function edit(template: FrameTemplateDto) {
@@ -159,11 +165,13 @@ export default function TemplatesPage() {
         setDraft((current) => ({ ...current, fontSource: "custom", fontLibraryId: null }))
       }
       toast.success(
-        result.fontFamily ? `Wgrano font: ${result.fontFamily}` : "Wgrano plik do szablonu",
+        result.fontFamily
+          ? t("toasts.fontUploaded", { family: result.fontFamily })
+          : t("toasts.assetUploaded"),
       )
       setPreviewBlob(null)
     } catch (error) {
-      toastApiError(error, "Nie udało się wgrać pliku")
+      toastApiError(error, t("toasts.uploadFailed"))
     }
   }
 
@@ -173,22 +181,19 @@ export default function TemplatesPage() {
       if (editedId === NEW_TEMPLATE_ID) {
         const created = await createTemplate.mutateAsync(body)
         setEditedId(created.id)
-        toast.success(`Utworzono szablon ${created.name}`)
+        toast.success(t("toasts.created", { name: created.name }))
       } else {
         await updateTemplate.mutateAsync({ id: editedId, body })
-        toast.success("Zapisano zmiany w szablonie")
+        toast.success(t("toasts.saved"))
       }
     } catch (error) {
-      toastApiError(error, "Nie udało się zapisać szablonu")
+      toastApiError(error, t("toasts.saveFailed"))
     }
   }
 
   return (
     <>
-      <PageHeader
-        title="Szablony marki"
-        description="Font, kolory, logo i geometria ramki. Podgląd renderuje się tą samą funkcją co gotowy kafelek."
-      />
+      <PageHeader title={t("templates.title")} description={t("templates.description")} />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
@@ -196,16 +201,18 @@ export default function TemplatesPage() {
             <CardContent className="flex flex-col gap-4 pt-6">
               <div className="flex items-center justify-between">
                 <Label>
-                  {editedId === NEW_TEMPLATE_ID ? "Nowy szablon" : `Edycja: ${editedId}`}
+                  {editedId === NEW_TEMPLATE_ID
+                    ? t("templates.newTemplate")
+                    : t("templates.editing", { id: editedId })}
                 </Label>
                 <Button type="button" variant="outline" size="sm" onClick={startNew}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Nowy
+                  {t("templates.newAction")}
                 </Button>
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="template-name">Nazwa</Label>
+                <Label htmlFor="template-name">{t("templates.nameLabel")}</Label>
                 <Input
                   id="template-name"
                   value={draft.name}
@@ -214,30 +221,30 @@ export default function TemplatesPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="template-color-bg">Kolor tła</Label>
+                <Label htmlFor="template-color-bg">{t("templates.colorBgLabel")}</Label>
                 <ColorInput
                   id="template-color-bg"
-                  aria-label="Kolor tła"
+                  aria-label={t("templates.colorBgLabel")}
                   value={draft.colorBg}
                   onChange={(colorBg) => setDraft({ ...draft, colorBg })}
                 />
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="template-color-text">Kolor tekstu</Label>
+                <Label htmlFor="template-color-text">{t("templates.colorTextLabel")}</Label>
                 <ColorInput
                   id="template-color-text"
-                  aria-label="Kolor tekstu"
+                  aria-label={t("templates.colorTextLabel")}
                   value={draft.colorText}
                   onChange={(colorText) => setDraft({ ...draft, colorText })}
                 />
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="template-color-accent">Kolor akcentu</Label>
+                <Label htmlFor="template-color-accent">{t("templates.colorAccentLabel")}</Label>
                 <ColorInput
                   id="template-color-accent"
-                  aria-label="Kolor akcentu"
+                  aria-label={t("templates.colorAccentLabel")}
                   value={draft.colorAccent}
                   onChange={(colorAccent) => setDraft({ ...draft, colorAccent })}
                 />
@@ -246,16 +253,15 @@ export default function TemplatesPage() {
               {contrast !== null && contrast < WCAG_AA_NORMAL_TEXT ? (
                 <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Niski kontrast</AlertTitle>
+                  <AlertTitle>{t("templates.contrastTitle")}</AlertTitle>
                   <AlertDescription>
-                    Kontrast tekstu do tła wynosi {contrast.toFixed(2)}:1, poniżej progu WCAG AA
-                    (4.5:1). Tekst może być nieczytelny.
+                    {t("templates.contrastBody", { ratio: contrast.toFixed(2) })}
                   </AlertDescription>
                 </Alert>
               ) : null}
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="template-font">Font</Label>
+                <Label htmlFor="template-font">{t("templates.fontLabel")}</Label>
                 <Select
                   value={draft.fontLibraryId ?? "noto-sans"}
                   onValueChange={(fontLibraryId) =>
@@ -268,7 +274,7 @@ export default function TemplatesPage() {
                   <SelectContent>
                     {fonts.map((font) => (
                       <SelectItem key={font.id} value={font.id}>
-                        {font.label}
+                        {t(`options.font.${font.id}`, { defaultValue: font.label })}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -276,7 +282,7 @@ export default function TemplatesPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="template-website">Tekst strony w pasku</Label>
+                <Label htmlFor="template-website">{t("templates.websiteLabel")}</Label>
                 <Input
                   id="template-website"
                   value={draft.websiteText ?? ""}
@@ -286,7 +292,7 @@ export default function TemplatesPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label>Pozycja logo</Label>
+                <Label>{t("templates.logoPositionLabel")}</Label>
                 <RadioGroup
                   value={draft.logoPosition}
                   onValueChange={(logoPosition) =>
@@ -300,7 +306,7 @@ export default function TemplatesPage() {
                     <div key={value} className="flex items-center gap-2">
                       <RadioGroupItem id={`logo-${value}`} value={value} />
                       <Label htmlFor={`logo-${value}`} className="font-normal">
-                        {label}
+                        {t(`options.logoPosition.${value}`, { defaultValue: label })}
                       </Label>
                     </div>
                   ))}
@@ -308,7 +314,7 @@ export default function TemplatesPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label>Układ</Label>
+                <Label>{t("templates.layoutLabel")}</Label>
                 <RadioGroup
                   value={draft.layout}
                   onValueChange={(layout) =>
@@ -319,7 +325,7 @@ export default function TemplatesPage() {
                     <div key={value} className="flex items-center gap-2">
                       <RadioGroupItem id={`layout-${value}`} value={value} />
                       <Label htmlFor={`layout-${value}`} className="font-normal">
-                        {label}
+                        {t(`options.layout.${value}`, { defaultValue: label })}
                       </Label>
                     </div>
                   ))}
@@ -327,7 +333,7 @@ export default function TemplatesPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label>Wyrównanie tekstu</Label>
+                <Label>{t("templates.textAlignLabel")}</Label>
                 <RadioGroup
                   value={draft.textAlign}
                   onValueChange={(textAlign) =>
@@ -338,7 +344,7 @@ export default function TemplatesPage() {
                     <div key={value} className="flex items-center gap-2">
                       <RadioGroupItem id={`align-${value}`} value={value} />
                       <Label htmlFor={`align-${value}`} className="font-normal">
-                        {label}
+                        {t(`options.textAlign.${value}`, { defaultValue: label })}
                       </Label>
                     </div>
                   ))}
@@ -346,7 +352,9 @@ export default function TemplatesPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="template-radius">Zaokrąglenie rogów: {draft.cornerRadius} px</Label>
+                <Label htmlFor="template-radius">
+                  {t("templates.cornerRadiusLabel", { value: draft.cornerRadius })}
+                </Label>
                 <Slider
                   id="template-radius"
                   min={CORNER_RADIUS_RANGE[0]}
@@ -361,7 +369,9 @@ export default function TemplatesPage() {
 
               <div className="flex flex-col gap-2">
                 <Label htmlFor="template-ratio">
-                  Minimalna wysokość pola obrazu: {Math.round(draft.minImageAreaRatio * 100)}%
+                  {t("templates.minImageAreaLabel", {
+                    value: Math.round(draft.minImageAreaRatio * 100),
+                  })}
                 </Label>
                 <Slider
                   id="template-ratio"
@@ -383,38 +393,36 @@ export default function TemplatesPage() {
                 onClick={save}
                 disabled={createTemplate.isPending || updateTemplate.isPending}
               >
-                Zapisz szablon
+                {t("templates.save")}
               </Button>
 
               {/* Assety wgrywa się dopiero do ISTNIEJĄCEGO szablonu — muszą
                   mieć do czego się dowiązać (template_assets.template_id). */}
               {editedId === NEW_TEMPLATE_ID ? (
-                <p className="text-xs text-muted-foreground">
-                  Własny font i logo wgrasz po zapisaniu szablonu.
-                </p>
+                <p className="text-xs text-muted-foreground">{t("templates.afterSaveHint")}</p>
               ) : (
                 <div className="flex flex-col gap-4 border-t border-border pt-4">
                   <div className="flex flex-col gap-2">
-                    <Label>Własny font (regular)</Label>
+                    <Label>{t("templates.fontRegularLabel")}</Label>
                     <FileUploader
                       accept=".ttf,.otf"
-                      description="Plik TTF/OTF. Font bez kompletu polskich znaków zostanie odrzucony."
+                      description={t("templates.fontRegularHint")}
                       onFilesSelected={(files) => uploadAsset("font-regular", files)}
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Label>Własny font (bold)</Label>
+                    <Label>{t("templates.fontBoldLabel")}</Label>
                     <FileUploader
                       accept=".ttf,.otf"
-                      description="Odmiana pogrubiona — używana w tytule kafelka."
+                      description={t("templates.fontBoldHint")}
                       onFilesSelected={(files) => uploadAsset("font-bold", files)}
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Label>Logo</Label>
+                    <Label>{t("templates.logoLabel")}</Label>
                     <FileUploader
                       accept=".png,.jpg,.jpeg,.svg"
-                      description="PNG, JPG lub SVG — normalizowane do PNG z przezroczystością."
+                      description={t("templates.logoHint")}
                       onFilesSelected={(files) => uploadAsset("logo", files)}
                     />
                   </div>
@@ -426,23 +434,23 @@ export default function TemplatesPage() {
           <div className="flex flex-col gap-6">
             <Card>
               <CardContent className="flex flex-col gap-3 pt-6">
-                <Label>Podgląd na żywo</Label>
+                <Label>{t("templates.previewTitle")}</Label>
                 {previewUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={previewUrl}
-                    alt="Podgląd szablonu"
+                    alt={t("templates.previewAlt")}
                     className="h-auto w-full rounded-md border border-border"
                   />
                 ) : (
-                  <p className="text-sm text-muted-foreground">Przeliczanie podglądu...</p>
+                  <p className="text-sm text-muted-foreground">{t("templates.previewPending")}</p>
                 )}
               </CardContent>
             </Card>
 
             <Card>
               <CardContent className="flex flex-col gap-3 pt-6">
-                <Label>Istniejące szablony</Label>
+                <Label>{t("templates.listTitle")}</Label>
                 <ul className="flex flex-col gap-2">
                   {templates.map((template) => (
                     <li
@@ -452,9 +460,9 @@ export default function TemplatesPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm">{template.name}</span>
                         {template.isActive ? (
-                          <Badge variant="secondary">Aktywny</Badge>
+                          <Badge variant="secondary">{t("templates.active")}</Badge>
                         ) : (
-                          <Badge variant="outline">Wyłączony</Badge>
+                          <Badge variant="outline">{t("templates.inactive")}</Badge>
                         )}
                       </div>
                       <div className="flex gap-2">
@@ -464,7 +472,7 @@ export default function TemplatesPage() {
                           size="sm"
                           onClick={() => edit(template)}
                         >
-                          Edytuj
+                          {t("common:actions.edit")}
                         </Button>
                         <Button
                           type="button"
@@ -473,7 +481,7 @@ export default function TemplatesPage() {
                           onClick={() => duplicate.mutate(template.id)}
                         >
                           <Copy className="mr-2 h-4 w-4" />
-                          Duplikuj
+                          {t("templates.duplicate")}
                         </Button>
                         <Button
                           type="button"
@@ -483,7 +491,7 @@ export default function TemplatesPage() {
                             setActive.mutate({ id: template.id, isActive: !template.isActive })
                           }
                         >
-                          {template.isActive ? "Wyłącz" : "Włącz"}
+                          {template.isActive ? t("templates.disable") : t("templates.enable")}
                         </Button>
                       </div>
                     </li>

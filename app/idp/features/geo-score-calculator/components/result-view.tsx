@@ -14,14 +14,17 @@ import { Badge, Card, CardContent, Label, Progress } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { TrendingDown, TrendingUp } from "lucide-react"
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import { buildHighlightRanges, extractQuotedWord, toTextSegments } from "../highlight"
 import type { AnalyzeGeoScoreResponseDto, GeoScoreGrade } from "../types"
 
-const DIMENSION_LABELS = [
-  { key: "statistics", label: "Statystyki i dane" },
-  { key: "actionVerbs", label: "Czasowniki akcji" },
-  { key: "structure", label: "Struktura tekstu" },
-  { key: "objectivity", label: "Obiektywność" },
+// Nazwy wymiarów żyją w przestrzeni `geo-score-calculator` pod `dimensions.*`,
+// bo te same cztery napisy opisują suwaki wag w Ustawieniach.
+const DIMENSIONS = [
+  { key: "statistics", labelKey: "dimensions.statistics" },
+  { key: "actionVerbs", labelKey: "dimensions.actionVerbs" },
+  { key: "structure", labelKey: "dimensions.structure" },
+  { key: "objectivity", labelKey: "dimensions.objectivity" },
 ] as const
 
 const GRADE_TONE: Record<GeoScoreGrade, { text: string; border: string; bg: string }> = {
@@ -52,6 +55,7 @@ export function GeoScoreResultView({
   delta = null,
   headerActions,
 }: GeoScoreResultViewProps) {
+  const { t } = useTranslation("geo-score-calculator")
   const [activeHighlightStart, setActiveHighlightStart] = useState<number | null>(null)
   const highlightRefs = useRef(new Map<number, HTMLElement>())
 
@@ -90,7 +94,7 @@ export function GeoScoreResultView({
               {result.totalScore.toFixed(1)}
             </span>
             <span className={cn("text-sm font-medium", GRADE_TONE[result.grade].text)}>
-              Ocena {result.grade}
+              {t("result.gradeLabel", { grade: result.grade })}
             </span>
           </div>
 
@@ -109,11 +113,15 @@ export function GeoScoreResultView({
               ) : (
                 <TrendingDown className="h-3.5 w-3.5" />
               )}
-              {delta >= 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1)} od poprzedniej analizy
+              {t("result.delta", {
+                value: delta >= 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1),
+              })}
             </Badge>
           ) : null}
 
-          <span className="text-sm text-muted-foreground">{result.wordCount} słów w tekście</span>
+          <span className="text-sm text-muted-foreground">
+            {t("result.wordsInText", { words: result.wordCount })}
+          </span>
 
           {headerActions ? <div className="ml-auto">{headerActions}</div> : null}
         </CardContent>
@@ -122,10 +130,7 @@ export function GeoScoreResultView({
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]">
         <Card>
           <CardContent className="pt-6">
-            <p className="mb-3 text-xs text-muted-foreground">
-              Podświetlone fragmenty: dane liczbowe, słowa subiektywne. Kliknij rekomendację obok,
-              żeby przejść do powiązanego fragmentu.
-            </p>
+            <p className="mb-3 text-xs text-muted-foreground">{t("result.highlightHint")}</p>
             <div className="whitespace-pre-wrap text-sm leading-relaxed">
               {segments.map((segment) =>
                 segment.highlighted ? (
@@ -154,12 +159,12 @@ export function GeoScoreResultView({
         <div className="flex flex-col gap-6">
           <Card>
             <CardContent className="flex flex-col gap-4 pt-6">
-              {DIMENSION_LABELS.map(({ key, label }) => {
+              {DIMENSIONS.map(({ key, labelKey }) => {
                 const score = result[key].score
                 return (
                   <div key={key} className="flex flex-col gap-1.5">
                     <div className="flex items-baseline justify-between text-sm">
-                      <span>{label}</span>
+                      <span>{t(labelKey)}</span>
                       <span className="tabular-nums text-muted-foreground">
                         {score.toFixed(1)}/100
                       </span>
@@ -177,8 +182,12 @@ export function GeoScoreResultView({
               {result.actionVerbs.foundVerbs.length > 0 ? (
                 <div className="flex flex-col gap-1.5 border-t border-border pt-3">
                   <span className="text-xs text-muted-foreground">
-                    Wykryte czasowniki akcji (metoda:{" "}
-                    {result.actionVerbs.method === "spacy" ? "spaCy" : "heurystyka"})
+                    {t("result.detectedVerbs", {
+                      method:
+                        result.actionVerbs.method === "spacy"
+                          ? "spaCy"
+                          : t("result.methodHeuristic"),
+                    })}
                   </span>
                   <div className="flex flex-wrap gap-1">
                     {result.actionVerbs.foundVerbs.map((verb) => (
@@ -195,7 +204,7 @@ export function GeoScoreResultView({
           {result.recommendations.length > 0 ? (
             <Card>
               <CardContent className="flex flex-col gap-2 pt-6">
-                <Label>Rekomendacje</Label>
+                <Label>{t("result.recommendations")}</Label>
                 <ul className="flex flex-col gap-1.5">
                   {result.recommendations.map((recommendation, index) => {
                     const clickable = extractQuotedWord(recommendation) !== null

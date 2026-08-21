@@ -1,1 +1,80 @@
-{}
+{
+  "generator": {
+    "description": "AI image generator — free-form prompt, optional reference image. Raw model output, no branding.",
+    "promptLabel": "Image description",
+    "promptPlaceholder": "E.g. a minimalist illustration of a fox against mountains, flat vector style",
+    "contextLabel": "Additional context (optional)",
+    "contextPlaceholder": "Style, colour palette, composition constraints...",
+    "referenceImagesLabel": "Reference images (optional, max. {{max}})",
+    "referenceImagesHint": "PNG, JPEG or WebP",
+    "referenceThumbAlt": "Preview of reference image {{index}}",
+    "fidelityLabel": "Fidelity to the reference image",
+    "fidelityHint": "Fidelity steers the CONTENT of the prompt sent to the model, not a separate API parameter.",
+    "fidelity": {
+      "high": {
+        "label": "High",
+        "description": "The model sticks to the composition and the details of the attached image."
+      },
+      "loose": {
+        "label": "Loose",
+        "description": "The model treats the attached image as loose inspiration."
+      }
+    },
+    "variantCountLabel": "Number of variants",
+    "generate": "Generate",
+    "generating": "Generating...",
+    "emptyTitle": "No images generated yet",
+    "emptyDescription": "Enter a description and click Generate. Every generation is archived automatically.",
+    "errors": {
+      "tooManyImages": "At most {{max}} reference images",
+      "promptRequired": "The image description is required",
+      "generateFailed": "Could not generate the images"
+    }
+  },
+  "history": {
+    "title": "Archive",
+    "description": "Every generation you have run — prompt, variants and metadata.",
+    "loading": "Loading archive…",
+    "searchPlaceholder": "Search by prompt text…",
+    "emptyTitle": "No generations",
+    "emptyDescription": "Generate your first image on the Generator screen — it will show up here automatically.",
+    "referenceUsed": "Used",
+    "columns": {
+      "prompt": "Prompt",
+      "model": "Model",
+      "variants": "Variants",
+      "referenceImage": "Reference image",
+      "date": "Date",
+      "viewDetailsAria": "View details of the generation from {{date}}"
+    }
+  },
+  "detail": {
+    "title": "Generation details",
+    "description": "The full prompt, the context and every variant of this generation.",
+    "backToHistory": "Archive",
+    "loading": "Loading generation…",
+    "notFoundTitle": "Generation not found",
+    "notFoundDescription": "The generation does not exist or you do not have access to it.",
+    "promptLabel": "Prompt",
+    "contextLabel": "Additional context",
+    "referenceImageLabel": "Reference image",
+    "referenceUsed": "This generation used a reference image",
+    "referenceNotStored": "The file itself is not stored — it only went into the request sent to the model.",
+    "referenceNone": "None — generated from the prompt alone.",
+    "modelLabel": "Model",
+    "variantsLabel": "Variants",
+    "generatedAtLabel": "Generated",
+    "deleteConfirmTitle": "Delete this generation?",
+    "deleteConfirmBody": "All of its variants disappear together with the generation. This cannot be undone.",
+    "deleted": "Generation deleted",
+    "errors": {
+      "deleteFailed": "Could not delete the generation"
+    }
+  },
+  "variants": {
+    "variantLabel": "Variant {{index}}",
+    "previewAria": "Preview of variant {{index}}",
+    "previewTitle": "Preview",
+    "downloadAll": "Download all (ZIP)"
+  }
+}

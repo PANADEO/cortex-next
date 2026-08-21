@@ -58,6 +58,7 @@ import {
   Upload,
 } from "lucide-react"
 import { useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 const NEW_TEMPLATE_SENTINEL = "__new__"
@@ -82,6 +83,7 @@ function templateExportShape(template: TemplateDto | TemplateInputDto) {
 }
 
 export default function ContentGuruTemplatesPage() {
+  const { t } = useTranslation(["content-guru", "common"])
   const templatesQuery = useTemplates()
   const configQuery = useContentGuruConfig()
   const createTemplate = useCreateTemplate()
@@ -140,14 +142,14 @@ export default function ContentGuruTemplatesPage() {
     try {
       if (isNew) {
         await createTemplate.mutateAsync(draft)
-        toast.success(`Utworzono szablon "${draft.name}"`)
+        toast.success(t("templates.toasts.created", { name: draft.name }))
       } else if (editedId) {
         await updateTemplate.mutateAsync({ id: editedId, body: draft })
-        toast.success("Zapisano zmiany w szablonie")
+        toast.success(t("templates.toasts.saved"))
       }
       closeEditor()
     } catch (error) {
-      toastApiError(error, "Nie udało się zapisać szablonu")
+      toastApiError(error, t("templates.errors.saveFailed"))
     }
   }
 
@@ -155,9 +157,9 @@ export default function ContentGuruTemplatesPage() {
     if (!templateToDelete) return
     try {
       await deleteTemplate.mutateAsync(templateToDelete.id)
-      toast.success(`Usunięto szablon "${templateToDelete.name}"`)
+      toast.success(t("templates.toasts.deleted", { name: templateToDelete.name }))
     } catch (error) {
-      toastApiError(error, "Nie udało się usunąć szablonu")
+      toastApiError(error, t("templates.errors.deleteFailed"))
     } finally {
       setTemplateToDelete(null)
     }
@@ -166,9 +168,9 @@ export default function ContentGuruTemplatesPage() {
   async function handleDuplicate(template: TemplateDto) {
     try {
       const copy = await duplicateTemplate.mutateAsync(template.id)
-      toast.success(`Utworzono kopię: "${copy.name}"`)
+      toast.success(t("templates.toasts.duplicated", { name: copy.name }))
     } catch (error) {
-      toastApiError(error, "Nie udało się zduplikować szablonu")
+      toastApiError(error, t("templates.errors.duplicateFailed"))
     }
   }
 
@@ -186,10 +188,10 @@ export default function ContentGuruTemplatesPage() {
         model: testModel,
       })
       if (result.status === "done-with-warnings") {
-        toast.warning("Testowa generacja zawiera zakazane frazy z Twojej listy")
+        toast.warning(t("templates.toasts.testWithWarnings"))
       }
     } catch (error) {
-      toastApiError(error, "Nie udało się przeprowadzić testowej generacji")
+      toastApiError(error, t("templates.errors.testFailed"))
     }
   }
 
@@ -212,9 +214,7 @@ export default function ContentGuruTemplatesPage() {
         )
 
         if (valid.length === 0) {
-          toast.error(
-            "Plik nie zawiera poprawnych szablonów (wymagane pola: name, category, content)",
-          )
+          toast.error(t("templates.errors.importInvalid"))
           return
         }
 
@@ -228,9 +228,9 @@ export default function ContentGuruTemplatesPage() {
             // nie ma blokować całej paczki.
           }
         }
-        toast.success(`Zaimportowano ${succeeded} z ${valid.length} szablonów`)
+        toast.success(t("templates.toasts.imported", { succeeded, total: valid.length }))
       })
-      .catch(() => toast.error("Nie udało się odczytać pliku JSON"))
+      .catch(() => toast.error(t("templates.errors.importReadFailed")))
   }
 
   // Świadomie BEZ useMemo — cell renderery domykają się nad handlerami
@@ -240,11 +240,11 @@ export default function ContentGuruTemplatesPage() {
   // sortowalne (meta-swap w withSortableHeaders), nie wymaga stabilnej
   // referencji `columns` żeby `cell` renderery działały poprawnie.
   const columns: ColumnDef<TemplateDto, unknown>[] = [
-    { accessorKey: "category", header: "Kategoria", enableSorting: true },
-    { accessorKey: "name", header: "Nazwa", enableSorting: true },
+    { accessorKey: "category", header: t("templates.columns.category"), enableSorting: true },
+    { accessorKey: "name", header: t("templates.columns.name"), enableSorting: true },
     {
       accessorKey: "updatedAt",
-      header: "Data edycji",
+      header: t("templates.columns.updatedAt"),
       enableSorting: true,
       cell: ({ row }) => formatAbsolute(row.original.updatedAt),
     },
@@ -257,7 +257,7 @@ export default function ContentGuruTemplatesPage() {
             size="icon"
             variant="ghost"
             onClick={() => openEdit(row.original)}
-            aria-label={`Edytuj szablon ${row.original.name}`}
+            aria-label={t("templates.a11y.edit", { name: row.original.name })}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -266,7 +266,7 @@ export default function ContentGuruTemplatesPage() {
               <Button
                 size="icon"
                 variant="ghost"
-                aria-label={`Więcej akcji dla ${row.original.name}`}
+                aria-label={t("templates.a11y.more", { name: row.original.name })}
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
@@ -274,7 +274,7 @@ export default function ContentGuruTemplatesPage() {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleDuplicate(row.original)}>
                 <Copy className="mr-1.5 h-3.5 w-3.5" />
-                Duplikuj
+                {t("templates.actions.duplicate")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() =>
@@ -285,7 +285,7 @@ export default function ContentGuruTemplatesPage() {
                 }
               >
                 <Download className="mr-1.5 h-3.5 w-3.5" />
-                Eksportuj JSON
+                {t("templates.actions.exportJson")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -293,7 +293,7 @@ export default function ContentGuruTemplatesPage() {
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                Usuń
+                {t("common:actions.delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -305,8 +305,8 @@ export default function ContentGuruTemplatesPage() {
   return (
     <>
       <PageHeader
-        title="Szablony"
-        description="Prompty treści współdzielone przez wszystkich użytkowników Content Guru."
+        title={t("templates.title")}
+        description={t("templates.description")}
         actions={
           <div className="flex gap-2">
             <input
@@ -322,7 +322,7 @@ export default function ContentGuruTemplatesPage() {
             />
             <Button size="sm" variant="outline" onClick={() => importInputRef.current?.click()}>
               <Upload className="mr-1.5 h-3.5 w-3.5" />
-              Importuj JSON
+              {t("templates.actions.importJson")}
             </Button>
             {categoryFilter !== ALL_CATEGORIES ? (
               <Button
@@ -333,12 +333,12 @@ export default function ContentGuruTemplatesPage() {
                 }
               >
                 <Download className="mr-1.5 h-3.5 w-3.5" />
-                Eksportuj kategorię
+                {t("templates.actions.exportCategory")}
               </Button>
             ) : null}
             <Button size="sm" onClick={openNew}>
               <Plus className="mr-1.5 h-3.5 w-3.5" />
-              Nowy szablon
+              {t("templates.newButton")}
             </Button>
           </div>
         }
@@ -350,14 +350,14 @@ export default function ContentGuruTemplatesPage() {
             htmlFor="content-guru-templates-category"
             className="text-xs text-muted-foreground"
           >
-            Kategoria
+            {t("templates.filters.categoryLabel")}
           </Label>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger id="content-guru-templates-category" className="w-64">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL_CATEGORIES}>Wszystkie kategorie</SelectItem>
+              <SelectItem value={ALL_CATEGORIES}>{t("templates.filters.allCategories")}</SelectItem>
               {categories.map((category) => (
                 <SelectItem key={category} value={category}>
                   {category}
@@ -368,20 +368,20 @@ export default function ContentGuruTemplatesPage() {
         </div>
 
         {templatesQuery.isLoading ? (
-          <LoadingState label="Wczytywanie szablonów…" />
+          <LoadingState label={t("templates.loading")} />
         ) : (
           <CortexDataGrid
             columns={columns}
             data={filtered}
             bordered
             searchable
-            searchPlaceholder="Szukaj po nazwie…"
+            searchPlaceholder={t("templates.searchPlaceholder")}
             getRowId={(row) => row.id}
             emptyState={
               <EmptyState
                 icon={Sparkles}
-                title="Brak szablonów"
-                description="Dodaj pierwszy szablon, żeby można go było wybrać na ekranie generowania."
+                title={t("templates.empty.title")}
+                description={t("templates.empty.description")}
               />
             }
           />
@@ -391,13 +391,17 @@ export default function ContentGuruTemplatesPage() {
       <Dialog open={editorOpen} onOpenChange={(open) => !open && closeEditor()}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{isNew ? "Nowy szablon" : `Edycja: ${draft.name}`}</DialogTitle>
+            <DialogTitle>
+              {isNew
+                ? t("templates.dialog.newTitle")
+                : t("templates.dialog.editTitle", { name: draft.name })}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="template-name">Nazwa</Label>
+                <Label htmlFor="template-name">{t("templates.form.name")}</Label>
                 <Input
                   id="template-name"
                   value={draft.name}
@@ -405,7 +409,7 @@ export default function ContentGuruTemplatesPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="template-category">Kategoria</Label>
+                <Label htmlFor="template-category">{t("templates.form.category")}</Label>
                 <Input
                   id="template-category"
                   value={draft.category}
@@ -415,7 +419,7 @@ export default function ContentGuruTemplatesPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="template-content">Treść promptu</Label>
+              <Label htmlFor="template-content">{t("templates.form.content")}</Label>
               <Textarea
                 id="template-content"
                 rows={10}
@@ -425,30 +429,27 @@ export default function ContentGuruTemplatesPage() {
             </div>
 
             <div className="flex flex-col gap-3 rounded-md border border-border p-4">
-              <Label>Testuj generację</Label>
-              <p className="text-xs text-muted-foreground">
-                Jednorazowe wywołanie modelu z bieżącą (możliwie niezapisaną) treścią szablonu i
-                przykładowym tematem. Nic nie zapisuje się w archiwum ani na liście szablonów.
-              </p>
+              <Label>{t("templates.test.title")}</Label>
+              <p className="text-xs text-muted-foreground">{t("templates.test.hint")}</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="template-test-topic" className="text-xs">
-                    Temat testowy (opcjonalnie)
+                    {t("templates.test.topicLabel")}
                   </Label>
                   <Input
                     id="template-test-topic"
-                    placeholder="Przykładowy temat testowy"
+                    placeholder={t("templates.test.topicPlaceholder")}
                     value={testTopic}
                     onChange={(event) => setTestTopic(event.target.value)}
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="template-test-model" className="text-xs">
-                    Model
+                    {t("templates.test.modelLabel")}
                   </Label>
                   <Select value={testModel} onValueChange={setTestModel}>
                     <SelectTrigger id="template-test-model">
-                      <SelectValue placeholder="Wybierz model" />
+                      <SelectValue placeholder={t("templates.test.modelPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       {models.map((option) => (
@@ -468,7 +469,9 @@ export default function ContentGuruTemplatesPage() {
                 disabled={!draft.content.trim() || !testModel || testGeneration.isPending}
               >
                 <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                {testGeneration.isPending ? "Generowanie…" : "Testuj generację"}
+                {testGeneration.isPending
+                  ? t("templates.test.running")
+                  : t("templates.test.runButton")}
               </Button>
 
               {testGeneration.data ? (
@@ -478,7 +481,7 @@ export default function ContentGuruTemplatesPage() {
                       variant="outline"
                       className="w-fit border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300"
                     >
-                      Zawiera zakazane frazy
+                      {t("status.withWarnings")}
                     </Badge>
                   ) : null}
                   <div className="whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-3 text-sm leading-relaxed">
@@ -491,7 +494,7 @@ export default function ContentGuruTemplatesPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={closeEditor}>
-              Anuluj
+              {t("common:actions.cancel")}
             </Button>
             <Button
               onClick={handleSave}
@@ -503,7 +506,7 @@ export default function ContentGuruTemplatesPage() {
                 updateTemplate.isPending
               }
             >
-              Zapisz szablon
+              {t("templates.saveButton")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -515,16 +518,17 @@ export default function ContentGuruTemplatesPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Usunąć szablon {templateToDelete?.name}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("templates.deleteDialog.title", { name: templateToDelete?.name ?? "" })}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Szablon zniknie z listy wyboru na ekranie generowania. Treści wygenerowane z jego
-              użyciem w przeszłości zostają w archiwum bez zmian. Tej operacji nie da się cofnąć.
+              {t("templates.deleteDialog.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleteTemplate.isPending}>
-              Usuń
+              {t("common:actions.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

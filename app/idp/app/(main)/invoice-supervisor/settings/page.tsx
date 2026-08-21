@@ -23,36 +23,34 @@ import {
 } from "@cortex/ui"
 import { PlayCircle } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 
-const DAY_LABELS: Record<string, string> = {
-  monday: "Pon",
-  tuesday: "Wt",
-  wednesday: "Śr",
-  thursday: "Czw",
-  friday: "Pt",
-  saturday: "Sob",
-  sunday: "Nd",
-}
-const DAY_ORDER = Object.keys(DAY_LABELS)
+const DAY_ORDER = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+] as const
 
 export default function InvoiceSupervisorSettingsPage() {
+  const { t } = useTranslation("invoice-supervisor")
   const { data: config, isLoading } = useInvoiceSupervisorSchedulerConfig()
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <PageHeader title="Ustawienia" />
+      <PageHeader title={t("settings.title")} />
 
       <div className="px-8 py-6">
         {/* AI-002: always visible, not tucked behind a hover tooltip — this is
             the reassurance that the scheduler never sends anything itself. */}
-        <p className="mb-4 max-w-2xl text-sm text-muted-foreground">
-          Harmonogram tylko generuje propozycje do przeglądu — nigdy nie wysyła niczego
-          automatycznie (AI-002).
-        </p>
+        <p className="mb-4 max-w-2xl text-sm text-muted-foreground">{t("settings.notice")}</p>
 
         <Card className="max-w-2xl">
           <CardHeader>
-            <CardTitle className="text-base">Harmonogram</CardTitle>
+            <CardTitle className="text-base">{t("settings.scheduleCard")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {isLoading || !config ? (
@@ -70,6 +68,7 @@ export default function InvoiceSupervisorSettingsPage() {
 // Only mounted once `config` has actually loaded, so local state can be
 // lazily initialized straight from it — no effect needed to "re-sync" state.
 function SchedulerForm({ config }: { config: InvoiceSupervisorSchedulerConfig }) {
+  const { t } = useTranslation("invoice-supervisor")
   const updateConfig = useInvoiceSupervisorUpdateSchedulerConfig()
   const runNow = useInvoiceSupervisorRunSchedulerNow()
 
@@ -85,11 +84,13 @@ function SchedulerForm({ config }: { config: InvoiceSupervisorSchedulerConfig })
     <>
       <div className="flex items-center justify-between rounded-lg border border-border p-3">
         <div>
-          <Label>Harmonogram aktywny</Label>
+          <Label>{t("settings.enabledLabel")}</Label>
           <p className="text-xs text-muted-foreground">
-            {config.is_running ? "Działa" : "Zatrzymany"}
+            {config.is_running ? t("settings.running") : t("settings.stopped")}
             {config.next_run_time &&
-              ` · następne uruchomienie: ${formatInvoiceSupervisorDateTime(config.next_run_time)}`}
+              ` · ${t("settings.nextRun", {
+                time: formatInvoiceSupervisorDateTime(config.next_run_time),
+              })}`}
           </p>
         </div>
         <Switch
@@ -99,7 +100,7 @@ function SchedulerForm({ config }: { config: InvoiceSupervisorSchedulerConfig })
       </div>
 
       <div className="space-y-2">
-        <Label>Dni tygodnia</Label>
+        <Label>{t("settings.daysLabel")}</Label>
         <div className="flex flex-wrap gap-2">
           {DAY_ORDER.map((day) => (
             <Badge
@@ -108,7 +109,7 @@ function SchedulerForm({ config }: { config: InvoiceSupervisorSchedulerConfig })
               className="cursor-pointer"
               onClick={() => toggleDay(day)}
             >
-              {DAY_LABELS[day]}
+              {t(`settings.days.${day}`)}
             </Badge>
           ))}
         </div>
@@ -116,7 +117,7 @@ function SchedulerForm({ config }: { config: InvoiceSupervisorSchedulerConfig })
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <Label>Godzina</Label>
+          <Label>{t("settings.hourLabel")}</Label>
           <Input
             type="number"
             min={0}
@@ -126,7 +127,7 @@ function SchedulerForm({ config }: { config: InvoiceSupervisorSchedulerConfig })
           />
         </div>
         <div className="space-y-1">
-          <Label>Minuta</Label>
+          <Label>{t("settings.minuteLabel")}</Label>
           <Input
             type="number"
             min={0}
@@ -144,11 +145,11 @@ function SchedulerForm({ config }: { config: InvoiceSupervisorSchedulerConfig })
           onClick={() => updateConfig.mutate({ days, start_hour: hour, start_minute: minute })}
           disabled={updateConfig.isPending}
         >
-          Zapisz harmonogram
+          {t("settings.saveSchedule")}
         </Button>
         <Button variant="outline" onClick={() => runNow.mutate()} disabled={runNow.isPending}>
           <PlayCircle className="size-4" />
-          Sprawdź statusy teraz
+          {t("settings.runNow")}
         </Button>
       </div>
     </>

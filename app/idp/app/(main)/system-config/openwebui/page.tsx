@@ -5,6 +5,7 @@ import type { OpenwebuiFullSyncResult, OpenwebuiPlanEntry } from "@cortex/servic
 import { Alert, AlertDescription, AlertTitle, Button } from "@cortex/ui"
 import { AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 
 /**
  * „Synchronizuj wszystko" — doprowadza OpenWebUI do stanu Konfiguracji Systemu.
@@ -15,18 +16,23 @@ import { useState } from "react"
  * nigdy nie uzgadniał, więc każda niepełność danych w Cortexie trafiłaby do
  * OpenWebUI hurtem — z odcięciem ludzi włącznie. Admin ma zobaczyć KOGO to
  * dotyczy, zanim to się stanie.
+ *
+ * Mapa niżej trzyma KLUCZE tłumaczeń, nie gotowe napisy: stoi poza
+ * komponentem, więc nie ma tu `t`. `Record<...>` wymusza dopisanie klucza,
+ * gdy serwis doda nową operację.
  */
-const ACTION_LABEL: Record<OpenwebuiPlanEntry["action"], string> = {
-  "create-group": "Załóż grupę",
-  create: "Załóż konto",
-  "promote-admin": "Nadaj admina",
-  "demote-user": "Odbierz admina",
-  restore: "Przywróć dostęp",
-  revoke: "Odetnij dostęp",
-  "orphan-revoke": "Odetnij (spoza Cortexa)",
+const ACTION_LABEL_KEYS: Record<OpenwebuiPlanEntry["action"], string> = {
+  "create-group": "openwebui.action.createGroup",
+  create: "openwebui.action.create",
+  "promote-admin": "openwebui.action.promoteAdmin",
+  "demote-user": "openwebui.action.demoteUser",
+  restore: "openwebui.action.restore",
+  revoke: "openwebui.action.revoke",
+  "orphan-revoke": "openwebui.action.orphanRevoke",
 }
 
 export default function OpenwebuiSyncPage() {
+  const { t } = useTranslation("system-config")
   const [result, setResult] = useState<OpenwebuiFullSyncResult | null>(null)
   const [busy, setBusy] = useState<"preview" | "apply" | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +48,7 @@ export default function OpenwebuiSyncPage() {
         : await apiClient.get<OpenwebuiFullSyncResult>("/api/system-config/openwebui/sync")
       setResult(data)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Nie udało się połączyć z OpenWebUI")
+      setError(caught instanceof Error ? caught.message : t("openwebui.connectFailed"))
     } finally {
       setBusy(null)
     }
@@ -54,27 +60,26 @@ export default function OpenwebuiSyncPage() {
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6 p-6">
       <div>
-        <h1 className="text-xl font-semibold">Synchronizacja OpenWebUI</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Doprowadza konta i grupy w OpenWebUI do stanu z Konfiguracji Systemu. Podgląd niczego nie
-          zapisuje — zmiany wykonuje dopiero przycisk obok.
-        </p>
+        <h1 className="text-xl font-semibold">{t("openwebui.title")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("openwebui.description")}</p>
       </div>
 
       <div className="flex flex-wrap gap-2">
         <Button onClick={() => run(false)} disabled={busy !== null} variant="outline">
           <RefreshCw className="mr-2 h-4 w-4" />
-          {busy === "preview" ? "Liczę różnice…" : "Pokaż różnice"}
+          {busy === "preview" ? t("openwebui.previewBusy") : t("openwebui.preview")}
         </Button>
         <Button onClick={() => run(true)} disabled={busy !== null || plan.length === 0}>
-          {busy === "apply" ? "Synchronizuję…" : `Zastosuj (${plan.length})`}
+          {busy === "apply"
+            ? t("openwebui.applyBusy")
+            : t("openwebui.apply", { count: plan.length })}
         </Button>
       </div>
 
       {error ? (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Błąd</AlertTitle>
+          <AlertTitle>{t("openwebui.errorTitle")}</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
@@ -82,7 +87,7 @@ export default function OpenwebuiSyncPage() {
       {notConfigured ? (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>OpenWebUI nie jest skonfigurowane</AlertTitle>
+          <AlertTitle>{t("openwebui.notConfiguredTitle")}</AlertTitle>
           <AlertDescription>{result?.message}</AlertDescription>
         </Alert>
       ) : null}
@@ -90,8 +95,8 @@ export default function OpenwebuiSyncPage() {
       {result && !notConfigured && plan.length === 0 ? (
         <Alert>
           <CheckCircle2 className="h-4 w-4" />
-          <AlertTitle>Brak różnic</AlertTitle>
-          <AlertDescription>OpenWebUI odzwierciedla stan Konfiguracji Systemu.</AlertDescription>
+          <AlertTitle>{t("openwebui.noDiffTitle")}</AlertTitle>
+          <AlertDescription>{t("openwebui.noDiffBody")}</AlertDescription>
         </Alert>
       ) : null}
 
@@ -100,16 +105,16 @@ export default function OpenwebuiSyncPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left">
               <tr>
-                <th className="px-4 py-2 font-medium">Kogo dotyczy</th>
-                <th className="px-4 py-2 font-medium">Operacja</th>
-                <th className="px-4 py-2 font-medium">Zmiana</th>
+                <th className="px-4 py-2 font-medium">{t("openwebui.columnSubject")}</th>
+                <th className="px-4 py-2 font-medium">{t("openwebui.columnAction")}</th>
+                <th className="px-4 py-2 font-medium">{t("openwebui.columnDetail")}</th>
               </tr>
             </thead>
             <tbody>
               {plan.map((entry) => (
                 <tr key={`${entry.email}-${entry.action}`} className="border-t border-border">
                   <td className="px-4 py-2">{entry.email}</td>
-                  <td className="px-4 py-2">{ACTION_LABEL[entry.action]}</td>
+                  <td className="px-4 py-2">{t(ACTION_LABEL_KEYS[entry.action])}</td>
                   <td className="px-4 py-2 text-muted-foreground">{entry.detail}</td>
                 </tr>
               ))}
@@ -132,10 +137,10 @@ export default function OpenwebuiSyncPage() {
             <CheckCircle2 className="h-4 w-4" />
           )}
           <AlertTitle>
-            Wykonano {result.applied} z {result.plan.length}
+            {t("openwebui.appliedTitle", { applied: result.applied, total: result.plan.length })}
           </AlertTitle>
           <AlertDescription>
-            Grupy: {result.groups.status}
+            {t("openwebui.groupsLabel")} {result.groups.status}
             {result.groups.message ? ` — ${result.groups.message}` : ""}
             {result.failures.length > 0 ? (
               <ul className="mt-2 list-disc pl-5">

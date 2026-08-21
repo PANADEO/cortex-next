@@ -8,7 +8,7 @@ import {
   useUpdateApplication,
 } from "@/features/system-config/hooks"
 import { resolveApplicationIcon } from "@/features/system-config/icons"
-import { KIND_LABELS, KIND_SHORT_LABELS } from "@/features/system-config/kinds"
+import { KIND_LABEL_KEYS, KIND_SHORT_LABEL_KEYS } from "@/features/system-config/kinds"
 import type { Application } from "@/features/system-config/types"
 import { toastApiError } from "@cortex/api"
 import type { TileKind } from "@cortex/tile-sdk"
@@ -45,6 +45,7 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { systemConfigTile } from "../manifest"
 
@@ -76,6 +77,7 @@ const EMPTY_FORM: NewApplicationForm = {
 const SORT_ORDER_STEP = 10
 
 export default function ApplicationsPage() {
+  const { t } = useTranslation(["system-config", "common"])
   const router = useRouter()
   const applicationsQuery = useApplications()
   const createApplication = useCreateApplication()
@@ -137,7 +139,7 @@ export default function ApplicationsPage() {
         if (!form.manifestCode) return
         const activated = await activateApplication.mutateAsync(form.manifestCode)
         setIsOpen(false)
-        toast.success(`Aktywowano aplikację ${activated.name}`)
+        toast.success(t("applications.toast.activated", { name: activated.name }))
         router.push(`/system-config/applications/${activated.code}`)
         return
       }
@@ -150,14 +152,14 @@ export default function ApplicationsPage() {
         url: form.url.trim(),
       })
       setIsOpen(false)
-      toast.success(`Dodano aplikację ${created.name}`)
+      toast.success(t("applications.toast.created", { name: created.name }))
       router.push(`/system-config/applications/${created.code}`)
     } catch (error) {
       toastApiError(
         error,
         form.kind === "native"
-          ? "Nie udało się aktywować aplikacji"
-          : "Nie udało się dodać aplikacji",
+          ? t("applications.errors.activateFailed")
+          : t("applications.errors.createFailed"),
       )
     }
   }
@@ -176,15 +178,15 @@ export default function ApplicationsPage() {
       })
       toast.success(
         application.isActive
-          ? `Wyłączono aplikację ${application.name}`
-          : `Włączono aplikację ${application.name}`,
+          ? t("applications.toast.disabled", { name: application.name })
+          : t("applications.toast.enabled", { name: application.name }),
       )
     } catch (error) {
       toastApiError(
         error,
         application.isActive
-          ? "Nie udało się wyłączyć aplikacji"
-          : "Nie udało się włączyć aplikacji",
+          ? t("applications.errors.disableFailed")
+          : t("applications.errors.enableFailed"),
       )
     }
   }
@@ -240,8 +242,11 @@ export default function ApplicationsPage() {
       toastApiError(
         failures[0]?.reason,
         failures.length === changes.length
-          ? "Nie udało się zapisać nowej kolejności"
-          : `Nie udało się zapisać części zmian (${failures.length}/${changes.length}) — kolejność odświeżona z bazy`,
+          ? t("applications.errors.reorderFailed")
+          : t("applications.errors.reorderPartial", {
+              failed: failures.length,
+              total: changes.length,
+            }),
       )
     }
 
@@ -264,22 +269,22 @@ export default function ApplicationsPage() {
   return (
     <>
       <PageHeader
-        title="Aplikacje"
-        description="Aplikacje instancji. Kod aplikacji jest jednocześnie kodem uprawnienia sprawdzanym przy wejściu do modułu."
+        title={t("applications.title")}
+        description={t("applications.description")}
         actions={
           isReordering ? (
             <Button size="sm" variant="outline" onClick={exitReorderMode}>
-              Zakończ zmianę kolejności
+              {t("applications.reorderExit")}
             </Button>
           ) : (
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={enterReorderMode}>
                 <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
-                Zmień kolejność
+                {t("applications.reorderEnter")}
               </Button>
               <Button size="sm" onClick={openCreate}>
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
-                Dodaj aplikację
+                {t("applications.add")}
               </Button>
             </div>
           )
@@ -288,28 +293,25 @@ export default function ApplicationsPage() {
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         {isReordering ? (
-          <p className="text-xs text-muted-foreground">
-            Tryb zmiany kolejności: strzałki przenoszą wiersz i zapisują od razu. Kolejność decyduje
-            o układzie kafelków na hubie.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("applications.reorderHint")}</p>
         ) : null}
         {applicationsQuery.isLoading ? (
-          <LoadingState label="Wczytywanie aplikacji…" />
+          <LoadingState label={t("applications.loading")} />
         ) : applicationsQuery.isError ? (
           <EmptyState
             icon={LayoutDashboard}
-            title="Nie udało się wczytać aplikacji"
-            description="Sprawdź połączenie z bazą danych modułu Konfiguracja Systemu."
+            title={t("applications.loadFailedTitle")}
+            description={t("shared.dbConnectionHint")}
           />
         ) : applications.length === 0 ? (
           <EmptyState
             icon={LayoutDashboard}
-            title="Brak aplikacji"
-            description="Dodaj pierwszą aplikację. Hub nadal pokazuje kafelki zaszyte w kodzie — pusta lista niczego nie wygasza."
+            title={t("applications.emptyTitle")}
+            description={t("applications.emptyDescription")}
             action={
               <Button size="sm" onClick={openCreate}>
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
-                Dodaj aplikację
+                {t("applications.add")}
               </Button>
             }
           />
@@ -319,10 +321,10 @@ export default function ApplicationsPage() {
               <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
                 <tr>
                   <th className="px-4 py-2" />
-                  <th className="px-4 py-2 font-medium">Kod</th>
-                  <th className="px-4 py-2 font-medium">Nazwa</th>
-                  <th className="px-4 py-2 font-medium">Typ</th>
-                  <th className="px-4 py-2 font-medium">Status</th>
+                  <th className="px-4 py-2 font-medium">{t("applications.columnCode")}</th>
+                  <th className="px-4 py-2 font-medium">{t("applications.columnName")}</th>
+                  <th className="px-4 py-2 font-medium">{t("applications.columnKind")}</th>
+                  <th className="px-4 py-2 font-medium">{t("applications.columnStatus")}</th>
                   <th className="px-4 py-2" />
                 </tr>
               </thead>
@@ -338,11 +340,15 @@ export default function ApplicationsPage() {
                       <td className="px-4 py-2 font-mono text-xs">{application.code}</td>
                       <td className="px-4 py-2 font-medium">{application.name}</td>
                       <td className="px-4 py-2">
-                        <Badge variant="outline">{KIND_SHORT_LABELS[application.kind]}</Badge>
+                        <Badge variant="outline">
+                          {t(KIND_SHORT_LABEL_KEYS[application.kind])}
+                        </Badge>
                       </td>
                       <td className="px-4 py-2">
                         <Badge variant={application.isActive ? "default" : "secondary"}>
-                          {application.isActive ? "Aktywna" : "Wyłączona"}
+                          {application.isActive
+                            ? t("applications.statusActive")
+                            : t("applications.statusDisabled")}
                         </Badge>
                       </td>
                       <td className="px-4 py-2 text-right">
@@ -353,7 +359,7 @@ export default function ApplicationsPage() {
                               variant="ghost"
                               disabled={index === 0 || isMovingOrder}
                               onClick={() => moveApplication(index, -1)}
-                              aria-label={`Przenieś w górę: ${application.name}`}
+                              aria-label={t("applications.moveUpAria", { name: application.name })}
                             >
                               <ArrowUp className="h-4 w-4" />
                             </Button>
@@ -362,7 +368,9 @@ export default function ApplicationsPage() {
                               variant="ghost"
                               disabled={index === displayedApplications.length - 1 || isMovingOrder}
                               onClick={() => moveApplication(index, 1)}
-                              aria-label={`Przenieś w dół: ${application.name}`}
+                              aria-label={t("applications.moveDownAria", {
+                                name: application.name,
+                              })}
                             >
                               <ArrowDown className="h-4 w-4" />
                             </Button>
@@ -374,15 +382,13 @@ export default function ApplicationsPage() {
                               variant="ghost"
                               disabled={isSelfManaged || updateApplication.isPending}
                               title={
-                                isSelfManaged
-                                  ? "Nie można wyłączyć aplikacji Konfiguracja Systemu — odcięłoby to dostęp administratorom"
-                                  : undefined
+                                isSelfManaged ? t("applications.selfManagedTooltip") : undefined
                               }
                               onClick={() => handleToggleActive(application)}
                               aria-label={
                                 application.isActive
-                                  ? `Wyłącz aplikację ${application.name}`
-                                  : `Włącz aplikację ${application.name}`
+                                  ? t("applications.disableAria", { name: application.name })
+                                  : t("applications.enableAria", { name: application.name })
                               }
                             >
                               {application.isActive ? (
@@ -394,7 +400,9 @@ export default function ApplicationsPage() {
                             <Button
                               size="icon"
                               variant="ghost"
-                              aria-label={`Otwórz szczegóły ${application.name}`}
+                              aria-label={t("applications.openDetailsAria", {
+                                name: application.name,
+                              })}
                               onClick={() =>
                                 router.push(`/system-config/applications/${application.code}`)
                               }
@@ -416,12 +424,12 @@ export default function ApplicationsPage() {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nowa aplikacja</DialogTitle>
+            <DialogTitle>{t("applications.createTitle")}</DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="kind">Typ</Label>
+              <Label htmlFor="kind">{t("applications.form.kindLabel")}</Label>
               <Select
                 value={form.kind}
                 onValueChange={(value) => handleKindChange(value as TileKind)}
@@ -432,7 +440,7 @@ export default function ApplicationsPage() {
                 <SelectContent>
                   {TileKindSchema.options.map((kind) => (
                     <SelectItem key={kind} value={kind}>
-                      {KIND_LABELS[kind]}
+                      {t(KIND_LABEL_KEYS[kind])}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -445,18 +453,17 @@ export default function ApplicationsPage() {
               // tu wolnym tekstem, tylko wyborem z listy tego, co realnie ma
               // stronę w kodzie (defineTile() w danym module).
               <div className="grid gap-1.5">
-                <Label htmlFor="manifest">Moduł</Label>
+                <Label htmlFor="manifest">{t("applications.form.manifestLabel")}</Label>
                 {unactivatedNativeQuery.isLoading ? (
                   <Skeleton className="h-9 w-full rounded-md" />
                 ) : unactivatedNative.length === 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    Brak niezaktywowanych modułów — każdy natywny moduł zarejestrowany dziś w kodzie
-                    jest już aktywny w tej instancji.
+                    {t("applications.form.noManifests")}
                   </p>
                 ) : (
                   <Select value={form.manifestCode} onValueChange={selectManifest}>
                     <SelectTrigger id="manifest">
-                      <SelectValue placeholder="Wybierz moduł" />
+                      <SelectValue placeholder={t("applications.form.manifestPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       {unactivatedNative.map((candidate) => (
@@ -471,15 +478,19 @@ export default function ApplicationsPage() {
                 {selectedManifest ? (
                   <div className="mt-2 grid gap-2 rounded-md border border-border p-3 text-xs">
                     <div className="grid gap-0.5">
-                      <span className="text-muted-foreground">Kod uprawnienia</span>
+                      <span className="text-muted-foreground">
+                        {t("applications.form.entitlementCodeLabel")}
+                      </span>
                       <span className="font-mono">{selectedManifest.code}</span>
                     </div>
                     <div className="grid gap-0.5">
-                      <span className="text-muted-foreground">Ścieżka w aplikacji</span>
+                      <span className="text-muted-foreground">
+                        {t("applications.form.routeLabel")}
+                      </span>
                       <span className="font-mono">{selectedManifest.route}</span>
                     </div>
                     <span className="text-muted-foreground">
-                      Kod i ścieżka pochodzą z kodu modułu — nieedytowalne, także po aktywacji.
+                      {t("applications.form.manifestLockedHint")}
                     </span>
                   </div>
                 ) : null}
@@ -487,30 +498,28 @@ export default function ApplicationsPage() {
             ) : (
               <>
                 <div className="grid gap-1.5">
-                  <Label htmlFor="code">Kod uprawnienia</Label>
+                  <Label htmlFor="code">{t("applications.form.entitlementCodeLabel")}</Label>
                   <Input
                     id="code"
                     value={form.code}
                     onChange={(event) => update("code", event.target.value)}
-                    placeholder="np. czat-zewnetrzny"
+                    placeholder={t("applications.form.codePlaceholder")}
                   />
-                  <span className="text-xs text-muted-foreground">
-                    Małe litery, cyfry i myślnik. Po utworzeniu nie da się zmienić.
-                  </span>
+                  <span className="text-xs text-muted-foreground">{t("shared.codeHint")}</span>
                 </div>
 
                 <div className="grid gap-1.5">
-                  <Label htmlFor="name">Nazwa</Label>
+                  <Label htmlFor="name">{t("applications.form.nameLabel")}</Label>
                   <Input
                     id="name"
                     value={form.name}
                     onChange={(event) => update("name", event.target.value)}
-                    placeholder="np. Czat zewnętrzny"
+                    placeholder={t("applications.form.namePlaceholder")}
                   />
                 </div>
 
                 <div className="grid gap-1.5">
-                  <Label htmlFor="url">Adres zewnętrzny</Label>
+                  <Label htmlFor="url">{t("applications.form.urlLabel")}</Label>
                   <Input
                     id="url"
                     value={form.url}
@@ -522,14 +531,15 @@ export default function ApplicationsPage() {
             )}
 
             <p className="text-xs text-muted-foreground">
-              Pozostałe pola i uprawnienia ról ustawisz na stronie szczegółów, zaraz po{" "}
-              {form.kind === "native" ? "aktywacji" : "utworzeniu"}.
+              {form.kind === "native"
+                ? t("applications.form.nextStepNative")
+                : t("applications.form.nextStepExternal")}
             </p>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsOpen(false)}>
-              Anuluj
+              {t("common:actions.cancel")}
             </Button>
             <Button
               onClick={handleCreate}
@@ -539,7 +549,7 @@ export default function ApplicationsPage() {
                   : createApplication.isPending
               }
             >
-              {form.kind === "native" ? "Aktywuj" : "Utwórz"}
+              {form.kind === "native" ? t("applications.activate") : t("common:actions.create")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -10,6 +10,7 @@ import {
 import { Checkbox } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { Mail, MessageSquare } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface InvoiceSupervisorProposalListItemProps {
   proposal: InvoiceSupervisorProposal
@@ -26,6 +27,7 @@ export function InvoiceSupervisorProposalListItem({
   onSelectChange,
   onClick,
 }: InvoiceSupervisorProposalListItemProps) {
+  const { t } = useTranslation("invoice-supervisor")
   const ChannelIcon = proposal.channel === "email" ? Mail : MessageSquare
   const isPaymentDemand = proposal.escalation_stage === "payment_demand"
 
@@ -42,9 +44,7 @@ export function InvoiceSupervisorProposalListItem({
           checked={selected}
           onCheckedChange={(checked) => onSelectChange(checked === true)}
           disabled={isPaymentDemand}
-          aria-label={
-            isPaymentDemand ? "Wezwania do zapłaty wymagają pojedynczej akceptacji" : "Zaznacz"
-          }
+          aria-label={isPaymentDemand ? t("proposal.demandCheckboxAria") : t("proposal.selectAria")}
         />
       </div>
       <div className="min-w-0 flex-1">

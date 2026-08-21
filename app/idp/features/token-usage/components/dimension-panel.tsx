@@ -4,6 +4,7 @@ import { buildExportFileName, buildGroupCsv } from "@/lib/token-usage/csv"
 import { BarList, Button, CortexDataGrid, EmptyState } from "@cortex/ui"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Download, Inbox } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { downloadTextFile } from "../download"
 import { formatNumber, formatShare } from "../format"
 import type { UsageDateRange, UsageGroup } from "../types"
@@ -31,11 +32,13 @@ export function DimensionPanel({
   chartLimit = 15,
   showUserCount = true,
 }: DimensionPanelProps) {
+  const { t } = useTranslation("token-usage")
+
   const columns: ColumnDef<UsageGroup, unknown>[] = [
     { accessorKey: "key", header: dimensionLabel, enableSorting: true },
     {
       accessorKey: "totalTokens",
-      header: "Tokeny",
+      header: t("columns.totalTokens"),
       enableSorting: true,
       cell: ({ row }) => (
         <span className="tabular-nums">{formatNumber(row.original.totalTokens)}</span>
@@ -43,7 +46,7 @@ export function DimensionPanel({
     },
     {
       accessorKey: "requestCount",
-      header: "Żądania",
+      header: t("columns.requestCount"),
       enableSorting: true,
       cell: ({ row }) => (
         <span className="tabular-nums">{formatNumber(row.original.requestCount)}</span>
@@ -53,7 +56,7 @@ export function DimensionPanel({
       ? [
           {
             accessorKey: "userCount",
-            header: "Użytkownicy",
+            header: t("columns.userCount"),
             enableSorting: true,
             cell: ({ row }) => (
               <span className="tabular-nums">{formatNumber(row.original.userCount)}</span>
@@ -63,7 +66,7 @@ export function DimensionPanel({
       : []),
     {
       accessorKey: "share",
-      header: "Udział",
+      header: t("columns.share"),
       enableSorting: true,
       cell: ({ row }) => (
         <span className="tabular-nums text-muted-foreground">
@@ -77,7 +80,7 @@ export function DimensionPanel({
     return (
       <section className="space-y-3">
         <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
-        <EmptyState icon={Inbox} title="Brak danych w tym okresie" />
+        <EmptyState icon={Inbox} title={t("empty.noDataTitle")} />
       </section>
     )
   }
@@ -98,7 +101,7 @@ export function DimensionPanel({
           }
         >
           <Download className="mr-2 h-3.5 w-3.5" />
-          Pobierz CSV
+          {t("actions.downloadCsv")}
         </Button>
       </div>
 
@@ -107,15 +110,14 @@ export function DimensionPanel({
           label: group.key,
           value: group.totalTokens,
           share: group.share,
-          meta: `${formatNumber(group.requestCount)} żądań`,
+          meta: t("panel.barMeta", { requests: formatNumber(group.requestCount) }),
         }))}
         formatValue={formatNumber}
       />
 
       {groups.length > chartLimit ? (
         <p className="text-xs text-muted-foreground">
-          Lista słupkowa pokazuje {chartLimit} największych pozycji z {groups.length}. Tabela
-          poniżej zawiera komplet.
+          {t("panel.truncated", { shown: chartLimit, total: groups.length })}
         </p>
       ) : null}
 

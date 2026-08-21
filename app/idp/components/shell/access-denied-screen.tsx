@@ -16,7 +16,7 @@ interface AccessDeniedScreenProps {
 export function AccessDeniedScreen({ email, reason }: AccessDeniedScreenProps) {
   const { t } = useTranslation("shell")
   const isError = reason === "error"
-  const title = isError ? t("gate.deniedTitle") : "Brak dostępu"
+  const title = isError ? t("gate.deniedTitle") : t("gate.deniedHeading")
 
   const handleLogout = () => {
     window.location.assign("/logout")
@@ -59,11 +59,11 @@ export function AccessDeniedScreen({ email, reason }: AccessDeniedScreenProps) {
         <div className="mt-8 flex w-full flex-col gap-2">
           {isError ? (
             <Button onClick={handleRetry} className="w-full">
-              Spróbuj ponownie
+              {t("gate.retry")}
             </Button>
           ) : (
             <Button onClick={handleLogout} className="w-full">
-              Wyloguj się
+              {t("gate.signOut")}
             </Button>
           )}
         </div>

@@ -33,9 +33,11 @@ import {
 } from "@cortex/ui"
 import { Image as ImageIcon, Sparkles } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 export default function VisualGuruGenerationPage() {
+  const { t } = useTranslation("visual-guru")
   const generate = useGenerate()
 
   const [prompt, setPrompt] = useState("")
@@ -53,7 +55,7 @@ export default function VisualGuruGenerationPage() {
 
   function handleReferenceFilesChange(files: File[]) {
     if (files.length > MAX_REFERENCE_IMAGES) {
-      toast.error(`Maksymalnie ${MAX_REFERENCE_IMAGES} obrazy referencyjne`)
+      toast.error(t("generator.errors.tooManyImages", { max: MAX_REFERENCE_IMAGES }))
       setReferenceFiles(files.slice(0, MAX_REFERENCE_IMAGES))
       return
     }
@@ -62,7 +64,7 @@ export default function VisualGuruGenerationPage() {
 
   async function handleGenerate() {
     if (!prompt.trim()) {
-      toast.error("Opis obrazu jest wymagany")
+      toast.error(t("generator.errors.promptRequired"))
       return
     }
 
@@ -77,51 +79,49 @@ export default function VisualGuruGenerationPage() {
       })
       setResult(response)
     } catch (error) {
-      toastApiError(error, "Nie udało się wygenerować obrazów")
+      toastApiError(error, t("generator.errors.generateFailed"))
     }
   }
 
   return (
     <>
-      <PageHeader
-        title="Visual Guru"
-        description="Generator obrazów AI — swobodny prompt, opcjonalny obraz referencyjny. Surowy wynik modelu, bez brandingu."
-      />
+      {/* "Visual Guru" to nazwa własna kafelka — zostaje nietłumaczona. */}
+      <PageHeader title="Visual Guru" description={t("generator.description")} />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
           <Card>
             <CardContent className="flex flex-col gap-4 pt-6">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="visual-guru-prompt">Opis obrazu</Label>
+                <Label htmlFor="visual-guru-prompt">{t("generator.promptLabel")}</Label>
                 <Textarea
                   id="visual-guru-prompt"
                   rows={5}
                   value={prompt}
-                  placeholder="Np. minimalistyczna ilustracja lisa na tle gór, płaski styl wektorowy"
+                  placeholder={t("generator.promptPlaceholder")}
                   onChange={(event) => setPrompt(event.target.value)}
                 />
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="visual-guru-context">Dodatkowy kontekst (opcjonalnie)</Label>
+                <Label htmlFor="visual-guru-context">{t("generator.contextLabel")}</Label>
                 <Textarea
                   id="visual-guru-context"
                   rows={3}
                   value={additionalContext}
-                  placeholder="Styl, paleta kolorów, ograniczenia kompozycji..."
+                  placeholder={t("generator.contextPlaceholder")}
                   onChange={(event) => setAdditionalContext(event.target.value)}
                 />
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label>Obrazy referencyjne (opcjonalnie, maks. {MAX_REFERENCE_IMAGES})</Label>
+                <Label>{t("generator.referenceImagesLabel", { max: MAX_REFERENCE_IMAGES })}</Label>
                 <FileUploader
                   value={referenceFiles}
                   onChange={handleReferenceFilesChange}
                   accept="image/png,image/jpeg,image/webp"
                   multiple
-                  description="PNG, JPEG lub WebP"
+                  description={t("generator.referenceImagesHint")}
                 />
                 {thumbnails.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -130,7 +130,7 @@ export default function VisualGuruGenerationPage() {
                       <img
                         key={url}
                         src={url}
-                        alt={`Podgląd obrazu referencyjnego ${index + 1}`}
+                        alt={t("generator.referenceThumbAlt", { index: index + 1 })}
                         className="h-16 w-16 rounded-md object-cover ring-1 ring-border"
                       />
                     ))}
@@ -140,7 +140,7 @@ export default function VisualGuruGenerationPage() {
 
               {hasReferenceImages ? (
                 <div className="flex flex-col gap-2">
-                  <Label>Wierność względem obrazu referencyjnego</Label>
+                  <Label>{t("generator.fidelityLabel")}</Label>
                   <RadioGroup
                     className="flex gap-4"
                     value={fidelity}
@@ -155,22 +155,19 @@ export default function VisualGuruGenerationPage() {
                         <Label
                           htmlFor={`visual-guru-fidelity-${option.key}`}
                           className="font-normal"
-                          title={option.description}
+                          title={t(`generator.fidelity.${option.key}.description`)}
                         >
-                          {option.label}
+                          {t(`generator.fidelity.${option.key}.label`)}
                         </Label>
                       </div>
                     ))}
                   </RadioGroup>
-                  <p className="text-xs text-muted-foreground">
-                    Wierność steruje TREŚCIĄ promptu wysyłanego do modelu, nie osobnym parametrem
-                    API.
-                  </p>
+                  <p className="text-xs text-muted-foreground">{t("generator.fidelityHint")}</p>
                 </div>
               ) : null}
 
               <div className="flex flex-col gap-2">
-                <Label>Liczba wariantów</Label>
+                <Label>{t("generator.variantCountLabel")}</Label>
                 <RadioGroup
                   className="flex gap-4"
                   value={String(variantCount)}
@@ -191,7 +188,7 @@ export default function VisualGuruGenerationPage() {
 
               <Button type="button" onClick={handleGenerate} disabled={generate.isPending}>
                 <Sparkles className="mr-2 h-4 w-4" />
-                {generate.isPending ? "Generowanie..." : "Generuj"}
+                {generate.isPending ? t("generator.generating") : t("generator.generate")}
               </Button>
             </CardContent>
           </Card>
@@ -207,8 +204,8 @@ export default function VisualGuruGenerationPage() {
               ) : !result ? (
                 <EmptyState
                   icon={ImageIcon}
-                  title="Brak wygenerowanych obrazów"
-                  description="Wpisz opis i kliknij Generuj. Każda generacja trafia automatycznie do archiwum."
+                  title={t("generator.emptyTitle")}
+                  description={t("generator.emptyDescription")}
                 />
               ) : (
                 <VariantGrid

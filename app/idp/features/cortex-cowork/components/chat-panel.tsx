@@ -5,6 +5,7 @@ import type { CoworkProjectBrief } from "@cortex/types"
 import { LoadingState } from "@cortex/ui"
 import { FileUp, MessagesSquare, Sparkles } from "lucide-react"
 import { useEffect, useRef, useState, type DragEvent } from "react"
+import { useTranslation } from "react-i18next"
 import type { ChatMessage, CoworkInputFile, CoworkSessionUsage } from "../types"
 import { LiveAgentActivity } from "./agent-activity"
 import { MessageBubble } from "./message-bubble"
@@ -39,6 +40,7 @@ export function ChatPanel({
   isUploading = false,
   inputFiles = [],
 }: ChatPanelProps) {
+  const { t } = useTranslation("cortex-cowork")
   const bottomRef = useRef<HTMLDivElement>(null)
   // Lifted composer draft so brief cards can prefill it (click = insert, not send).
   const [draft, setDraft] = useState("")
@@ -95,25 +97,22 @@ export function ChatPanel({
         <div className="pointer-events-none absolute inset-2 z-30 flex items-center justify-center rounded-2xl border-2 border-dashed border-ring/70 bg-background/80 backdrop-blur-sm">
           <div className="flex items-center gap-2 text-sm font-medium">
             <FileUp className="h-5 w-5" />
-            Upuść pliki - trafią do sandboxa tej sesji
+            {t("chat.dropFiles")}
           </div>
         </div>
       ) : null}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {isLoadingSession ? (
-          <LoadingState label="Startuję sesję sandboxa..." />
+          <LoadingState label={t("chat.startingSession")} />
         ) : empty ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
               <MessagesSquare className="h-6 w-6 text-muted-foreground" />
             </div>
             <h2 className="text-xl font-semibold tracking-tight">
-              {projectName ? `${projectName} - czym mam się zająć?` : "Czym mam się zająć?"}
+              {projectName ? t("chat.heroWithProject", { project: projectName }) : t("chat.hero")}
             </h2>
-            <p className="max-w-md text-sm text-muted-foreground">
-              Agent pracuje w sandboxie i oddaje pliki jako artefakty - poproś o raport, eksport
-              albo analizę.
-            </p>
+            <p className="max-w-md text-sm text-muted-foreground">{t("chat.heroDescription")}</p>
             {briefs.length > 0 ? (
               <div className="mt-4 grid w-full max-w-2xl grid-cols-1 gap-2 text-left sm:grid-cols-2">
                 {briefs.map((brief) => (

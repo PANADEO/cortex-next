@@ -30,6 +30,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 
 // URL first segments that own an app-shell. store-pit serves two tile ids
 // (sp-console/sp-client) but one nav+label, keyed by its path segment.
@@ -76,6 +77,7 @@ const TILE_LABELS: Record<string, string> = {
 }
 
 export default function MainLayout({ children }: { children: ReactNode }) {
+  const { t } = useTranslation("misc")
   const pathname = usePathname()
   const tileId = pathToTileId(pathname)
   const requiredTileId = resolveRequiredTileId(pathname)
@@ -128,7 +130,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const brandIcon = (
     <Link
       href="/"
-      aria-label="Powrót do Cortex360 hub"
+      aria-label={t("nav.backToHub")}
       className="inline-block transition-opacity hover:opacity-80 motion-reduce:transition-none"
     >
       <Image
@@ -145,7 +147,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const brand = (
     <Link
       href="/"
-      aria-label="Powrót do Cortex360 hub"
+      aria-label={t("nav.backToHub")}
       className="flex items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-80 motion-reduce:transition-none"
     >
       <Image

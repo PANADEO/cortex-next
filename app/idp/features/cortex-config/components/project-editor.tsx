@@ -29,6 +29,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Controller, useFieldArray, useForm, type FieldErrors } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import {
   useCatalog,
   useCreateProject,
@@ -50,20 +51,20 @@ import { DepartmentSelect } from "./pickers"
 
 const BACK_HREF = "/cortex-config/projects"
 
-// Tab definitions in one place: label for the trigger + the fields that live on
-// the tab, so a failed submit can dot the tab that needs attention (fields hide
-// behind inactive tabs, so the dot is the only cue).
+// Tab definitions in one place: translation key for the trigger label + the
+// fields that live on the tab, so a failed submit can dot the tab that needs
+// attention (fields hide behind inactive tabs, so the dot is the only cue).
 const TABS = [
   {
     value: "podstawy",
-    label: "Podstawy",
+    labelKey: "projectEditor.tabs.basics",
     fields: ["id", "name", "description", "icon", "enabled"],
   },
-  { value: "dostep", label: "Dostęp", fields: ["allowedRoleIds"] },
-  { value: "model", label: "Model", fields: ["modelId", "apiKeyRef"] },
+  { value: "dostep", labelKey: "projectEditor.tabs.access", fields: ["allowedRoleIds"] },
+  { value: "model", labelKey: "projectEditor.tabs.model", fields: ["modelId", "apiKeyRef"] },
   {
     value: "klocki",
-    label: "Klocki",
+    labelKey: "projectEditor.tabs.blocks",
     fields: [
       "skillBranches",
       "skillLeaves",
@@ -73,16 +74,20 @@ const TABS = [
       "secretLeaves",
     ],
   },
-  { value: "briefy", label: "Briefy", fields: ["briefs"] },
+  { value: "briefy", labelKey: "projectEditor.tabs.briefs", fields: ["briefs"] },
   {
     value: "agent",
-    label: "Agent i sandbox",
+    labelKey: "projectEditor.tabs.agent",
     fields: ["department", "systemPrompt", "sandboxMode", "sandboxPaths"],
   },
-  { value: "eksport", label: "Eksport", fields: ["exportDir", "exportDisplayPath"] },
+  {
+    value: "eksport",
+    labelKey: "projectEditor.tabs.export",
+    fields: ["exportDir", "exportDisplayPath"],
+  },
 ] as const satisfies ReadonlyArray<{
   value: string
-  label: string
+  labelKey: string
   fields: ReadonlyArray<keyof ProjectFormValues>
 }>
 
@@ -95,6 +100,7 @@ function tabHasErrors(
 
 /** Data-loading host: resolves governance + catalog and wires the mutations. */
 export function ProjectEditorScreen({ projectId }: { projectId?: string | undefined }) {
+  const { t } = useTranslation("cortex-config")
   const governance = useGovernanceConfig()
   const catalog = useCatalog()
   const credentials = useCredentialPaths()
@@ -102,7 +108,7 @@ export function ProjectEditorScreen({ projectId }: { projectId?: string | undefi
   const updateProject = useUpdateProject()
 
   if (governance.isPending || catalog.isPending) {
-    return <LoadingState label="Wczytywanie konfiguracji..." />
+    return <LoadingState label={t("state.loadingConfig")} />
   }
   if (governance.isError || catalog.isError || !catalog.data) return <AccessDeniedState />
 
@@ -110,7 +116,12 @@ export function ProjectEditorScreen({ projectId }: { projectId?: string | undefi
     ? governance.data.projects.find((candidate) => candidate.id === projectId)
     : undefined
   if (projectId && !project) {
-    return <ErrorState title="Nie znaleziono projektu" message={`Brak projektu "${projectId}".`} />
+    return (
+      <ErrorState
+        title={t("projectEditor.notFoundTitle")}
+        message={t("projectEditor.notFoundMessage", { id: projectId })}
+      />
+    )
   }
 
   return (
@@ -148,6 +159,7 @@ export function ProjectEditor({
   isSaving,
   onSubmit,
 }: ProjectEditorProps) {
+  const { t } = useTranslation(["cortex-config", "common"])
   const router = useRouter()
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectFormSchema),
@@ -171,16 +183,23 @@ export function ProjectEditor({
     <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
       <ConfigScreen
         backHref={BACK_HREF}
-        backLabel="Projekty"
-        title={project ? `Edytuj projekt: ${project.name}` : "Nowy projekt"}
-        description="Kafelek task-chat: model, dostęp, klocki z katalogu i sandbox."
-        save={{ isSaving, label: project ? "Zapisz zmiany" : "Utwórz projekt" }}
+        backLabel={t("nav.backToProjects")}
+        title={
+          project
+            ? t("projectEditor.editTitle", { name: project.name })
+            : t("projectEditor.newTitle")
+        }
+        description={t("projectEditor.description")}
+        save={{
+          isSaving,
+          label: project ? t("projectEditor.saveChanges") : t("projectEditor.createProject"),
+        }}
       >
         <Tabs defaultValue="podstawy">
           <TabsList className="mb-4 flex-wrap">
             {TABS.map((tab) => (
               <TabsTrigger key={tab.value} value={tab.value} className="gap-1.5">
-                {tab.label}
+                {t(tab.labelKey)}
                 {tabHasErrors(tab.fields, errors) ? (
                   <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
                 ) : null}
@@ -191,28 +210,28 @@ export function ProjectEditor({
           <TabsContent value="podstawy" className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Identyfikacja kafelka</CardTitle>
-                <CardDescription>To, co użytkownik widzi na hubie.</CardDescription>
+                <CardTitle className="text-base">{t("projectEditor.identityTitle")}</CardTitle>
+                <CardDescription>{t("projectEditor.identityDescription")}</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="project-id">Identyfikator (slug)</Label>
+                  <Label htmlFor="project-id">{t("projectEditor.slugLabel")}</Label>
                   <Input
                     id="project-id"
                     className="mt-1"
-                    placeholder="np. raporty-finansowe"
+                    placeholder={t("projectEditor.slugPlaceholder")}
                     disabled={Boolean(project)}
                     {...form.register("id")}
                   />
                   <FieldError message={errors.id?.message} />
                 </div>
                 <div>
-                  <Label htmlFor="project-name">Nazwa</Label>
+                  <Label htmlFor="project-name">{t("fields.name")}</Label>
                   <Input id="project-name" className="mt-1" {...form.register("name")} />
                   <FieldError message={errors.name?.message} />
                 </div>
                 <div className="sm:col-span-2">
-                  <Label htmlFor="project-description">Opis (widoczny na kafelku)</Label>
+                  <Label htmlFor="project-description">{t("projectEditor.descriptionLabel")}</Label>
                   <Input
                     id="project-description"
                     className="mt-1"
@@ -221,7 +240,7 @@ export function ProjectEditor({
                   <FieldError message={errors.description?.message} />
                 </div>
                 <div>
-                  <Label>Ikona</Label>
+                  <Label>{t("projectEditor.iconLabel")}</Label>
                   <Controller
                     control={form.control}
                     name="icon"
@@ -233,7 +252,7 @@ export function ProjectEditor({
                         <SelectContent>
                           {PROJECT_ICON_OPTIONS.map((option) => (
                             <SelectItem key={option.value} value={option.value}>
-                              {option.label}
+                              {t(`projectEditor.icons.${option.value}`)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -253,7 +272,7 @@ export function ProjectEditor({
                       />
                     )}
                   />
-                  <Label htmlFor="project-enabled">Kafelek aktywny</Label>
+                  <Label htmlFor="project-enabled">{t("projectEditor.enabledLabel")}</Label>
                 </div>
               </CardContent>
             </Card>
@@ -262,11 +281,8 @@ export function ProjectEditor({
           <TabsContent value="dostep" className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Role z dostępem</CardTitle>
-                <CardDescription>
-                  Rola to bramka: decyduje, kto widzi i otwiera kafelek. Zawartość definiują klocki
-                  projektu.
-                </CardDescription>
+                <CardTitle className="text-base">{t("projectEditor.accessTitle")}</CardTitle>
+                <CardDescription>{t("projectEditor.accessDescription")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <Controller
@@ -281,7 +297,7 @@ export function ProjectEditor({
                       }))}
                       value={field.value}
                       onChange={field.onChange}
-                      emptyText="Brak zdefiniowanych ról - dodaj je w zakładce Role i dostęp."
+                      emptyText={t("projectEditor.rolesEmpty")}
                     />
                   )}
                 />
@@ -292,32 +308,26 @@ export function ProjectEditor({
           <TabsContent value="model" className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Model językowy</CardTitle>
-                <CardDescription>
-                  Każda tura idzie przez cortex-proxy - adres bramki bierze serwer ze swojego
-                  środowiska (CORTEX_PROXY_URL), więc projekt przenosi się między instancjami bez
-                  edycji. Tu wybierasz tylko model.
-                </CardDescription>
+                <CardTitle className="text-base">{t("projectEditor.modelTitle")}</CardTitle>
+                <CardDescription>{t("projectEditor.modelDescription")}</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <Label htmlFor="project-model">Model</Label>
+                  <Label htmlFor="project-model">{t("projectEditor.modelLabel")}</Label>
                   <Input
                     id="project-model"
                     className="mt-1"
-                    placeholder="np. anthropic/claude-sonnet-4.6"
+                    placeholder={t("projectEditor.modelPlaceholder")}
                     {...form.register("modelId")}
                   />
                   <FieldError message={errors.modelId?.message} />
                 </div>
                 <div className="sm:col-span-2">
-                  <Label htmlFor="project-api-key-ref">
-                    Klucz API (referencja z sekretów, np. wspolne/llm/cortex-proxy)
-                  </Label>
+                  <Label htmlFor="project-api-key-ref">{t("projectEditor.apiKeyLabel")}</Label>
                   <Input
                     id="project-api-key-ref"
                     className="mt-1"
-                    placeholder="puste = cortex-proxy nie weryfikuje klucza klienta"
+                    placeholder={t("projectEditor.apiKeyPlaceholder")}
                     {...form.register("apiKeyRef")}
                   />
                 </div>
@@ -328,11 +338,8 @@ export function ProjectEditor({
           <TabsContent value="klocki" className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Skille</CardTitle>
-                <CardDescription>
-                  Zbuduj toolkit projektu z klocków katalogu. Gałąź departamentu ciągnie wszystkie
-                  zasoby pod nim.
-                </CardDescription>
+                <CardTitle className="text-base">{t("projectEditor.skillsTitle")}</CardTitle>
+                <CardDescription>{t("projectEditor.skillsDescription")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <GrantPickerField
@@ -345,15 +352,15 @@ export function ProjectEditor({
                     label: skill.name,
                     department: skill.department,
                   }))}
-                  leafEmptyText="Katalog skilli jest pusty."
+                  leafEmptyText={t("projectEditor.skillsEmpty")}
                 />
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Konektory</CardTitle>
-                <CardDescription>MCP i CLI, które agent dostaje jako narzędzia.</CardDescription>
+                <CardTitle className="text-base">{t("projectEditor.connectorsTitle")}</CardTitle>
+                <CardDescription>{t("projectEditor.connectorsDescription")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <GrantPickerField
@@ -366,18 +373,15 @@ export function ProjectEditor({
                     label: `${connector.name} (${connector.type})`,
                     department: connector.department,
                   }))}
-                  leafEmptyText="Katalog konektorów jest pusty."
+                  leafEmptyText={t("projectEditor.connectorsEmpty")}
                 />
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Sekrety (strefy danych)</CardTitle>
-                <CardDescription>
-                  Projekt może użyć tylko sekretów z przyznanych gałęzi/ścieżek. To techniczna
-                  granica stref danych.
-                </CardDescription>
+                <CardTitle className="text-base">{t("projectEditor.secretsTitle")}</CardTitle>
+                <CardDescription>{t("projectEditor.secretsDescription")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <GrantPickerField
@@ -386,7 +390,7 @@ export function ProjectEditor({
                   leafName="secretLeaves"
                   departments={catalog.departments}
                   leaves={credentialPaths.map((path) => ({ id: path, label: path }))}
-                  leafEmptyText="Brak zapisanych sekretów."
+                  leafEmptyText={t("projectEditor.secretsEmpty")}
                 />
               </CardContent>
             </Card>
@@ -395,50 +399,49 @@ export function ProjectEditor({
           <TabsContent value="briefy" className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Karty startowe (briefy)</CardTitle>
-                <CardDescription>
-                  Gotowe zlecenia widoczne w pustym czacie - kliknięcie wypełnia pole wiadomości.
-                  Podpowiedź mówi użytkownikowi, co musi dostarczyć (np. plik z transkrypcją).
-                </CardDescription>
+                <CardTitle className="text-base">{t("projectEditor.briefsTitle")}</CardTitle>
+                <CardDescription>{t("projectEditor.briefsDescription")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {briefs.fields.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Brak briefów - użytkownik zobaczy pusty czat bez podpowiedzi.
-                  </p>
+                  <p className="text-sm text-muted-foreground">{t("projectEditor.briefsEmpty")}</p>
                 ) : null}
                 {briefs.fields.map((field, index) => (
                   <div key={field.id} className="space-y-3 rounded-lg border border-border p-4">
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
-                        <Label htmlFor={`brief-title-${index}`}>Tytuł karty</Label>
+                        <Label htmlFor={`brief-title-${index}`}>
+                          {t("projectEditor.briefTitleLabel")}
+                        </Label>
                         <Input
                           id={`brief-title-${index}`}
                           className="mt-1"
-                          placeholder="np. Status pack z transkrypcji"
+                          placeholder={t("projectEditor.briefTitlePlaceholder")}
                           {...form.register(`briefs.${index}.title`)}
                         />
                         <FieldError message={errors.briefs?.[index]?.title?.message} />
                       </div>
                       <div>
                         <Label htmlFor={`brief-hint-${index}`}>
-                          Podpowiedź (czego potrzebuje user)
+                          {t("projectEditor.briefHintLabel")}
                         </Label>
                         <Input
                           id={`brief-hint-${index}`}
                           className="mt-1"
-                          placeholder="np. dodaj plik z transkrypcją"
+                          placeholder={t("projectEditor.briefHintPlaceholder")}
                           {...form.register(`briefs.${index}.hint`)}
                         />
                       </div>
                     </div>
                     <div>
-                      <Label htmlFor={`brief-prompt-${index}`}>Prompt (trafia do composera)</Label>
+                      <Label htmlFor={`brief-prompt-${index}`}>
+                        {t("projectEditor.briefPromptLabel")}
+                      </Label>
                       <Textarea
                         id={`brief-prompt-${index}`}
                         className="mt-1"
                         rows={3}
-                        placeholder="np. Zrób status pack z wgranej transkrypcji spotkania."
+                        placeholder={t("projectEditor.briefPromptPlaceholder")}
                         {...form.register(`briefs.${index}.prompt`)}
                       />
                       <FieldError message={errors.briefs?.[index]?.prompt?.message} />
@@ -451,7 +454,7 @@ export function ProjectEditor({
                       onClick={() => briefs.remove(index)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                      Usuń kartę
+                      {t("projectEditor.removeBrief")}
                     </Button>
                   </div>
                 ))}
@@ -465,7 +468,7 @@ export function ProjectEditor({
                   }
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  Dodaj kartę
+                  {t("projectEditor.addBrief")}
                 </Button>
               </CardContent>
             </Card>
@@ -474,15 +477,12 @@ export function ProjectEditor({
           <TabsContent value="agent" className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Instrukcje agenta</CardTitle>
-                <CardDescription>
-                  Kafelek dziedziczy AGENTS.md: zasady organizacji, potem działów po ścieżce
-                  departamentu, potem poniższe instrukcje, na końcu prywatna notka użytkownika.
-                </CardDescription>
+                <CardTitle className="text-base">{t("projectEditor.agentTitle")}</CardTitle>
+                <CardDescription>{t("projectEditor.agentDescription")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label>Departament kafelka (dziedziczenie AGENTS.md)</Label>
+                  <Label>{t("projectEditor.departmentLabel")}</Label>
                   <div className="mt-1">
                     <Controller
                       control={form.control}
@@ -492,7 +492,7 @@ export function ProjectEditor({
                           departments={catalog.departments}
                           value={field.value ?? ""}
                           onChange={field.onChange}
-                          placeholder="Brak - tylko zasady organizacji"
+                          placeholder={t("projectEditor.departmentPlaceholder")}
                         />
                       )}
                     />
@@ -501,13 +501,13 @@ export function ProjectEditor({
                 </div>
                 <div>
                   <Label htmlFor="project-system-prompt">
-                    Dodatkowe instrukcje (system prompt)
+                    {t("projectEditor.systemPromptLabel")}
                   </Label>
                   <Textarea
                     id="project-system-prompt"
                     className="mt-1"
                     rows={4}
-                    placeholder="np. Odpowiadaj po polsku. Raporty formatuj wg standardu działu."
+                    placeholder={t("projectEditor.systemPromptPlaceholder")}
                     {...form.register("systemPrompt")}
                   />
                 </div>
@@ -516,14 +516,12 @@ export function ProjectEditor({
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Sandbox</CardTitle>
-                <CardDescription>
-                  Gdzie agent wykonuje pracę i które ścieżki hosta widzi.
-                </CardDescription>
+                <CardTitle className="text-base">{t("projectEditor.sandboxTitle")}</CardTitle>
+                <CardDescription>{t("projectEditor.sandboxDescription")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label>Tryb</Label>
+                  <Label>{t("projectEditor.sandboxModeLabel")}</Label>
                   <Controller
                     control={form.control}
                     name="sandboxMode"
@@ -533,12 +531,8 @@ export function ProjectEditor({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="local">
-                            Lokalny (izolacja katalogowa, wykonanie na hoście)
-                          </SelectItem>
-                          <SelectItem value="docker">
-                            Docker (twarda izolacja, ścieżki jako bind-mounty)
-                          </SelectItem>
+                          <SelectItem value="local">{t("projectEditor.sandboxLocal")}</SelectItem>
+                          <SelectItem value="docker">{t("projectEditor.sandboxDocker")}</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -546,13 +540,13 @@ export function ProjectEditor({
                 </div>
                 <div>
                   <Label htmlFor="project-sandbox-paths">
-                    Ścieżki dostępne w sandboxie (jedna na linię, sufiks :ro = tylko odczyt)
+                    {t("projectEditor.sandboxPathsLabel")}
                   </Label>
                   <Textarea
                     id="project-sandbox-paths"
                     className="mt-1 font-mono text-xs"
                     rows={4}
-                    placeholder={"/mnt/dzial-finanse/dane:ro\n/mnt/wspolne/szablony"}
+                    placeholder={t("projectEditor.sandboxPathsPlaceholder")}
                     {...form.register("sandboxPaths")}
                   />
                 </div>
@@ -563,27 +557,27 @@ export function ProjectEditor({
           <TabsContent value="eksport" className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Eksport artefaktów</CardTitle>
-                <CardDescription>
-                  Opcjonalny dysk sieciowy, na który użytkownik jednym klikiem odkłada plik z sesji.
-                </CardDescription>
+                <CardTitle className="text-base">{t("projectEditor.exportTitle")}</CardTitle>
+                <CardDescription>{t("projectEditor.exportDescription")}</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="project-export-dir">Folder docelowy (na serwerze)</Label>
+                  <Label htmlFor="project-export-dir">{t("projectEditor.exportDirLabel")}</Label>
                   <Input
                     id="project-export-dir"
                     className="mt-1 font-mono text-xs"
-                    placeholder="/mnt/dzial-finanse/artefakty"
+                    placeholder={t("projectEditor.exportDirPlaceholder")}
                     {...form.register("exportDir")}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="project-export-display">Ścieżka pokazywana użytkownikom</Label>
+                  <Label htmlFor="project-export-display">
+                    {t("projectEditor.exportDisplayLabel")}
+                  </Label>
                   <Input
                     id="project-export-display"
                     className="mt-1 font-mono text-xs"
-                    placeholder="\\\\nas\\finanse\\artefakty"
+                    placeholder={t("projectEditor.exportDisplayPlaceholder")}
                     {...form.register("exportDisplayPath")}
                   />
                 </div>

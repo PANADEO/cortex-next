@@ -28,6 +28,7 @@ import {
 } from "@cortex/ui"
 import { AlertTriangle } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 
 interface InvoiceSupervisorClientEscalationSectionProps {
   clientId: number
@@ -46,6 +47,7 @@ export function InvoiceSupervisorClientEscalationSection({
   clientName,
   openInvoiceCount,
 }: InvoiceSupervisorClientEscalationSectionProps) {
+  const { t } = useTranslation(["invoice-supervisor", "common"])
   const [stage, setStage] = useState<InvoiceSupervisorEscalationStage>("payment_demand")
   const forceEscalation = useInvoiceSupervisorForceClientEscalation(clientId)
 
@@ -56,13 +58,12 @@ export function InvoiceSupervisorClientEscalationSection({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-sm font-medium">
           <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
-          Eskaluj wszystkie otwarte faktury tego klienta
+          {t("escalation.title")}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <p className="mb-3 text-sm text-muted-foreground">
-          Wymuś natychmiastowe przejście {openInvoiceCount} otwartych faktur {clientName} do
-          wybranego etapu, bez czekania na progi czasowe polityki.
+          {t("escalation.description", { n: openInvoiceCount, client: clientName })}
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Select
@@ -86,25 +87,25 @@ export function InvoiceSupervisorClientEscalationSection({
                 variant="outline"
                 className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-500/40 dark:text-amber-400"
               >
-                Eskaluj {openInvoiceCount} faktur(y)
+                {t("escalation.trigger", { n: openInvoiceCount })}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>
-                  Eskalować {openInvoiceCount} faktur do etapu:{" "}
-                  {INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS[stage]}?
+                  {t("escalation.confirmTitle", {
+                    n: openInvoiceCount,
+                    stage: INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS[stage],
+                  })}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                  Każda otwarta faktura {clientName} dostanie nową propozycję na tym etapie w
-                  Skrzynce. Nic nie zostanie wysłane automatycznie — nadal wymaga Twojego
-                  zatwierdzenia.
+                  {t("escalation.confirmDescription", { client: clientName })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Anuluj</AlertDialogCancel>
+                <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
                 <AlertDialogAction onClick={() => forceEscalation.mutate(stage)}>
-                  Eskaluj
+                  {t("escalation.confirm")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

@@ -15,23 +15,26 @@
 import { Badge, Dialog, DialogContent, DialogHeader, DialogTitle, Skeleton } from "@cortex/ui"
 import { AlertTriangle, CheckCircle2, CircleDashed, Loader2, XCircle } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import type { GenerationJobDto, GenerationJobItemDto, GenerationJobMode } from "../types"
 import { renderHighlightedContent } from "../utils"
 
 function ItemStatusBadge({ status }: { status: GenerationJobItemDto["status"] }) {
+  const { t } = useTranslation("content-guru")
+
   switch (status) {
     case "pending":
       return (
         <Badge variant="secondary" className="gap-1 font-normal">
           <CircleDashed className="h-3 w-3" />
-          Oczekuje
+          {t("job.itemStatus.pending")}
         </Badge>
       )
     case "running":
       return (
         <Badge variant="secondary" className="gap-1 font-normal">
           <Loader2 className="h-3 w-3 animate-spin" />
-          Generowanie...
+          {t("job.itemStatus.running")}
         </Badge>
       )
     case "done":
@@ -41,7 +44,7 @@ function ItemStatusBadge({ status }: { status: GenerationJobItemDto["status"] })
           className="gap-1 border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
         >
           <CheckCircle2 className="h-3 w-3" />
-          Gotowe
+          {t("job.itemStatus.done")}
         </Badge>
       )
     case "done-with-warnings":
@@ -51,20 +54,21 @@ function ItemStatusBadge({ status }: { status: GenerationJobItemDto["status"] })
           className="gap-1 border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300"
         >
           <AlertTriangle className="h-3 w-3" />
-          Zakazane frazy
+          {t("job.itemStatus.withWarnings")}
         </Badge>
       )
     case "error":
       return (
         <Badge variant="destructive" className="gap-1">
           <XCircle className="h-3 w-3" />
-          Błąd
+          {t("job.itemStatus.error")}
         </Badge>
       )
   }
 }
 
 function JobSummary({ job }: { job: GenerationJobDto }) {
+  const { t } = useTranslation("content-guru")
   const total = job.items.length
   const finished = job.items.filter(
     (item) => item.status !== "pending" && item.status !== "running",
@@ -72,10 +76,13 @@ function JobSummary({ job }: { job: GenerationJobDto }) {
   return (
     <p className="text-xs text-muted-foreground">
       {job.status === "queued" || job.status === "running"
-        ? `Generowanie w toku — ${finished}/${total} gotowych.`
+        ? t("job.summary.running", { finished, total })
         : job.status === "done"
-          ? `Ukończono — ${total}/${total} treści wygenerowanych i zapisanych w archiwum.`
-          : `Ukończono z błędami — ${job.items.filter((item) => item.status === "error").length} z ${total} pozycji się nie powiodło.`}
+          ? t("job.summary.done", { total })
+          : t("job.summary.doneWithErrors", {
+              failed: job.items.filter((item) => item.status === "error").length,
+              total,
+            })}
     </p>
   )
 }
@@ -105,6 +112,7 @@ interface GenerationJobCardProps {
 }
 
 export function GenerationJobCard({ job, mode, isLoading }: GenerationJobCardProps) {
+  const { t } = useTranslation("content-guru")
   const [selected, setSelected] = useState<GenerationJobItemDto | null>(null)
 
   // Macierz wierszy(tematy)/kolumn(szablonów) w kolejności PIERWSZEGO
@@ -166,7 +174,7 @@ export function GenerationJobCard({ job, mode, isLoading }: GenerationJobCardPro
             <thead>
               <tr>
                 <th className="border-b border-border p-2 text-left font-medium text-muted-foreground">
-                  Temat \ Szablon
+                  {t("job.matrixHeader")}
                 </th>
                 {matrix.templates.map((template) => (
                   <th
@@ -215,14 +223,13 @@ export function GenerationJobCard({ job, mode, isLoading }: GenerationJobCardPro
                 </div>
                 {selected.status === "error" ? (
                   <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                    {selected.errorMessage ?? "Generowanie tej pozycji się nie powiodło."}
+                    {selected.errorMessage ?? t("job.itemErrorFallback")}
                   </div>
                 ) : (
                   <>
                     {selected.status === "done-with-warnings" ? (
                       <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-                        Treść zawiera frazy z Twojej listy zakazanych fraz mimo automatycznej próby
-                        poprawy — zaznaczone poniżej. Popraw ręcznie przed użyciem.
+                        {t("warnings.forbiddenPhrases")}
                       </div>
                     ) : null}
                     <div className="whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-4 text-sm leading-relaxed">

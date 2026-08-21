@@ -10,16 +10,19 @@ import {
 import { Badge, Button } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
+import type { TFunction } from "i18next"
 import { Eye } from "lucide-react"
 import Link from "next/link"
 
 // Row-action eye icon instead of whole-row-click navigation — deliberate UX
 // choice ported from the approved prototype, do not regress to onRowClick.
-export function invoiceSupervisorColumns(): ColumnDef<InvoiceSupervisorInvoice, unknown>[] {
+export function invoiceSupervisorColumns(
+  t: TFunction<"invoice-supervisor">,
+): ColumnDef<InvoiceSupervisorInvoice, unknown>[] {
   return [
     {
       accessorKey: "invoice_number",
-      header: "Numer faktury",
+      header: t("columns.invoiceNumber"),
       cell: ({ row }) => (
         <Link
           href={`/invoice-supervisor/invoices/${row.original.id}`}
@@ -29,21 +32,21 @@ export function invoiceSupervisorColumns(): ColumnDef<InvoiceSupervisorInvoice, 
         </Link>
       ),
     },
-    { accessorKey: "client_name", header: "Klient" },
+    { accessorKey: "client_name", header: t("columns.client") },
     {
       accessorKey: "amount",
-      header: "Kwota",
+      header: t("columns.amount"),
       cell: ({ row }) =>
         formatInvoiceSupervisorCurrency(row.original.amount, row.original.currency),
     },
     {
       accessorKey: "due_date",
-      header: "Termin",
+      header: t("columns.dueDate"),
       cell: ({ row }) => formatInvoiceSupervisorDate(row.original.due_date),
     },
     {
       accessorKey: "status",
-      header: "Status",
+      header: t("columns.status"),
       cell: ({ row }) => {
         const status = row.original.status
         return (
@@ -67,7 +70,7 @@ export function invoiceSupervisorColumns(): ColumnDef<InvoiceSupervisorInvoice, 
             size="icon"
             className="h-8 w-8"
             asChild
-            aria-label={`Zobacz szczegóły faktury ${row.original.invoice_number}`}
+            aria-label={t("columns.viewInvoiceAria", { number: row.original.invoice_number })}
           >
             <Link href={`/invoice-supervisor/invoices/${row.original.id}`}>
               <Eye className="h-4 w-4" />

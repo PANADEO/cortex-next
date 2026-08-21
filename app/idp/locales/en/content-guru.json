@@ -1,1 +1,336 @@
-{}
+{
+  "modes": {
+    "single": "Single",
+    "batch": "Batch",
+    "package": "Package"
+  },
+  "status": {
+    "done": "Ready",
+    "withWarnings": "Contains forbidden phrases"
+  },
+  "warnings": {
+    "forbiddenPhrases": "The content contains phrases from your forbidden phrases list despite an automatic correction attempt — highlighted below. Fix them manually before use."
+  },
+  "generate": {
+    "description": "Draft marketing, product and recruitment content — with real validation against forbidden phrases.",
+    "packageTemplatesLabel": "Templates ({{selected}} selected)",
+    "templateCategoryLabel": "Template category",
+    "templateCategoryPlaceholder": "Select a category",
+    "templateLabel": "Template",
+    "templatePlaceholder": "Select a template",
+    "noTemplatesHint": "No templates — add the first one under",
+    "noTemplatesLink": "Templates",
+    "topicLabel": "Topic",
+    "topicPlaceholder": "E.g. we are opening a Senior .NET Developer vacancy",
+    "topicsLabel": "Topics",
+    "audienceLabel": "Target audience",
+    "audiencePlaceholder": "E.g. candidates with fintech experience",
+    "additionalInfoLabel": "Additional information",
+    "additionalInfoPlaceholder": "Context the model should take into account",
+    "modelLabel": "Model",
+    "modelPlaceholder": "Select a model",
+    "clientProfileLabel": "Client profile (optional)",
+    "marketProfileLabel": "Market profile (optional)",
+    "noProfileOption": "No profile",
+    "generateButton": "Generate",
+    "generatingButton": "Generating...",
+    "startingButton": "Starting...",
+    "savedToArchive": "Saved to the Content Guru archive.",
+    "seo": {
+      "sectionLabel": "SEO and metadata",
+      "singleOnlyHint": "(used in Single mode)",
+      "keywordLabel": "SEO keyword phrase",
+      "keywordPlaceholder": "E.g. finance process automation",
+      "keywordGenerate": "Generate keyword phrase",
+      "metaLabel": "Meta description",
+      "metaPlaceholder": "A short description that invites a click",
+      "metaGenerate": "Generate meta description"
+    },
+    "batch": {
+      "activeTopicsOne": "active topic",
+      "activeTopicsMany": "active topics"
+    },
+    "package": {
+      "topicOne": "topic",
+      "topicMany": "topics",
+      "templateOne": "template",
+      "templateMany": "templates",
+      "contentOne": "text",
+      "contentMany": "texts",
+      "overLimit": "the limit of {{max}} combinations has been exceeded. Reduce the number of topics or templates."
+    },
+    "empty": {
+      "title": "No content generated yet",
+      "description": "Pick a template, fill in the topic, then click Generate."
+    },
+    "jobEmpty": {
+      "title": "No job running",
+      "batchDescription": "Pick a template, add topics and click Generate.",
+      "packageDescription": "Pick templates, add topics and click Generate."
+    },
+    "toasts": {
+      "done": "Content generated and saved to the archive",
+      "doneWithWarnings": "Content generated — it contains forbidden phrases, check the highlights",
+      "jobStarted": "Generation started — progress will appear below."
+    },
+    "errors": {
+      "keywordPhraseFailed": "Could not generate the keyword phrase",
+      "metaDescriptionFailed": "Could not generate the meta description",
+      "generateFailed": "Could not generate the content",
+      "jobStartFailed": "Could not start generation"
+    }
+  },
+  "topicTable": {
+    "topicPlaceholder": "Topic {{index}}",
+    "addButton": "Add topic",
+    "a11y": {
+      "active": "Topic {{index}} active",
+      "remove": "Remove topic {{index}}"
+    }
+  },
+  "topicGenerator": {
+    "title": "Topic generator",
+    "transcriptLabel": "Transcript",
+    "transcriptPlaceholder": "Paste a call transcript or a note for the model to pull topics from",
+    "countLabel": "Approximate number of topics",
+    "generateButton": "Generate topics",
+    "generating": "Generating…",
+    "insertButton": "Insert selected ({{selected}})",
+    "errors": {
+      "generateFailed": "Could not generate topics"
+    }
+  },
+  "job": {
+    "itemStatus": {
+      "pending": "Waiting",
+      "running": "Generating...",
+      "done": "Ready",
+      "withWarnings": "Forbidden phrases",
+      "error": "Error"
+    },
+    "summary": {
+      "running": "Generation in progress — {{finished}}/{{total}} ready.",
+      "done": "Finished — {{total}}/{{total}} texts generated and saved to the archive.",
+      "doneWithErrors": "Finished with errors — {{failed}} of {{total}} items failed."
+    },
+    "matrixHeader": "Topic \\ Template",
+    "itemErrorFallback": "Generating this item failed."
+  },
+  "clientProfiles": {
+    "title": "Client profiles",
+    "description": "Client context injected into the prompt during generation — visible only to you.",
+    "newButton": "New profile",
+    "loading": "Loading profiles…",
+    "searchPlaceholder": "Search by name…",
+    "unnamedProfile": "(unnamed profile)",
+    "previewLabel": "Preview — exactly what goes into the prompt",
+    "saveButton": "Save profile",
+    "columns": {
+      "name": "Profile name",
+      "updatedAt": "Last edited"
+    },
+    "a11y": {
+      "edit": "Edit profile {{name}}",
+      "delete": "Delete profile {{name}}"
+    },
+    "empty": {
+      "title": "No client profiles",
+      "description": "Add your first profile so you can pick it on the generation screen."
+    },
+    "dialog": {
+      "newTitle": "New client profile",
+      "editTitle": "Editing: {{name}}"
+    },
+    "form": {
+      "name": "Profile name",
+      "history": "History",
+      "description": "Description",
+      "products": "Products",
+      "offer": "Offer",
+      "useCases": "Use cases",
+      "experience": "Experience"
+    },
+    "deleteDialog": {
+      "title": "Delete profile {{name}}?",
+      "description": "Content generated with it in the past stays in the archive unchanged. This cannot be undone."
+    },
+    "toasts": {
+      "created": "Profile \"{{name}}\" created",
+      "saved": "Profile changes saved",
+      "deleted": "Profile \"{{name}}\" deleted"
+    },
+    "errors": {
+      "saveFailed": "Could not save the client profile",
+      "deleteFailed": "Could not delete the profile"
+    }
+  },
+  "marketProfiles": {
+    "title": "Market profiles",
+    "description": "Market context injected into the prompt during generation — visible only to you.",
+    "newButton": "New profile",
+    "loading": "Loading profiles…",
+    "searchPlaceholder": "Search by name…",
+    "unnamedProfile": "(unnamed profile)",
+    "previewLabel": "Preview — exactly what goes into the prompt",
+    "saveButton": "Save profile",
+    "columns": {
+      "name": "Profile name",
+      "updatedAt": "Last edited"
+    },
+    "a11y": {
+      "edit": "Edit profile {{name}}",
+      "delete": "Delete profile {{name}}"
+    },
+    "empty": {
+      "title": "No market profiles",
+      "description": "Add your first profile so you can pick it on the generation screen."
+    },
+    "dialog": {
+      "newTitle": "New market profile",
+      "editTitle": "Editing: {{name}}"
+    },
+    "form": {
+      "name": "Profile name",
+      "description": "Description",
+      "sizeTrends": "Market size and trends",
+      "personas": "Personas",
+      "problems": "Problems",
+      "needs": "Needs",
+      "plans": "Plans"
+    },
+    "deleteDialog": {
+      "title": "Delete profile {{name}}?",
+      "description": "Content generated with it in the past stays in the archive unchanged. This cannot be undone."
+    },
+    "toasts": {
+      "created": "Profile \"{{name}}\" created",
+      "saved": "Profile changes saved",
+      "deleted": "Profile \"{{name}}\" deleted"
+    },
+    "errors": {
+      "saveFailed": "Could not save the market profile",
+      "deleteFailed": "Could not delete the profile"
+    }
+  },
+  "templates": {
+    "title": "Templates",
+    "description": "Content prompts shared by all Content Guru users.",
+    "newButton": "New template",
+    "loading": "Loading templates…",
+    "searchPlaceholder": "Search by name…",
+    "saveButton": "Save template",
+    "columns": {
+      "category": "Category",
+      "name": "Name",
+      "updatedAt": "Last edited"
+    },
+    "filters": {
+      "categoryLabel": "Category",
+      "allCategories": "All categories"
+    },
+    "actions": {
+      "importJson": "Import JSON",
+      "exportCategory": "Export category",
+      "duplicate": "Duplicate",
+      "exportJson": "Export JSON"
+    },
+    "a11y": {
+      "edit": "Edit template {{name}}",
+      "more": "More actions for {{name}}"
+    },
+    "empty": {
+      "title": "No templates",
+      "description": "Add your first template so it can be picked on the generation screen."
+    },
+    "dialog": {
+      "newTitle": "New template",
+      "editTitle": "Editing: {{name}}"
+    },
+    "form": {
+      "name": "Name",
+      "category": "Category",
+      "content": "Prompt content"
+    },
+    "test": {
+      "title": "Test generation",
+      "hint": "A one-off model call with the current (possibly unsaved) template content and a sample topic. Nothing is saved to the archive or to the template list.",
+      "topicLabel": "Test topic (optional)",
+      "topicPlaceholder": "A sample test topic",
+      "modelLabel": "Model",
+      "modelPlaceholder": "Select a model",
+      "runButton": "Test generation",
+      "running": "Generating…"
+    },
+    "deleteDialog": {
+      "title": "Delete template {{name}}?",
+      "description": "The template will disappear from the picker on the generation screen. Content generated with it in the past stays in the archive unchanged. This cannot be undone."
+    },
+    "toasts": {
+      "created": "Template \"{{name}}\" created",
+      "saved": "Template changes saved",
+      "deleted": "Template \"{{name}}\" deleted",
+      "duplicated": "Copy created: \"{{name}}\"",
+      "imported": "Imported {{succeeded}} of {{total}} templates",
+      "testWithWarnings": "The test generation contains forbidden phrases from your list"
+    },
+    "errors": {
+      "saveFailed": "Could not save the template",
+      "deleteFailed": "Could not delete the template",
+      "duplicateFailed": "Could not duplicate the template",
+      "testFailed": "Could not run the test generation",
+      "importInvalid": "The file contains no valid templates (required fields: name, category, content)",
+      "importReadFailed": "Could not read the JSON file"
+    }
+  },
+  "history": {
+    "title": "History",
+    "description": "Generated content — status, topic and the full result for each item.",
+    "loading": "Loading the archive…",
+    "searchPlaceholder": "Search by topic, type or model…",
+    "columns": {
+      "createdAt": "Date",
+      "contentType": "Content type",
+      "topic": "Topic",
+      "status": "Status",
+      "model": "Model"
+    },
+    "filters": {
+      "statusLabel": "Status",
+      "allStatuses": "All statuses",
+      "statusDone": "Ready",
+      "statusWithWarnings": "Forbidden phrases",
+      "contentTypeLabel": "Content type",
+      "allContentTypes": "All types"
+    },
+    "a11y": {
+      "viewDetails": "View details of the content from {{date}}"
+    },
+    "empty": {
+      "title": "No entries in the archive",
+      "description": "Generate your first content on the Generation screen — it will appear here automatically."
+    }
+  },
+  "detail": {
+    "title": "Content details",
+    "description": "The full generated content, generation metadata and (if any) forbidden phrases.",
+    "backToHistory": "History",
+    "loading": "Loading the entry…",
+    "forbiddenWarning": "The content contains phrases from the forbidden phrases list despite an automatic correction attempt — highlighted below.",
+    "notFound": {
+      "title": "Entry not found",
+      "description": "The entry does not exist or you do not have access to it."
+    },
+    "fields": {
+      "createdAt": "Generated",
+      "topic": "Topic",
+      "targetAudience": "Target audience",
+      "generationMode": "Generation mode",
+      "clientProfile": "Client profile",
+      "marketProfile": "Market profile",
+      "keywordPhrase": "SEO keyword phrase",
+      "metaDescription": "Meta description",
+      "jobId": "Job (batch/package)",
+      "additionalInfo": "Additional information"
+    }
+  }
+}

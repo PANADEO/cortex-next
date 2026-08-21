@@ -6,28 +6,30 @@ import { useInvoiceSupervisorClientsWithExposure } from "@/lib/invoice-superviso
 import { DataTable, EmptyState, ErrorState, PageHeader } from "@cortex/ui"
 import { Users } from "lucide-react"
 import { useMemo } from "react"
+import { useTranslation } from "react-i18next"
 
 export default function InvoiceSupervisorClientsPage() {
+  const { t } = useTranslation(["invoice-supervisor", "common"])
   const { data: clients, isLoading, isError, refetch } = useInvoiceSupervisorClientsWithExposure()
-  const columns = useMemo(() => invoiceSupervisorClientColumns(), [])
+  const columns = useMemo(() => invoiceSupervisorClientColumns(t), [t])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <PageHeader
-        title="Klienci"
-        description="Klienci z bieżącą ekspozycją należności — kliknij nazwę, aby zobaczyć szczegóły."
+        title={t("clients.title")}
+        description={t("clients.description")}
         actions={<InvoiceSupervisorClientFormDialog />}
       />
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-8 py-6">
         <p className="shrink-0 text-xs text-muted-foreground">
-          {isLoading ? "Ładowanie…" : `${clients?.length ?? 0} klientów`}
+          {isLoading ? t("common:state.loading") : t("clients.count", { n: clients?.length ?? 0 })}
         </p>
 
         {isError ? (
           <ErrorState
-            title="Nie udało się wczytać klientów"
-            message="Sprawdź połączenie z backendem i spróbuj ponownie."
+            title={t("clients.loadErrorTitle")}
+            message={t("errors.backendMessage")}
             onRetry={() => refetch()}
           />
         ) : (
@@ -41,8 +43,8 @@ export default function InvoiceSupervisorClientsPage() {
             emptyState={
               <EmptyState
                 icon={Users}
-                title="Brak klientów"
-                description="Dodaj pierwszego klienta, aby zacząć śledzić jego faktury."
+                title={t("clients.emptyTitle")}
+                description={t("clients.emptyDescription")}
               />
             }
           />

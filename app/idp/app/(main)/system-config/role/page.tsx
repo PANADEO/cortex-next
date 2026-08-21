@@ -40,6 +40,7 @@ import {
 } from "@cortex/ui"
 import { KeyRound, Link2, Pencil, Plus, RefreshCw, Trash2, Unlink } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 interface RoleForm {
@@ -55,6 +56,7 @@ const EMPTY_FORM: RoleForm = { code: "", name: "", description: "" }
 type DialogState = { role: RoleSummary | null } | null
 
 export default function RolePage() {
+  const { t } = useTranslation(["system-config", "common"])
   const rolesQuery = useRoles()
   const createRole = useCreateRole()
   const updateRole = useUpdateRole()
@@ -93,17 +95,20 @@ export default function RolePage() {
           name: form.name.trim(),
           description,
         })
-        toast.success(`Dodano rolę ${created.name}`)
+        toast.success(t("roles.toast.created", { name: created.name }))
       } else {
         const updated = await updateRole.mutateAsync({
           id: dialog.role.id,
           body: { name: form.name.trim(), description },
         })
-        toast.success(`Zapisano rolę ${updated.name}`)
+        toast.success(t("roles.toast.saved", { name: updated.name }))
       }
       setDialog(null)
     } catch (error) {
-      toastApiError(error, isCreating ? "Nie udało się dodać roli" : "Nie udało się zapisać roli")
+      toastApiError(
+        error,
+        isCreating ? t("roles.errors.createFailed") : t("roles.errors.saveFailed"),
+      )
     }
   }
 
@@ -111,9 +116,9 @@ export default function RolePage() {
     if (!roleToDelete) return
     try {
       await deleteRole.mutateAsync(roleToDelete.id)
-      toast.success(`Usunięto rolę ${roleToDelete.name}`)
+      toast.success(t("roles.toast.deleted", { name: roleToDelete.name }))
     } catch (error) {
-      toastApiError(error, "Nie udało się usunąć roli")
+      toastApiError(error, t("roles.errors.deleteFailed"))
     } finally {
       setRoleToDelete(null)
     }
@@ -122,40 +127,40 @@ export default function RolePage() {
   return (
     <>
       <PageHeader
-        title="Role"
-        description="Role są jedynym nośnikiem uprawnień. Rola systemowa jest chroniona przed usunięciem."
+        title={t("roles.title")}
+        description={t("roles.description")}
         actions={
           <Button size="sm" onClick={openCreate}>
             <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Dodaj rolę
+            {t("roles.add")}
           </Button>
         }
       />
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         {rolesQuery.isLoading ? (
-          <LoadingState label="Wczytywanie ról…" />
+          <LoadingState label={t("roles.loading")} />
         ) : rolesQuery.isError ? (
           <EmptyState
             icon={KeyRound}
-            title="Nie udało się wczytać ról"
-            description="Sprawdź połączenie z bazą danych modułu Konfiguracja Systemu."
+            title={t("roles.loadFailedTitle")}
+            description={t("shared.dbConnectionHint")}
           />
         ) : roles.length === 0 ? (
           <EmptyState
             icon={KeyRound}
-            title="Brak ról"
-            description="Uruchom seed bootstrapowy, aby utworzyć rolę administratora."
+            title={t("roles.emptyTitle")}
+            description={t("roles.emptyDescription")}
           />
         ) : (
           <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-2 font-medium">Kod</th>
-                  <th className="px-4 py-2 font-medium">Nazwa</th>
-                  <th className="px-4 py-2 font-medium">Opis</th>
-                  <th className="px-4 py-2 font-medium">Typ</th>
+                  <th className="px-4 py-2 font-medium">{t("roles.columnCode")}</th>
+                  <th className="px-4 py-2 font-medium">{t("roles.columnName")}</th>
+                  <th className="px-4 py-2 font-medium">{t("roles.columnDescription")}</th>
+                  <th className="px-4 py-2 font-medium">{t("roles.columnType")}</th>
                   <th className="px-4 py-2" />
                 </tr>
               </thead>
@@ -167,7 +172,7 @@ export default function RolePage() {
                     <td className="px-4 py-2 text-muted-foreground">{role.description ?? "-"}</td>
                     <td className="px-4 py-2">
                       <Badge variant={role.isSystem ? "default" : "outline"}>
-                        {role.isSystem ? "Systemowa" : "Zwykła"}
+                        {role.isSystem ? t("roles.typeSystem") : t("roles.typeRegular")}
                       </Badge>
                     </td>
                     <td className="px-4 py-2 text-right">
@@ -176,7 +181,7 @@ export default function RolePage() {
                           size="icon"
                           variant="ghost"
                           onClick={() => openEdit(role)}
-                          aria-label={`Edytuj rolę ${role.name}`}
+                          aria-label={t("roles.editAria", { name: role.name })}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -184,13 +189,9 @@ export default function RolePage() {
                           size="icon"
                           variant="ghost"
                           disabled={role.isSystem}
-                          title={
-                            role.isSystem
-                              ? "Rola systemowa jest chroniona przed usunięciem"
-                              : undefined
-                          }
+                          title={role.isSystem ? t("roles.systemProtectedTooltip") : undefined}
                           onClick={() => setRoleToDelete(role)}
-                          aria-label={`Usuń rolę ${role.name}`}
+                          aria-label={t("roles.deleteAria", { name: role.name })}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -208,42 +209,42 @@ export default function RolePage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {isCreating ? "Nowa rola" : `Edytuj rolę ${dialog?.role?.name ?? ""}`}
+              {isCreating
+                ? t("roles.createTitle")
+                : t("roles.editTitle", { name: dialog?.role?.name ?? "" })}
             </DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="code">Kod</Label>
+              <Label htmlFor="code">{t("roles.form.codeLabel")}</Label>
               <Input
                 id="code"
                 value={form.code}
                 disabled={!isCreating}
                 onChange={(event) => update("code", event.target.value)}
-                placeholder="np. marketing"
+                placeholder={t("roles.form.codePlaceholder")}
               />
-              <span className="text-xs text-muted-foreground">
-                Małe litery, cyfry i myślnik. Po utworzeniu nie da się zmienić.
-              </span>
+              <span className="text-xs text-muted-foreground">{t("shared.codeHint")}</span>
             </div>
 
             <div className="grid gap-1.5">
-              <Label htmlFor="name">Nazwa</Label>
+              <Label htmlFor="name">{t("roles.form.nameLabel")}</Label>
               <Input
                 id="name"
                 value={form.name}
                 onChange={(event) => update("name", event.target.value)}
-                placeholder="np. Marketing"
+                placeholder={t("roles.form.namePlaceholder")}
               />
             </div>
 
             <div className="grid gap-1.5">
-              <Label htmlFor="description">Opis</Label>
+              <Label htmlFor="description">{t("roles.form.descriptionLabel")}</Label>
               <Input
                 id="description"
                 value={form.description}
                 onChange={(event) => update("description", event.target.value)}
-                placeholder="opcjonalnie"
+                placeholder={t("shared.optionalPlaceholder")}
               />
             </div>
 
@@ -251,7 +252,7 @@ export default function RolePage() {
                 jeszcze `id`, po którym mapowanie się zapisuje. */}
             {!isCreating && dialog?.role ? (
               <div className="grid gap-1.5">
-                <Label>Grupa OpenWebUI</Label>
+                <Label>{t("roles.openwebui.sectionLabel")}</Label>
                 <OpenwebuiGroupSection role={dialog.role} />
               </div>
             ) : null}
@@ -259,10 +260,10 @@ export default function RolePage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialog(null)}>
-              Anuluj
+              {t("common:actions.cancel")}
             </Button>
             <Button onClick={handleSubmit} disabled={isSaving}>
-              {isCreating ? "Utwórz" : "Zapisz"}
+              {isCreating ? t("common:actions.create") : t("common:actions.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -274,16 +275,15 @@ export default function RolePage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Usunąć rolę {roleToDelete?.name}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Razem z rolą znikną wszystkie jej granty do aplikacji i zakresów oraz wszystkie
-              przypisania użytkowników do niej. Tej operacji nie da się cofnąć.
-            </AlertDialogDescription>
+            <AlertDialogTitle>
+              {t("roles.deleteConfirmTitle", { name: roleToDelete?.name ?? "" })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>{t("roles.deleteConfirmBody")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleteRole.isPending}>
-              Usuń
+              {t("common:actions.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -299,6 +299,7 @@ export default function RolePage() {
  * zmapowane (status + "Synchronizuj teraz"/"Odepnij").
  */
 function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
+  const { t } = useTranslation(["system-config", "common"])
   const { data, isLoading } = useRoleOpenwebuiGroup(role.id)
   const attach = useAttachRoleOpenwebuiGroup()
   const detach = useDetachRoleOpenwebuiGroup()
@@ -310,9 +311,9 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
   async function handleCreate() {
     try {
       await attach.mutateAsync({ id: role.id, body: { action: "create" } })
-      toast.success(`Utworzono grupę OpenWebUI dla roli ${role.name}`)
+      toast.success(t("roles.openwebui.toast.groupCreated", { name: role.name }))
     } catch (error) {
-      toastApiError(error, "Nie udało się utworzyć grupy OpenWebUI")
+      toastApiError(error, t("roles.openwebui.errors.createFailed"))
     }
   }
 
@@ -323,10 +324,12 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
         id: role.id,
         body: { action: "existing", groupId: confirmGroup.id },
       })
-      toast.success(`Podpięto grupę „${confirmGroup.name}” do roli ${role.name}`)
+      toast.success(
+        t("roles.openwebui.toast.attached", { group: confirmGroup.name, role: role.name }),
+      )
       setSelectedGroupName("")
     } catch (error) {
-      toastApiError(error, "Nie udało się podpiąć grupy OpenWebUI")
+      toastApiError(error, t("roles.openwebui.errors.attachFailed"))
     } finally {
       setConfirmGroup(null)
     }
@@ -335,11 +338,9 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
   async function handleDetach() {
     try {
       await detach.mutateAsync(role.id)
-      toast.success(
-        "Odpięto grupę OpenWebUI od roli — jej członkostwo w OpenWebUI zostaje nietknięte",
-      )
+      toast.success(t("roles.openwebui.toast.detached"))
     } catch (error) {
-      toastApiError(error, "Nie udało się odpiąć grupy OpenWebUI")
+      toastApiError(error, t("roles.openwebui.errors.detachFailed"))
     }
   }
 
@@ -348,40 +349,35 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
       const result = await sync.mutateAsync(role.id)
       if (result.openwebuiSync.status === "failed") {
         toast.error(
-          `Synchronizacja nie powiodła się: ${result.openwebuiSync.message ?? "nieznany błąd"}`,
+          t("roles.openwebui.errors.syncFailedWithReason", {
+            reason: result.openwebuiSync.message ?? t("roles.openwebui.errors.unknownReason"),
+          }),
         )
       } else {
-        toast.success("Zsynchronizowano grupę OpenWebUI")
+        toast.success(t("roles.openwebui.toast.synced"))
       }
     } catch (error) {
-      toastApiError(error, "Nie udało się zsynchronizować grupy OpenWebUI")
+      toastApiError(error, t("roles.openwebui.errors.syncFailed"))
     }
   }
 
   if (isLoading) {
-    return <p className="text-xs text-muted-foreground">Wczytywanie stanu grupy OpenWebUI…</p>
+    return <p className="text-xs text-muted-foreground">{t("roles.openwebui.loading")}</p>
   }
 
   if (!data || !data.configured) {
-    return (
-      <p className="text-xs text-muted-foreground">
-        Synchronizacja z OpenWebUI nie jest skonfigurowana w tej instancji (OPENWEBUI_URL/
-        OPENWEBUI_ADMIN_TOKEN).
-      </p>
-    )
+    return <p className="text-xs text-muted-foreground">{t("roles.openwebui.notConfigured")}</p>
   }
 
   if (!data.mapping) {
     const groupOptions = data.availableGroups ?? []
     return (
       <div className="grid gap-2 rounded-md border border-dashed border-border p-3">
-        <p className="text-xs text-muted-foreground">
-          Rola nie jest podpięta do żadnej grupy OpenWebUI.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("roles.openwebui.notMapped")}</p>
 
         <Button size="sm" variant="outline" onClick={handleCreate} disabled={attach.isPending}>
           <Link2 className="mr-1.5 h-3.5 w-3.5" />
-          Utwórz grupę „cortex:{role.code}”
+          {t("roles.openwebui.createGroup", { name: `cortex:${role.code}` })}
         </Button>
 
         {groupOptions.length > 0 ? (
@@ -390,7 +386,7 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
               value={selectedGroupName}
               onChange={setSelectedGroupName}
               options={groupOptions.map((group) => group.name)}
-              placeholder="Podepnij istniejącą grupę"
+              placeholder={t("roles.openwebui.attachExistingPlaceholder")}
               className="flex-1"
             />
             <Button
@@ -402,7 +398,7 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
                 if (match) setConfirmGroup(match)
               }}
             >
-              Podepnij
+              {t("roles.openwebui.attach")}
             </Button>
           </div>
         ) : null}
@@ -413,17 +409,18 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
         >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Podpiąć istniejącą grupę „{confirmGroup?.name}”?</AlertDialogTitle>
+              <AlertDialogTitle>
+                {t("roles.openwebui.attachConfirmTitle", { name: confirmGroup?.name ?? "" })}
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                Członkostwo tej grupy zostanie przy najbliższej synchronizacji NADPISANE zgodnie ze
-                składem tej roli. Jeśli grupa gatuje dostęp do innego asystenta w OpenWebUI (przez
-                access_control), jego dostępność dla użytkowników może się nieoczekiwanie zmienić.
-                Upewnij się, że to właściwa grupa.
+                {t("roles.openwebui.attachConfirmBody")}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Anuluj</AlertDialogCancel>
-              <AlertDialogAction onClick={handleAttachExisting}>Podepnij</AlertDialogAction>
+              <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
+              <AlertDialogAction onClick={handleAttachExisting}>
+                {t("roles.openwebui.attach")}
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -439,33 +436,38 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
         <span className="font-mono text-xs">{mapping.groupName}</span>
         <Badge variant={mapping.lastSyncError ? "destructive" : "outline"}>
           {mapping.lastSyncedAt
-            ? `Zsynchronizowano ${new Date(mapping.lastSyncedAt).toLocaleString("pl-PL")}`
-            : "Jeszcze nie zsynchronizowano"}
+            ? t("roles.openwebui.syncedAt", {
+                date: new Date(mapping.lastSyncedAt).toLocaleString("pl-PL"),
+              })
+            : t("roles.openwebui.neverSynced")}
         </Badge>
       </div>
 
       {mapping.lastSyncError ? (
         <Alert variant="destructive">
-          <AlertTitle>Ostatnia synchronizacja nie powiodła się</AlertTitle>
+          <AlertTitle>{t("roles.openwebui.lastSyncFailedTitle")}</AlertTitle>
           <AlertDescription>{mapping.lastSyncError}</AlertDescription>
         </Alert>
       ) : null}
 
       {preview?.status === "ok" ? (
         <p className="text-xs text-muted-foreground">
-          Przy najbliższej synchronizacji: dodanych {preview.toAdd}, usuniętych {preview.toRemove}{" "}
-          (cel: {preview.targetCount} aktywnych użytkowników z kontem w OpenWebUI).
+          {t("roles.openwebui.previewSummary", {
+            toAdd: preview.toAdd,
+            toRemove: preview.toRemove,
+            target: preview.targetCount,
+          })}
         </p>
       ) : null}
 
       <div className="flex gap-2">
         <Button size="sm" variant="outline" onClick={handleSync} disabled={sync.isPending}>
           <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-          Synchronizuj teraz
+          {t("roles.openwebui.syncNow")}
         </Button>
         <Button size="sm" variant="ghost" onClick={handleDetach} disabled={detach.isPending}>
           <Unlink className="mr-1.5 h-3.5 w-3.5" />
-          Odepnij
+          {t("roles.openwebui.detach")}
         </Button>
       </div>
     </div>

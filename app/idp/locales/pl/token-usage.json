@@ -1,3 +1,218 @@
 {
-  "_ctx": {}
+  "page": {
+    "title": "Raportowanie Tokenów",
+    "description": "Zużycie tokenów i liczba żądań przechodzących przez cortex-proxy"
+  },
+  "tabs": {
+    "users": "Użytkownicy",
+    "models": "Modele",
+    "apps": "Aplikacje",
+    "scopes": "Zakresy",
+    "details": "Szczegóły"
+  },
+  "columns": {
+    "user": "Użytkownik",
+    "app": "Aplikacja",
+    "scope": "Zakres",
+    "model": "Model",
+    "totalTokens": "Tokeny",
+    "reasoningTokens": "Rozumowanie",
+    "requestCount": "Żądania",
+    "userCount": "Użytkownicy",
+    "share": "Udział"
+  },
+  "panel": {
+    "usersTitle": "Zużycie według użytkowników",
+    "modelsTitle": "Zużycie według modeli",
+    "appsTitle": "Zużycie według aplikacji",
+    "scopesTitle": "Zużycie według zakresów",
+    "barMeta": "{{requests}} żądań",
+    "truncated": "Lista słupkowa pokazuje {{shown}} największych pozycji z {{total}}. Tabela poniżej zawiera komplet."
+  },
+  "filter": {
+    "startLabel": "Data początkowa",
+    "endLabel": "Data końcowa",
+    "submit": "Pokaż raport",
+    "hint": "Zakres obejmuje obie daty włącznie, liczony w strefie cortex-proxy (Europe/Warsaw, CET/CEST). Maksymalna długość zakresu: {{days}} dni.",
+    "presets": {
+      "current-month": "Bieżący miesiąc",
+      "last-7-days": "Ostatnie 7 dni",
+      "last-30-days": "Ostatnie 30 dni"
+    }
+  },
+  "detail": {
+    "modelLabel": "Model",
+    "allModels": "Wszystkie modele",
+    "scopeLabel": "Zakres",
+    "allScopes": "Wszystkie zakresy",
+    "searchPlaceholder": "Szukaj w szczegółach..."
+  },
+  "actions": {
+    "downloadCsv": "Pobierz CSV",
+    "downloadJson": "Pobierz JSON"
+  },
+  "empty": {
+    "noDataTitle": "Brak danych w tym okresie",
+    "noDataDescription": "W wybranym zakresie dat cortex-proxy nie zarejestrował żadnych żądań.",
+    "noMatchTitle": "Brak danych dla wybranych filtrów",
+    "noMatchDescription": "Zmień model lub zakres, albo poszerz przedział dat."
+  },
+  "errors": {
+    "generic": {
+      "title": "Nie udało się wczytać raportu",
+      "message": "Spróbuj ponownie za chwilę."
+    },
+    "cortex-proxy-not-configured": {
+      "title": "Raport nie jest skonfigurowany",
+      "message": "Ta instancja nie ma ustawionego klucza administracyjnego cortex-proxy (CORTEX_PROXY_ADMIN_API_KEY). To zadanie konfiguracyjne po stronie administratora instancji — pozostałe kafelki działają normalnie."
+    },
+    "cortex-proxy-unauthorized": {
+      "title": "cortex-proxy odrzucił klucz administracyjny",
+      "message": "Klucz jest ustawiony, ale cortex-proxy go nie uznaje. Najczęstsza przyczyna: wpisano CORTEX_PROXY_API_KEY zamiast CORTEX_PROXY_ADMIN_API_KEY — to dwa różne sekrety."
+    },
+    "cortex-proxy-unreachable": {
+      "title": "cortex-proxy nie odpowiada",
+      "message": "Nie udało się połączyć z cortex-proxy. Spróbuj ponownie za chwilę."
+    },
+    "cortex-proxy-error": {
+      "title": "Nieoczekiwana odpowiedź cortex-proxy",
+      "message": "cortex-proxy odpowiedział w sposób, którego nie potrafimy odczytać."
+    },
+    "invalid-format": {
+      "title": "Nieprawidłowy zakres dat",
+      "message": "Daty muszą mieć format RRRR-MM-DD."
+    },
+    "invalid-date": {
+      "title": "Nieprawidłowa data",
+      "message": "Podana data nie istnieje w kalendarzu."
+    },
+    "reversed-range": {
+      "title": "Nieprawidłowy zakres dat",
+      "message": "Data początkowa nie może być późniejsza niż końcowa."
+    },
+    "range-too-long": {
+      "title": "Zakres jest zbyt długi",
+      "message": "Wybierz krótszy przedział — raport obejmuje maksymalnie jeden kwartał."
+    }
+  },
+  "dataQuality": {
+    "title": "Jak czytać te liczby",
+    "estimates": "Część wartości to szacunki, nie odczyt z API dostawcy. Gdy odpowiedź modelu nie zawiera bloku danych o zużyciu, cortex-proxy zapisuje liczbę tokenów przybliżoną na podstawie treści żądania. Raport pokazuje więc skalę zużycia, a nie rozliczenie co do tokena.",
+    "coverage": "Zestawienie obejmuje cały ruch przechodzący przez cortex-proxy, także z systemów spoza Cortex360. Kolumna „Użytkownik” zawiera identyfikator przysłany przez system wołający — najczęściej adres e-mail, ale nie jest to gwarantowane."
+  },
+  "metrics": {
+    "totalTokens": {
+      "label": "Tokeny łącznie",
+      "description": "{{request}} w żądaniach, {{response}} w odpowiedziach"
+    },
+    "requestCount": {
+      "label": "Liczba żądań",
+      "description": "Wliczając żądania nieudane, które nie zużyły tokenów"
+    },
+    "activeUsers": {
+      "label": "Aktywni użytkownicy",
+      "description": "Z niezerowym zużyciem tokenów",
+      "withIdle": "{{total}} widocznych, w tym bez zużycia"
+    },
+    "averagePerUser": {
+      "label": "Średnia na użytkownika",
+      "description": "Liczona po aktywnych użytkownikach"
+    },
+    "reasoningTokens": {
+      "label": "Tokeny rozumowania",
+      "description": "Raportowane osobno przez modele reasoningowe"
+    },
+    "cachedTokens": {
+      "label": "Tokeny z cache",
+      "description": "Część żądań obsłużona z pamięci podręcznej dostawcy"
+    },
+    "models": {
+      "label": "Modele",
+      "top": "Najczęstszy: {{model}}"
+    },
+    "apps": {
+      "label": "Aplikacje",
+      "top": "Najczęstsza: {{app}}"
+    }
+  },
+  "_ctx": {
+    "page.title": "nagłówek ekranu; nazwa raportu zużycia tokenów AI; maks. 28 zn.",
+    "page.description": "opis pod nagłówkiem ekranu; jedno zdanie, co raport pokazuje",
+    "tabs.users": "etykieta zakładki; zestawienie wg użytkowników; maks. 16 zn.",
+    "tabs.models": "etykieta zakładki; zestawienie wg modeli AI; maks. 16 zn.",
+    "tabs.apps": "etykieta zakładki; zestawienie wg aplikacji wołających proxy; maks. 16 zn.",
+    "tabs.scopes": "etykieta zakładki; zestawienie wg zakresów (scope) żądań; maks. 16 zn.",
+    "tabs.details": "etykieta zakładki; surowa tabela wierszy szczegółowych; maks. 16 zn.",
+    "columns.user": "nagłówek kolumny tabeli; identyfikator wołającego, zwykle e-mail, NIE zawsze; maks. 16 zn.",
+    "columns.app": "nagłówek kolumny tabeli; system, który wywołał proxy; maks. 14 zn.",
+    "columns.scope": "nagłówek kolumny tabeli; zakres (scope) żądania nadany przez wołającego; maks. 12 zn.",
+    "columns.model": "nagłówek kolumny tabeli; nazwa modelu AI; maks. 12 zn.",
+    "columns.totalTokens": "nagłówek kolumny tabeli; łączna liczba tokenów; maks. 12 zn.",
+    "columns.reasoningTokens": "nagłówek kolumny tabeli; tokeny rozumowania modeli reasoningowych; maks. 16 zn.",
+    "columns.requestCount": "nagłówek kolumny tabeli; liczba żądań; maks. 12 zn.",
+    "columns.userCount": "nagłówek kolumny tabeli; liczba różnych użytkowników w wierszu; maks. 16 zn.",
+    "columns.share": "nagłówek kolumny tabeli; udział procentowy w całości; maks. 10 zn.",
+    "panel.usersTitle": "nagłówek sekcji; wykres i tabela zużycia wg użytkowników; maks. 34 zn.",
+    "panel.modelsTitle": "nagłówek sekcji; wykres i tabela zużycia wg modeli; maks. 34 zn.",
+    "panel.appsTitle": "nagłówek sekcji; wykres i tabela zużycia wg aplikacji; maks. 34 zn.",
+    "panel.scopesTitle": "nagłówek sekcji; wykres i tabela zużycia wg zakresów; maks. 34 zn.",
+    "panel.barMeta": "etykieta przy słupku wykresu; {{requests}} to gotowa, sformatowana liczba żądań; maks. 20 zn.",
+    "panel.truncated": "opis pod wykresem; {{shown}} pozycji na wykresie, {{total}} w całym zestawieniu",
+    "filter.startLabel": "etykieta pola daty; początek zakresu raportu; maks. 20 zn.",
+    "filter.endLabel": "etykieta pola daty; koniec zakresu raportu; maks. 20 zn.",
+    "filter.submit": "przycisk; pobiera raport dla wybranego zakresu dat; maks. 18 zn.",
+    "filter.hint": "opis pod filtrem; {{days}} to maksymalna długość zakresu w dniach; nazw stref NIE tłumaczyć",
+    "filter.presets.current-month": "przycisk skrótu zakresu dat; od pierwszego dnia miesiąca do dziś; maks. 18 zn.",
+    "filter.presets.last-7-days": "przycisk skrótu zakresu dat; dziś i sześć dni wstecz; maks. 18 zn.",
+    "filter.presets.last-30-days": "przycisk skrótu zakresu dat; dziś i 29 dni wstecz; maks. 18 zn.",
+    "detail.modelLabel": "etykieta listy wyboru; filtr po modelu AI; maks. 12 zn.",
+    "detail.allModels": "opcja listy wyboru; zdejmuje filtr modelu; maks. 22 zn.",
+    "detail.scopeLabel": "etykieta listy wyboru; filtr po zakresie (scope); maks. 12 zn.",
+    "detail.allScopes": "opcja listy wyboru; zdejmuje filtr zakresu; maks. 22 zn.",
+    "detail.searchPlaceholder": "placeholder pola; wyszukiwanie pełnotekstowe w tabeli szczegółów; maks. 28 zn.",
+    "actions.downloadCsv": "przycisk; pobiera bieżące zestawienie jako plik CSV; maks. 16 zn.",
+    "actions.downloadJson": "przycisk; pobiera cały raport jako plik JSON; maks. 16 zn.",
+    "empty.noDataTitle": "stan pusty; w wybranym zakresie dat nie ma żadnych żądań, to NIE błąd; maks. 32 zn.",
+    "empty.noDataDescription": "stan pusty; wyjaśnia, że proxy nie zarejestrowało ruchu w tym zakresie",
+    "empty.noMatchTitle": "stan pusty po filtrowaniu; dane są, ale filtry nic nie przepuszczają; maks. 36 zn.",
+    "empty.noMatchDescription": "stan pusty po filtrowaniu; podpowiada zmianę filtra albo zakresu dat",
+    "errors.generic.title": "tytuł błędu; nie znamy przyczyny niepowodzenia raportu; maks. 34 zn.",
+    "errors.generic.message": "opis błędu; sugeruje ponowienie za chwilę",
+    "errors.cortex-proxy-not-configured.title": "tytuł błędu; instancja nie ma klucza administracyjnego proxy; maks. 34 zn.",
+    "errors.cortex-proxy-not-configured.message": "opis błędu; tekst dla ADMINA instancji, nie dla klienta; nazw zmiennych środowiskowych NIE tłumaczyć",
+    "errors.cortex-proxy-unauthorized.title": "tytuł błędu; proxy nie uznaje ustawionego klucza; maks. 40 zn.",
+    "errors.cortex-proxy-unauthorized.message": "opis błędu; wskazuje pomylenie dwóch sekretów; nazw zmiennych środowiskowych NIE tłumaczyć",
+    "errors.cortex-proxy-unreachable.title": "tytuł błędu; brak połączenia z cortex-proxy; maks. 34 zn.",
+    "errors.cortex-proxy-unreachable.message": "opis błędu; awaria cudzego serwisu, sugeruje ponowienie",
+    "errors.cortex-proxy-error.title": "tytuł błędu; odpowiedź proxy w nieznanym kształcie; maks. 40 zn.",
+    "errors.cortex-proxy-error.message": "opis błędu; odpowiedzi nie da się odczytać",
+    "errors.invalid-format.title": "tytuł błędu; zły format wpisanych dat; maks. 30 zn.",
+    "errors.invalid-format.message": "komunikat błędu; widoczny też pod polami filtra; RRRR-MM-DD to wzorzec daty, przetłumacz litery wzorca",
+    "errors.invalid-date.title": "tytuł błędu; data nie istnieje w kalendarzu; maks. 30 zn.",
+    "errors.invalid-date.message": "komunikat błędu; widoczny też pod polami filtra; np. 31 lutego",
+    "errors.reversed-range.title": "tytuł błędu; zakres dat odwrócony; maks. 30 zn.",
+    "errors.reversed-range.message": "komunikat błędu; widoczny też pod polami filtra; początek po końcu",
+    "errors.range-too-long.title": "tytuł błędu; zakres dat przekracza limit; maks. 30 zn.",
+    "errors.range-too-long.message": "komunikat błędu; widoczny też pod polami filtra; limit to jeden kwartał",
+    "dataQuality.title": "tytuł noty informacyjnej nad raportem; maks. 30 zn.",
+    "dataQuality.estimates": "akapit noty; ostrzega, że liczby są szacunkiem, nie rozliczeniem co do tokena",
+    "dataQuality.coverage": "akapit noty; raport obejmuje cały ruch proxy, nie tylko Cortex360; cudzysłów obejmuje nagłówek kolumny",
+    "metrics.totalTokens.label": "etykieta karty metryki; suma tokenów w okresie; maks. 20 zn.",
+    "metrics.totalTokens.description": "opis karty metryki; {{request}} i {{response}} to gotowe, sformatowane liczby",
+    "metrics.requestCount.label": "etykieta karty metryki; liczba żądań w okresie; maks. 20 zn.",
+    "metrics.requestCount.description": "opis karty metryki; tłumaczy, czemu średnia bywa niższa niż się wydaje",
+    "metrics.activeUsers.label": "etykieta karty metryki; użytkownicy z niezerowym zużyciem; maks. 22 zn.",
+    "metrics.activeUsers.description": "opis karty metryki; wariant, gdy wszyscy widoczni są aktywni",
+    "metrics.activeUsers.withIdle": "opis karty metryki; wariant, gdy część widocznych nie zużyła nic; {{total}} to sformatowana liczba",
+    "metrics.averagePerUser.label": "etykieta karty metryki; średnia tokenów na aktywnego użytkownika; maks. 24 zn.",
+    "metrics.averagePerUser.description": "opis karty metryki; mianownikiem są aktywni, nie wszyscy",
+    "metrics.reasoningTokens.label": "etykieta karty metryki; tokeny rozumowania; maks. 22 zn.",
+    "metrics.reasoningTokens.description": "opis karty metryki; raportują je tylko modele reasoningowe",
+    "metrics.cachedTokens.label": "etykieta karty metryki; tokeny obsłużone z cache dostawcy; maks. 22 zn.",
+    "metrics.cachedTokens.description": "opis karty metryki; część ruchu poszła z pamięci podręcznej dostawcy",
+    "metrics.models.label": "etykieta karty metryki; liczba różnych modeli w okresie; maks. 16 zn.",
+    "metrics.models.top": "opis karty metryki; {{model}} to nazwa własna modelu, NIE tłumaczyć",
+    "metrics.apps.label": "etykieta karty metryki; liczba różnych aplikacji w okresie; maks. 16 zn.",
+    "metrics.apps.top": "opis karty metryki; {{app}} to nazwa własna aplikacji, NIE tłumaczyć"
+  }
 }

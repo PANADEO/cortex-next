@@ -46,15 +46,11 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
-const GRADE_FILTER_OPTIONS: Array<{ value: GeoScoreGrade | "all"; label: string }> = [
-  { value: "all", label: "Wszystkie oceny" },
-  { value: "A", label: "Ocena A" },
-  { value: "B", label: "Ocena B" },
-  { value: "C", label: "Ocena C" },
-  { value: "D", label: "Ocena D" },
-  { value: "F", label: "Ocena F" },
-]
+// Same WARTOŚCI filtra — napis opcji powstaje z tłumaczenia przy renderze,
+// bo litera oceny jest danymi, a nie częścią zdania do przetłumaczenia.
+const GRADE_FILTER_VALUES = ["all", "A", "B", "C", "D", "F"] as const
 
 const GRADE_BADGE_TONE: Record<GeoScoreGrade, string> = {
   A: "border-success/40 bg-success/10 text-success",
@@ -69,6 +65,7 @@ const GRADE_BADGE_TONE: Record<GeoScoreGrade, string> = {
 const EMPTY_HISTORY: GeoScoreCalculationSummaryDto[] = []
 
 export default function GeoScoreCalculatorHistoryPage() {
+  const { t } = useTranslation("geo-score-calculator")
   const router = useRouter()
   const historyQuery = useMyGeoScoreHistory()
   const [gradeFilter, setGradeFilter] = useState<GeoScoreGrade | "all">("all")
@@ -84,20 +81,20 @@ export default function GeoScoreCalculatorHistoryPage() {
     () => [
       {
         accessorKey: "createdAt",
-        header: "Data",
+        header: t("history.columns.date"),
         enableSorting: true,
         cell: ({ row }) => formatAbsolute(row.original.createdAt),
       },
       {
         accessorKey: "textPreview",
-        header: "Podgląd",
+        header: t("history.columns.preview"),
         cell: ({ row }) => (
           <span className="line-clamp-1 max-w-md">{row.original.textPreview}</span>
         ),
       },
       {
         accessorKey: "totalScore",
-        header: "Wynik",
+        header: t("history.columns.score"),
         enableSorting: true,
         cell: ({ row }) => (
           <span className="tabular-nums">{row.original.totalScore.toFixed(1)}</span>
@@ -105,7 +102,7 @@ export default function GeoScoreCalculatorHistoryPage() {
       },
       {
         accessorKey: "grade",
-        header: "Ocena",
+        header: t("history.columns.grade"),
         enableSorting: true,
         cell: ({ row }) => (
           <Badge variant="outline" className={cn(GRADE_BADGE_TONE[row.original.grade])}>
@@ -115,7 +112,7 @@ export default function GeoScoreCalculatorHistoryPage() {
       },
       {
         accessorKey: "wordCount",
-        header: "Słowa",
+        header: t("history.columns.words"),
         enableSorting: true,
         cell: ({ row }) => row.original.wordCount,
       },
@@ -127,7 +124,9 @@ export default function GeoScoreCalculatorHistoryPage() {
             <Button
               size="icon"
               variant="ghost"
-              aria-label={`Zobacz szczegóły analizy z ${formatAbsolute(row.original.createdAt)}`}
+              aria-label={t("history.columns.viewDetailsAria", {
+                date: formatAbsolute(row.original.createdAt),
+              })}
               onClick={() => router.push(`/geo-score-calculator/history/${row.original.id}`)}
             >
               <ChevronRight className="h-4 w-4" />
@@ -136,28 +135,28 @@ export default function GeoScoreCalculatorHistoryPage() {
         ),
       },
     ],
-    [router],
+    [router, t],
   )
 
   return (
     <>
       <PageHeader
-        title="Historia"
-        description="Analizy GEO Score, które policzyłeś — status, wynik i pełny wynik dla każdej z nich."
+        title={t("history.title")}
+        description={t("history.description")}
         actions={
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="outline" disabled={rows.length === 0}>
                 <Download className="mr-1.5 h-3.5 w-3.5" />
-                Eksportuj
+                {t("history.export")}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => downloadHistoryExport(rows, "csv")}>
-                Eksportuj CSV
+                {t("history.exportCsv")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => downloadHistoryExport(rows, "json")}>
-                Eksportuj JSON
+                {t("history.exportJson")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -167,19 +166,19 @@ export default function GeoScoreCalculatorHistoryPage() {
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         <div className="grid gap-4 sm:grid-cols-3">
           <DataCard
-            label="Liczba analiz"
+            label={t("history.stats.count")}
             value={stats.count}
             icon={FileText}
             isLoading={historyQuery.isLoading}
           />
           <DataCard
-            label="Średni wynik"
+            label={t("history.stats.average")}
             value={stats.averageScore !== null ? stats.averageScore.toFixed(1) : "—"}
             icon={BarChart3}
             isLoading={historyQuery.isLoading}
           />
           <DataCard
-            label="Trend"
+            label={t("history.stats.trend")}
             value={
               stats.trend
                 ? `${stats.trend.direction === "up" ? "+" : ""}${stats.trend.delta.toFixed(1)}`
@@ -187,10 +186,10 @@ export default function GeoScoreCalculatorHistoryPage() {
             }
             description={
               stats.trend
-                ? "nowsze analizy vs. starsze"
+                ? t("history.stats.trendNewerVsOlder")
                 : rows.length < 2
-                  ? "za mało danych"
-                  : "bez zmiany"
+                  ? t("history.stats.trendNotEnough")
+                  : t("history.stats.trendNoChange")
             }
             icon={stats.trend?.direction === "down" ? TrendingDown : TrendingUp}
             tone={
@@ -202,7 +201,7 @@ export default function GeoScoreCalculatorHistoryPage() {
 
         <div className="flex items-center gap-2">
           <Label htmlFor="geo-score-grade-filter" className="text-xs text-muted-foreground">
-            Ocena
+            {t("history.gradeFilterLabel")}
           </Label>
           <Select
             value={gradeFilter}
@@ -212,9 +211,11 @@ export default function GeoScoreCalculatorHistoryPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {GRADE_FILTER_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
+              {GRADE_FILTER_VALUES.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {value === "all"
+                    ? t("history.gradeFilter.all")
+                    : t("history.gradeFilter.grade", { grade: value })}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -222,20 +223,20 @@ export default function GeoScoreCalculatorHistoryPage() {
         </div>
 
         {historyQuery.isLoading ? (
-          <LoadingState label="Wczytywanie historii…" />
+          <LoadingState label={t("history.loading")} />
         ) : (
           <CortexDataGrid
             columns={columns}
             data={filtered}
             bordered
             searchable
-            searchPlaceholder="Szukaj w tekście…"
+            searchPlaceholder={t("history.searchPlaceholder")}
             getRowId={(row) => row.id}
             emptyState={
               <EmptyState
                 icon={FileSearch}
-                title="Brak analiz"
-                description="Przeanalizuj pierwszy tekst na Kalkulatorze — pojawi się tutaj po zapisaniu wyniku."
+                title={t("history.emptyTitle")}
+                description={t("history.emptyDescription")}
               />
             }
           />

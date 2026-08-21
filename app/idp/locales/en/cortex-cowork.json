@@ -1,1 +1,83 @@
-{}
+{
+  "chat": {
+    "sessionErrorTitle": "Could not start the sandbox session",
+    "dropFiles": "Drop the files - they go into this session's sandbox",
+    "startingSession": "Starting the sandbox session...",
+    "hero": "What should I work on?",
+    "heroWithProject": "{{project}} - what should I work on?",
+    "heroDescription": "The agent works in a sandbox and hands back files as artifacts - ask for a report, an export or an analysis.",
+    "degradedBadge": "Fallback mode - agent unavailable"
+  },
+  "composer": {
+    "placeholder": "Ask for a report, an export or the next step...",
+    "attachAria": "Add files to the session",
+    "attachTitle": "Add files (or paste / drop them here)",
+    "hint": "Enter sends · Shift+Enter new line",
+    "sendAria": "Send message",
+    "contextMeterTitle": "Context window usage (last turn)"
+  },
+  "panels": {
+    "artifacts": "Artifacts",
+    "artifactsEmpty": "Ask for a report - it will show up here.",
+    "artifactsNoSession": "Start a session to begin.",
+    "resources": "Session resources",
+    "skillsEmpty": "No skills in this session.",
+    "inputFiles": "Input files"
+  },
+  "artifacts": {
+    "exportTitle": "Send to the network share",
+    "exportAria": "Send {{filename}} to the network share",
+    "exportFailed": "Export failed",
+    "downloadAria": "Download {{filename}}",
+    "copyPathAria": "Copy path"
+  },
+  "sidebar": {
+    "backToHubAria": "Back to the Cortex360 hub",
+    "newSession": "New session",
+    "skillsLibrary": "Skills library",
+    "projects": "Projects",
+    "noProjects": "No projects",
+    "loadingSessions": "Loading sessions...",
+    "noSessions": "No sessions",
+    "sessionTitle": "Session from {{when}}",
+    "messageCount": "· {{n}} msg.",
+    "artifactCount": "· {{n}} art.",
+    "deleteSessionAria": "Delete session",
+    "deleteSessionConfirm": "Delete this session? It will wipe the transcript and the artifacts from the sandbox.",
+    "myInstructions": "My instructions",
+    "myInstructionsPlaceholder": "e.g. Call me by my first name.\nAlways add a TL;DR section to reports.",
+    "myInstructionsHint": "Your private AGENTS.md layer - appended to every session of yours.",
+    "saved": "Saved"
+  },
+  "activity": {
+    "working": {
+      "starting": "Spinning up the sandbox…",
+      "thinking": "Thinking…",
+      "answering": "Drafting the answer…",
+      "webSearch": "Searching the web…",
+      "image": "Generating an image…",
+      "skill": "Reaching for a skill…",
+      "write": "Writing a file…",
+      "read": "Reading the workspace…",
+      "exec": "Running a command…",
+      "tool": "Using: {{tool}}…",
+      "toolFallback": "a tool",
+      "toolDone": "Making sense of the result…",
+      "lifecycle": "Working in the sandbox…"
+    },
+    "step": {
+      "thinking": "Thinking",
+      "tool": "Tool: {{tool}}",
+      "toolDone": "Tool done: {{tool}}",
+      "runStarted": "Run started",
+      "lifecycle": "Lifecycle",
+      "assistant": "Assistant"
+    },
+    "trail": "Agent work trail ({{n}} steps)"
+  },
+  "skills": {
+    "title": "Skills library",
+    "description": "Reusable expertise packages copied into every new sandbox session.",
+    "loading": "Loading skills..."
+  }
+}

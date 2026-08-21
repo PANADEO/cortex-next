@@ -26,6 +26,29 @@
     "empty": "Brak danych",
     "error": "Wystąpił błąd"
   },
+  "categories": {
+    "functional": {
+      "content-generation": "Generowanie treści",
+      "agents": "Agenci",
+      "research": "Badania",
+      "misc": "Różne",
+      "admin-system": "Admin & System"
+    },
+    "department": {
+      "operations": "Operacje",
+      "marketing": "Marketing",
+      "finance": "Finanse",
+      "it": "IT",
+      "hr": "HR"
+    }
+  },
+  "presets": {
+    "instanceDefault": "Domyślny instancji",
+    "instanceDefaultHint": "Wygląd ustawiony dla tej instancji.",
+    "dominoDescription": "Papier i atrament, twarde krawędzie.",
+    "neutralDescription": "Monochromatyczne wartości domyślne shadcn.",
+    "customsDescription": "Odblaskowy pomarańcz i celna zieleń."
+  },
   "_ctx": {
     "language.label": "etykieta a11y; ukryta, opisuje listę wyboru języka w stopce",
     "language.pl": "nazwa języka na liście; ZAWSZE endonim — nie tłumaczyć",
@@ -45,6 +68,21 @@
     "actions.retry": "przycisk; ponawia nieudaną operację; maks. 18 zn.",
     "state.loading": "stan pośredni; widoczny w miejscu treści, gdy trwa pobieranie",
     "state.empty": "stan pusty; lista bez rekordów, NIE błąd",
-    "state.error": "stan błędu; ogólny komunikat, gdy nie znamy przyczyny"
+    "state.error": "stan błędu; ogólny komunikat, gdy nie znamy przyczyny",
+    "categories.functional.content-generation": "etykieta kategorii kafelka; oś „Funkcje” na hubie i w panelu; maks. 22 zn.",
+    "categories.functional.agents": "etykieta kategorii kafelka; kafelki agentowe; maks. 22 zn.",
+    "categories.functional.research": "etykieta kategorii kafelka; narzędzia analityczne; maks. 22 zn.",
+    "categories.functional.misc": "etykieta kategorii kafelka; kosz na nieprzypisane; maks. 22 zn.",
+    "categories.functional.admin-system": "etykieta kategorii kafelka; narzędzia administracyjne; NIE tłumaczyć — nazwa własna; maks. 22 zn.",
+    "categories.department.operations": "etykieta działu firmy; oś „Działy” na hubie; maks. 18 zn.",
+    "categories.department.marketing": "etykieta działu firmy; maks. 18 zn.",
+    "categories.department.finance": "etykieta działu firmy; maks. 18 zn.",
+    "categories.department.it": "etykieta działu firmy; akronim, NIE tłumaczyć; maks. 18 zn.",
+    "categories.department.hr": "etykieta działu firmy; akronim, NIE tłumaczyć; maks. 18 zn.",
+    "presets.instanceDefault": "opcja przełącznika wyglądu; oznacza BRAK własnego wyboru, dziedziczenie po instancji; maks. 22 zn.",
+    "presets.instanceDefaultHint": "opis opcji przełącznika wyglądu; pod etykietą",
+    "presets.dominoDescription": "opis presetu wyglądu Domino w przełączniku; ton opisowy, nie marketingowy",
+    "presets.neutralDescription": "opis presetu wyglądu Neutral w przełączniku; „shadcn” to nazwa własna biblioteki",
+    "presets.customsDescription": "opis presetu wyglądu Customs w przełączniku; nawiązuje do kolorów służb celnych"
   }
 }

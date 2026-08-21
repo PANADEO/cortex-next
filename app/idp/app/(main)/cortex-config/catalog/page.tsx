@@ -2,14 +2,13 @@
 
 import { CatalogPanel } from "@/features/cortex-config"
 import { PageHeader } from "@cortex/ui"
+import { useTranslation } from "react-i18next"
 
 export default function CortexConfigCatalogPage() {
+  const { t } = useTranslation("cortex-config")
   return (
     <>
-      <PageHeader
-        title="Katalog zasobów"
-        description="Departamentowe drzewo skilli, konektorów i sekretów - budowane centralnie, wybierane w projektach jako klocki."
-      />
+      <PageHeader title={t("pages.catalog.title")} description={t("pages.catalog.description")} />
       <div className="p-6 pt-4">
         <CatalogPanel />
       </div>

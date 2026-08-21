@@ -8,7 +8,7 @@ import { MetricsBar } from "@/features/token-usage/components/metrics-bar"
 import { useTokenUsageReport } from "@/features/token-usage/hooks"
 import { defaultRange } from "@/features/token-usage/presets"
 import { readUsageErrorCode } from "@/features/token-usage/queries"
-import type { TokenUsageErrorCode, UsageDateRange } from "@/features/token-usage/types"
+import type { UsageDateRange } from "@/features/token-usage/types"
 import {
   EmptyState,
   ErrorState,
@@ -21,53 +21,11 @@ import {
 } from "@cortex/ui"
 import { Inbox } from "lucide-react"
 import { useState } from "react"
-
-/**
- * Komunikaty rozróżniają BRAK KONFIGURACJI od AWARII — to nie kosmetyka:
- * pierwsze jest zadaniem dla administratora instancji i da się naprawić,
- * drugie oznacza, że cudzy serwis leży i trzeba czekać.
- */
-const ERROR_COPY: Record<TokenUsageErrorCode, { title: string; message: string }> = {
-  "cortex-proxy-not-configured": {
-    title: "Raport nie jest skonfigurowany",
-    message:
-      "Ta instancja nie ma ustawionego klucza administracyjnego cortex-proxy " +
-      "(CORTEX_PROXY_ADMIN_API_KEY). To zadanie konfiguracyjne po stronie administratora " +
-      "instancji — pozostałe kafelki działają normalnie.",
-  },
-  "cortex-proxy-unauthorized": {
-    title: "cortex-proxy odrzucił klucz administracyjny",
-    message:
-      "Klucz jest ustawiony, ale cortex-proxy go nie uznaje. Najczęstsza przyczyna: " +
-      "wpisano CORTEX_PROXY_API_KEY zamiast CORTEX_PROXY_ADMIN_API_KEY — to dwa różne sekrety.",
-  },
-  "cortex-proxy-unreachable": {
-    title: "cortex-proxy nie odpowiada",
-    message: "Nie udało się połączyć z cortex-proxy. Spróbuj ponownie za chwilę.",
-  },
-  "cortex-proxy-error": {
-    title: "Nieoczekiwana odpowiedź cortex-proxy",
-    message: "cortex-proxy odpowiedział w sposób, którego nie potrafimy odczytać.",
-  },
-  "invalid-format": {
-    title: "Nieprawidłowy zakres dat",
-    message: "Daty muszą mieć format RRRR-MM-DD.",
-  },
-  "invalid-date": {
-    title: "Nieprawidłowa data",
-    message: "Podana data nie istnieje w kalendarzu.",
-  },
-  "reversed-range": {
-    title: "Nieprawidłowy zakres dat",
-    message: "Data początkowa nie może być późniejsza niż końcowa.",
-  },
-  "range-too-long": {
-    title: "Zakres jest zbyt długi",
-    message: "Wybierz krótszy przedział — raport obejmuje maksymalnie jeden kwartał.",
-  },
-}
+import { useTranslation } from "react-i18next"
 
 export default function TokenUsagePage() {
+  const { t } = useTranslation("token-usage")
+
   // Stan początkowy liczony raz (inicjalizator useState), nie przy każdym
   // renderze — inaczej obiekt zakresu byłby nowy za każdym razem i klucz
   // zapytania zmieniałby się w kółko.
@@ -75,14 +33,21 @@ export default function TokenUsagePage() {
   const report = useTokenUsageReport(range)
 
   const errorCode = readUsageErrorCode(report.error)
-  const copy = errorCode ? ERROR_COPY[errorCode] : null
+
+  /**
+   * Komunikaty rozróżniają BRAK KONFIGURACJI od AWARII — to nie kosmetyka:
+   * pierwsze jest zadaniem dla administratora instancji i da się naprawić,
+   * drugie oznacza, że cudzy serwis leży i trzeba czekać. Kod błędu jest
+   * zarazem członem klucza tłumaczenia, więc słownik `errors` w przestrzeni
+   * `token-usage` musi pokrywać cały `TokenUsageErrorCode`.
+   */
+  const copy = errorCode
+    ? { title: t(`errors.${errorCode}.title`), message: t(`errors.${errorCode}.message`) }
+    : null
 
   return (
     <>
-      <PageHeader
-        title="Raportowanie Tokenów"
-        description="Zużycie tokenów i liczba żądań przechodzących przez cortex-proxy"
-      />
+      <PageHeader title={t("page.title")} description={t("page.description")} />
 
       <div className="space-y-6 p-6">
         <DateRangeFilter value={range} onChange={setRange} isLoading={report.isFetching} />
@@ -92,8 +57,8 @@ export default function TokenUsagePage() {
 
         {report.isError ? (
           <ErrorState
-            title={copy?.title ?? "Nie udało się wczytać raportu"}
-            message={copy?.message ?? "Spróbuj ponownie za chwilę."}
+            title={copy?.title ?? t("errors.generic.title")}
+            message={copy?.message ?? t("errors.generic.message")}
             // Brak konfiguracji nie naprawi się przez ponowienie — przycisk
             // "spróbuj ponownie" byłby tu obietnicą bez pokrycia.
             {...(errorCode === "cortex-proxy-not-configured"
@@ -106,8 +71,8 @@ export default function TokenUsagePage() {
           report.data.totals.requestCount === 0 ? (
             <EmptyState
               icon={Inbox}
-              title="Brak danych w tym okresie"
-              description="W wybranym zakresie dat cortex-proxy nie zarejestrował żadnych żądań."
+              title={t("empty.noDataTitle")}
+              description={t("empty.noDataDescription")}
             />
           ) : (
             <div className="space-y-6">
@@ -115,17 +80,17 @@ export default function TokenUsagePage() {
 
               <Tabs defaultValue="users">
                 <TabsList>
-                  <TabsTrigger value="users">Użytkownicy</TabsTrigger>
-                  <TabsTrigger value="models">Modele</TabsTrigger>
-                  <TabsTrigger value="apps">Aplikacje</TabsTrigger>
-                  <TabsTrigger value="scopes">Zakresy</TabsTrigger>
-                  <TabsTrigger value="details">Szczegóły</TabsTrigger>
+                  <TabsTrigger value="users">{t("tabs.users")}</TabsTrigger>
+                  <TabsTrigger value="models">{t("tabs.models")}</TabsTrigger>
+                  <TabsTrigger value="apps">{t("tabs.apps")}</TabsTrigger>
+                  <TabsTrigger value="scopes">{t("tabs.scopes")}</TabsTrigger>
+                  <TabsTrigger value="details">{t("tabs.details")}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="users" className="pt-4">
                   <DimensionPanel
-                    title="Zużycie według użytkowników"
-                    dimensionLabel="Użytkownik"
+                    title={t("panel.usersTitle")}
+                    dimensionLabel={t("columns.user")}
                     groups={report.data.byUser}
                     range={report.data.range}
                     exportKind="uzytkownicy"
@@ -135,8 +100,8 @@ export default function TokenUsagePage() {
 
                 <TabsContent value="models" className="pt-4">
                   <DimensionPanel
-                    title="Zużycie według modeli"
-                    dimensionLabel="Model"
+                    title={t("panel.modelsTitle")}
+                    dimensionLabel={t("columns.model")}
                     groups={report.data.byModel}
                     range={report.data.range}
                     exportKind="modele"
@@ -145,8 +110,8 @@ export default function TokenUsagePage() {
 
                 <TabsContent value="apps" className="pt-4">
                   <DimensionPanel
-                    title="Zużycie według aplikacji"
-                    dimensionLabel="Aplikacja"
+                    title={t("panel.appsTitle")}
+                    dimensionLabel={t("columns.app")}
                     groups={report.data.byApp}
                     range={report.data.range}
                     exportKind="aplikacje"
@@ -155,8 +120,8 @@ export default function TokenUsagePage() {
 
                 <TabsContent value="scopes" className="pt-4">
                   <DimensionPanel
-                    title="Zużycie według zakresów"
-                    dimensionLabel="Zakres"
+                    title={t("panel.scopesTitle")}
+                    dimensionLabel={t("columns.scope")}
                     groups={report.data.byScope}
                     range={report.data.range}
                     exportKind="zakresy"

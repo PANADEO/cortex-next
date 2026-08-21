@@ -1,1 +1,128 @@
-{}
+{
+  "dimensions": {
+    "statistics": "Statistics and data",
+    "actionVerbs": "Action verbs",
+    "structure": "Text structure",
+    "objectivity": "Objectivity"
+  },
+  "calculator": {
+    "title": "GEO Score calculator",
+    "description": "Scores press texts for generative engine optimisation — four weighted dimensions: numeric data, action verbs, structure, objectivity.",
+    "textLabel": "Text to analyse",
+    "textPlaceholder": "Paste the press article you want scored for generative engine optimisation…",
+    "wordsOne": "word",
+    "wordsFew": "words",
+    "wordsMany": "words",
+    "charsSuffix": "characters",
+    "analyze": "Analyse",
+    "analyzing": "Analysing…",
+    "loadExample": "Load example",
+    "editAgain": "Edit again",
+    "errors": {
+      "emptyText": "Enter the text you want analysed",
+      "analyzeFailed": "Could not analyse the text"
+    }
+  },
+  "result": {
+    "gradeLabel": "Grade {{grade}}",
+    "delta": "{{value}} vs. previous run",
+    "wordsInText": "{{words}} words in the text",
+    "highlightHint": "Highlighted fragments: numeric data, subjective words. Click a recommendation on the side to jump to the matching fragment.",
+    "detectedVerbs": "Detected action verbs (method: {{method}})",
+    "methodHeuristic": "heuristic",
+    "recommendations": "Recommendations"
+  },
+  "history": {
+    "title": "History",
+    "description": "The GEO Score analyses you have run — status, score and the full result for each of them.",
+    "export": "Export",
+    "exportCsv": "Export CSV",
+    "exportJson": "Export JSON",
+    "loading": "Loading history…",
+    "searchPlaceholder": "Search in text…",
+    "emptyTitle": "No analyses",
+    "emptyDescription": "Analyse your first text in the Calculator — it will show up here once the result is saved.",
+    "gradeFilterLabel": "Grade",
+    "gradeFilter": {
+      "all": "All grades",
+      "grade": "Grade {{grade}}"
+    },
+    "stats": {
+      "count": "Analyses run",
+      "average": "Average score",
+      "trend": "Trend",
+      "trendNewerVsOlder": "newer analyses vs. older",
+      "trendNotEnough": "not enough data",
+      "trendNoChange": "no change"
+    },
+    "columns": {
+      "date": "Date",
+      "preview": "Preview",
+      "score": "Score",
+      "grade": "Grade",
+      "words": "Words",
+      "viewDetailsAria": "View details of the analysis from {{date}}"
+    }
+  },
+  "detail": {
+    "title": "Analysis details",
+    "description": "The full result and the configuration used to compute it.",
+    "savedAt": "Saved {{date}}",
+    "backToHistory": "History",
+    "loading": "Loading analysis…",
+    "notFoundTitle": "Analysis not found",
+    "notFoundDescription": "The analysis does not exist or you do not have access to it.",
+    "configLabel": "Configuration used for this result",
+    "configHint": "A snapshot of the weights, benchmarks, grade thresholds and word lists in force at the time of this analysis — later changes in Settings no longer affect the score already computed.",
+    "deleteConfirmTitle": "Delete this analysis?",
+    "deleteConfirmBody": "This cannot be undone — the analysis will disappear from history for good.",
+    "deleted": "Analysis removed from history",
+    "errors": {
+      "deleteFailed": "Could not delete the analysis"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Dimension weights, benchmarks, grade thresholds and word lists — the calculator configuration shared across the whole instance.",
+    "loadErrorTitle": "Could not load the settings",
+    "loadErrorMessage": "Try refreshing the page. If the problem persists, contact your administrator.",
+    "weightsTitle": "Dimension weights",
+    "weightsDescription": "Four weighted scoring dimensions — they must add up to 100%.",
+    "weightSum": "Sum: {{sum}}%",
+    "benchmarksTitle": "Benchmarks and grade thresholds",
+    "benchmarksDescription": "Reference points (Muck Rack report) and the minimum scores for grades A-D.",
+    "fields": {
+      "benchmarkStats": "Statistics / 100 words",
+      "benchmarkVerbs": "Action verb share",
+      "benchmarkStructure": "Bullets / 500 words",
+      "benchmarkObjectivity": "Max. subjectivity share",
+      "gradeAMin": "Grade A threshold",
+      "gradeBMin": "Grade B threshold",
+      "gradeCMin": "Grade C threshold",
+      "gradeDMin": "Grade D threshold"
+    },
+    "wordListsTitle": "Word lists",
+    "wordListsDescription": "Used by the action verb and objectivity analysers.",
+    "actionVerbsLabel": "Action verbs",
+    "actionVerbsPlaceholder": "e.g. deployed — Enter to add",
+    "subjectiveWordsLabel": "Subjective words",
+    "subjectiveWordsPlaceholder": "e.g. best — Enter to add",
+    "advancedTitle": "Advanced",
+    "advancedDescription": "Bullet point regex patterns and false-positive exceptions — configuration for advanced users.",
+    "bulletPatternsLabel": "Bullet point patterns (regex)",
+    "bulletPatternsPlaceholder": "e.g. ^[\\s]*-\\s+ — Enter to add",
+    "falsePositivesLabel": "Exceptions (false positives)",
+    "falsePositivesPlaceholder": "e.g. solutions — Enter to add",
+    "lastChange": "Last change: {{date}} · {{user}}",
+    "restoreDefaults": "Restore defaults",
+    "resetConfirmTitle": "Restore the default configuration?",
+    "resetConfirmBody": "This overwrites the weights, benchmarks, grade thresholds and word lists of the SHARED calculator configuration — for every user of this instance, not only for you. This cannot be undone.",
+    "saving": "Saving…",
+    "saved": "Settings saved",
+    "resetDone": "Default configuration restored",
+    "errors": {
+      "saveFailed": "Could not save the settings",
+      "resetFailed": "Could not restore the default configuration"
+    }
+  }
+}

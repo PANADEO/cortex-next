@@ -3,6 +3,7 @@
 import { Badge } from "@cortex/ui"
 import { TriangleAlert } from "lucide-react"
 import { memo } from "react"
+import { useTranslation } from "react-i18next"
 import type { ChatMessage } from "../types"
 import { AgentActivityTrail } from "./agent-activity"
 import { Markdown } from "./markdown"
@@ -17,6 +18,7 @@ interface MessageBubbleProps {
 // and message objects are reference-stable, so this skips re-parsing every
 // prior assistant message's Markdown on each tick.
 export const MessageBubble = memo(function MessageBubble({ message }: MessageBubbleProps) {
+  const { t } = useTranslation("cortex-cowork")
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
@@ -35,7 +37,7 @@ export const MessageBubble = memo(function MessageBubble({ message }: MessageBub
           className="mb-1.5 gap-1 border-amber-400 text-amber-700 dark:text-amber-300"
         >
           <TriangleAlert className="h-3 w-3" />
-          Tryb awaryjny - agent niedostępny
+          {t("chat.degradedBadge")}
         </Badge>
       ) : null}
       <Markdown content={message.content} />

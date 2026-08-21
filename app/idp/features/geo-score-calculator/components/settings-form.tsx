@@ -49,6 +49,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { ChevronDown, RotateCcw, Save } from "lucide-react"
 import { useState } from "react"
 import { Controller, useForm, type UseFormReturn } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
   configDtoToFormValues,
@@ -59,14 +60,17 @@ import {
 import { useResetGeoScoreConfig, useUpdateGeoScoreConfig } from "../hooks"
 import type { GeoScoreConfigDto } from "../types"
 
+// Te same cztery napisy opisują wymiary na ekranie wyniku (result-view.tsx),
+// więc mieszkają pod wspólnym `dimensions.*`, a nie osobno pod `settings.*`.
 const WEIGHT_FIELDS = [
-  { key: "weightStatistics", label: "Statystyki i dane" },
-  { key: "weightActionVerbs", label: "Czasowniki akcji" },
-  { key: "weightStructure", label: "Struktura tekstu" },
-  { key: "weightObjectivity", label: "Obiektywność" },
-] as const satisfies ReadonlyArray<{ key: keyof GeoScoreSettingsFormValues; label: string }>
+  { key: "weightStatistics", labelKey: "dimensions.statistics" },
+  { key: "weightActionVerbs", labelKey: "dimensions.actionVerbs" },
+  { key: "weightStructure", labelKey: "dimensions.structure" },
+  { key: "weightObjectivity", labelKey: "dimensions.objectivity" },
+] as const satisfies ReadonlyArray<{ key: keyof GeoScoreSettingsFormValues; labelKey: string }>
 
 export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) {
+  const { t } = useTranslation(["geo-score-calculator", "common"])
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const updateConfig = useUpdateGeoScoreConfig()
   const resetConfig = useResetGeoScoreConfig()
@@ -89,9 +93,9 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
     try {
       const saved = await updateConfig.mutateAsync(formValuesToUpdateRequest(values))
       form.reset(configDtoToFormValues(saved))
-      toast.success("Ustawienia zapisane")
+      toast.success(t("settings.saved"))
     } catch (error) {
-      toastApiError(error, "Nie udało się zapisać ustawień")
+      toastApiError(error, t("settings.errors.saveFailed"))
     }
   }
 
@@ -99,9 +103,9 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
     try {
       const reset = await resetConfig.mutateAsync()
       form.reset(configDtoToFormValues(reset))
-      toast.success("Przywrócono domyślną konfigurację")
+      toast.success(t("settings.resetDone"))
     } catch (error) {
-      toastApiError(error, "Nie udało się przywrócić domyślnej konfiguracji")
+      toastApiError(error, t("settings.errors.resetFailed"))
     }
   }
 
@@ -110,10 +114,8 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4">
           <div>
-            <CardTitle className="text-base">Wagi wymiarów</CardTitle>
-            <CardDescription>
-              Cztery ważone wymiary oceny — muszą sumować się do 100%.
-            </CardDescription>
+            <CardTitle className="text-base">{t("settings.weightsTitle")}</CardTitle>
+            <CardDescription>{t("settings.weightsDescription")}</CardDescription>
           </div>
           <Badge
             variant="outline"
@@ -124,14 +126,14 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
                 : "border-destructive/40 bg-destructive/10 text-destructive",
             )}
           >
-            Suma: {weightSum}%
+            {t("settings.weightSum", { sum: weightSum })}
           </Badge>
         </CardHeader>
         <CardContent className="space-y-5">
-          {WEIGHT_FIELDS.map(({ key, label }) => (
+          {WEIGHT_FIELDS.map(({ key, labelKey }) => (
             <div key={key} className="space-y-1.5">
               <div className="flex items-baseline justify-between text-sm">
-                <Label htmlFor={`geo-score-${key}`}>{label}</Label>
+                <Label htmlFor={`geo-score-${key}`}>{t(labelKey)}</Label>
                 <span className="tabular-nums text-muted-foreground">{form.watch(key)}%</span>
               </div>
               <Controller
@@ -160,48 +162,69 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Benchmarki i progi ocen</CardTitle>
-          <CardDescription>
-            Punkty odniesienia (raport Muck Rack) i minimalne wyniki dla ocen A-D.
-          </CardDescription>
+          <CardTitle className="text-base">{t("settings.benchmarksTitle")}</CardTitle>
+          <CardDescription>{t("settings.benchmarksDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <NumberField form={form} name="benchmarkStats" label="Statystyki / 100 słów" step={0.1} />
+          <NumberField
+            form={form}
+            name="benchmarkStats"
+            label={t("settings.fields.benchmarkStats")}
+            step={0.1}
+          />
           <NumberField
             form={form}
             name="benchmarkVerbs"
-            label="Udział czasowników akcji"
+            label={t("settings.fields.benchmarkVerbs")}
             step={0.01}
           />
           <NumberField
             form={form}
             name="benchmarkStructure"
-            label="Bullet-y / 500 słów"
+            label={t("settings.fields.benchmarkStructure")}
             step={0.1}
           />
           <NumberField
             form={form}
             name="benchmarkObjectivity"
-            label="Maks. udział subiektywności"
+            label={t("settings.fields.benchmarkObjectivity")}
             step={0.01}
           />
-          <NumberField form={form} name="gradeAMin" label="Próg oceny A" step={1} />
-          <NumberField form={form} name="gradeBMin" label="Próg oceny B" step={1} />
-          <NumberField form={form} name="gradeCMin" label="Próg oceny C" step={1} />
-          <NumberField form={form} name="gradeDMin" label="Próg oceny D" step={1} />
+          <NumberField
+            form={form}
+            name="gradeAMin"
+            label={t("settings.fields.gradeAMin")}
+            step={1}
+          />
+          <NumberField
+            form={form}
+            name="gradeBMin"
+            label={t("settings.fields.gradeBMin")}
+            step={1}
+          />
+          <NumberField
+            form={form}
+            name="gradeCMin"
+            label={t("settings.fields.gradeCMin")}
+            step={1}
+          />
+          <NumberField
+            form={form}
+            name="gradeDMin"
+            label={t("settings.fields.gradeDMin")}
+            step={1}
+          />
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Listy słów</CardTitle>
-          <CardDescription>
-            Używane przez analizatory czasowników akcji i obiektywności.
-          </CardDescription>
+          <CardTitle className="text-base">{t("settings.wordListsTitle")}</CardTitle>
+          <CardDescription>{t("settings.wordListsDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label id="geo-score-action-verbs-label">Czasowniki akcji</Label>
+            <Label id="geo-score-action-verbs-label">{t("settings.actionVerbsLabel")}</Label>
             <Controller
               control={form.control}
               name="actionVerbs"
@@ -210,7 +233,7 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
                   value={field.value}
                   onChange={field.onChange}
                   aria-labelledby="geo-score-action-verbs-label"
-                  placeholder="np. wdrożył — Enter, aby dodać"
+                  placeholder={t("settings.actionVerbsPlaceholder")}
                 />
               )}
             />
@@ -221,7 +244,9 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
             ) : null}
           </div>
           <div className="space-y-1.5">
-            <Label id="geo-score-subjective-words-label">Słowa subiektywne</Label>
+            <Label id="geo-score-subjective-words-label">
+              {t("settings.subjectiveWordsLabel")}
+            </Label>
             <Controller
               control={form.control}
               name="subjectiveWords"
@@ -230,7 +255,7 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
                   value={field.value}
                   onChange={field.onChange}
                   aria-labelledby="geo-score-subjective-words-label"
-                  placeholder="np. najlepszy — Enter, aby dodać"
+                  placeholder={t("settings.subjectiveWordsPlaceholder")}
                 />
               )}
             />
@@ -251,10 +276,11 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
               className="flex w-full items-center justify-between p-6 text-left"
             >
               <div>
-                <p className="text-base font-semibold leading-none tracking-tight">Zaawansowane</p>
+                <p className="text-base font-semibold leading-none tracking-tight">
+                  {t("settings.advancedTitle")}
+                </p>
                 <p className="mt-1.5 text-sm text-muted-foreground">
-                  Wzorce regex bullet-pointów i wyjątki false-positive — konfiguracja dla
-                  zaawansowanych.
+                  {t("settings.advancedDescription")}
                 </p>
               </div>
               <ChevronDown
@@ -268,7 +294,9 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
           <CollapsibleContent>
             <CardContent className="grid gap-6 border-t border-border pt-6 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label id="geo-score-bullet-patterns-label">Wzorce bullet-pointów (regex)</Label>
+                <Label id="geo-score-bullet-patterns-label">
+                  {t("settings.bulletPatternsLabel")}
+                </Label>
                 <Controller
                   control={form.control}
                   name="bulletPatterns"
@@ -277,7 +305,7 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
                       value={field.value}
                       onChange={field.onChange}
                       aria-labelledby="geo-score-bullet-patterns-label"
-                      placeholder="np. ^[\s]*-\s+ — Enter, aby dodać"
+                      placeholder={t("settings.bulletPatternsPlaceholder")}
                     />
                   )}
                 />
@@ -288,7 +316,9 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
                 ) : null}
               </div>
               <div className="space-y-1.5">
-                <Label id="geo-score-false-positives-label">Wyjątki (false positives)</Label>
+                <Label id="geo-score-false-positives-label">
+                  {t("settings.falsePositivesLabel")}
+                </Label>
                 <Controller
                   control={form.control}
                   name="falsePositives"
@@ -297,7 +327,7 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
                       value={field.value}
                       onChange={field.onChange}
                       aria-labelledby="geo-score-false-positives-label"
-                      placeholder="np. rozwiązania — Enter, aby dodać"
+                      placeholder={t("settings.falsePositivesPlaceholder")}
                     />
                   )}
                 />
@@ -309,34 +339,35 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">
-          Ostatnia zmiana: {formatAbsolute(config.updatedAt)} · {config.updatedBy}
+          {t("settings.lastChange", {
+            date: formatAbsolute(config.updatedAt),
+            user: config.updatedBy,
+          })}
         </p>
         <div className="flex gap-2">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button type="button" variant="outline" disabled={resetConfig.isPending}>
                 <RotateCcw className="mr-2 h-4 w-4" />
-                Przywróć domyślne
+                {t("settings.restoreDefaults")}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Przywrócić domyślną konfigurację?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  To nadpisze wagi, benchmarki, progi ocen i listy słów WSPÓLNEJ konfiguracji
-                  kalkulatora — dla wszystkich użytkowników tej instancji, nie tylko dla Ciebie. Tej
-                  operacji nie można cofnąć.
-                </AlertDialogDescription>
+                <AlertDialogTitle>{t("settings.resetConfirmTitle")}</AlertDialogTitle>
+                <AlertDialogDescription>{t("settings.resetConfirmBody")}</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Anuluj</AlertDialogCancel>
-                <AlertDialogAction onClick={handleReset}>Przywróć domyślne</AlertDialogAction>
+                <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleReset}>
+                  {t("settings.restoreDefaults")}
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
           <Button type="submit" disabled={!sumOk || updateConfig.isPending}>
             <Save className="mr-2 h-4 w-4" />
-            {updateConfig.isPending ? "Zapisuję…" : "Zapisz"}
+            {updateConfig.isPending ? t("settings.saving") : t("common:actions.save")}
           </Button>
         </div>
       </div>
