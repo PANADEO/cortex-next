@@ -32,19 +32,40 @@ import {
   Users,
 } from "lucide-react"
 import { useMemo } from "react"
+import { useTranslation } from "react-i18next"
 import { getVisibleAiTools } from "./ai-tools/registry"
+import { tileName } from "./i18n/tile-names"
 
-export const IDP_NAV: TileMenuSection[] = [
+/**
+ * Pozycja menu bocznego w postaci, w jakiej stoi w kodzie: z KLUCZEM
+ * tłumaczenia zamiast napisu — stąd `labelKey`, nie `label`.
+ *
+ * Te same stałe karmią trzy miejsca naraz: sidebar (`TileMenu`), paletę
+ * poleceń i breadcrumb. Napis wpisany tutaj byłby polski we wszystkich trzech
+ * niezależnie od wybranego języka, bo stała powstaje raz, przy imporcie
+ * modułu — zanim w ogóle wiadomo, jaki język wybrał użytkownik. `t()` woła
+ * miejsce renderu (`translateNavSections` niżej).
+ */
+export interface NavItem extends Omit<TileMenuItem, "label"> {
+  labelKey: string
+}
+
+export interface NavSection extends Omit<TileMenuSection, "label" | "items"> {
+  labelKey?: string
+  items: NavItem[]
+}
+
+export const IDP_NAV: NavSection[] = [
   {
     id: "pipeline",
-    label: "Pipeline",
+    labelKey: "nav.sections.pipeline",
     items: [
-      { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/idp/dashboard" },
-      { id: "import", label: "Import", icon: Upload, href: "/idp/import" },
-      { id: "packages", label: "Extraction", icon: Package, href: "/idp/packages" },
+      { id: "dashboard", labelKey: "nav.idp.dashboard", icon: BarChart3, href: "/idp/dashboard" },
+      { id: "import", labelKey: "nav.idp.import", icon: Upload, href: "/idp/import" },
+      { id: "packages", labelKey: "nav.idp.extraction", icon: Package, href: "/idp/packages" },
       {
         id: "export",
-        label: "Export",
+        labelKey: "nav.idp.export",
         icon: FileDown,
         href: "/idp/export",
       },
@@ -52,17 +73,17 @@ export const IDP_NAV: TileMenuSection[] = [
   },
   {
     id: "settings",
-    label: "Settings",
+    labelKey: "nav.sections.settings",
     items: [
       {
         id: "rules",
-        label: "Rule editor",
+        labelKey: "nav.idp.rule-editor",
         icon: ScrollText,
         href: "/idp/rules",
       },
       {
         id: "configuration",
-        label: "Configuration",
+        labelKey: "nav.idp.configuration",
         icon: Settings,
         href: "/idp/configuration",
       },
@@ -70,21 +91,33 @@ export const IDP_NAV: TileMenuSection[] = [
   },
   {
     id: "reports",
-    label: "Reports",
-    items: [{ id: "audit-log", label: "Audit log", icon: History, href: "/idp/audit-log" }],
+    labelKey: "nav.sections.reports",
+    items: [
+      { id: "audit-log", labelKey: "nav.idp.audit-log", icon: History, href: "/idp/audit-log" },
+    ],
   },
 ]
 
-export const IDP_BASIC_NAV: TileMenuSection[] = [
+export const IDP_BASIC_NAV: NavSection[] = [
   {
     id: "pipeline",
-    label: "Pipeline",
+    labelKey: "nav.sections.pipeline",
     items: [
-      { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/idp-basic/dashboard" },
-      { id: "results", label: "Results", icon: Package, href: "/idp-basic/results" },
+      {
+        id: "dashboard",
+        labelKey: "nav.idpBasic.dashboard",
+        icon: BarChart3,
+        href: "/idp-basic/dashboard",
+      },
+      {
+        id: "results",
+        labelKey: "nav.idpBasic.results",
+        icon: Package,
+        href: "/idp-basic/results",
+      },
       {
         id: "files",
-        label: "Files",
+        labelKey: "nav.idpBasic.files",
         icon: FileText,
         href: "/idp-basic/files",
       },
@@ -92,11 +125,11 @@ export const IDP_BASIC_NAV: TileMenuSection[] = [
   },
   {
     id: "settings",
-    label: "Settings",
+    labelKey: "nav.sections.settings",
     items: [
       {
         id: "settings",
-        label: "Settings",
+        labelKey: "nav.idpBasic.settings",
         icon: Settings,
         href: "/idp-basic/settings",
       },
@@ -104,36 +137,63 @@ export const IDP_BASIC_NAV: TileMenuSection[] = [
   },
 ]
 
-export const STORE_PIT_NAV: TileMenuSection[] = [
+export const STORE_PIT_NAV: NavSection[] = [
   {
     id: "pipeline",
-    label: "Pipeline",
+    labelKey: "nav.sections.pipeline",
     items: [
-      { id: "dashboard", label: "Overview", icon: LayoutDashboard, href: "/store-pit/dashboard" },
-      { id: "source-files", label: "Source files", icon: Files, href: "/store-pit/source-files" },
-      { id: "extraction", label: "Extraction", icon: Table2, href: "/store-pit/extraction" },
+      {
+        id: "dashboard",
+        labelKey: "nav.storePit.overview",
+        icon: LayoutDashboard,
+        href: "/store-pit/dashboard",
+      },
+      {
+        id: "source-files",
+        labelKey: "nav.storePit.source-files",
+        icon: Files,
+        href: "/store-pit/source-files",
+      },
+      {
+        id: "extraction",
+        labelKey: "nav.storePit.extraction",
+        icon: Table2,
+        href: "/store-pit/extraction",
+      },
       {
         id: "reconciliation",
-        label: "Reconciliation",
+        labelKey: "nav.storePit.reconciliation",
         icon: ListChecks,
         href: "/store-pit/reconciliation",
       },
-      { id: "netting", label: "Netting", icon: GitMerge, href: "/store-pit/netting" },
-      { id: "re-rating", label: "Re-rating", icon: Calculator, href: "/store-pit/re-rating" },
+      {
+        id: "netting",
+        labelKey: "nav.storePit.netting",
+        icon: GitMerge,
+        href: "/store-pit/netting",
+      },
+      {
+        id: "re-rating",
+        labelKey: "nav.storePit.re-rating",
+        icon: Calculator,
+        href: "/store-pit/re-rating",
+      },
     ],
   },
   {
     id: "deliverables",
-    label: "Deliverables",
-    items: [{ id: "clients", label: "Clients", icon: Users, href: "/store-pit/clients" }],
+    labelKey: "nav.sections.deliverables",
+    items: [
+      { id: "clients", labelKey: "nav.storePit.clients", icon: Users, href: "/store-pit/clients" },
+    ],
   },
   {
     id: "settings",
-    label: "Settings",
+    labelKey: "nav.sections.settings",
     items: [
       {
         id: "pricing",
-        label: "Pricing rules",
+        labelKey: "nav.storePit.pricing-rules",
         icon: SlidersHorizontal,
         href: "/store-pit/pricing",
       },
@@ -141,48 +201,62 @@ export const STORE_PIT_NAV: TileMenuSection[] = [
   },
   {
     id: "reports",
-    label: "Reports",
-    items: [{ id: "audit-log", label: "Audit log", icon: History, href: "/store-pit/audit-log" }],
+    labelKey: "nav.sections.reports",
+    items: [
+      {
+        id: "audit-log",
+        labelKey: "nav.storePit.audit-log",
+        icon: History,
+        href: "/store-pit/audit-log",
+      },
+    ],
   },
 ]
 
-export const OKNA_CZASOWE_NAV: TileMenuSection[] = [
+export const OKNA_CZASOWE_NAV: NavSection[] = [
   {
     id: "pipeline",
-    label: "Pipeline",
+    labelKey: "nav.sections.pipeline",
     items: [
       {
         id: "dashboard",
-        label: "Dashboard",
+        labelKey: "nav.oknaCzasowe.dashboard",
         icon: LayoutDashboard,
         href: "/okna-czasowe/dashboard",
       },
-      { id: "films", label: "Filmy", icon: Film, href: "/okna-czasowe/films" },
-      { id: "data", label: "Dane", icon: Database, href: "/okna-czasowe/data" },
+      { id: "films", labelKey: "nav.oknaCzasowe.films", icon: Film, href: "/okna-czasowe/films" },
+      { id: "data", labelKey: "nav.oknaCzasowe.data", icon: Database, href: "/okna-czasowe/data" },
     ],
   },
   {
     id: "reports",
-    label: "Reports",
-    items: [{ id: "log", label: "Log", icon: History, href: "/okna-czasowe/log" }],
+    labelKey: "nav.sections.reports",
+    items: [
+      { id: "log", labelKey: "nav.oknaCzasowe.log", icon: History, href: "/okna-czasowe/log" },
+    ],
   },
 ]
 
-export const SYSTEM_CONFIG_NAV: TileMenuSection[] = [
+export const SYSTEM_CONFIG_NAV: NavSection[] = [
   {
     id: "dostep",
-    label: "Dostęp",
+    labelKey: "nav.sections.access",
     items: [
       {
         id: "users",
-        label: "Użytkownicy",
+        labelKey: "nav.systemConfig.users",
         icon: Users,
         href: "/system-config/users",
       },
-      { id: "role", label: "Role", icon: KeyRound, href: "/system-config/role" },
+      {
+        id: "role",
+        labelKey: "nav.systemConfig.roles",
+        icon: KeyRound,
+        href: "/system-config/role",
+      },
       {
         id: "openwebui",
-        label: "OpenWebUI",
+        labelKey: "nav.systemConfig.openwebui",
         icon: RefreshCw,
         href: "/system-config/openwebui",
       },
@@ -190,15 +264,20 @@ export const SYSTEM_CONFIG_NAV: TileMenuSection[] = [
   },
   {
     id: "instancja",
-    label: "Instancja",
+    labelKey: "nav.sections.instance",
     items: [
       {
         id: "applications",
-        label: "Aplikacje",
+        labelKey: "nav.systemConfig.applications",
         icon: LayoutDashboard,
         href: "/system-config/applications",
       },
-      { id: "appearance", label: "Wygląd", icon: Palette, href: "/system-config/appearance" },
+      {
+        id: "appearance",
+        labelKey: "nav.systemConfig.appearance",
+        icon: Palette,
+        href: "/system-config/appearance",
+      },
     ],
   },
 ]
@@ -207,37 +286,54 @@ export const SYSTEM_CONFIG_NAV: TileMenuSection[] = [
 // i sidebar tego kafelka zamiast dziedziczyć domyślną nawigację IDP.
 // Id "dashboard", bo pathToItemId() w (main)/layout.tsx tak właśnie mapuje
 // korzeń kafelka bez podstrony.
-export const TOKEN_USAGE_NAV: TileMenuSection[] = [
+export const TOKEN_USAGE_NAV: NavSection[] = [
   {
     id: "raport",
-    label: "Raport",
-    items: [{ id: "dashboard", label: "Zużycie tokenów", icon: BarChart3, href: "/token-usage" }],
+    labelKey: "nav.sections.report",
+    items: [
+      { id: "dashboard", labelKey: "nav.tokenUsage.usage", icon: BarChart3, href: "/token-usage" },
+    ],
   },
 ]
 
-export const INTRASTAT_NAV: TileMenuSection[] = [
+export const INTRASTAT_NAV: NavSection[] = [
   {
     id: "pipeline",
-    label: "Pipeline",
+    labelKey: "nav.sections.pipeline",
     items: [
-      { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/intrastat/dashboard" },
-      { id: "batches", label: "Batches", icon: Package, href: "/intrastat/batches" },
-      { id: "review", label: "Review", icon: TableProperties, href: "/intrastat/review" },
+      {
+        id: "dashboard",
+        labelKey: "nav.intrastat.dashboard",
+        icon: BarChart3,
+        href: "/intrastat/dashboard",
+      },
+      {
+        id: "batches",
+        labelKey: "nav.intrastat.batches",
+        icon: Package,
+        href: "/intrastat/batches",
+      },
+      {
+        id: "review",
+        labelKey: "nav.intrastat.review",
+        icon: TableProperties,
+        href: "/intrastat/review",
+      },
     ],
   },
   {
     id: "settings",
-    label: "Settings",
+    labelKey: "nav.sections.settings",
     items: [
       {
         id: "resources",
-        label: "CN Code Database",
+        labelKey: "nav.intrastat.cn-code-database",
         icon: FileSpreadsheet,
         href: "/intrastat/resources",
       },
       {
         id: "settings",
-        label: "Settings",
+        labelKey: "nav.intrastat.settings",
         icon: Settings,
         href: "/intrastat/settings",
       },
@@ -245,51 +341,61 @@ export const INTRASTAT_NAV: TileMenuSection[] = [
   },
 ]
 
-export const ILUSTROMAT_NAV: TileMenuSection[] = [
+export const ILUSTROMAT_NAV: NavSection[] = [
   {
     id: "praca",
-    label: "Praca",
+    labelKey: "nav.sections.work",
     items: [
-      { id: "generation", label: "Generowanie", icon: Sparkles, href: "/ilustromat/generation" },
-      { id: "templates", label: "Szablony", icon: FileText, href: "/ilustromat/templates" },
+      {
+        id: "generation",
+        labelKey: "nav.ilustromat.generation",
+        icon: Sparkles,
+        href: "/ilustromat/generation",
+      },
+      {
+        id: "templates",
+        labelKey: "nav.ilustromat.templates",
+        icon: FileText,
+        href: "/ilustromat/templates",
+      },
     ],
   },
 ]
 
 // cortex-cowork renders its own Codex-style shell (no TileMenu nav).
 
-export const CORTEX_CONFIG_NAV: TileMenuSection[] = [
+export const CORTEX_CONFIG_NAV: NavSection[] = [
   {
     id: "governance",
-    label: "Governance",
+    labelKey: "nav.sections.governance",
     items: [
       {
         id: "projects",
-        label: "Projekty",
+        labelKey: "nav.cortexConfig.projects",
         icon: LayoutDashboard,
         href: "/cortex-config/projects",
       },
       {
         id: "catalog",
-        label: "Katalog zasobów",
+        labelKey: "nav.cortexConfig.catalog",
         icon: Database,
         href: "/cortex-config/catalog",
       },
       {
         id: "agents",
-        label: "AGENTS.md",
+        labelKey: "nav.cortexConfig.agents",
         icon: FileText,
         href: "/cortex-config/agents",
       },
       {
         id: "roles",
-        label: "Role i dostęp",
+        labelKey: "nav.cortexConfig.roles",
         icon: Users,
         href: "/cortex-config/governance",
       },
       {
         id: "credentials",
-        label: "Sekrety",
+        labelKey: "nav.cortexConfig.credentials",
         icon: KeyRound,
         href: "/cortex-config/credentials",
       },
@@ -304,22 +410,32 @@ export const CORTEX_CONFIG_NAV: TileMenuSection[] = [
 // poziom dostępu (D5 §7 pkt 3, bez osobnego scope'u "manage-settings"), ale
 // wizualne rozdzielenie "codzienna praca" vs. "wspólna konfiguracja
 // instancji" jest już ustalonym wzorcem UX w tym repo.
-export const GEO_SCORE_CALCULATOR_NAV: TileMenuSection[] = [
+export const GEO_SCORE_CALCULATOR_NAV: NavSection[] = [
   {
     id: "praca",
-    label: "Praca",
+    labelKey: "nav.sections.work",
     items: [
-      { id: "kalkulator", label: "Kalkulator", icon: Calculator, href: "/geo-score-calculator" },
-      { id: "historia", label: "Historia", icon: History, href: "/geo-score-calculator/history" },
+      {
+        id: "kalkulator",
+        labelKey: "nav.geoScore.calculator",
+        icon: Calculator,
+        href: "/geo-score-calculator",
+      },
+      {
+        id: "historia",
+        labelKey: "nav.geoScore.history",
+        icon: History,
+        href: "/geo-score-calculator/history",
+      },
     ],
   },
   {
     id: "konfiguracja",
-    label: "Konfiguracja",
+    labelKey: "nav.sections.configuration",
     items: [
       {
         id: "settings",
-        label: "Ustawienia",
+        labelKey: "nav.geoScore.settings",
         icon: Settings,
         href: "/geo-score-calculator/settings",
       },
@@ -333,13 +449,23 @@ export const GEO_SCORE_CALCULATOR_NAV: TileMenuSection[] = [
 // 1/2). Nieszkodliwe do czasu aktywacji: kafelek jest dziś nieaktywnym
 // kandydatem (seed-tile-manifests.mjs), więc TileMenu go jeszcze nie
 // renderuje — wzorem GEO_SCORE_CALCULATOR_NAV wyżej.
-export const VISUAL_GURU_NAV: TileMenuSection[] = [
+export const VISUAL_GURU_NAV: NavSection[] = [
   {
     id: "praca",
-    label: "Praca",
+    labelKey: "nav.sections.work",
     items: [
-      { id: "generator", label: "Generator", icon: Sparkles, href: "/visual-guru" },
-      { id: "archiwum", label: "Archiwum", icon: History, href: "/visual-guru/history" },
+      {
+        id: "generator",
+        labelKey: "nav.visualGuru.generator",
+        icon: Sparkles,
+        href: "/visual-guru",
+      },
+      {
+        id: "archiwum",
+        labelKey: "nav.visualGuru.archive",
+        icon: History,
+        href: "/visual-guru/history",
+      },
     ],
   },
 ]
@@ -348,13 +474,23 @@ export const VISUAL_GURU_NAV: TileMenuSection[] = [
 // dwa ekrany nawigowalne — upload jest trasą domyślną kafelka (manifest.ts),
 // szczegóły joba (/document-parser/history/[id]) to drill-down z historii,
 // nie osobna pozycja w sidebarze.
-export const DOCUMENT_PARSER_NAV: TileMenuSection[] = [
+export const DOCUMENT_PARSER_NAV: NavSection[] = [
   {
     id: "praca",
-    label: "Praca",
+    labelKey: "nav.sections.work",
     items: [
-      { id: "upload", label: "Wgraj dokument", icon: Upload, href: "/document-parser/upload" },
-      { id: "history", label: "Historia", icon: History, href: "/document-parser/history" },
+      {
+        id: "upload",
+        labelKey: "nav.documentParser.upload",
+        icon: Upload,
+        href: "/document-parser/upload",
+      },
+      {
+        id: "history",
+        labelKey: "nav.documentParser.history",
+        icon: History,
+        href: "/document-parser/history",
+      },
     ],
   },
 ]
@@ -364,23 +500,38 @@ export const DOCUMENT_PARSER_NAV: TileMenuSection[] = [
 // z docelowych sześciu — zakazane frazy to osobna runda, dopisywana tutaj
 // dopiero gdy jej page.tsx realnie powstanie (wzorem komentarza przy
 // GEO_SCORE_CALCULATOR_NAV — martwy link w sidebarze zanim ekran istnieje).
-export const CONTENT_GURU_NAV: TileMenuSection[] = [
+export const CONTENT_GURU_NAV: NavSection[] = [
   {
     id: "praca",
-    label: "Praca",
+    labelKey: "nav.sections.work",
     items: [
-      { id: "generowanie", label: "Generowanie", icon: Sparkles, href: "/content-guru" },
-      { id: "historia", label: "Historia", icon: History, href: "/content-guru/history" },
-      { id: "szablony", label: "Szablony", icon: FileText, href: "/content-guru/templates" },
+      {
+        id: "generowanie",
+        labelKey: "nav.contentGuru.generation",
+        icon: Sparkles,
+        href: "/content-guru",
+      },
+      {
+        id: "historia",
+        labelKey: "nav.contentGuru.history",
+        icon: History,
+        href: "/content-guru/history",
+      },
+      {
+        id: "szablony",
+        labelKey: "nav.contentGuru.templates",
+        icon: FileText,
+        href: "/content-guru/templates",
+      },
       {
         id: "profile-klienta",
-        label: "Profile klienta",
+        labelKey: "nav.contentGuru.client-profiles",
         icon: Building2,
         href: "/content-guru/client-profiles",
       },
       {
         id: "profile-rynku",
-        label: "Profile rynku",
+        labelKey: "nav.contentGuru.market-profiles",
         icon: LineChart,
         href: "/content-guru/market-profiles",
       },
@@ -388,32 +539,62 @@ export const CONTENT_GURU_NAV: TileMenuSection[] = [
   },
 ]
 
-export const INVOICE_SUPERVISOR_NAV: TileMenuSection[] = [
+export const INVOICE_SUPERVISOR_NAV: NavSection[] = [
   {
     id: "praca",
-    label: "Praca",
+    labelKey: "nav.sections.work",
     items: [
-      { id: "inbox", label: "Skrzynka", icon: Inbox, href: "/invoice-supervisor/inbox" },
-      { id: "invoices", label: "Faktury", icon: Receipt, href: "/invoice-supervisor/invoices" },
-      { id: "clients", label: "Klienci", icon: Users, href: "/invoice-supervisor/clients" },
+      {
+        id: "inbox",
+        labelKey: "nav.invoiceSupervisor.inbox",
+        icon: Inbox,
+        href: "/invoice-supervisor/inbox",
+      },
+      {
+        id: "invoices",
+        labelKey: "nav.invoiceSupervisor.invoices",
+        icon: Receipt,
+        href: "/invoice-supervisor/invoices",
+      },
+      {
+        id: "clients",
+        labelKey: "nav.invoiceSupervisor.clients",
+        icon: Users,
+        href: "/invoice-supervisor/clients",
+      },
     ],
   },
   {
     id: "konfiguracja",
-    label: "Konfiguracja",
+    labelKey: "nav.sections.configuration",
     items: [
-      { id: "policies", label: "Polityki", icon: ScrollText, href: "/invoice-supervisor/policies" },
-      { id: "templates", label: "Szablony", icon: FileText, href: "/invoice-supervisor/templates" },
-      { id: "settings", label: "Ustawienia", icon: Settings, href: "/invoice-supervisor/settings" },
+      {
+        id: "policies",
+        labelKey: "nav.invoiceSupervisor.policies",
+        icon: ScrollText,
+        href: "/invoice-supervisor/policies",
+      },
+      {
+        id: "templates",
+        labelKey: "nav.invoiceSupervisor.templates",
+        icon: FileText,
+        href: "/invoice-supervisor/templates",
+      },
+      {
+        id: "settings",
+        labelKey: "nav.invoiceSupervisor.settings",
+        icon: Settings,
+        href: "/invoice-supervisor/settings",
+      },
     ],
   },
   {
     id: "audyt",
-    label: "Audyt",
+    labelKey: "nav.sections.audit",
     items: [
       {
         id: "notifications",
-        label: "Historia wysyłek",
+        labelKey: "nav.invoiceSupervisor.notifications",
         icon: History,
         href: "/invoice-supervisor/notifications",
       },
@@ -421,11 +602,31 @@ export const INVOICE_SUPERVISOR_NAV: TileMenuSection[] = [
   },
 ]
 
-export const AI_TOOLS_DASHBOARD_ITEM: TileMenuItem = {
+export const AI_TOOLS_DASHBOARD_ITEM: NavItem = {
   id: "dashboard",
-  label: "Dashboard",
+  labelKey: "nav.aiTools.dashboard",
   icon: Sparkles,
   href: "/ai-tools",
+}
+
+/**
+ * Zamienia klucze na napisy w języku, który jest AKTUALNIE wybrany. Wołane z
+ * hooków niżej, czyli w komponencie — `t` z `useTranslation` zmienia
+ * tożsamość przy zmianie języka, więc `useMemo` się przelicza i sidebar
+ * przełącza się razem z resztą ekranu.
+ */
+export function translateNavSections(
+  sections: readonly NavSection[],
+  t: (key: string) => string,
+): TileMenuSection[] {
+  return sections.map(({ labelKey, items, ...section }) => ({
+    ...section,
+    ...(labelKey ? { label: t(labelKey) } : {}),
+    items: items.map(({ labelKey: itemLabelKey, ...item }) => ({
+      ...item,
+      label: t(itemLabelKey),
+    })),
+  }))
 }
 
 function normalizeMenuKey(value: string): string {
@@ -485,16 +686,28 @@ export function parseHiddenMenuItems(value: HiddenMenuItemsConfig): ReadonlySet<
   return new Set(items.map(normalizeMenuKey).filter(Boolean))
 }
 
-function itemKeys(item: TileMenuItem): string[] {
+/**
+ * Tokeny, po których `hide_menu_items` z backendu trafia w pozycję menu.
+ *
+ * Zamiast napisu idzie tu OSTATNI SEGMENT klucza tłumaczenia — token, który
+ * nie zmienia się razem z językiem. Dla pozycji IDP (jedynych, których ta
+ * konfiguracja dotyczy) jest on kebabową postacią dotychczasowej etykiety
+ * („Rule editor" -> `rule-editor`), więc listy skonfigurowane po nazwie
+ * działają dalej. Dopasowanie po WIDOCZNYM napisie byłoby tu pułapką: ta sama
+ * konfiguracja ukrywałaby pozycję po polsku i przestawała działać po
+ * przełączeniu na angielski.
+ */
+function itemKeys(item: NavItem): string[] {
   const hrefLeaf = item.href.split("/").filter(Boolean).at(-1) ?? ""
-  return [item.id, item.label, item.href, hrefLeaf].map(normalizeMenuKey)
+  const labelLeaf = item.labelKey.split(".").at(-1) ?? ""
+  return [item.id, labelLeaf, item.href, hrefLeaf].map(normalizeMenuKey)
 }
 
 export function filterNavSections(
-  sections: readonly TileMenuSection[],
+  sections: readonly NavSection[],
   hiddenItems: ReadonlySet<string>,
   options: { showAdminItems?: boolean } = {},
-): TileMenuSection[] {
+): NavSection[] {
   const showAdminItems = options.showAdminItems ?? false
   return sections
     .map((section) => ({
@@ -508,68 +721,88 @@ export function filterNavSections(
 }
 
 export function useIdpNavSections(): TileMenuSection[] {
+  const { t } = useTranslation("common")
   const { data } = useFeatureFlags()
   const settings = useFeatureFlagSettings()
   const hiddenMenuItems = data?.hide_menu_items
 
   return useMemo(
     () =>
-      filterNavSections(IDP_NAV, parseHiddenMenuItems(hiddenMenuItems), {
-        showAdminItems: settings.isSuccess,
-      }),
-    [hiddenMenuItems, settings.isSuccess],
+      translateNavSections(
+        filterNavSections(IDP_NAV, parseHiddenMenuItems(hiddenMenuItems), {
+          showAdminItems: settings.isSuccess,
+        }),
+        t,
+      ),
+    [hiddenMenuItems, settings.isSuccess, t],
   )
 }
 
 export function useIdpBasicNavSections(): TileMenuSection[] {
-  return IDP_BASIC_NAV
+  const { t } = useTranslation("common")
+  return useMemo(() => translateNavSections(IDP_BASIC_NAV, t), [t])
 }
 
 export function useStorePitNavSections(): TileMenuSection[] {
-  return STORE_PIT_NAV
+  const { t } = useTranslation("common")
+  return useMemo(() => translateNavSections(STORE_PIT_NAV, t), [t])
 }
 
 export function useOknaCzasoweNavSections(): TileMenuSection[] {
-  return OKNA_CZASOWE_NAV
+  const { t } = useTranslation("common")
+  return useMemo(() => translateNavSections(OKNA_CZASOWE_NAV, t), [t])
 }
 
 export function useIntrastatNavSections(): TileMenuSection[] {
-  return INTRASTAT_NAV
+  const { t } = useTranslation("common")
+  return useMemo(() => translateNavSections(INTRASTAT_NAV, t), [t])
 }
 
 export function useIlustromatNavSections(): TileMenuSection[] {
-  return ILUSTROMAT_NAV
+  const { t } = useTranslation("common")
+  return useMemo(() => translateNavSections(ILUSTROMAT_NAV, t), [t])
 }
 
 export function useSystemConfigNavSections(): TileMenuSection[] {
-  return SYSTEM_CONFIG_NAV
+  const { t } = useTranslation("common")
+  return useMemo(() => translateNavSections(SYSTEM_CONFIG_NAV, t), [t])
 }
 
 export function useTokenUsageNavSections(): TileMenuSection[] {
-  return TOKEN_USAGE_NAV
+  const { t } = useTranslation("common")
+  return useMemo(() => translateNavSections(TOKEN_USAGE_NAV, t), [t])
 }
 
 export function useInvoiceSupervisorNavSections(): TileMenuSection[] {
-  return INVOICE_SUPERVISOR_NAV
+  const { t } = useTranslation("common")
+  return useMemo(() => translateNavSections(INVOICE_SUPERVISOR_NAV, t), [t])
 }
 
 export function useGeoScoreCalculatorNavSections(): TileMenuSection[] {
-  return GEO_SCORE_CALCULATOR_NAV
+  const { t } = useTranslation("common")
+  return useMemo(() => translateNavSections(GEO_SCORE_CALCULATOR_NAV, t), [t])
 }
 
 export function useVisualGuruNavSections(): TileMenuSection[] {
-  return VISUAL_GURU_NAV
+  const { t } = useTranslation("common")
+  return useMemo(() => translateNavSections(VISUAL_GURU_NAV, t), [t])
 }
 
 export function useDocumentParserNavSections(): TileMenuSection[] {
-  return DOCUMENT_PARSER_NAV
+  const { t } = useTranslation("common")
+  return useMemo(() => translateNavSections(DOCUMENT_PARSER_NAV, t), [t])
 }
 
 export function useContentGuruNavSections(): TileMenuSection[] {
-  return CONTENT_GURU_NAV
+  const { t } = useTranslation("common")
+  return useMemo(() => translateNavSections(CONTENT_GURU_NAV, t), [t])
 }
 
 export function useAiToolsNavSections(): TileMenuSection[] {
+  const { t } = useTranslation("common")
+  // Nazwy narzędzi mają własną przestrzeń — w języku źródłowym wygrywa
+  // rejestr, w pozostałych tłumaczenie (`i18n/tile-names.ts`).
+  const { t: tTiles, i18n: instance } = useTranslation("tiles")
   const authorized = useAuthorizedApps()
 
   return useMemo(() => {
@@ -578,7 +811,7 @@ export function useAiToolsNavSections(): TileMenuSection[] {
       const items = acc[tool.category] ?? []
       items.push({
         id: tool.id,
-        label: tool.shortLabel,
+        label: tileName(tTiles, instance.language, tool.id, "shortLabel", tool.shortLabel),
         icon: tool.icon,
         href: `/ai-tools/${tool.id}`,
       })
@@ -586,11 +819,13 @@ export function useAiToolsNavSections(): TileMenuSection[] {
       return acc
     }, {})
 
+    const { labelKey: dashboardLabelKey, ...dashboardItem } = AI_TOOLS_DASHBOARD_ITEM
+
     return [
       {
         id: "home",
-        label: "Start",
-        items: [AI_TOOLS_DASHBOARD_ITEM],
+        label: t("nav.sections.home"),
+        items: [{ ...dashboardItem, label: t(dashboardLabelKey) }],
       },
       ...Object.entries(grouped).map(([label, items]) => ({
         id: label.toLowerCase(),
@@ -598,9 +833,10 @@ export function useAiToolsNavSections(): TileMenuSection[] {
         items,
       })),
     ]
-  }, [authorized.apps])
+  }, [authorized.apps, t, tTiles, instance.language])
 }
 
 export function useCortexConfigNavSections(): TileMenuSection[] {
-  return CORTEX_CONFIG_NAV
+  const { t } = useTranslation("common")
+  return useMemo(() => translateNavSections(CORTEX_CONFIG_NAV, t), [t])
 }

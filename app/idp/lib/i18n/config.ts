@@ -5,15 +5,18 @@ import enCortexConfig from "@/locales/en/cortex-config.json"
 import enCortexCowork from "@/locales/en/cortex-cowork.json"
 import enDocumentParser from "@/locales/en/document-parser.json"
 import enGeoScoreCalculator from "@/locales/en/geo-score-calculator.json"
+import enIdpBasic from "@/locales/en/idp-basic.json"
 import enIdp from "@/locales/en/idp.json"
 import enIlustromat from "@/locales/en/ilustromat.json"
+import enIntrastat from "@/locales/en/intrastat.json"
 import enInvoiceSupervisor from "@/locales/en/invoice-supervisor.json"
-import enMisc from "@/locales/en/misc.json"
 import enOknaCzasowe from "@/locales/en/okna-czasowe.json"
 import enShell from "@/locales/en/shell.json"
+import enStorePit from "@/locales/en/store-pit.json"
 import enSystemConfig from "@/locales/en/system-config.json"
 import enTiles from "@/locales/en/tiles.json"
 import enTokenUsage from "@/locales/en/token-usage.json"
+import enUi from "@/locales/en/ui.json"
 import enVisualGuru from "@/locales/en/visual-guru.json"
 import plAiTools from "@/locales/pl/ai-tools.json"
 import plCommon from "@/locales/pl/common.json"
@@ -22,14 +25,17 @@ import plCortexConfig from "@/locales/pl/cortex-config.json"
 import plCortexCowork from "@/locales/pl/cortex-cowork.json"
 import plDocumentParser from "@/locales/pl/document-parser.json"
 import plGeoScoreCalculator from "@/locales/pl/geo-score-calculator.json"
+import plIdpBasic from "@/locales/pl/idp-basic.json"
 import plIdp from "@/locales/pl/idp.json"
 import plIlustromat from "@/locales/pl/ilustromat.json"
+import plIntrastat from "@/locales/pl/intrastat.json"
 import plInvoiceSupervisor from "@/locales/pl/invoice-supervisor.json"
-import plMisc from "@/locales/pl/misc.json"
 import plOknaCzasowe from "@/locales/pl/okna-czasowe.json"
 import plShell from "@/locales/pl/shell.json"
+import plStorePit from "@/locales/pl/store-pit.json"
 import plSystemConfig from "@/locales/pl/system-config.json"
 import plTokenUsage from "@/locales/pl/token-usage.json"
+import plUi from "@/locales/pl/ui.json"
 import plVisualGuru from "@/locales/pl/visual-guru.json"
 
 /**
@@ -83,6 +89,7 @@ export const resources = {
     "system-config": plSystemConfig,
     "ai-tools": plAiTools,
     "invoice-supervisor": plInvoiceSupervisor,
+    intrastat: plIntrastat,
     "cortex-config": plCortexConfig,
     "cortex-cowork": plCortexCowork,
     "content-guru": plContentGuru,
@@ -93,7 +100,9 @@ export const resources = {
     ilustromat: plIlustromat,
     "okna-czasowe": plOknaCzasowe,
     idp: plIdp,
-    misc: plMisc,
+    ui: plUi,
+    "idp-basic": plIdpBasic,
+    "store-pit": plStorePit,
   },
   en: {
     common: enCommon,
@@ -102,6 +111,7 @@ export const resources = {
     "system-config": enSystemConfig,
     "ai-tools": enAiTools,
     "invoice-supervisor": enInvoiceSupervisor,
+    intrastat: enIntrastat,
     "cortex-config": enCortexConfig,
     "cortex-cowork": enCortexCowork,
     "content-guru": enContentGuru,
@@ -112,7 +122,9 @@ export const resources = {
     ilustromat: enIlustromat,
     "okna-czasowe": enOknaCzasowe,
     idp: enIdp,
-    misc: enMisc,
+    ui: enUi,
+    "idp-basic": enIdpBasic,
+    "store-pit": enStorePit,
   },
 } as const
 

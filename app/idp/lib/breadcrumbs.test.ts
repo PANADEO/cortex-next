@@ -20,6 +20,7 @@ afterAll(() => {
 
 const { breadcrumbsFromPath, useResolvedBreadcrumbs } = await import("./breadcrumbs")
 const { queryKeys } = await import("@cortex/api")
+const { default: i18nInstance } = await import("./i18n")
 
 describe("breadcrumbsFromPath", () => {
   it("returns IDP root for /idp", () => {
@@ -29,14 +30,14 @@ describe("breadcrumbsFromPath", () => {
   it("maps /idp/packages to IDP / Extraction", () => {
     expect(breadcrumbsFromPath("/idp/packages")).toEqual([
       { label: "IDP", href: "/" },
-      { label: "Extraction" },
+      { label: "Ekstrakcja" },
     ])
   })
 
   it("falls through to raw segment for /idp/packages/<id>", () => {
     expect(breadcrumbsFromPath("/idp/packages/abc-123")).toEqual([
       { label: "IDP", href: "/" },
-      { label: "Extraction", href: "/idp/packages" },
+      { label: "Ekstrakcja", href: "/idp/packages" },
       { label: "abc-123" },
     ])
   })
@@ -58,14 +59,14 @@ describe("breadcrumbsFromPath", () => {
   it("maps /idp-basic/files to IDP Basic / Files", () => {
     expect(breadcrumbsFromPath("/idp-basic/files")).toEqual([
       { label: "IDP Basic", href: "/" },
-      { label: "Files" },
+      { label: "Pliki" },
     ])
   })
 
   it("maps /idp-basic/results detail to IDP Basic / Results / id", () => {
     expect(breadcrumbsFromPath("/idp-basic/results/result-1")).toEqual([
       { label: "IDP Basic", href: "/" },
-      { label: "Results", href: "/idp-basic/results" },
+      { label: "Wyniki", href: "/idp-basic/results" },
       { label: "result-1" },
     ])
   })
@@ -73,7 +74,7 @@ describe("breadcrumbsFromPath", () => {
   it("maps /intrastat/review to Intrastat / Review", () => {
     expect(breadcrumbsFromPath("/intrastat/review")).toEqual([
       { label: "Intrastat", href: "/" },
-      { label: "Review" },
+      { label: "Weryfikacja" },
     ])
   })
 
@@ -98,7 +99,7 @@ describe("breadcrumbsFromPath", () => {
   it("tolerates trailing slash on package detail path", () => {
     expect(breadcrumbsFromPath("/idp/packages/abc-123/")).toEqual([
       { label: "IDP", href: "/" },
-      { label: "Extraction", href: "/idp/packages" },
+      { label: "Ekstrakcja", href: "/idp/packages" },
       { label: "abc-123" },
     ])
   })
@@ -154,21 +155,21 @@ describe("breadcrumbsFromPath", () => {
   it("maps /store-pit/dashboard to sp-console's tile label, not sp-client's", () => {
     expect(breadcrumbsFromPath("/store-pit/dashboard")).toEqual([
       { label: "Store-Pit Re-Rating", href: "/" },
-      { label: "Overview" },
+      { label: "Przegląd" },
     ])
   })
 
   it("maps /store-pit/clients to sp-client's tile label, not sp-console's", () => {
     expect(breadcrumbsFromPath("/store-pit/clients")).toEqual([
       { label: "Store-Pit Client Zone", href: "/" },
-      { label: "Clients" },
+      { label: "Klienci" },
     ])
   })
 
   it("falls back to the first store-pit tile for a segment neither sp-console nor sp-client owns by href", () => {
     expect(breadcrumbsFromPath("/store-pit/pricing")).toEqual([
       { label: "Store-Pit Re-Rating", href: "/" },
-      { label: "Pricing rules" },
+      { label: "Reguły cenowe" },
     ])
   })
 
@@ -214,7 +215,7 @@ describe("useResolvedBreadcrumbs", () => {
     })
     expect(result.current).toEqual([
       { label: "IDP", href: "/" },
-      { label: "Extraction", href: "/idp/packages" },
+      { label: "Ekstrakcja", href: "/idp/packages" },
       { label: "INV-2026-001.zip" },
     ])
   })
@@ -228,7 +229,7 @@ describe("useResolvedBreadcrumbs", () => {
     })
     expect(result.current).toEqual([
       { label: "IDP", href: "/" },
-      { label: "Extraction", href: "/idp/packages" },
+      { label: "Ekstrakcja", href: "/idp/packages" },
       { label: "May shipment" },
     ])
   })
@@ -248,8 +249,38 @@ describe("useResolvedBreadcrumbs", () => {
     })
     expect(result.current).toEqual([
       { label: "IDP", href: "/" },
-      { label: "Extraction", href: "/idp/packages" },
+      { label: "Ekstrakcja", href: "/idp/packages" },
       { label: "missing-id" },
+    ])
+  })
+})
+
+describe("nazwy kafelków w drugim języku", () => {
+  const tiles = () => i18nInstance.getFixedT(null, "tiles")
+
+  // Ta ścieżka omijała przestrzeń `tiles`: okruszek narzędzia AI brał
+  // `shortLabel` wprost z rejestru, więc w interfejsie angielskim pokazywał
+  // polską nazwę. Nie miała pokrycia, bo cała reszta okruszków chodzi przez
+  // klucze nawigacji i wyglądała poprawnie.
+  it("okruszek narzędzia AI jest tłumaczony, a nie brany z rejestru", () => {
+    expect(breadcrumbsFromPath("/ai-tools/text-highlighter", (k) => k, tiles(), "en")).toEqual([
+      { label: "nav.hub", href: "/" },
+      { label: "Highlighter" },
+    ])
+  })
+
+  it("korzeń okruszka bierze nazwę kafelka z tłumaczenia", () => {
+    const [root] = breadcrumbsFromPath("/idp-basic/dashboard", (k) => k, tiles(), "en")
+    expect(root).toEqual({ label: "IDP Basic", href: "/" })
+  })
+
+  // Odwrotna strona tej samej reguły: w języku źródłowym wygrywa wartość
+  // lokalna, żeby zmiana nazwy przez administratora nie znikała pod plikiem
+  // tłumaczeń.
+  it("w języku źródłowym zostaje nazwa z rejestru", () => {
+    expect(breadcrumbsFromPath("/ai-tools/text-highlighter", (k) => k, tiles(), "pl")).toEqual([
+      { label: "nav.hub", href: "/" },
+      { label: "Podświetlacz" },
     ])
   })
 })

@@ -34,6 +34,16 @@ function flatten(value: unknown, prefix = ""): string[] {
   )
 }
 
+/** Jak `flatten`, ale zwraca PARY ścieżka→wartość. Osobno, bo `flatten`
+ *  oddaje same ścieżki i pomylenie tych dwóch daje test, który nie potrafi
+ *  upaść — dokładnie to przydarzyło się pierwszej wersji reguły niżej. */
+function flattenEntries(value: unknown, prefix = ""): Array<[string, unknown]> {
+  if (value === null || typeof value !== "object") return [[prefix, value]]
+  return Object.entries(value as Record<string, unknown>).flatMap(([key, child]) =>
+    flattenEntries(child, prefix ? `${prefix}.${key}` : key),
+  )
+}
+
 function load(locale: string, namespace: string): Record<string, unknown> {
   return JSON.parse(readFileSync(path.join(localesDir, locale, namespace), "utf8"))
 }
@@ -90,6 +100,27 @@ describe("pliki tłumaczeń", () => {
       .map(([key]) => key)
 
     expect({ bezTypu }).toEqual({ bezTypu: [] })
+  })
+
+  /**
+   * Wielokropek jako JEDEN znak, nie trzy kropki.
+   *
+   * Reguła kosmetyczna, ale warta bramki właśnie dlatego, że jest kosmetyczna:
+   * różnicy nie widać na przeglądzie, a widać ją na ekranie, gdy dwa sąsiednie
+   * napisy o tym samym znaczeniu („Wczytywanie…" obok „Generowanie...")
+   * pochodzą z różnych fal migracji. Przed ujednoliceniem 49 kluczy z 320
+   * używało wariantu ASCII — rozkład typowy dla konwencji, której nikt nie
+   * pilnuje.
+   */
+  it.each(namespaces)("%s używa znaku wielokropka, nie trzech kropek", (namespace) => {
+    const offenders = (["pl", "en"] as const).flatMap((locale) =>
+      flattenEntries(load(locale, namespace))
+        .filter(([key]) => !key.startsWith(`${CONTEXT_KEY}.`))
+        .filter(([, value]) => typeof value === "string" && value.includes("..."))
+        .map(([key]) => `${locale}:${key}`),
+    )
+
+    expect({ trzyKropki: offenders }).toEqual({ trzyKropki: [] })
   })
 
   it.each(namespaces)("%s nie ma pustych wartości", (namespace) => {
