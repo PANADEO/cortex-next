@@ -15,6 +15,7 @@
 
 import { X } from "lucide-react"
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 
 import { cn } from "@cortex/utils"
 import { Badge } from "./badge"
@@ -43,13 +44,14 @@ export function ChipInput({
   id,
   value,
   onChange,
-  placeholder = "Dodaj i naciśnij Enter…",
-  searchPlaceholder = "Szukaj…",
+  placeholder,
+  searchPlaceholder,
   disabled,
   className,
   "aria-label": ariaLabel,
   "aria-labelledby": ariaLabelledBy,
 }: ChipInputProps) {
+  const { t } = useTranslation("ui")
   const [draft, setDraft] = React.useState("")
   const [search, setSearch] = React.useState("")
 
@@ -87,7 +89,7 @@ export function ChipInput({
       <Input
         id={id}
         value={draft}
-        placeholder={placeholder}
+        placeholder={placeholder ?? t("chipInput.placeholder")}
         disabled={disabled}
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
@@ -99,10 +101,10 @@ export function ChipInput({
       {value.length > CHIP_SEARCH_THRESHOLD ? (
         <Input
           value={search}
-          placeholder={searchPlaceholder}
+          placeholder={searchPlaceholder ?? t("chipInput.searchPlaceholder")}
           className="h-8 text-xs"
           onChange={(event) => setSearch(event.target.value)}
-          aria-label={`${ariaLabel ?? "Lista"} — szukaj`}
+          aria-label={t("chipInput.searchLabel", { list: ariaLabel ?? t("chipInput.listLabel") })}
         />
       ) : null}
 
@@ -110,7 +112,7 @@ export function ChipInput({
         <div className="flex flex-wrap gap-1.5 p-2">
           {visible.length === 0 ? (
             <p className="px-1 py-1 text-xs text-muted-foreground">
-              {value.length === 0 ? "Brak elementów" : "Brak wyników wyszukiwania"}
+              {value.length === 0 ? t("chipInput.empty") : t("chipInput.noResults")}
             </p>
           ) : (
             visible.map((chip) => (
@@ -120,7 +122,7 @@ export function ChipInput({
                   type="button"
                   disabled={disabled}
                   onClick={() => remove(chip)}
-                  aria-label={`Usuń „${chip}”`}
+                  aria-label={t("chipInput.remove", { chip })}
                   className="rounded-sm p-0.5 text-muted-foreground hover:bg-muted-foreground/20 hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
                 >
                   <X className="h-3 w-3" />
@@ -132,7 +134,7 @@ export function ChipInput({
       </ScrollArea>
 
       <p className="text-xs text-muted-foreground">
-        {value.length} {value.length === 1 ? "element" : "elementów"}
+        {value.length} {t("chipInput.count", { count: value.length })}
       </p>
     </div>
   )

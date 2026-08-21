@@ -6,6 +6,7 @@ import { formatDistanceToNowStrict, parseISO } from "date-fns"
 import { Cpu, Sparkles, Zap } from "lucide-react"
 import type { SyntheticEvent } from "react"
 import { useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { JsonViewer } from "./json-viewer"
 import { Badge } from "./ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
@@ -47,44 +48,50 @@ const CATEGORY_BY_ACTION = {
   restored: "system",
 } as const satisfies Record<PackageActionType, EventCategory>
 
-const ACTION_LABELS: Record<PackageActionType, string> = {
-  imported: "Package imported",
-  imported_with_error: "Imported with error",
-  analysing: "Started analysis pipeline",
-  analysis_failed: "Analysis failed",
-  ready_for_verification: "Package ready for verification",
-  verification: "Started package verification",
-  cancel_verification: "Verification cancelled",
-  unlock_verification: "Package unlocked",
-  verified: "Marked package as verified",
-  reset_verification: "Verification reset",
-  seller_updated: "Updated seller",
-  buyer_updated: "Updated buyer",
-  consignor_updated: "Updated consignor",
-  consignee_updated: "Updated consignee",
-  invoice_updated: "Updated invoice",
-  invoice_line_updated: "Updated invoice line",
-  invoice_totals_updated: "Updated invoice totals",
-  delivery_terms_updated: "Updated delivery terms",
-  transport_info_updated: "Updated transport info",
-  sad_context_updated: "Updated SAD context",
-  custom_status_updated: "Updated custom status",
-  user_notes_updated: "Updated user notes",
-  deleted: "Package deleted",
-  restored: "Package restored",
+// Stałe trzymają KLUCZE przestrzeni `ui`, nie napisy — mapy żyją poza
+// komponentem, więc nie mają dostępu do `t()`. Napis powstaje w miejscu renderu.
+const ACTION_LABEL_KEY: Record<PackageActionType, string> = {
+  imported: "actionLog.actions.imported",
+  imported_with_error: "actionLog.actions.imported_with_error",
+  analysing: "actionLog.actions.analysing",
+  analysis_failed: "actionLog.actions.analysis_failed",
+  ready_for_verification: "actionLog.actions.ready_for_verification",
+  verification: "actionLog.actions.verification",
+  cancel_verification: "actionLog.actions.cancel_verification",
+  unlock_verification: "actionLog.actions.unlock_verification",
+  verified: "actionLog.actions.verified",
+  reset_verification: "actionLog.actions.reset_verification",
+  seller_updated: "actionLog.actions.seller_updated",
+  buyer_updated: "actionLog.actions.buyer_updated",
+  consignor_updated: "actionLog.actions.consignor_updated",
+  consignee_updated: "actionLog.actions.consignee_updated",
+  invoice_updated: "actionLog.actions.invoice_updated",
+  invoice_line_updated: "actionLog.actions.invoice_line_updated",
+  invoice_totals_updated: "actionLog.actions.invoice_totals_updated",
+  delivery_terms_updated: "actionLog.actions.delivery_terms_updated",
+  transport_info_updated: "actionLog.actions.transport_info_updated",
+  sad_context_updated: "actionLog.actions.sad_context_updated",
+  custom_status_updated: "actionLog.actions.custom_status_updated",
+  user_notes_updated: "actionLog.actions.user_notes_updated",
+  deleted: "actionLog.actions.deleted",
+  restored: "actionLog.actions.restored",
 }
 
-const TAG_LABEL_BY_CATEGORY: Record<EventCategory, string> = {
-  edit: "Edit",
-  system: "System",
-  verification: "Verify",
+const TAG_LABEL_KEY_BY_CATEGORY: Record<EventCategory, string> = {
+  edit: "actionLog.tags.edit",
+  system: "actionLog.tags.system",
+  verification: "actionLog.tags.verification",
 }
 
-const FILTER_DEFINITIONS: ReadonlyArray<{ value: FilterValue; label: string }> = [
-  { value: "all", label: "All" },
-  { value: "edit", label: "User edits" },
-  { value: "system", label: "System" },
-  { value: "verification", label: "Verification" },
+// Wzorzec `date-fns`, nie napis dla użytkownika — stoi w stałej, żeby nie
+// wyglądał na zdanie w atrybucie `title`.
+const TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss"
+
+const FILTER_DEFINITIONS: ReadonlyArray<{ value: FilterValue; labelKey: string }> = [
+  { value: "all", labelKey: "actionLog.filters.all" },
+  { value: "edit", labelKey: "actionLog.filters.edit" },
+  { value: "system", labelKey: "actionLog.filters.system" },
+  { value: "verification", labelKey: "actionLog.filters.verification" },
 ]
 
 export function categorise(actionType: PackageActionType): EventCategory {
@@ -189,6 +196,7 @@ export function ActionLogTimeline({
   showPayloads = true,
   className,
 }: ActionLogTimelineProps) {
+  const { t } = useTranslation("ui")
   const [filter, setFilter] = useState<FilterValue>("all")
   const [sort, setSort] = useState<SortOrder>("desc")
   // Map of event.id -> open boolean. Empty until first user toggle / collapse-expand-all.
@@ -229,7 +237,7 @@ export function ActionLogTimeline({
   }, [events])
 
   if (events.length === 0) {
-    return <p className={cn("text-sm text-muted-foreground", className)}>No actions yet.</p>
+    return <p className={cn("text-sm text-muted-foreground", className)}>{t("actionLog.empty")}</p>
   }
 
   const handleToggle = (eventId: string) => (e: SyntheticEvent<HTMLDetailsElement>) => {
@@ -272,28 +280,26 @@ export function ActionLogTimeline({
       <section className="overflow-hidden rounded-xl border border-border bg-card">
         <header className="flex items-center justify-between gap-3 border-b border-border bg-muted/40 px-5 py-3">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-foreground">Action log</h2>
+            <h2 className="text-sm font-semibold text-foreground">{t("actionLog.title")}</h2>
             <span className="text-xs text-muted-foreground">
-              {events.length} {events.length === 1 ? "event" : "events"}
+              {t("actionLog.eventCount", { count: events.length })}
               {span ? ` · ${span}` : null}
             </span>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <button type="button" onClick={handleCollapseAll} className="hover:text-foreground">
-              Collapse all
+              {t("actionLog.collapseAll")}
             </button>
             <span aria-hidden className="text-muted-foreground/50">
               |
             </span>
             <button type="button" onClick={handleExpandAll} className="hover:text-foreground">
-              Expand all
+              {t("actionLog.expandAll")}
             </button>
           </div>
         </header>
         {visible.length === 0 ? (
-          <p className="p-6 text-center text-sm text-muted-foreground">
-            No events match this filter.
-          </p>
+          <p className="p-6 text-center text-sm text-muted-foreground">{t("actionLog.noMatch")}</p>
         ) : (
           <ol>
             {visible.map((event) => {
@@ -330,10 +336,11 @@ interface ToolbarProps {
 }
 
 function Toolbar({ counts, filter, sort, onFilterChange, onSortChange }: ToolbarProps) {
+  const { t } = useTranslation("ui")
   return (
     <section className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-xs text-muted-foreground">Show:</span>
+        <span className="mr-1 text-xs text-muted-foreground">{t("actionLog.showLabel")}</span>
         {FILTER_DEFINITIONS.map((def) => {
           const active = filter === def.value
           return (
@@ -349,7 +356,7 @@ function Toolbar({ counts, filter, sort, onFilterChange, onSortChange }: Toolbar
                   : "border-border bg-card text-muted-foreground hover:bg-muted/40",
               )}
             >
-              {def.label}
+              {t(def.labelKey)}
               <span
                 className={cn(
                   "text-[10px] font-medium",
@@ -363,14 +370,14 @@ function Toolbar({ counts, filter, sort, onFilterChange, onSortChange }: Toolbar
         })}
       </div>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span>Sort:</span>
+        <span>{t("actionLog.sortLabel")}</span>
         <Select value={sort} onValueChange={(v) => onSortChange(v as SortOrder)}>
           <SelectTrigger className="h-8 w-[140px] text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="desc">Newest first</SelectItem>
-            <SelectItem value="asc">Oldest first</SelectItem>
+            <SelectItem value="desc">{t("actionLog.sortNewest")}</SelectItem>
+            <SelectItem value="asc">{t("actionLog.sortOldest")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -401,12 +408,15 @@ interface ConversationRowProps {
 }
 
 function ConversationRow({ event, meta, open, onToggle }: ConversationRowProps) {
+  const { t } = useTranslation("ui")
   const { category, isReprocess, editSummary, parsedPayload, hasPayload } = meta
   const isSystemRow = category === "system"
+  // `system` i `cortex.idp` to identyfikatory konta wykonawcy, nie etykiety —
+  // wyglądają tak samo w każdym języku i tak też jadą z backendu.
   const senderLabel = isSystemRow ? "system" : event.performed_by
   const senderSub = isSystemRow ? "cortex.idp" : event.performed_by
-  const subjectLabel = ACTION_LABELS[event.action_type] ?? humanizeEnum(event.action_type)
-  const tagLabel = TAG_LABEL_BY_CATEGORY[category]
+  const subjectLabel = actionLabel(t, event.action_type)
+  const tagLabel = t(TAG_LABEL_KEY_BY_CATEGORY[category])
 
   return (
     <details
@@ -486,7 +496,7 @@ function Timestamp({ timestamp }: { timestamp: string }) {
   return (
     <time
       className="shrink-0 whitespace-nowrap text-right text-[0.72rem] leading-tight text-muted-foreground"
-      title={formatAbsolute(timestamp, "yyyy-MM-dd HH:mm:ss")}
+      title={formatAbsolute(timestamp, TIMESTAMP_FORMAT)}
     >
       {formatRelative(timestamp)}
       <br />
@@ -502,6 +512,7 @@ function PreviewLine({
   editSummary: EditSummary[]
   category: EventCategory
 }) {
+  const { t } = useTranslation("ui")
   if (editSummary.length === 0) return null
   const first = editSummary[0]!
   const extraCount = editSummary.length - 1
@@ -515,8 +526,9 @@ function PreviewLine({
       <span className="font-medium text-success">{formatDiffValue(first.to)}</span>
       {extraCount > 0 ? (
         <span className="ml-2 font-sans text-[0.7rem] text-muted-foreground/70">
-          +{extraCount} more {category === "edit" ? "field" : "change"}
-          {extraCount === 1 ? "" : "s"}
+          {t(category === "edit" ? "actionLog.moreFields" : "actionLog.moreChanges", {
+            count: extraCount,
+          })}
         </span>
       ) : null}
     </span>
@@ -524,6 +536,7 @@ function PreviewLine({
 }
 
 function Body({ event, meta }: { event: PackageActionReadModel; meta: RowMeta }) {
+  const { t } = useTranslation("ui")
   const { category, isReprocess, editSummary, parsedPayload, hasPayload } = meta
   return (
     <div
@@ -533,7 +546,7 @@ function Body({ event, meta }: { event: PackageActionReadModel; meta: RowMeta })
       )}
     >
       <MetaLine event={event} />
-      <p className="text-foreground/80">{describe(event, category, isReprocess)}</p>
+      <p className="text-foreground/80">{describe(t, event, category, isReprocess)}</p>
       {isReprocess ? (
         <ReprocessPayload payload={parsedPayload} />
       ) : editSummary.length > 0 ? (
@@ -545,35 +558,48 @@ function Body({ event, meta }: { event: PackageActionReadModel; meta: RowMeta })
   )
 }
 
+// Typ `t` bierzemy z samego hooka — pakiet zna wyłącznie `react-i18next`
+// i nie sięga po typy i18nexta wprost.
+type Translate = ReturnType<typeof useTranslation>["t"]
+
+/** Zapas `humanizeEnum` zostaje: typ akcji przychodzi z backendu i może
+ *  wyprzedzić tę mapę, a wtedy `t(undefined)` przewróciłoby wiersz. */
+function actionLabel(t: Translate, actionType: PackageActionType): string {
+  const key = ACTION_LABEL_KEY[actionType]
+  return key ? t(key) : humanizeEnum(actionType)
+}
+
 function describe(
+  t: Translate,
   event: PackageActionReadModel,
   category: EventCategory,
   isReprocess: boolean,
 ): string {
   if (isReprocess) {
-    return "Reprocess triggered. Pipeline rerun with the parameters listed below."
+    return t("actionLog.reprocessDescription")
   }
   if (category === "edit") {
-    return `${ACTION_LABELS[event.action_type]}. See diff below for changed fields.`
+    return t("actionLog.editDescription", { action: actionLabel(t, event.action_type) })
   }
-  return ACTION_LABELS[event.action_type] ?? humanizeEnum(event.action_type)
+  return actionLabel(t, event.action_type)
 }
 
 function MetaLine({ event }: { event: PackageActionReadModel }) {
+  const { t } = useTranslation("ui")
   return (
     <dl className="flex flex-wrap gap-x-4 gap-y-1 border-b border-dashed border-border/60 pb-2 text-[0.72rem] text-muted-foreground">
       <span className="inline-flex items-baseline gap-1">
-        <dt className="text-muted-foreground/80">Event</dt>
+        <dt className="text-muted-foreground/80">{t("actionLog.meta.event")}</dt>
         <dd className="font-mono text-foreground/80">{event.action_type}</dd>
       </span>
       <span className="inline-flex items-baseline gap-1">
-        <dt className="text-muted-foreground/80">By</dt>
+        <dt className="text-muted-foreground/80">{t("actionLog.meta.by")}</dt>
         <dd className="text-foreground/80">{event.performed_by}</dd>
       </span>
       <span className="inline-flex items-baseline gap-1">
-        <dt className="text-muted-foreground/80">At</dt>
+        <dt className="text-muted-foreground/80">{t("actionLog.meta.at")}</dt>
         <dd className="text-foreground/80" title={event.timestamp}>
-          {formatAbsolute(event.timestamp, "yyyy-MM-dd HH:mm:ss")}
+          {formatAbsolute(event.timestamp, TIMESTAMP_FORMAT)}
         </dd>
       </span>
     </dl>
@@ -581,18 +607,19 @@ function MetaLine({ event }: { event: PackageActionReadModel }) {
 }
 
 function DiffTable({ rows }: { rows: EditSummary[] }) {
+  const { t } = useTranslation("ui")
   return (
     <table className="w-full border-collapse text-[0.78rem]">
       <thead>
         <tr>
           <th className="border-b border-border bg-muted/60 px-2.5 py-1.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-muted-foreground">
-            Field
+            {t("actionLog.diff.field")}
           </th>
           <th className="border-b border-border bg-muted/60 px-2.5 py-1.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-muted-foreground">
-            Before
+            {t("actionLog.diff.before")}
           </th>
           <th className="border-b border-border bg-muted/60 px-2.5 py-1.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-muted-foreground">
-            After
+            {t("actionLog.diff.after")}
           </th>
         </tr>
       </thead>
@@ -618,8 +645,11 @@ function DiffTable({ rows }: { rows: EditSummary[] }) {
 }
 
 function ReprocessPayload({ payload }: { payload: unknown }) {
+  const { t } = useTranslation("ui")
   if (!isPlainObject(payload)) {
-    return <p className="text-xs italic text-muted-foreground">Reprocess details unavailable</p>
+    return (
+      <p className="text-xs italic text-muted-foreground">{t("actionLog.reprocess.unavailable")}</p>
+    )
   }
   const shape = payload as ReprocessPayloadShape
   const aiEnabled = shape.additional_ai_context_enabled === true
@@ -627,24 +657,26 @@ function ReprocessPayload({ payload }: { payload: unknown }) {
   const aiContext =
     typeof shape.additional_ai_context === "string" ? shape.additional_ai_context.trim() : ""
   const hasAiContext = aiEnabled && aiContext.length > 0
-  const packagingMode = formatPackagingSelectionMode(shape.packaging_selection_mode)
+  const packagingModeKey = packagingSelectionModeKey(shape.packaging_selection_mode)
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-1.5">
         <Badge variant={aiEnabled ? "secondary" : "outline"} className="gap-1 text-[10px]">
           <Sparkles className="h-3 w-3" />
-          {aiEnabled ? "AI context used" : "No additional context"}
+          {aiEnabled
+            ? t("actionLog.reprocess.aiContextUsed")
+            : t("actionLog.reprocess.noAdditionalContext")}
         </Badge>
         {fastProcessing ? (
           <Badge variant="secondary" className="gap-1 text-[10px]">
             <Zap className="h-3 w-3" />
-            Fast processing
+            {t("actionLog.reprocess.fastProcessing")}
           </Badge>
         ) : null}
-        {packagingMode ? (
+        {packagingModeKey ? (
           <Badge variant="outline" className="text-[10px]">
-            {packagingMode}
+            {t(packagingModeKey)}
           </Badge>
         ) : null}
       </div>
@@ -659,11 +691,11 @@ function ReprocessPayload({ payload }: { payload: unknown }) {
   )
 }
 
-function formatPackagingSelectionMode(value: unknown): string | null {
+function packagingSelectionModeKey(value: unknown): string | null {
   if (typeof value !== "string") return null
-  if (value === "auto_by_bill_of_lading") return "Packaging: auto by B/L"
-  if (value === "force_packages") return "Packaging: packages"
-  if (value === "force_pallets") return "Packaging: pallets"
+  if (value === "auto_by_bill_of_lading") return "actionLog.reprocess.packagingAuto"
+  if (value === "force_packages") return "actionLog.reprocess.packagingPackages"
+  if (value === "force_pallets") return "actionLog.reprocess.packagingPallets"
   return null
 }
 

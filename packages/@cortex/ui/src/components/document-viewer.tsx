@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, RenderTask } from "pdfjs-dist"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import * as XLSX from "xlsx"
 import type { SpreadsheetSearchTerm } from "./spreadsheet-search"
 import {
@@ -58,12 +59,13 @@ export function DocumentViewer({
   highlightBoxes,
   spreadsheetSearchTerms,
 }: DocumentViewerProps) {
+  const { t } = useTranslation("ui")
   const kind = useMemo(() => detectDocumentKind(fileName, mediaType), [fileName, mediaType])
 
   if (!source) {
     return (
       <ViewerFrame className={className}>
-        <ViewerMessage label="No document selected." />
+        <ViewerMessage label={t("documentViewer.noSelection")} />
       </ViewerFrame>
     )
   }
@@ -93,7 +95,7 @@ export function DocumentViewer({
     <ViewerFrame className={className}>
       <ViewerMessage
         icon={<FileWarning className="h-5 w-5" />}
-        label={`No inline preview for ${fileName}.`}
+        label={t("documentViewer.noPreview", { fileName })}
       />
     </ViewerFrame>
   )
@@ -160,6 +162,7 @@ function PdfViewer({
   activePage: number | null
   highlightBoxes: NormalizedHighlightBox[]
 }) {
+  const { t } = useTranslation("ui")
   const containerRef = useRef<HTMLDivElement>(null)
   const pageRefs = useRef(new Map<number, HTMLDivElement>())
   const hasAutoFitRef = useRef(false)
@@ -185,7 +188,7 @@ function PdfViewer({
         if (source instanceof ArrayBuffer) data = source
         else if (source instanceof Blob) data = await source.arrayBuffer()
         else {
-          setError("Remote URL source not supported for PDF; pass a Blob.")
+          setError(t("documentViewer.remoteUnsupportedPdf"))
           return
         }
         loadingTask = pdfjs.getDocument({
@@ -211,7 +214,7 @@ function PdfViewer({
         setScale(PDF_RENDER_SCALE)
         setError(null)
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load PDF")
+        if (!cancelled) setError(e instanceof Error ? e.message : t("documentViewer.loadPdfFailed"))
       }
     }
     void load()
@@ -221,7 +224,7 @@ function PdfViewer({
       loadedDoc?.destroy()
       loadingTask?.destroy()
     }
-  }, [source])
+  }, [source, t])
 
   useEffect(() => {
     if (!doc || !unscaledFirstPageWidth || hasAutoFitRef.current) return
@@ -308,7 +311,10 @@ function PdfViewer({
   if (!doc) {
     return (
       <ViewerFrame className={className}>
-        <ViewerMessage icon={<Loader2 className="h-4 w-4 animate-spin" />} label="Loading PDF…" />
+        <ViewerMessage
+          icon={<Loader2 className="h-4 w-4 animate-spin" />}
+          label={t("documentViewer.loadingPdf")}
+        />
       </ViewerFrame>
     )
   }
@@ -372,6 +378,7 @@ function PdfToolbar({
   onPrevPage: () => void
   onNextPage: () => void
 }) {
+  const { t } = useTranslation("ui")
   const atFirstPage = currentPage <= 1
   const atLastPage = currentPage >= numPages
   const atMinScale = scale <= PDF_MIN_SCALE + 1e-6
@@ -389,12 +396,12 @@ function PdfToolbar({
               className="h-7 w-7"
               onClick={onPrevPage}
               disabled={atFirstPage}
-              aria-label="Previous page"
+              aria-label={t("documentViewer.previousPage")}
             >
               <ChevronUp className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Previous page</TooltipContent>
+          <TooltipContent>{t("documentViewer.previousPage")}</TooltipContent>
         </Tooltip>
         <span className="px-1 tabular-nums text-muted-foreground">
           {currentPage} / {numPages}
@@ -408,12 +415,12 @@ function PdfToolbar({
               className="h-7 w-7"
               onClick={onNextPage}
               disabled={atLastPage}
-              aria-label="Next page"
+              aria-label={t("documentViewer.nextPage")}
             >
               <ChevronDown className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Next page</TooltipContent>
+          <TooltipContent>{t("documentViewer.nextPage")}</TooltipContent>
         </Tooltip>
         <span className="mx-1 h-4 w-px bg-border" />
         <Tooltip>
@@ -425,12 +432,12 @@ function PdfToolbar({
               className="h-7 w-7"
               onClick={onZoomOut}
               disabled={atMinScale}
-              aria-label="Zoom out"
+              aria-label={t("documentViewer.zoomOut")}
             >
               <ZoomOut className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Zoom out</TooltipContent>
+          <TooltipContent>{t("documentViewer.zoomOut")}</TooltipContent>
         </Tooltip>
         <span className="min-w-[3rem] px-1 text-center tabular-nums text-muted-foreground">
           {Math.round(scale * 100)}%
@@ -444,12 +451,12 @@ function PdfToolbar({
               className="h-7 w-7"
               onClick={onZoomIn}
               disabled={atMaxScale}
-              aria-label="Zoom in"
+              aria-label={t("documentViewer.zoomIn")}
             >
               <ZoomIn className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Zoom in</TooltipContent>
+          <TooltipContent>{t("documentViewer.zoomIn")}</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -460,12 +467,12 @@ function PdfToolbar({
               className="h-7 w-7"
               onClick={onFitToWidth}
               disabled={!canFitToWidth}
-              aria-label="Fit to width"
+              aria-label={t("documentViewer.fitToWidth")}
             >
               <Maximize2 className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Fit to width</TooltipContent>
+          <TooltipContent>{t("documentViewer.fitToWidth")}</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>
@@ -550,21 +557,22 @@ function DocxViewer({
   source: Blob | ArrayBuffer | string
   className?: string | undefined
 }) {
+  const { t } = useTranslation("ui")
   const ref = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!ref.current) return
     if (typeof source === "string") {
-      setError("Remote URL source not supported for DOCX; pass a Blob.")
+      setError(t("documentViewer.remoteUnsupportedDocx"))
       return
     }
     const blob = source instanceof Blob ? source : new Blob([source])
     ref.current.innerHTML = ""
     renderAsync(blob, ref.current).catch((e) => {
-      setError(e instanceof Error ? e.message : "Unknown error")
+      setError(e instanceof Error ? e.message : t("documentViewer.unknownError"))
     })
-  }, [source])
+  }, [source, t])
 
   return (
     <ViewerFrame className={className}>
@@ -588,6 +596,7 @@ function XlsxViewer({
   className?: string | undefined
   spreadsheetSearchTerms: SpreadsheetSearchTerm[]
 }) {
+  const { t } = useTranslation("ui")
   const tableRef = useRef<HTMLDivElement>(null)
   const [sheets, setSheets] = useState<SpreadsheetSheetData[]>([])
   const [active, setActive] = useState(0)
@@ -601,7 +610,7 @@ function XlsxViewer({
         if (source instanceof ArrayBuffer) buffer = source
         else if (source instanceof Blob) buffer = await source.arrayBuffer()
         else {
-          setError("Remote URL source not supported for XLSX; pass a Blob.")
+          setError(t("documentViewer.remoteUnsupportedXlsx"))
           return
         }
         const wb = XLSX.read(buffer, { type: "array" })
@@ -622,14 +631,15 @@ function XlsxViewer({
           setActive(0)
         }
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to parse spreadsheet")
+        if (!cancelled)
+          setError(e instanceof Error ? e.message : t("documentViewer.parseSpreadsheetFailed"))
       }
     }
     void load()
     return () => {
       cancelled = true
     }
-  }, [source])
+  }, [source, t])
 
   useEffect(() => {
     if (spreadsheetSearchTerms.length === 0 || sheets.length === 0) return
@@ -675,7 +685,7 @@ function XlsxViewer({
       <ViewerFrame className={className}>
         <ViewerMessage
           icon={<Loader2 className="h-4 w-4 animate-spin" />}
-          label="Loading spreadsheet…"
+          label={t("documentViewer.loadingSpreadsheet")}
         />
       </ViewerFrame>
     )
@@ -702,9 +712,10 @@ function XlsxViewer({
       </div>
       {spreadsheetMatch ? (
         <div className="shrink-0 border-b border-border bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-          Matched {spreadsheetMatch.matchedTermCount} field
-          {spreadsheetMatch.matchedTermCount === 1 ? "" : "s"} in row{" "}
-          {spreadsheetMatch.rowIndex + 1}.
+          {t("documentViewer.matched", {
+            count: spreadsheetMatch.matchedTermCount,
+            row: spreadsheetMatch.rowIndex + 1,
+          })}
         </div>
       ) : null}
       <div ref={tableRef} className="flex-1 overflow-auto bg-background p-3 text-xs">

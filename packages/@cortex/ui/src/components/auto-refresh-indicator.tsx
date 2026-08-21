@@ -2,6 +2,7 @@
 
 import { cn } from "@cortex/utils"
 import { Pause, Play, RotateCw } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "./ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
 
@@ -21,6 +22,8 @@ export function AutoRefreshIndicator({
   isRefreshing,
   className,
 }: AutoRefreshIndicatorProps) {
+  const { t } = useTranslation("ui")
+  const toggleLabel = enabled ? t("autoRefresh.pause") : t("autoRefresh.resume")
   return (
     <TooltipProvider delayDuration={300}>
       <div
@@ -36,14 +39,12 @@ export function AutoRefreshIndicator({
               size="icon"
               className="h-6 w-6"
               onClick={() => onToggle(!enabled)}
-              aria-label={enabled ? "Pause auto-refresh" : "Resume auto-refresh"}
+              aria-label={toggleLabel}
             >
               {enabled ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {enabled ? "Pause auto-refresh" : "Resume auto-refresh"}
-          </TooltipContent>
+          <TooltipContent side="bottom">{toggleLabel}</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -52,12 +53,12 @@ export function AutoRefreshIndicator({
               size="icon"
               className="h-6 w-6"
               onClick={onRefresh}
-              aria-label="Refresh now"
+              aria-label={t("autoRefresh.refreshNow")}
             >
               <RotateCw className={cn("h-3 w-3", isRefreshing && "animate-spin")} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">Refresh now</TooltipContent>
+          <TooltipContent side="bottom">{t("autoRefresh.refreshNow")}</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

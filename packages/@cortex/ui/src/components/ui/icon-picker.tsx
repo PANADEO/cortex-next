@@ -4,6 +4,7 @@ import { useVirtualizer } from "@tanstack/react-virtual"
 import type { LucideIcon } from "lucide-react"
 import * as Icons from "lucide-react"
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 
 import { cn } from "@cortex/utils"
 import { Button } from "./button"
@@ -81,6 +82,7 @@ export function IconPicker({
   className,
   autoOpen,
 }: IconPickerProps) {
+  const { t } = useTranslation("ui")
   // Wartość początkowa czytana raz, na pierwszym renderze — dokładnie tyle
   // potrzeba: ten komponent montuje się raz na czas życia strony (gate
   // `isIconPickerActive` w wołającym nie wraca do false), więc `autoOpen`
@@ -114,7 +116,9 @@ export function IconPicker({
           className={cn("w-full justify-start gap-2 font-normal", className)}
         >
           <SelectedIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="truncate">{selected ? selected.label : value || "Wybierz ikonę"}</span>
+          <span className="truncate">
+            {selected ? selected.label : value || t("iconPicker.placeholder")}
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-3" align="start">
@@ -122,8 +126,8 @@ export function IconPicker({
           autoFocus
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Szukaj ikony…"
-          aria-label="Szukaj ikony"
+          placeholder={t("iconPicker.searchPlaceholder")}
+          aria-label={t("iconPicker.searchLabel")}
           className="mb-2"
         />
         <IconGrid query={query} value={value} onSelect={handleSelect} />
@@ -141,6 +145,7 @@ function IconGrid({
   value: string
   onSelect: (name: string) => void
 }) {
+  const { t } = useTranslation("ui")
   const scrollAreaRef = React.useRef<HTMLDivElement>(null)
 
   const filtered = React.useMemo(() => {
@@ -168,7 +173,9 @@ function IconGrid({
   })
 
   if (filtered.length === 0) {
-    return <p className="py-6 text-center text-sm text-muted-foreground">Brak wyników</p>
+    return (
+      <p className="py-6 text-center text-sm text-muted-foreground">{t("iconPicker.noResults")}</p>
+    )
   }
 
   return (

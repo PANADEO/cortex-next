@@ -142,18 +142,18 @@ describe("categorise", () => {
 describe("<ActionLogTimeline>", () => {
   it("renders empty-state copy when events is []", () => {
     render(<ActionLogTimeline events={[]} />)
-    expect(screen.getByText("No actions yet.")).toBeTruthy()
+    expect(screen.getByText("Nie ma jeszcze żadnych akcji.")).toBeTruthy()
   })
 
   it("renders toolbar with filter chips and counts", () => {
     render(<ActionLogTimeline events={FIXTURE} />)
-    const all = screen.getByRole("button", { name: /^All/ })
+    const all = screen.getByRole("button", { name: /^Wszystkie/ })
     expect(within(all).getByText("7")).toBeTruthy()
-    const userEdits = screen.getByRole("button", { name: /^User edits/ })
+    const userEdits = screen.getByRole("button", { name: /^Edycje użytkownika/ })
     expect(within(userEdits).getByText("2")).toBeTruthy()
     const system = screen.getByRole("button", { name: /^System/ })
     expect(within(system).getByText("3")).toBeTruthy()
-    const verification = screen.getByRole("button", { name: /^Verification/ })
+    const verification = screen.getByRole("button", { name: /^Weryfikacja/ })
     expect(within(verification).getByText("2")).toBeTruthy()
   })
 
@@ -180,7 +180,7 @@ describe("<ActionLogTimeline>", () => {
   it("collapse all closes every row", async () => {
     const user = userEvent.setup()
     const { container } = render(<ActionLogTimeline events={FIXTURE} />)
-    await user.click(screen.getByRole("button", { name: "Collapse all" }))
+    await user.click(screen.getByRole("button", { name: "Zwiń wszystko" }))
     const rows = container.querySelectorAll<HTMLDetailsElement>("details")
     for (const row of rows) {
       expect(row.open).toBe(false)
@@ -190,17 +190,17 @@ describe("<ActionLogTimeline>", () => {
   it("expand all opens every row", async () => {
     const user = userEvent.setup()
     const { container } = render(<ActionLogTimeline events={FIXTURE} />)
-    await user.click(screen.getByRole("button", { name: "Expand all" }))
+    await user.click(screen.getByRole("button", { name: "Rozwiń wszystko" }))
     const rows = container.querySelectorAll<HTMLDetailsElement>("details")
     for (const row of rows) {
       expect(row.open).toBe(true)
     }
   })
 
-  it("'User edits' filter hides system and verification rows", async () => {
+  it("filtr edycji użytkownika chowa wiersze systemowe i weryfikacyjne", async () => {
     const user = userEvent.setup()
     const { container } = render(<ActionLogTimeline events={FIXTURE} />)
-    await user.click(screen.getByRole("button", { name: /^User edits/ }))
+    await user.click(screen.getByRole("button", { name: /^Edycje użytkownika/ }))
     const rows = container.querySelectorAll<HTMLDetailsElement>("details")
     expect(rows.length).toBe(2)
   })
@@ -208,7 +208,7 @@ describe("<ActionLogTimeline>", () => {
   it("filter chip applies aria-pressed to the active option", async () => {
     const user = userEvent.setup()
     render(<ActionLogTimeline events={FIXTURE} />)
-    const all = screen.getByRole("button", { name: /^All/ })
+    const all = screen.getByRole("button", { name: /^Wszystkie/ })
     expect(all.getAttribute("aria-pressed")).toBe("true")
     const system = screen.getByRole("button", { name: /^System/ })
     expect(system.getAttribute("aria-pressed")).toBe("false")
@@ -253,10 +253,10 @@ describe("<ActionLogTimeline>", () => {
         ]}
       />,
     )
-    expect(screen.getByText("No additional context")).toBeTruthy()
-    expect(screen.getByText("Fast processing")).toBeTruthy()
-    expect(screen.getByText("Packaging: pallets")).toBeTruthy()
-    expect(screen.queryByText("Field")).toBeNull()
+    expect(screen.getByText("Bez dodatkowego kontekstu")).toBeTruthy()
+    expect(screen.getByText("Szybkie przetwarzanie")).toBeTruthy()
+    expect(screen.getByText("Opakowania: palety")).toBeTruthy()
+    expect(screen.queryByText("Pole")).toBeNull()
   })
 
   it("falls back to JsonViewer for unrecognised payload shapes", () => {
@@ -279,7 +279,7 @@ describe("<ActionLogTimeline>", () => {
     const { container } = render(<ActionLogTimeline events={FIXTURE} />)
     // Switch to "User edits" filter — hasUserToggledRef stays false because
     // changing filter is not a user toggle.
-    await user.click(screen.getByRole("button", { name: /^User edits/ }))
+    await user.click(screen.getByRole("button", { name: /^Edycje użytkownika/ }))
     const rows = container.querySelectorAll<HTMLDetailsElement>("details")
     expect(rows.length).toBe(2)
     expect(rows[0]!.open).toBe(true)

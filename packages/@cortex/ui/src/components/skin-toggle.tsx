@@ -2,6 +2,7 @@
 
 import { cn } from "@cortex/utils"
 import { Palette } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "./ui/button"
 import {
   DropdownMenu,
@@ -27,6 +28,7 @@ interface Props<T extends string> {
 }
 
 export function SkinToggle<T extends string>({ skin, options, onSkinChange, className }: Props<T>) {
+  const { t } = useTranslation("ui")
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -34,14 +36,14 @@ export function SkinToggle<T extends string>({ skin, options, onSkinChange, clas
           variant="ghost"
           size="icon"
           className={cn("h-8 w-8", className)}
-          aria-label="Choose skin"
+          aria-label={t("skinToggle.trigger")}
         >
           <Palette className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
-          Skin
+          {t("skinToggle.heading")}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {options.map((opt) => {

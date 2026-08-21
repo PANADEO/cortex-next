@@ -50,7 +50,7 @@ describe("DocumentViewer", () => {
     )
 
     expect(await screen.findByText("B-2")).toBeInTheDocument()
-    expect(await screen.findByText("Matched 2 fields in row 3.")).toBeInTheDocument()
+    expect(await screen.findByText("Dopasowano 2 pola w wierszu 3.")).toBeInTheDocument()
 
     await waitFor(() => {
       const rows = document.querySelectorAll("table tr")

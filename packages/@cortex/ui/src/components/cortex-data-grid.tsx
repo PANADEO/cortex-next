@@ -16,6 +16,7 @@ import {
 } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Search } from "lucide-react"
 import { useState, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import { DataTable } from "./data-table"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
@@ -179,13 +180,15 @@ export function CortexDataGrid<TData>({
   stickyHeader = false,
   bordered = false,
   searchable = false,
-  searchPlaceholder = "Szukaj...",
+  searchPlaceholder,
   globalFilter: globalFilterProp,
   onGlobalFilterChange,
   sorting: sortingProp,
   onSortingChange,
   pageSize,
 }: CortexDataGridProps<TData>) {
+  const { t } = useTranslation("ui")
+  const searchLabel = searchPlaceholder ?? t("dataGrid.searchPlaceholder")
   const [internalGlobalFilter, setInternalGlobalFilter] = useState("")
   const [internalSorting, setInternalSorting] = useState<SortingState>([])
   const [internalPageIndex, setInternalPageIndex] = useState(0)
@@ -241,8 +244,8 @@ export function CortexDataGrid<TData>({
           <Input
             value={globalFilter}
             onChange={(event) => handleSearchChange(event.target.value)}
-            placeholder={searchPlaceholder}
-            aria-label={searchPlaceholder}
+            placeholder={searchLabel}
+            aria-label={searchLabel}
             className="pl-8"
           />
         </div>
@@ -265,7 +268,10 @@ export function CortexDataGrid<TData>({
       {paginated ? (
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <p>
-            Strona {table.getState().pagination.pageIndex + 1} z {Math.max(table.getPageCount(), 1)}
+            {t("pagination.page", {
+              current: table.getState().pagination.pageIndex + 1,
+              total: Math.max(table.getPageCount(), 1),
+            })}
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -275,7 +281,7 @@ export function CortexDataGrid<TData>({
               disabled={!table.getCanPreviousPage()}
             >
               <ChevronLeft className="mr-1 h-4 w-4" />
-              Poprzednia
+              {t("pagination.previous")}
             </Button>
             <Button
               variant="outline"
@@ -283,7 +289,7 @@ export function CortexDataGrid<TData>({
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
-              Następna
+              {t("pagination.next")}
               <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>

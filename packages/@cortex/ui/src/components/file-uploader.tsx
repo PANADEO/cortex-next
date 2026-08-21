@@ -3,6 +3,7 @@
 import { cn, formatFileSizeBytes } from "@cortex/utils"
 import { FileArchive, Upload, X } from "lucide-react"
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "./ui/button"
 
 interface FileUploaderBaseProps {
@@ -27,6 +28,7 @@ interface FileUploaderUncontrolledProps extends FileUploaderBaseProps {
 type FileUploaderProps = FileUploaderControlledProps | FileUploaderUncontrolledProps
 
 export function FileUploader(props: FileUploaderProps) {
+  const { t } = useTranslation("ui")
   const { accept, multiple = false, description, className } = props
   const controlled = props.value !== undefined
   const inputRef = useRef<HTMLInputElement>(null)
@@ -93,7 +95,7 @@ export function FileUploader(props: FileUploaderProps) {
           <Upload className="h-5 w-5 text-muted-foreground" />
         </div>
         <p className="text-sm font-medium">
-          {multiple ? "Drop files here or click to browse" : "Drop a ZIP or click to browse"}
+          {multiple ? t("fileUploader.dropMany") : t("fileUploader.dropOne")}
         </p>
         {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
         <input

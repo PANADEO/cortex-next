@@ -2,6 +2,7 @@
 
 import { Check, Plus } from "lucide-react"
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 
 import { cn } from "@cortex/utils"
 import { Button } from "./button"
@@ -35,6 +36,7 @@ export function Combobox({
   placeholder,
   className,
 }: ComboboxProps) {
+  const { t } = useTranslation("ui")
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState("")
 
@@ -79,7 +81,7 @@ export function Combobox({
           className={cn("w-full justify-start font-normal", className)}
         >
           <span className={cn("truncate", !value && "text-muted-foreground")}>
-            {value || placeholder || "Wybierz lub wpisz wartość"}
+            {value || placeholder || t("combobox.placeholder")}
           </span>
         </Button>
       </PopoverTrigger>
@@ -89,14 +91,16 @@ export function Combobox({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Szukaj lub wpisz nową wartość…"
-          aria-label="Szukaj lub wpisz nową wartość"
+          placeholder={t("combobox.searchPlaceholder")}
+          aria-label={t("combobox.searchLabel")}
           className="mb-2"
         />
         <ScrollArea className="max-h-60">
           <div className="flex flex-col gap-0.5 pr-2">
             {filtered.length === 0 && !canCreate ? (
-              <p className="px-2 py-3 text-center text-sm text-muted-foreground">Brak wyników</p>
+              <p className="px-2 py-3 text-center text-sm text-muted-foreground">
+                {t("combobox.noResults")}
+              </p>
             ) : (
               filtered.map((option) => (
                 <Button
@@ -125,7 +129,7 @@ export function Combobox({
                 onClick={() => commit(query.trim())}
               >
                 <Plus className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="truncate">Utwórz „{query.trim()}”</span>
+                <span className="truncate">{t("combobox.create", { value: query.trim() })}</span>
               </Button>
             ) : null}
           </div>

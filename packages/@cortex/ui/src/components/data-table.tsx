@@ -9,6 +9,7 @@ import {
   type Row,
 } from "@tanstack/react-table"
 import type { ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import { Skeleton } from "./ui/skeleton"
 
 interface DataTableProps<TData> {
@@ -49,6 +50,7 @@ export function DataTable<TData>({
   stickyHeader = false,
   bordered = false,
 }: DataTableProps<TData>) {
+  const { t } = useTranslation("common")
   const table = useReactTable({
     data,
     columns,
@@ -118,7 +120,7 @@ export function DataTable<TData>({
               <td colSpan={columns.length} className="p-0">
                 {emptyState ?? (
                   <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                    Brak danych
+                    {t("state.empty")}
                   </div>
                 )}
               </td>

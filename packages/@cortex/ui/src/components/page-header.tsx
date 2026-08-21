@@ -3,6 +3,7 @@
 import { cn } from "@cortex/utils"
 import { Info } from "lucide-react"
 import type { ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
 
 interface PageHeaderProps {
@@ -13,6 +14,7 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ title, description, actions, className }: PageHeaderProps) {
+  const { t } = useTranslation("ui")
   return (
     <div
       className={cn(
@@ -27,7 +29,7 @@ export function PageHeader({ title, description, actions, className }: PageHeade
             <TooltipTrigger asChild>
               <button
                 type="button"
-                aria-label="Opis strony"
+                aria-label={t("pageHeader.descriptionLabel")}
                 className="text-muted-foreground transition-colors hover:text-foreground"
               >
                 <Info className="h-3.5 w-3.5" />

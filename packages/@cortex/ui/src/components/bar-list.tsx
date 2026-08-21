@@ -27,18 +27,22 @@ export interface BarListItem {
 
 interface BarListProps {
   items: readonly BarListItem[]
-  /** Domyślnie separator tysięcy wg locale przeglądarki. */
-  formatValue?: (value: number) => string
+  /**
+   * WYMAGANE, i to jest decyzja, nie przeoczenie. Wcześniej domyślna
+   * implementacja formatowała po `pl-PL`, przez co ten pakiet rozstrzygał
+   * język za aplikację — a `@cortex/ui` nie ma i nie może mieć dostępu do
+   * `useLocaleStore` (jest warstwą prezentacji, bez zależności od aplikacji).
+   * Zamiast zgadywać, komponent PYTA wywołującego, który wybór użytkownika zna.
+   * Jedyny konsument (`token-usage/dimension-panel.tsx`) i tak zawsze podawał
+   * tę funkcję, więc wartość domyślna była wyłącznie pułapką na następnego.
+   */
+  formatValue: (value: number) => string
   /** Obcięcie długiego ogona. Bez limitu renderuje wszystko. */
   maxItems?: number
   className?: string
 }
 
-function defaultFormat(value: number): string {
-  return value.toLocaleString("pl-PL")
-}
-
-export function BarList({ items, formatValue = defaultFormat, maxItems, className }: BarListProps) {
+export function BarList({ items, formatValue, maxItems, className }: BarListProps) {
   const visible = maxItems ? items.slice(0, maxItems) : items
   // Skala liczona z WIDOCZNYCH pozycji, nie z całości — po obcięciu ogona
   // najdłuższy słupek ma wypełniać wiersz, a nie zostawiać pustą przestrzeń.

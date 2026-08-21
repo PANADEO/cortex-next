@@ -1,6 +1,7 @@
 "use client"
 
 import { LogOut, User as UserIcon } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Avatar, AvatarFallback } from "./ui/avatar"
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
@@ -30,6 +31,7 @@ function initials(name: string | null | undefined, email: string | null | undefi
 }
 
 export function UserMenu({ user }: UserMenuProps) {
+  const { t } = useTranslation("ui")
   const isIdpAdmin = user?.scopes?.includes("package_unlock") ?? false
 
   const handleLogout = () => {
@@ -43,7 +45,7 @@ export function UserMenu({ user }: UserMenuProps) {
           variant="ghost"
           size="icon"
           className="h-8 w-8 rounded-full p-0"
-          aria-label="User menu"
+          aria-label={t("userMenu.trigger")}
         >
           <Avatar className="h-7 w-7">
             <AvatarFallback className="bg-muted text-[10px] font-semibold">
@@ -60,7 +62,7 @@ export function UserMenu({ user }: UserMenuProps) {
               <p className="truncate text-sm font-medium">{user?.name ?? user?.email ?? "—"}</p>
               {isIdpAdmin ? (
                 <Badge variant="secondary" className="shrink-0 px-1.5 py-0 text-[10px]">
-                  IDP admin
+                  {t("userMenu.adminBadge")}
                 </Badge>
               ) : null}
             </div>
@@ -70,7 +72,7 @@ export function UserMenu({ user }: UserMenuProps) {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
-          Sign out
+          {t("userMenu.signOut")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

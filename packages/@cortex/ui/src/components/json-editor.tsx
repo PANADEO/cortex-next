@@ -3,6 +3,7 @@
 import { cn } from "@cortex/utils"
 import { AlertCircle, Check, RotateCcw } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "./ui/button"
 
 interface JsonEditorProps {
@@ -26,12 +27,13 @@ function stringify(value: unknown): string {
 export function JsonEditor({
   value,
   onSave,
-  saveLabel = "Save",
+  saveLabel,
   disabledReason,
   readOnly = false,
   isSaving = false,
   className,
 }: JsonEditorProps) {
+  const { t } = useTranslation(["ui", "common"])
   const initial = useMemo(() => stringify(value), [value])
   const [draft, setDraft] = useState(initial)
   const [error, setError] = useState<string | null>(null)
@@ -48,7 +50,7 @@ export function JsonEditor({
     try {
       return { ok: true, value: JSON.parse(draft) as unknown }
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : "Invalid JSON" }
+      return { ok: false, error: e instanceof Error ? e.message : t("ui:jsonEditor.invalidJson") }
     }
   }
 
@@ -100,16 +102,16 @@ export function JsonEditor({
           title={disabledReason ?? undefined}
         >
           <Check className="mr-1 h-3.5 w-3.5" />
-          {isSaving ? "Saving…" : saveLabel}
+          {isSaving ? t("ui:jsonEditor.saving") : (saveLabel ?? t("common:actions.save"))}
         </Button>
         <Button size="sm" variant="outline" onClick={handleRevert} disabled={!dirty || isSaving}>
           <RotateCcw className="mr-1 h-3.5 w-3.5" />
-          Revert
+          {t("ui:jsonEditor.revert")}
         </Button>
         {disabledReason ? (
           <span className="text-xs text-muted-foreground">{disabledReason}</span>
         ) : dirty ? (
-          <span className="text-xs text-muted-foreground">Unsaved changes</span>
+          <span className="text-xs text-muted-foreground">{t("ui:jsonEditor.unsaved")}</span>
         ) : null}
       </div>
     </div>

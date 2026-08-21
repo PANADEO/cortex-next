@@ -3,6 +3,7 @@
 import { cn } from "@cortex/utils"
 import type { LucideIcon } from "lucide-react"
 import { Monitor, Moon, Sun } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "./ui/button"
 import {
   DropdownMenu,
@@ -19,13 +20,16 @@ interface ThemeToggleProps {
   className?: string | undefined
 }
 
-const OPTIONS: { value: ThemeMode; label: string; icon: LucideIcon }[] = [
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-  { value: "system", label: "System", icon: Monitor },
+/** Etykiety NIE są tu wpisane — `labelKey` wskazuje klucz w przestrzeni `ui`,
+ *  bo mapa jest stałą modułu i powstaje raz, poza cyklem renderu. */
+const OPTIONS: { value: ThemeMode; labelKey: string; icon: LucideIcon }[] = [
+  { value: "light", labelKey: "themeToggle.light", icon: Sun },
+  { value: "dark", labelKey: "themeToggle.dark", icon: Moon },
+  { value: "system", labelKey: "themeToggle.system", icon: Monitor },
 ]
 
 export function ThemeToggle({ mode, onModeChange, className }: ThemeToggleProps) {
+  const { t } = useTranslation("ui")
   const Icon = mode === "dark" ? Moon : mode === "light" ? Sun : Monitor
   return (
     <DropdownMenu>
@@ -34,7 +38,7 @@ export function ThemeToggle({ mode, onModeChange, className }: ThemeToggleProps)
           variant="ghost"
           size="icon"
           className={cn("h-8 w-8", className)}
-          aria-label="Toggle theme"
+          aria-label={t("themeToggle.trigger")}
         >
           <Icon className="h-4 w-4" />
         </Button>
@@ -50,7 +54,7 @@ export function ThemeToggle({ mode, onModeChange, className }: ThemeToggleProps)
               className={cn(active && "bg-muted")}
             >
               <OptIcon className="mr-2 h-4 w-4" />
-              <span>{opt.label}</span>
+              <span>{t(opt.labelKey)}</span>
             </DropdownMenuItem>
           )
         })}

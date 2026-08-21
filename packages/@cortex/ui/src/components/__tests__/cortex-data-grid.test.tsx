@@ -116,7 +116,7 @@ describe("<CortexDataGrid>", () => {
       )
       expect(bodyRows(container)).toHaveLength(ROWS.length)
 
-      await user.type(screen.getByPlaceholderText("Szukaj..."), "alpha")
+      await user.type(screen.getByPlaceholderText("Szukaj…"), "alpha")
 
       const rows = bodyRows(container)
       expect(rows).toHaveLength(1)
@@ -144,7 +144,7 @@ describe("<CortexDataGrid>", () => {
       const headerButton = screen.getByRole("button", { name: /Name/ })
       expect(document.contains(headerButton)).toBe(true)
 
-      await user.type(screen.getByPlaceholderText("Szukaj..."), "al")
+      await user.type(screen.getByPlaceholderText("Szukaj…"), "al")
 
       // Same DOM node still attached — proves the header wasn't unmounted and
       // remounted by the unrelated search-input re-render (which would have
@@ -161,7 +161,7 @@ describe("<CortexDataGrid>", () => {
       const { container } = render(
         <CortexDataGrid columns={SORTABLE_COLUMNS} data={rowsWithAlphPrefix} searchable />,
       )
-      await user.type(screen.getByPlaceholderText("Szukaj..."), "alph")
+      await user.type(screen.getByPlaceholderText("Szukaj…"), "alph")
       expect(bodyRows(container)).toHaveLength(2) // Alpha, Alphonse
 
       await user.click(screen.getByRole("button", { name: /Name/ }))
@@ -175,7 +175,7 @@ describe("<CortexDataGrid>", () => {
         <CortexDataGrid columns={SORTABLE_COLUMNS} data={ROWS} searchable />,
       )
       await user.click(screen.getByRole("button", { name: /Name/ })) // asc
-      await user.type(screen.getByPlaceholderText("Szukaj..."), "a")
+      await user.type(screen.getByPlaceholderText("Szukaj…"), "a")
       const rows = bodyRows(container).map(firstCellText)
       const sorted = [...rows].sort((a, b) => (a ?? "").localeCompare(b ?? ""))
       expect(rows).toEqual(sorted)

@@ -22,7 +22,7 @@ describe("UserMenu", () => {
 
     await userEvent.click(screen.getByRole("button"))
 
-    expect(screen.getByText("IDP admin")).toBeInTheDocument()
+    expect(screen.getByText("Admin IDP")).toBeInTheDocument()
   })
 
   it("does not show IDP admin badge without package unlock scope", async () => {
@@ -37,6 +37,6 @@ describe("UserMenu", () => {
 
     await userEvent.click(screen.getByRole("button"))
 
-    expect(screen.queryByText("IDP admin")).not.toBeInTheDocument()
+    expect(screen.queryByText("Admin IDP")).not.toBeInTheDocument()
   })
 })
