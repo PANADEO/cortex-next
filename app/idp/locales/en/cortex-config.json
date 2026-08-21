@@ -4,53 +4,26 @@
     "catalogTitle": "No access to the catalog",
     "message": "The Cortex Config panel requires administrator permissions."
   },
-  "state": {
-    "loadingConfig": "Loading configuration...",
-    "loadingCatalog": "Loading catalog..."
+  "agents": {
+    "orgTitle": "Organization rules",
+    "orgDescription": "The global layer - it reaches every agent on the platform, before the department layers.",
+    "orgPlaceholder": "e.g. Answer in English. Do not share personal data.\nName artifacts using the YYYYMMDD_name convention.",
+    "deptTitle": "Department rules",
+    "deptDescription": "A tile pinned to a department inherits the layers along its path: e.g. \"finance/controlling\" gets the \"finance\" rules, then \"finance/controlling\".",
+    "noDepartments": "No departments - add them in the resource catalog.",
+    "deptPlaceholder": "Rules inherited by tiles of the {{department}} department…",
+    "saved": "Saved",
+    "save": "Save AGENTS.md",
+    "order": "Composition order: organization → departments (along the path) → tile instructions → user note."
   },
-  "nav": {
-    "backToCatalog": "Resource catalog",
-    "backToGovernance": "Roles and access",
-    "backToProjects": "Projects"
-  },
-  "fields": {
-    "id": "Identifier",
-    "name": "Name",
-    "description": "Description",
-    "type": "Type",
-    "department": "Department",
-    "active": "Enabled"
-  },
-  "pages": {
-    "projects": {
-      "title": "Agent projects",
-      "description": "Task-chat tiles configured centrally: model, skills per role, sandbox and artifact export."
-    },
-    "catalog": {
-      "title": "Resource catalog",
-      "description": "A department tree of skills, connectors and secrets - built centrally, picked in projects as building blocks."
-    },
-    "agents": {
-      "description": "Hierarchical agent instructions: organization → departments → tile → user. You edit the admin layers here."
-    },
-    "credentials": {
-      "title": "Secrets",
-      "description": "Credential store: a key/subkey tree per department. Values are write-only - consumed through references in connectors and models."
-    },
-    "governance": {
-      "title": "Roles and access",
-      "description": "Roles as access gates, user assignments and panel administrators."
-    }
-  },
-  "projects": {
-    "intro": "Agent tiles (task-chat) configured centrally - every project is a separate hub tile with its own model, building blocks and sandbox.",
-    "new": "New project",
-    "emptyTitle": "No projects",
-    "emptyDescription": "Create the first agent tile for your department.",
-    "toggleAria": "Tile {{name}} enabled",
-    "blocksBadge": "blocks: {{n}}",
-    "openChat": "Open chat",
-    "deleteConfirm": "Delete project \"{{name}}\"? Sessions and artifacts will stay on disk."
+  "assignmentEditor": {
+    "editTitle": "User roles: {{email}}",
+    "newTitle": "Assign roles",
+    "description": "A central email → role assignment; the first assignment turns open mode off.",
+    "emailLabel": "User email",
+    "emailPlaceholder": "user@company.com",
+    "rolesLabel": "Roles",
+    "rolesEmpty": "Create a role first."
   },
   "catalog": {
     "departmentsTitle": "Departments",
@@ -75,6 +48,26 @@
     "editConnectorAria": "Edit connector {{name}}",
     "deleteConnectorAria": "Delete connector {{name}}"
   },
+  "connectorEditor": {
+    "notFoundTitle": "Connector not found",
+    "notFoundMessage": "There is no connector \"{{id}}\".",
+    "editTitle": "Edit connector: {{name}}",
+    "newTitle": "New connector",
+    "description": "An agent tool: an MCP server or a CLI, with secrets passed by reference.",
+    "identitySection": "Identity",
+    "connectionSection": "Connection",
+    "connectionDescription": "Secret values never reach the configuration - only references to paths in Secrets.",
+    "serverUrl": "Server URL",
+    "toolPath": "Path to the tool",
+    "refsHeaders": "Headers",
+    "refsEnvVars": "Environment variables",
+    "refsLabel": "{{kind}} → secret reference (name=path, one per line)",
+    "refsPlaceholderMcp": "Authorization=finance/jira/token",
+    "refsPlaceholderCli": "API_TOKEN=finance/token",
+    "baseArgs": "Fixed arguments (optional)",
+    "kindMcp": "MCP server",
+    "kindCli": "CLI tool"
+  },
   "credentials": {
     "title": "Credential store",
     "description": "Secrets for connectors and model keys (a key/subkey tree). Values are stored server-side and never come back to the browser - you can only overwrite them.",
@@ -86,7 +79,15 @@
     "deleteConfirm": "Delete secret \"{{path}}\"?",
     "pathLabel": "Path (key/subkey)",
     "valueLabel": "Value",
-    "valuePlaceholder": "secret..."
+    "valuePlaceholder": "secret…"
+  },
+  "fields": {
+    "id": "Identifier",
+    "name": "Name",
+    "description": "Description",
+    "type": "Type",
+    "department": "Department",
+    "active": "Enabled"
   },
   "governance": {
     "openModeTitle": "Open mode:",
@@ -115,65 +116,36 @@
     "leavesLabel": "Individual resources",
     "coveredByBranch": "covered by branch"
   },
+  "nav": {
+    "backToCatalog": "Resource catalog",
+    "backToGovernance": "Roles and access",
+    "backToProjects": "Projects"
+  },
+  "pages": {
+    "projects": {
+      "title": "Agent projects",
+      "description": "Task-chat tiles configured centrally: model, skills per role, sandbox and artifact export."
+    },
+    "catalog": {
+      "title": "Resource catalog",
+      "description": "A department tree of skills, connectors and secrets - built centrally, picked in projects as building blocks."
+    },
+    "agents": {
+      "description": "Hierarchical agent instructions: organization → departments → tile → user. You edit the admin layers here."
+    },
+    "credentials": {
+      "title": "Secrets",
+      "description": "Credential store: a key/subkey tree per department. Values are write-only - consumed through references in connectors and models."
+    },
+    "governance": {
+      "title": "Roles and access",
+      "description": "Roles as access gates, user assignments and panel administrators."
+    }
+  },
   "pickers": {
     "selectDepartment": "Choose a department",
     "noDepartments": "No departments.",
     "newPathPlaceholder": "new/path"
-  },
-  "agents": {
-    "orgTitle": "Organization rules",
-    "orgDescription": "The global layer - it reaches every agent on the platform, before the department layers.",
-    "orgPlaceholder": "e.g. Answer in English. Do not share personal data.\nName artifacts using the YYYYMMDD_name convention.",
-    "deptTitle": "Department rules",
-    "deptDescription": "A tile pinned to a department inherits the layers along its path: e.g. \"finance/controlling\" gets the \"finance\" rules, then \"finance/controlling\".",
-    "noDepartments": "No departments - add them in the resource catalog.",
-    "deptPlaceholder": "Rules inherited by tiles of the {{department}} department...",
-    "saved": "Saved",
-    "save": "Save AGENTS.md",
-    "order": "Composition order: organization → departments (along the path) → tile instructions → user note."
-  },
-  "connectorEditor": {
-    "notFoundTitle": "Connector not found",
-    "notFoundMessage": "There is no connector \"{{id}}\".",
-    "editTitle": "Edit connector: {{name}}",
-    "newTitle": "New connector",
-    "description": "An agent tool: an MCP server or a CLI, with secrets passed by reference.",
-    "identitySection": "Identity",
-    "connectionSection": "Connection",
-    "connectionDescription": "Secret values never reach the configuration - only references to paths in Secrets.",
-    "serverUrl": "Server URL",
-    "toolPath": "Path to the tool",
-    "refsHeaders": "Headers",
-    "refsEnvVars": "Environment variables",
-    "refsLabel": "{{kind}} → secret reference (name=path, one per line)",
-    "refsPlaceholderMcp": "Authorization=finance/jira/token",
-    "refsPlaceholderCli": "API_TOKEN=finance/token",
-    "baseArgs": "Fixed arguments (optional)"
-  },
-  "sourceEditor": {
-    "notFoundTitle": "Skill source not found",
-    "notFoundMessage": "There is no source \"{{id}}\".",
-    "editTitle": "Edit source: {{name}}",
-    "newTitle": "New skill source",
-    "description": "A folder on disk scanned into the catalog; the skills land under the chosen department.",
-    "folderLabel": "Folder on disk (absolute)",
-    "folderPlaceholder": "/mnt/skills/finance"
-  },
-  "roleEditor": {
-    "notFoundTitle": "Role not found",
-    "notFoundMessage": "There is no role \"{{id}}\".",
-    "editTitle": "Edit role: {{name}}",
-    "newTitle": "New role",
-    "description": "A role is an access gate - it decides who sees and opens tiles. The content is defined by the project's building blocks."
-  },
-  "assignmentEditor": {
-    "editTitle": "User roles: {{email}}",
-    "newTitle": "Assign roles",
-    "description": "A central email → role assignment; the first assignment turns open mode off.",
-    "emailLabel": "User email",
-    "emailPlaceholder": "user@company.com",
-    "rolesLabel": "Roles",
-    "rolesEmpty": "Create a role first."
   },
   "projectEditor": {
     "tabs": {
@@ -256,5 +228,35 @@
     "exportDirPlaceholder": "/mnt/dept-finance/artifacts",
     "exportDisplayLabel": "Path shown to users",
     "exportDisplayPlaceholder": "\\\\nas\\finance\\artifacts"
+  },
+  "projects": {
+    "intro": "Agent tiles (task-chat) configured centrally - every project is a separate hub tile with its own model, building blocks and sandbox.",
+    "new": "New project",
+    "emptyTitle": "No projects",
+    "emptyDescription": "Create the first agent tile for your department.",
+    "toggleAria": "Tile {{name}} enabled",
+    "blocksBadge": "blocks: {{n}}",
+    "openChat": "Open chat",
+    "deleteConfirm": "Delete project \"{{name}}\"? Sessions and artifacts will stay on disk."
+  },
+  "roleEditor": {
+    "notFoundTitle": "Role not found",
+    "notFoundMessage": "There is no role \"{{id}}\".",
+    "editTitle": "Edit role: {{name}}",
+    "newTitle": "New role",
+    "description": "A role is an access gate - it decides who sees and opens tiles. The content is defined by the project's building blocks."
+  },
+  "sourceEditor": {
+    "notFoundTitle": "Skill source not found",
+    "notFoundMessage": "There is no source \"{{id}}\".",
+    "editTitle": "Edit source: {{name}}",
+    "newTitle": "New skill source",
+    "description": "A folder on disk scanned into the catalog; the skills land under the chosen department.",
+    "folderLabel": "Folder on disk (absolute)",
+    "folderPlaceholder": "/mnt/skills/finance"
+  },
+  "state": {
+    "loadingConfig": "Loading configuration…",
+    "loadingCatalog": "Loading catalog…"
   }
 }

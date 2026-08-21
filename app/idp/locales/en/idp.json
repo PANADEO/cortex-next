@@ -63,6 +63,1035 @@
       "empty": "No versions yet. Compile and save the first one.",
       "current": "current",
       "load": "Load"
+    },
+    "categories": {
+      "transport_allocation": "Transport allocation",
+      "aggregation": "Aggregation",
+      "split": "Split",
+      "lookup": "Lookup",
+      "currency": "Currency",
+      "tax": "Tax",
+      "weight_derivation": "Weight derivation",
+      "custom": "Custom"
+    },
+    "statuses": {
+      "draft": "Draft",
+      "active": "Active",
+      "archived": "Archived"
+    },
+    "triggers": {
+      "manual": "Manual",
+      "auto_on_extraction": "Auto on extraction"
+    },
+    "attachments": {
+      "intro": "Rules transform extracted data after analysis. Auto-triggered rules run on every extraction; manual rules require explicit run.",
+      "attach": "Attach rule",
+      "dialogTitle": "Attach a rule",
+      "dialogDescription": "Pick from active rules. Manual triggers require explicit run; auto runs on every extraction.",
+      "ruleLabel": "Rule",
+      "rulePlaceholder": "Pick a rule…",
+      "noneAvailable": "No more active rules to attach",
+      "triggerLabel": "Trigger",
+      "confirm": "Attach",
+      "emptyTitle": "No rules attached",
+      "emptyDescription": "Attach a rule to transform extracted data — allocations, aggregations, lookups.",
+      "attachedAt": "Attached {{date}} · last run {{lastRun}}",
+      "never": "never",
+      "run": "Run",
+      "toasts": {
+        "pickFirst": "Pick a rule first.",
+        "attached": "Rule attached",
+        "ran": "Ran {{name}}",
+        "detached": "Rule detached"
+      }
+    },
+    "list": {
+      "title": "Rule editor",
+      "description": "Customs transformations defined in plain language, compiled to Python by AI.",
+      "untitled": "Untitled rule",
+      "newRule": "New rule",
+      "templateDialogTitle": "Start from a template",
+      "templateDialogDescription": "Pick a customs preset or start blank. You can edit the natural-language definition in the next step.",
+      "orStartFromScratch": "Or start from scratch.",
+      "blankRule": "Blank rule",
+      "searchPlaceholder": "Search rules…",
+      "allStatuses": "All statuses",
+      "allCategories": "All categories",
+      "refreshing": "Refreshing…",
+      "total_one": "{{count}} rule",
+      "total_few": "{{count}} rules",
+      "total_many": "{{count}} rules",
+      "total_other": "{{count}} rules",
+      "emptyTitle": "No rules yet",
+      "emptyDescription": "Pick a customs preset or write your own in plain language.",
+      "columnName": "Name",
+      "columnCategory": "Category",
+      "columnStatus": "Status",
+      "columnVersion": "Version",
+      "columnTrigger": "Trigger",
+      "columnPackages": "Packages",
+      "columnLastRun": "Last run",
+      "columnActions": "Actions",
+      "open": "Open",
+      "triggerAuto": "Auto",
+      "triggerManual": "Manual"
+    }
+  },
+  "board": {
+    "dashboardTitle": "Dashboard",
+    "pageTitle": "Pipeline board",
+    "columns": {
+      "processing": {
+        "label": "Processing",
+        "description": "Packages being analysed by AI"
+      },
+      "ready": {
+        "label": "Ready",
+        "description": "Waiting for human verification"
+      },
+      "verifying": {
+        "label": "Verifying",
+        "description": "Currently being verified"
+      },
+      "done": {
+        "label": "Exported",
+        "description": "Verified, promoted, ready to ship"
+      }
+    },
+    "column": {
+      "empty": "No packages here"
+    },
+    "stats": {
+      "errors": "Errors"
+    },
+    "filters": {
+      "allPackages": "All packages",
+      "dirtyOnly": "Dirty only",
+      "cleanOnly": "Clean only",
+      "loading": "Loading…",
+      "onBoard": "{{n}} on board"
+    },
+    "search": {
+      "placeholder": "Search by package name, ID, customer…",
+      "clear": "Clear search",
+      "open": "Open search"
+    },
+    "card": {
+      "kindDirty": "Dirty",
+      "kindClean": "Clean",
+      "docCount_one": "{{count}} doc",
+      "docCount_few": "{{count}} docs",
+      "docCount_many": "{{count}} docs",
+      "docCount_other": "{{count}} docs",
+      "needsReviewCount_one": "{{count}} needs review",
+      "needsReviewCount_few": "{{count}} need review",
+      "needsReviewCount_many": "{{count}} need review",
+      "needsReviewCount_other": "{{count}} need review",
+      "processingError": "Processing error",
+      "unassigned": "Unassigned"
+    },
+    "owner": {
+      "allOwners": "All owners",
+      "nobody": "Nobody",
+      "justMe": "Just me",
+      "unassigned": "Unassigned",
+      "ownersCount": "{{n}} owners",
+      "myView": "My view",
+      "showPackagesOf": "Show packages of",
+      "selectAll": "All",
+      "selectNone": "None",
+      "hintYou": "you",
+      "hintNoOwner": "no owner",
+      "hintNoOwnerDirty": "no owner (incl. dirty)",
+      "allIncluded": "All owners included"
+    }
+  },
+  "classification": {
+    "docType": {
+      "invoice": "Invoice",
+      "packing_list": "Packing list",
+      "translation_sheet": "Translation",
+      "code_assignment": "Code table",
+      "bill_of_lading": "Bill of lading",
+      "certificate_of_origin": "Cert. of origin",
+      "correspondence": "Correspondence",
+      "other": "Other",
+      "skip": "Skip"
+    },
+    "docMode": {
+      "process": "Process (LLM)",
+      "pass_through": "Pass-through",
+      "skip": "Skip"
+    },
+    "dirtyStatus": {
+      "needs_classification": "Needs classification",
+      "classifying": "Classifying",
+      "classified": "Classified",
+      "promoted": "Promoted",
+      "archived": "Archived"
+    },
+    "loading": "Loading classification…",
+    "list": {
+      "title": "Classification",
+      "description": "Triage uploaded documents into clean packages with AI assistance.",
+      "columnName": "Name",
+      "columnId": "ID",
+      "columnCustomer": "Customer",
+      "columnStatus": "Status",
+      "columnDocuments": "Documents",
+      "columnCreated": "Created",
+      "columnActions": "Actions",
+      "needReview_one": "{{count}} needs review",
+      "needReview_few": "{{count}} need review",
+      "needReview_many": "{{count}} need review",
+      "needReview_other": "{{count}} need review",
+      "open": "Open",
+      "searchPlaceholder": "Search by name…",
+      "allStatuses": "All statuses",
+      "refreshing": "Refreshing…",
+      "total": "{{n}} total",
+      "sortBy": "Sort by",
+      "sortCreated": "Created date",
+      "sortName": "Name",
+      "sortStatus": "Status",
+      "sortAscending": "Sort ascending",
+      "sortDescending": "Sort descending",
+      "resetFilters": "Reset filters",
+      "emptyTitle": "No dirty packages",
+      "emptyDescription": "Upload a mixed bundle of documents to start triage."
+    },
+    "workspace": {
+      "loadingPackage": "Loading dirty package…",
+      "errorTitle": "Could not load classification workspace",
+      "errorMessage": "The dirty package may have been removed or never existed.",
+      "autoClassifyDone": "AI classified {{docs}} doc(s), proposed {{drafts}} draft(s)",
+      "promoted_one": "Promoted to {{count}} clean package",
+      "promoted_few": "Promoted to {{count}} clean packages",
+      "promoted_many": "Promoted to {{count}} clean packages",
+      "promoted_other": "Promoted to {{count}} clean packages",
+      "promotedSkipped_one": "{{count}} doc skipped",
+      "promotedSkipped_few": "{{count}} docs skipped",
+      "promotedSkipped_many": "{{count}} docs skipped",
+      "promotedSkipped_other": "{{count}} docs skipped",
+      "back": "Back",
+      "reviewedCount": "{{done}}/{{total}} reviewed",
+      "autoReclassify": "Auto-reclassify with AI",
+      "promote": "Promote to processing",
+      "confirmTitle_one": "Promote to {{count}} clean package?",
+      "confirmTitle_few": "Promote to {{count}} clean packages?",
+      "confirmTitle_many": "Promote to {{count}} clean packages?",
+      "confirmTitle_other": "Promote to {{count}} clean packages?",
+      "confirmBody": "{{process}} document(s) will be sent to LLM processing, {{passThrough}} will be attached as reference, and {{skip}} will be dropped.",
+      "promoting": "Promoting…",
+      "promoteAction": "Promote"
+    },
+    "tree": {
+      "documents": "Documents · {{n}}",
+      "reviewed": "{{n}} reviewed"
+    },
+    "drafts": {
+      "title": "Clean package drafts · {{n}}",
+      "defaultName": "Clean package {{letter}}",
+      "docCount": "Docs: {{n}}",
+      "empty": "Drag documents here or assign via the Target dropdown.",
+      "newDraft": "New draft"
+    },
+    "preview": {
+      "loadingViewer": "Loading viewer…",
+      "selectPrompt": "Select a document on the left to preview and edit its classification.",
+      "pages": "Pages: {{n}}",
+      "confidence": "AI confidence {{n}}%",
+      "markedReviewed": "Marked as reviewed",
+      "reviewed": "Reviewed",
+      "markReviewed": "Mark reviewed",
+      "typeLabel": "Type",
+      "modeLabel": "Mode",
+      "targetPackagesLabel": "Target packages",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Free-text reviewer notes…",
+      "noInlineTitle": "No inline preview",
+      "noInlineBody": "{{type}} files are attached as references — open externally if you need to peek.",
+      "loadingFile": "Loading {{name}}…",
+      "loadFailed": "Failed to load document content."
+    },
+    "target": {
+      "unassigned": "— Unassigned —",
+      "allPackages": "All {{n}} packages",
+      "somePackages": "{{n}} packages",
+      "heading": "Assign to clean packages",
+      "selectAll": "All",
+      "selectNone": "None",
+      "empty": "No draft clean packages yet. Create one on the right."
+    }
+  },
+  "auditLog": {
+    "title": "Audit log",
+    "description": "Cross-package event history.",
+    "refresh": "Refresh",
+    "columnWhen": "When",
+    "columnEvent": "Event",
+    "columnPackage": "Package",
+    "columnActor": "Actor",
+    "eventTypePlaceholder": "Event type",
+    "allEvents": "All events",
+    "performedByPlaceholder": "Performed by…",
+    "refreshing": "Refreshing…",
+    "unknownAction": "Unknown event",
+    "total_one": "{{count}} event",
+    "total_few": "{{count}} events",
+    "total_many": "{{count}} events",
+    "total_other": "{{count}} events",
+    "emptyTitle": "No events match",
+    "emptyDescription": "Try clearing filters.",
+    "actions": {
+      "imported": "Imported",
+      "imported_with_error": "Imported with error",
+      "analysing": "Analysing",
+      "analysis_failed": "Analysis failed",
+      "ready_for_verification": "Ready for verification",
+      "verification": "Verification",
+      "cancel_verification": "Cancel verification",
+      "unlock_verification": "Unlock verification",
+      "verified": "Verified",
+      "reset_verification": "Reset verification",
+      "seller_updated": "Seller updated",
+      "buyer_updated": "Buyer updated",
+      "consignor_updated": "Consignor updated",
+      "consignee_updated": "Consignee updated",
+      "invoice_updated": "Invoice updated",
+      "invoice_line_updated": "Invoice line updated",
+      "invoice_totals_updated": "Invoice totals updated",
+      "delivery_terms_updated": "Delivery terms updated",
+      "transport_info_updated": "Transport info updated",
+      "sad_context_updated": "SAD context updated",
+      "custom_status_updated": "Custom status updated",
+      "user_notes_updated": "User notes updated",
+      "deleted": "Deleted",
+      "restored": "Restored"
+    }
+  },
+  "packages": {
+    "columns": {
+      "selectAll": "Select all on page",
+      "selectRow": "Select {{name}}",
+      "file": "File",
+      "uploader": "Uploader",
+      "created": "Created",
+      "status": "Status",
+      "assignee": "Assignee"
+    },
+    "list": {
+      "title": "Extraction",
+      "description": "Browse, filter, and manage all document packages.",
+      "searchPlaceholder": "Search by package or file name…",
+      "processingPlaceholder": "Processing",
+      "allProcessing": "All processing",
+      "verificationPlaceholder": "Verification",
+      "allVerification": "All verification",
+      "customStatusPlaceholder": "Custom status",
+      "assignedToMe": "Assigned to me",
+      "uploadedByMe": "Uploaded by me",
+      "refreshing": "Refreshing…",
+      "total": "{{n}} total",
+      "sortBy": "Sort by",
+      "sortCreated": "Created date",
+      "sortPackageName": "Package name",
+      "sortFileName": "File name",
+      "sortProcessingState": "Processing state",
+      "sortAscending": "Sort ascending",
+      "sortDescending": "Sort descending",
+      "resetFilters": "Reset filters",
+      "selectedCount_one": "<n>{{count}}</n> selected",
+      "selectedCount_few": "<n>{{count}}</n> selected",
+      "selectedCount_many": "<n>{{count}}</n> selected",
+      "selectedCount_other": "<n>{{count}}</n> selected",
+      "clearSelection": "Clear",
+      "deleteSelected": "Delete selected",
+      "deleted_one": "Deleted {{count}} package",
+      "deleted_few": "Deleted {{count}} packages",
+      "deleted_many": "Deleted {{count}} packages",
+      "deleted_other": "Deleted {{count}} packages",
+      "emptyTitle": "No packages match",
+      "emptyDescription": "Try clearing filters or importing a new package.",
+      "confirmDeleteTitle_one": "Delete {{count}} package?",
+      "confirmDeleteTitle_few": "Delete {{count}} packages?",
+      "confirmDeleteTitle_many": "Delete {{count}} packages?",
+      "confirmDeleteTitle_other": "Delete {{count}} packages?",
+      "confirmDeleteBody": "Packages are soft-deleted — they can be restored later via the API. Proceed with delete?"
+    },
+    "detail": {
+      "readOnlyActionHelp": "This action is available for the assignee or IDP admin.",
+      "transitions": {
+        "start_verification": "Start verification",
+        "cancel_verification": "Cancel verification",
+        "unlock_verification": "Unlock package",
+        "finish_verification": "Finish verification",
+        "reset_verification": "Reset verification",
+        "reprocess": "Reprocess"
+      },
+      "transitionSucceeded": "{{label}} succeeded",
+      "zipStarted": "ZIP download started",
+      "openVerification": "Open verification workspace",
+      "downloadZip": "Download ZIP",
+      "showStructure": "Show structure",
+      "readOnlyVerification": "Read-only verification.",
+      "noTransitions": "No transitions available.",
+      "loadingTitle": "Loading…",
+      "back": "Back",
+      "loadingDetails": "Loading package details…",
+      "assignedTo": "Assigned to",
+      "expandSummary": "Expand package summary",
+      "collapseSummary": "Collapse package summary",
+      "uploadedLabel": "Uploaded",
+      "byLabel": "by",
+      "hashLabel": "Hash",
+      "actionsTitle": "Actions",
+      "tabs": {
+        "transport": "Transport orders",
+        "metadata": "Metadata",
+        "analysis": "Analysis result",
+        "rules": "Rules",
+        "actions": "Action log",
+        "source": "Source materials"
+      },
+      "meta": {
+        "uploadedAt": "Uploaded at",
+        "size": "Size",
+        "tokens": "Tokens",
+        "llmCost": "LLM cost"
+      },
+      "analysisReadOnly": "Read-only. Only the current assignee ({{assignee}}) can edit.",
+      "analysisSaveLabel": "Save verified result",
+      "analysisDisabledReason": "Field-level edits go through transport-order endpoints; full-document save is pending backend support.",
+      "analysisNotAvailable": "Analysis result not available yet.",
+      "notFound": "Package not found.",
+      "structureTitle": "Analysis structure",
+      "structureDescription": "Raw extracted JSON. Field-level edits happen via the Transport orders tab.",
+      "structureEmpty": "No analysis result available."
+    },
+    "metadata": {
+      "customStatusLabel": "Custom status",
+      "customStatusPlaceholder": "e.g. manual-review",
+      "saveCustomStatus": "Save custom status",
+      "customStatusSaved": "Custom status saved",
+      "aiContextLabel": "Additional AI context",
+      "aiContextPlaceholder": "e.g. 'Invoices from DHL — totals in EUR, VAT included.'",
+      "aiContextHint": "Used by AI on next re-process. {{used}} / {{max}}",
+      "saveAiContext": "Save context",
+      "aiContextSaved": "AI context saved",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Private notes about this package…",
+      "saveNotes": "Save notes",
+      "notesSaved": "Notes saved",
+      "lastUpdated": "Last updated {{when}}"
+    },
+    "transportSummary": {
+      "order": "Transport order",
+      "route": "Route",
+      "mode": "Mode",
+      "invoices": "Invoices",
+      "total": "Total"
+    }
+  },
+  "verify": {
+    "readOnlyActionHelp": "This action is available for the assignee or IDP admin.",
+    "savedLines_one": "Saved {{count}} line",
+    "savedLines_few": "Saved {{count}} lines",
+    "savedLines_many": "Saved {{count}} lines",
+    "savedLines_other": "Saved {{count}} lines",
+    "packageUnlocked": "Package unlocked",
+    "backToPackage": "Back to package",
+    "workspaceTitle": "Verification workspace",
+    "loading": "Loading…",
+    "readOnly": "Read-only",
+    "hidePreviewAria": "Hide document preview",
+    "showPreviewAria": "Show document preview",
+    "hidePreview": "Hide preview",
+    "showPreview": "Show preview",
+    "onlyAssigneeCanEdit": "Only {{assignee}} can edit",
+    "assigneeFallback": "assignee",
+    "startToEdit": "Start verification to edit",
+    "unlockPackage": "Unlock package",
+    "loadingWorkspace": "Loading workspace…",
+    "noInvoices": "No invoices extracted for this package.",
+    "scrollTabsLeft": "Scroll invoice tabs left",
+    "scrollTabsRight": "Scroll invoice tabs right",
+    "showAllInvoices": "Show all invoices",
+    "invoiceTab": "Invoice {{label}}"
+  },
+  "sourceMaterials": {
+    "loadingViewer": "Loading viewer…",
+    "loadingFiles": "Loading source files…",
+    "empty": "No source files for this package.",
+    "scrollLeft": "Scroll tabs left",
+    "scrollRight": "Scroll tabs right",
+    "showAllFiles": "Show all files",
+    "selected": "Source selected",
+    "page": "page {{n}}",
+    "highlights_one": "{{count}} highlight",
+    "highlights_few": "{{count}} highlights",
+    "highlights_many": "{{count}} highlights",
+    "highlights_other": "{{count}} highlights",
+    "noInlinePreview": "No inline preview. Download via the export actions above.",
+    "loadingFile": "Loading {{name}}…",
+    "loadFailed": "Failed to load file."
+  },
+  "transportOrders": {
+    "sections": {
+      "transportInfo": "Transport info",
+      "header": "Header",
+      "deliveryTerms": "Delivery terms",
+      "totals": "Totals"
+    },
+    "form": {
+      "reset": "Reset",
+      "invalid": "Invalid"
+    },
+    "validation": {
+      "numeric": "Must be numeric (decimal with dot)",
+      "isoCountry": "ISO country code",
+      "isoCurrency": "ISO currency code",
+      "date": "YYYY-MM-DD",
+      "incoterms": "e.g. CIP, DAP"
+    },
+    "invoiceLabel": "Invoice {{number}}",
+    "noInvoiceData": "No invoice data",
+    "columnsDialog": {
+      "trigger": "Configure invoice line columns",
+      "triggerLabel": "Columns",
+      "title": "Invoice line columns",
+      "description": "Choose which invoice line columns are visible in the list and verification workspace.",
+      "atLeastOne": "At least one invoice line column must stay visible.",
+      "resetDefaults": "Reset defaults"
+    },
+    "grid": {
+      "title": "Invoice lines",
+      "downloadCsv": "Download CSV",
+      "empty": "No invoice lines extracted.",
+      "editLine": "Edit line",
+      "editLineTitle": "Edit line {{number}}",
+      "editLineDescription": "Changes are submitted with the entire invoice line list."
+    },
+    "spreadsheet": {
+      "title_one": "Invoice {{number}} — {{count}} line",
+      "title_few": "Invoice {{number}} — {{count}} lines",
+      "title_many": "Invoice {{number}} — {{count}} lines",
+      "title_other": "Invoice {{number}} — {{count}} lines",
+      "unsaved": "Unsaved changes",
+      "saveLines": "Save lines",
+      "total": "Total"
+    },
+    "panel": {
+      "emptyTitle": "No transport orders extracted yet",
+      "emptyDescription": "Once analysis finishes, extracted transport orders will appear here.",
+      "orderHeading": "Transport order {{label}}"
+    },
+    "toasts": {
+      "transportInfo": "Transport info updated",
+      "sadContext": "SAD context updated",
+      "invoice": "Invoice updated",
+      "deliveryTerms": "Delivery terms updated",
+      "totals": "Totals updated",
+      "lines": "Lines updated",
+      "party": "{{label}} updated"
+    },
+    "parties": {
+      "seller": "Seller",
+      "buyer": "Buyer",
+      "consignor": "Consignor",
+      "consignee": "Consignee"
+    },
+    "header": {
+      "title": "Header data",
+      "noData": "No header data",
+      "notProvided": "Not provided",
+      "invoiceSection": "Invoice",
+      "rowNumber": "Number",
+      "rowDate": "Date",
+      "rowRoute": "Route"
+    },
+    "sad": {
+      "declaration": "Declaration",
+      "transport": "Transport",
+      "field54": "Field 54",
+      "agent": "Agent",
+      "defaults": "Defaults",
+      "mustBeJsonList": "{{label}} must be a JSON list",
+      "itemsMustBeObjects": "{{label}} items must be JSON objects",
+      "invalidJson": "Invalid JSON: {{detail}}"
+    },
+    "lineColumns": {
+      "line_number": {
+        "label": "Line #",
+        "grid": "#",
+        "sheet": "#"
+      },
+      "po_number": {
+        "label": "PO number",
+        "grid": "PO number",
+        "sheet": "PO"
+      },
+      "product_code": {
+        "label": "Product code",
+        "grid": "Product code",
+        "sheet": "Product"
+      },
+      "description": {
+        "label": "Description",
+        "grid": "Description",
+        "sheet": "Description"
+      },
+      "description_pl": {
+        "label": "Polish name",
+        "grid": "Polish name",
+        "sheet": "Polish name"
+      },
+      "customs_code": {
+        "label": "Customs code",
+        "grid": "Customs code",
+        "sheet": "Customs code"
+      },
+      "preference_code": {
+        "label": "Preference code",
+        "grid": "Pref.",
+        "sheet": "Pref."
+      },
+      "atr_documents": {
+        "label": "Pref. docs",
+        "grid": "Pref. docs",
+        "sheet": "Pref. docs"
+      },
+      "quantity": {
+        "label": "Quantity",
+        "grid": "Qty",
+        "sheet": "Qty"
+      },
+      "unit_of_measure": {
+        "label": "Unit of measure",
+        "grid": "UoM",
+        "sheet": "UoM"
+      },
+      "invoice_value": {
+        "label": "Invoice value",
+        "grid": "Value",
+        "sheet": "Value"
+      },
+      "net_weight_kg": {
+        "label": "Net weight (kg)",
+        "grid": "Net wt (kg)",
+        "sheet": "Net kg"
+      },
+      "gross_weight_kg": {
+        "label": "Gross weight (kg)",
+        "grid": "Gross wt (kg)",
+        "sheet": "Gross kg"
+      },
+      "estimated_gross_weight_kg": {
+        "label": "Estimated gross weight (kg)",
+        "grid": "Est. gross wt (kg)",
+        "sheet": "Est. gross kg"
+      },
+      "packages_quantity": {
+        "label": "Packages quantity",
+        "grid": "Packages qty",
+        "sheet": "Pkg qty"
+      },
+      "packages_type": {
+        "label": "Packages type",
+        "grid": "Packages type",
+        "sheet": "Pkg type"
+      },
+      "packages_marking": {
+        "label": "Packages marking",
+        "grid": "Packages marking",
+        "sheet": "Pkg mark"
+      },
+      "origin_country": {
+        "label": "Origin country",
+        "grid": "Origin",
+        "sheet": "Origin"
+      },
+      "cn_code": {
+        "grid": "CN code",
+        "sheet": "CN"
+      },
+      "hs": {
+        "grid": "HS code",
+        "sheet": "HS"
+      }
+    },
+    "fields": {
+      "name": "Name",
+      "street": "Street",
+      "postalCode": "Postal code",
+      "city": "City",
+      "countryCode": "Country code",
+      "vatId": "VAT ID",
+      "eori": "EORI",
+      "partnerId": "Partner ID",
+      "toNumber": "TO number",
+      "mode": "Mode",
+      "truckPlate": "Truck plate",
+      "trailerPlate": "Trailer plate",
+      "from": "From",
+      "to": "To",
+      "invoiceNumber": "Invoice number",
+      "invoiceDate": "Invoice date",
+      "currency": "Currency",
+      "incotermsCode": "Incoterms code",
+      "incotermsPlace": "Incoterms place",
+      "deliveryArea": "Delivery area",
+      "baseOfDelivery": "Base of delivery",
+      "totalInvoiceValue": "Total invoice value",
+      "totalPackagesQty": "Total packages qty",
+      "totalPackagesType": "Total packages type",
+      "totalNetWeight": "Total net weight (kg)",
+      "totalGrossWeight": "Total gross weight (kg)",
+      "lineNumber": "Line #",
+      "poNumber": "PO number",
+      "productCode": "Product code",
+      "cnCode": "CN code",
+      "hsCode": "HS code",
+      "customsCode": "Customs code",
+      "origin": "Origin",
+      "pref": "Pref.",
+      "description": "Description",
+      "polishName": "Polish name",
+      "quantity": "Quantity",
+      "uom": "UoM",
+      "invoiceValue": "Invoice value",
+      "netWeight": "Net weight (kg)",
+      "grossWeight": "Gross weight (kg)",
+      "estGrossWeight": "Estimated gross weight (kg)",
+      "packagesQty": "Packages qty",
+      "packagesType": "Packages type",
+      "packagesMarking": "Packages marking",
+      "prefDocs": "Pref. docs"
+    }
+  },
+  "errorBoundary": {
+    "unexpected": "Unexpected error.",
+    "newVersionTitle": "A new version shipped",
+    "somethingWrong": "Something went wrong",
+    "refreshHint": "Refresh to load the latest app bundle.",
+    "refresh": "Refresh",
+    "backToDashboard": "Back to the Cortex360 hub",
+    "pageError": "This page hit an error"
+  },
+  "export": {
+    "page": {
+      "title": "Export",
+      "description": "Mass-export verified packages — choose format, columns, packaging and destination.",
+      "destinationDownload": "browser download",
+      "destinationNetwork": "network folder",
+      "done_one": "Exported {{count}} package as {{format}} → {{destination}}",
+      "done_few": "Exported {{count}} packages as {{format}} → {{destination}}",
+      "done_many": "Exported {{count}} packages as {{format}} → {{destination}}",
+      "done_other": "Exported {{count}} packages as {{format}} → {{destination}}",
+      "run": "Run export"
+    },
+    "summary": {
+      "packages": "Packages",
+      "format": "Format",
+      "columns": "Columns",
+      "packaging": "Packaging",
+      "packagingZip": "ZIP",
+      "packagingIndividual": "Individual",
+      "sources": "+ sources",
+      "sourcesOn": "on",
+      "destination": "Destination",
+      "destinationDownload": "Download",
+      "destinationNetwork": "Network"
+    },
+    "config": {
+      "title": "Export configuration",
+      "subtitle": "Format, columns, packaging and destination.",
+      "outputFormat": "Output format",
+      "columns": "Columns",
+      "columnsHint_one": "{{count}} field will appear in the output.",
+      "columnsHint_few": "{{count}} fields will appear in the output.",
+      "columnsHint_many": "{{count}} fields will appear in the output.",
+      "columnsHint_other": "{{count}} fields will appear in the output.",
+      "resetDefaults": "Reset defaults",
+      "toggleGroup": "Toggle {{group}}",
+      "packaging": "Packaging",
+      "includeSources": "Include source files",
+      "includeSourcesHint": "Original PDF / DOCX / XLSX alongside the extracted result.",
+      "bundle": "Bundle",
+      "individual": "Individual files",
+      "individualHint": "One output per package.",
+      "singleZip": "Single ZIP",
+      "singleZipHint": "All packages zipped together.",
+      "destination": "Destination",
+      "download": "Download",
+      "downloadHint": "Browser download.",
+      "networkFolder": "Network folder",
+      "networkFolderHint": "SMB / CIFS share.",
+      "uncPath": "UNC path",
+      "uncPathHint": "Credentials are managed by the host admin. Path is validated server-side."
+    },
+    "picker": {
+      "title": "Select packages",
+      "subtitle": "Pick which packages get exported in this batch.",
+      "selected": "{{n}} selected",
+      "searchPlaceholder": "Search packages…",
+      "readinessVerified": "Verified only",
+      "readinessReady": "Ready + verified",
+      "readinessAll": "All",
+      "selectAllVisible": "Select all visible",
+      "matchCount_one": "{{count}} package matches",
+      "matchCount_few": "{{count}} packages match",
+      "matchCount_many": "{{count}} packages match",
+      "matchCount_other": "{{count}} packages match",
+      "clear": "Clear",
+      "loading": "Loading…",
+      "empty": "Nothing matches current filters.",
+      "selectRow": "Select {{name}}",
+      "unassigned": "unassigned",
+      "verified": "Verified",
+      "ready": "Ready"
+    },
+    "menu": {
+      "exported": "Exported as {{template}}",
+      "subject": "Export {{template}}",
+      "emailed": "Export emailed to {{email}}",
+      "trigger": "Export",
+      "noTemplates": "No templates",
+      "sendByEmail": "Send by email",
+      "dialogTitle": "Email export",
+      "dialogDescription": "Send selected export as an email attachment.",
+      "templateLabel": "Export template",
+      "to": "To",
+      "subjectLabel": "Subject",
+      "message": "Message",
+      "send": "Send"
+    },
+    "fields": {
+      "package_id": "Package ID",
+      "file_name": "File name",
+      "created_date": "Created date",
+      "assignee": "Assignee",
+      "invoice_number": "Invoice number",
+      "invoice_date": "Invoice date",
+      "currency": "Currency",
+      "net_total": "Net total",
+      "vat_total": "VAT total",
+      "gross_total": "Gross total",
+      "seller_name": "Seller name",
+      "seller_vat": "Seller VAT",
+      "buyer_name": "Buyer name",
+      "buyer_vat": "Buyer VAT",
+      "consignor_name": "Consignor",
+      "consignee_name": "Consignee",
+      "carrier": "Carrier",
+      "transport_mode": "Transport mode",
+      "container_no": "Container no.",
+      "incoterm": "Incoterm",
+      "place_of_delivery": "Place of delivery",
+      "line_description": "Description",
+      "hs_code": "HS code",
+      "line_qty": "Quantity",
+      "line_unit": "Unit",
+      "line_unit_price": "Unit price",
+      "line_net": "Line net",
+      "line_vat": "Line VAT",
+      "line_gross": "Line gross",
+      "line_weight_kg": "Weight (kg)"
+    },
+    "groups": {
+      "header": "Document header",
+      "invoice": "Invoice",
+      "parties": "Parties",
+      "transport": "Transport & delivery",
+      "lines": "Invoice lines"
+    },
+    "formats": {
+      "csv": {
+        "label": "CSV",
+        "description": "One row per invoice line"
+      },
+      "xml": {
+        "label": "XML",
+        "description": "Customs-ready schema"
+      },
+      "json": {
+        "label": "JSON",
+        "description": "Raw structured payload"
+      },
+      "xlsx": {
+        "label": "Excel (XLSX)",
+        "description": "Spreadsheet with tabs"
+      }
+    }
+  },
+  "reprocess": {
+    "title": "Reprocess package",
+    "description": "Reset analysis and run extraction again. Optionally pass extra hints to the model.",
+    "submit": "Reprocess",
+    "started": "Reprocess started"
+  },
+  "aiNotifications": {
+    "tab": "AI Notifications",
+    "notRun": "Analysis hasn’t run yet — AI notifications will appear here after extraction.",
+    "nothingFlagged": "AI didn’t flag anything on this extraction.",
+    "jumpTo": "Jump to AI Notifications: {{summary}}",
+    "flagged_one": "AI flagged {{count}} observation",
+    "flagged_few": "AI flagged {{count}} observations",
+    "flagged_many": "AI flagged {{count}} observations",
+    "flagged_other": "AI flagged {{count}} observations",
+    "warningCount_one": "{{count}} warning",
+    "warningCount_few": "{{count}} warnings",
+    "warningCount_many": "{{count}} warnings",
+    "warningCount_other": "{{count}} warnings",
+    "noteCount_one": "{{count}} note",
+    "noteCount_few": "{{count}} notes",
+    "noteCount_many": "{{count}} notes",
+    "noteCount_other": "{{count}} notes",
+    "unreadWarnings_one": "{{count}} unread AI warning",
+    "unreadWarnings_few": "{{count}} unread AI warnings",
+    "unreadWarnings_many": "{{count}} unread AI warnings",
+    "unreadWarnings_other": "{{count}} unread AI warnings"
+  },
+  "import": {
+    "page": {
+      "title": "Import",
+      "description": "One unified drop zone — ZIP, email files, loose files or whole folders. System auto-detects and starts processing.",
+      "howItWorks": "How it works",
+      "ruleZip": "Drop a single ZIP → imported as-is.",
+      "ruleEmail": "Drop a single EML or MSG → backend extracts attachments into one package.",
+      "ruleFiles": "Drop several files or folders → uploaded together as one package.",
+      "ruleSlot": "Each slot = one package. A new empty slot appears automatically under the last filled one."
+    },
+    "queue": {
+      "invalidEmail": "Enter a valid notification email.",
+      "selectTemplate": "Select an export template.",
+      "imported": "Imported {{name}}",
+      "importedEmail": "Imported email {{name}}",
+      "importedFiles_one": "Imported {{count}} file",
+      "importedFiles_few": "Imported {{count}} files",
+      "importedFiles_many": "Imported {{count}} files",
+      "importedFiles_other": "Imported {{count}} files",
+      "uploadFailed": "Upload failed — please retry.",
+      "emptyHint": "Drop a ZIP, EML, MSG, files or folders to start — a new slot appears automatically.",
+      "readyToImportCount_one": "<n>{{count}}</n> ready to import",
+      "readyToImportCount_few": "<n>{{count}}</n> ready to import",
+      "readyToImportCount_many": "<n>{{count}}</n> ready to import",
+      "readyToImportCount_other": "<n>{{count}}</n> ready to import",
+      "importedCount": "· {{n}} imported",
+      "importAll": "Import all"
+    },
+    "slot": {
+      "status": {
+        "pending": "Waiting for files",
+        "ready": "Ready to import",
+        "uploading": "Uploading…",
+        "done": "Imported",
+        "error": "Failed"
+      },
+      "openPackageAria": "Open package details",
+      "kindZip": "ZIP bundle",
+      "kindEmail": "Email container",
+      "kindLoose_one": "{{count}} file → one package",
+      "kindLoose_few": "{{count}} files → one package",
+      "kindLoose_many": "{{count}} files → one package",
+      "kindLoose_other": "{{count}} files → one package",
+      "removeSlot": "Remove slot",
+      "packageName": "Package name",
+      "packageNamePlaceholder": "Optional display name",
+      "emailResult": "Email result after processing",
+      "templateAria": "Notification export template",
+      "templatePlaceholder": "Export template",
+      "dropTitle": "Drop a ZIP, EML, MSG, files or folders here",
+      "dropHint": "Single email files are unpacked by the backend; other files are grouped as one package.",
+      "chooseFiles": "Choose files",
+      "chooseFolder": "Choose folder",
+      "removeFile": "Remove {{name}}",
+      "openPackage": "Open package",
+      "addMore": "Add more",
+      "hideOptions": "Hide options",
+      "advancedOptions": "Advanced options",
+      "retry": "Retry",
+      "import": "Import"
+    },
+    "options": {
+      "fastProcessing": "Fast processing",
+      "fastProcessingHint": "Cheaper Gemini model; lower accuracy.",
+      "atr": "Process A.TR documents",
+      "atrHint": "Extract and assign A.TR data for this package.",
+      "packagingMode": "Packaging mode",
+      "packagingModeHint": "Select package or pallet counts for SAD/Huzar extraction.",
+      "packagingAuto": "Auto by B/L",
+      "packagingPackages": "Packages",
+      "packagingPallets": "Pallets",
+      "aiContext": "Additional AI context",
+      "aiContextHint": "Extra prompt appended to extraction. Max {{max}} chars.",
+      "aiContextPlaceholder": "e.g. 'This batch is from DHL — invoice totals in EUR.'"
+    }
+  },
+  "configuration": {
+    "page": {
+      "title": "Configuration",
+      "description": "Runtime IDP settings stored in the database."
+    },
+    "loadFromEnv": "Load from env",
+    "saved": "Configuration saved.",
+    "loadedFromEnv": "Configuration loaded from env.",
+    "loading": "Loading configuration…",
+    "adminRequiredTitle": "Admin scope required",
+    "adminRequiredMessage": "Your account does not have the admin action scope.",
+    "unavailableTitle": "Configuration unavailable",
+    "unavailableMessage": "The feature flag configuration could not be loaded.",
+    "columnFlag": "Flag",
+    "columnState": "State",
+    "testSmtp": "Test SMTP",
+    "testConnection": "Test connection",
+    "configuredSuffix": " (configured)",
+    "leaveBlankToKeep": "Leave blank to keep",
+    "sections": {
+      "geminiWorker": "Gemini worker"
+    },
+    "flags": {
+      "enable_verification_process": "Verification process",
+      "package_custom_statuses": "Package custom statuses",
+      "enable_user_notes": "User notes",
+      "enable_po_number": "PO number",
+      "enable_customs_code": "Customs code",
+      "enable_additional_ai_context": "Additional AI context",
+      "enable_atr_processing": "A.TR processing",
+      "enable_packaging_selection_mode": "Packaging selection mode",
+      "enable_cn_ai_enrichment": "CN AI enrichment",
+      "enable_document_preview": "Document preview",
+      "enable_classification": "Classification",
+      "enable_imap_import": "IMAP import",
+      "enable_import_email_notifications": "Import email notifications"
+    },
+    "fields": {
+      "hiddenMenuItems": "Hidden menu items",
+      "customStatuses": "Custom statuses",
+      "customStatusesPlaceholder": "Accounting Department, Controlling Department",
+      "exportTemplates": "Export templates",
+      "sadContextDefaults": "SAD context defaults",
+      "model": "Model",
+      "fastModel": "Fast model",
+      "temperature": "Temperature",
+      "fastTemperature": "Fast temperature",
+      "thinkingBudget": "Thinking budget",
+      "smtpHost": "SMTP host",
+      "smtpPort": "SMTP port",
+      "timeoutSeconds": "Timeout seconds",
+      "fromEmail": "From email",
+      "fromName": "From name",
+      "smtpUser": "SMTP user",
+      "smtpPassword": "SMTP password",
+      "imapHost": "IMAP host",
+      "imapPort": "IMAP port",
+      "pollLimit": "Poll limit",
+      "imapUser": "IMAP user",
+      "imapPassword": "IMAP password",
+      "secure": "Secure",
+      "mailbox": "Mailbox",
+      "processedMailbox": "Processed mailbox",
+      "draftsMailbox": "Drafts mailbox"
     }
   }
 }

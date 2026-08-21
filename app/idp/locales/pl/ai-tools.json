@@ -5,7 +5,6 @@
     "deniedBody": "Twoje konto nie ma włączonej tej aplikacji. Skontaktuj się z administratorem instancji."
   },
   "shared": {
-    "backToHub": "Wróć do huba",
     "generate": "Generuj",
     "generateSuccess": "Wynik wygenerowany",
     "generateFailed": "Nie udało się wygenerować wyniku",
@@ -280,7 +279,6 @@
     "gate.checking": "stan pośredni; trwa sprawdzanie uprawnień do narzędzia AI Tools",
     "gate.deniedTitle": "nagłówek stanu pustego; odmowa wejścia do AI Tools; maks. 32 zn.",
     "gate.deniedBody": "opis odmowy; kieruje użytkownika do administratora instancji",
-    "shared.backToHub": "przycisk w stanie pustym; wraca na hub kafelków; maks. 18 zn.",
     "shared.generate": "przycisk główny formularza; wysyła prompt do modelu; maks. 12 zn.",
     "shared.generateSuccess": "komunikat sukcesu; toast po odebraniu wyniku z modelu; maks. 24 zn.",
     "shared.generateFailed": "komunikat błędu; zapasowa treść, gdy serwer nie podał własnej przyczyny",

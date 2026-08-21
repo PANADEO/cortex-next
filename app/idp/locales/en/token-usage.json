@@ -26,7 +26,10 @@
     "modelsTitle": "Usage by model",
     "appsTitle": "Usage by application",
     "scopesTitle": "Usage by scope",
-    "barMeta": "{{requests}} requests",
+    "barMeta_one": "{{requests}} request",
+    "barMeta_few": "{{requests}} requests",
+    "barMeta_many": "{{requests}} requests",
+    "barMeta_other": "{{requests}} requests",
     "truncated": "The bar list shows the top {{shown}} of {{total}} entries. The table below has them all."
   },
   "filter": {
@@ -45,7 +48,7 @@
     "allModels": "All models",
     "scopeLabel": "Scope",
     "allScopes": "All scopes",
-    "searchPlaceholder": "Search details..."
+    "searchPlaceholder": "Search details…"
   },
   "actions": {
     "downloadCsv": "Download CSV",
@@ -64,7 +67,7 @@
     },
     "cortex-proxy-not-configured": {
       "title": "Report is not configured",
-      "message": "This instance has no cortex-proxy admin key set (CORTEX_PROXY_ADMIN_API_KEY). That is a configuration task for the instance administrator — all other applications keep working."
+      "message": "This instance has no cortex-proxy admin key set (CORTEX_PROXY_ADMIN_API_KEY). That is a configuration task for the instance administrator — all other tiles keep working."
     },
     "cortex-proxy-unauthorized": {
       "title": "cortex-proxy rejected the admin key",
@@ -79,7 +82,7 @@
       "message": "cortex-proxy replied in a way we cannot read."
     },
     "invalid-format": {
-      "title": "Invalid date range",
+      "title": "Invalid date format",
       "message": "Dates must use the YYYY-MM-DD format."
     },
     "invalid-date": {
@@ -93,6 +96,18 @@
     "range-too-long": {
       "title": "Range is too long",
       "message": "Pick a shorter period — the report covers at most one quarter."
+    },
+    "forbidden": {
+      "title": "No access to the report",
+      "message": "Your account has no permission for this report. Ask the instance administrator to grant you access."
+    },
+    "missing-email": {
+      "title": "Session has expired",
+      "message": "We cannot identify you. Sign in again and try once more."
+    },
+    "internal-error": {
+      "title": "Server-side error",
+      "message": "Preparing the report failed. Please try again in a moment."
     }
   },
   "dataQuality": {
@@ -134,5 +149,22 @@
       "label": "Applications",
       "top": "Most used: {{app}}"
     }
+  },
+  "export": {
+    "columns": {
+      "user": "User",
+      "app": "Application",
+      "scope": "Scope",
+      "model": "Model",
+      "totalTokens": "Total tokens",
+      "requestTokens": "Request tokens",
+      "responseTokens": "Response tokens",
+      "reasoningTokens": "Reasoning tokens",
+      "cachedTokens": "Cached tokens",
+      "requestCount": "Request count",
+      "userCount": "User count",
+      "share": "Percentage share"
+    },
+    "dataQualityNote": "Some values are estimates: when the provider response carried no usage block, cortex-proxy records an approximate token count derived from the request payload."
   }
 }

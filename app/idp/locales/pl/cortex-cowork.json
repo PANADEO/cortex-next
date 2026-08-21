@@ -2,14 +2,14 @@
   "chat": {
     "sessionErrorTitle": "Nie udało się wystartować sesji sandboxa",
     "dropFiles": "Upuść pliki - trafią do sandboxa tej sesji",
-    "startingSession": "Startuję sesję sandboxa...",
+    "startingSession": "Startuję sesję sandboxa…",
     "hero": "Czym mam się zająć?",
     "heroWithProject": "{{project}} - czym mam się zająć?",
     "heroDescription": "Agent pracuje w sandboxie i oddaje pliki jako artefakty - poproś o raport, eksport albo analizę.",
-    "degradedBadge": "Tryb awaryjny - agent niedostępny"
+    "degradedBadge": "Tryb zapasowy - agent niedostępny"
   },
   "composer": {
-    "placeholder": "Poproś o raport, eksport albo kolejny krok...",
+    "placeholder": "Poproś o raport, eksport albo kolejny krok…",
     "attachAria": "Dodaj pliki do sesji",
     "attachTitle": "Dodaj pliki (albo wklej / upuść je tutaj)",
     "hint": "Enter wysyła · Shift+Enter nowa linia",
@@ -32,12 +32,11 @@
     "copyPathAria": "Kopiuj ścieżkę"
   },
   "sidebar": {
-    "backToHubAria": "Powrót do Cortex360 hub",
     "newSession": "Nowa sesja",
     "skillsLibrary": "Biblioteka skilli",
     "projects": "Projekty",
     "noProjects": "Brak projektów",
-    "loadingSessions": "Wczytywanie sesji...",
+    "loadingSessions": "Wczytywanie sesji…",
     "noSessions": "Brak sesji",
     "sessionTitle": "Sesja z {{when}}",
     "messageCount": "· {{n}} wiad.",
@@ -47,7 +46,9 @@
     "myInstructions": "Moje instrukcje",
     "myInstructionsPlaceholder": "np. Zwracaj się do mnie po imieniu.\nRaporty zawsze z sekcją TL;DR.",
     "myInstructionsHint": "Prywatna warstwa AGENTS.md - doklejana do każdej Twojej sesji.",
-    "saved": "Zapisano"
+    "saved": "Zapisano",
+    "saveInstructionsFailed": "Nie udało się zapisać instrukcji",
+    "instructionsTooLong": "Instrukcje mogą mieć maksymalnie {{max}} znaków"
   },
   "activity": {
     "working": {
@@ -58,7 +59,7 @@
       "image": "Generuję obraz…",
       "skill": "Sięgam po skill…",
       "write": "Piszę plik…",
-      "read": "Czytam workspace…",
+      "read": "Czytam pliki w sandboxie…",
       "exec": "Wykonuję polecenie…",
       "tool": "Używam: {{tool}}…",
       "toolFallback": "narzędzia",
@@ -73,12 +74,15 @@
       "lifecycle": "Cykl życia",
       "assistant": "Asystent"
     },
-    "trail": "Przebieg pracy agenta ({{n}} kroków)"
+    "trail_one": "Przebieg pracy agenta ({{count}} krok)",
+    "trail_few": "Przebieg pracy agenta ({{count}} kroki)",
+    "trail_many": "Przebieg pracy agenta ({{count}} kroków)",
+    "trail_other": "Przebieg pracy agenta ({{count}} kroków)"
   },
   "skills": {
     "title": "Biblioteka skilli",
     "description": "Pakiety wielokrotnego użytku, kopiowane do każdej nowej sesji sandboxa.",
-    "loading": "Wczytywanie skilli..."
+    "loading": "Wczytywanie skilli…"
   },
   "_ctx": {
     "chat.sessionErrorTitle": "komunikat błędu; nie udało się wystartować sandboxa dla sesji czatu",
@@ -87,7 +91,7 @@
     "chat.hero": "nagłówek; pytanie w pustym czacie, gdy nie znamy nazwy projektu; maks. 28 zn.",
     "chat.heroWithProject": "nagłówek; pytanie w pustym czacie z nazwą projektu {{project}}",
     "chat.heroDescription": "akapit; wyjaśnia w pustym czacie, co agent potrafi oddać",
-    "chat.degradedBadge": "wartość; badge nad odpowiedzią wygenerowaną bez agenta; maks. 36 zn.",
+    "chat.degradedBadge": "wartość; badge nad odpowiedzią wygenerowaną bez agenta; ten sam termin co idp-basic:settings.fallback; maks. 36 zn.",
     "composer.placeholder": "placeholder pola; pole wpisywania wiadomości do agenta",
     "composer.attachAria": "etykieta a11y; ukryta, opisuje przycisk spinacza dodający pliki",
     "composer.attachTitle": "tooltip; przycisk spinacza, wymienia też wklejenie i upuszczenie",
@@ -105,7 +109,6 @@
     "artifacts.exportFailed": "komunikat błędu; zapas, gdy serwer nie podał powodu nieudanego eksportu",
     "artifacts.downloadAria": "etykieta a11y; ukryta, pobiera plik {{filename}} do przeglądarki",
     "artifacts.copyPathAria": "etykieta a11y; ukryta, kopiuje ścieżkę sieciową do schowka",
-    "sidebar.backToHubAria": "etykieta a11y; ukryta, link logo wracający na hub Cortex360",
     "sidebar.newSession": "przycisk; zakłada nową sesję w bieżącym projekcie; maks. 16 zn.",
     "sidebar.skillsLibrary": "przycisk; link do listy dostępnych skilli; maks. 20 zn.",
     "sidebar.projects": "nagłówek; sekcja listy projektów w sidebarze; maks. 14 zn.",
@@ -116,11 +119,13 @@
     "sidebar.messageCount": "wartość; skrócona liczba wiadomości w wierszu sesji; maks. 12 zn.",
     "sidebar.artifactCount": "wartość; skrócona liczba artefaktów w wierszu sesji; maks. 12 zn.",
     "sidebar.deleteSessionAria": "etykieta a11y; ukryta, kasuje sesję z sidebara",
-    "sidebar.deleteSessionConfirm": "tytuł okna; potwierdzenie usunięcia sesji, operacja NIEODWRACALNA",
+    "sidebar.deleteSessionConfirm": "akapit; TREŚĆ okna potwierdzenia (window.confirm) przed usunięciem sesji, operacja NIEODWRACALNA",
     "sidebar.myInstructions": "przycisk; rozwija prywatną warstwę AGENTS.md; maks. 18 zn.",
     "sidebar.myInstructionsPlaceholder": "placeholder pola; przykładowe instrukcje prywatne, dwie linie",
     "sidebar.myInstructionsHint": "opis; tłumaczy, że notka jest prywatna i doklejana do sesji",
     "sidebar.saved": "komunikat sukcesu; napis na przycisku po zapisaniu notki; maks. 12 zn.",
+    "sidebar.saveInstructionsFailed": "komunikat błędu; zapis prywatnej notki się nie powiódł",
+    "sidebar.instructionsTooLong": "komunikat błędu; notka przekroczyła limit długości, {{max}} = limit znaków",
     "activity.working.starting": "stan pośredni; agent jeszcze nie zaczął, trwa rozruch sandboxa",
     "activity.working.thinking": "stan pośredni; agent rozumuje przed odpowiedzią; maks. 20 zn.",
     "activity.working.answering": "stan pośredni; agent formułuje odpowiedź; maks. 24 zn.",
@@ -128,7 +133,7 @@
     "activity.working.image": "stan pośredni; agent generuje obraz; maks. 24 zn.",
     "activity.working.skill": "stan pośredni; agent aktywuje skilla; maks. 24 zn.",
     "activity.working.write": "stan pośredni; agent zapisuje albo edytuje plik; maks. 24 zn.",
-    "activity.working.read": "stan pośredni; agent czyta pliki w sandboxie; maks. 24 zn.",
+    "activity.working.read": "stan pośredni; agent czyta pliki w sandboxie; obszar roboczy agenta nazywamy WSZĘDZIE sandboxem; maks. 26 zn.",
     "activity.working.exec": "stan pośredni; agent wykonuje polecenie w powłoce; maks. 24 zn.",
     "activity.working.tool": "stan pośredni; agent używa narzędzia {{tool}}, którego nie rozpoznajemy",
     "activity.working.toolFallback": "wartość; podstawiana za {{tool}}, gdy nazwa narzędzia jest nieznana; maks. 12 zn.",
@@ -140,7 +145,10 @@
     "activity.step.runStarted": "wartość; wiersz przebiegu pracy - start tury agenta; maks. 20 zn.",
     "activity.step.lifecycle": "wartość; wiersz przebiegu pracy - zdarzenie cyklu życia; maks. 16 zn.",
     "activity.step.assistant": "wartość; wiersz przebiegu pracy - fragment odpowiedzi; maks. 16 zn.",
-    "activity.trail": "przycisk; rozwija przebieg pracy agenta pod odpowiedzią; JEDNA forma dla każdej liczby {{n}}",
+    "activity.trail_one": "przycisk; rozwija przebieg pracy agenta pod odpowiedzią, forma dla 1; {{count}} = liczba kroków",
+    "activity.trail_few": "przycisk; rozwija przebieg pracy agenta pod odpowiedzią, forma dla 2–4; {{count}} = liczba kroków",
+    "activity.trail_many": "przycisk; rozwija przebieg pracy agenta pod odpowiedzią, forma dla 5 i więcej oraz dla 0; {{count}} = liczba kroków",
+    "activity.trail_other": "przycisk; rozwija przebieg pracy agenta pod odpowiedzią, forma zapasowa dla ułamków; {{count}} = liczba kroków",
     "skills.title": "nagłówek; tytuł strony z listą dostępnych skilli; maks. 20 zn.",
     "skills.description": "opis; podtytuł strony biblioteki skilli",
     "skills.loading": "stan pośredni; trwa pobieranie katalogu skilli z serwera"

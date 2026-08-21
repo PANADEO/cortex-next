@@ -26,7 +26,10 @@
     "modelsTitle": "Zużycie według modeli",
     "appsTitle": "Zużycie według aplikacji",
     "scopesTitle": "Zużycie według zakresów",
-    "barMeta": "{{requests}} żądań",
+    "barMeta_one": "{{requests}} żądanie",
+    "barMeta_few": "{{requests}} żądania",
+    "barMeta_many": "{{requests}} żądań",
+    "barMeta_other": "{{requests}} żądań",
     "truncated": "Lista słupkowa pokazuje {{shown}} największych pozycji z {{total}}. Tabela poniżej zawiera komplet."
   },
   "filter": {
@@ -45,7 +48,7 @@
     "allModels": "Wszystkie modele",
     "scopeLabel": "Zakres",
     "allScopes": "Wszystkie zakresy",
-    "searchPlaceholder": "Szukaj w szczegółach..."
+    "searchPlaceholder": "Szukaj w szczegółach…"
   },
   "actions": {
     "downloadCsv": "Pobierz CSV",
@@ -79,7 +82,7 @@
       "message": "cortex-proxy odpowiedział w sposób, którego nie potrafimy odczytać."
     },
     "invalid-format": {
-      "title": "Nieprawidłowy zakres dat",
+      "title": "Nieprawidłowy format daty",
       "message": "Daty muszą mieć format RRRR-MM-DD."
     },
     "invalid-date": {
@@ -93,6 +96,18 @@
     "range-too-long": {
       "title": "Zakres jest zbyt długi",
       "message": "Wybierz krótszy przedział — raport obejmuje maksymalnie jeden kwartał."
+    },
+    "forbidden": {
+      "title": "Brak dostępu do raportu",
+      "message": "Twoje konto nie ma uprawnień do tego raportu. Poproś administratora instancji o przyznanie dostępu."
+    },
+    "missing-email": {
+      "title": "Sesja wygasła",
+      "message": "Nie rozpoznajemy Twojej tożsamości. Zaloguj się ponownie i spróbuj jeszcze raz."
+    },
+    "internal-error": {
+      "title": "Błąd po stronie serwera",
+      "message": "Przygotowanie raportu nie powiodło się. Spróbuj ponownie za chwilę."
     }
   },
   "dataQuality": {
@@ -135,6 +150,23 @@
       "top": "Najczęstsza: {{app}}"
     }
   },
+  "export": {
+    "columns": {
+      "user": "Użytkownik",
+      "app": "Aplikacja",
+      "scope": "Zakres",
+      "model": "Model",
+      "totalTokens": "Tokeny łącznie",
+      "requestTokens": "Tokeny żądań",
+      "responseTokens": "Tokeny odpowiedzi",
+      "reasoningTokens": "Tokeny rozumowania",
+      "cachedTokens": "Tokeny z cache",
+      "requestCount": "Liczba żądań",
+      "userCount": "Liczba użytkowników",
+      "share": "Udział procentowy"
+    },
+    "dataQualityNote": "Część wartości to szacunki: gdy odpowiedź dostawcy nie zawierała bloku usage, cortex-proxy zapisuje przybliżoną liczbę tokenów policzoną z treści żądania."
+  },
   "_ctx": {
     "page.title": "nagłówek ekranu; nazwa raportu zużycia tokenów AI; maks. 28 zn.",
     "page.description": "opis pod nagłówkiem ekranu; jedno zdanie, co raport pokazuje",
@@ -156,7 +188,10 @@
     "panel.modelsTitle": "nagłówek sekcji; wykres i tabela zużycia wg modeli; maks. 34 zn.",
     "panel.appsTitle": "nagłówek sekcji; wykres i tabela zużycia wg aplikacji; maks. 34 zn.",
     "panel.scopesTitle": "nagłówek sekcji; wykres i tabela zużycia wg zakresów; maks. 34 zn.",
-    "panel.barMeta": "etykieta przy słupku wykresu; {{requests}} to gotowa, sformatowana liczba żądań; maks. 20 zn.",
+    "panel.barMeta_one": "etykieta przy słupku wykresu; forma dla 1; {{requests}} to gotowa, sformatowana liczba żądań; maks. 20 zn.",
+    "panel.barMeta_few": "etykieta przy słupku wykresu; forma dla 2–4; {{requests}} to gotowa, sformatowana liczba żądań; maks. 20 zn.",
+    "panel.barMeta_many": "etykieta przy słupku wykresu; forma dla 5 i więcej oraz dla 0; {{requests}} to gotowa, sformatowana liczba żądań; maks. 20 zn.",
+    "panel.barMeta_other": "etykieta przy słupku wykresu; forma zapasowa dla ułamków; {{requests}} to gotowa, sformatowana liczba żądań; maks. 20 zn.",
     "panel.truncated": "opis pod wykresem; {{shown}} pozycji na wykresie, {{total}} w całym zestawieniu",
     "filter.startLabel": "etykieta pola daty; początek zakresu raportu; maks. 20 zn.",
     "filter.endLabel": "etykieta pola daty; koniec zakresu raportu; maks. 20 zn.",
@@ -194,6 +229,12 @@
     "errors.reversed-range.message": "komunikat błędu; widoczny też pod polami filtra; początek po końcu",
     "errors.range-too-long.title": "tytuł błędu; zakres dat przekracza limit; maks. 30 zn.",
     "errors.range-too-long.message": "komunikat błędu; widoczny też pod polami filtra; limit to jeden kwartał",
+    "errors.forbidden.title": "tytuł błędu; użytkownik jest zalogowany, ale nie ma grantu na ten kafelek; maks. 30 zn.",
+    "errors.forbidden.message": "opis błędu; kieruje po uprawnienia do administratora instancji",
+    "errors.missing-email.title": "tytuł błędu; żądanie doszło bez tożsamości użytkownika; maks. 30 zn.",
+    "errors.missing-email.message": "opis błędu; prosi o ponowne zalogowanie",
+    "errors.internal-error.title": "tytuł błędu; niespodziewana awaria po stronie serwera; maks. 30 zn.",
+    "errors.internal-error.message": "opis błędu; przyczyny nie znamy, sugeruje ponowienie za chwilę",
     "dataQuality.title": "tytuł noty informacyjnej nad raportem; maks. 30 zn.",
     "dataQuality.estimates": "akapit noty; ostrzega, że liczby są szacunkiem, nie rozliczeniem co do tokena",
     "dataQuality.coverage": "akapit noty; raport obejmuje cały ruch proxy, nie tylko Cortex360; cudzysłów obejmuje nagłówek kolumny",
@@ -213,6 +254,19 @@
     "metrics.models.label": "etykieta karty metryki; liczba różnych modeli w okresie; maks. 16 zn.",
     "metrics.models.top": "opis karty metryki; {{model}} to nazwa własna modelu, NIE tłumaczyć",
     "metrics.apps.label": "etykieta karty metryki; liczba różnych aplikacji w okresie; maks. 16 zn.",
-    "metrics.apps.top": "opis karty metryki; {{app}} to nazwa własna aplikacji, NIE tłumaczyć"
+    "metrics.apps.top": "opis karty metryki; {{app}} to nazwa własna aplikacji, NIE tłumaczyć",
+    "export.columns.user": "nagłówek; kolumna eksportu CSV — identyfikator wołającego, zwykle e-mail",
+    "export.columns.app": "nagłówek; kolumna eksportu CSV — system, który wywołał proxy",
+    "export.columns.scope": "nagłówek; kolumna eksportu CSV — zakres (scope) żądania",
+    "export.columns.model": "nagłówek; kolumna eksportu CSV — nazwa modelu AI",
+    "export.columns.totalTokens": "nagłówek; kolumna eksportu CSV — suma tokenów żądań i odpowiedzi",
+    "export.columns.requestTokens": "nagłówek; kolumna eksportu CSV — tokeny wysłane do modelu",
+    "export.columns.responseTokens": "nagłówek; kolumna eksportu CSV — tokeny zwrócone przez model",
+    "export.columns.reasoningTokens": "nagłówek; kolumna eksportu CSV — tokeny rozumowania modeli reasoningowych",
+    "export.columns.cachedTokens": "nagłówek; kolumna eksportu CSV — tokeny obsłużone z cache dostawcy",
+    "export.columns.requestCount": "nagłówek; kolumna eksportu CSV — liczba żądań",
+    "export.columns.userCount": "nagłówek; kolumna eksportu CSV — liczba różnych użytkowników w wierszu",
+    "export.columns.share": "nagłówek; kolumna eksportu CSV — udział procentowy w całości",
+    "export.dataQualityNote": "akapit; nota w eksporcie JSON — ostrzega, że część liczb to szacunki, nie rozliczenie co do tokena"
   }
 }

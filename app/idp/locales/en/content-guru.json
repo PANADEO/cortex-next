@@ -33,8 +33,8 @@
     "marketProfileLabel": "Market profile (optional)",
     "noProfileOption": "No profile",
     "generateButton": "Generate",
-    "generatingButton": "Generating...",
-    "startingButton": "Starting...",
+    "generatingButton": "Generating…",
+    "startingButton": "Starting…",
     "savedToArchive": "Saved to the Content Guru archive.",
     "seo": {
       "sectionLabel": "SEO and metadata",
@@ -47,14 +47,20 @@
       "metaGenerate": "Generate meta description"
     },
     "batch": {
-      "activeTopicsOne": "active topic",
-      "activeTopicsMany": "active topics"
+      "activeTopicCount_one": "{{count}} active topic",
+      "activeTopicCount_few": "{{count}} active topics",
+      "activeTopicCount_many": "{{count}} active topics",
+      "activeTopicCount_other": "{{count}} active topics"
     },
     "package": {
-      "topicOne": "topic",
-      "topicMany": "topics",
-      "templateOne": "template",
-      "templateMany": "templates",
+      "topicCount_one": "{{count}} topic",
+      "topicCount_few": "{{count}} topics",
+      "topicCount_many": "{{count}} topics",
+      "topicCount_other": "{{count}} topics",
+      "templateCount_one": "{{count}} template",
+      "templateCount_few": "{{count}} templates",
+      "templateCount_many": "{{count}} templates",
+      "templateCount_other": "{{count}} templates",
       "contentOne": "text",
       "contentMany": "texts",
       "overLimit": "the limit of {{max}} combinations has been exceeded. Reduce the number of topics or templates."
@@ -77,7 +83,10 @@
       "keywordPhraseFailed": "Could not generate the keyword phrase",
       "metaDescriptionFailed": "Could not generate the meta description",
       "generateFailed": "Could not generate the content",
-      "jobStartFailed": "Could not start generation"
+      "jobStartFailed": "Could not start generation",
+      "templateMissing": "One of the selected templates no longer exists — refresh the list",
+      "clientProfileMissing": "The selected client profile no longer exists — refresh the list",
+      "marketProfileMissing": "The selected market profile no longer exists — refresh the list"
     }
   },
   "topicTable": {
@@ -103,7 +112,7 @@
   "job": {
     "itemStatus": {
       "pending": "Waiting",
-      "running": "Generating...",
+      "running": "Generating…",
       "done": "Ready",
       "withWarnings": "Forbidden phrases",
       "error": "Error"
@@ -155,9 +164,9 @@
       "description": "Content generated with it in the past stays in the archive unchanged. This cannot be undone."
     },
     "toasts": {
-      "created": "Profile \"{{name}}\" created",
+      "created": "Profile “{{name}}” created",
       "saved": "Profile changes saved",
-      "deleted": "Profile \"{{name}}\" deleted"
+      "deleted": "Profile “{{name}}” deleted"
     },
     "errors": {
       "saveFailed": "Could not save the client profile",
@@ -203,9 +212,9 @@
       "description": "Content generated with it in the past stays in the archive unchanged. This cannot be undone."
     },
     "toasts": {
-      "created": "Profile \"{{name}}\" created",
+      "created": "Profile “{{name}}” created",
       "saved": "Profile changes saved",
-      "deleted": "Profile \"{{name}}\" deleted"
+      "deleted": "Profile “{{name}}” deleted"
     },
     "errors": {
       "saveFailed": "Could not save the market profile",
@@ -266,10 +275,10 @@
       "description": "The template will disappear from the picker on the generation screen. Content generated with it in the past stays in the archive unchanged. This cannot be undone."
     },
     "toasts": {
-      "created": "Template \"{{name}}\" created",
+      "created": "Template “{{name}}” created",
       "saved": "Template changes saved",
-      "deleted": "Template \"{{name}}\" deleted",
-      "duplicated": "Copy created: \"{{name}}\"",
+      "deleted": "Template “{{name}}” deleted",
+      "duplicated": "Copy created: “{{name}}”",
       "imported": "Imported {{succeeded}} of {{total}} templates",
       "testWithWarnings": "The test generation contains forbidden phrases from your list"
     },

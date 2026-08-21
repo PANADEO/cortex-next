@@ -1,11 +1,18 @@
 {
   "scan": {
     "run": "Scan now",
-    "success": "Scan finished: {{films}} films, {{newAvailabilities}} new availabilities.",
+    "success_one": "Scan finished: {{count}} film, {{availabilities}}.",
+    "success_few": "Scan finished: {{count}} films, {{availabilities}}.",
+    "success_many": "Scan finished: {{count}} films, {{availabilities}}.",
+    "success_other": "Scan finished: {{count}} films, {{availabilities}}.",
+    "newAvailabilities_one": "{{count}} new availability",
+    "newAvailabilities_few": "{{count}} new availabilities",
+    "newAvailabilities_many": "{{count}} new availabilities",
+    "newAvailabilities_other": "{{count}} new availabilities",
     "failed": "Scan failed"
   },
   "dashboard": {
-    "title": "Release windows — Dashboard",
+    "title": "Dashboard",
     "description": "Tracking when films show up on Rakuten TV PL, based on daily JustWatch scans.",
     "cardTrackedFilms": "Films tracked",
     "cardAvailableNow": "Available now (Rakuten PL)",
@@ -16,7 +23,7 @@
       "film": "Film",
       "available": "On Rakuten PL now?",
       "availableYes": "Available",
-      "availableNo": "None",
+      "availableNo": "Unavailable",
       "offerType": "Offer type",
       "price": "Price",
       "firstSeenAvailable": "Since"
@@ -89,6 +96,11 @@
     "addForeignTitle": "Add title",
     "noForeignTitles": "No extra titles — the search will use the main title only.",
     "foreignTitlePlaceholder": "e.g. the original title or one in another language",
-    "removeForeignTitle": "Remove title"
+    "removeForeignTitle": "Remove title",
+    "errors": {
+      "titleRequired": "Title is required",
+      "yearInteger": "Year must be a whole number",
+      "yearInvalid": "Invalid year"
+    }
   }
 }

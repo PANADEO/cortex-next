@@ -107,14 +107,14 @@
       "notConfigured": "Synchronizacja z OpenWebUI nie jest skonfigurowana w tej instancji (OPENWEBUI_URL/OPENWEBUI_ADMIN_TOKEN).",
       "notMapped": "Rola nie jest podpięta do żadnej grupy OpenWebUI.",
       "createGroup": "Utwórz grupę „{{name}}”",
-      "attachExistingPlaceholder": "Podepnij istniejącą grupę",
+      "attachExistingPlaceholder": "Wybierz istniejącą grupę",
       "attach": "Podepnij",
       "attachConfirmTitle": "Podpiąć istniejącą grupę „{{name}}”?",
-      "attachConfirmBody": "Członkostwo tej grupy zostanie przy najbliższej synchronizacji NADPISANE zgodnie ze składem tej roli. Jeśli grupa gatuje dostęp do innego asystenta w OpenWebUI (przez access_control), jego dostępność dla użytkowników może się nieoczekiwanie zmienić. Upewnij się, że to właściwa grupa.",
+      "attachConfirmBody": "Członkostwo tej grupy zostanie przy najbliższej synchronizacji NADPISANE zgodnie ze składem tej roli. Jeśli grupa steruje dostępem do innego asystenta w OpenWebUI (przez access_control), jego dostępność dla użytkowników może się nieoczekiwanie zmienić. Upewnij się, że to właściwa grupa.",
       "syncedAt": "Zsynchronizowano {{date}}",
       "neverSynced": "Jeszcze nie zsynchronizowano",
       "lastSyncFailedTitle": "Ostatnia synchronizacja nie powiodła się",
-      "previewSummary": "Przy najbliższej synchronizacji: dodanych {{toAdd}}, usuniętych {{toRemove}} (cel: {{target}} aktywnych użytkowników z kontem w OpenWebUI).",
+      "previewSummary": "Przy najbliższej synchronizacji: do dodania: {{toAdd}}, do usunięcia: {{toRemove}} (cel: {{target}} aktywnych użytkowników z kontem w OpenWebUI).",
       "syncNow": "Synchronizuj teraz",
       "detach": "Odepnij",
       "toast": {
@@ -229,7 +229,7 @@
       "targetBlank": "Nowa karta",
       "isActiveLabel": "Aplikacja aktywna",
       "showOnHubLabel": "Widoczna na stronie głównej (hub)",
-      "showOnHubHint": "Osobny przełącznik od „Aplikacja aktywna” (D1): „aktywna” decyduje o uprawnieniu, ten przełącznik wyłącznie o tym, czy kafelek renderuje się na hubie. Wyłączenie nie odbiera nikomu dostępu — tylko chowa kartę.",
+      "showOnHubHint": "Osobny przełącznik od „Aplikacja aktywna”: „aktywna” decyduje o uprawnieniu, ten przełącznik wyłącznie o tym, czy kafelek renderuje się na hubie. Wyłączenie nie odbiera nikomu dostępu — tylko chowa kartę.",
       "nextStepNative": "Pozostałe pola i uprawnienia ról ustawisz na stronie szczegółów, zaraz po aktywacji.",
       "nextStepExternal": "Pozostałe pola i uprawnienia ról ustawisz na stronie szczegółów, zaraz po utworzeniu."
     },
@@ -260,9 +260,9 @@
       "scopeRoleColumn": "Rola",
       "deleteConfirmTitle": "Usunąć aplikację {{name}}?",
       "deleteConfirmBody": "Razem z aplikacją znikną wszystkie granty ról do niej. Tej operacji nie da się cofnąć.",
-      "hideConfirmTitle": "Schować {{name}} z hubu?",
+      "hideConfirmTitle": "Ukryć {{name}} na hubie?",
       "hideConfirmBody": "Ten kafelek jest dziś widoczny na stronie głównej. Po zapisaniu zniknie z hubu KAŻDEGO użytkownika, który dziś go widzi — uprawnienia (kto ma dostęp) się nie zmieniają, tylko karta przestaje się renderować. Dopiero po kliknięciu „Zapisz dane” zmiana staje się realna.",
-      "hideConfirmAction": "Schowaj z hubu",
+      "hideConfirmAction": "Ukryj na hubie",
       "toast": {
         "detailsSaved": "Zapisano dane aplikacji",
         "permissionsSaved": "Zapisano uprawnienia",
@@ -281,9 +281,9 @@
     "title": "Synchronizacja OpenWebUI",
     "description": "Doprowadza konta i grupy w OpenWebUI do stanu z Konfiguracji Systemu. Podgląd niczego nie zapisuje — zmiany wykonuje dopiero przycisk obok.",
     "preview": "Pokaż różnice",
-    "previewBusy": "Liczę różnice…",
+    "previewBusy": "Liczenie różnic…",
     "apply": "Zastosuj ({{count}})",
-    "applyBusy": "Synchronizuję…",
+    "applyBusy": "Synchronizowanie…",
     "errorTitle": "Błąd",
     "connectFailed": "Nie udało się połączyć z OpenWebUI",
     "notConfiguredTitle": "OpenWebUI nie jest skonfigurowane",
@@ -304,6 +304,27 @@
       "orphanRevoke": "Odetnij (spoza Cortexa)"
     }
   },
+  "errors": {
+    "selfLockout": {
+      "applicationDelete": "Nie można usunąć aplikacji Konfiguracja Systemu — to jej uprawnieniem chroniony jest ten moduł.",
+      "applicationCode": "Nie można zmienić kodu aplikacji Konfiguracja Systemu — po tym kodzie pyta bramka tego modułu.",
+      "applicationDeactivate": "Nie można dezaktywować aplikacji Konfiguracja Systemu — odcięłoby to dostęp do tego modułu wszystkim administratorom.",
+      "applicationTarget": "Nie można zmienić typu ani adresu aplikacji Konfiguracja Systemu — ten wiersz opisuje sam moduł administracyjny, a podmiana go na adres zewnętrzny wyprowadzałaby administratorów poza tę aplikację.",
+      "applicationRoles": "Co najmniej jeden aktywny użytkownik musi zachować dostęp do Konfiguracji Systemu — wskazane role nie mają ani jednego aktywnego użytkownika, więc po zapisie nikt nie wszedłby już do tego modułu.",
+      "userRoles": "Nie można odebrać tych ról — to ostatni aktywny użytkownik z dostępem do Konfiguracji Systemu, więc po zapisie nikt nie wszedłby już do tego modułu.",
+      "roleApplications": "Nie można odebrać tej roli dostępu do Konfiguracji Systemu — to ostatnia rola z aktywnym użytkownikiem, więc po zapisie nikt nie wszedłby już do tego modułu.",
+      "userActive": "Nie można dezaktywować tego użytkownika — to ostatni aktywny użytkownik z dostępem do Konfiguracji Systemu, więc po zapisie nikt nie wszedłby już do tego modułu.",
+      "roleDeleted": "Nie można usunąć tej roli — to ostatnia rola z aktywnym użytkownikiem mającym dostęp do Konfiguracji Systemu, więc po usunięciu nikt nie wszedłby już do tego modułu."
+    },
+    "systemRoleProtected": "Nie można usunąć roli systemowej „{{name}}” — role systemowe są chronione przed usunięciem.",
+    "nativeCreationNotAllowed": "Kafelek natywny można utworzyć wyłącznie przez aktywację zarejestrowanego manifestu — wybierz go z listy niezaktywowanych modułów, nie z tego formularza.",
+    "moduleNotLicensed": "Moduł „{{code}}” nie jest objęty licencją tej instancji — nie ma go na liście ENABLED_MODULES, więc nie można go aktywować. Skontaktuj się z dostawcą platformy, żeby rozszerzyć zakres licencji.",
+    "openwebuiGroupAlreadyMapped": "Ta grupa OpenWebUI jest już podpięta pod rolę „{{role}}”. Jedna grupa może stać za najwyżej jedną rolą — inaczej obie role wyliczają dla niej różne członkostwo i przy każdej synchronizacji wyrzucają nawzajem swoich użytkowników. Odepnij grupę od roli „{{role}}” albo wybierz inną grupę.",
+    "nativeImmutable": {
+      "kindToNative": "Nie można zmienić typu istniejącej aplikacji na natywną — kafelek natywny powstaje wyłącznie przez aktywację zarejestrowanego manifestu.",
+      "identityLocked": "Nie można zmienić kodu, typu ani ścieżki aktywowanego kafelka natywnego — ustala je wyłącznie aktywacja zarejestrowanego manifestu."
+    }
+  },
   "_ctx": {
     "shared.dbConnectionHint": "opis; pod tytułem błędu na listach użytkowników, ról i aplikacji; tekst dla ADMINA",
     "shared.codeHint": "opis; podpowiedź pod polem kodu w formularzu roli i aplikacji",
@@ -317,7 +338,7 @@
     "appearance.unknownPresetTitle": "nagłówek alertu; zapisany wygląd nie istnieje w tej wersji aplikacji",
     "appearance.unknownPresetBody": "opis; treść alertu o nieznanym presecie; {{value}} to surowa wartość z bazy",
     "appearance.saveFailed": "komunikat błędu; zapis wyglądu instancji się nie powiódł",
-    "appearance.noChanges": "stan pośredni; obok wyszarzonego przycisku Zapisz; maks. 28 zn.",
+    "appearance.noChanges": "opis; statyczna podpowiedź obok wyszarzonego przycisku Zapisz — formularz nie ma niezapisanych zmian; maks. 28 zn.",
     "users.title": "nagłówek strony; lista tożsamości w instancji; maks. 20 zn.",
     "users.description": "opis; pod nagłówkiem strony Użytkownicy",
     "users.add": "przycisk; otwiera okno zakładania użytkownika; maks. 20 zn.",
@@ -559,6 +580,21 @@
     "openwebui.action.demoteUser": "wartość; operacja w wierszu planu — obniża administratora do zwykłego konta; maks. 24 zn.",
     "openwebui.action.restore": "wartość; operacja w wierszu planu — odblokowuje wcześniej odcięte konto; maks. 24 zn.",
     "openwebui.action.revoke": "wartość; operacja w wierszu planu — odbiera kontu dostęp do OpenWebUI; maks. 24 zn.",
-    "openwebui.action.orphanRevoke": "wartość; operacja w wierszu planu — odcina konto, którego w Cortexie w ogóle nie ma; maks. 28 zn."
+    "openwebui.action.orphanRevoke": "wartość; operacja w wierszu planu — odcina konto, którego w Cortexie w ogóle nie ma; maks. 28 zn.",
+    "errors.selfLockout.applicationDelete": "komunikat błędu; odmowa usunięcia wiersza aplikacji Konfiguracja Systemu; nazwa modułu ma być tą samą co w nawigacji",
+    "errors.selfLockout.applicationCode": "komunikat błędu; odmowa zmiany kodu wiersza aplikacji Konfiguracja Systemu",
+    "errors.selfLockout.applicationDeactivate": "komunikat błędu; odmowa dezaktywacji wiersza aplikacji Konfiguracja Systemu",
+    "errors.selfLockout.applicationTarget": "komunikat błędu; odmowa zmiany typu albo adresu wiersza aplikacji Konfiguracja Systemu",
+    "errors.selfLockout.applicationRoles": "komunikat błędu; odmowa zapisu ról na ekranie aplikacji, bo wskazane role nie mają aktywnego użytkownika",
+    "errors.selfLockout.userRoles": "komunikat błędu; odmowa odebrania ról ostatniemu aktywnemu adminowi",
+    "errors.selfLockout.roleApplications": "komunikat błędu; odmowa odebrania roli dostępu do modułu administracyjnego",
+    "errors.selfLockout.userActive": "komunikat błędu; odmowa dezaktywacji ostatniego aktywnego admina",
+    "errors.selfLockout.roleDeleted": "komunikat błędu; odmowa usunięcia ostatniej roli z dostępem do modułu administracyjnego",
+    "errors.systemRoleProtected": "komunikat błędu; odmowa usunięcia roli systemowej; {{name}} to nazwa roli z bazy, NIE tłumaczyć",
+    "errors.nativeCreationNotAllowed": "komunikat błędu; formularz „Dodaj aplikację” nie tworzy kafelków natywnych",
+    "errors.moduleNotLicensed": "komunikat błędu; instancja nie ma licencji na ten moduł; {{code}} to kod modułu, nazwy ENABLED_MODULES NIE tłumaczyć",
+    "errors.openwebuiGroupAlreadyMapped": "komunikat błędu; wybrana grupa OpenWebUI stoi już za inną rolą; {{role}} to kod roli, NIE tłumaczyć",
+    "errors.nativeImmutable.kindToNative": "komunikat błędu; odmowa zamiany istniejącej aplikacji na kafelek natywny przez edycję",
+    "errors.nativeImmutable.identityLocked": "komunikat błędu; odmowa zmiany kodu/typu/ścieżki aktywowanego kafelka natywnego"
   }
 }

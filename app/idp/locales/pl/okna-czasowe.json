@@ -1,11 +1,18 @@
 {
   "scan": {
     "run": "Skanuj teraz",
-    "success": "Skan zakończony: {{films}} filmów, {{newAvailabilities}} nowych dostępności.",
+    "success_one": "Skan zakończony: {{count}} film, {{availabilities}}.",
+    "success_few": "Skan zakończony: {{count}} filmy, {{availabilities}}.",
+    "success_many": "Skan zakończony: {{count}} filmów, {{availabilities}}.",
+    "success_other": "Skan zakończony: {{count}} filmów, {{availabilities}}.",
+    "newAvailabilities_one": "{{count}} nowa dostępność",
+    "newAvailabilities_few": "{{count}} nowe dostępności",
+    "newAvailabilities_many": "{{count}} nowych dostępności",
+    "newAvailabilities_other": "{{count}} nowych dostępności",
     "failed": "Skan nie powiódł się"
   },
   "dashboard": {
-    "title": "Okna czasowe — Dashboard",
+    "title": "Dashboard",
     "description": "Śledzenie od kiedy filmy pojawiają się na Rakuten TV PL, na podstawie codziennych skanów JustWatch.",
     "cardTrackedFilms": "Filmy śledzone",
     "cardAvailableNow": "Dostępne teraz (Rakuten PL)",
@@ -16,7 +23,7 @@
       "film": "Film",
       "available": "Rakuten PL teraz?",
       "availableYes": "Dostępny",
-      "availableNo": "Brak",
+      "availableNo": "Niedostępny",
       "offerType": "Typ oferty",
       "price": "Cena",
       "firstSeenAvailable": "Od kiedy"
@@ -89,13 +96,25 @@
     "addForeignTitle": "Dodaj tytuł",
     "noForeignTitles": "Brak dodatkowych tytułów — wyszukiwanie użyje tylko tytułu głównego.",
     "foreignTitlePlaceholder": "np. tytuł oryginalny lub w innym języku",
-    "removeForeignTitle": "Usuń tytuł"
+    "removeForeignTitle": "Usuń tytuł",
+    "errors": {
+      "titleRequired": "Wymagany tytuł",
+      "yearInteger": "Rok musi być liczbą całkowitą",
+      "yearInvalid": "Nieprawidłowy rok"
+    }
   },
   "_ctx": {
     "scan.run": "przycisk; uruchamia skan dostępności filmów od ręki; maks. 16 zn.",
-    "scan.success": "komunikat sukcesu; toast po skanie, {{films}} i {{newAvailabilities}} to liczby",
+    "scan.success_one": "komunikat sukcesu; toast po skanie, forma dla 1 filmu; {{count}} = liczba przeskanowanych filmów, {{availabilities}} = gotowy człon z scan.newAvailabilities",
+    "scan.success_few": "komunikat sukcesu; toast po skanie, forma dla 2–4 filmów; {{count}} = liczba przeskanowanych filmów, {{availabilities}} = gotowy człon z scan.newAvailabilities",
+    "scan.success_many": "komunikat sukcesu; toast po skanie, forma dla 5 i więcej oraz dla 0; {{count}} = liczba przeskanowanych filmów, {{availabilities}} = gotowy człon z scan.newAvailabilities",
+    "scan.success_other": "komunikat sukcesu; toast po skanie, forma zapasowa dla ułamków; {{count}} = liczba przeskanowanych filmów, {{availabilities}} = gotowy człon z scan.newAvailabilities",
+    "scan.newAvailabilities_one": "wartość; człon toastu po skanie wstawiany w {{availabilities}}, forma dla 1; {{count}} = liczba nowych dostępności",
+    "scan.newAvailabilities_few": "wartość; człon toastu po skanie wstawiany w {{availabilities}}, forma dla 2–4; {{count}} = liczba nowych dostępności",
+    "scan.newAvailabilities_many": "wartość; człon toastu po skanie wstawiany w {{availabilities}}, forma dla 5 i więcej oraz dla 0; {{count}} = liczba nowych dostępności",
+    "scan.newAvailabilities_other": "wartość; człon toastu po skanie wstawiany w {{availabilities}}, forma zapasowa dla ułamków; {{count}} = liczba nowych dostępności",
     "scan.failed": "komunikat błędu; skan nie doszedł do skutku; tytuł toastu, maks. 30 zn.",
-    "dashboard.title": "nagłówek strony; pulpit kafelka Okna czasowe; nazwa kafelka zostaje bez tłumaczenia",
+    "dashboard.title": "nagłówek strony; nazwa EKRANU (pulpit) wewnątrz kafelka, bez nazwy kafelka — tę niesie okruszek; maks. 16 zn.",
     "dashboard.description": "opis pod nagłówkiem strony; wyjaśnia po co jest ten ekran",
     "dashboard.cardTrackedFilms": "etykieta kafelka z liczbą; ile filmów jest w rejestrze; maks. 20 zn.",
     "dashboard.cardAvailableNow": "etykieta kafelka z liczbą; ile filmów jest dziś dostępnych; maks. 30 zn.",
@@ -105,7 +124,7 @@
     "dashboard.columns.film": "nagłówek kolumny tabeli; tytuł i rok filmu; maks. 14 zn.",
     "dashboard.columns.available": "nagłówek kolumny tabeli; czy film jest dziś na Rakuten TV PL; maks. 22 zn.",
     "dashboard.columns.availableYes": "wartość w wierszu tabeli; plakietka „film dostępny”; maks. 12 zn.",
-    "dashboard.columns.availableNo": "wartość w wierszu tabeli; plakietka „film niedostępny”; maks. 12 zn.",
+    "dashboard.columns.availableNo": "wartość w wierszu tabeli; plakietka „film niedostępny na Rakuten TV PL”; przeciwieństwo availableYes; maks. 12 zn.",
     "dashboard.columns.offerType": "nagłówek kolumny tabeli; rodzaj oferty JustWatch (najem/zakup); maks. 16 zn.",
     "dashboard.columns.price": "nagłówek kolumny tabeli; cena z oferty; maks. 10 zn.",
     "dashboard.columns.firstSeenAvailable": "nagłówek kolumny tabeli; data pierwszej zaobserwowanej dostępności; maks. 14 zn.",
@@ -163,6 +182,9 @@
     "form.addForeignTitle": "przycisk; dokłada puste pole na kolejny tytuł; maks. 16 zn.",
     "form.noForeignTitles": "stan pusty; lista dodatkowych tytułów jest pusta, wyjaśnia skutek",
     "form.foreignTitlePlaceholder": "placeholder pola; podpowiada, jaki tytuł tu wpisać",
-    "form.removeForeignTitle": "etykieta a11y; przycisk z ikoną X kasujący jeden tytuł z listy"
+    "form.removeForeignTitle": "etykieta a11y; przycisk z ikoną X kasujący jeden tytuł z listy",
+    "form.errors.titleRequired": "komunikat błędu; pod KAŻDYM pustym polem tytułu w oknie dodawania/edycji — zarówno głównym, jak i każdym tytułem obcojęzycznym; maks. 24 zn.",
+    "form.errors.yearInteger": "komunikat błędu; pod polem roku, gdy wpisano wartość niecałkowitą; maks. 34 zn.",
+    "form.errors.yearInvalid": "komunikat błędu; pod polem roku, gdy rok wypada poza zakresem 1900–2100; maks. 24 zn."
   }
 }

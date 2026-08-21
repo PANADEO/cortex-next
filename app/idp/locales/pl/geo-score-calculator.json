@@ -10,12 +10,13 @@
     "description": "Ocenia teksty prasowe pod kątem optymalizacji dla generatywnych silników AI — cztery ważone wymiary: dane liczbowe, czasowniki akcji, struktura, obiektywność.",
     "textLabel": "Tekst do analizy",
     "textPlaceholder": "Wklej treść artykułu prasowego do oceny pod kątem optymalizacji dla generatywnych silników AI…",
-    "wordsOne": "słowo",
-    "wordsFew": "słowa",
-    "wordsMany": "słów",
+    "words_one": "słowo",
+    "words_few": "słowa",
+    "words_many": "słów",
+    "words_other": "słowa",
     "charsSuffix": "znaków",
     "analyze": "Analizuj",
-    "analyzing": "Analizuję…",
+    "analyzing": "Analizowanie…",
     "loadExample": "Wczytaj przykład",
     "editAgain": "Edytuj ponownie",
     "errors": {
@@ -26,7 +27,10 @@
   "result": {
     "gradeLabel": "Ocena {{grade}}",
     "delta": "{{value}} od poprzedniej analizy",
-    "wordsInText": "{{words}} słów w tekście",
+    "wordsInText_one": "{{count}} słowo w tekście",
+    "wordsInText_few": "{{count}} słowa w tekście",
+    "wordsInText_many": "{{count}} słów w tekście",
+    "wordsInText_other": "{{count}} słowa w tekście",
     "highlightHint": "Podświetlone fragmenty: dane liczbowe, słowa subiektywne. Kliknij rekomendację obok, żeby przejść do powiązanego fragmentu.",
     "detectedVerbs": "Wykryte czasowniki akcji (metoda: {{method}})",
     "methodHeuristic": "heurystyka",
@@ -34,14 +38,14 @@
   },
   "history": {
     "title": "Historia",
-    "description": "Analizy GEO Score, które policzyłeś — status, wynik i pełny wynik dla każdej z nich.",
+    "description": "Analizy GEO Score, które policzyłeś — status, punktację i pełny wynik dla każdej z nich.",
     "export": "Eksportuj",
     "exportCsv": "Eksportuj CSV",
     "exportJson": "Eksportuj JSON",
     "loading": "Wczytywanie historii…",
     "searchPlaceholder": "Szukaj w tekście…",
     "emptyTitle": "Brak analiz",
-    "emptyDescription": "Przeanalizuj pierwszy tekst na Kalkulatorze — pojawi się tutaj po zapisaniu wyniku.",
+    "emptyDescription": "Przeanalizuj pierwszy tekst w Kalkulatorze — pojawi się tutaj po zapisaniu wyniku.",
     "gradeFilterLabel": "Ocena",
     "gradeFilter": {
       "all": "Wszystkie oceny",
@@ -117,12 +121,18 @@
     "restoreDefaults": "Przywróć domyślne",
     "resetConfirmTitle": "Przywrócić domyślną konfigurację?",
     "resetConfirmBody": "To nadpisze wagi, benchmarki, progi ocen i listy słów WSPÓLNEJ konfiguracji kalkulatora — dla wszystkich użytkowników tej instancji, nie tylko dla Ciebie. Tej operacji nie można cofnąć.",
-    "saving": "Zapisuję…",
+    "saving": "Zapisywanie…",
     "saved": "Ustawienia zapisane",
     "resetDone": "Przywrócono domyślną konfigurację",
     "errors": {
       "saveFailed": "Nie udało się zapisać ustawień",
       "resetFailed": "Nie udało się przywrócić domyślnej konfiguracji"
+    },
+    "validation": {
+      "weightSum": "Suma wag musi wynosić 100% (obecnie {{sum}}%)",
+      "listNotEmpty": "Lista musi zawierać co najmniej jeden element",
+      "emptyEntry": "Pusty wpis jest niedozwolony",
+      "invalidRegex": "Nieprawidłowy wzorzec regex: {{pattern}}"
     }
   },
   "_ctx": {
@@ -134,9 +144,10 @@
     "calculator.description": "opis pod nagłówkiem ekranu; tłumaczy, co kalkulator mierzy",
     "calculator.textLabel": "etykieta pola tekstowego; nad polem, w które wkleja się artykuł; maks. 24 zn.",
     "calculator.textPlaceholder": "placeholder pola; wklejany tekst źródłowy artykułu prasowego",
-    "calculator.wordsOne": "wartość; polska forma rzeczownika „słowo” dla liczby 1 („1 słowo”) w liczniku pod polem; maks. 12 zn.",
-    "calculator.wordsFew": "wartość; polska forma rzeczownika „słowo” dla 2-4 („3 słowa\") w liczniku pod polem; w językach z jedną formą mnogą użyj tej samej co wordsMany; maks. 12 zn.",
-    "calculator.wordsMany": "wartość; polska forma rzeczownika „słowo” dla 0 i 5+ („5 słów\") w liczniku pod polem; domyślna forma mnoga; maks. 12 zn.",
+    "calculator.words_one": "wartość; rzeczownik „słowo” w liczniku pod polem, forma dla 1 („1 słowo”); liczba stoi PRZED tym słowem; maks. 12 zn.",
+    "calculator.words_few": "wartość; rzeczownik „słowo” w liczniku pod polem, forma dla 2–4 i 22–24 („3 słowa”); w językach z jedną formą mnogą powtórz formę z words_many; maks. 12 zn.",
+    "calculator.words_many": "wartość; rzeczownik „słowo” w liczniku pod polem, forma dla 0, 5 i więcej oraz 12–14 („5 słów”); domyślna forma mnoga; maks. 12 zn.",
+    "calculator.words_other": "wartość; rzeczownik „słowo” w liczniku pod polem, forma zapasowa dla ułamków — po polsku dopełniacz liczby POJEDYNCZEJ („1,5 słowa”); maks. 12 zn.",
     "calculator.charsSuffix": "wartość; słowo po liczniku znaków „1200/5000 znaków\"; maks. 12 zn.",
     "calculator.analyze": "przycisk główny; uruchamia liczenie wyniku; maks. 14 zn.",
     "calculator.analyzing": "stan pośredni; napis na przycisku, gdy trwa liczenie; maks. 14 zn.",
@@ -146,7 +157,10 @@
     "calculator.errors.analyzeFailed": "komunikat błędu; toast, gdy mikroserwis liczący wynik nie odpowiedział",
     "result.gradeLabel": "wartość; ocena literowa A-F pod wynikiem punktowym; {{grade}} to litera; maks. 14 zn.",
     "result.delta": "wartość; plakietka zmiany wyniku względem poprzedniej próby w tej samej sesji; {{value}} to liczba ze znakiem",
-    "result.wordsInText": "wartość; liczba słów policzonego tekstu obok wyniku; {{words}} to liczba",
+    "result.wordsInText_one": "wartość; liczba słów policzonego tekstu obok wyniku, forma dla 1; {{count}} to liczba słów",
+    "result.wordsInText_few": "wartość; liczba słów policzonego tekstu obok wyniku, forma dla 2–4 i 22–24; {{count}} to liczba słów",
+    "result.wordsInText_many": "wartość; liczba słów policzonego tekstu obok wyniku, forma dla 0, 5 i więcej oraz 12–14; {{count}} to liczba słów",
+    "result.wordsInText_other": "wartość; liczba słów policzonego tekstu obok wyniku, forma zapasowa dla ułamków — po polsku dopełniacz liczby POJEDYNCZEJ; {{count}} to liczba słów",
     "result.highlightHint": "opis; nad podświetlonym tekstem, tłumaczy kolory i klikalność rekomendacji",
     "result.detectedVerbs": "opis; nad listą wykrytych czasowników, {{method}} to nazwa metody wykrywania",
     "result.methodHeuristic": "wartość; nazwa metody wykrywania czasowników bez modelu językowego; wstawiana w result.detectedVerbs; maks. 14 zn.",
@@ -200,7 +214,7 @@
     "settings.fields.benchmarkStats": "etykieta pola liczbowego; oczekiwana liczba danych liczbowych na 100 słów; maks. 26 zn.",
     "settings.fields.benchmarkVerbs": "etykieta pola liczbowego; oczekiwany udział czasowników akcji wśród czasowników; maks. 26 zn.",
     "settings.fields.benchmarkStructure": "etykieta pola liczbowego; oczekiwana liczba bulletów na 500 słów; maks. 26 zn.",
-    "settings.fields.benchmarkObjectivity": "etykieta pola liczbowego; górny dopuszczalny udział słów subiektywnych; maks. 26 zn.",
+    "settings.fields.benchmarkObjectivity": "etykieta pola liczbowego; górny dopuszczalny udział słów subiektywnych; maks. 28 zn.",
     "settings.fields.gradeAMin": "etykieta pola liczbowego; minimalny wynik punktowy na ocenę A; maks. 20 zn.",
     "settings.fields.gradeBMin": "etykieta pola liczbowego; minimalny wynik punktowy na ocenę B; maks. 20 zn.",
     "settings.fields.gradeCMin": "etykieta pola liczbowego; minimalny wynik punktowy na ocenę C; maks. 20 zn.",
@@ -225,6 +239,10 @@
     "settings.saved": "komunikat sukcesu; toast po zapisaniu konfiguracji",
     "settings.resetDone": "komunikat sukcesu; toast po przywróceniu domyślnej konfiguracji",
     "settings.errors.saveFailed": "komunikat błędu; toast, gdy zapis konfiguracji się nie powiódł",
-    "settings.errors.resetFailed": "komunikat błędu; toast, gdy przywrócenie domyślnej konfiguracji się nie powiodło"
+    "settings.errors.resetFailed": "komunikat błędu; toast, gdy przywrócenie domyślnej konfiguracji się nie powiodło",
+    "settings.validation.weightSum": "komunikat błędu; pod suwakami wag, gdy suma czterech wag nie daje 100; {{sum}} to bieżąca suma",
+    "settings.validation.listNotEmpty": "komunikat błędu; lista słów nie może zostać opróżniona do zera",
+    "settings.validation.emptyEntry": "komunikat błędu; pusty chip na liście słów",
+    "settings.validation.invalidRegex": "komunikat błędu; wzorzec bulletu nie jest poprawnym wyrażeniem regularnym; {{pattern}} to odrzucone wzorce po przecinku, NIE tłumaczyć"
   }
 }

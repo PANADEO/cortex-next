@@ -14,9 +14,10 @@
   "outcome": {
     "queued": "Zadanie czeka w kolejce…",
     "processing": "Trwa przetwarzanie dokumentu — konwersja, render stron i ekstrakcja przez model wizyjny…",
-    "truncated": "Dokument ma więcej stron niż limit przetwarzania — wynik obejmuje tylko pierwsze {{pages}} {{unit}}.",
-    "pageOne": "stronę",
-    "pageMany": "stron",
+    "truncated_one": "Dokument ma więcej stron niż limit przetwarzania — wynik obejmuje tylko pierwszą stronę.",
+    "truncated_few": "Dokument ma więcej stron niż limit przetwarzania — wynik obejmuje tylko pierwsze {{count}} strony.",
+    "truncated_many": "Dokument ma więcej stron niż limit przetwarzania — wynik obejmuje tylko pierwsze {{count}} stron.",
+    "truncated_other": "Dokument ma więcej stron niż limit przetwarzania — wynik obejmuje tylko pierwsze {{count}} stron.",
     "downloadButton": "Pobierz Markdown",
     "viewFullButton": "Zobacz pełny wynik",
     "fields": {
@@ -68,6 +69,43 @@
       "completedAt": "Zakończono"
     }
   },
+  "status": {
+    "queued": "W kolejce",
+    "processing": "Przetwarzanie",
+    "done": "Gotowe",
+    "error": "Błąd"
+  },
+  "errors": {
+    "unsupported-format": {
+      "title": "Nieobsługiwany format pliku",
+      "hint": "Ten typ pliku nie jest wspierany. Sprawdź listę dozwolonych rozszerzeń i spróbuj ponownie."
+    },
+    "file-too-large": {
+      "title": "Plik jest za duży",
+      "hint": "Zmniejsz rozmiar dokumentu albo podziel go na mniejsze części i spróbuj ponownie."
+    },
+    "conversion-failed": {
+      "title": "Nie udało się przetworzyć dokumentu",
+      "hint": "Plik może być uszkodzony albo usługa konwersji jest chwilowo niedostępna. Spróbuj wgrać dokument ponownie."
+    },
+    "vision-call-failed": {
+      "title": "Błąd modelu wizyjnego",
+      "hint": "Ekstrakcja treści dokumentu przez model AI nie powiodła się. Spróbuj ponownie za chwilę."
+    },
+    "page-limit-exceeded": {
+      "title": "Przekroczony limit stron",
+      "hint": "Dokument ma więcej stron niż dozwolony limit. Skróć dokument i spróbuj ponownie."
+    },
+    "unknown": {
+      "title": "Przetwarzanie nie powiodło się",
+      "hint": "Wystąpił nieoczekiwany błąd. Spróbuj ponownie."
+    }
+  },
+  "validation": {
+    "unsupportedFormat": "Nieobsługiwany format pliku: .{{extension}}. Dozwolone: {{allowed}}.",
+    "missingExtension": "Plik nie ma rozszerzenia — nie da się rozpoznać formatu.",
+    "fileTooLarge": "Plik jest za duży (limit: {{maxMb}} MB)."
+  },
   "_ctx": {
     "upload.title": "nagłówek ekranu; nazwa kafelka wyciągającego treść z dokumentów; maks. 24 zn.",
     "upload.description": "opis; podtytuł ekranu uploadu — co kafelek robi z wgranym plikiem",
@@ -79,9 +117,10 @@
     "upload.errors.submitFailed": "komunikat błędu; wysłanie pliku na serwer się nie powiodło",
     "outcome.queued": "stan pośredni; zadanie przyjęte, ale jeszcze nie zaczęło się przetwarzać",
     "outcome.processing": "stan pośredni; trwa konwersja i ekstrakcja treści przez model wizyjny",
-    "outcome.truncated": "opis; ostrzeżenie, że dokument przekroczył limit stron i wynik jest niepełny, {{pages}} = liczba przetworzonych stron, {{unit}} = rzeczownik „strona” w odpowiedniej formie",
-    "outcome.pageOne": "wartość; rzeczownik po liczbie 1 w ostrzeżeniu o obcięciu; maks. 12 zn.",
-    "outcome.pageMany": "wartość; rzeczownik po liczbie innej niż 1 w ostrzeżeniu o obcięciu; maks. 12 zn.",
+    "outcome.truncated_one": "opis; ostrzeżenie o obcięciu dokumentu, forma dla 1 przetworzonej strony",
+    "outcome.truncated_few": "opis; ostrzeżenie o obcięciu dokumentu, forma dla 2–4, {{count}} = liczba przetworzonych stron",
+    "outcome.truncated_many": "opis; ostrzeżenie o obcięciu dokumentu, forma dla 5 i więcej, {{count}} = liczba przetworzonych stron",
+    "outcome.truncated_other": "opis; ostrzeżenie o obcięciu dokumentu, forma zapasowa dla ułamków, {{count}} = liczba przetworzonych stron",
     "outcome.downloadButton": "przycisk; zapisuje wynik ekstrakcji jako plik .md na dysku; maks. 22 zn.",
     "outcome.viewFullButton": "przycisk; z ekranu uploadu przechodzi do pełnych szczegółów zadania; maks. 24 zn.",
     "outcome.fields.pages": "etykieta; opisuje liczbę przetworzonych stron w liście metadanych; maks. 12 zn.",
@@ -93,7 +132,7 @@
     "history.loading": "stan pośredni; trwa pobieranie listy zadań",
     "history.searchPlaceholder": "placeholder pola wyszukiwania nad tabelą; szuka po nazwie wgranego pliku",
     "history.columns.fileName": "nagłówek kolumny tabeli; nazwa wgranego pliku; maks. 10 zn.",
-    "history.columns.status": "nagłówek kolumny tabeli; maks. 12 zn.",
+    "history.columns.status": "nagłówek kolumny tabeli; stan przetwarzania zadania (w kolejce / przetwarzanie / gotowe / błąd); maks. 12 zn.",
     "history.columns.fileSize": "nagłówek kolumny tabeli; rozmiar pliku; maks. 12 zn.",
     "history.columns.pages": "nagłówek kolumny tabeli; liczba przetworzonych stron; maks. 12 zn.",
     "history.columns.elapsed": "nagłówek kolumny tabeli; czas przetwarzania w sekundach; maks. 20 zn.",
@@ -113,6 +152,25 @@
     "detail.notFound.description": "stan pusty; nie zdradza, czy zadanie istnieje u innego użytkownika",
     "detail.fields.createdAt": "etykieta; opisuje datę wgrania pliku w liście metadanych; maks. 12 zn.",
     "detail.fields.startedAt": "etykieta; opisuje moment rozpoczęcia przetwarzania; maks. 14 zn.",
-    "detail.fields.completedAt": "etykieta; opisuje moment zakończenia przetwarzania; maks. 14 zn."
+    "detail.fields.completedAt": "etykieta; opisuje moment zakończenia przetwarzania; maks. 14 zn.",
+    "status.queued": "wartość; badge stanu zadania — przyjęte, czeka na przetworzenie; maks. 16 zn.",
+    "status.processing": "wartość; badge stanu zadania — konwersja i ekstrakcja w toku; maks. 16 zn.",
+    "status.done": "wartość; badge stanu zadania — wynik gotowy; maks. 12 zn.",
+    "status.error": "wartość; badge stanu zadania — przetwarzanie nie powiodło się; maks. 12 zn.",
+    "errors.unsupported-format.title": "komunikat błędu; nagłówek karty błędu — backend odrzucił typ pliku; maks. 34 zn.",
+    "errors.unsupported-format.hint": "komunikat błędu; podpowiedź pod nagłówkiem — co użytkownik ma zrobić dalej",
+    "errors.file-too-large.title": "komunikat błędu; nagłówek karty błędu — plik przekroczył limit rozmiaru; maks. 26 zn.",
+    "errors.file-too-large.hint": "komunikat błędu; podpowiedź pod nagłówkiem — jak zmieścić się w limicie",
+    "errors.conversion-failed.title": "komunikat błędu; nagłówek karty błędu — konwersja dokumentu padła; maks. 38 zn.",
+    "errors.conversion-failed.hint": "komunikat błędu; podpowiedź pod nagłówkiem — plik uszkodzony albo usługa niedostępna",
+    "errors.vision-call-failed.title": "komunikat błędu; nagłówek karty błędu — wywołanie modelu wizyjnego padło; maks. 26 zn.",
+    "errors.vision-call-failed.hint": "komunikat błędu; podpowiedź pod nagłówkiem — zachęta do ponowienia za chwilę",
+    "errors.page-limit-exceeded.title": "komunikat błędu; nagłówek karty błędu — dokument dłuższy niż limit stron; maks. 28 zn.",
+    "errors.page-limit-exceeded.hint": "komunikat błędu; podpowiedź pod nagłówkiem — skrócić dokument",
+    "errors.unknown.title": "komunikat błędu; nagłówek karty błędu, gdy backend nie podał kodu błędu; maks. 34 zn.",
+    "errors.unknown.hint": "komunikat błędu; podpowiedź, gdy backend nie podał ani kodu, ani własnego opisu",
+    "validation.unsupportedFormat": "komunikat błędu; walidacja pliku przed wysyłką, {{extension}} = rozszerzenie wybranego pliku, {{allowed}} = lista dozwolonych rozszerzeń",
+    "validation.missingExtension": "komunikat błędu; walidacja pliku przed wysyłką — nazwa pliku nie ma rozszerzenia",
+    "validation.fileTooLarge": "komunikat błędu; walidacja pliku przed wysyłką, {{maxMb}} = limit rozmiaru w megabajtach"
   }
 }

@@ -10,9 +10,10 @@
     "description": "Scores press texts for generative engine optimisation — four weighted dimensions: numeric data, action verbs, structure, objectivity.",
     "textLabel": "Text to analyse",
     "textPlaceholder": "Paste the press article you want scored for generative engine optimisation…",
-    "wordsOne": "word",
-    "wordsFew": "words",
-    "wordsMany": "words",
+    "words_one": "word",
+    "words_few": "words",
+    "words_many": "words",
+    "words_other": "words",
     "charsSuffix": "characters",
     "analyze": "Analyse",
     "analyzing": "Analysing…",
@@ -26,7 +27,10 @@
   "result": {
     "gradeLabel": "Grade {{grade}}",
     "delta": "{{value}} vs. previous run",
-    "wordsInText": "{{words}} words in the text",
+    "wordsInText_one": "{{count}} word in the text",
+    "wordsInText_few": "{{count}} words in the text",
+    "wordsInText_many": "{{count}} words in the text",
+    "wordsInText_other": "{{count}} words in the text",
     "highlightHint": "Highlighted fragments: numeric data, subjective words. Click a recommendation on the side to jump to the matching fragment.",
     "detectedVerbs": "Detected action verbs (method: {{method}})",
     "methodHeuristic": "heuristic",
@@ -123,6 +127,12 @@
     "errors": {
       "saveFailed": "Could not save the settings",
       "resetFailed": "Could not restore the default configuration"
+    },
+    "validation": {
+      "weightSum": "The weights have to add up to 100% (currently {{sum}}%)",
+      "listNotEmpty": "The list has to contain at least one entry",
+      "emptyEntry": "An empty entry is not allowed",
+      "invalidRegex": "Invalid regex pattern: {{pattern}}"
     }
   }
 }

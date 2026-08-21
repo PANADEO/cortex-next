@@ -1,11 +1,13 @@
 {
   "ai-daily-assistant": {
     "label": "AI Chatbot",
-    "description": "General-purpose assistant"
+    "description": "General-purpose assistant",
+    "shortLabel": "Chatbot"
   },
   "ai-summarizer": {
     "label": "Summarizer",
-    "description": "Condenses long texts into a summary"
+    "description": "Condenses long texts into a summary",
+    "shortLabel": "Summarizer"
   },
   "content-guru": {
     "label": "Content Creator",
@@ -21,7 +23,8 @@
   },
   "fakturomat": {
     "label": "Invoice Analyser",
-    "description": "Extracts data from invoices and summarises them"
+    "description": "Extracts data from invoices and summarises them",
+    "shortLabel": "Invoices"
   },
   "geo-score-calculator": {
     "label": "GEO Score Calculator",
@@ -49,7 +52,12 @@
   },
   "linkedin-generator": {
     "label": "LinkedIn Generator",
-    "description": "Creates LinkedIn posts"
+    "description": "Creates LinkedIn posts",
+    "shortLabel": "LinkedIn"
+  },
+  "meeting-guru": {
+    "label": "Meeting Recording",
+    "description": "Sales-meeting assistant — recording, transcription and live AI hints"
   },
   "okna-czasowe": {
     "label": "Release Windows",
@@ -57,7 +65,8 @@
   },
   "presentation-generator": {
     "label": "Presentation Generator",
-    "description": "Builds a presentation outline from a description"
+    "description": "Builds a presentation outline from a description",
+    "shortLabel": "Presentations"
   },
   "sp-client": {
     "label": "Store-Pit Client Zone",
@@ -73,15 +82,18 @@
   },
   "text-analyzer": {
     "label": "Text Analyser",
-    "description": "Analyses content, tone and structure of a text"
+    "description": "Analyses content, tone and structure of a text",
+    "shortLabel": "Analyser"
   },
   "text-highlighter": {
     "label": "Text Highlighter",
-    "description": "Marks key passages in a text"
+    "description": "Marks key passages in a text",
+    "shortLabel": "Highlighter"
   },
   "text-transformer": {
     "label": "Text Transformer",
-    "description": "Rewrites text in a chosen style"
+    "description": "Rewrites text in a chosen style",
+    "shortLabel": "Transformer"
   },
   "token-usage": {
     "label": "Token Reporting",

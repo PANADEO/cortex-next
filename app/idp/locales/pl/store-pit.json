@@ -1,0 +1,516 @@
+{
+  "layers": {
+    "input": "Wejście",
+    "ocr": "OCR",
+    "idp": "IDP",
+    "engine": "Silnik",
+    "output": "Wyjście"
+  },
+  "status": {
+    "ok": "OK",
+    "completed": "Zakończony"
+  },
+  "actions": {
+    "reset": "Wyczyść"
+  },
+  "fields": {
+    "parcelReference": "Paczka / referencja",
+    "client": "Klient",
+    "country": "Kraj",
+    "service": "Usługa",
+    "destination": "Miejsce docelowe",
+    "weight": "Masa",
+    "discount": "Rabat",
+    "parcels": "Paczki",
+    "glsCost": "Koszt GLS",
+    "storePitPrice": "Cena Store-Pit",
+    "margin": "Marża",
+    "grandTotal": "Suma całkowita",
+    "variance": "Odchylenie",
+    "status": "Status",
+    "netTotal": "Suma netto",
+    "grossTotal": "Suma brutto"
+  },
+  "markupTable": {
+    "rule": "Reguła",
+    "pricingBasis": "Podstawa wyceny",
+    "formula": "Wzór",
+    "notes": "Uwagi"
+  },
+  "clientMeta": {
+    "flatpay": {
+      "basis": "Netto GLS po rabacie ShopDelivery",
+      "rule": "Netto GLS x 1.1"
+    },
+    "braintimizer": {
+      "basis": "Umowne stawki GLS dla BT",
+      "rule": "Cennik BT (DKK)"
+    },
+    "drywear": {
+      "basis": "Cennik DAO",
+      "rule": "Odczyt z cennika DAO wg usługi / masy"
+    },
+    "nordvio": {
+      "basis": "Cennik DAO",
+      "rule": "Odczyt z cennika DAO wg usługi / masy"
+    }
+  },
+  "overview": {
+    "title": "Przegląd procesu",
+    "description": "Czym jest ta faktura, na jakim jest etapie i jakie dane stoją za każdym krokiem.",
+    "runCompleted": "Przebieg zakończony",
+    "introLead": "Store-Pit kupuje paczki hurtowo od GLS",
+    "introBody": "i refakturuje je na swoich klientów z marżą. Ten ekran prowadzi jedną tygodniową fakturę GLS przez osiem kroków, które zamieniają jeden zbiorczy rachunek w czyste rozliczenie per klient. Kliknij dowolny krok, aby otworzyć stojące za nim dane.",
+    "period": "Tydzień {{week}} · okres {{from}} – {{to}} · faktura {{invoice}}",
+    "stepsTitle": "Ta faktura krok po kroku",
+    "referenceTitle": "Materiały źródłowe i ustawienia",
+    "state": {
+      "glsInvoiceNet": "Faktura GLS (netto)",
+      "spBilled": "Naliczone przez Store-Pit",
+      "spMargin": "Marża Store-Pit"
+    },
+    "steps": {
+      "sourceFiles": "GLS przysyła co tydzień dwa pliki — CSV z każdą paczką i PDF z zestawieniem stawek. Wszystko zaczyna się tutaj.",
+      "extraction": "Wczytanie tych plików na czyste pozycje przesyłek. To jedyny krok z OCR — wszystko po nim to już obliczenia.",
+      "reconciliation": "Sprawdzenie, czy liczby się zgadzają: suma z CSV równa się sumie z PDF, a liczby paczek się pokrywają. Błędne dane wyłapujemy przed fakturowaniem.",
+      "classification": "Ustalenie, do którego klienta należy każda paczka, na podstawie jej kodu referencyjnego (FP- to FlatPay, NV to Nordvio i tak dalej).",
+      "netting": "Dopasowanie rabatów GLS do właściwych paczek i odjęcie ich w pierwszej kolejności, żeby oszczędność trafiła do klienta przed naliczeniem marży.",
+      "reRating": "Zastosowanie własnych warunków cenowych każdego klienta — FlatPay x1.1, umowa Braintimizera, Drywear i Nordvio z cennika. To sedno całego procesu, a nie płaski narzut.",
+      "aggregation": "Zsumowanie wszystkiego per klient i kraj, a potem doliczenie dopłat — energetycznej, drogowej i za prefinansowanie.",
+      "export": "Każdy klient dostaje czyste zestawienie: swoje paczki, swoje kraje, kwotę do rozliczenia. Store-Pit widzi swoją marżę."
+    },
+    "references": {
+      "pricingBlurb": "Cenniki źródłowe i ustawienia, z których silnik korzysta przy przeliczaniu stawek.",
+      "auditLogBlurb": "Niezmienny, krok po kroku zapis tego przebiegu przetwarzania."
+    }
+  },
+  "sourceFiles": {
+    "title": "Pliki źródłowe",
+    "description": "Pliki wejściowe zarejestrowane dla tej faktury GLS Germany.",
+    "parsed": "Sparsowany",
+    "inputFilesTitle": "Pliki wejściowe",
+    "metadataTitle": "Metadane faktury",
+    "roles": {
+      "csv": "Szczegóły CSV na poziomie pozycji",
+      "pdf": "Podsumowanie faktury / stawki"
+    },
+    "stats": {
+      "rows": "Wiersze",
+      "type": "Typ",
+      "typeCsv": "Eksport CSV z GLS",
+      "encoding": "Kodowanie",
+      "pages": "Strony"
+    },
+    "meta": {
+      "carrier": "Przewoźnik",
+      "glsInvoiceNo": "Nr faktury GLS",
+      "spInvoiceNo": "Nr faktury Store-Pit",
+      "customerNo": "Nr klienta",
+      "invoiceDate": "Data faktury",
+      "period": "Okres",
+      "week": "Tydzień",
+      "currency": "Waluta",
+      "vat": "VAT"
+    },
+    "footnote": "CSV zawiera {{csvRows}} wierszy, które po wydzieleniu opłat naliczanych na poziomie faktury dają {{shipmentRows}} wierszy paczek — opłatami zajmuje się ekran Uzgadnianie."
+  },
+  "extraction": {
+    "title": "Ekstrakcja",
+    "description": "Ustrukturyzowane pozycje przesyłek odczytane ze szczegółowego CSV i podsumowania PDF od GLS.",
+    "counts": "pozycji paczek: {{lines}} · wierszy CSV: {{csvRows}}",
+    "columns": {
+      "glsNet": "Netto GLS",
+      "netAfter": "Netto po rabacie"
+    },
+    "searchPlaceholder": "Szukaj paczki, referencji, odbiorcy…",
+    "filters": {
+      "allClients": "Wszyscy klienci",
+      "allCountries": "Wszystkie kraje",
+      "allServices": "Wszystkie usługi"
+    },
+    "shownCount": "pokazano {{n}} z próbki",
+    "emptyTitle": "Brak pasujących pozycji",
+    "emptyDescription": "Wyczyść filtry, aby zobaczyć pełną wyodrębnioną próbkę.",
+    "footnote": "Widok pokazuje reprezentatywną próbkę spośród {{rows}} pozycji paczek wyodrębnionych dla faktury {{invoice}}. Opłatami naliczanymi na poziomie faktury zajmuje się ekran Uzgadnianie."
+  },
+  "reconciliation": {
+    "title": "Uzgadnianie",
+    "description": "Kontrole krzyżowe wiążące szczegóły odczytane z CSV z podsumowaniem faktury w PDF.",
+    "varianceBadge": "Odchylenie {{value}}",
+    "cards": {
+      "csvNetTotal": "Suma netto z CSV",
+      "pdfNetTotal": "Suma netto z PDF",
+      "pdfVat": "VAT z PDF",
+      "pdfGrossTotal": "Suma brutto z PDF"
+    },
+    "tabs": {
+      "checks": "Kontrole",
+      "services": "Zestawienie usług",
+      "charges": "Opłaty na fakturze"
+    },
+    "checks": {
+      "check": "Kontrola",
+      "value": "Wartość",
+      "note": "Uwaga"
+    },
+    "services": {
+      "csvRows": "Wiersze CSV",
+      "csvAmount": "Kwota z CSV",
+      "weightKg": "Masa (kg)",
+      "pdfAmount": "Kwota z PDF",
+      "footnote": "Resztkowe odchylenia na dopłatach drogowych i sortowniczych wynikają z zaokrągleń GLS na jednostkę — nieistotne dla rozliczenia z klientem."
+    },
+    "charges": {
+      "intro": "Opłaty naliczane na poziomie faktury (dopłaty energetyczne, ryczałty serwisowe, prefinansowanie) są wydzielane z pozycji paczek przed klasyfikacją usług.",
+      "articleNo": "Nr artykułu",
+      "description": "Opis",
+      "amount": "Kwota"
+    }
+  },
+  "netting": {
+    "title": "Kompensata",
+    "description": "Rabaty ShopDelivery -0.50 dopasowane do paczek i skompensowane z frachtem.",
+    "matchedCount": "dopasowano {{matched}} z {{rows}}",
+    "cards": {
+      "discountLines": "Pozycje rabatowe",
+      "matched": "Dopasowane",
+      "unmatched": "Niedopasowane",
+      "discountTotal": "Suma rabatów"
+    },
+    "columns": {
+      "matchedService": "Dopasowana usługa",
+      "freightBefore": "Fracht przed",
+      "freightAfter": "Fracht po"
+    },
+    "searchPlaceholder": "Szukaj paczki, referencji…",
+    "filters": {
+      "allCountries": "Wszystkie kraje",
+      "matched": "Dopasowanie",
+      "all": "Wszystkie",
+      "matchedOnly": "Dopasowane"
+    },
+    "shownCount": "{{shown}} z {{total}}",
+    "emptyTitle": "Brak pasujących pozycji",
+    "emptyDescription": "Wyczyść filtry, aby zobaczyć wszystkie pozycje kompensaty.",
+    "footnote": "Każdy dopasowany rabat obniża fracht GLS tej paczki jeszcze przed naliczeniem narzutu klienta, dzięki czemu oszczędność jest przenoszona poprawnie."
+  },
+  "reRating": {
+    "title": "Przeliczenie stawek",
+    "description": "Silnik cenowy per klient: klasyfikacja, kompensata, a potem przeliczenie kosztu GLS na cenę Store-Pit.",
+    "cards": {
+      "spMargin": "Marża SP",
+      "marginSplit": "Podział marży",
+      "marginOnGrandTotal": "{{pct}} od sumy całkowitej",
+      "surchargeAmount": "dopłaty {{value}}"
+    },
+    "rulesTitle": "Zastosowane reguły cenowe",
+    "rulesNote": "Reguły per klient — nie płaski narzut",
+    "breakdownTitle": "Od kosztu GLS do ceny Store-Pit",
+    "breakdownNote": "Podział na fracht i dopłaty per klient",
+    "columns": {
+      "glsFreight": "Fracht GLS",
+      "glsSurcharge": "Dopłaty GLS",
+      "glsTotal": "Suma GLS",
+      "spFreight": "Fracht SP",
+      "spSurcharge": "Dopłaty SP",
+      "spTotal": "Suma SP"
+    },
+    "marginBuildTitle": "Jak powstaje marża",
+    "margin": {
+      "freight": "Marża na frachcie",
+      "surcharge": "Marża na dopłatach",
+      "total": "Marża łączna"
+    }
+  },
+  "pricing": {
+    "title": "Reguły cenowe",
+    "description": "Cenniki źródłowe i ustawienia faktury, z których korzysta silnik przeliczania stawek.",
+    "intro": "Te tabele to słowniki — mnożniki narzutu, cennik DAO, umowne stawki Braintimizera i ustawienia stawek na poziomie faktury.",
+    "tabs": {
+      "markup": "Narzut Store-Pit",
+      "dao": "Cennik DAO",
+      "braintimizer": "Braintimizer",
+      "settings": "Ustawienia faktury"
+    },
+    "dao": {
+      "filterPlaceholder": "Filtruj po kluczu cennika…",
+      "shownCount": "{{shown}} z {{total}}",
+      "tier": "Próg",
+      "priceKey": "Klucz cennika"
+    },
+    "bt": {
+      "priceUnder5": "Cena < 5 kg (DKK)",
+      "transit": "Czas tranzytu"
+    },
+    "settings": {
+      "setting": "Ustawienie",
+      "value": "Wartość",
+      "source": "Źródło"
+    }
+  },
+  "clients": {
+    "title": "Klienci",
+    "description": "Rozliczenie per klient — widok, który dostaje każda marka.",
+    "count": "Klientów: {{n}}",
+    "summaryTitle": "Zestawienie rozliczeń",
+    "summaryNote": "Koszt GLS – cena Store-Pit",
+    "columns": {
+      "pricingRule": "Reguła cenowa"
+    }
+  },
+  "clientDetail": {
+    "notFoundTitle": "Nie znaleziono klienta",
+    "notFoundDescription": "Wskazany klient nie istnieje.",
+    "backToClients": "Wróć do klientów",
+    "back": "Wróć",
+    "amountToSettle": "Kwota do rozliczenia",
+    "costLine": "Koszt GLS {{cost}} · marża {{margin}} ({{pct}})",
+    "tabs": {
+      "breakdown": "Rozbicie na usługi"
+    },
+    "columns": {
+      "date": "Data"
+    },
+    "breakdown": {
+      "domExport": "Dom/Export",
+      "shipments": "Przesyłki",
+      "freight": "Fracht",
+      "energy": "Energia",
+      "serviceFlat": "Ryczałt serwisowy",
+      "preFinance": "Prefinansowanie",
+      "total": "Razem"
+    },
+    "searchPlaceholder": "Szukaj paczki, referencji, odbiorcy…",
+    "shownCount": "{{shown}} z {{total}} paczek",
+    "emptyTitle": "Brak pasujących paczek",
+    "emptyDescription": "Wyczyść wyszukiwanie, aby zobaczyć wszystkie paczki tego klienta."
+  },
+  "auditLog": {
+    "title": "Dziennik zdarzeń",
+    "description": "Przebieg przetwarzania faktury GLS {{invoice}}.",
+    "stepsBadge": "kroków: {{n}} · zakończono",
+    "cards": {
+      "runStatus": "Status przebiegu",
+      "steps": "Kroki",
+      "rowsProcessed": "Przetworzone wiersze"
+    },
+    "columns": {
+      "step": "Krok",
+      "detail": "Szczegóły",
+      "layer": "Warstwa",
+      "rows": "Wiersze",
+      "duration": "Czas trwania",
+      "finishedAt": "Zakończono o"
+    },
+    "footnote": "Ten dziennik to niezmienny zapis każdego etapu przetwarzania — neutralny ślad decyzji, który Store-Pit prowadzi dla każdej faktury."
+  },
+  "_ctx": {
+    "layers.input": "etykieta; plakietka warstwy pipeline'u — krok wejściowy, pliki od przewoźnika; maks. 12 zn.",
+    "layers.ocr": "etykieta; plakietka warstwy pipeline'u — krok z odczytem OCR; akronim, NIE tłumaczyć; maks. 12 zn.",
+    "layers.idp": "etykieta; plakietka warstwy w dzienniku zdarzeń — krok obsłużony przez IDP; akronim, NIE tłumaczyć; maks. 12 zn.",
+    "layers.engine": "etykieta; plakietka warstwy pipeline'u — krok liczony przez silnik cenowy; maks. 12 zn.",
+    "layers.output": "etykieta; plakietka warstwy pipeline'u — krok wydający wynik klientowi; maks. 12 zn.",
+    "status.ok": "wartość; plakietka statusu wiersza kontroli i kroku przebiegu — bez zastrzeżeń; maks. 6 zn.",
+    "status.completed": "wartość; status całego przebiegu przetwarzania faktury; maks. 14 zn.",
+    "actions.reset": "przycisk; kasuje wszystkie filtry nad tabelą, pojawia się dopiero gdy któryś jest ustawiony; maks. 12 zn.",
+    "fields.parcelReference": "nagłówek kolumny tabeli; numer paczki i kod referencyjny nadawcy w jednej komórce; maks. 22 zn.",
+    "fields.client": "nagłówek kolumny tabeli oraz placeholder listy wyboru; marka, na którą refakturowana jest paczka; maks. 14 zn.",
+    "fields.country": "nagłówek kolumny tabeli oraz placeholder listy wyboru; kraj doręczenia, wartości to kody ISO; maks. 12 zn.",
+    "fields.service": "nagłówek kolumny tabeli oraz placeholder listy wyboru; usługa przewoźnika, wartości pochodzą z danych GLS; maks. 14 zn.",
+    "fields.destination": "nagłówek kolumny tabeli; miasto i kraj odbiorcy; maks. 18 zn.",
+    "fields.weight": "nagłówek kolumny tabeli i etykieta kafelka liczbowego; masa paczki w kg; maks. 10 zn.",
+    "fields.discount": "nagłówek kolumny tabeli; rabat GLS odjęty od pozycji; maks. 12 zn.",
+    "fields.parcels": "nagłówek kolumny tabeli, etykieta kafelka liczbowego i zakładka; liczba paczek; maks. 12 zn.",
+    "fields.glsCost": "nagłówek kolumny tabeli i etykieta kafelka liczbowego; ile Store-Pit zapłacił GLS; maks. 14 zn.",
+    "fields.storePitPrice": "nagłówek kolumny tabeli i etykieta kafelka liczbowego; ile Store-Pit policzył klientowi; maks. 18 zn.",
+    "fields.margin": "nagłówek kolumny tabeli; różnica między ceną Store-Pit a kosztem GLS; maks. 10 zn.",
+    "fields.grandTotal": "nagłówek kolumny tabeli i etykieta wiersza podsumowania; suma wszystkich składników; maks. 18 zn.",
+    "fields.variance": "nagłówek kolumny tabeli i etykieta kafelka liczbowego; rozbieżność między CSV a PDF, docelowo zero; maks. 14 zn.",
+    "fields.status": "nagłówek kolumny tabeli i etykieta kafelka liczbowego; stan kroku lub kontroli; maks. 10 zn.",
+    "fields.netTotal": "etykieta wiersza metadanych i statystyki pliku; suma netto faktury; maks. 16 zn.",
+    "fields.grossTotal": "etykieta wiersza metadanych i statystyki pliku; suma brutto faktury; maks. 16 zn.",
+    "markupTable.rule": "nagłówek kolumny tabeli reguł narzutu; nazwa reguły cenowej; maks. 12 zn.",
+    "markupTable.pricingBasis": "nagłówek kolumny tabeli reguł narzutu; od czego liczona jest cena; maks. 20 zn.",
+    "markupTable.formula": "nagłówek kolumny tabeli reguł narzutu; wzór przeliczenia; maks. 12 zn.",
+    "markupTable.notes": "nagłówek kolumny tabeli reguł narzutu; komentarz do reguły; maks. 12 zn.",
+    "clientMeta.flatpay.basis": "opis; podstawa wyceny klienta FlatPay, pod kwotą na karcie klienta i w podtytule ekranu klienta; ShopDelivery to nazwa usługi GLS, NIE tłumaczyć",
+    "clientMeta.flatpay.rule": "wartość w wierszu tabeli; reguła cenowa FlatPay; mnożnik zapisany kropką dziesiętną jak we wzorze w danych; maks. 26 zn.",
+    "clientMeta.braintimizer.basis": "opis; podstawa wyceny klienta Braintimizer, pod kwotą na karcie klienta i w podtytule ekranu klienta; BT to skrót od Braintimizer",
+    "clientMeta.braintimizer.rule": "wartość w wierszu tabeli; reguła cenowa Braintimizera; DKK to kod waluty, zostaje; maks. 26 zn.",
+    "clientMeta.drywear.basis": "opis; podstawa wyceny klienta Drywear, pod kwotą na karcie klienta i w podtytule ekranu klienta; DAO to nazwa cennika, NIE tłumaczyć",
+    "clientMeta.drywear.rule": "wartość w wierszu tabeli; reguła cenowa Drywear — odczyt z cennika DAO; maks. 40 zn.",
+    "clientMeta.nordvio.basis": "opis; podstawa wyceny klienta Nordvio, pod kwotą na karcie klienta i w podtytule ekranu klienta; DAO to nazwa cennika, NIE tłumaczyć",
+    "clientMeta.nordvio.rule": "wartość w wierszu tabeli; reguła cenowa Nordvio — odczyt z cennika DAO; maks. 40 zn.",
+    "overview.title": "nagłówek ekranu startowego kafelka; przegląd całego przebiegu faktury; maks. 24 zn.",
+    "overview.description": "opis pod nagłówkiem ekranu startowego; zapowiada, co użytkownik tu znajdzie",
+    "overview.runCompleted": "wartość; plakietka w nagłówku ekranu startowego, przebieg zakończył się bez błędu; maks. 22 zn.",
+    "overview.introLead": "akapit; POGRUBIONY początek zdania wprowadzającego, sklejany z overview.introBody — musi kończyć się bez kropki",
+    "overview.introBody": "akapit; dalsza część zdania rozpoczętego przez overview.introLead — musi zaczynać się małą literą i domykać zdanie",
+    "overview.period": "opis; podpis pod akapitem wprowadzającym; {{week}} to numer tygodnia, {{from}} i {{to}} to daty okresu, {{invoice}} to numer faktury Store-Pit",
+    "overview.stepsTitle": "nagłówek sekcji; nad listą ośmiu kroków przetwarzania; maks. 34 zn.",
+    "overview.referenceTitle": "nagłówek sekcji; nad odnośnikami do reguł cenowych i dziennika zdarzeń; maks. 34 zn.",
+    "overview.state.glsInvoiceNet": "etykieta kafelka liczbowego; kwota netto z faktury przewoźnika; maks. 22 zn.",
+    "overview.state.spBilled": "etykieta kafelka liczbowego; łączna kwota, którą Store-Pit wystawił klientom; maks. 26 zn.",
+    "overview.state.spMargin": "etykieta kafelka liczbowego; zarobek Store-Pit na tej fakturze; maks. 22 zn.",
+    "overview.steps.sourceFiles": "opis; blurb kroku 1 na liście kroków — pliki wejściowe od GLS",
+    "overview.steps.extraction": "opis; blurb kroku 2 na liście kroków — odczyt plików przez OCR",
+    "overview.steps.reconciliation": "opis; blurb kroku 3 na liście kroków — uzgodnienie CSV z PDF",
+    "overview.steps.classification": "opis; blurb kroku 4 na liście kroków — przypisanie paczek do klientów; FP- i NV to prefiksy kodów referencyjnych, zostają",
+    "overview.steps.netting": "opis; blurb kroku 5 na liście kroków — kompensata rabatów GLS",
+    "overview.steps.reRating": "opis; blurb kroku 6 na liście kroków — przeliczenie stawek per klient; FlatPay, Braintimizer, Drywear, Nordvio to nazwy klientów",
+    "overview.steps.aggregation": "opis; blurb kroku 7 na liście kroków — agregacja i dopłaty",
+    "overview.steps.export": "opis; blurb kroku 8 na liście kroków — zestawienie wydawane klientowi",
+    "overview.references.pricingBlurb": "opis; podpis kafelka odnośnika do ekranu reguł cenowych",
+    "overview.references.auditLogBlurb": "opis; podpis kafelka odnośnika do dziennika zdarzeń",
+    "sourceFiles.title": "nagłówek ekranu; pliki wejściowe faktury przewoźnika; maks. 22 zn.",
+    "sourceFiles.description": "opis pod nagłówkiem ekranu; GLS Germany to nazwa własna oddziału przewoźnika",
+    "sourceFiles.parsed": "wartość; plakietka na karcie pliku — plik został odczytany; maks. 14 zn.",
+    "sourceFiles.inputFilesTitle": "nagłówek sekcji; nad kartami plików wejściowych; maks. 22 zn.",
+    "sourceFiles.metadataTitle": "nagłówek sekcji; nad listą metadanych faktury; maks. 22 zn.",
+    "sourceFiles.roles.csv": "etykieta; rola pliku CSV na jego karcie, wersalikami; maks. 34 zn.",
+    "sourceFiles.roles.pdf": "etykieta; rola pliku PDF na jego karcie, wersalikami; maks. 34 zn.",
+    "sourceFiles.stats.rows": "etykieta; statystyka na karcie pliku CSV — liczba wierszy; maks. 12 zn.",
+    "sourceFiles.stats.type": "etykieta; statystyka na karcie pliku — rodzaj pliku; maks. 12 zn.",
+    "sourceFiles.stats.typeCsv": "wartość; rodzaj pliku CSV na jego karcie; maks. 20 zn.",
+    "sourceFiles.stats.encoding": "etykieta; statystyka na karcie pliku CSV — kodowanie znaków; maks. 14 zn.",
+    "sourceFiles.stats.pages": "etykieta; statystyka na karcie pliku PDF — liczba stron; maks. 12 zn.",
+    "sourceFiles.meta.carrier": "etykieta wiersza metadanych; przewoźnik wystawiający fakturę; maks. 16 zn.",
+    "sourceFiles.meta.glsInvoiceNo": "etykieta wiersza metadanych; numer faktury przewoźnika; maks. 20 zn.",
+    "sourceFiles.meta.spInvoiceNo": "etykieta wiersza metadanych; numer faktury wystawionej przez Store-Pit; maks. 24 zn.",
+    "sourceFiles.meta.customerNo": "etykieta wiersza metadanych; numer Store-Pit w systemie GLS; maks. 16 zn.",
+    "sourceFiles.meta.invoiceDate": "etykieta wiersza metadanych; data wystawienia faktury; maks. 16 zn.",
+    "sourceFiles.meta.period": "etykieta wiersza metadanych; okres rozliczeniowy faktury; maks. 12 zn.",
+    "sourceFiles.meta.week": "etykieta wiersza metadanych; numer tygodnia rozliczeniowego; maks. 12 zn.",
+    "sourceFiles.meta.currency": "etykieta wiersza metadanych; waluta faktury; maks. 12 zn.",
+    "sourceFiles.meta.vat": "etykieta wiersza metadanych; kwota podatku z faktury; akronim, NIE tłumaczyć; maks. 8 zn.",
+    "sourceFiles.footnote": "akapit; przypis pod tabelami; {{csvRows}} to liczba wierszy CSV, {{shipmentRows}} to liczba wierszy paczek; „Uzgadnianie” to nazwa innego ekranu tego kafelka",
+    "extraction.title": "nagłówek ekranu; dane wyciągnięte z faktury przewoźnika; maks. 20 zn.",
+    "extraction.description": "opis pod nagłówkiem ekranu; skąd pochodzą pozycje w tabeli",
+    "extraction.counts": "wartość; licznik w nagłówku ekranu; {{lines}} to liczba pozycji paczek, {{csvRows}} to liczba wierszy CSV",
+    "extraction.columns.glsNet": "nagłówek kolumny tabeli; kwota netto GLS przed rabatem; maks. 14 zn.",
+    "extraction.columns.netAfter": "nagłówek kolumny tabeli; kwota netto GLS po odjęciu rabatu; maks. 18 zn.",
+    "extraction.searchPlaceholder": "placeholder pola wyszukiwania; przeszukuje numer paczki, referencję i odbiorcę",
+    "extraction.filters.allClients": "opcja listy wyboru; wyłącza filtr klienta; maks. 20 zn.",
+    "extraction.filters.allCountries": "opcja listy wyboru; wyłącza filtr kraju; maks. 20 zn.",
+    "extraction.filters.allServices": "opcja listy wyboru; wyłącza filtr usługi; maks. 20 zn.",
+    "extraction.shownCount": "wartość; licznik po prawej nad tabelą; {{n}} to liczba pozycji po filtrowaniu; maks. 24 zn.",
+    "extraction.emptyTitle": "stan pusty; filtry nie zwróciły żadnej pozycji, NIE błąd; maks. 30 zn.",
+    "extraction.emptyDescription": "stan pusty; podpowiada wyczyszczenie filtrów",
+    "extraction.footnote": "akapit; przypis pod tabelą; {{rows}} to liczba wyodrębnionych pozycji, {{invoice}} to numer faktury GLS; „Uzgadnianie” to nazwa innego ekranu tego kafelka",
+    "reconciliation.title": "nagłówek ekranu; porównanie danych z CSV i z PDF; maks. 20 zn.",
+    "reconciliation.description": "opis pod nagłówkiem ekranu; czym są kontrole na tym ekranie",
+    "reconciliation.varianceBadge": "wartość; plakietka w nagłówku ekranu; {{value}} to sformatowana liczba, zawsze zero przy poprawnym przebiegu; maks. 22 zn.",
+    "reconciliation.cards.csvNetTotal": "etykieta kafelka liczbowego; suma netto policzona z pliku CSV; maks. 20 zn.",
+    "reconciliation.cards.pdfNetTotal": "etykieta kafelka liczbowego; suma netto odczytana z PDF; maks. 20 zn.",
+    "reconciliation.cards.pdfVat": "etykieta kafelka liczbowego; kwota podatku z PDF; maks. 16 zn.",
+    "reconciliation.cards.pdfGrossTotal": "etykieta kafelka liczbowego; suma brutto z PDF; maks. 20 zn.",
+    "reconciliation.tabs.checks": "etykieta zakładki; lista kontroli spójności; maks. 18 zn.",
+    "reconciliation.tabs.services": "etykieta zakładki; zestawienie kwot w podziale na usługi; maks. 20 zn.",
+    "reconciliation.tabs.charges": "etykieta zakładki; opłaty naliczane na całą fakturę, nie na paczkę; maks. 20 zn.",
+    "reconciliation.checks.check": "nagłówek kolumny tabeli; nazwa kontroli; maks. 14 zn.",
+    "reconciliation.checks.value": "nagłówek kolumny tabeli; liczba lub kwota będąca wynikiem kontroli; maks. 12 zn.",
+    "reconciliation.checks.note": "nagłówek kolumny tabeli; komentarz do kontroli; maks. 12 zn.",
+    "reconciliation.services.csvRows": "nagłówek kolumny tabeli; liczba wierszy CSV dla usługi; maks. 14 zn.",
+    "reconciliation.services.csvAmount": "nagłówek kolumny tabeli; kwota policzona z CSV; maks. 16 zn.",
+    "reconciliation.services.weightKg": "nagłówek kolumny tabeli; łączna masa; jednostka w nawiasie zostaje; maks. 14 zn.",
+    "reconciliation.services.pdfAmount": "nagłówek kolumny tabeli; kwota odczytana z PDF; maks. 16 zn.",
+    "reconciliation.services.footnote": "akapit; przypis w stopce tabeli usług, wyjaśnia dopuszczalne resztkowe różnice",
+    "reconciliation.charges.intro": "akapit; wstęp nad tabelą opłat fakturowych, tłumaczy dlaczego są wydzielone",
+    "reconciliation.charges.articleNo": "nagłówek kolumny tabeli; numer artykułu GLS; maks. 16 zn.",
+    "reconciliation.charges.description": "nagłówek kolumny tabeli; opis opłaty; maks. 12 zn.",
+    "reconciliation.charges.amount": "nagłówek kolumny tabeli; kwota opłaty, ujemna dla rabatu; maks. 12 zn.",
+    "netting.title": "nagłówek ekranu; potrącanie rabatów GLS od frachtu; maks. 20 zn.",
+    "netting.description": "opis pod nagłówkiem ekranu; ShopDelivery to nazwa usługi GLS, kwota -0.50 zostaje bez zmian",
+    "netting.matchedCount": "wartość; licznik w nagłówku ekranu; {{matched}} to liczba dopasowanych rabatów, {{rows}} to wszystkie pozycje rabatowe",
+    "netting.cards.discountLines": "etykieta kafelka liczbowego; liczba pozycji rabatowych na fakturze; maks. 20 zn.",
+    "netting.cards.matched": "etykieta kafelka liczbowego; rabaty przypisane do konkretnej paczki; maks. 16 zn.",
+    "netting.cards.unmatched": "etykieta kafelka liczbowego; rabaty bez przypisanej paczki, wartość dodatnia jest ostrzeżeniem; maks. 16 zn.",
+    "netting.cards.discountTotal": "etykieta kafelka liczbowego; łączna kwota rabatów; maks. 18 zn.",
+    "netting.columns.matchedService": "nagłówek kolumny tabeli; usługa paczki, do której dopasowano rabat; maks. 22 zn.",
+    "netting.columns.freightBefore": "nagłówek kolumny tabeli; fracht przed odjęciem rabatu; maks. 16 zn.",
+    "netting.columns.freightAfter": "nagłówek kolumny tabeli; fracht po odjęciu rabatu; maks. 16 zn.",
+    "netting.searchPlaceholder": "placeholder pola wyszukiwania; przeszukuje numer paczki i referencję",
+    "netting.filters.matched": "placeholder listy wyboru; filtr po tym, czy rabat został dopasowany; maks. 16 zn.",
+    "netting.filters.all": "opcja listy wyboru; wyłącza filtr dopasowania; maks. 16 zn.",
+    "netting.filters.matchedOnly": "opcja listy wyboru; zawęża do rabatów dopasowanych do paczki; maks. 16 zn.",
+    "netting.shownCount": "wartość; licznik po prawej nad tabelą; {{shown}} po filtrowaniu, {{total}} wszystkich; maks. 20 zn.",
+    "netting.emptyTitle": "stan pusty; filtry nie zwróciły żadnej pozycji, NIE błąd; maks. 30 zn.",
+    "netting.emptyDescription": "stan pusty; podpowiada wyczyszczenie filtrów",
+    "netting.footnote": "akapit; przypis pod tabelą, wyjaśnia kolejność: najpierw rabat, potem narzut",
+    "reRating.title": "nagłówek ekranu; przeliczenie kosztu GLS na cenę dla klienta; maks. 24 zn.",
+    "reRating.description": "opis pod nagłówkiem ekranu; wymienia kolejność kroków silnika cenowego",
+    "reRating.cards.spMargin": "etykieta kafelka liczbowego; marża Store-Pit, skrót SP jak w tabeli obok; maks. 16 zn.",
+    "reRating.cards.marginSplit": "etykieta kafelka liczbowego; rozbicie marży na fracht i dopłaty; maks. 16 zn.",
+    "reRating.cards.marginOnGrandTotal": "opis pod wartością kafelka; {{pct}} to gotowy, sformatowany procent; maks. 26 zn.",
+    "reRating.cards.surchargeAmount": "opis pod wartością kafelka; {{value}} to gotowa, sformatowana kwota marży na dopłatach; maks. 26 zn.",
+    "reRating.rulesTitle": "nagłówek sekcji; nad tabelą reguł cenowych; maks. 30 zn.",
+    "reRating.rulesNote": "opis; podpis po prawej przy nagłówku sekcji, podkreśla że narzut nie jest jednakowy; maks. 44 zn.",
+    "reRating.breakdownTitle": "nagłówek sekcji; nad tabelą przejścia od kosztu do ceny; maks. 34 zn.",
+    "reRating.breakdownNote": "opis; podpis po prawej przy nagłówku sekcji; maks. 44 zn.",
+    "reRating.columns.glsFreight": "nagłówek kolumny tabeli; fracht zapłacony GLS; maks. 16 zn.",
+    "reRating.columns.glsSurcharge": "nagłówek kolumny tabeli; dopłaty zapłacone GLS; maks. 16 zn.",
+    "reRating.columns.glsTotal": "nagłówek kolumny tabeli; łączny koszt GLS; maks. 14 zn.",
+    "reRating.columns.spFreight": "nagłówek kolumny tabeli; fracht policzony klientowi, skrót SP od Store-Pit; maks. 14 zn.",
+    "reRating.columns.spSurcharge": "nagłówek kolumny tabeli; dopłaty policzone klientowi, skrót SP od Store-Pit; maks. 14 zn.",
+    "reRating.columns.spTotal": "nagłówek kolumny tabeli; łączna kwota dla klienta, skrót SP od Store-Pit; maks. 12 zn.",
+    "reRating.marginBuildTitle": "nagłówek sekcji; nad rozbiciem marży na składniki; maks. 30 zn.",
+    "reRating.margin.freight": "etykieta; opis kwoty w kafelku rozbicia marży — część z frachtu; maks. 20 zn.",
+    "reRating.margin.surcharge": "etykieta; opis kwoty w kafelku rozbicia marży — część z dopłat; maks. 20 zn.",
+    "reRating.margin.total": "etykieta; opis kwoty w kafelku rozbicia marży — suma; maks. 20 zn.",
+    "pricing.title": "nagłówek ekranu; cenniki i ustawienia używane przy przeliczaniu; maks. 22 zn.",
+    "pricing.description": "opis pod nagłówkiem ekranu; do czego służą tabele na tym ekranie",
+    "pricing.intro": "akapit; wstęp nad zakładkami, wylicza cztery zbiory danych; DAO i Braintimizer to nazwy własne",
+    "pricing.tabs.markup": "etykieta zakładki; reguły narzutu Store-Pit; maks. 22 zn.",
+    "pricing.tabs.dao": "etykieta zakładki; cennik DAO; nazwa własna cennika, NIE tłumaczyć; maks. 20 zn.",
+    "pricing.tabs.braintimizer": "etykieta zakładki; umowne stawki klienta Braintimizer; nazwa własna, NIE tłumaczyć; maks. 20 zn.",
+    "pricing.tabs.settings": "etykieta zakładki; stawki ustawiane na poziomie całej faktury; maks. 22 zn.",
+    "pricing.dao.filterPlaceholder": "placeholder pola filtrowania; zawęża cennik DAO po kluczu pozycji",
+    "pricing.dao.shownCount": "wartość; licznik obok pola filtrowania; {{shown}} po filtrowaniu, {{total}} wszystkich; maks. 20 zn.",
+    "pricing.dao.tier": "nagłówek kolumny tabeli; próg wagowy pozycji cennika; maks. 12 zn.",
+    "pricing.dao.priceKey": "nagłówek kolumny tabeli; techniczny klucz pozycji cennika; maks. 18 zn.",
+    "pricing.bt.priceUnder5": "nagłówek kolumny tabeli; cena dla paczek do 5 kg; kod waluty w nawiasie zostaje; maks. 24 zn.",
+    "pricing.bt.transit": "nagłówek kolumny tabeli; deklarowany czas doręczenia; maks. 16 zn.",
+    "pricing.settings.setting": "nagłówek kolumny tabeli; nazwa ustawienia faktury; maks. 14 zn.",
+    "pricing.settings.value": "nagłówek kolumny tabeli; wartość ustawienia; maks. 12 zn.",
+    "pricing.settings.source": "nagłówek kolumny tabeli; skąd pochodzi wartość ustawienia; maks. 12 zn.",
+    "clients.title": "nagłówek ekranu; lista klientów i ich rozliczeń; maks. 16 zn.",
+    "clients.description": "opis pod nagłówkiem ekranu; podkreśla, że to widok wydawany klientowi",
+    "clients.count": "wartość; licznik w nagłówku ekranu; {{n}} to liczba klientów; maks. 20 zn.",
+    "clients.summaryTitle": "nagłówek sekcji; nad tabelą zbiorczą rozliczeń; maks. 30 zn.",
+    "clients.summaryNote": "opis; podpis po prawej przy nagłówku sekcji, nazywa oś tabeli: od kosztu do ceny; maks. 34 zn.",
+    "clients.columns.pricingRule": "nagłówek kolumny tabeli; reguła, po której wyceniono klienta; maks. 18 zn.",
+    "clientDetail.notFoundTitle": "stan pusty; w adresie jest nieznany identyfikator klienta; maks. 30 zn.",
+    "clientDetail.notFoundDescription": "stan pusty; opis pod nagłówkiem nieznanego klienta",
+    "clientDetail.backToClients": "przycisk; wraca na listę klientów z ekranu nieznanego klienta; maks. 22 zn.",
+    "clientDetail.back": "przycisk; wraca na listę klientów z nagłówka ekranu klienta; maks. 10 zn.",
+    "clientDetail.amountToSettle": "etykieta; wersalikami nad główną kwotą na karcie klienta; maks. 24 zn.",
+    "clientDetail.costLine": "opis; podpis pod główną kwotą; {{cost}}, {{margin}} i {{pct}} to gotowe, sformatowane wartości",
+    "clientDetail.tabs.breakdown": "etykieta zakładki; rozbicie rozliczenia na usługi i kraje; maks. 22 zn.",
+    "clientDetail.columns.date": "nagłówek kolumny tabeli; data nadania paczki; maks. 10 zn.",
+    "clientDetail.breakdown.domExport": "nagłówek kolumny tabeli; oznaczenie GLS: przesyłka krajowa albo eksportowa; wartości w kolumnie zostają po angielsku, NIE tłumaczyć; maks. 14 zn.",
+    "clientDetail.breakdown.shipments": "nagłówek kolumny tabeli; liczba przesyłek w wierszu zbiorczym; maks. 14 zn.",
+    "clientDetail.breakdown.freight": "nagłówek kolumny tabeli; kwota za sam przewóz; maks. 12 zn.",
+    "clientDetail.breakdown.energy": "nagłówek kolumny tabeli; dopłata paliwowo-energetyczna; maks. 12 zn.",
+    "clientDetail.breakdown.serviceFlat": "nagłówek kolumny tabeli; ryczałtowa opłata serwisowa; maks. 18 zn.",
+    "clientDetail.breakdown.preFinance": "nagłówek kolumny tabeli; opłata za prefinansowanie należności; maks. 18 zn.",
+    "clientDetail.breakdown.total": "etykieta wiersza podsumowania tabeli; suma dla klienta bez podziału na kraje; maks. 10 zn.",
+    "clientDetail.searchPlaceholder": "placeholder pola wyszukiwania; przeszukuje numer paczki, referencję i odbiorcę",
+    "clientDetail.shownCount": "wartość; licznik po prawej nad tabelą paczek; {{shown}} po filtrowaniu, {{total}} wszystkich; maks. 24 zn.",
+    "clientDetail.emptyTitle": "stan pusty; wyszukiwanie nie zwróciło żadnej paczki, NIE błąd; maks. 30 zn.",
+    "clientDetail.emptyDescription": "stan pusty; podpowiada wyczyszczenie wyszukiwania",
+    "auditLog.title": "nagłówek ekranu; niezmienny zapis przebiegu przetwarzania; maks. 22 zn.",
+    "auditLog.description": "opis pod nagłówkiem ekranu; {{invoice}} to numer faktury GLS",
+    "auditLog.stepsBadge": "wartość; plakietka w nagłówku ekranu; {{n}} to liczba kroków przebiegu; maks. 24 zn.",
+    "auditLog.cards.runStatus": "etykieta kafelka liczbowego; stan całego przebiegu; maks. 20 zn.",
+    "auditLog.cards.steps": "etykieta kafelka liczbowego; ile kroków wykonano z ilu; maks. 12 zn.",
+    "auditLog.cards.rowsProcessed": "etykieta kafelka liczbowego; łączna liczba przetworzonych wierszy; maks. 22 zn.",
+    "auditLog.columns.step": "nagłówek kolumny tabeli; numer i nazwa kroku; maks. 12 zn.",
+    "auditLog.columns.detail": "nagłówek kolumny tabeli; co krok zrobił; maks. 14 zn.",
+    "auditLog.columns.layer": "nagłówek kolumny tabeli; warstwa pipeline'u, do której należy krok; maks. 12 zn.",
+    "auditLog.columns.rows": "nagłówek kolumny tabeli; liczba wierszy przetworzonych w kroku; maks. 12 zn.",
+    "auditLog.columns.duration": "nagłówek kolumny tabeli; czas trwania kroku; maks. 16 zn.",
+    "auditLog.columns.finishedAt": "nagłówek kolumny tabeli; znacznik czasu zakończenia kroku; maks. 16 zn.",
+    "auditLog.footnote": "akapit; przypis pod tabelą, tłumaczy po co ten dziennik istnieje",
+    "netting.filters.allCountries": "opcja listy wyboru; wyłącza filtr kraju; maks. 20 zn."
+  }
+}

@@ -14,9 +14,10 @@
   "outcome": {
     "queued": "The job is waiting in the queue…",
     "processing": "Processing the document — conversion, page rendering and extraction by the vision model…",
-    "truncated": "The document has more pages than the processing limit — the result covers only the first {{pages}} {{unit}}.",
-    "pageOne": "page",
-    "pageMany": "pages",
+    "truncated_one": "The document has more pages than the processing limit — the result covers only the first page.",
+    "truncated_few": "The document has more pages than the processing limit — the result covers only the first {{count}} pages.",
+    "truncated_many": "The document has more pages than the processing limit — the result covers only the first {{count}} pages.",
+    "truncated_other": "The document has more pages than the processing limit — the result covers only the first {{count}} pages.",
     "downloadButton": "Download Markdown",
     "viewFullButton": "See the full result",
     "fields": {
@@ -67,5 +68,42 @@
       "startedAt": "Started",
       "completedAt": "Finished"
     }
+  },
+  "status": {
+    "queued": "Queued",
+    "processing": "Processing",
+    "done": "Done",
+    "error": "Error"
+  },
+  "errors": {
+    "unsupported-format": {
+      "title": "Unsupported file format",
+      "hint": "This file type is not supported. Check the list of allowed extensions and try again."
+    },
+    "file-too-large": {
+      "title": "File is too large",
+      "hint": "Reduce the document size or split it into smaller parts and try again."
+    },
+    "conversion-failed": {
+      "title": "Could not process the document",
+      "hint": "The file may be corrupted, or the conversion service is temporarily unavailable. Try uploading the document again."
+    },
+    "vision-call-failed": {
+      "title": "Vision model error",
+      "hint": "The AI model failed to extract the document content. Try again in a moment."
+    },
+    "page-limit-exceeded": {
+      "title": "Page limit exceeded",
+      "hint": "The document has more pages than the allowed limit. Shorten it and try again."
+    },
+    "unknown": {
+      "title": "Processing failed",
+      "hint": "An unexpected error occurred. Try again."
+    }
+  },
+  "validation": {
+    "unsupportedFormat": "Unsupported file format: .{{extension}}. Allowed: {{allowed}}.",
+    "missingExtension": "The file has no extension — its format cannot be determined.",
+    "fileTooLarge": "File is too large (limit: {{maxMb}} MB)."
   }
 }

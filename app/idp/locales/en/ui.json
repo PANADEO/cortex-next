@@ -1,0 +1,178 @@
+{
+  "actionLog": {
+    "title": "Action log",
+    "empty": "No actions yet.",
+    "noMatch": "No events match this filter.",
+    "eventCount_one": "{{count}} event",
+    "eventCount_few": "{{count}} events",
+    "eventCount_many": "{{count}} events",
+    "eventCount_other": "{{count}} events",
+    "collapseAll": "Collapse all",
+    "expandAll": "Expand all",
+    "showLabel": "Show:",
+    "sortLabel": "Sort:",
+    "sortNewest": "Newest first",
+    "sortOldest": "Oldest first",
+    "moreFields_one": "+{{count}} more field",
+    "moreFields_few": "+{{count}} more fields",
+    "moreFields_many": "+{{count}} more fields",
+    "moreFields_other": "+{{count}} more fields",
+    "moreChanges_one": "+{{count}} more change",
+    "moreChanges_few": "+{{count}} more changes",
+    "moreChanges_many": "+{{count}} more changes",
+    "moreChanges_other": "+{{count}} more changes",
+    "reprocessDescription": "Reprocess triggered. Pipeline rerun with the parameters listed below.",
+    "editDescription": "{{action}}. See diff below for changed fields.",
+    "filters": {
+      "all": "All",
+      "edit": "User edits",
+      "system": "System",
+      "verification": "Verification"
+    },
+    "tags": {
+      "edit": "Edit",
+      "system": "System",
+      "verification": "Verify"
+    },
+    "meta": {
+      "event": "Event",
+      "by": "By",
+      "at": "At"
+    },
+    "diff": {
+      "field": "Field",
+      "before": "Before",
+      "after": "After"
+    },
+    "reprocess": {
+      "unavailable": "Reprocess details unavailable",
+      "aiContextUsed": "AI context used",
+      "noAdditionalContext": "No additional context",
+      "fastProcessing": "Fast processing",
+      "packagingAuto": "Packaging: auto by B/L",
+      "packagingPackages": "Packaging: packages",
+      "packagingPallets": "Packaging: pallets"
+    },
+    "actions": {
+      "imported": "Package imported",
+      "imported_with_error": "Imported with error",
+      "analysing": "Started analysis pipeline",
+      "analysis_failed": "Analysis failed",
+      "ready_for_verification": "Package ready for verification",
+      "verification": "Started package verification",
+      "cancel_verification": "Verification cancelled",
+      "unlock_verification": "Package unlocked",
+      "verified": "Marked package as verified",
+      "reset_verification": "Verification reset",
+      "seller_updated": "Updated seller",
+      "buyer_updated": "Updated buyer",
+      "consignor_updated": "Updated consignor",
+      "consignee_updated": "Updated consignee",
+      "invoice_updated": "Updated invoice",
+      "invoice_line_updated": "Updated invoice line",
+      "invoice_totals_updated": "Updated invoice totals",
+      "delivery_terms_updated": "Updated delivery terms",
+      "transport_info_updated": "Updated transport info",
+      "sad_context_updated": "Updated SAD context",
+      "custom_status_updated": "Updated custom status",
+      "user_notes_updated": "Updated user notes",
+      "deleted": "Package deleted",
+      "restored": "Package restored"
+    }
+  },
+  "api": {
+    "forbidden": "Access denied"
+  },
+  "autoRefresh": {
+    "pause": "Pause auto-refresh",
+    "resume": "Resume auto-refresh",
+    "refreshNow": "Refresh now"
+  },
+  "chipInput": {
+    "placeholder": "Type and press Enter…",
+    "searchPlaceholder": "Search…",
+    "searchLabel": "{{list}} — search",
+    "listLabel": "List",
+    "empty": "No items",
+    "noResults": "No matching items",
+    "remove": "Remove “{{chip}}”",
+    "count_one": "item",
+    "count_few": "items",
+    "count_many": "items",
+    "count_other": "items"
+  },
+  "combobox": {
+    "placeholder": "Pick or type a value",
+    "searchPlaceholder": "Search or type a new value…",
+    "searchLabel": "Search or type a new value",
+    "noResults": "No results",
+    "create": "Create “{{value}}”"
+  },
+  "dataGrid": {
+    "searchPlaceholder": "Search…"
+  },
+  "documentViewer": {
+    "noSelection": "No document selected.",
+    "noPreview": "No inline preview for {{fileName}}.",
+    "loadingPdf": "Loading PDF…",
+    "loadPdfFailed": "Failed to load PDF",
+    "remoteUnsupportedPdf": "Remote URL source not supported for PDF; pass a Blob.",
+    "remoteUnsupportedDocx": "Remote URL source not supported for DOCX; pass a Blob.",
+    "remoteUnsupportedXlsx": "Remote URL source not supported for XLSX; pass a Blob.",
+    "unknownError": "Unknown error",
+    "loadingSpreadsheet": "Loading spreadsheet…",
+    "parseSpreadsheetFailed": "Failed to parse spreadsheet",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "zoomOut": "Zoom out",
+    "zoomIn": "Zoom in",
+    "fitToWidth": "Fit to width",
+    "matched_one": "Matched {{count}} field in row {{row}}.",
+    "matched_few": "Matched {{count}} fields in row {{row}}.",
+    "matched_many": "Matched {{count}} fields in row {{row}}.",
+    "matched_other": "Matched {{count}} fields in row {{row}}."
+  },
+  "fileUploader": {
+    "dropMany": "Drop files here or click to browse",
+    "dropOne": "Drop a ZIP or click to browse"
+  },
+  "iconPicker": {
+    "placeholder": "Pick an icon",
+    "searchPlaceholder": "Search icons…",
+    "searchLabel": "Search icons",
+    "noResults": "No results"
+  },
+  "jsonEditor": {
+    "saving": "Saving…",
+    "revert": "Revert",
+    "unsaved": "Unsaved changes",
+    "invalidJson": "Invalid JSON"
+  },
+  "pageHeader": {
+    "descriptionLabel": "Page description"
+  },
+  "pagination": {
+    "page": "Page {{current}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "primitives": {
+    "close": "Close",
+    "more": "More"
+  },
+  "skinToggle": {
+    "trigger": "Choose skin",
+    "heading": "Skin"
+  },
+  "themeToggle": {
+    "trigger": "Toggle theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "userMenu": {
+    "trigger": "User menu",
+    "adminBadge": "IDP admin",
+    "signOut": "Sign out"
+  }
+}

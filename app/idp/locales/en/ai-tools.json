@@ -5,7 +5,6 @@
     "deniedBody": "Your account does not have this application enabled. Please contact your instance administrator."
   },
   "shared": {
-    "backToHub": "Back to hub",
     "generate": "Generate",
     "generateSuccess": "Result generated",
     "generateFailed": "Could not generate the result",

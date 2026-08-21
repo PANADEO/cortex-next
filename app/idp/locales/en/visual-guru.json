@@ -4,7 +4,7 @@
     "promptLabel": "Image description",
     "promptPlaceholder": "E.g. a minimalist illustration of a fox against mountains, flat vector style",
     "contextLabel": "Additional context (optional)",
-    "contextPlaceholder": "Style, colour palette, composition constraints...",
+    "contextPlaceholder": "Style, colour palette, composition constraints…",
     "referenceImagesLabel": "Reference images (optional, max. {{max}})",
     "referenceImagesHint": "PNG, JPEG or WebP",
     "referenceThumbAlt": "Preview of reference image {{index}}",
@@ -22,7 +22,7 @@
     },
     "variantCountLabel": "Number of variants",
     "generate": "Generate",
-    "generating": "Generating...",
+    "generating": "Generating…",
     "emptyTitle": "No images generated yet",
     "emptyDescription": "Enter a description and click Generate. Every generation is archived automatically.",
     "errors": {

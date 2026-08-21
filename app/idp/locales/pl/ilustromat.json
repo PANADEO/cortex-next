@@ -14,7 +14,7 @@
     "templatePlaceholder": "Wybierz szablon",
     "variantsLabel": "Liczba wariantów",
     "generate": "Generuj",
-    "generating": "Generowanie..."
+    "generating": "Generowanie…"
   },
   "assist": {
     "polish": "Dopracuj",
@@ -25,14 +25,14 @@
     "undoHelp": "Przywraca tekst sprzed ostatniej zmiany AI.",
     "helpPolish": "Poprawia sformułowanie, nie zmienia sensu ani tematu.",
     "helpRephrase": "Ten sam sens, inne ujęcie. Każde kolejne kliknięcie proponuje coś innego niż wersje pokazane wcześniej.",
-    "helpProposeSubtitle": "Proponuje hasło na podstawie tytułu posta.",
+    "helpProposeSubtitle": "Proponuje podtytuł na podstawie tytułu posta.",
     "helpProposeIdea": "Wymyśla pomysł na ilustrację z tytułu i podtytułu. Każde kolejne kliknięcie daje nowy pomysł."
   },
   "result": {
-    "emptyTitle": "Brak wygenerowanych kafelków",
+    "emptyTitle": "Brak wygenerowanych grafik",
     "emptyDescription": "Wypełnij tytuł i kliknij Generuj. Warianty pojawią się już z nałożoną ramką marki.",
     "variantAlt": "Wariant {{index}}",
-    "selected": "Wybrany kafelek",
+    "selected": "Wybrana grafika",
     "download": "Pobierz PNG",
     "regenerate": "Wygeneruj ponownie",
     "model": "Model:",
@@ -76,7 +76,7 @@
   },
   "templates": {
     "title": "Szablony marki",
-    "description": "Font, kolory, logo i geometria ramki. Podgląd renderuje się tą samą funkcją co gotowy kafelek.",
+    "description": "Font, kolory, logo i geometria ramki. Podgląd renderuje się tą samą funkcją co gotowa grafika.",
     "newTemplate": "Nowy szablon",
     "defaultName": "Nowy szablon",
     "editing": "Edycja: {{id}}",
@@ -88,7 +88,7 @@
     "contrastTitle": "Niski kontrast",
     "contrastBody": "Kontrast tekstu do tła wynosi {{ratio}}:1, poniżej progu WCAG AA (4.5:1). Tekst może być nieczytelny.",
     "fontLabel": "Font",
-    "websiteLabel": "Tekst strony w pasku",
+    "websiteLabel": "Adres strony w pasku",
     "logoPositionLabel": "Pozycja logo",
     "layoutLabel": "Układ",
     "textAlignLabel": "Wyrównanie tekstu",
@@ -99,12 +99,12 @@
     "fontRegularLabel": "Własny font (regular)",
     "fontRegularHint": "Plik TTF/OTF. Font bez kompletu polskich znaków zostanie odrzucony.",
     "fontBoldLabel": "Własny font (bold)",
-    "fontBoldHint": "Odmiana pogrubiona — używana w tytule kafelka.",
+    "fontBoldHint": "Odmiana pogrubiona — używana w tytule grafiki.",
     "logoLabel": "Logo",
     "logoHint": "PNG, JPG lub SVG — normalizowane do PNG z przezroczystością.",
     "previewTitle": "Podgląd na żywo",
     "previewAlt": "Podgląd szablonu",
-    "previewPending": "Przeliczanie podglądu...",
+    "previewPending": "Przeliczanie podglądu…",
     "listTitle": "Istniejące szablony",
     "active": "Aktywny",
     "inactive": "Wyłączony",
@@ -113,7 +113,7 @@
     "enable": "Włącz"
   },
   "toasts": {
-    "recomposeFailed": "Nie udało się przeliczyć kafelka",
+    "recomposeFailed": "Nie udało się przeliczyć grafiki",
     "titleRequired": "Tytuł jest wymagany",
     "templateRequired": "Wybierz szablon marki",
     "generateFailed": "Nie udało się wygenerować wariantów",
@@ -126,6 +126,20 @@
     "created": "Utworzono szablon {{name}}",
     "saved": "Zapisano zmiany w szablonie",
     "saveFailed": "Nie udało się zapisać szablonu"
+  },
+  "errors": {
+    "templateMissing": "Nie ma szablonu o id {{id}}",
+    "fontUnparsable": "Nie udało się odczytać pliku fontu: {{detail}}",
+    "fontCollection": "Plik zawiera kolekcję krojów (.ttc). Wgraj pojedynczy plik .ttf lub .otf.",
+    "fontNoFamilyName": "Plik fontu nie deklaruje nazwy rodziny (name table).",
+    "logoUnreadable": "Nie udało się odczytać pliku logo: {{detail}}",
+    "invalidColor": "Kolor musi być w formacie #RRGGBB, otrzymano: {{value}}",
+    "fontFileMissing": "Plik fontu nie istnieje: {{path}}. Render przerwany — Ilustromat nigdy nie renderuje fontem zastępczym.",
+    "incompleteCustomFont": "Szablon {{id}} deklaruje własny font, ale brakuje pliku {{kind}}. Render przerwany — Ilustromat nie podmienia brakującego fontu po cichu.",
+    "missingPolishGlyphs": "Font nie zawiera wymaganych polskich znaków: {{chars}}",
+    "fontEnvironmentIgnoresFiles": "Środowisko renderujące ignoruje własne pliki fontów — nawet font z biblioteki nie jest w nim stosowany, więc szablon składałby się fontem zastępczym. Sprawdź pakiet fontconfig w obrazie aplikacji.",
+    "fontRenderFailed": "Wgrany plik fontu jest uszkodzony — nie da się nim złożyć tekstu. Wgraj kompletny plik .ttf lub .otf.",
+    "fontNotApplied": "Render nie użył wgranego pliku — tekst złożył się innym krojem. Nazwa rodziny odczytana z pliku nie zgadza się z tym, czym silnik tekstu rozwiązuje tę rodzinę. Ilustromat nie zapisuje fontu, którego nie potrafi wyrenderować."
   },
   "_ctx": {
     "generation.description": "opis pod nagłówkiem ekranu; wyjaśnia, że tekst i ramka nakładane są bez udziału AI",
@@ -194,7 +208,7 @@
     "templates.contrastTitle": "tytuł ostrzeżenia; kontrast tekstu do tła poniżej progu WCAG AA; maks. 20 zn.",
     "templates.contrastBody": "opis ostrzeżenia; {{ratio}} to wyliczony stosunek kontrastu; oznaczenia WCAG AA i 4.5:1 zostają",
     "templates.fontLabel": "etykieta listy wyboru; font z biblioteki; maks. 12 zn.",
-    "templates.websiteLabel": "etykieta pola; tekst adresu strony w dolnym pasku ramki; maks. 26 zn.",
+    "templates.websiteLabel": "etykieta pola; adres strony WWW drukowany w dolnym pasku ramki; maks. 26 zn.",
     "templates.logoPositionLabel": "etykieta grupy przycisków radiowych; róg, w którym siada logo; maks. 20 zn.",
     "templates.layoutLabel": "etykieta grupy przycisków radiowych; kolejność obrazu i tekstu w ramce; maks. 14 zn.",
     "templates.textAlignLabel": "etykieta grupy przycisków radiowych; wyrównanie tekstu w ramce; maks. 22 zn.",
@@ -229,6 +243,18 @@
     "toasts.uploadFailed": "komunikat błędu; wgrywanie pliku nie powiodło się",
     "toasts.created": "komunikat sukcesu; {{name}} to nazwa szablonu nadana przez użytkownika",
     "toasts.saved": "komunikat sukcesu; zmiany w istniejącym szablonie zapisane",
-    "toasts.saveFailed": "komunikat błędu; zapis szablonu do bazy się nie powiódł"
+    "toasts.saveFailed": "komunikat błędu; zapis szablonu do bazy się nie powiódł",
+    "errors.templateMissing": "komunikat błędu; szablon o tym id nie istnieje (np. skasowany w innej karcie); {{id}} to identyfikator, NIE tłumaczyć",
+    "errors.fontUnparsable": "komunikat błędu; wgranego pliku fontu nie da się sparsować; {{detail}} to diagnostyka parsera po angielsku, NIE tłumaczyć",
+    "errors.fontCollection": "komunikat błędu; wgrano kolekcję krojów zamiast pojedynczego pliku; rozszerzeń .ttc/.ttf/.otf NIE tłumaczyć",
+    "errors.fontNoFamilyName": "komunikat błędu; plik fontu nie podaje nazwy rodziny, więc silnik tekstu nie ma czym jej wskazać; nazwy tablicy „name table\" NIE tłumaczyć",
+    "errors.logoUnreadable": "komunikat błędu; wgranego pliku logo nie da się odczytać; {{detail}} to diagnostyka biblioteki po angielsku, NIE tłumaczyć",
+    "errors.invalidColor": "komunikat błędu; kolor spoza formatu szesnastkowego; zapisu #RRGGBB NIE tłumaczyć; {{value}} to odrzucona wartość",
+    "errors.fontFileMissing": "komunikat błędu; szablon wskazuje plik fontu, którego nie ma na dysku; {{path}} to ścieżka pliku, NIE tłumaczyć",
+    "errors.incompleteCustomFont": "komunikat błędu; szablon ma własny font bez jednej z odmian; {{id}} to identyfikator szablonu, {{kind}} techniczny rodzaj assetu — obu NIE tłumaczyć",
+    "errors.missingPolishGlyphs": "komunikat błędu; wgrany font nie pokrywa wymaganych polskich znaków; {{chars}} to lista brakujących znaków",
+    "errors.fontEnvironmentIgnoresFiles": "komunikat błędu; wada ŚRODOWISKA, nie wgranego pliku — obraz aplikacji nie stosuje własnych fontów; nazwy pakietu fontconfig NIE tłumaczyć",
+    "errors.fontRenderFailed": "komunikat błędu; render weryfikacyjny nie złożył tekstu wgranym plikiem; rozszerzeń .ttf/.otf NIE tłumaczyć",
+    "errors.fontNotApplied": "komunikat błędu; render weryfikacyjny użył innego kroju niż wgrany plik — rozjazd nazwy rodziny fontu"
   }
 }

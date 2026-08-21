@@ -2,14 +2,14 @@
   "chat": {
     "sessionErrorTitle": "Could not start the sandbox session",
     "dropFiles": "Drop the files - they go into this session's sandbox",
-    "startingSession": "Starting the sandbox session...",
+    "startingSession": "Starting the sandbox session…",
     "hero": "What should I work on?",
     "heroWithProject": "{{project}} - what should I work on?",
     "heroDescription": "The agent works in a sandbox and hands back files as artifacts - ask for a report, an export or an analysis.",
     "degradedBadge": "Fallback mode - agent unavailable"
   },
   "composer": {
-    "placeholder": "Ask for a report, an export or the next step...",
+    "placeholder": "Ask for a report, an export or the next step…",
     "attachAria": "Add files to the session",
     "attachTitle": "Add files (or paste / drop them here)",
     "hint": "Enter sends · Shift+Enter new line",
@@ -32,12 +32,11 @@
     "copyPathAria": "Copy path"
   },
   "sidebar": {
-    "backToHubAria": "Back to the Cortex360 hub",
     "newSession": "New session",
     "skillsLibrary": "Skills library",
     "projects": "Projects",
     "noProjects": "No projects",
-    "loadingSessions": "Loading sessions...",
+    "loadingSessions": "Loading sessions…",
     "noSessions": "No sessions",
     "sessionTitle": "Session from {{when}}",
     "messageCount": "· {{n}} msg.",
@@ -47,7 +46,9 @@
     "myInstructions": "My instructions",
     "myInstructionsPlaceholder": "e.g. Call me by my first name.\nAlways add a TL;DR section to reports.",
     "myInstructionsHint": "Your private AGENTS.md layer - appended to every session of yours.",
-    "saved": "Saved"
+    "saved": "Saved",
+    "saveInstructionsFailed": "Could not save your instructions",
+    "instructionsTooLong": "Instructions can be at most {{max}} characters long"
   },
   "activity": {
     "working": {
@@ -58,7 +59,7 @@
       "image": "Generating an image…",
       "skill": "Reaching for a skill…",
       "write": "Writing a file…",
-      "read": "Reading the workspace…",
+      "read": "Reading the sandbox…",
       "exec": "Running a command…",
       "tool": "Using: {{tool}}…",
       "toolFallback": "a tool",
@@ -73,11 +74,14 @@
       "lifecycle": "Lifecycle",
       "assistant": "Assistant"
     },
-    "trail": "Agent work trail ({{n}} steps)"
+    "trail_one": "Agent work trail ({{count}} step)",
+    "trail_few": "Agent work trail ({{count}} steps)",
+    "trail_many": "Agent work trail ({{count}} steps)",
+    "trail_other": "Agent work trail ({{count}} steps)"
   },
   "skills": {
     "title": "Skills library",
     "description": "Reusable expertise packages copied into every new sandbox session.",
-    "loading": "Loading skills..."
+    "loading": "Loading skills…"
   }
 }

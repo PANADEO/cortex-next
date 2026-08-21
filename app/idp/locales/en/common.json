@@ -1,30 +1,13 @@
 {
-  "language": {
-    "label": "Language",
-    "pl": "Polski",
-    "en": "English"
-  },
-  "footer": {
-    "version": "Version",
-    "time": "Time",
-    "resolution": "Resolution",
-    "online": "Online",
-    "yes": "Yes",
-    "no": "No"
-  },
   "actions": {
     "cancel": "Cancel",
     "save": "Save",
     "create": "Create",
     "delete": "Delete",
     "edit": "Edit",
-    "close": "Close",
-    "retry": "Try again"
-  },
-  "state": {
-    "loading": "Loading…",
-    "empty": "No data",
-    "error": "Something went wrong"
+    "retry": "Try again",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar"
   },
   "categories": {
     "functional": {
@@ -42,11 +25,173 @@
       "hr": "HR"
     }
   },
+  "errors": {
+    "generic": "Something went wrong",
+    "packageDuplicate": "This package has already been imported.",
+    "packageNotFound": "Package not found.",
+    "fileNotFound": "Source file not found.",
+    "invalidPackageFile": "Package file is invalid or corrupted.",
+    "transitionNotAllowed": "This action is not allowed in the current state.",
+    "resultNotFound": "Result not available yet.",
+    "entityNotFound": "Entity not found.",
+    "csvExportValidationFailed": "CSV export failed validation. Fix the highlighted issues and retry.",
+    "permissionDenied": "You do not have permission to perform this action.",
+    "emailDeliveryNotConfigured": "Email delivery is not configured.",
+    "emailDeliveryFailed": "Email delivery failed."
+  },
+  "export": {
+    "emailDefaultBody": "The export is attached."
+  },
+  "fields": {
+    "from": "From",
+    "to": "To"
+  },
+  "footer": {
+    "version": "Version",
+    "time": "Time",
+    "resolution": "Resolution",
+    "online": "Online",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "language": {
+    "label": "Language",
+    "pl": "Polski",
+    "en": "English"
+  },
+  "nav": {
+    "hub": "Apps",
+    "backToHub": "Back to the Cortex360 hub",
+    "sections": {
+      "pipeline": "Pipeline",
+      "settings": "Settings",
+      "reports": "Reports",
+      "deliverables": "Deliverables",
+      "access": "Access",
+      "instance": "Instance",
+      "report": "Report",
+      "work": "Work",
+      "configuration": "Configuration",
+      "governance": "Governance",
+      "audit": "Audit",
+      "home": "Home"
+    },
+    "idp": {
+      "dashboard": "Dashboard",
+      "import": "Import",
+      "extraction": "Extraction",
+      "export": "Export",
+      "rule-editor": "Rule editor",
+      "configuration": "Configuration",
+      "audit-log": "Audit log"
+    },
+    "idpBasic": {
+      "dashboard": "Dashboard",
+      "results": "Results",
+      "files": "Files",
+      "settings": "Settings",
+      "packages": "Packages"
+    },
+    "storePit": {
+      "overview": "Overview",
+      "source-files": "Source files",
+      "extraction": "Extraction",
+      "reconciliation": "Reconciliation",
+      "netting": "Netting",
+      "re-rating": "Re-rating",
+      "clients": "Clients",
+      "pricing-rules": "Pricing rules",
+      "audit-log": "Audit log"
+    },
+    "oknaCzasowe": {
+      "dashboard": "Dashboard",
+      "films": "Films",
+      "data": "Data",
+      "log": "Log"
+    },
+    "systemConfig": {
+      "users": "Users",
+      "roles": "Roles",
+      "openwebui": "OpenWebUI",
+      "applications": "Applications",
+      "appearance": "Appearance"
+    },
+    "tokenUsage": {
+      "usage": "Token usage"
+    },
+    "intrastat": {
+      "dashboard": "Dashboard",
+      "batches": "Batches",
+      "review": "Review",
+      "cn-code-database": "CN Code Database",
+      "settings": "Settings"
+    },
+    "ilustromat": {
+      "generation": "Generation",
+      "templates": "Templates"
+    },
+    "cortexConfig": {
+      "projects": "Projects",
+      "catalog": "Resource catalog",
+      "agents": "AGENTS.md",
+      "roles": "Roles and access",
+      "credentials": "Secrets"
+    },
+    "geoScore": {
+      "calculator": "Calculator",
+      "history": "History",
+      "settings": "Settings"
+    },
+    "visualGuru": {
+      "generator": "Generator",
+      "archive": "Archive"
+    },
+    "documentParser": {
+      "upload": "Upload document",
+      "history": "History"
+    },
+    "contentGuru": {
+      "generation": "Generation",
+      "history": "History",
+      "templates": "Templates",
+      "client-profiles": "Client profiles",
+      "market-profiles": "Market profiles"
+    },
+    "invoiceSupervisor": {
+      "inbox": "Inbox",
+      "invoices": "Invoices",
+      "clients": "Clients",
+      "policies": "Policies",
+      "templates": "Templates",
+      "settings": "Settings",
+      "notifications": "Delivery history"
+    },
+    "aiTools": {
+      "dashboard": "Dashboard"
+    },
+    "notifications": "Notifications"
+  },
+  "palette": {
+    "navigation": "Navigation",
+    "extraction": "Extraction",
+    "searchPackages": "Search packages or jump to…",
+    "jumpTo": "Jump to…",
+    "title": "Command palette",
+    "noResults": "No results.",
+    "searchOrJump": "Search or jump to…",
+    "navigate": "navigate",
+    "open": "open"
+  },
   "presets": {
     "instanceDefault": "Instance default",
     "instanceDefaultHint": "The look configured for this instance.",
     "dominoDescription": "Paper and ink, hard edges.",
     "neutralDescription": "Monochrome shadcn defaults.",
     "customsDescription": "Hi-vis orange and duty green."
+  },
+  "state": {
+    "loading": "Loading…",
+    "empty": "No data",
+    "error": "Something went wrong"
   }
 }

@@ -1,0 +1,307 @@
+{
+  "layers": {
+    "input": "Input",
+    "ocr": "OCR",
+    "idp": "IDP",
+    "engine": "Engine",
+    "output": "Output"
+  },
+  "status": {
+    "ok": "OK",
+    "completed": "Completed"
+  },
+  "actions": {
+    "reset": "Reset"
+  },
+  "fields": {
+    "parcelReference": "Parcel / reference",
+    "client": "Client",
+    "country": "Country",
+    "service": "Service",
+    "destination": "Destination",
+    "weight": "Weight",
+    "discount": "Discount",
+    "parcels": "Parcels",
+    "glsCost": "GLS cost",
+    "storePitPrice": "Store-Pit price",
+    "margin": "Margin",
+    "grandTotal": "Grand total",
+    "variance": "Variance",
+    "status": "Status",
+    "netTotal": "Net total",
+    "grossTotal": "Gross total"
+  },
+  "markupTable": {
+    "rule": "Rule",
+    "pricingBasis": "Pricing basis",
+    "formula": "Formula",
+    "notes": "Notes"
+  },
+  "clientMeta": {
+    "flatpay": {
+      "basis": "GLS net after ShopDelivery discount",
+      "rule": "GLS net x 1.1"
+    },
+    "braintimizer": {
+      "basis": "BT contractual GLS pricing",
+      "rule": "BT price map (DKK)"
+    },
+    "drywear": {
+      "basis": "DAO price list",
+      "rule": "DAO lookup by service / weight"
+    },
+    "nordvio": {
+      "basis": "DAO price list",
+      "rule": "DAO lookup by service / weight"
+    }
+  },
+  "overview": {
+    "title": "Process overview",
+    "description": "What this invoice is, where it is, and the data behind every step.",
+    "runCompleted": "Run completed",
+    "introLead": "Store-Pit buys parcels in bulk from GLS",
+    "introBody": "and re-bills them to each of its clients with a margin. This screen follows one weekly GLS invoice through the eight steps that turn a single mixed bill into a clean, per-client settlement. Click any step to open the data behind it.",
+    "period": "Week {{week}} · period {{from}} to {{to}} · invoice {{invoice}}",
+    "stepsTitle": "This invoice, step by step",
+    "referenceTitle": "Reference and controls",
+    "state": {
+      "glsInvoiceNet": "GLS invoice (net)",
+      "spBilled": "Store-Pit billed",
+      "spMargin": "Store-Pit margin"
+    },
+    "steps": {
+      "sourceFiles": "GLS sends two files each week - a CSV with every parcel and a PDF with the rate summary. Everything starts here.",
+      "extraction": "Read those files into clean shipment lines. This is the only step that is OCR - everything after it is calculation.",
+      "reconciliation": "Check the numbers tie out: the CSV total equals the PDF total and parcel counts match. Bad data is caught before any billing.",
+      "classification": "Work out which client each parcel belongs to, from the reference code on it (FP- is FlatPay, NV is Nordvio, and so on).",
+      "netting": "Match GLS discounts to the right parcels and subtract them first, so the saving is passed to the client before any margin.",
+      "reRating": "Apply each client's own price deal - FlatPay x1.1, Braintimizer's contract, Drywear and Nordvio off a price list. This is the heart of it, not a flat markup.",
+      "aggregation": "Roll everything up per client and country, then add the surcharges - energy, road tolls and pre-financing.",
+      "export": "Each client gets a clean statement: their parcels, their countries, the amount to settle. Store-Pit sees its margin."
+    },
+    "references": {
+      "pricingBlurb": "The reference price lists and settings the engine looks up while re-rating.",
+      "auditLogBlurb": "The immutable, step-by-step record of this processing run."
+    }
+  },
+  "sourceFiles": {
+    "title": "Source files",
+    "description": "Input files registered for this GLS Germany invoice.",
+    "parsed": "Parsed",
+    "inputFilesTitle": "Input files",
+    "metadataTitle": "Invoice metadata",
+    "roles": {
+      "csv": "Line-level CSV detail",
+      "pdf": "Invoice summary / rates"
+    },
+    "stats": {
+      "rows": "Rows",
+      "type": "Type",
+      "typeCsv": "GLS CSV export",
+      "encoding": "Encoding",
+      "pages": "Pages"
+    },
+    "meta": {
+      "carrier": "Carrier",
+      "glsInvoiceNo": "GLS invoice no",
+      "spInvoiceNo": "Store-Pit invoice no",
+      "customerNo": "Customer no",
+      "invoiceDate": "Invoice date",
+      "period": "Period",
+      "week": "Week",
+      "currency": "Currency",
+      "vat": "VAT"
+    },
+    "footnote": "The CSV carries {{csvRows}} lines that become {{shipmentRows}} parcel rows after invoice-level charges are split out - handled under Reconciliation."
+  },
+  "extraction": {
+    "title": "Extraction",
+    "description": "Structured shipment lines parsed from the GLS CSV detail and PDF summary.",
+    "counts": "{{lines}} parcel lines · {{csvRows}} CSV rows",
+    "columns": {
+      "glsNet": "GLS net",
+      "netAfter": "Net after"
+    },
+    "searchPlaceholder": "Search parcel, reference, recipient…",
+    "filters": {
+      "allClients": "All clients",
+      "allCountries": "All countries",
+      "allServices": "All services"
+    },
+    "shownCount": "{{n}} of sample shown",
+    "emptyTitle": "No lines match",
+    "emptyDescription": "Clear the filters to see the full extracted sample.",
+    "footnote": "Showing a representative sample of the {{rows}} parcel lines extracted for invoice {{invoice}}. Invoice-level charges are handled under Reconciliation."
+  },
+  "reconciliation": {
+    "title": "Reconciliation",
+    "description": "Cross-checks tying the extracted CSV detail to the PDF invoice summary.",
+    "varianceBadge": "Variance {{value}}",
+    "cards": {
+      "csvNetTotal": "CSV net total",
+      "pdfNetTotal": "PDF net total",
+      "pdfVat": "PDF VAT",
+      "pdfGrossTotal": "PDF gross total"
+    },
+    "tabs": {
+      "checks": "Checks",
+      "services": "Service summary",
+      "charges": "Invoice charges"
+    },
+    "checks": {
+      "check": "Check",
+      "value": "Value",
+      "note": "Note"
+    },
+    "services": {
+      "csvRows": "CSV rows",
+      "csvAmount": "CSV amount",
+      "weightKg": "Weight (kg)",
+      "pdfAmount": "PDF amount",
+      "footnote": "Residual variances on toll and sorting surcharges reflect GLS per-unit rounding - immaterial to client settlement."
+    },
+    "charges": {
+      "intro": "Invoice-level charges (energy surcharges, service flat fees, pre-financing) are split out from parcel lines before service classification.",
+      "articleNo": "Article no.",
+      "description": "Description",
+      "amount": "Amount"
+    }
+  },
+  "netting": {
+    "title": "Netting",
+    "description": "ShopDelivery -0.50 discounts matched to parcels and netted against freight.",
+    "matchedCount": "{{matched}} of {{rows}} matched",
+    "cards": {
+      "discountLines": "Discount lines",
+      "matched": "Matched",
+      "unmatched": "Unmatched",
+      "discountTotal": "Discount total"
+    },
+    "columns": {
+      "matchedService": "Matched service",
+      "freightBefore": "Freight before",
+      "freightAfter": "Freight after"
+    },
+    "searchPlaceholder": "Search parcel, reference…",
+    "filters": {
+      "allCountries": "All countries",
+      "matched": "Matched",
+      "all": "All",
+      "matchedOnly": "Matched"
+    },
+    "shownCount": "{{shown}} of {{total}}",
+    "emptyTitle": "No lines match",
+    "emptyDescription": "Clear the filters to see all netting lines.",
+    "footnote": "Each matched discount reduces that parcel's GLS freight before the per-client mark-up is applied, so the saving is passed through correctly."
+  },
+  "reRating": {
+    "title": "Re-rating",
+    "description": "Per-client pricing engine: classify, net, then re-rate GLS cost to the Store-Pit price.",
+    "cards": {
+      "spMargin": "SP margin",
+      "marginSplit": "Margin split",
+      "marginOnGrandTotal": "{{pct}} on grand total",
+      "surchargeAmount": "surcharge {{value}}"
+    },
+    "rulesTitle": "Pricing rules applied",
+    "rulesNote": "Rule-based per client - not a flat markup",
+    "breakdownTitle": "GLS cost to Store-Pit price",
+    "breakdownNote": "Freight and surcharge split per client",
+    "columns": {
+      "glsFreight": "GLS freight",
+      "glsSurcharge": "GLS surcharge",
+      "glsTotal": "GLS total",
+      "spFreight": "SP freight",
+      "spSurcharge": "SP surcharge",
+      "spTotal": "SP total"
+    },
+    "marginBuildTitle": "How the margin builds",
+    "margin": {
+      "freight": "Freight margin",
+      "surcharge": "Surcharge margin",
+      "total": "Total margin"
+    }
+  },
+  "pricing": {
+    "title": "Pricing rules",
+    "description": "Reference price lists and invoice settings the re-rating engine looks up.",
+    "intro": "These tables are the dictionaries - mark-up multipliers, the DAO price list, Braintimizer contract pricing, and invoice-level rate settings.",
+    "tabs": {
+      "markup": "Store-Pit mark-up",
+      "dao": "DAO price list",
+      "braintimizer": "Braintimizer",
+      "settings": "Invoice settings"
+    },
+    "dao": {
+      "filterPlaceholder": "Filter by price key…",
+      "shownCount": "{{shown}} of {{total}}",
+      "tier": "Tier",
+      "priceKey": "Price key"
+    },
+    "bt": {
+      "priceUnder5": "Price < 5 kg (DKK)",
+      "transit": "Transit"
+    },
+    "settings": {
+      "setting": "Setting",
+      "value": "Value",
+      "source": "Source"
+    }
+  },
+  "clients": {
+    "title": "Clients",
+    "description": "Per-client settlement - the view each brand receives.",
+    "count": "{{n}} clients",
+    "summaryTitle": "Settlement summary",
+    "summaryNote": "GLS cost - Store-Pit price",
+    "columns": {
+      "pricingRule": "Pricing rule"
+    }
+  },
+  "clientDetail": {
+    "notFoundTitle": "Client not found",
+    "notFoundDescription": "The requested client does not exist.",
+    "backToClients": "Back to Clients",
+    "back": "Back",
+    "amountToSettle": "Amount to settle",
+    "costLine": "GLS cost {{cost}} · margin {{margin}} ({{pct}})",
+    "tabs": {
+      "breakdown": "Service breakdown"
+    },
+    "columns": {
+      "date": "Date"
+    },
+    "breakdown": {
+      "domExport": "Dom/Export",
+      "shipments": "Shipments",
+      "freight": "Freight",
+      "energy": "Energy",
+      "serviceFlat": "Service flat",
+      "preFinance": "Pre-finance",
+      "total": "Total"
+    },
+    "searchPlaceholder": "Search parcel, reference, recipient…",
+    "shownCount": "{{shown}} of {{total}} parcels",
+    "emptyTitle": "No parcels match",
+    "emptyDescription": "Clear the search to see all parcels for this client."
+  },
+  "auditLog": {
+    "title": "Audit log",
+    "description": "Processing run for GLS invoice {{invoice}}.",
+    "stepsBadge": "{{n}} steps · completed",
+    "cards": {
+      "runStatus": "Run status",
+      "steps": "Steps",
+      "rowsProcessed": "Rows processed"
+    },
+    "columns": {
+      "step": "Step",
+      "detail": "Detail",
+      "layer": "Layer",
+      "rows": "Rows",
+      "duration": "Duration",
+      "finishedAt": "Finished at"
+    },
+    "footnote": "This log is an immutable record of each processing stage - the neutral decision-trail Store-Pit keeps per invoice."
+  }
+}

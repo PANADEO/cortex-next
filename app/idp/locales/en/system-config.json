@@ -107,7 +107,7 @@
       "notConfigured": "OpenWebUI synchronisation is not configured on this instance (OPENWEBUI_URL/OPENWEBUI_ADMIN_TOKEN).",
       "notMapped": "This role is not linked to any OpenWebUI group.",
       "createGroup": "Create group “{{name}}”",
-      "attachExistingPlaceholder": "Link an existing group",
+      "attachExistingPlaceholder": "Choose an existing group",
       "attach": "Link",
       "attachConfirmTitle": "Link existing group “{{name}}”?",
       "attachConfirmBody": "At the next synchronisation this group's membership will be OVERWRITTEN to match this role. If the group gates access to another assistant in OpenWebUI (through access_control), its availability to users may change unexpectedly. Make sure this is the right group.",
@@ -209,7 +209,7 @@
       "descriptionLabel": "Description",
       "urlLabel": "External address",
       "urlHint": "Only http:// and https:// addresses are allowed.",
-      "routeLabel": "Route inside the application",
+      "routeLabel": "Application route",
       "routeHint": "A route inside this application, starting with a single slash.",
       "iconLabel": "Icon",
       "iconPlaceholder": "Choose an icon",
@@ -302,6 +302,27 @@
       "restore": "Restore access",
       "revoke": "Revoke access",
       "orphanRevoke": "Revoke (outside Cortex)"
+    }
+  },
+  "errors": {
+    "selfLockout": {
+      "applicationDelete": "The System Configuration application cannot be deleted — its own permission is what protects this module.",
+      "applicationCode": "The code of the System Configuration application cannot be changed — this module's gate asks for exactly that code.",
+      "applicationDeactivate": "The System Configuration application cannot be deactivated — that would cut every administrator off from this module.",
+      "applicationTarget": "The type and the address of the System Configuration application cannot be changed — this row describes the administration module itself, and pointing it at an external address would take administrators out of this application.",
+      "applicationRoles": "At least one active user has to keep access to System Configuration — the selected roles have no active user at all, so after saving nobody could enter this module any more.",
+      "userRoles": "These roles cannot be revoked — this is the last active user with access to System Configuration, so after saving nobody could enter this module any more.",
+      "roleApplications": "Access to System Configuration cannot be revoked from this role — it is the last role with an active user, so after saving nobody could enter this module any more.",
+      "userActive": "This user cannot be deactivated — this is the last active user with access to System Configuration, so after saving nobody could enter this module any more.",
+      "roleDeleted": "This role cannot be deleted — it is the last role with an active user holding access to System Configuration, so after deleting it nobody could enter this module any more."
+    },
+    "systemRoleProtected": "The system role “{{name}}” cannot be deleted — system roles are protected from deletion.",
+    "nativeCreationNotAllowed": "A native tile can only be created by activating a registered manifest — pick it from the list of not yet activated modules instead of this form.",
+    "moduleNotLicensed": "Module “{{code}}” is not covered by this instance's licence — it is missing from the ENABLED_MODULES list, so it cannot be activated. Contact the platform provider to extend the scope of the licence.",
+    "openwebuiGroupAlreadyMapped": "This OpenWebUI group is already linked to the “{{role}}” role. A group can stand behind at most one role — otherwise both roles compute a different membership for it and every sync throws out each other's users. Unlink the group from the “{{role}}” role or pick another group.",
+    "nativeImmutable": {
+      "kindToNative": "An existing application cannot be turned into a native tile — a native tile only comes into being by activating a registered manifest.",
+      "identityLocked": "The code, the type and the route of an activated native tile cannot be changed — they are set solely by activating the registered manifest."
     }
   }
 }

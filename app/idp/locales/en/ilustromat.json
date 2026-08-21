@@ -14,7 +14,7 @@
     "templatePlaceholder": "Choose a template",
     "variantsLabel": "Number of variants",
     "generate": "Generate",
-    "generating": "Generating..."
+    "generating": "Generating…"
   },
   "assist": {
     "polish": "Refine",
@@ -104,7 +104,7 @@
     "logoHint": "PNG, JPG or SVG — normalised to PNG with transparency.",
     "previewTitle": "Live preview",
     "previewAlt": "Template preview",
-    "previewPending": "Rendering preview...",
+    "previewPending": "Rendering preview…",
     "listTitle": "Existing templates",
     "active": "Active",
     "inactive": "Disabled",
@@ -126,5 +126,19 @@
     "created": "Template {{name}} created",
     "saved": "Template changes saved",
     "saveFailed": "Could not save the template"
+  },
+  "errors": {
+    "templateMissing": "There is no template with id {{id}}",
+    "fontUnparsable": "Could not read the font file: {{detail}}",
+    "fontCollection": "The file contains a font collection (.ttc). Upload a single .ttf or .otf file.",
+    "fontNoFamilyName": "The font file declares no family name (name table).",
+    "logoUnreadable": "Could not read the logo file: {{detail}}",
+    "invalidColor": "The colour must use the #RRGGBB format, received: {{value}}",
+    "fontFileMissing": "The font file does not exist: {{path}}. Rendering stopped — Ilustromat never renders with a substitute font.",
+    "incompleteCustomFont": "Template {{id}} declares a custom font but the {{kind}} file is missing. Rendering stopped — Ilustromat never substitutes a missing font silently.",
+    "missingPolishGlyphs": "The font does not contain the required Polish characters: {{chars}}",
+    "fontEnvironmentIgnoresFiles": "The rendering environment ignores custom font files — not even the library font is applied, so the template would be composed with a substitute font. Check the fontconfig package in the application image.",
+    "fontRenderFailed": "The uploaded font file is damaged — text cannot be composed with it. Upload a complete .ttf or .otf file.",
+    "fontNotApplied": "Rendering did not use the uploaded file — the text was composed with a different typeface. The family name read from the file does not match how the text engine resolves that family. Ilustromat does not store a font it cannot render."
   }
 }

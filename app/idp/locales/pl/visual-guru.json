@@ -4,7 +4,7 @@
     "promptLabel": "Opis obrazu",
     "promptPlaceholder": "Np. minimalistyczna ilustracja lisa na tle gór, płaski styl wektorowy",
     "contextLabel": "Dodatkowy kontekst (opcjonalnie)",
-    "contextPlaceholder": "Styl, paleta kolorów, ograniczenia kompozycji...",
+    "contextPlaceholder": "Styl, paleta kolorów, ograniczenia kompozycji…",
     "referenceImagesLabel": "Obrazy referencyjne (opcjonalnie, maks. {{max}})",
     "referenceImagesHint": "PNG, JPEG lub WebP",
     "referenceThumbAlt": "Podgląd obrazu referencyjnego {{index}}",
@@ -22,7 +22,7 @@
     },
     "variantCountLabel": "Liczba wariantów",
     "generate": "Generuj",
-    "generating": "Generowanie...",
+    "generating": "Generowanie…",
     "emptyTitle": "Brak wygenerowanych obrazów",
     "emptyDescription": "Wpisz opis i kliknij Generuj. Każda generacja trafia automatycznie do archiwum.",
     "errors": {
