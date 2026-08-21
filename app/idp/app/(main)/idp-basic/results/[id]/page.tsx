@@ -130,7 +130,7 @@ export default function IdpBasicResultDetailPage() {
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   {t("results.sourceEmail")}
                 </div>
-                <dl className="grid gap-1.5 text-xs">
+                <dl className="grid content-start gap-1.5 text-xs">
                   <div className="grid gap-x-3 gap-y-0.5 sm:grid-cols-[86px_minmax(0,1fr)]">
                     <dt className="text-muted-foreground">{t("fields.sender")}</dt>
                     <dd className="break-all">{result.sender || "—"}</dd>

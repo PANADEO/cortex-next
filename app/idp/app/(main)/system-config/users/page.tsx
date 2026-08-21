@@ -270,7 +270,7 @@ export default function UsersPage() {
           </DialogHeader>
 
           <div className="grid gap-4">
-            <div className="grid gap-1.5">
+            <div className="grid content-start gap-1.5">
               <Label htmlFor="new-user-email">{t("users.form.emailLabel")}</Label>
               <Input
                 id="new-user-email"
@@ -284,7 +284,7 @@ export default function UsersPage() {
               <span className="text-xs text-muted-foreground">{t("users.form.emailHint")}</span>
             </div>
 
-            <div className="grid gap-1.5">
+            <div className="grid content-start gap-1.5">
               <Label htmlFor="new-user-name">{t("users.form.fullNameLabel")}</Label>
               <Input
                 id="new-user-name"
@@ -318,7 +318,7 @@ export default function UsersPage() {
           </DialogHeader>
 
           <div className="grid gap-4">
-            <div className="grid gap-1.5">
+            <div className="grid content-start gap-1.5">
               <Label htmlFor="edit-user-email">{t("users.form.emailLabel")}</Label>
               <Input id="edit-user-email" value={editedDetails?.email ?? ""} disabled />
               <span className="text-xs text-muted-foreground">
@@ -326,7 +326,7 @@ export default function UsersPage() {
               </span>
             </div>
 
-            <div className="grid gap-1.5">
+            <div className="grid content-start gap-1.5">
               <Label htmlFor="edit-user-name">{t("users.form.fullNameLabel")}</Label>
               <Input
                 id="edit-user-name"

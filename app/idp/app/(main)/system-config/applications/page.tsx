@@ -437,7 +437,7 @@ export default function ApplicationsPage() {
           </DialogHeader>
 
           <div className="grid gap-4">
-            <div className="grid gap-1.5">
+            <div className="grid content-start gap-1.5">
               <Label htmlFor="kind">{t("applications.form.kindLabel")}</Label>
               <Select
                 value={form.kind}
@@ -461,7 +461,7 @@ export default function ApplicationsPage() {
               // aktywację zarejestrowanego manifestu — kod/nazwa/ścieżka nie są
               // tu wolnym tekstem, tylko wyborem z listy tego, co realnie ma
               // stronę w kodzie (defineTile() w danym module).
-              <div className="grid gap-1.5">
+              <div className="grid content-start gap-1.5">
                 <Label htmlFor="manifest">{t("applications.form.manifestLabel")}</Label>
                 {unactivatedNativeQuery.isLoading ? (
                   <Skeleton className="h-9 w-full rounded-md" />
@@ -506,7 +506,7 @@ export default function ApplicationsPage() {
               </div>
             ) : (
               <>
-                <div className="grid gap-1.5">
+                <div className="grid content-start gap-1.5">
                   <Label htmlFor="code">{t("applications.form.entitlementCodeLabel")}</Label>
                   <Input
                     id="code"
@@ -517,7 +517,7 @@ export default function ApplicationsPage() {
                   <span className="text-xs text-muted-foreground">{t("shared.codeHint")}</span>
                 </div>
 
-                <div className="grid gap-1.5">
+                <div className="grid content-start gap-1.5">
                   <Label htmlFor="name">{t("applications.form.nameLabel")}</Label>
                   <Input
                     id="name"
@@ -527,7 +527,7 @@ export default function ApplicationsPage() {
                   />
                 </div>
 
-                <div className="grid gap-1.5">
+                <div className="grid content-start gap-1.5">
                   <Label htmlFor="url">{t("applications.form.urlLabel")}</Label>
                   <Input
                     id="url"

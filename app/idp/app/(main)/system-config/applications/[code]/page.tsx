@@ -588,7 +588,7 @@ export default function ApplicationDetailPage() {
 
             <div className="grid gap-4 rounded-lg border border-border p-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-1.5">
+                <div className="grid content-start gap-1.5">
                   <Label htmlFor="code">{t("applications.form.entitlementCodeLabel")}</Label>
                   <Input id="code" value={code} disabled />
                   <span className="text-xs text-muted-foreground">
@@ -596,7 +596,7 @@ export default function ApplicationDetailPage() {
                   </span>
                 </div>
 
-                <div className="grid gap-1.5">
+                <div className="grid content-start gap-1.5">
                   <Label htmlFor="name">{t("applications.form.nameLabel")}</Label>
                   <Input
                     id="name"
@@ -606,7 +606,7 @@ export default function ApplicationDetailPage() {
                 </div>
               </div>
 
-              <div className="grid gap-1.5">
+              <div className="grid content-start gap-1.5">
                 <Label htmlFor="description">{t("applications.form.descriptionLabel")}</Label>
                 <Input
                   id="description"
@@ -615,7 +615,7 @@ export default function ApplicationDetailPage() {
                 />
               </div>
 
-              <div className="grid gap-1.5">
+              <div className="grid content-start gap-1.5">
                 <Label htmlFor="icon">{t("applications.form.iconLabel")}</Label>
                 {isIconPickerActive ? (
                   <IconPicker
@@ -633,7 +633,7 @@ export default function ApplicationDetailPage() {
                 )}
               </div>
 
-              <div className="grid gap-1.5">
+              <div className="grid content-start gap-1.5">
                 <Label id="color-label">{t("applications.form.colorLabel")}</Label>
                 <div className="flex flex-wrap gap-2" role="group" aria-labelledby="color-label">
                   {TILE_COLOR_OPTIONS.map((option) => (
@@ -688,7 +688,7 @@ export default function ApplicationDetailPage() {
                   `category`) zniknęła stąd całkowicie: była wyłącznie etykietą
                   panelu administracyjnego, hub nigdy jej nie czytał. */}
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-1.5">
+                <div className="grid content-start gap-1.5">
                   <Label id="categoryDepartment-label" htmlFor="categoryDepartment">
                     {t("applications.form.categoryDepartmentLabel")}
                   </Label>
@@ -708,7 +708,7 @@ export default function ApplicationDetailPage() {
                   </span>
                 </div>
 
-                <div className="grid gap-1.5">
+                <div className="grid content-start gap-1.5">
                   <Label htmlFor="categoryFunctional">
                     {t("applications.form.categoryFunctionalLabel")}
                   </Label>
@@ -736,7 +736,7 @@ export default function ApplicationDetailPage() {
                 </div>
               </div>
 
-              <div className="grid gap-1.5">
+              <div className="grid content-start gap-1.5">
                 <Label htmlFor="kind">{t("applications.form.kindDetailLabel")}</Label>
                 <Select
                   value={form.kind}
@@ -762,7 +762,7 @@ export default function ApplicationDetailPage() {
               </div>
 
               {form.kind === "native" ? (
-                <div className="grid gap-1.5">
+                <div className="grid content-start gap-1.5">
                   <Label htmlFor="route">{t("applications.form.routeLabel")}</Label>
                   <Input
                     id="route"
@@ -777,7 +777,7 @@ export default function ApplicationDetailPage() {
                 </div>
               ) : (
                 <>
-                  <div className="grid gap-1.5">
+                  <div className="grid content-start gap-1.5">
                     <Label htmlFor="url">{t("applications.form.urlLabel")}</Label>
                     <Input
                       id="url"
@@ -791,7 +791,7 @@ export default function ApplicationDetailPage() {
                     </span>
                   </div>
 
-                  <div className="grid gap-1.5">
+                  <div className="grid content-start gap-1.5">
                     <Label htmlFor="target">{t("applications.form.targetLabel")}</Label>
                     <Select
                       value={form.target}

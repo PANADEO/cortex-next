@@ -221,7 +221,7 @@ export default function RolePage() {
           </DialogHeader>
 
           <div className="grid gap-4">
-            <div className="grid gap-1.5">
+            <div className="grid content-start gap-1.5">
               <Label htmlFor="code">{t("roles.form.codeLabel")}</Label>
               <Input
                 id="code"
@@ -233,7 +233,7 @@ export default function RolePage() {
               <span className="text-xs text-muted-foreground">{t("shared.codeHint")}</span>
             </div>
 
-            <div className="grid gap-1.5">
+            <div className="grid content-start gap-1.5">
               <Label htmlFor="name">{t("roles.form.nameLabel")}</Label>
               <Input
                 id="name"
@@ -243,7 +243,7 @@ export default function RolePage() {
               />
             </div>
 
-            <div className="grid gap-1.5">
+            <div className="grid content-start gap-1.5">
               <Label htmlFor="description">{t("roles.form.descriptionLabel")}</Label>
               <Input
                 id="description"
@@ -256,7 +256,7 @@ export default function RolePage() {
             {/* Tylko przy edycji istniejącej roli — świeżo tworzona nie ma
                 jeszcze `id`, po którym mapowanie się zapisuje. */}
             {!isCreating && dialog?.role ? (
-              <div className="grid gap-1.5">
+              <div className="grid content-start gap-1.5">
                 <Label>{t("roles.openwebui.sectionLabel")}</Label>
                 <OpenwebuiGroupSection role={dialog.role} />
               </div>
