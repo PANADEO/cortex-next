@@ -53,6 +53,22 @@ Format: **`typ; co robi[; ograniczenie]`**
 Brak średnika = zostaje sama nazwa miejsca, a to za mało, żeby wybrać słowo
 w obcym języku. Test to sprawdza i przepuszcza tylko format z typem.
 
+**Kontekst leży w bloku `_ctx` NA GÓRZE pliku, a napisy niżej** — i tak musi
+być, bo i18next wymaga, żeby wartością klucza był napis, więc metadanej nie da
+się położyć obok. Skutek uboczny jest dotkliwy: w pliku z 818 kluczami kontekst
+i opisywany napis dzieli tysiąc linii. Do czytania ich RAZEM służy:
+
+```
+npm run i18n:batch export <język> [przestrzeń…] [--missing]
+npm run i18n:batch import <plik.json>
+```
+
+Wydaje pozycje w kształcie `{ key, source, context, target }` — dokładnie to,
+czego potrzebuje tłumacz albo agent tłumaczący, bez składania dwóch końców
+pliku ręcznie. `--missing` wydaje wyłącznie nieprzetłumaczone, czyli normalny
+tryb pracy przy dokładaniu języka. Import nie rusza kolejności kluczy
+i nie kasuje istniejącego tłumaczenia pozycją z pustym `target`.
+
 ## Gdzie `t` nie sięga
 
 **Funkcja, która nie jest komponentem, bierze `t` PARAMETREM.** Fabryki kolumn,
