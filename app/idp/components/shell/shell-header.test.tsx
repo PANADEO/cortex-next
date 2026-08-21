@@ -25,6 +25,7 @@ vi.mock("@cortex/api", () => ({
  * i realnie dokładało się do niestabilności katalogu pod obciążeniem.
  */
 vi.mock("@cortex/ui", () => ({
+  LocaleToggle: () => null,
   SkinToggle: () => null,
   ThemeToggle: () => null,
   UserMenu: () => null,

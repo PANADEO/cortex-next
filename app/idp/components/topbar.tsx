@@ -9,6 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
   Button,
+  LocaleToggle,
   SkinToggle,
   ThemeToggle,
   Tooltip,
@@ -24,6 +25,8 @@ import { usePathname } from "next/navigation"
 import { Fragment, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useResolvedBreadcrumbs } from "../lib/breadcrumbs"
+import { localeChoices } from "../lib/i18n/config"
+import { useLocaleStore } from "../lib/i18n/locale-store"
 import { usePreset, usePresetStore } from "../lib/presets/preset-store"
 import { presetChoices, presetChoiceToStored, storedToPresetChoice } from "../lib/presets/registry"
 import { useSidebarStore } from "../lib/stores/sidebar-store"
@@ -84,6 +87,8 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
   const persistPreferences = useSetUserPreferences()
   const shellUser = useShellUser()
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const locale = useLocaleStore((s) => s.locale)
+  const setLocale = useLocaleStore((s) => s.setLocale)
   const { t: tCommon } = useTranslation("common")
 
   const trail = useResolvedBreadcrumbs(pathname)
@@ -174,6 +179,11 @@ export function Topbar({ showSidebarToggle = true }: TopbarProps) {
           </Tooltip>
           {/* Drugie miejsce renderu jednego store'u — ten sam wzorzec, którym
               chodzi już `ThemeToggle`. Uzasadnienie propsów w `shell-header.tsx`. */}
+          <LocaleToggle
+            locale={locale}
+            options={localeChoices(tCommon)}
+            onLocaleChange={setLocale}
+          />
           <SkinToggle
             skin={storedToPresetChoice(storedPreset)}
             options={presetChoices(tCommon)}

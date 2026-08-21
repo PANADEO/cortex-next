@@ -148,6 +148,10 @@
     "unsaved": "Unsaved changes",
     "invalidJson": "Invalid JSON"
   },
+  "localeToggle": {
+    "trigger": "Change language",
+    "heading": "Language"
+  },
   "pageHeader": {
     "descriptionLabel": "Page description"
   },

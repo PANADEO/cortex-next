@@ -117,6 +117,8 @@
     "jsonEditor.revert": "przycisk; przywraca treść edytora do stanu sprzed zmian; maks. 14 zn.",
     "jsonEditor.saving": "stan pośredni; napis na przycisku zapisu w trakcie zapisywania; maks. 16 zn.",
     "jsonEditor.unsaved": "stan pośredni; ostrzega, że edytor ma niezapisane zmiany; maks. 22 zn.",
+    "localeToggle.heading": "nagłówek listy rozwijanej z językami; wersaliki, maks. 12 zn.",
+    "localeToggle.trigger": "etykieta a11y; przycisk w pasku górnym; doklejana jest do niej nazwa aktywnego języka",
     "pageHeader.descriptionLabel": "etykieta a11y; przycisk „i” obok tytułu strony, rozwija opis w tooltipie",
     "pagination.next": "przycisk; przechodzi o jedną stronę tabeli dalej; maks. 14 zn.",
     "pagination.page": "wartość; licznik stron pod tabelą, {{current}} i {{total}} to liczby; maks. 20 zn.",
@@ -281,6 +283,10 @@
     "revert": "Przywróć",
     "unsaved": "Niezapisane zmiany",
     "invalidJson": "Nieprawidłowy JSON"
+  },
+  "localeToggle": {
+    "trigger": "Zmień język",
+    "heading": "Język"
   },
   "pageHeader": {
     "descriptionLabel": "Opis strony"

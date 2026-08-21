@@ -1,10 +1,12 @@
 "use client"
 
+import { localeChoices } from "@/lib/i18n/config"
+import { useLocaleStore } from "@/lib/i18n/locale-store"
 import { usePreset, usePresetStore } from "@/lib/presets/preset-store"
 import { presetChoices, presetChoiceToStored, storedToPresetChoice } from "@/lib/presets/registry"
 import { useThemeStore } from "@/lib/stores/theme-store"
 import { useSetUserPreferences, useShellUser } from "@cortex/api"
-import { SkinToggle, ThemeToggle, UserMenu } from "@cortex/ui"
+import { LocaleToggle, SkinToggle, ThemeToggle, UserMenu } from "@cortex/ui"
 import { cva } from "class-variance-authority"
 import Image from "next/image"
 import { useTranslation } from "react-i18next"
@@ -48,6 +50,8 @@ export function ShellHeader() {
   // Tu odwrotnie niż przy przełączniku wyżej: kształt idzie za tym, co
   // użytkownik REALNIE widzi, więc rozwiązany preset, nie sam wybór.
   const variant = usePreset().variants.shell
+  const locale = useLocaleStore((s) => s.locale)
+  const setLocale = useLocaleStore((s) => s.setLocale)
   const { t: tCommon } = useTranslation("common")
 
   return (
@@ -72,6 +76,11 @@ export function ShellHeader() {
               zamienia go na `null` w store i z powrotem, więc pierwsze
               kliknięcie nie zabetonowuje wyboru i preset instancji z E5 ma jak
               wygrać. */}
+          <LocaleToggle
+            locale={locale}
+            options={localeChoices(tCommon)}
+            onLocaleChange={setLocale}
+          />
           <SkinToggle
             skin={storedToPresetChoice(storedPreset)}
             options={presetChoices(tCommon)}

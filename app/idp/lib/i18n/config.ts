@@ -129,3 +129,16 @@ export const resources = {
 } as const
 
 export const DEFAULT_NS = "common"
+
+/**
+ * Lista dla przełącznika języka — ten sam kształt co `presetChoices(t)`.
+ *
+ * Bierze `t` PARAMETREM, bo to nie komponent, a nazwy języków siedzą
+ * w przestrzeni `common`. Etykiety są ENDONIMAMI i tłumaczenie ich byłoby
+ * błędem: listy języków szuka ten, kto NIE rozumie aktualnie ustawionego.
+ */
+export function localeChoices(
+  t: (key: string) => string,
+): ReadonlyArray<{ id: Locale; label: string }> {
+  return LOCALES.map((locale) => ({ id: locale, label: t(`language.${locale}`) }))
+}

@@ -128,6 +128,8 @@ export {
 export type { AppShellVariant } from "./components/app-shell"
 export { JsonEditor } from "./components/json-editor"
 export { JsonViewer } from "./components/json-viewer"
+export { LocaleToggle } from "./components/locale-toggle"
+export type { LocaleOption } from "./components/locale-toggle"
 export { SkinToggle } from "./components/skin-toggle"
 export type { SkinOption } from "./components/skin-toggle"
 export { ThemeToggle } from "./components/theme-toggle"
