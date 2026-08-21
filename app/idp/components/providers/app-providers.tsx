@@ -9,6 +9,7 @@ import { Toaster } from "sonner"
 import "@/lib/i18n"
 import { InstancePresetProvider } from "@/lib/presets/instance-preset"
 import { MswProvider } from "../../mocks/msw-provider"
+import { LocaleProvider } from "./locale-provider"
 import { ThemeProvider } from "./theme-provider"
 
 interface AppProvidersProps {
@@ -25,6 +26,7 @@ export function AppProviders({ children, instancePreset = null }: AppProvidersPr
       <MswProvider>
         <ApiProvider devtools={process.env.NODE_ENV === "development"}>
           <ThemeProvider />
+          <LocaleProvider />
           {children}
           <Toaster richColors closeButton position="top-right" />
         </ApiProvider>
