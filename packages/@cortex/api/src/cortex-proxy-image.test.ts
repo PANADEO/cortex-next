@@ -28,7 +28,10 @@ function mockFetch(body: unknown, ok = true, status = 200) {
 }
 
 function imageResponse(url: string = PNG_DATA_URL) {
-  return { choices: [{ message: { images: [{ image_url: { url } }] } }], usage: { total_tokens: 42 } }
+  return {
+    choices: [{ message: { images: [{ image_url: { url } }] } }],
+    usage: { total_tokens: 42 },
+  }
 }
 
 const baseRequest = {
@@ -71,7 +74,11 @@ describe("callCortexProxyImage", () => {
 
   it("uderza w /v1/chat/completions i wysyła nagłówki atrybucji", async () => {
     const fetchMock = mockFetch(imageResponse())
-    await callCortexProxyImage({ ...baseRequest, appLabel: "Ilustromat", sourceApp: "Cortex360 Ilustromat" })
+    await callCortexProxyImage({
+      ...baseRequest,
+      appLabel: "Ilustromat",
+      sourceApp: "Cortex360 Ilustromat",
+    })
 
     const [url, init] = fetchMock.mock.calls[0]! as unknown as [string, RequestInit]
     expect(url).toBe("http://cortex-proxy/v1/chat/completions")

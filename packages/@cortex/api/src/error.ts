@@ -55,7 +55,8 @@ const ERROR_MESSAGES: Record<ErrorCode, string> = {
   TRANSITION_NOT_ALLOWED: "This action is not allowed in the current state.",
   RESULT_NOT_FOUND: "Result not available yet.",
   ENTITY_NOT_FOUND: "Entity not found.",
-  CSV_EXPORT_VALIDATION_FAILED: "CSV export failed validation. Fix the highlighted issues and retry.",
+  CSV_EXPORT_VALIDATION_FAILED:
+    "CSV export failed validation. Fix the highlighted issues and retry.",
   PERMISSION_DENIED: "You do not have permission to perform this action.",
   EMAIL_DELIVERY_NOT_CONFIGURED: "Email delivery is not configured.",
   EMAIL_DELIVERY_FAILED: "Email delivery failed.",

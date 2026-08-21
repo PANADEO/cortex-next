@@ -1,9 +1,9 @@
-import { mkdir, stat, writeFile } from "node:fs/promises"
-import path from "node:path"
 import { listInputFiles } from "@/features/cortex-cowork/server/sandbox-store"
 import { isDenied, requireSessionAccess } from "@/lib/cortex-governance/project-gate"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
+import { mkdir, stat, writeFile } from "node:fs/promises"
+import path from "node:path"
 
 // Upload of user input files into the session sandbox's input/ directory -
 // the staging area the agent reads task materials from (transcripts, data
@@ -17,7 +17,10 @@ const MAX_FILES_PER_REQUEST = 10
  * control characters, keeps unicode word characters (Polish names survive).
  */
 function sanitizeFilename(raw: string): string {
-  const base = path.basename(raw).replaceAll(/[\u0000-\u001f/\\:]+/g, "").trim()
+  const base = path
+    .basename(raw)
+    .replaceAll(/[\u0000-\u001f/\\:]+/g, "")
+    .trim()
   return base && base !== "." && base !== ".." ? base : `plik-${Date.now()}`
 }
 
@@ -81,10 +84,7 @@ export async function POST(
   await mkdir(session.inputDir, { recursive: true })
   for (const file of uploads) {
     const filename = await unusedName(session.inputDir, sanitizeFilename(file.name))
-    await writeFile(
-      path.join(session.inputDir, filename),
-      Buffer.from(await file.arrayBuffer()),
-    )
+    await writeFile(path.join(session.inputDir, filename), Buffer.from(await file.arrayBuffer()))
   }
 
   return NextResponse.json({ files: await listInputFiles(session) }, { status: 201 })

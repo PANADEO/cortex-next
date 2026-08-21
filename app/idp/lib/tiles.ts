@@ -1,15 +1,33 @@
 import type { CoworkTileArchetype } from "@cortex/types"
 import type { LucideIcon } from "lucide-react"
-import { BarChart3, CalendarClock, FileScan, FileSpreadsheet, FileText, Gauge, Image, Megaphone, Receipt, ScanText, Settings, ShieldCheck, Users, Video, Wand2, Workflow } from "lucide-react"
-import { AI_TOOLS_TILE_ID, canAccessAiTool, hasAnyAiToolAccess, isAiToolId } from "./ai-tools/app-codes"
+import {
+  BarChart3,
+  CalendarClock,
+  FileScan,
+  FileSpreadsheet,
+  FileText,
+  Gauge,
+  Image,
+  Megaphone,
+  Receipt,
+  ScanText,
+  Settings,
+  ShieldCheck,
+  Users,
+  Video,
+  Wand2,
+  Workflow,
+} from "lucide-react"
+import {
+  AI_TOOLS_TILE_ID,
+  canAccessAiTool,
+  hasAnyAiToolAccess,
+  isAiToolId,
+} from "./ai-tools/app-codes"
 import { AI_TOOL_DEFINITIONS, type AiToolDefinition } from "./ai-tools/registry"
 
 export type TileCategoryFunctional =
-  | "content-generation"
-  | "agents"
-  | "research"
-  | "misc"
-  | "admin-system"
+  "content-generation" | "agents" | "research" | "misc" | "admin-system"
 
 export type TileCategoryDepartment = "operations" | "marketing" | "finance" | "it" | "hr"
 
@@ -319,7 +337,8 @@ export const TILES: ReadonlyArray<Tile> = [
     // startuje jako nieaktywny kandydat w rejestrze (wzorem geo-score-calculator).
     id: "visual-guru",
     label: "Visual Guru",
-    description: "Generowanie obrazów AI ze swobodnego promptu, opcjonalnie sterowane obrazem referencyjnym",
+    description:
+      "Generowanie obrazów AI ze swobodnego promptu, opcjonalnie sterowane obrazem referencyjnym",
     href: "/visual-guru",
     icon: Wand2,
     iconBg: "bg-pink-200 dark:bg-pink-900/40",
@@ -334,7 +353,8 @@ export const TILES: ReadonlyArray<Tile> = [
     // wizyjny — patrz manifest.ts w tym samym folderze.
     id: "document-parser",
     label: "Parser Dokumentów",
-    description: "Ekstrakcja treści dokumentów (PDF, Office, obrazy) do ustrukturyzowanego Markdown",
+    description:
+      "Ekstrakcja treści dokumentów (PDF, Office, obrazy) do ustrukturyzowanego Markdown",
     href: "/document-parser/upload",
     icon: FileScan,
     iconBg: "bg-cyan-200 dark:bg-cyan-900/40",

@@ -80,12 +80,19 @@ export const endpoints = {
   },
   miniGenerators: {
     topics: (body: GenerateTopicsRequestDto) =>
-      apiClient.post<GenerateTopicsResponseDto>(`${BASE}/mini-generators/topics`, { jsonBody: body }),
-    keyword: (body: GenerateKeywordPhraseRequestDto) =>
-      apiClient.post<GenerateKeywordPhraseResponseDto>(`${BASE}/mini-generators/keyword`, { jsonBody: body }),
-    metaDescription: (body: GenerateMetaDescriptionRequestDto) =>
-      apiClient.post<GenerateMetaDescriptionResponseDto>(`${BASE}/mini-generators/meta-description`, {
+      apiClient.post<GenerateTopicsResponseDto>(`${BASE}/mini-generators/topics`, {
         jsonBody: body,
       }),
+    keyword: (body: GenerateKeywordPhraseRequestDto) =>
+      apiClient.post<GenerateKeywordPhraseResponseDto>(`${BASE}/mini-generators/keyword`, {
+        jsonBody: body,
+      }),
+    metaDescription: (body: GenerateMetaDescriptionRequestDto) =>
+      apiClient.post<GenerateMetaDescriptionResponseDto>(
+        `${BASE}/mini-generators/meta-description`,
+        {
+          jsonBody: body,
+        },
+      ),
   },
 }

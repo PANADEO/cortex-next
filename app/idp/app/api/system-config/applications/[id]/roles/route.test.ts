@@ -83,7 +83,10 @@ describe("PUT — zapis grantów", () => {
   it("pusta lista ról odbiera dostęp wszystkim", async () => {
     setApplicationRoles.mockResolvedValue(undefined)
 
-    const response = await PUT(makeRequest("PUT", { roleIds: [] }) as never, contextFor(APPLICATION_ID))
+    const response = await PUT(
+      makeRequest("PUT", { roleIds: [] }) as never,
+      contextFor(APPLICATION_ID),
+    )
 
     expect(response.status).toBe(200)
     expect(setApplicationRoles).toHaveBeenCalledWith(APPLICATION_ID, [])
@@ -101,7 +104,10 @@ describe("PUT — zapis grantów", () => {
   })
 
   it("odrzuca identyfikator, który nie jest UUID", async () => {
-    const response = await PUT(makeRequest("PUT", { roleIds: [] }) as never, contextFor("../../etc"))
+    const response = await PUT(
+      makeRequest("PUT", { roleIds: [] }) as never,
+      contextFor("../../etc"),
+    )
 
     expect(response.status).toBe(400)
     expect(setApplicationRoles).not.toHaveBeenCalled()
@@ -110,7 +116,10 @@ describe("PUT — zapis grantów", () => {
   it("nieznana aplikacja daje 404", async () => {
     setApplicationRoles.mockRejectedValue(new UnknownApplicationError())
 
-    const response = await PUT(makeRequest("PUT", { roleIds: [] }) as never, contextFor(APPLICATION_ID))
+    const response = await PUT(
+      makeRequest("PUT", { roleIds: [] }) as never,
+      contextFor(APPLICATION_ID),
+    )
 
     expect(response.status).toBe(404)
   })

@@ -13,7 +13,9 @@ interface PaginationProps {
 
 export function Pagination({ page, pageCount, onChange, className }: PaginationProps) {
   return (
-    <div className={cn("flex items-center justify-between text-xs text-muted-foreground", className)}>
+    <div
+      className={cn("flex items-center justify-between text-xs text-muted-foreground", className)}
+    >
       <p>
         Page {page + 1} of {pageCount}
       </p>

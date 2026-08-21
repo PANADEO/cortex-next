@@ -1,5 +1,6 @@
 "use client"
 
+import { DIRTY_STATUS_LABEL } from "@/components/classification/labels"
 import { useDirtyPackages } from "@cortex/api"
 import {
   DIRTY_PACKAGE_STATUS,
@@ -39,7 +40,6 @@ import {
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { useMemo, useState } from "react"
-import { DIRTY_STATUS_LABEL } from "@/components/classification/labels"
 
 type DirtySortField = "created_date" | "name" | "status"
 
@@ -138,9 +138,7 @@ export default function ClassificationPage() {
         header: "ID",
         size: 140,
         cell: ({ row }) => (
-          <span className="font-mono text-[10px] text-muted-foreground">
-            {row.original.id}
-          </span>
+          <span className="font-mono text-[10px] text-muted-foreground">{row.original.id}</span>
         ),
       },
       {
@@ -209,10 +207,7 @@ export default function ClassificationPage() {
   }
 
   const filtersDirty =
-    status !== "all" ||
-    search !== "" ||
-    sortBy !== "created_date" ||
-    sortOrder !== "desc"
+    status !== "all" || search !== "" || sortBy !== "created_date" || sortOrder !== "desc"
 
   return (
     <>

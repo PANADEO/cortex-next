@@ -773,9 +773,7 @@ export const handlers = [
     const customer = url.searchParams.get("customer_tag")
     const search = url.searchParams.get("search")?.toLowerCase() ?? null
     const sortBy = (url.searchParams.get("sort_by") ?? "created_date") as
-      | "created_date"
-      | "name"
-      | "status"
+      "created_date" | "name" | "status"
     const sortOrder = (url.searchParams.get("sort_order") ?? "desc") as "asc" | "desc"
 
     let filtered = [...dirtyPackages]

@@ -1,13 +1,6 @@
 "use client"
 
-import {
-  Button,
-  Checkbox,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  Separator,
-} from "@cortex/ui"
+import { Button, Checkbox, Popover, PopoverContent, PopoverTrigger, Separator } from "@cortex/ui"
 import { cn, useFeatureFlag } from "@cortex/utils"
 import { Check, UserCog, Users } from "lucide-react"
 import { useMemo, useState } from "react"
@@ -59,15 +52,12 @@ export function OwnerFilter({
     return { me: currentUser, rest }
   }, [currentUser, knownOwners])
 
-  const isSelected = (value: string) =>
-    selection === "all" ? true : selection.has(value)
+  const isSelected = (value: string) => (selection === "all" ? true : selection.has(value))
 
   const toggle = (value: string) => {
     const base: Set<string> =
       selection === "all"
-        ? new Set(
-            [...options.rest, UNASSIGNED, ...(currentUser ? [currentUser] : [])],
-          )
+        ? new Set([...options.rest, UNASSIGNED, ...(currentUser ? [currentUser] : [])])
         : new Set(selection)
     if (base.has(value)) base.delete(value)
     else base.add(value)
@@ -84,10 +74,7 @@ export function OwnerFilter({
 
   const label = describeSelection(selection, currentUser, options.rest.length)
   const isMineActive =
-    currentUser != null &&
-    selection !== "all" &&
-    selection.size === 1 &&
-    selection.has(currentUser)
+    currentUser != null && selection !== "all" && selection.size === 1 && selection.has(currentUser)
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
@@ -201,11 +188,7 @@ function OwnerRow({
       htmlFor={`owner-${value}`}
       className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted"
     >
-      <Checkbox
-        id={`owner-${value}`}
-        checked={checked}
-        onCheckedChange={onToggle}
-      />
+      <Checkbox id={`owner-${value}`} checked={checked} onCheckedChange={onToggle} />
       {!isMeta ? (
         <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
           {initials(value)}

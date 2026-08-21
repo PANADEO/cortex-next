@@ -1,8 +1,8 @@
 "use client"
 
-import { TabsTrigger } from "@cortex/ui"
 import { useAiNotificationCounts } from "@/components/ai-notifications-panel"
 import { useAiNotificationsReadStore } from "@/lib/stores/ai-notifications-read-store"
+import { TabsTrigger } from "@cortex/ui"
 
 interface AiNotificationsTabTriggerProps {
   packageId: string
@@ -10,9 +10,7 @@ interface AiNotificationsTabTriggerProps {
 
 export function AiNotificationsTabTrigger({ packageId }: AiNotificationsTabTriggerProps) {
   const { warning, isLoaded } = useAiNotificationCounts(packageId)
-  const lastSeen = useAiNotificationsReadStore(
-    (s) => s.lastSeenWarningCounts[packageId] ?? 0,
-  )
+  const lastSeen = useAiNotificationsReadStore((s) => s.lastSeenWarningCounts[packageId] ?? 0)
   const unread = isLoaded ? Math.max(0, warning - lastSeen) : 0
   const hasUnread = unread > 0
 

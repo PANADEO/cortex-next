@@ -80,8 +80,7 @@ function buildDocuments(
   for (let i = 0; i < count; i++) {
     let templateIdx = Math.floor(rand() * DOC_TEMPLATES.length)
     if (usedTemplates.size < DOC_TEMPLATES.length) {
-      while (usedTemplates.has(templateIdx))
-        templateIdx = (templateIdx + 1) % DOC_TEMPLATES.length
+      while (usedTemplates.has(templateIdx)) templateIdx = (templateIdx + 1) % DOC_TEMPLATES.length
     }
     usedTemplates.add(templateIdx)
     const tpl = DOC_TEMPLATES[templateIdx]!
@@ -115,9 +114,7 @@ function buildDocuments(
   }
   for (const doc of docs) {
     if (doc.mode === "skip") continue
-    const targetIdx = doc.doc_type === "invoice"
-      ? Math.floor(rand() * drafts.length)
-      : 0
+    const targetIdx = doc.doc_type === "invoice" ? Math.floor(rand() * drafts.length) : 0
     const draft = drafts[targetIdx]!
     draft.document_ids.push(doc.id)
     doc.target_clean_package_ids = [draft.id]
@@ -158,9 +155,7 @@ export function buildDirtyPackages(count = 12): DirtyPackageReadModel[] {
   return items
 }
 
-export function buildDirtyPackageDetails(
-  pkg: DirtyPackageReadModel,
-): DirtyPackageDetailsResponse {
+export function buildDirtyPackageDetails(pkg: DirtyPackageReadModel): DirtyPackageDetailsResponse {
   const seed = Number(pkg.id.replace(/\D/g, ""))
   const rand = pseudoRandom(seed * 13 + 7)
   const { docs, drafts } = buildDocuments(Number(pkg.id.replace(/\D/g, "")), rand)
@@ -172,8 +167,7 @@ export function buildDirtyPackageDetails(
     created_date: pkg.created_date,
     documents: docs,
     drafts,
-    last_classification_run_at:
-      pkg.status === "needs_classification" ? null : daysAgo(0),
+    last_classification_run_at: pkg.status === "needs_classification" ? null : daysAgo(0),
     promoted_clean_package_ids: pkg.promoted_clean_package_ids,
   }
 }

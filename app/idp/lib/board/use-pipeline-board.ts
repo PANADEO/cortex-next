@@ -1,9 +1,9 @@
 "use client"
 
+import { UNASSIGNED, type OwnerSelection } from "@/components/board/owner-filter"
 import { useDirtyPackages, useMe, usePackages } from "@cortex/api"
 import { useFeatureFlag } from "@cortex/utils"
 import { useDeferredValue, useMemo, useState } from "react"
-import { UNASSIGNED, type OwnerSelection } from "@/components/board/owner-filter"
 import {
   BOARD_COLUMNS,
   groupByStage,
@@ -45,10 +45,7 @@ export function usePipelineBoard(): PipelineBoardState {
     sort_by: "created_date",
     sort_order: "desc",
   })
-  const dirty = useDirtyPackages(
-    { limit: BOARD_PAGE_SIZE },
-    { enabled: classificationEnabled },
-  )
+  const dirty = useDirtyPackages({ limit: BOARD_PAGE_SIZE }, { enabled: classificationEnabled })
   const me = useMe()
   const currentUser = me.data?.email ?? null
 
@@ -88,9 +85,7 @@ export function usePipelineBoard(): PipelineBoardState {
       done: [],
     }
     for (const stage of Object.keys(rawColumns) as BoardStage[]) {
-      next[stage] = rawColumns[stage].filter(
-        (c) => matchKind(c) && matchSearch(c) && matchOwner(c),
-      )
+      next[stage] = rawColumns[stage].filter((c) => matchKind(c) && matchSearch(c) && matchOwner(c))
     }
     return next
   }, [rawColumns, deferredSearch, kindFilter, ownerSelection])
@@ -101,14 +96,10 @@ export function usePipelineBoard(): PipelineBoardState {
     return out
   }, [columns])
 
-  const totalCount = useMemo(
-    () => Object.values(counts).reduce((sum, n) => sum + n, 0),
-    [counts],
-  )
+  const totalCount = useMemo(() => Object.values(counts).reduce((sum, n) => sum + n, 0), [counts])
 
   const errorCount = useMemo(
-    () =>
-      columns.processing.filter((c) => c.kind === "clean" && c.hasError).length,
+    () => columns.processing.filter((c) => c.kind === "clean" && c.hasError).length,
     [columns.processing],
   )
 

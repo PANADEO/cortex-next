@@ -10,12 +10,7 @@ interface SplitTextProps {
   className?: string
 }
 
-export function SplitText({
-  children,
-  delay = 60,
-  splitBy = "word",
-  className,
-}: SplitTextProps) {
+export function SplitText({ children, delay = 60, splitBy = "word", className }: SplitTextProps) {
   const reduceMotion = useReducedMotion()
 
   const parts = useMemo(() => {

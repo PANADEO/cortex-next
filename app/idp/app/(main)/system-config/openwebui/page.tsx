@@ -131,7 +131,9 @@ export default function OpenwebuiSyncPage() {
           ) : (
             <CheckCircle2 className="h-4 w-4" />
           )}
-          <AlertTitle>Wykonano {result.applied} z {result.plan.length}</AlertTitle>
+          <AlertTitle>
+            Wykonano {result.applied} z {result.plan.length}
+          </AlertTitle>
           <AlertDescription>
             Grupy: {result.groups.status}
             {result.groups.message ? ` — ${result.groups.message}` : ""}

@@ -4,13 +4,13 @@
 // @cortex/service/src/visual-guru.ts (createGeneration, Faza 0). Ten plik nie
 // buduje payloadów ani nie dotyka Drizzle bezpośrednio.
 
-import { createGeneration } from "@cortex/service"
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { z } from "zod"
 import { visualGuruConfig } from "@/lib/visual-guru/config"
 import { generateVariants } from "@/lib/visual-guru/integration-client"
 import { buildModelPrompt, FIDELITY_KEYS } from "@/lib/visual-guru/prompts"
+import { createGeneration } from "@cortex/service"
+import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
+import { z } from "zod"
 import { requireVisualGuruAccess, toErrorResponse, toUpstreamErrorResponse } from "../_lib/guard"
 
 export const runtime = "nodejs"

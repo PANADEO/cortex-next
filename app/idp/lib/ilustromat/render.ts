@@ -5,12 +5,8 @@
 // biblioteki (plik na dysku) albo własny font szablonu (bytea -> materializacja
 // do tmpdir), plus opcjonalne logo.
 
-import {
-  getFrameTemplate,
-  getTemplateAsset,
-  type FrameTemplateInput,
-} from "@cortex/service"
 import type { FrameTemplateRow } from "@cortex/db"
+import { getFrameTemplate, getTemplateAsset, type FrameTemplateInput } from "@cortex/service"
 import type { ComposeFonts } from "./composer"
 import { materializeFont } from "./font-cache"
 import { resolveFontLibraryEntry } from "./font-library"
@@ -87,9 +83,7 @@ export interface ResolvedRender {
  * i bierze nazwę rodziny ZAPISANĄ przy wgrywaniu — nie zgaduje jej, bo rozjazd
  * nazwy sprawia, że Pango po cichu dobiera inny krój.
  */
-export async function resolveTemplateFonts(
-  template: FrameTemplate,
-): Promise<ComposeFonts> {
+export async function resolveTemplateFonts(template: FrameTemplate): Promise<ComposeFonts> {
   if (template.fontSource === "library") {
     const entry = resolveFontLibraryEntry(template.fontLibraryId)
     return { family: entry.family, regularPath: entry.regularPath, boldPath: entry.boldPath }

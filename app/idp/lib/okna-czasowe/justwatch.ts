@@ -168,7 +168,13 @@ export async function findRakutenAvailability(
     const rakutenOffers = exact.offers.filter(isRakutenOffer)
     const chosen = pickPreferredOffer(rakutenOffers)
     if (!chosen) {
-      return { matchedTitle: exact.content.title, available: false, offerType: null, price: null, ambiguous: false }
+      return {
+        matchedTitle: exact.content.title,
+        available: false,
+        offerType: null,
+        price: null,
+        ambiguous: false,
+      }
     }
     return {
       matchedTitle: exact.content.title,

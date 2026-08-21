@@ -32,7 +32,7 @@ interface RouteResponse {
 function makeFetchMock(routes: Record<string, RouteResponse>) {
   return vi.fn((input: RequestInfo | URL) => {
     const url = typeof input === "string" ? input : input.toString()
-    const path = url.startsWith("http") ? new URL(url).pathname : url.split("?")[0] ?? url
+    const path = url.startsWith("http") ? new URL(url).pathname : (url.split("?")[0] ?? url)
     const route = routes[path ?? ""]
     if (!route) {
       return Promise.reject(new Error(`Unexpected fetch: ${url}`))

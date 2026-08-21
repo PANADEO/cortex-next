@@ -15,8 +15,7 @@ export const endpoints = {
       apiClient.post<Film>("/api/okna-czasowe/films", { jsonBody: body }),
     update: (id: string, body: FilmInput) =>
       apiClient.put<Film>(`/api/okna-czasowe/films/${id}`, { jsonBody: body }),
-    remove: (id: string) =>
-      apiClient.delete<{ ok: true }>(`/api/okna-czasowe/films/${id}`),
+    remove: (id: string) => apiClient.delete<{ ok: true }>(`/api/okna-czasowe/films/${id}`),
   },
   data: {
     snapshots: () => apiClient.get<Snapshot[]>("/api/okna-czasowe/data"),

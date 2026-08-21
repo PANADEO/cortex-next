@@ -1,5 +1,6 @@
 "use client"
 
+import { TILE_COLOR_OPTIONS } from "@/features/system-config/colors"
 import {
   useApplicationRoles,
   useApplications,
@@ -13,7 +14,6 @@ import {
 } from "@/features/system-config/hooks"
 import { resolveApplicationIcon } from "@/features/system-config/icons"
 import { KIND_LABELS } from "@/features/system-config/kinds"
-import { TILE_COLOR_OPTIONS } from "@/features/system-config/colors"
 import type { Application, ApplicationInput, RoleSummary } from "@/features/system-config/types"
 import { usePreset } from "@/lib/presets/preset-store"
 import { presetUsesApplicationColor } from "@/lib/presets/registry"
@@ -21,7 +21,6 @@ import { DEPARTMENT_CATEGORIES, FUNCTIONAL_CATEGORIES } from "@/lib/tiles"
 import { toastApiError } from "@cortex/api"
 import type { TileKind } from "@cortex/tile-sdk"
 import { TileKind as TileKindSchema } from "@cortex/tile-sdk"
-import { cn } from "@cortex/utils"
 import {
   Alert,
   AlertDescription,
@@ -57,10 +56,11 @@ import {
   TabsList,
   TabsTrigger,
 } from "@cortex/ui"
+import { cn } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
 import { ArrowLeft, ChevronDown, Info, LayoutDashboard, ShieldAlert, Trash2 } from "lucide-react"
-import Link from "next/link"
 import dynamic from "next/dynamic"
+import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
@@ -145,7 +145,9 @@ function ClosedListMultiSelect({
 
   function toggle(optionId: string, checked: boolean) {
     onChange(
-      checked ? [...new Set([...value, optionId])] : value.filter((existing) => existing !== optionId),
+      checked
+        ? [...new Set([...value, optionId])]
+        : value.filter((existing) => existing !== optionId),
     )
   }
 
@@ -218,7 +220,10 @@ function toFormState(application: Application): FormState {
     kind: application.kind,
     route: application.route ?? "",
     url: application.url ?? "",
-    target: application.target === "_blank" || application.target === "_self" ? application.target : NO_TARGET,
+    target:
+      application.target === "_blank" || application.target === "_self"
+        ? application.target
+        : NO_TARGET,
     isActive: application.isActive,
     showOnHub: application.showOnHub,
     color: application.color ?? "",
@@ -246,7 +251,8 @@ function toInput(code: string, form: FormState): ApplicationInput {
     isActive: form.isActive,
     showOnHub: form.showOnHub,
     color: form.color || null,
-    categoryFunctional: form.categoryFunctional === NO_FUNCTIONAL_CATEGORY ? null : form.categoryFunctional,
+    categoryFunctional:
+      form.categoryFunctional === NO_FUNCTIONAL_CATEGORY ? null : form.categoryFunctional,
     categoryDepartment: form.categoryDepartment.length > 0 ? form.categoryDepartment : null,
   }
 }
@@ -317,7 +323,9 @@ export default function ApplicationDetailPage() {
   useEffect(() => {
     if (applicationScopeGrantsQuery.data) {
       setScopeGrants(
-        Object.fromEntries(applicationScopeGrantsQuery.data.map((grant) => [grant.scopeId, grant.roleIds])),
+        Object.fromEntries(
+          applicationScopeGrantsQuery.data.map((grant) => [grant.scopeId, grant.roleIds]),
+        ),
       )
     }
   }, [applicationScopeGrantsQuery.data])
@@ -338,30 +346,32 @@ export default function ApplicationDetailPage() {
       ),
     }
 
-    const columns = (applicationScopesQuery.data ?? []).map<ColumnDef<RoleSummary, unknown>>((scope) => ({
-      id: scope.id,
-      header: scope.name,
-      cell: ({ row }) => {
-        const roleId = row.original.id
-        return (
-          <Checkbox
-            checked={(scopeGrants?.[scope.id] ?? []).includes(roleId)}
-            onCheckedChange={(checked) =>
-              setScopeGrants((current) => {
-                const base = current ?? {}
-                const existing = base[scope.id] ?? []
-                const next =
-                  checked === true
-                    ? [...new Set([...existing, roleId])]
-                    : existing.filter((id) => id !== roleId)
-                return { ...base, [scope.id]: next }
-              })
-            }
-            aria-label={`${scope.name} — ${row.original.name}`}
-          />
-        )
-      },
-    }))
+    const columns = (applicationScopesQuery.data ?? []).map<ColumnDef<RoleSummary, unknown>>(
+      (scope) => ({
+        id: scope.id,
+        header: scope.name,
+        cell: ({ row }) => {
+          const roleId = row.original.id
+          return (
+            <Checkbox
+              checked={(scopeGrants?.[scope.id] ?? []).includes(roleId)}
+              onCheckedChange={(checked) =>
+                setScopeGrants((current) => {
+                  const base = current ?? {}
+                  const existing = base[scope.id] ?? []
+                  const next =
+                    checked === true
+                      ? [...new Set([...existing, roleId])]
+                      : existing.filter((id) => id !== roleId)
+                  return { ...base, [scope.id]: next }
+                })
+              }
+              aria-label={`${scope.name} — ${row.original.name}`}
+            />
+          )
+        },
+      }),
+    )
 
     return [roleColumn, ...columns]
   }, [applicationScopesQuery.data, scopeGrants])
@@ -478,7 +488,9 @@ export default function ApplicationDetailPage() {
       .filter((scopeId) => {
         const before = [...(serverByScope.get(scopeId) ?? [])].sort()
         const after = [...(scopeGrants[scopeId] ?? [])].sort()
-        return before.length !== after.length || before.some((roleId, index) => roleId !== after[index])
+        return (
+          before.length !== after.length || before.some((roleId, index) => roleId !== after[index])
+        )
       })
 
     if (changedScopeIds.length === 0) return
@@ -499,7 +511,9 @@ export default function ApplicationDetailPage() {
       // Błąd częściowy (jedna kolumna 409, inna 200) cofa lokalny stan do
       // prawdy serwera dla WSZYSTKICH kolumn, wzorem handleSavePermissions —
       // nie zostawia UI w stanie niespójnym z bazą.
-      setScopeGrants(Object.fromEntries(serverGrants.map((grant) => [grant.scopeId, grant.roleIds])))
+      setScopeGrants(
+        Object.fromEntries(serverGrants.map((grant) => [grant.scopeId, grant.roleIds])),
+      )
       toastApiError(error, "Nie udało się zapisać zakresów")
     } finally {
       setIsSavingScopes(false)
@@ -552,11 +566,11 @@ export default function ApplicationDetailPage() {
             <AlertTitle>To jest aplikacja, z której właśnie korzystasz</AlertTitle>
             <AlertDescription>
               Nie da się zmienić kodu, typu ani adresu tej aplikacji, ani jej wyłączyć czy usunąć.
-              To po tym kodzie bramka sprawdza dostęp do Konfiguracji Systemu, a typ i adres
-              opisują sam ten moduł — taka zmiana albo odcięłaby od niego wszystkich
-              administratorów (łącznie z Tobą), albo wyprowadziłaby administrację poza tę
-              aplikację, i dałoby się to cofnąć tylko ręcznie w bazie danych. Serwer odrzuca te
-              operacje niezależnie od tego, co wyśle przeglądarka.
+              To po tym kodzie bramka sprawdza dostęp do Konfiguracji Systemu, a typ i adres opisują
+              sam ten moduł — taka zmiana albo odcięłaby od niego wszystkich administratorów
+              (łącznie z Tobą), albo wyprowadziłaby administrację poza tę aplikację, i dałoby się to
+              cofnąć tylko ręcznie w bazie danych. Serwer odrzuca te operacje niezależnie od tego,
+              co wyśle przeglądarka.
             </AlertDescription>
           </Alert>
         ) : null}
@@ -569,9 +583,7 @@ export default function ApplicationDetailPage() {
           </TabsList>
 
           <TabsContent value="basics" className="flex flex-col gap-4">
-            <p className="text-xs text-muted-foreground">
-              Opis aplikacji w rejestrze instancji.
-            </p>
+            <p className="text-xs text-muted-foreground">Opis aplikacji w rejestrze instancji.</p>
 
             <div className="grid gap-4 rounded-lg border border-border p-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -639,7 +651,10 @@ export default function ApplicationDetailPage() {
                           : "opacity-70 hover:opacity-100",
                       )}
                     >
-                      <span className={cn("h-3 w-3 rounded-full", option.iconFg)} aria-hidden="true" />
+                      <span
+                        className={cn("h-3 w-3 rounded-full", option.iconFg)}
+                        aria-hidden="true"
+                      />
                     </button>
                   ))}
                 </div>
@@ -663,8 +678,8 @@ export default function ApplicationDetailPage() {
                   <span className="flex items-start gap-1.5 text-xs text-muted-foreground">
                     <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                     <span>
-                      Wygląd „{preset.label}” tej palety nie używa — kafelki na hubie dostają jeden z
-                      trzech akcentów wyglądu, dobierany po kategorii funkcjonalnej. Wybór zapisze
+                      Wygląd „{preset.label}” tej palety nie używa — kafelki na hubie dostają jeden
+                      z trzech akcentów wyglądu, dobierany po kategorii funkcjonalnej. Wybór zapisze
                       się i zadziała w wyglądach, które paletę czytają.
                     </span>
                   </span>
@@ -811,9 +826,9 @@ export default function ApplicationDetailPage() {
                 <Label htmlFor="showOnHub">Widoczna na stronie głównej (hub)</Label>
               </div>
               <span className="text-xs text-muted-foreground">
-                Osobny przełącznik od „Aplikacja aktywna” (D1): „aktywna” decyduje o uprawnieniu, ten
-                przełącznik wyłącznie o tym, czy kafelek renderuje się na hubie. Wyłączenie nie odbiera
-                nikomu dostępu — tylko chowa kartę.
+                Osobny przełącznik od „Aplikacja aktywna” (D1): „aktywna” decyduje o uprawnieniu,
+                ten przełącznik wyłącznie o tym, czy kafelek renderuje się na hubie. Wyłączenie nie
+                odbiera nikomu dostępu — tylko chowa kartę.
               </span>
 
               {/* Kolejność nie jest już edytowalna tutaj — patrz tryb zmiany
@@ -866,7 +881,10 @@ export default function ApplicationDetailPage() {
                   </div>
 
                   <div className="flex justify-end">
-                    <Button onClick={handleSavePermissions} disabled={setApplicationRoles.isPending}>
+                    <Button
+                      onClick={handleSavePermissions}
+                      disabled={setApplicationRoles.isPending}
+                    >
                       Zapisz uprawnienia
                     </Button>
                   </div>
@@ -900,7 +918,12 @@ export default function ApplicationDetailPage() {
                 </p>
               ) : (
                 <>
-                  <DataTable columns={scopeColumns} data={roles} getRowId={(role) => role.id} bordered />
+                  <DataTable
+                    columns={scopeColumns}
+                    data={roles}
+                    getRowId={(role) => role.id}
+                    bordered
+                  />
                   <div className="flex justify-end">
                     <Button onClick={handleSaveScopes} disabled={isSavingScopes}>
                       Zapisz zakresy
@@ -936,9 +959,9 @@ export default function ApplicationDetailPage() {
             <AlertDialogTitle>Schować {application.name} z hubu?</AlertDialogTitle>
             <AlertDialogDescription>
               Ten kafelek jest dziś widoczny na stronie głównej. Po zapisaniu zniknie z hubu KAŻDEGO
-              użytkownika, który dziś go widzi — uprawnienia (kto ma dostęp) się nie zmieniają, tylko
-              karta przestaje się renderować. Dopiero po kliknięciu „Zapisz dane” zmiana staje się
-              realna.
+              użytkownika, który dziś go widzi — uprawnienia (kto ma dostęp) się nie zmieniają,
+              tylko karta przestaje się renderować. Dopiero po kliknięciu „Zapisz dane” zmiana staje
+              się realna.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

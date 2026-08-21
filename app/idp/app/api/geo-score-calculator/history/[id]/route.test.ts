@@ -32,7 +32,8 @@ const ROW = {
 }
 
 const service = vi.hoisted(() => ({
-  getMyCalculation: vi.fn<(userEmail: string, id: string) => Promise<Record<string, unknown> | undefined>>(),
+  getMyCalculation:
+    vi.fn<(userEmail: string, id: string) => Promise<Record<string, unknown> | undefined>>(),
   deleteMyCalculation: vi.fn<(userEmail: string, id: string) => Promise<boolean>>(),
 }))
 vi.mock("@cortex/service", async (importOriginal) => ({

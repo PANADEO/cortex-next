@@ -1,7 +1,16 @@
 "use client"
 
+import {
+  useContentGuruConfig,
+  useCreateTemplate,
+  useDeleteTemplate,
+  useDuplicateTemplate,
+  useTemplates,
+  useTestTemplateGeneration,
+  useUpdateTemplate,
+} from "@/features/content-guru/hooks"
+import type { TemplateDto, TemplateInputDto } from "@/features/content-guru/types"
 import { toastApiError } from "@cortex/api"
-import { formatAbsolute } from "@cortex/utils"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,20 +45,20 @@ import {
   SelectValue,
   Textarea,
 } from "@cortex/ui"
+import { formatAbsolute } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
-import { ChevronRight, Copy, Download, MoreHorizontal, Plus, Sparkles, Trash2, Upload } from "lucide-react"
+import {
+  ChevronRight,
+  Copy,
+  Download,
+  MoreHorizontal,
+  Plus,
+  Sparkles,
+  Trash2,
+  Upload,
+} from "lucide-react"
 import { useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
-import {
-  useContentGuruConfig,
-  useCreateTemplate,
-  useDeleteTemplate,
-  useDuplicateTemplate,
-  useTemplates,
-  useTestTemplateGeneration,
-  useUpdateTemplate,
-} from "@/features/content-guru/hooks"
-import type { TemplateDto, TemplateInputDto } from "@/features/content-guru/types"
 
 const NEW_TEMPLATE_SENTINEL = "__new__"
 const ALL_CATEGORIES = "__all__"
@@ -203,7 +212,9 @@ export default function ContentGuruTemplatesPage() {
         )
 
         if (valid.length === 0) {
-          toast.error("Plik nie zawiera poprawnych szablonów (wymagane pola: name, category, content)")
+          toast.error(
+            "Plik nie zawiera poprawnych szablonów (wymagane pola: name, category, content)",
+          )
           return
         }
 
@@ -252,7 +263,11 @@ export default function ContentGuruTemplatesPage() {
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="ghost" aria-label={`Więcej akcji dla ${row.original.name}`}>
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label={`Więcej akcji dla ${row.original.name}`}
+              >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -314,10 +329,7 @@ export default function ContentGuruTemplatesPage() {
                 size="sm"
                 variant="outline"
                 onClick={() =>
-                  downloadJson(
-                    `${categoryFilter}.json`,
-                    filtered.map(templateExportShape),
-                  )
+                  downloadJson(`${categoryFilter}.json`, filtered.map(templateExportShape))
                 }
               >
                 <Download className="mr-1.5 h-3.5 w-3.5" />
@@ -334,7 +346,10 @@ export default function ContentGuruTemplatesPage() {
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         <div className="flex items-center gap-2">
-          <Label htmlFor="content-guru-templates-category" className="text-xs text-muted-foreground">
+          <Label
+            htmlFor="content-guru-templates-category"
+            className="text-xs text-muted-foreground"
+          >
             Kategoria
           </Label>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -494,13 +509,16 @@ export default function ContentGuruTemplatesPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={templateToDelete !== null} onOpenChange={(open) => !open && setTemplateToDelete(null)}>
+      <AlertDialog
+        open={templateToDelete !== null}
+        onOpenChange={(open) => !open && setTemplateToDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Usunąć szablon {templateToDelete?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Szablon zniknie z listy wyboru na ekranie generowania. Treści wygenerowane z jego użyciem
-              w przeszłości zostają w archiwum bez zmian. Tej operacji nie da się cofnąć.
+              Szablon zniknie z listy wyboru na ekranie generowania. Treści wygenerowane z jego
+              użyciem w przeszłości zostają w archiwum bez zmian. Tej operacji nie da się cofnąć.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

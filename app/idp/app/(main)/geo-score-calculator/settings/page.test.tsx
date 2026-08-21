@@ -7,11 +7,11 @@
 // - ChipInput faktycznie dodaje nowe słowo do payloadu PUT;
 // - reset jest gated przez AlertDialog (bez potwierdzenia NIC się nie woła).
 
+import type { GeoScoreConfigDto } from "@/features/geo-score-calculator/types"
 import "@testing-library/jest-dom/vitest"
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import type { GeoScoreConfigDto } from "@/features/geo-score-calculator/types"
 import GeoScoreCalculatorSettingsPage from "./page"
 
 // jsdom nie implementuje ResizeObserver — potrzebny przez Radix ScrollArea

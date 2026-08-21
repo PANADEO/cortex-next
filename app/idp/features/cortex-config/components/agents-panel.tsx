@@ -49,9 +49,7 @@ function AgentsForm({
 }) {
   const update = useUpdateGovernance()
   const [global, setGlobal] = useState(initial.global ?? "")
-  const [byDepartment, setByDepartment] = useState<Record<string, string>>(
-    initial.departments,
-  )
+  const [byDepartment, setByDepartment] = useState<Record<string, string>>(initial.departments)
   const [saved, setSaved] = useState(false)
 
   const sortedDepartments = [...departments].sort()

@@ -10,10 +10,10 @@
 // wszystkich userów instancji, nie tylko klikającego admina).
 
 import { GeoScoreConfigMissingError, getRequestEmail, resetGeoScoreConfig } from "@cortex/service"
-import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { denyUnlessAllowed } from "../../_lib/guard"
+import { NextResponse } from "next/server"
 import { toGeoScoreConfigDto } from "../../_lib/config-dto"
+import { denyUnlessAllowed } from "../../_lib/guard"
 
 export const runtime = "nodejs"
 

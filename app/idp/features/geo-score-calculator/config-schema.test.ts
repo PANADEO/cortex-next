@@ -64,7 +64,9 @@ describe("geoScoreSettingsSchema", () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.issues.some((issue) => issue.path.join(".") === "weightStatistics")).toBe(true)
+      expect(result.error.issues.some((issue) => issue.path.join(".") === "weightStatistics")).toBe(
+        true,
+      )
       expect(result.error.issues[0]?.message).toMatch(/100%/)
     }
   })

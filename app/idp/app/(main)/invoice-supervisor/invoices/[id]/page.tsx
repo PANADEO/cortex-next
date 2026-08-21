@@ -269,7 +269,10 @@ export default function InvoiceSupervisorInvoiceDetailPage() {
             value={formatInvoiceSupervisorCurrency(remaining, invoice.currency)}
             tone={remaining > 0 ? "warning" : "default"}
           />
-          <DataCard label="Termin płatności" value={formatInvoiceSupervisorDate(invoice.due_date)} />
+          <DataCard
+            label="Termin płatności"
+            value={formatInvoiceSupervisorDate(invoice.due_date)}
+          />
         </section>
 
         <div className="grid gap-4 lg:grid-cols-3">
@@ -278,7 +281,10 @@ export default function InvoiceSupervisorInvoiceDetailPage() {
               <CardTitle className="text-sm font-medium">Szczegóły</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <DetailRow label="Data wystawienia" value={formatInvoiceSupervisorDate(invoice.issue_date)} />
+              <DetailRow
+                label="Data wystawienia"
+                value={formatInvoiceSupervisorDate(invoice.issue_date)}
+              />
               <DetailRow label="Sprzedawca" value={invoice.seller_name} />
               {invoice.bank_account ? (
                 <DetailRow label="Numer konta" value={invoice.bank_account} />

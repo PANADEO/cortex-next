@@ -28,7 +28,8 @@ vi.mock("@cortex/service", async (importOriginal) => {
   }
 })
 
-const { OpenwebuiClientError, OpenwebuiGroupAlreadyMappedError, clearTileAccessCache } = await import("@cortex/service")
+const { OpenwebuiClientError, OpenwebuiGroupAlreadyMappedError, clearTileAccessCache } =
+  await import("@cortex/service")
 const { GET, PUT, POST } = await import("./route")
 
 const ROLE_ID = "9f1d3c62-1f4a-4a6b-9f3c-2b7d5e8a1c40"
@@ -82,7 +83,11 @@ describe("GET — stan mapowania", () => {
     const response = await GET(makeRequest("GET") as never, contextFor(ROLE_ID))
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ mapping: null, configured: false, availableGroups: null })
+    expect(await response.json()).toEqual({
+      mapping: null,
+      configured: false,
+      availableGroups: null,
+    })
     expect(listOpenwebuiGroups).not.toHaveBeenCalled()
   })
 
@@ -101,7 +106,13 @@ describe("GET — stan mapowania", () => {
 
   it("z mapowaniem -> serializuje daty do ISO i dołącza podgląd (previewRoleGroupSync)", async () => {
     getOpenwebuiRoleGroupMapping.mockResolvedValue(MAPPING)
-    previewRoleGroupSync.mockResolvedValue({ status: "ok", groupName: "cortex:hr", targetCount: 3, toAdd: 1, toRemove: 0 })
+    previewRoleGroupSync.mockResolvedValue({
+      status: "ok",
+      groupName: "cortex:hr",
+      targetCount: 3,
+      toAdd: 1,
+      toRemove: 0,
+    })
 
     const response = await GET(makeRequest("GET") as never, contextFor(ROLE_ID))
     const body = (await response.json()) as { mapping: { lastSyncedAt: string } }
@@ -127,7 +138,10 @@ describe("PUT — podepnij/odepnij", () => {
   it("action:create -> 200 z zapisanym mapowaniem", async () => {
     attachRoleGroup.mockResolvedValue({ mapping: MAPPING })
 
-    const response = await PUT(makeRequest("PUT", { action: "create" }) as never, contextFor(ROLE_ID))
+    const response = await PUT(
+      makeRequest("PUT", { action: "create" }) as never,
+      contextFor(ROLE_ID),
+    )
 
     expect(response.status).toBe(200)
     expect(attachRoleGroup).toHaveBeenCalledWith({ roleId: ROLE_ID, action: { kind: "create" } })
@@ -136,15 +150,24 @@ describe("PUT — podepnij/odepnij", () => {
   it("action:existing przekazuje groupId adapterowi", async () => {
     attachRoleGroup.mockResolvedValue({ mapping: MAPPING })
 
-    await PUT(makeRequest("PUT", { action: "existing", groupId: "g9" }) as never, contextFor(ROLE_ID))
+    await PUT(
+      makeRequest("PUT", { action: "existing", groupId: "g9" }) as never,
+      contextFor(ROLE_ID),
+    )
 
-    expect(attachRoleGroup).toHaveBeenCalledWith({ roleId: ROLE_ID, action: { kind: "existing", groupId: "g9" } })
+    expect(attachRoleGroup).toHaveBeenCalledWith({
+      roleId: ROLE_ID,
+      action: { kind: "existing", groupId: "g9" },
+    })
   })
 
   it("action:detach -> woła detachRoleGroup, nie attachRoleGroup", async () => {
     detachRoleGroup.mockResolvedValue(true)
 
-    const response = await PUT(makeRequest("PUT", { action: "detach" }) as never, contextFor(ROLE_ID))
+    const response = await PUT(
+      makeRequest("PUT", { action: "detach" }) as never,
+      contextFor(ROLE_ID),
+    )
 
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({ ok: true, detached: true })
@@ -154,7 +177,10 @@ describe("PUT — podepnij/odepnij", () => {
   it("not-configured -> 503", async () => {
     attachRoleGroup.mockResolvedValue({ error: "not-configured" })
 
-    const response = await PUT(makeRequest("PUT", { action: "create" }) as never, contextFor(ROLE_ID))
+    const response = await PUT(
+      makeRequest("PUT", { action: "create" }) as never,
+      contextFor(ROLE_ID),
+    )
 
     expect(response.status).toBe(503)
   })
@@ -162,7 +188,10 @@ describe("PUT — podepnij/odepnij", () => {
   it("unknown-role -> 404", async () => {
     attachRoleGroup.mockResolvedValue({ error: "unknown-role" })
 
-    const response = await PUT(makeRequest("PUT", { action: "create" }) as never, contextFor(ROLE_ID))
+    const response = await PUT(
+      makeRequest("PUT", { action: "create" }) as never,
+      contextFor(ROLE_ID),
+    )
 
     expect(response.status).toBe(404)
   })
@@ -181,7 +210,10 @@ describe("PUT — podepnij/odepnij", () => {
   it("grupa trzymana przez inną rolę -> 409 z komunikatem nazywającym tamtą rolę, NIE 500", async () => {
     attachRoleGroup.mockRejectedValue(new OpenwebuiGroupAlreadyMappedError("konsultanci"))
 
-    const response = await PUT(makeRequest("PUT", { action: "existing", groupId: "g9" }) as never, contextFor(ROLE_ID))
+    const response = await PUT(
+      makeRequest("PUT", { action: "existing", groupId: "g9" }) as never,
+      contextFor(ROLE_ID),
+    )
 
     expect(response.status).toBe(409)
     const body = (await response.json()) as { error: string; message: string }
@@ -190,9 +222,14 @@ describe("PUT — podepnij/odepnij", () => {
   })
 
   it("awaria HTTP OpenWebUI (OpenwebuiClientError) -> 502, bez rzucenia dalej", async () => {
-    attachRoleGroup.mockRejectedValue(new OpenwebuiClientError("upstream-error", "OpenWebUI zwrócił 500"))
+    attachRoleGroup.mockRejectedValue(
+      new OpenwebuiClientError("upstream-error", "OpenWebUI zwrócił 500"),
+    )
 
-    const response = await PUT(makeRequest("PUT", { action: "create" }) as never, contextFor(ROLE_ID))
+    const response = await PUT(
+      makeRequest("PUT", { action: "create" }) as never,
+      contextFor(ROLE_ID),
+    )
 
     expect(response.status).toBe(502)
   })
@@ -210,7 +247,10 @@ describe("PUT — podepnij/odepnij", () => {
   })
 
   it("odrzuca identyfikator, który nie jest UUID", async () => {
-    const response = await PUT(makeRequest("PUT", { action: "detach" }) as never, contextFor("../../etc"))
+    const response = await PUT(
+      makeRequest("PUT", { action: "detach" }) as never,
+      contextFor("../../etc"),
+    )
 
     expect(response.status).toBe(400)
     expect(detachRoleGroup).not.toHaveBeenCalled()

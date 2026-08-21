@@ -1,0 +1,31 @@
+{
+  "gate": {
+    "checking": "Sprawdzanie dostępu…",
+    "deniedTitle": "Brak uprawnień",
+    "deniedHeading": "Brak dostępu",
+    "deniedBody": "Nie masz uprawnień do korzystania z tej aplikacji. Skontaktuj się z administratorem.",
+    "retry": "Spróbuj ponownie",
+    "signOut": "Wyloguj się"
+  },
+  "hub": {
+    "loadFailedTitle": "Nie udało się wczytać aplikacji",
+    "loadFailedBody": "Spróbuj odświeżyć stronę. Jeśli problem się powtarza, sprawdź połączenie z bazą danych.",
+    "subtitle": "Wybierz aplikację, której chcesz użyć",
+    "byDepartment": "Wg działu",
+    "grouping": "Sposób grupowania",
+    "noResults": "Spróbuj zmienić zapytanie lub wyczyścić filtry.",
+    "clearFilters": "Wyczyść filtry",
+    "loading": "Wczytywanie aplikacji…"
+  },
+  "landing": {
+    "tagline": "Zintegrowany hub modułów AI dla operacji enterprise.",
+    "featureExtraction": "Automatyczna ekstrakcja danych z dokumentów",
+    "featureSecurity": "Bezpieczeństwo i audyt klasy enterprise",
+    "signIn": "Zaloguj się",
+    "signInHint": "Uzyskaj dostęp do swoich modułów Cortex360",
+    "intro": "Od ekstrakcji dokumentów po automatyzację procesów — jedna platforma, wspólny design system, jeden punkt logowania.",
+    "featurePipeline": "Pipeline AI dla powtarzalnych operacji",
+    "authInterrupted": "Logowanie przerwane",
+    "continue": "Kontynuuj"
+  }
+}

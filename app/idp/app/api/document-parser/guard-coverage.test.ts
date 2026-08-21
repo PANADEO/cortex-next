@@ -126,7 +126,11 @@ const BYPASS_ATTEMPTS = [
   { label: "brak nagłówka tożsamości", email: null, granted: [] as string[] },
   { label: "obcy e-mail spoza bazy", email: "intruz@obca-firma.pl", granted: [] },
   { label: "znany e-mail bez żadnej roli", email: "bez-roli@firma.pl", granted: [] },
-  { label: "rola z grantem do innego kafelka", email: "ktos@firma.pl", granted: ["intrastat", "idp"] },
+  {
+    label: "rola z grantem do innego kafelka",
+    email: "ktos@firma.pl",
+    granted: ["intrastat", "idp"],
+  },
   {
     label: "grant do łudząco podobnego kodu",
     email: "ktos@firma.pl",

@@ -5,9 +5,9 @@
 // blokuje" (202 wraca ZANIM orkiestracja się skończy). Bramka autoryzacji
 // (bypass attempts) jest osobno w guard-coverage.test.ts.
 
+import { MAX_COMBINATIONS } from "@/lib/content-guru/job-limits"
 import type * as CortexService from "@cortex/service"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { MAX_COMBINATIONS } from "@/lib/content-guru/job-limits"
 
 vi.mock("@cortex/service/rbac-store", () => ({
   loadGrantedApplicationCodes: vi.fn(async () => ["content-guru"]),
@@ -15,7 +15,16 @@ vi.mock("@cortex/service/rbac-store", () => ({
 }))
 
 const service = vi.hoisted(() => ({
-  listMyForbiddenPhrases: vi.fn(async () => [] as { id: string; userEmail: string; phrase: string; description: string | null; createdAt: Date }[]),
+  listMyForbiddenPhrases: vi.fn(
+    async () =>
+      [] as {
+        id: string
+        userEmail: string
+        phrase: string
+        description: string | null
+        createdAt: Date
+      }[],
+  ),
   getTemplate: vi.fn(
     async (id: string) =>
       ({
@@ -136,7 +145,9 @@ describe("POST /api/content-guru/jobs — walidacja", () => {
   })
 
   it("400: model spoza dozwolonej listy, zero utworzonego joba", async () => {
-    const response = await POST(makeRequest({ ...VALID_BATCH_BODY, model: "nieznany/model" }) as never)
+    const response = await POST(
+      makeRequest({ ...VALID_BATCH_BODY, model: "nieznany/model" }) as never,
+    )
     expect(response.status).toBe(400)
     expect(service.createGenerationJob).not.toHaveBeenCalled()
     expect(processGenerationJob).not.toHaveBeenCalled()
@@ -151,7 +162,10 @@ describe("POST /api/content-guru/jobs — walidacja", () => {
 
   it("400: nieznany clientProfileId, zero utworzonego joba", async () => {
     const response = await POST(
-      makeRequest({ ...VALID_BATCH_BODY, clientProfileId: "99999999-9999-9999-9999-999999999999" }) as never,
+      makeRequest({
+        ...VALID_BATCH_BODY,
+        clientProfileId: "99999999-9999-9999-9999-999999999999",
+      }) as never,
     )
     expect(response.status).toBe(400)
     expect(service.createGenerationJob).not.toHaveBeenCalled()
@@ -164,7 +178,10 @@ describe("POST /api/content-guru/jobs — walidacja", () => {
   describe(`MAX_COMBINATIONS=${MAX_COMBINATIONS} — egzekwowane server-side, nie tylko podpowiedź UI`, () => {
     it("pakiet: topics.length * templateIds.length > limit -> 400, zero utworzonego joba/orkiestracji", async () => {
       const manyTopics = Array.from({ length: 16 }, (_, i) => `Temat ${i}`)
-      const manyTemplates = Array.from({ length: 2 }, (_, i) => `3333333${i}-3333-3333-3333-333333333333`)
+      const manyTemplates = Array.from(
+        { length: 2 },
+        (_, i) => `3333333${i}-3333-3333-3333-333333333333`,
+      )
       // 16 * 2 = 32 > 30
       const response = await POST(
         makeRequest({
@@ -184,7 +201,9 @@ describe("POST /api/content-guru/jobs — walidacja", () => {
 
     it("batch: topics.length sam w sobie > limit (jeden szablon) -> 400", async () => {
       const tooManyTopics = Array.from({ length: MAX_COMBINATIONS + 1 }, (_, i) => `Temat ${i}`)
-      const response = await POST(makeRequest({ ...VALID_BATCH_BODY, topics: tooManyTopics }) as never)
+      const response = await POST(
+        makeRequest({ ...VALID_BATCH_BODY, topics: tooManyTopics }) as never,
+      )
 
       expect(response.status).toBe(400)
       expect(service.createGenerationJob).not.toHaveBeenCalled()
@@ -211,15 +230,11 @@ describe("POST /api/content-guru/jobs — budowa pozycji", () => {
 
     expect(response.status).toBe(202)
     expect(json).toEqual({ jobId: "job-1", status: "queued" })
-    expect(service.createGenerationJob).toHaveBeenCalledWith(
-      EMAIL,
-      "batch",
-      [
-        { templateId: TEMPLATE_A, templateLabel: "Rekrutacja — Post na LinkedIn", topic: "Temat 1" },
-        { templateId: TEMPLATE_A, templateLabel: "Rekrutacja — Post na LinkedIn", topic: "Temat 2" },
-        { templateId: TEMPLATE_A, templateLabel: "Rekrutacja — Post na LinkedIn", topic: "Temat 3" },
-      ],
-    )
+    expect(service.createGenerationJob).toHaveBeenCalledWith(EMAIL, "batch", [
+      { templateId: TEMPLATE_A, templateLabel: "Rekrutacja — Post na LinkedIn", topic: "Temat 1" },
+      { templateId: TEMPLATE_A, templateLabel: "Rekrutacja — Post na LinkedIn", topic: "Temat 2" },
+      { templateId: TEMPLATE_A, templateLabel: "Rekrutacja — Post na LinkedIn", topic: "Temat 3" },
+    ])
   })
 
   it("pakiet: iloczyn kartezjański M szablonów × N tematów (szablon-zewnętrzny, temat-wewnętrzny)", async () => {
@@ -235,12 +250,11 @@ describe("POST /api/content-guru/jobs — budowa pozycji", () => {
     expect(response.status).toBe(202)
     const [, , items] = service.createGenerationJob.mock.calls[0]!
     expect(items).toHaveLength(4)
-    expect(items.map((item: { templateId: string; topic: string }) => `${item.templateId}:${item.topic}`)).toEqual([
-      `${TEMPLATE_A}:T1`,
-      `${TEMPLATE_A}:T2`,
-      `${TEMPLATE_B}:T1`,
-      `${TEMPLATE_B}:T2`,
-    ])
+    expect(
+      items.map(
+        (item: { templateId: string; topic: string }) => `${item.templateId}:${item.topic}`,
+      ),
+    ).toEqual([`${TEMPLATE_A}:T1`, `${TEMPLATE_A}:T2`, `${TEMPLATE_B}:T1`, `${TEMPLATE_B}:T2`])
   })
 
   it("deduplikuje templateIds powtórzone w żądaniu (getTemplate wołane raz per unikalny id)", async () => {
@@ -274,7 +288,13 @@ describe("POST /api/content-guru/jobs — 202 genuinely nie blokuje (D4)", () =>
 
   it("processGenerationJob dostaje pełny kontekst: model/audience/profile/forbiddenPhrases", async () => {
     service.listMyForbiddenPhrases.mockResolvedValueOnce([
-      { id: "1", userEmail: EMAIL, phrase: "najlepszy na rynku", description: null, createdAt: new Date() },
+      {
+        id: "1",
+        userEmail: EMAIL,
+        phrase: "najlepszy na rynku",
+        description: null,
+        createdAt: new Date(),
+      },
     ])
 
     await POST(

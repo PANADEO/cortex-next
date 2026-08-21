@@ -3,12 +3,12 @@
 // Tło przychodzi w ciele żądania — historia generacji nie jest utrwalana
 // w MVP (parytet z PoC), więc klient oddaje z powrotem to, co dostał.
 
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { z } from "zod"
 import { compose } from "@/lib/ilustromat/composer"
 import { FORMAT_BY_KEY, SUBTITLE_MAX_CHARS, TITLE_MAX_CHARS } from "@/lib/ilustromat/presets"
 import { resolveTemplateRender } from "@/lib/ilustromat/render"
+import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
+import { z } from "zod"
 import { denyUnlessAllowed, toErrorResponse } from "../_lib/guard"
 
 export const runtime = "nodejs"

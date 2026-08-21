@@ -1,9 +1,11 @@
 "use client"
 
+import { useTranslation } from "react-i18next"
+
+import { canAccessTile } from "@/lib/tiles"
 import { useAuthorizedApps, useMe } from "@cortex/api"
 import { LoadingState } from "@cortex/ui"
 import type { ReactNode } from "react"
-import { canAccessTile } from "@/lib/tiles"
 import { AccessDeniedScreen } from "./access-denied-screen"
 
 /** Jedyny kafelek, o którym cokolwiek mówi `has_access` z /user/me. */
@@ -28,7 +30,8 @@ const IDP_TILE_ID = "idp"
  * Etykieta ta sama co w <AiToolGate> — to ten sam komunikat dla użytkownika.
  */
 function GatePending() {
-  return <LoadingState className="min-h-screen" label="Sprawdzanie dostępu…" />
+  const { t } = useTranslation("shell")
+  return <LoadingState className="min-h-screen" label={t("gate.checking")} />
 }
 
 interface AppGateProps {

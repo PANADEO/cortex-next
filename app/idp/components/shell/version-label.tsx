@@ -1,9 +1,9 @@
 "use client"
 
-import { useModuleVersion } from "@cortex/api"
-import { cva } from "class-variance-authority"
 import { usePreset } from "@/lib/presets/preset-store"
 import { TILES } from "@/lib/tiles"
+import { useModuleVersion } from "@cortex/api"
+import { cva } from "class-variance-authority"
 
 /** Stopka paska bocznego. Pod `ruled` numer wersji jest monospace'owy i pisany
  *  wersalikami — jak stopka druku, spójnie z etykietami sekcji w menu. */

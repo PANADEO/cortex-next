@@ -12,11 +12,7 @@ export function detectPreviewableKind(
   const lower = fileName.toLowerCase()
   if (mediaType?.includes("pdf") || lower.endsWith(".pdf")) return "pdf"
   if (mediaType?.includes("wordprocessingml") || lower.endsWith(".docx")) return "docx"
-  if (
-    mediaType?.includes("spreadsheetml") ||
-    lower.endsWith(".xlsx") ||
-    lower.endsWith(".xls")
-  ) {
+  if (mediaType?.includes("spreadsheetml") || lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
     return "xlsx"
   }
   if (mediaType?.startsWith("image/") || /\.(png|jpe?g|gif|webp|svg)$/.test(lower)) {
@@ -39,10 +35,7 @@ export interface FileTypeIcon {
   toneClass: string
 }
 
-export function getFileTypeIcon(
-  fileName: string,
-  mediaType?: string | null,
-): FileTypeIcon {
+export function getFileTypeIcon(fileName: string, mediaType?: string | null): FileTypeIcon {
   const kind = detectPreviewableKind(fileName, mediaType)
   switch (kind) {
     case "pdf":

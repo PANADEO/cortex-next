@@ -1,9 +1,9 @@
+import type * as CortexService from "@cortex/service"
+import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import type * as CortexService from "@cortex/service"
 
 // Regression coverage for the /api/cortex-cowork/sessions/** authorization
 // hole (Obsidian task "cortex2.0-task-tile-level-auth"): every handler used

@@ -4,6 +4,7 @@ import { FeatureErrorBoundary } from "@/components/error-boundaries"
 import { AppGate } from "@/components/shell/app-gate"
 import { VersionLabel } from "@/components/shell/version-label"
 import { Topbar } from "@/components/topbar"
+import { AI_TOOLS_TILE_ID } from "@/lib/ai-tools/app-codes"
 import {
   resolveActiveItemId,
   useContentGuruNavSections,
@@ -15,15 +16,14 @@ import {
   useIlustromatNavSections,
   useIntrastatNavSections,
   useInvoiceSupervisorNavSections,
-  useSystemConfigNavSections,
-  useTokenUsageNavSections,
   useOknaCzasoweNavSections,
   useStorePitNavSections,
+  useSystemConfigNavSections,
+  useTokenUsageNavSections,
   useVisualGuruNavSections,
 } from "@/lib/nav"
 import { usePreset } from "@/lib/presets/preset-store"
 import { useSidebarStore } from "@/lib/stores/sidebar-store"
-import { AI_TOOLS_TILE_ID } from "@/lib/ai-tools/app-codes"
 import { resolveRequiredTileId, TILES } from "@/lib/tiles"
 import { AppShell, TileMenu } from "@cortex/ui"
 import Image from "next/image"
@@ -129,7 +129,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     <Link
       href="/"
       aria-label="Powrót do Cortex360 hub"
-      className="inline-block transition-opacity motion-reduce:transition-none hover:opacity-80"
+      className="inline-block transition-opacity hover:opacity-80 motion-reduce:transition-none"
     >
       <Image
         src="/cortex-logo.png"
@@ -146,7 +146,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     <Link
       href="/"
       aria-label="Powrót do Cortex360 hub"
-      className="flex items-center gap-2 font-semibold tracking-tight transition-opacity motion-reduce:transition-none hover:opacity-80"
+      className="flex items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-80 motion-reduce:transition-none"
     >
       <Image
         src="/cortex-logo.png"

@@ -110,7 +110,9 @@ export function ProjectsPanel() {
   const projects = [...config.projects].sort((a, b) => a.name.localeCompare(b.name))
 
   const handleDelete = (project: CoworkProjectConfig) => {
-    if (!window.confirm(`Usunąć projekt "${project.name}"? Sesje i artefakty pozostaną na dysku.`)) {
+    if (
+      !window.confirm(`Usunąć projekt "${project.name}"? Sesje i artefakty pozostaną na dysku.`)
+    ) {
       return
     }
     deleteProject.mutate(project.id)
@@ -120,8 +122,8 @@ export function ProjectsPanel() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Kafelki agentowe (task-chat) konfigurowane centralnie - każdy projekt to osobny kafelek
-          na hubie z własnym modelem, klockami i sandboxem.
+          Kafelki agentowe (task-chat) konfigurowane centralnie - każdy projekt to osobny kafelek na
+          hubie z własnym modelem, klockami i sandboxem.
         </p>
         <Button asChild>
           <Link href="/cortex-config/projects/new">

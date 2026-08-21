@@ -1,6 +1,5 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
 import {
   Card,
   CardContent,
@@ -19,6 +18,7 @@ import {
   Switch,
   Textarea,
 } from "@cortex/ui"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
 import { Controller, useForm } from "react-hook-form"
 import { useCatalog, useUpdateConnectors } from "../hooks/use-governance"
@@ -42,7 +42,8 @@ export function ConnectorEditorScreen({ connectorId }: { connectorId?: string | 
   const router = useRouter()
 
   if (catalog.isPending) return <LoadingState label="Wczytywanie katalogu..." />
-  if (catalog.isError || !catalog.data) return <AccessDeniedState title="Brak dostępu do katalogu" />
+  if (catalog.isError || !catalog.data)
+    return <AccessDeniedState title="Brak dostępu do katalogu" />
 
   const { connectors, departments } = catalog.data
   const connector = connectorId ? connectors.find((c) => c.id === connectorId) : undefined
@@ -113,12 +114,7 @@ function ConnectorForm({
             <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="conn-id">Identyfikator</Label>
-                <Input
-                  id="conn-id"
-                  className="mt-1"
-                  disabled={editing}
-                  {...form.register("id")}
-                />
+                <Input id="conn-id" className="mt-1" disabled={editing} {...form.register("id")} />
                 <FieldError message={form.formState.errors.id?.message} />
               </div>
               <div>
@@ -182,8 +178,8 @@ function ConnectorForm({
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Połączenie</CardTitle>
               <CardDescription>
-                Wartości sekretów nigdy nie trafiają do konfiguracji - tylko referencje do
-                ścieżek w Sekretach.
+                Wartości sekretów nigdy nie trafiają do konfiguracji - tylko referencje do ścieżek w
+                Sekretach.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -194,7 +190,9 @@ function ConnectorForm({
                 <Input
                   id="conn-target"
                   className="mt-1 font-mono text-xs"
-                  placeholder={type === "mcp" ? "https://mcp.example.com/sse" : "/usr/local/bin/tool"}
+                  placeholder={
+                    type === "mcp" ? "https://mcp.example.com/sse" : "/usr/local/bin/tool"
+                  }
                   {...form.register("target")}
                 />
                 <FieldError message={form.formState.errors.target?.message} />

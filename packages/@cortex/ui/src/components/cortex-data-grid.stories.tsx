@@ -14,12 +14,54 @@ interface Row {
 }
 
 const ROWS: Row[] = [
-  { id: "1", name: "Fakturownia", code: "invoice-supervisor", owner: "Zespół A", status: "active", requests: 1284 },
-  { id: "2", name: "Intrastat", code: "intrastat", owner: "Zespół B", status: "active", requests: 842 },
-  { id: "3", name: "Store PIT", code: "store-pit", owner: "Zespół A", status: "inactive", requests: 12 },
-  { id: "4", name: "IDP Basic", code: "idp-basic", owner: "Zespół C", status: "active", requests: 3021 },
-  { id: "5", name: "Okna Czasowe", code: "okna-czasowe", owner: "Zespół B", status: "active", requests: 156 },
-  { id: "6", name: "Raportowanie Tokenów", code: "token-usage", owner: "Zespół C", status: "active", requests: 97 },
+  {
+    id: "1",
+    name: "Fakturownia",
+    code: "invoice-supervisor",
+    owner: "Zespół A",
+    status: "active",
+    requests: 1284,
+  },
+  {
+    id: "2",
+    name: "Intrastat",
+    code: "intrastat",
+    owner: "Zespół B",
+    status: "active",
+    requests: 842,
+  },
+  {
+    id: "3",
+    name: "Store PIT",
+    code: "store-pit",
+    owner: "Zespół A",
+    status: "inactive",
+    requests: 12,
+  },
+  {
+    id: "4",
+    name: "IDP Basic",
+    code: "idp-basic",
+    owner: "Zespół C",
+    status: "active",
+    requests: 3021,
+  },
+  {
+    id: "5",
+    name: "Okna Czasowe",
+    code: "okna-czasowe",
+    owner: "Zespół B",
+    status: "active",
+    requests: 156,
+  },
+  {
+    id: "6",
+    name: "Raportowanie Tokenów",
+    code: "token-usage",
+    owner: "Zespół C",
+    status: "active",
+    requests: 97,
+  },
 ]
 
 const COLUMNS: ColumnDef<Row, unknown>[] = [
@@ -55,10 +97,10 @@ export const Basic: Story = () => (
 )
 
 export const Sortable: Story = () => (
-  <div className="p-6 space-y-2">
+  <div className="space-y-2 p-6">
     <p className="text-xs text-muted-foreground">
-      Kliknij nagłówek „Nazwa”, „Kod”, „Zespół” lub „Żądania” — „Status” nie ma
-      `enableSorting`, więc nie reaguje na klik.
+      Kliknij nagłówek „Nazwa”, „Kod”, „Zespół” lub „Żądania” — „Status” nie ma `enableSorting`,
+      więc nie reaguje na klik.
     </p>
     <CortexDataGrid columns={COLUMNS} data={ROWS} bordered />
   </div>
@@ -66,7 +108,13 @@ export const Sortable: Story = () => (
 
 export const Searchable: Story = () => (
   <div className="p-6">
-    <CortexDataGrid columns={COLUMNS} data={ROWS} bordered searchable searchPlaceholder="Szukaj aplikacji..." />
+    <CortexDataGrid
+      columns={COLUMNS}
+      data={ROWS}
+      bordered
+      searchable
+      searchPlaceholder="Szukaj aplikacji..."
+    />
   </div>
 )
 
@@ -77,11 +125,10 @@ export const SearchableAndSortable: Story = () => (
 )
 
 export const ShowAllNoPagination: Story = () => (
-  <div className="p-6 space-y-2">
+  <div className="space-y-2 p-6">
     <p className="text-xs text-muted-foreground">
-      Domyślny tryb — bez `pageSize` grid renderuje wszystkie wiersze naraz.
-      To przypadek listy Aplikacje w trybie zmiany kolejności: trzeba widzieć
-      cały zbiór jednocześnie.
+      Domyślny tryb — bez `pageSize` grid renderuje wszystkie wiersze naraz. To przypadek listy
+      Aplikacje w trybie zmiany kolejności: trzeba widzieć cały zbiór jednocześnie.
     </p>
     <CortexDataGrid columns={COLUMNS} data={[...ROWS, ...ROWS, ...ROWS]} bordered />
   </div>

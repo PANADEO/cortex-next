@@ -13,7 +13,17 @@
 // @cortex/service/src/visual-guru.ts (code-service, "Rekordy per-user").
 // Generator/archiwum UI i API routes to Faza 1/2 — poza zakresem tej zmiany.
 
-import { boolean, customType, index, integer, pgSchema, text, timestamp, unique, uuid } from "drizzle-orm/pg-core"
+import {
+  boolean,
+  customType,
+  index,
+  integer,
+  pgSchema,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from "drizzle-orm/pg-core"
 
 export const visualGuru = pgSchema("visual_guru")
 

@@ -1,5 +1,9 @@
 // @vitest-environment jsdom
-import type { CoworkConnectorConfig, CoworkProjectComposition, CoworkSkillSource } from "@cortex/types"
+import type {
+  CoworkConnectorConfig,
+  CoworkProjectComposition,
+  CoworkSkillSource,
+} from "@cortex/types"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import "@testing-library/jest-dom/vitest"
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react"
@@ -180,9 +184,7 @@ describe("useUpdateGovernance error surfacing", () => {
       screen.getByRole("button", { name: "save" }).click()
     })
 
-    await waitFor(() =>
-      expect(screen.getByText("each role needs id and name")).toBeInTheDocument(),
-    )
+    await waitFor(() => expect(screen.getByText("each role needs id and name")).toBeInTheDocument())
   })
 })
 
@@ -324,7 +326,10 @@ describe("useSetCredential error surfacing", () => {
       "fetch",
       vi.fn(() =>
         Promise.resolve(
-          jsonResponse({ message: "path must be key/subkey (lowercase slugs separated by /)" }, 400),
+          jsonResponse(
+            { message: "path must be key/subkey (lowercase slugs separated by /)" },
+            400,
+          ),
         ),
       ),
     )

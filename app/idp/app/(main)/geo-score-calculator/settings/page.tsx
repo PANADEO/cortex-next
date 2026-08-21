@@ -9,9 +9,9 @@
 // isLoading===false, więc lokalny stan formularza może być inicjalizowany
 // leniwie wprost z serwera, bez efektu "re-sync").
 
-import { ErrorState, LoadingState, PageHeader } from "@cortex/ui"
 import { GeoScoreSettingsForm } from "@/features/geo-score-calculator/components/settings-form"
 import { useGeoScoreConfig } from "@/features/geo-score-calculator/hooks"
+import { ErrorState, LoadingState, PageHeader } from "@cortex/ui"
 
 export default function GeoScoreCalculatorSettingsPage() {
   const configQuery = useGeoScoreConfig()

@@ -1,11 +1,11 @@
 "use client"
 
-import { DataTable, EmptyState, ErrorState, PageHeader } from "@cortex/ui"
-import { Users } from "lucide-react"
-import { useMemo } from "react"
 import { invoiceSupervisorClientColumns } from "@/components/invoice-supervisor/client-columns"
 import { InvoiceSupervisorClientFormDialog } from "@/components/invoice-supervisor/client-form-dialog"
 import { useInvoiceSupervisorClientsWithExposure } from "@/lib/invoice-supervisor/hooks"
+import { DataTable, EmptyState, ErrorState, PageHeader } from "@cortex/ui"
+import { Users } from "lucide-react"
+import { useMemo } from "react"
 
 export default function InvoiceSupervisorClientsPage() {
   const { data: clients, isLoading, isError, refetch } = useInvoiceSupervisorClientsWithExposure()

@@ -1,5 +1,7 @@
 "use client"
 
+import { useTranslation } from "react-i18next"
+
 import { Button } from "@cortex/ui"
 import { ShieldAlert } from "lucide-react"
 import Image from "next/image"
@@ -12,8 +14,9 @@ interface AccessDeniedScreenProps {
 }
 
 export function AccessDeniedScreen({ email, reason }: AccessDeniedScreenProps) {
+  const { t } = useTranslation("shell")
   const isError = reason === "error"
-  const title = isError ? "Brak uprawnień" : "Brak dostępu"
+  const title = isError ? t("gate.deniedTitle") : "Brak dostępu"
 
   const handleLogout = () => {
     window.location.assign("/logout")
@@ -32,7 +35,7 @@ export function AccessDeniedScreen({ email, reason }: AccessDeniedScreenProps) {
             alt="Cortex360"
             width={28}
             height={28}
-            className="dark:invert dark:hue-rotate-180"
+            className="dark:hue-rotate-180 dark:invert"
             priority
           />
         </div>
@@ -43,16 +46,12 @@ export function AccessDeniedScreen({ email, reason }: AccessDeniedScreenProps) {
           </span>
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           {isError ? (
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Nie masz uprawnień do korzystania z tej aplikacji. Skontaktuj się z administratorem.
-            </p>
+            <p className="text-sm leading-relaxed text-muted-foreground">{t("gate.deniedBody")}</p>
           ) : (
             <p className="text-sm leading-relaxed text-muted-foreground">
               Twoje konto{" "}
-              {email ? (
-                <span className="font-medium text-foreground">{email}</span>
-              ) : null}{" "}
-              nie ma uprawnień do tej aplikacji. Skontaktuj się z administratorem.
+              {email ? <span className="font-medium text-foreground">{email}</span> : null} nie ma
+              uprawnień do tej aplikacji. Skontaktuj się z administratorem.
             </p>
           )}
         </div>

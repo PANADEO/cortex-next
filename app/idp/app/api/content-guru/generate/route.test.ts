@@ -13,8 +13,20 @@ vi.mock("@cortex/service/rbac-store", () => ({
 }))
 
 const service = vi.hoisted(() => ({
-  listMyForbiddenPhrases: vi.fn(async () => [] as { id: string; userEmail: string; phrase: string; description: string | null; createdAt: Date }[]),
-  getTemplate: vi.fn(async () => undefined as { id: string; category: string; name: string; content: string } | undefined),
+  listMyForbiddenPhrases: vi.fn(
+    async () =>
+      [] as {
+        id: string
+        userEmail: string
+        phrase: string
+        description: string | null
+        createdAt: Date
+      }[],
+  ),
+  getTemplate: vi.fn(
+    async () =>
+      undefined as { id: string; category: string; name: string; content: string } | undefined,
+  ),
   getMyClientProfile: vi.fn(
     async () =>
       undefined as
@@ -178,7 +190,13 @@ describe("POST /api/content-guru/generate", () => {
 
   it("D5: zakazana fraza w 1. próbie, retry NADAL ją zawiera -> done-with-warnings, treść i tak zapisana", async () => {
     service.listMyForbiddenPhrases.mockResolvedValueOnce([
-      { id: "1", userEmail: EMAIL, phrase: "najlepszy na rynku", description: null, createdAt: new Date() },
+      {
+        id: "1",
+        userEmail: EMAIL,
+        phrase: "najlepszy na rynku",
+        description: null,
+        createdAt: new Date(),
+      },
     ])
     generateContent
       .mockResolvedValueOnce({
@@ -217,7 +235,13 @@ describe("POST /api/content-guru/generate", () => {
 
   it("D5: zakazana fraza w 1. próbie, retry jej NIE zawiera -> done, treść z retry", async () => {
     service.listMyForbiddenPhrases.mockResolvedValueOnce([
-      { id: "1", userEmail: EMAIL, phrase: "najlepszy na rynku", description: null, createdAt: new Date() },
+      {
+        id: "1",
+        userEmail: EMAIL,
+        phrase: "najlepszy na rynku",
+        description: null,
+        createdAt: new Date(),
+      },
     ])
     generateContent
       .mockResolvedValueOnce({
@@ -225,7 +249,11 @@ describe("POST /api/content-guru/generate", () => {
         tokensUsed: 150,
         model: VALID_BODY.model,
       })
-      .mockResolvedValueOnce({ content: "Jesteśmy liderem branży.", tokensUsed: 160, model: VALID_BODY.model })
+      .mockResolvedValueOnce({
+        content: "Jesteśmy liderem branży.",
+        tokensUsed: 160,
+        model: VALID_BODY.model,
+      })
 
     const response = await POST(makeRequest(VALID_BODY) as never)
     const json = await response.json()
@@ -242,7 +270,11 @@ describe("POST /api/content-guru/generate", () => {
 
   it("nie woła LLM wcale gdy user nie ma zakazanych fraz (brak sekcji, brak retry)", async () => {
     service.listMyForbiddenPhrases.mockResolvedValueOnce([])
-    generateContent.mockResolvedValueOnce({ content: "Treść bez żadnych ograniczeń.", tokensUsed: 90, model: VALID_BODY.model })
+    generateContent.mockResolvedValueOnce({
+      content: "Treść bez żadnych ograniczeń.",
+      tokensUsed: 90,
+      model: VALID_BODY.model,
+    })
 
     await POST(makeRequest(VALID_BODY) as never)
 
@@ -310,7 +342,11 @@ describe("POST /api/content-guru/generate", () => {
       })
 
       const response = await POST(
-        makeRequest({ ...VALID_BODY, contentType: "będzie nadpisane", templateId: TEMPLATE_ID }) as never,
+        makeRequest({
+          ...VALID_BODY,
+          contentType: "będzie nadpisane",
+          templateId: TEMPLATE_ID,
+        }) as never,
       )
       const json = await response.json()
 
@@ -468,7 +504,11 @@ describe("POST /api/content-guru/generate", () => {
 
     it("bez keywordPhrase/metaDescription -> oba zostają null (kontrakt Round A/B/C bez zmian)", async () => {
       service.listMyForbiddenPhrases.mockResolvedValueOnce([])
-      generateContent.mockResolvedValueOnce({ content: "Treść bez SEO.", tokensUsed: 70, model: VALID_BODY.model })
+      generateContent.mockResolvedValueOnce({
+        content: "Treść bez SEO.",
+        tokensUsed: 70,
+        model: VALID_BODY.model,
+      })
 
       await POST(makeRequest(VALID_BODY) as never)
 

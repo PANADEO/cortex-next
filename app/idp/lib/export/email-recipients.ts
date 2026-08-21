@@ -1,6 +1,5 @@
 const STORAGE_KEY = "cortex.idp.export.emailRecipients"
-const IMPORT_NOTIFICATION_TEMPLATE_STORAGE_KEY =
-  "cortex.idp.import.notificationExportTemplate"
+const IMPORT_NOTIFICATION_TEMPLATE_STORAGE_KEY = "cortex.idp.import.notificationExportTemplate"
 const MAX_RECIPIENTS = 10
 const EMAIL_PATTERN =
   /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$/
@@ -69,10 +68,7 @@ export function saveExportEmailRecipients(
   storage.setItem(storageKeyForUser(userEmail), JSON.stringify(recipients.slice(0, MAX_RECIPIENTS)))
 }
 
-export function rememberExportEmailRecipient(
-  email: string,
-  userEmail?: string | null,
-): string[] {
+export function rememberExportEmailRecipient(email: string, userEmail?: string | null): string[] {
   const recipients = addExportEmailRecipient(loadExportEmailRecipients(userEmail), email)
   saveExportEmailRecipients(recipients, userEmail)
   return recipients

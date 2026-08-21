@@ -1,13 +1,13 @@
 "use client"
 
+import { JobOutcome } from "@/features/document-parser/components/job-outcome"
+import { useJob } from "@/features/document-parser/hooks"
+import { DEFAULT_EXTRACTION_PROMPT } from "@/lib/document-parser/prompt"
 import { Button, Card, CardContent, EmptyState, Label, LoadingState, PageHeader } from "@cortex/ui"
 import { formatAbsolute } from "@cortex/utils"
 import { ChevronLeft, FileX } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { JobOutcome } from "@/features/document-parser/components/job-outcome"
-import { useJob } from "@/features/document-parser/hooks"
-import { DEFAULT_EXTRACTION_PROMPT } from "@/lib/document-parser/prompt"
 
 export default function DocumentParserJobDetailPage() {
   const params = useParams<{ id: string }>()

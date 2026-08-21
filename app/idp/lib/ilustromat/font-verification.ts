@@ -39,8 +39,8 @@
 // w zestawie. Render kontrolny bez pliku zostaje, ale wyłącznie jako materiał
 // do komunikatu błędu — nie jako podstawa decyzji.
 
-import { createHash } from "node:crypto"
 import * as fontkit from "fontkit"
+import { createHash } from "node:crypto"
 import sharp from "sharp"
 import { resolveFontLibraryEntry } from "./font-library"
 import { pangoFontDescription } from "./pango"
@@ -90,7 +90,11 @@ export type FontProbeRenderer = (options: {
   fontPath?: string
 }) => Promise<FontProbe>
 
-export const sharpFontProbeRenderer: FontProbeRenderer = async ({ text, description, fontPath }) => {
+export const sharpFontProbeRenderer: FontProbeRenderer = async ({
+  text,
+  description,
+  fontPath,
+}) => {
   const { data, info } = await sharp({
     text: {
       text,
@@ -345,7 +349,11 @@ async function measureMetricDrift(
     }
   }
 
-  return { mean: sum / PROBE_TEXTS.length, worstRendered: worst.rendered, worstPredicted: worst.predicted }
+  return {
+    mean: sum / PROBE_TEXTS.length,
+    worstRendered: worst.rendered,
+    worstPredicted: worst.predicted,
+  }
 }
 
 let fontFileSupport: Promise<boolean> | null = null
@@ -358,7 +366,9 @@ let fontFileSupport: Promise<boolean> | null = null
  * zapisu nie jest winą wgranego pliku i komunikat musi to rozróżniać.
  * Wynik jest zapamiętywany na proces: to własność środowiska, nie żądania.
  */
-export function supportsFontFiles(renderer: FontProbeRenderer = sharpFontProbeRenderer): Promise<boolean> {
+export function supportsFontFiles(
+  renderer: FontProbeRenderer = sharpFontProbeRenderer,
+): Promise<boolean> {
   fontFileSupport ??= (async () => {
     const entry = resolveFontLibraryEntry(null)
     const { readFile } = await import("node:fs/promises")

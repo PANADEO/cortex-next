@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { analyzeGeoScore, GeoScoreServiceError, type AnalyzeGeoScoreRequest } from "./integration-client"
+import {
+  analyzeGeoScore,
+  GeoScoreServiceError,
+  type AnalyzeGeoScoreRequest,
+} from "./integration-client"
 
 const REQUEST: AnalyzeGeoScoreRequest = {
   text: "Firma wdrożyła system.",
@@ -48,9 +52,7 @@ describe("analyzeGeoScore", () => {
 
   it("woła POST /analyze pod skonfigurowanym adresem z pełną migawką configu", async () => {
     const fetchMock = vi.mocked(fetch)
-    fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify(RESPONSE_BODY), { status: 200 }),
-    )
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(RESPONSE_BODY), { status: 200 }))
 
     const result = await analyzeGeoScore(REQUEST)
 

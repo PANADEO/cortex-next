@@ -10,8 +10,8 @@
 // (design doc §6: 403 brak dostępu do kafelka, tak jak każdy inny endpoint
 // modułu).
 
-import { NextResponse, type NextRequest } from "next/server"
 import { contentGuruConfig } from "@/lib/content-guru/config"
+import { NextResponse, type NextRequest } from "next/server"
 import { requireContentGuruAccess } from "../_lib/guard"
 
 export const runtime = "nodejs"

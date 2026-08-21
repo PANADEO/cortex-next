@@ -22,15 +22,15 @@ import {
   userRoles,
   users,
 } from "@cortex/db"
-import { randomUUID } from "node:crypto"
 import { and, eq, inArray, max } from "drizzle-orm"
+import { randomUUID } from "node:crypto"
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { clearTileAccessCache, requireTileAccess, requireTileScope } from "./rbac"
 import {
-  SYSTEM_CONFIG_APP_CODE,
   ModuleNotLicensedError,
   NativeApplicationImmutableError,
   NativeCreationNotAllowedError,
+  SYSTEM_CONFIG_APP_CODE,
   SelfLockoutError,
   SystemRoleProtectedError,
   UnknownApplicationScopeError,
@@ -333,10 +333,7 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
       const db = getDb()
 
       if (snapshotRow) {
-        await db
-          .update(applications)
-          .set(snapshotRow)
-          .where(eq(applications.id, systemConfigId))
+        await db.update(applications).set(snapshotRow).where(eq(applications.id, systemConfigId))
       }
 
       await db.delete(permissionsMatrix).where(eq(permissionsMatrix.applicationId, systemConfigId))
@@ -649,7 +646,9 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
     // powyżej, JEDYNYM aktywnym posiadaczem dostępu do systemConfigId.
     describe("updateUser — dezaktywacja użytkownika", () => {
       it("SEDNO: odrzuca dezaktywację ostatniego aktywnego użytkownika z dostępem do modułu", async () => {
-        await expect(updateUser(userId, { isActive: false })).rejects.toBeInstanceOf(SelfLockoutError)
+        await expect(updateUser(userId, { isActive: false })).rejects.toBeInstanceOf(
+          SelfLockoutError,
+        )
 
         const [row] = await getDb().select().from(users).where(eq(users.id, userId))
         expect(row!.isActive).toBe(true)
@@ -744,7 +743,9 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
 
         try {
           // Jedynym posiadaczem dostępu do modułu jest TERAZ ta rola systemowa.
-          await db.delete(permissionsMatrix).where(eq(permissionsMatrix.applicationId, systemConfigId))
+          await db
+            .delete(permissionsMatrix)
+            .where(eq(permissionsMatrix.applicationId, systemConfigId))
           await db
             .insert(permissionsMatrix)
             .values({ roleId: systemRole!.id, applicationId: systemConfigId })
@@ -846,7 +847,12 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
 
       const [otherApplication] = await db
         .insert(applications)
-        .values({ code: OTHER_APP_CODE, name: "Inny kafelek", kind: "native", route: `/${OTHER_APP_CODE}` })
+        .values({
+          code: OTHER_APP_CODE,
+          name: "Inny kafelek",
+          kind: "native",
+          route: `/${OTHER_APP_CODE}`,
+        })
         .returning()
       otherApplicationId = otherApplication!.id
     })
@@ -903,7 +909,9 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
       it("odzwierciedla granty zapisane przez setApplicationScopeRoles", async () => {
         await setApplicationScopeRoles(applicationId, scopeId, [roleId])
 
-        expect(await listApplicationScopeGrants(applicationId)).toEqual([{ scopeId, roleIds: [roleId] }])
+        expect(await listApplicationScopeGrants(applicationId)).toEqual([
+          { scopeId, roleIds: [roleId] },
+        ])
       })
     })
 
@@ -989,7 +997,11 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
 
         const [systemScope] = await db
           .insert(applicationScopes)
-          .values({ applicationId: systemConfigApp.id, code: `sc-zakres-${SUFFIX}`, name: "Testowy scope SC" })
+          .values({
+            applicationId: systemConfigApp.id,
+            code: `sc-zakres-${SUFFIX}`,
+            name: "Testowy scope SC",
+          })
           .returning()
 
         try {
@@ -1056,17 +1068,15 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
     })
 
     it("listUnactivatedNativeApplications widzi wiersz native z activated_at=null, pomija aktywowane i external-link", async () => {
-      await getDb()
-        .insert(applications)
-        .values({
-          code: MANIFEST_CODE,
-          name: "Nieaktywowany moduł",
-          kind: "native",
-          route: MANIFEST_ROUTE,
-          isActive: false,
-          showOnHub: false,
-          activatedAt: null,
-        })
+      await getDb().insert(applications).values({
+        code: MANIFEST_CODE,
+        name: "Nieaktywowany moduł",
+        kind: "native",
+        route: MANIFEST_ROUTE,
+        isActive: false,
+        showOnHub: false,
+        activatedAt: null,
+      })
 
       const candidates = await listUnactivatedNativeApplications()
       const codes = candidates.map((row) => row.code)
@@ -1084,17 +1094,15 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
     // zostawia na `false`). Przed K1b fixture stawiał `false`, bo seed też
     // stawiał `false` dla każdego, a aktywacja podnosiła kolumnę bezwarunkowo.
     it("activateApplication aktywuje wiersz i jest bezpieczna na wyścig — drugie wywołanie to no-op, nie błąd", async () => {
-      await getDb()
-        .insert(applications)
-        .values({
-          code: MANIFEST_CODE,
-          name: "Nieaktywowany moduł",
-          kind: "native",
-          route: MANIFEST_ROUTE,
-          isActive: false,
-          showOnHub: true,
-          activatedAt: null,
-        })
+      await getDb().insert(applications).values({
+        code: MANIFEST_CODE,
+        name: "Nieaktywowany moduł",
+        kind: "native",
+        route: MANIFEST_ROUTE,
+        isActive: false,
+        showOnHub: true,
+        activatedAt: null,
+      })
 
       // Bez asercji na showOnHub — od K1b aktywacja do tej kolumny NIE PISZE,
       // więc sprawdzanie jej tutaj mierzyłoby wyłącznie fixture. Właścicielem
@@ -1252,7 +1260,10 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
         updateApplication(external!.id, { kind: "native", route: "/sciezka-znikad" }),
       ).rejects.toBeInstanceOf(NativeApplicationImmutableError)
 
-      const [row] = await getDb().select().from(applications).where(eq(applications.id, external!.id))
+      const [row] = await getDb()
+        .select()
+        .from(applications)
+        .where(eq(applications.id, external!.id))
       expect(row!.kind).toBe("external-link")
       expect(row!.route).toBeNull()
       expect(row!.url).toBe("https://chat.megu.me")
@@ -1277,17 +1288,15 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
     // tego samego mechanizmu jeszcze raz, ale myliłoby czytelnika jako
     // "kontrolę").
     it("listApplications pomija native bez activated_at, ale widzi aktywowany-a-potem-wyłączony wiersz", async () => {
-      await getDb()
-        .insert(applications)
-        .values({
-          code: MANIFEST_CODE,
-          name: "Nigdy nieaktywowany moduł",
-          kind: "native",
-          route: MANIFEST_ROUTE,
-          isActive: false,
-          showOnHub: false,
-          activatedAt: null,
-        })
+      await getDb().insert(applications).values({
+        code: MANIFEST_CODE,
+        name: "Nigdy nieaktywowany moduł",
+        kind: "native",
+        route: MANIFEST_ROUTE,
+        isActive: false,
+        showOnHub: false,
+        activatedAt: null,
+      })
       await getDb()
         .insert(applications)
         .values({
@@ -1526,7 +1535,9 @@ describe.skipIf(!hasDatabase)("mutacje uprawnień — prawdziwy Postgres", () =>
      *  wszystkim, także za zarejestrowanym, jeszcze nieaktywowanym kandydatem
      *  native, którego listApplications() nie pokazuje. */
     async function highestSortOrder(): Promise<number | null> {
-      const [row] = await getDb().select({ value: max(applications.sortOrder) }).from(applications)
+      const [row] = await getDb()
+        .select({ value: max(applications.sortOrder) })
+        .from(applications)
       return row?.value ?? null
     }
 

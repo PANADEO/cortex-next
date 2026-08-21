@@ -42,7 +42,9 @@ const columns: ColumnDef<UsageDetailRow, unknown>[] = [
     accessorKey: "totalTokens",
     header: "Tokeny",
     enableSorting: true,
-    cell: ({ row }) => <span className="tabular-nums">{formatNumber(row.original.totalTokens)}</span>,
+    cell: ({ row }) => (
+      <span className="tabular-nums">{formatNumber(row.original.totalTokens)}</span>
+    ),
   },
   {
     accessorKey: "reasoningTokens",
@@ -67,8 +69,14 @@ const columns: ColumnDef<UsageDetailRow, unknown>[] = [
 export function DetailTable({ report, range }: DetailTableProps) {
   const [filters, setFilters] = useState<DetailFilters>(NO_FILTERS)
 
-  const models = useMemo(() => availableModels(report.rows, filters.scope), [report.rows, filters.scope])
-  const scopes = useMemo(() => availableScopes(report.rows, filters.model), [report.rows, filters.model])
+  const models = useMemo(
+    () => availableModels(report.rows, filters.scope),
+    [report.rows, filters.scope],
+  )
+  const scopes = useMemo(
+    () => availableScopes(report.rows, filters.model),
+    [report.rows, filters.model],
+  )
   const rows = useMemo(() => filterRows(report.rows, filters), [report.rows, filters])
 
   function update(changed: keyof DetailFilters, value: string) {

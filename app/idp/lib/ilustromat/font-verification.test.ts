@@ -25,10 +25,8 @@ import { pangoFontDescription } from "./pango"
 const entry = resolveFontLibraryEntry(null)
 let notoBytes: Buffer
 
-
 beforeAll(() => {
   notoBytes = readFileSync(entry.regularPath)
-
 })
 
 afterEach(() => {

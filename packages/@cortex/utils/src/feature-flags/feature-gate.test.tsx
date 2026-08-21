@@ -15,13 +15,7 @@ function freshClient(): QueryClient {
   })
 }
 
-function Wrapper({
-  client,
-  children,
-}: {
-  client: QueryClient
-  children: ReactNode
-}) {
+function Wrapper({ client, children }: { client: QueryClient; children: ReactNode }) {
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>
 }
 

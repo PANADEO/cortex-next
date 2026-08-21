@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
+import { PRESETS } from "@/lib/presets/registry"
+import { AppShell, TileMenu } from "@cortex/ui"
 import "@testing-library/jest-dom/vitest"
+import { cleanup, render } from "@testing-library/react"
+import { LayoutDashboard } from "lucide-react"
 import { readFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { AppShell, TileMenu } from "@cortex/ui"
-import { cleanup, render } from "@testing-library/react"
-import { LayoutDashboard } from "lucide-react"
 import { afterEach, describe, expect, it } from "vitest"
-import { PRESETS } from "@/lib/presets/registry"
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..")
 
@@ -158,16 +158,29 @@ describe("powłoka — wariant plain nie rusza wyglądu sprzed zmiany", () => {
 
     expect(classSet(container.querySelector("aside"))).toEqual(
       [
-        "hidden", "shrink-0", "border-r", "border-sidebar-border", "bg-sidebar",
+        "hidden",
+        "shrink-0",
+        "border-r",
+        "border-sidebar-border",
+        "bg-sidebar",
         "text-sidebar-foreground",
-        "md:flex", "md:flex-col", "w-sidebar",
+        "md:flex",
+        "md:flex-col",
+        "w-sidebar",
       ].sort(),
     )
 
     expect(classSet(container.querySelector("header"))).toEqual(
       [
-        "flex", "h-header", "shrink-0", "items-center", "gap-3",
-        "border-b", "border-border", "bg-background", "px-4",
+        "flex",
+        "h-header",
+        "shrink-0",
+        "items-center",
+        "gap-3",
+        "border-b",
+        "border-border",
+        "bg-background",
+        "px-4",
       ].sort(),
     )
   })
@@ -177,16 +190,31 @@ describe("powłoka — wariant plain nie rusza wyglądu sprzed zmiany", () => {
 
     expect(classSet(container.querySelector('[aria-current="page"]'))).toEqual(
       [
-        "group", "flex", "h-8", "items-center", "rounded-md", "text-sm",
-        "transition-colors", "motion-reduce:transition-none", "gap-2.5", "px-2",
-        "bg-sidebar-accent", "text-sidebar-accent-foreground", "font-medium",
+        "group",
+        "flex",
+        "h-8",
+        "items-center",
+        "rounded-md",
+        "text-sm",
+        "transition-colors",
+        "motion-reduce:transition-none",
+        "gap-2.5",
+        "px-2",
+        "bg-sidebar-accent",
+        "text-sidebar-accent-foreground",
+        "font-medium",
       ].sort(),
     )
 
     expect(classSet(container.querySelector("nav p"))).toEqual(
       [
-        "mb-2", "px-2", "text-[10px]", "font-semibold", "uppercase",
-        "tracking-wider", "text-muted-foreground",
+        "mb-2",
+        "px-2",
+        "text-[10px]",
+        "font-semibold",
+        "uppercase",
+        "tracking-wider",
+        "text-muted-foreground",
       ].sort(),
     )
 
@@ -208,10 +236,19 @@ describe("powłoka — wariant plain nie rusza wyglądu sprzed zmiany", () => {
 
     expect(classSet(inactiveLink(container))).toEqual(
       [
-        "group", "flex", "h-8", "items-center", "rounded-md", "text-sm",
-        "transition-colors", "motion-reduce:transition-none", "gap-2.5", "px-2",
+        "group",
+        "flex",
+        "h-8",
+        "items-center",
+        "rounded-md",
+        "text-sm",
+        "transition-colors",
+        "motion-reduce:transition-none",
+        "gap-2.5",
+        "px-2",
         "text-sidebar-foreground/80",
-        "hover:bg-sidebar-accent", "hover:text-sidebar-accent-foreground",
+        "hover:bg-sidebar-accent",
+        "hover:text-sidebar-accent-foreground",
       ].sort(),
     )
   })
@@ -224,17 +261,33 @@ describe("powłoka — wariant plain nie rusza wyglądu sprzed zmiany", () => {
 
     expect(classSet(container.querySelector("aside"))).toEqual(
       [
-        "hidden", "shrink-0", "border-r", "border-sidebar-border", "bg-sidebar",
+        "hidden",
+        "shrink-0",
+        "border-r",
+        "border-sidebar-border",
+        "bg-sidebar",
         "text-sidebar-foreground",
-        "md:flex", "md:flex-col", "w-sidebar-icon",
+        "md:flex",
+        "md:flex-col",
+        "w-sidebar-icon",
       ].sort(),
     )
 
     expect(classSet(container.querySelector('[aria-current="page"]'))).toEqual(
       [
-        "group", "flex", "h-8", "items-center", "rounded-md", "text-sm",
-        "transition-colors", "motion-reduce:transition-none", "justify-center", "px-0",
-        "bg-sidebar-accent", "text-sidebar-accent-foreground", "font-medium",
+        "group",
+        "flex",
+        "h-8",
+        "items-center",
+        "rounded-md",
+        "text-sm",
+        "transition-colors",
+        "motion-reduce:transition-none",
+        "justify-center",
+        "px-0",
+        "bg-sidebar-accent",
+        "text-sidebar-accent-foreground",
+        "font-medium",
       ].sort(),
     )
   })
@@ -351,9 +404,7 @@ describe("powłoka — reguła warstw", () => {
   // nazwy klas z premedytacją (np. uzasadnienie odrzucenia `ch-*`).
   it.each(SHELL_SOURCES)("źródło %s nie zawiera twardej klasy palety", (relative) => {
     const source = readFileSync(path.join(repoRoot, relative), "utf8")
-    const withoutComments = source
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .replace(/^\s*\/\/.*$/gm, "")
+    const withoutComments = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
 
     const found = withoutComments.match(HARDCODED_PALETTE)
     expect(found, `${relative} niesie klasę z palety: ${found?.[0]}`).toBeNull()

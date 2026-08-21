@@ -1,5 +1,33 @@
 "use client"
 
+import { GenerationJobCard } from "@/features/content-guru/components/generation-job-card"
+import { TopicGeneratorDialog } from "@/features/content-guru/components/topic-generator-dialog"
+import {
+  createEmptyTopicRow,
+  TopicTable,
+  type TopicRow,
+} from "@/features/content-guru/components/topic-table"
+import {
+  useContentGuruConfig,
+  useCreateGenerationJob,
+  useGenerateContent,
+  useGenerateKeywordPhrase,
+  useGenerateMetaDescriptionMini,
+  useGenerationJob,
+  useMyClientProfiles,
+  useMyMarketProfiles,
+  useTemplates,
+} from "@/features/content-guru/hooks"
+import type {
+  ClientProfileDto,
+  GenerateContentResponseDto,
+  GenerationJobMode,
+  MarketProfileDto,
+  TemplateDto,
+} from "@/features/content-guru/types"
+import { ContentStatusBadge, renderHighlightedContent } from "@/features/content-guru/utils"
+import { MAX_COMBINATIONS } from "@/lib/content-guru/job-limits"
+import { META_DESCRIPTION_MAX_CHARS } from "@/lib/content-guru/mini-generators"
 import { toastApiError } from "@cortex/api"
 import {
   Button,
@@ -24,30 +52,6 @@ import {
 import { Sparkles } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
-import { GenerationJobCard } from "@/features/content-guru/components/generation-job-card"
-import { createEmptyTopicRow, TopicTable, type TopicRow } from "@/features/content-guru/components/topic-table"
-import { TopicGeneratorDialog } from "@/features/content-guru/components/topic-generator-dialog"
-import {
-  useContentGuruConfig,
-  useCreateGenerationJob,
-  useGenerateContent,
-  useGenerateKeywordPhrase,
-  useGenerateMetaDescriptionMini,
-  useGenerationJob,
-  useMyClientProfiles,
-  useMyMarketProfiles,
-  useTemplates,
-} from "@/features/content-guru/hooks"
-import type {
-  ClientProfileDto,
-  GenerateContentResponseDto,
-  GenerationJobMode,
-  MarketProfileDto,
-  TemplateDto,
-} from "@/features/content-guru/types"
-import { ContentStatusBadge, renderHighlightedContent } from "@/features/content-guru/utils"
-import { MAX_COMBINATIONS } from "@/lib/content-guru/job-limits"
-import { META_DESCRIPTION_MAX_CHARS } from "@/lib/content-guru/mini-generators"
 
 // Referencje stabilne między renderami — inaczej `query.data ?? []` tworzyłby
 // nową tablicę za każdym razem, unieważniając poniższe useMemo (wzorem
@@ -133,7 +137,8 @@ export default function ContentGuruPage() {
   }, [models, model])
 
   useEffect(() => {
-    if (!templateCategory && templateCategories.length > 0) setTemplateCategory(templateCategories[0]!)
+    if (!templateCategory && templateCategories.length > 0)
+      setTemplateCategory(templateCategories[0]!)
   }, [templateCategories, templateCategory])
 
   // Zmiana kategorii czyści wybraną nazwę, jeśli nie należy już do nowej
@@ -146,7 +151,10 @@ export default function ContentGuruPage() {
   }, [templatesInCategory, templateId])
 
   const activeTopics = useMemo(
-    () => topicRows.filter((row) => row.active && row.topic.trim().length > 0).map((row) => row.topic.trim()),
+    () =>
+      topicRows
+        .filter((row) => row.active && row.topic.trim().length > 0)
+        .map((row) => row.topic.trim()),
     [topicRows],
   )
 
@@ -159,7 +167,8 @@ export default function ContentGuruPage() {
   const packageCombinations = activeTopics.length * packageTemplateIds.length
   const packageOverLimit = packageCombinations > MAX_COMBINATIONS
 
-  const canSubmitSingle = templateId.length > 0 && topic.trim().length > 0 && model.length > 0 && !generate.isPending
+  const canSubmitSingle =
+    templateId.length > 0 && topic.trim().length > 0 && model.length > 0 && !generate.isPending
   const canSubmitBatch =
     templateId.length > 0 && activeTopics.length > 0 && model.length > 0 && !createJob.isPending
   const canSubmitPackage =
@@ -171,7 +180,9 @@ export default function ContentGuruPage() {
 
   function togglePackageTemplate(id: string) {
     setPackageTemplateIds((current) =>
-      current.includes(id) ? current.filter((templateIdInList) => templateIdInList !== id) : [...current, id],
+      current.includes(id)
+        ? current.filter((templateIdInList) => templateIdInList !== id)
+        : [...current, id],
     )
   }
 
@@ -189,7 +200,11 @@ export default function ContentGuruPage() {
     setTopicRows((current) => {
       const base =
         current.length === 1 && current[0] && current[0].topic.trim() === "" ? [] : current
-      const newRows = insertedTopics.map((value) => ({ id: crypto.randomUUID(), topic: value, active: true }))
+      const newRows = insertedTopics.map((value) => ({
+        id: crypto.randomUUID(),
+        topic: value,
+        active: true,
+      }))
       return [...base, ...newRows]
     })
   }
@@ -234,7 +249,9 @@ export default function ContentGuruPage() {
         // NADPISUJE ją autorytatywnie na podstawie realnego templateId
         // (app/idp/app/api/content-guru/generate/route.ts), więc rozjazd
         // tutaj nie ma znaczenia.
-        contentType: selectedTemplate ? `${selectedTemplate.category} — ${selectedTemplate.name}` : "",
+        contentType: selectedTemplate
+          ? `${selectedTemplate.category} — ${selectedTemplate.name}`
+          : "",
         topic: topic.trim(),
         targetAudience: targetAudience.trim(),
         additionalInfo: additionalInfo.trim(),
@@ -296,7 +313,11 @@ export default function ContentGuruPage() {
       />
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as GenerationTab)} className="w-full">
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as GenerationTab)}
+          className="w-full"
+        >
           <TabsList>
             <TabsTrigger value="single">Pojedyncza</TabsTrigger>
             <TabsTrigger value="batch">Kilka</TabsTrigger>
@@ -354,7 +375,11 @@ export default function ContentGuruPage() {
                   </div>
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="content-guru-template">Szablon</Label>
-                    <Select value={templateId} onValueChange={setTemplateId} disabled={!templateCategory}>
+                    <Select
+                      value={templateId}
+                      onValueChange={setTemplateId}
+                      disabled={!templateCategory}
+                    >
                       <SelectTrigger id="content-guru-template">
                         <SelectValue placeholder="Wybierz szablon" />
                       </SelectTrigger>
@@ -424,9 +449,16 @@ export default function ContentGuruPage() {
                   </div>
                   <TopicTable rows={topicRows} onChange={setTopicRows} />
                   {activeTab === "package" ? (
-                    <p className={packageOverLimit ? "text-xs font-medium text-destructive" : "text-xs text-muted-foreground"}>
+                    <p
+                      className={
+                        packageOverLimit
+                          ? "text-xs font-medium text-destructive"
+                          : "text-xs text-muted-foreground"
+                      }
+                    >
                       {activeTopics.length} {activeTopics.length === 1 ? "temat" : "tematy"} ×{" "}
-                      {packageTemplateIds.length} {packageTemplateIds.length === 1 ? "szablon" : "szablony"} ={" "}
+                      {packageTemplateIds.length}{" "}
+                      {packageTemplateIds.length === 1 ? "szablon" : "szablony"} ={" "}
                       {packageCombinations} {packageCombinations === 1 ? "treść" : "treści"}
                       {packageOverLimit
                         ? ` — przekroczono limit ${MAX_COMBINATIONS} kombinacji. Zmniejsz liczbę tematów lub szablonów.`
@@ -434,7 +466,8 @@ export default function ContentGuruPage() {
                     </p>
                   ) : (
                     <p className="text-xs text-muted-foreground">
-                      {activeTopics.length} {activeTopics.length === 1 ? "aktywny temat" : "aktywnych tematów"}
+                      {activeTopics.length}{" "}
+                      {activeTopics.length === 1 ? "aktywny temat" : "aktywnych tematów"}
                     </p>
                   )}
                 </div>
@@ -529,7 +562,9 @@ export default function ContentGuruPage() {
                       variant="outline"
                       size="icon"
                       onClick={handleGenerateMetaDescription}
-                      disabled={!seoSourceTopic.trim() || !model || generateMetaDescriptionMini.isPending}
+                      disabled={
+                        !seoSourceTopic.trim() || !model || generateMetaDescriptionMini.isPending
+                      }
                       title="Generuj meta description"
                       aria-label="Generuj meta description"
                     >
@@ -644,11 +679,17 @@ export default function ContentGuruPage() {
                       {renderHighlightedContent(result.content, result.matchedForbiddenPhrases)}
                     </div>
 
-                    <p className="text-xs text-muted-foreground">Zapisano w archiwum Content Guru.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Zapisano w archiwum Content Guru.
+                    </p>
                   </>
                 )
               ) : showJobCard ? (
-                <GenerationJobCard job={jobQuery.data} mode={activeTab} isLoading={jobQuery.isLoading} />
+                <GenerationJobCard
+                  job={jobQuery.data}
+                  mode={activeTab}
+                  isLoading={jobQuery.isLoading}
+                />
               ) : (
                 <EmptyState
                   icon={Sparkles}

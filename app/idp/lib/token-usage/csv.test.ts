@@ -55,7 +55,12 @@ describe("toCsv", () => {
   })
 
   it("rozdziela wiersze CRLF zgodnie z RFC 4180", () => {
-    expect(toCsv([["a", "b"], ["c", "d"]])).toBe(`${BOM}a,b\r\nc,d`)
+    expect(
+      toCsv([
+        ["a", "b"],
+        ["c", "d"],
+      ]),
+    ).toBe(`${BOM}a,b\r\nc,d`)
   })
 })
 
@@ -121,8 +126,8 @@ describe("buildDetailJson", () => {
 
 describe("buildExportFileName", () => {
   it("nazwa pliku niesie zakres dat", () => {
-    expect(buildExportFileName("uzytkownicy", { start: "2026-07-01", end: "2026-07-30" }, "csv")).toBe(
-      "zuzycie-tokenow-uzytkownicy-2026-07-01-2026-07-30.csv",
-    )
+    expect(
+      buildExportFileName("uzytkownicy", { start: "2026-07-01", end: "2026-07-30" }, "csv"),
+    ).toBe("zuzycie-tokenow-uzytkownicy-2026-07-01-2026-07-30.csv")
   })
 })

@@ -102,12 +102,7 @@ export function JsonEditor({
           <Check className="mr-1 h-3.5 w-3.5" />
           {isSaving ? "Saving…" : saveLabel}
         </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleRevert}
-          disabled={!dirty || isSaving}
-        >
+        <Button size="sm" variant="outline" onClick={handleRevert} disabled={!dirty || isSaving}>
           <RotateCcw className="mr-1 h-3.5 w-3.5" />
           Revert
         </Button>

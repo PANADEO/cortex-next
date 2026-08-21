@@ -41,12 +41,10 @@ function baseRow(overrides: Record<string, unknown> = {}): FixtureRow {
 
 const service = vi.hoisted(() => ({
   getMyJob: vi.fn<(userEmail: string, id: string) => Promise<FixtureRow | undefined>>(),
-  markJobDone: vi.fn<
-    (userEmail: string, id: string, input: unknown) => Promise<FixtureRow | undefined>
-  >(),
-  markJobError: vi.fn<
-    (userEmail: string, id: string, input: unknown) => Promise<FixtureRow | undefined>
-  >(),
+  markJobDone:
+    vi.fn<(userEmail: string, id: string, input: unknown) => Promise<FixtureRow | undefined>>(),
+  markJobError:
+    vi.fn<(userEmail: string, id: string, input: unknown) => Promise<FixtureRow | undefined>>(),
 }))
 vi.mock("@cortex/service", async (importOriginal) => ({
   ...(await importOriginal<typeof CortexService>()),
@@ -145,14 +143,19 @@ describe("GET /api/document-parser/jobs/[id]", () => {
       completedAt: "2026-08-03T10:00:02Z",
     })
     backendClient.mapBackendErrorToCode.mockReturnValueOnce("vision-call-failed")
-    service.markJobError.mockResolvedValueOnce(baseRow({ status: "error", errorCode: "vision-call-failed" }))
+    service.markJobError.mockResolvedValueOnce(
+      baseRow({ status: "error", errorCode: "vision-call-failed" }),
+    )
 
     const response = await GET(request() as never, context)
 
     expect(service.markJobError).toHaveBeenCalledWith(
       EMAIL,
       "job-1",
-      expect.objectContaining({ errorCode: "vision-call-failed", errorMessage: "OpenAI request failed: 401" }),
+      expect.objectContaining({
+        errorCode: "vision-call-failed",
+        errorMessage: "OpenAI request failed: 401",
+      }),
     )
     await expect(response.json()).resolves.toMatchObject({ status: "error" })
   })
@@ -160,7 +163,9 @@ describe("GET /api/document-parser/jobs/[id]", () => {
   it("processing + backend nie zna już zadania (404/TTL): oznacza jako error", async () => {
     service.getMyJob.mockResolvedValueOnce(baseRow({ status: "processing" }))
     backendClient.getBackendJob.mockResolvedValueOnce(null)
-    service.markJobError.mockResolvedValueOnce(baseRow({ status: "error", errorCode: "conversion-failed" }))
+    service.markJobError.mockResolvedValueOnce(
+      baseRow({ status: "error", errorCode: "conversion-failed" }),
+    )
 
     const response = await GET(request() as never, context)
 

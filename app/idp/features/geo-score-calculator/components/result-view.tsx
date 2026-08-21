@@ -46,7 +46,12 @@ export interface GeoScoreResultViewProps {
   headerActions?: ReactNode
 }
 
-export function GeoScoreResultView({ text, result, delta = null, headerActions }: GeoScoreResultViewProps) {
+export function GeoScoreResultView({
+  text,
+  result,
+  delta = null,
+  headerActions,
+}: GeoScoreResultViewProps) {
   const [activeHighlightStart, setActiveHighlightStart] = useState<number | null>(null)
   const highlightRefs = useRef(new Map<number, HTMLElement>())
 
@@ -99,7 +104,11 @@ export function GeoScoreResultView({ text, result, delta = null, headerActions }
                   : "border-destructive/40 bg-destructive/10 text-destructive",
               )}
             >
-              {delta >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+              {delta >= 0 ? (
+                <TrendingUp className="h-3.5 w-3.5" />
+              ) : (
+                <TrendingDown className="h-3.5 w-3.5" />
+              )}
               {delta >= 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1)} od poprzedniej analizy
             </Badge>
           ) : null}
@@ -114,8 +123,8 @@ export function GeoScoreResultView({ text, result, delta = null, headerActions }
         <Card>
           <CardContent className="pt-6">
             <p className="mb-3 text-xs text-muted-foreground">
-              Podświetlone fragmenty: dane liczbowe, słowa subiektywne. Kliknij rekomendację obok, żeby
-              przejść do powiązanego fragmentu.
+              Podświetlone fragmenty: dane liczbowe, słowa subiektywne. Kliknij rekomendację obok,
+              żeby przejść do powiązanego fragmentu.
             </p>
             <div className="whitespace-pre-wrap text-sm leading-relaxed">
               {segments.map((segment) =>
@@ -151,7 +160,9 @@ export function GeoScoreResultView({ text, result, delta = null, headerActions }
                   <div key={key} className="flex flex-col gap-1.5">
                     <div className="flex items-baseline justify-between text-sm">
                       <span>{label}</span>
-                      <span className="tabular-nums text-muted-foreground">{score.toFixed(1)}/100</span>
+                      <span className="tabular-nums text-muted-foreground">
+                        {score.toFixed(1)}/100
+                      </span>
                     </div>
                     <Progress
                       value={score}
@@ -166,7 +177,8 @@ export function GeoScoreResultView({ text, result, delta = null, headerActions }
               {result.actionVerbs.foundVerbs.length > 0 ? (
                 <div className="flex flex-col gap-1.5 border-t border-border pt-3">
                   <span className="text-xs text-muted-foreground">
-                    Wykryte czasowniki akcji (metoda: {result.actionVerbs.method === "spacy" ? "spaCy" : "heurystyka"})
+                    Wykryte czasowniki akcji (metoda:{" "}
+                    {result.actionVerbs.method === "spacy" ? "spaCy" : "heurystyka"})
                   </span>
                   <div className="flex flex-wrap gap-1">
                     {result.actionVerbs.foundVerbs.map((verb) => (

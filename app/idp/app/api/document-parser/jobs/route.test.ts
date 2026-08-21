@@ -15,7 +15,10 @@ vi.mock("@cortex/service/rbac-store", () => ({
 
 const service = vi.hoisted(() => ({
   listMyJobs: vi.fn<() => Promise<Record<string, unknown>[]>>(async () => []),
-  createQueuedJob: vi.fn(async (email: string, input: unknown) => ({ id: "job-1", ...(input as object) })),
+  createQueuedJob: vi.fn(async (email: string, input: unknown) => ({
+    id: "job-1",
+    ...(input as object),
+  })),
   markJobProcessing: vi.fn<(...args: unknown[]) => Promise<Record<string, unknown> | undefined>>(
     async () => undefined,
   ),
@@ -63,7 +66,9 @@ beforeEach(() => {
 describe("POST /api/document-parser/jobs", () => {
   it("odrzuca nieobsługiwany format PRZED wywołaniem backendu (400)", async () => {
     const response = await POST(
-      uploadRequest(new File(["x"], "zloczynca.exe", { type: "application/octet-stream" })) as never,
+      uploadRequest(
+        new File(["x"], "zloczynca.exe", { type: "application/octet-stream" }),
+      ) as never,
     )
 
     expect(response.status).toBe(400)

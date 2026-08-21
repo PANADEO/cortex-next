@@ -43,7 +43,9 @@ export function filterRows(
   rows: readonly UsageDetailRow[],
   filters: DetailFilters,
 ): UsageDetailRow[] {
-  return rows.filter((row) => matches(row.model, filters.model) && matches(row.scope, filters.scope))
+  return rows.filter(
+    (row) => matches(row.model, filters.model) && matches(row.scope, filters.scope),
+  )
 }
 
 /**

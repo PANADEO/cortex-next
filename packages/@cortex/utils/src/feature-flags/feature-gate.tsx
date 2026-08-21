@@ -10,10 +10,6 @@ interface FeatureGateProps {
   fallback?: ReactNode
 }
 
-export function FeatureGate({
-  flag,
-  children,
-  fallback = null,
-}: FeatureGateProps) {
+export function FeatureGate({ flag, children, fallback = null }: FeatureGateProps) {
   return useFeatureFlag(flag) ? <>{children}</> : <>{fallback}</>
 }

@@ -4,9 +4,18 @@
 // wymaga `manage-templates` — szablony są zasobem WSPÓLNYM (D6), edycja ich
 // treści wpływa na promptu wszystkich userów kafelka.
 
+import {
+  createTemplate,
+  getRequestEmail,
+  listTemplates,
+  templateInputSchema,
+} from "@cortex/service"
 import { NextResponse, type NextRequest } from "next/server"
-import { createTemplate, getRequestEmail, listTemplates, templateInputSchema } from "@cortex/service"
-import { isUniqueViolation, requireContentGuruAccess, requireContentGuruManageTemplates } from "../_lib/guard"
+import {
+  isUniqueViolation,
+  requireContentGuruAccess,
+  requireContentGuruManageTemplates,
+} from "../_lib/guard"
 
 export const runtime = "nodejs"
 

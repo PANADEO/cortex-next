@@ -144,7 +144,9 @@ function ActivityStepRow({ step, active }: { step: AgentActivityStep; active: bo
           {stepLabel(step)}
           {active ? "…" : ""}
         </span>
-        {drilldown ? <DisclosureChevron open={open} className="ml-auto text-muted-foreground" /> : null}
+        {drilldown ? (
+          <DisclosureChevron open={open} className="ml-auto text-muted-foreground" />
+        ) : null}
       </button>
       <CollapseRegion open={open && Boolean(drilldown)}>
         <pre className="ml-6 mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded border bg-muted/40 p-2 font-mono text-[11px] leading-snug text-muted-foreground">

@@ -1,5 +1,8 @@
 "use client"
 
+import { useMyJobs } from "@/features/document-parser/hooks"
+import { STATUS_BADGE_VARIANT, STATUS_LABELS } from "@/features/document-parser/status"
+import type { DocumentParserJob, JobStatus } from "@/features/document-parser/types"
 import {
   Badge,
   Button,
@@ -19,9 +22,6 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { ChevronRight, FileSearch } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
-import { useMyJobs } from "@/features/document-parser/hooks"
-import { STATUS_BADGE_VARIANT, STATUS_LABELS } from "@/features/document-parser/status"
-import type { DocumentParserJob, JobStatus } from "@/features/document-parser/types"
 
 const STATUS_FILTER_OPTIONS: Array<{ value: JobStatus | "all"; label: string }> = [
   { value: "all", label: "Wszystkie statusy" },
@@ -116,7 +116,10 @@ export default function DocumentParserHistoryPage() {
           <Label htmlFor="document-parser-status-filter" className="text-xs text-muted-foreground">
             Status
           </Label>
-          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as JobStatus | "all")}>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => setStatusFilter(value as JobStatus | "all")}
+          >
             <SelectTrigger id="document-parser-status-filter" className="w-56">
               <SelectValue />
             </SelectTrigger>

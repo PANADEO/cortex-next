@@ -6,6 +6,8 @@
 // wszystkie warianty w tym samym VariantGrid co ekran generatora (§6.1),
 // usuń z potwierdzeniem AlertDialog (nieodwracalne, mimo że rekord "mój").
 
+import { useDeleteGeneration, useGenerationDetail } from "@/features/visual-guru/hooks"
+import { VariantGrid } from "@/features/visual-guru/variant-grid"
 import { toastApiError } from "@cortex/api"
 import {
   AlertDialog,
@@ -30,8 +32,6 @@ import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
-import { useDeleteGeneration, useGenerationDetail } from "@/features/visual-guru/hooks"
-import { VariantGrid } from "@/features/visual-guru/variant-grid"
 
 export default function VisualGuruHistoryDetailPage() {
   const params = useParams<{ id: string }>()
@@ -123,7 +123,9 @@ export default function VisualGuruHistoryDetailPage() {
                       modelu.
                     </p>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Brak — generacja z samego promptu.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Brak — generacja z samego promptu.
+                    </p>
                   )}
                 </div>
 
@@ -146,7 +148,10 @@ export default function VisualGuruHistoryDetailPage() {
 
             <Card>
               <CardContent className="pt-6">
-                <VariantGrid variants={generation.variants} fileNamePrefix={`visual-guru-${generation.id}`} />
+                <VariantGrid
+                  variants={generation.variants}
+                  fileNamePrefix={`visual-guru-${generation.id}`}
+                />
               </CardContent>
             </Card>
           </>

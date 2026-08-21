@@ -8,9 +8,6 @@
 // Logo jest normalizowane do jednego PNG z alfą niezależnie od formatu
 // źródłowego (PNG/JPG/SVG), żeby composer czytał zawsze to samo.
 
-import { getFrameTemplate, saveTemplateAsset } from "@cortex/service"
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
 import { materializeFont, sha256 } from "@/lib/ilustromat/font-cache"
 import {
   FontVerificationError,
@@ -20,6 +17,9 @@ import {
 } from "@/lib/ilustromat/font-verification"
 import { inspectFont } from "@/lib/ilustromat/glyph-coverage"
 import { normalizeLogoToPng } from "@/lib/ilustromat/logo"
+import { getFrameTemplate, saveTemplateAsset } from "@cortex/service"
+import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
 import { denyUnlessTemplateManager, toErrorResponse } from "../../../_lib/guard"
 
 export const runtime = "nodejs"
@@ -135,8 +135,7 @@ async function verifyUploadedFont(input: FontVerificationInput): Promise<NextRes
     // Podmiana komunikatu TYLKO dla odmowy z atrybucji: uszkodzony plik jest
     // uszkodzony niezależnie od środowiska i zwalanie tego na fontconfig
     // wysłałoby użytkownika w złą stronę.
-    const blameEnvironment =
-      error.code === "font-not-applied" && !(await supportsFontFiles())
+    const blameEnvironment = error.code === "font-not-applied" && !(await supportsFontFiles())
     const message = blameEnvironment
       ? "Środowisko renderujące ignoruje własne pliki fontów — nawet font z biblioteki " +
         "nie jest w nim stosowany, więc szablon składałby się fontem zastępczym. " +

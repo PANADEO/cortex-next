@@ -1,4 +1,8 @@
-import { deleteSandboxSession, listInputFiles, toCoworkSession } from "@/features/cortex-cowork/server/sandbox-store"
+import {
+  deleteSandboxSession,
+  listInputFiles,
+  toCoworkSession,
+} from "@/features/cortex-cowork/server/sandbox-store"
 import { isDenied, requireSessionAccess } from "@/lib/cortex-governance/project-gate"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"

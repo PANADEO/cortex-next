@@ -1,7 +1,6 @@
 "use client"
 
 import { PROJECT_ICON_OPTIONS } from "@/features/cortex-cowork"
-import { zodResolver } from "@hookform/resolvers/zod"
 import type { CoworkProjectConfig, CoworkRole } from "@cortex/types"
 import {
   Button,
@@ -26,6 +25,7 @@ import {
   TabsTrigger,
   Textarea,
 } from "@cortex/ui"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Controller, useFieldArray, useForm, type FieldErrors } from "react-hook-form"
@@ -54,7 +54,11 @@ const BACK_HREF = "/cortex-config/projects"
 // the tab, so a failed submit can dot the tab that needs attention (fields hide
 // behind inactive tabs, so the dot is the only cue).
 const TABS = [
-  { value: "podstawy", label: "Podstawy", fields: ["id", "name", "description", "icon", "enabled"] },
+  {
+    value: "podstawy",
+    label: "Podstawy",
+    fields: ["id", "name", "description", "icon", "enabled"],
+  },
   { value: "dostep", label: "Dostęp", fields: ["allowedRoleIds"] },
   { value: "model", label: "Model", fields: ["modelId", "apiKeyRef"] },
   {
@@ -260,8 +264,8 @@ export function ProjectEditor({
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Role z dostępem</CardTitle>
                 <CardDescription>
-                  Rola to bramka: decyduje, kto widzi i otwiera kafelek. Zawartość definiują
-                  klocki projektu.
+                  Rola to bramka: decyduje, kto widzi i otwiera kafelek. Zawartość definiują klocki
+                  projektu.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -326,8 +330,8 @@ export function ProjectEditor({
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Skille</CardTitle>
                 <CardDescription>
-                  Zbuduj toolkit projektu z klocków katalogu. Gałąź departamentu ciągnie
-                  wszystkie zasoby pod nim.
+                  Zbuduj toolkit projektu z klocków katalogu. Gałąź departamentu ciągnie wszystkie
+                  zasoby pod nim.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -561,8 +565,7 @@ export function ProjectEditor({
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Eksport artefaktów</CardTitle>
                 <CardDescription>
-                  Opcjonalny dysk sieciowy, na który użytkownik jednym klikiem odkłada plik z
-                  sesji.
+                  Opcjonalny dysk sieciowy, na który użytkownik jednym klikiem odkłada plik z sesji.
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">

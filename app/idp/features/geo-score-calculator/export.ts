@@ -32,7 +32,13 @@ const CSV_HEADER = ["Data", "Podgląd tekstu", "Wynik", "Ocena", "Liczba słów"
 
 export function buildHistoryCsv(rows: readonly GeoScoreCalculationSummaryDto[]): string {
   const body = rows.map((row) =>
-    toCsvRow([row.createdAt, row.textPreview, row.totalScore.toFixed(1), row.grade, String(row.wordCount)]),
+    toCsvRow([
+      row.createdAt,
+      row.textPreview,
+      row.totalScore.toFixed(1),
+      row.grade,
+      String(row.wordCount),
+    ]),
   )
   return BOM + [toCsvRow([...CSV_HEADER]), ...body].join("\r\n")
 }

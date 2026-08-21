@@ -60,7 +60,11 @@ describe("migracje drizzle — journal i pliki .sql opisują ten sam zbiór", ()
   })
 
   it.each(MODULE_FOLDERS)("%s: każdy plik .sql ma wpis w journalu i odwrotnie", (folder) => {
-    expect(journalOf(folder).map((entry) => entry.tag).sort()).toEqual(sqlFilesOf(folder))
+    expect(
+      journalOf(folder)
+        .map((entry) => entry.tag)
+        .sort(),
+    ).toEqual(sqlFilesOf(folder))
   })
 
   // Migrator stosuje migracje w kolejności `when` i zapisuje tę wartość jako

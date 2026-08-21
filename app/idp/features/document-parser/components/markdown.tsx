@@ -19,7 +19,9 @@ const components: Components = {
   ol: ({ children }) => <ol className="my-2 ml-5 list-decimal space-y-1">{children}</ol>,
   li: ({ children }) => <li className="[&>p]:my-0">{children}</li>,
   h1: ({ children }) => <h1 className="mb-2 mt-4 text-lg font-semibold first:mt-0">{children}</h1>,
-  h2: ({ children }) => <h2 className="mb-1.5 mt-4 text-base font-semibold first:mt-0">{children}</h2>,
+  h2: ({ children }) => (
+    <h2 className="mb-1.5 mt-4 text-base font-semibold first:mt-0">{children}</h2>
+  ),
   h3: ({ children }) => <h3 className="mb-1 mt-3 text-sm font-semibold first:mt-0">{children}</h3>,
   h4: ({ children }) => <h4 className="mb-1 mt-3 text-sm font-semibold first:mt-0">{children}</h4>,
   a: ({ href, children }) => (

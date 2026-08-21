@@ -26,12 +26,7 @@ interface Props<T extends string> {
   className?: string | undefined
 }
 
-export function SkinToggle<T extends string>({
-  skin,
-  options,
-  onSkinChange,
-  className,
-}: Props<T>) {
+export function SkinToggle<T extends string>({ skin, options, onSkinChange, className }: Props<T>) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -68,9 +63,7 @@ export function SkinToggle<T extends string>({
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">{opt.label}</p>
-                <p className="truncate text-[10px] text-muted-foreground">
-                  {opt.description}
-                </p>
+                <p className="truncate text-[10px] text-muted-foreground">{opt.description}</p>
               </div>
             </DropdownMenuItem>
           )

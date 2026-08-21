@@ -5,11 +5,11 @@
 // trzy akcenty z kategorii funkcjonalnej, kolumny `applications.color` nie
 // czyta), a formularz nie mówił o tym ani słowa. Alex ustawił
 // `document-parser` na „emerald", zapis przeszedł, kafelek został taki sam.
+import type { Application } from "@/features/system-config/types"
 import "@testing-library/jest-dom/vitest"
 import { cleanup, render, screen } from "@testing-library/react"
 import type { ReactNode } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import type { Application } from "@/features/system-config/types"
 
 // Wiersz zdjęty z żywej bazy (`docker exec cortex-next-postgres psql -U cortex
 // -d cortex`) — ten sam kafelek i ten sam kolor, na którym objaw zobaczył Alex.

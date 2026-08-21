@@ -1,8 +1,8 @@
 "use client"
 
+import type { BoardCard, BoardColumnMeta } from "@/lib/board/pipeline"
 import { cn } from "@cortex/utils"
 import { Inbox } from "lucide-react"
-import type { BoardCard, BoardColumnMeta } from "@/lib/board/pipeline"
 import { KanbanCard } from "./kanban-card"
 
 interface KanbanColumnProps {
@@ -21,7 +21,7 @@ export function KanbanColumn({ meta, cards }: KanbanColumnProps) {
     >
       <header
         className={cn(
-          "sticky top-0 z-10 flex items-center justify-between gap-2 rounded-t-xl px-3 pt-4 pb-2.5",
+          "sticky top-0 z-10 flex items-center justify-between gap-2 rounded-t-xl px-3 pb-2.5 pt-4",
           meta.headerBg,
         )}
       >
@@ -29,9 +29,7 @@ export function KanbanColumn({ meta, cards }: KanbanColumnProps) {
           <h2 className={cn("text-sm font-semibold leading-none", meta.headerText)}>
             {meta.label}
           </h2>
-          <p className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">
-            {meta.description}
-          </p>
+          <p className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">{meta.description}</p>
         </div>
         <span
           className={cn(

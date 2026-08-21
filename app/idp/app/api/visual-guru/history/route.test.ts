@@ -33,7 +33,9 @@ function request(email: string | null = EMAIL): Request {
   return new Request("http://localhost/api/visual-guru/history", { headers })
 }
 
-function row(overrides: Partial<CortexService.GenerationListItem> = {}): CortexService.GenerationListItem {
+function row(
+  overrides: Partial<CortexService.GenerationListItem> = {},
+): CortexService.GenerationListItem {
   return {
     id: "gen-1",
     userEmail: EMAIL,
@@ -70,7 +72,9 @@ describe("GET /api/visual-guru/history", () => {
     const response = await GET(request() as never)
     const body = (await response.json()) as { firstVariantDataUrl: string | null }[]
 
-    expect(body[0]!.firstVariantDataUrl).toBe(`data:image/png;base64,${Buffer.from("aaa").toString("base64")}`)
+    expect(body[0]!.firstVariantDataUrl).toBe(
+      `data:image/png;base64,${Buffer.from("aaa").toString("base64")}`,
+    )
   })
 
   it("generacja bez zapisanego wariantu: firstVariantDataUrl null, nie rzuca", async () => {

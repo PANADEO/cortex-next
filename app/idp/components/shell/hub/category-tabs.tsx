@@ -1,9 +1,9 @@
 "use client"
 
+import type { TabsVariant } from "@/lib/presets/registry"
 import { cn } from "@cortex/utils"
 import { cva } from "class-variance-authority"
 import { Star } from "lucide-react"
-import type { TabsVariant } from "@/lib/presets/registry"
 import type { CategoryTab } from "./types"
 
 /**

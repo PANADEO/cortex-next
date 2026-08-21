@@ -10,21 +10,21 @@
 // przed jakąkolwiek pracą").
 
 import {
+  GeoScoreServiceError,
+  analyzeGeoScore,
+  type AnalyzeGeoScoreResponse,
+} from "@/lib/geo-score-calculator/integration-client"
+import { TEXT_MAX_CHARS } from "@/lib/geo-score-calculator/limits"
+import {
   GEO_SCORE_CALCULATOR_APP_CODE,
   GeoScoreConfigMissingError,
   getGeoScoreConfig,
   requireTileAccess,
   saveGeoScoreCalculation,
 } from "@cortex/service"
-import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
 import { z } from "zod"
-import {
-  GeoScoreServiceError,
-  analyzeGeoScore,
-  type AnalyzeGeoScoreResponse,
-} from "@/lib/geo-score-calculator/integration-client"
-import { TEXT_MAX_CHARS } from "@/lib/geo-score-calculator/limits"
 
 export const runtime = "nodejs"
 

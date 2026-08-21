@@ -28,13 +28,15 @@ const RULES: RuleSeed[] = [
   {
     id: "rule-0001",
     name: "Alokuj fracht po wadze netto",
-    description: "Rozdziela całkowity koszt frachtu na pozycje faktury proporcjonalnie do wagi netto.",
+    description:
+      "Rozdziela całkowity koszt frachtu na pozycje faktury proporcjonalnie do wagi netto.",
     category: "transport_allocation",
     status: "active",
     tags: ["transport", "cost", "weight"],
     customer_tag: "Acme Corp",
     trigger: "auto_on_extraction",
-    nl_definition: "Rozdziel koszt frachtu z transport_info.cost proporcjonalnie do wagi netto każdej pozycji faktury.",
+    nl_definition:
+      "Rozdziel koszt frachtu z transport_info.cost proporcjonalnie do wagi netto każdej pozycji faktury.",
     python_code: [
       "def apply(lines, transport_info):",
       "    total_weight = sum(float(l.get('net_weight_kg') or 0) for l in lines)",
@@ -45,7 +47,11 @@ const RULES: RuleSeed[] = [
       "    return lines",
     ].join("\n"),
     output_columns: [
-      { name: "freight_share", description: "Przypisana część frachtu (w walucie transportu).", data_type: "number" },
+      {
+        name: "freight_share",
+        description: "Przypisana część frachtu (w walucie transportu).",
+        data_type: "number",
+      },
     ],
   },
   {
@@ -57,7 +63,8 @@ const RULES: RuleSeed[] = [
     tags: ["customs", "cn-code"],
     customer_tag: null,
     trigger: "manual",
-    nl_definition: "Pogrupuj pozycje po cn_code i policz sumy net_weight_kg, gross_weight_kg, invoice_value.",
+    nl_definition:
+      "Pogrupuj pozycje po cn_code i policz sumy net_weight_kg, gross_weight_kg, invoice_value.",
     python_code: [
       "def apply(lines):",
       "    groups = {}",
@@ -73,7 +80,11 @@ const RULES: RuleSeed[] = [
       { name: "cn_code", description: "Kod nomenklatury celnej (CN).", data_type: "string" },
       { name: "net_weight_kg", description: "Suma wag netto per kod CN.", data_type: "number" },
       { name: "gross_weight_kg", description: "Suma wag brutto per kod CN.", data_type: "number" },
-      { name: "invoice_value", description: "Suma wartości faktury per kod CN.", data_type: "number" },
+      {
+        name: "invoice_value",
+        description: "Suma wartości faktury per kod CN.",
+        data_type: "number",
+      },
     ],
   },
   {
@@ -94,7 +105,11 @@ const RULES: RuleSeed[] = [
       "    return lines",
     ].join("\n"),
     output_columns: [
-      { name: "invoice_value_pln", description: "Wartość pozycji przeliczona na PLN.", data_type: "number" },
+      {
+        name: "invoice_value_pln",
+        description: "Wartość pozycji przeliczona na PLN.",
+        data_type: "number",
+      },
     ],
   },
   {
@@ -106,7 +121,8 @@ const RULES: RuleSeed[] = [
     tags: ["weight"],
     customer_tag: null,
     trigger: "manual",
-    nl_definition: "Jeśli gross_weight_kg jest pusty, policz go jako net_weight_kg + packaging.weight_kg.",
+    nl_definition:
+      "Jeśli gross_weight_kg jest pusty, policz go jako net_weight_kg + packaging.weight_kg.",
     python_code: [
       "def apply(lines):",
       "    for line in lines:",
@@ -129,7 +145,8 @@ const RULES: RuleSeed[] = [
     tags: ["customs", "translation"],
     customer_tag: null,
     trigger: "manual",
-    nl_definition: "Dla każdej pozycji weź cn_code i znajdź polską nazwę w słowniku CN_PL, wypełnij polish_cn_name.",
+    nl_definition:
+      "Dla każdej pozycji weź cn_code i znajdź polską nazwę w słowniku CN_PL, wypełnij polish_cn_name.",
     python_code: [
       "def apply(lines, lookup):",
       "    table = lookup.table('cn_pl')",
@@ -144,13 +161,15 @@ const RULES: RuleSeed[] = [
   {
     id: "rule-0006",
     name: "Rozdziel pozycję po kodzie HS",
-    description: "Rozbija zbiorczą pozycję na osobne wiersze per kod HS z proporcjonalnymi wartościami.",
+    description:
+      "Rozbija zbiorczą pozycję na osobne wiersze per kod HS z proporcjonalnymi wartościami.",
     category: "split",
     status: "draft",
     tags: ["hs-code", "split"],
     customer_tag: "Müller GmbH",
     trigger: "manual",
-    nl_definition: "Jeśli pozycja ma listę hs_codes z udziałami, rozdziel ją na osobne wiersze proporcjonalnie do udziałów.",
+    nl_definition:
+      "Jeśli pozycja ma listę hs_codes z udziałami, rozdziel ją na osobne wiersze proporcjonalnie do udziałów.",
     python_code: [
       "def apply(lines):",
       "    out = []",
@@ -168,7 +187,11 @@ const RULES: RuleSeed[] = [
       "    return out",
     ].join("\n"),
     output_columns: [
-      { name: "hs_code", description: "Konkretny kod HS per rozdzielony wiersz.", data_type: "string" },
+      {
+        name: "hs_code",
+        description: "Konkretny kod HS per rozdzielony wiersz.",
+        data_type: "string",
+      },
     ],
   },
 ]
@@ -378,17 +401,13 @@ export function explainRuleStub(nl: string): {
 
   const concerns: string[] = []
   if (mentionsFreight && !mentionsWeight && !mentionsValue) {
-    concerns.push(
-      "Nie wskazano podstawy alokacji frachtu (waga vs wartość). Domyślnie użyję wagi.",
-    )
+    concerns.push("Nie wskazano podstawy alokacji frachtu (waga vs wartość). Domyślnie użyję wagi.")
   }
   if (mentionsPln && !/(invoice_date|data faktury)/.test(lower)) {
     concerns.push("Nie podałeś źródła kursu — założę kurs NBP z dnia faktury.")
   }
   if (mentionsAggregate && affected.length === 1) {
-    concerns.push(
-      "Nie wskazano kolumn do zsumowania — zaproponuję net_weight_kg + invoice_value.",
-    )
+    concerns.push("Nie wskazano kolumn do zsumowania — zaproponuję net_weight_kg + invoice_value.")
   }
 
   const questions: string[] = []
@@ -410,22 +429,17 @@ export function explainRuleStub(nl: string): {
   } else if (mentionsFreight && mentionsValue) {
     summary =
       "Alokuje koszt frachtu z `transport_info.cost` proporcjonalnie do wartości każdej pozycji."
-    worked =
-      "Faktura: 100 PLN frachtu, pozycje o wartości 50/150 PLN. Wynik: 25 PLN i 75 PLN."
+    worked = "Faktura: 100 PLN frachtu, pozycje o wartości 50/150 PLN. Wynik: 25 PLN i 75 PLN."
   } else if (mentionsAggregate && mentionsCn) {
     summary = "Grupuje pozycje po `cn_code` i sumuje wagi netto, brutto oraz wartości."
-    worked =
-      "Pozycje: CN 8471... (waga 5+10), CN 8528... (waga 8). Wynik: dwie linie sumaryczne."
+    worked = "Pozycje: CN 8471... (waga 5+10), CN 8528... (waga 8). Wynik: dwie linie sumaryczne."
   } else if (mentionsPln) {
     summary =
       "Dodaje kolumnę `invoice_value_pln` przeliczając `invoice_value` po kursie NBP z daty faktury."
-    worked =
-      "Faktura w EUR: 100 EUR, kurs 4.30. Wynik: invoice_value_pln = 430.00."
+    worked = "Faktura w EUR: 100 EUR, kurs 4.30. Wynik: invoice_value_pln = 430.00."
   } else if (mentionsSplit) {
-    summary =
-      "Rozdziela pozycje na osobne wiersze proporcjonalnie do udziałów (np. po HS code)."
-    worked =
-      "Pozycja 100 PLN z udziałami HS 8471 (60%) i 8528 (40%). Wynik: dwie linie 60/40 PLN."
+    summary = "Rozdziela pozycje na osobne wiersze proporcjonalnie do udziałów (np. po HS code)."
+    worked = "Pozycja 100 PLN z udziałami HS 8471 (60%) i 8528 (40%). Wynik: dwie linie 60/40 PLN."
   }
 
   return {

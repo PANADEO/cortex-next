@@ -1,9 +1,10 @@
+import { COWORK_DATA_DIR } from "@/lib/cortex-governance/store"
+import type { CoworkProjectConfig } from "@cortex/types"
+import { DEFAULT_COWORK_PROJECT_ID } from "@cortex/types"
 import { randomUUID } from "node:crypto"
 import type { Dirent } from "node:fs"
 import { cp, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
-import type { CoworkProjectConfig } from "@cortex/types"
-import { DEFAULT_COWORK_PROJECT_ID } from "@cortex/types"
 import type {
   ChatMessage,
   CoworkArtifact,
@@ -13,7 +14,6 @@ import type {
   CoworkSessionUsage,
   CoworkSkillSummary,
 } from "../types"
-import { COWORK_DATA_DIR } from "@/lib/cortex-governance/store"
 import type { ResolvedSkill } from "./skills-catalog"
 
 export interface SandboxSession {
@@ -95,11 +95,9 @@ export async function createSandboxSession(
   // come from different departmental sources).
   await Promise.all(
     grantedSkills.map((skill) =>
-      cp(
-        path.join(skill.sourceFolder, skill.dirName),
-        path.join(skillsDir, skill.dirName),
-        { recursive: true },
-      ),
+      cp(path.join(skill.sourceFolder, skill.dirName), path.join(skillsDir, skill.dirName), {
+        recursive: true,
+      }),
     ),
   )
   const skills: CoworkSkillSummary[] = grantedSkills.map((skill) => ({
@@ -147,9 +145,7 @@ export async function getSandboxSession(sessionId: string): Promise<SandboxSessi
 
 /** Session summaries for a project's session list, newest first. */
 export async function listSessionSummaries(projectId: string): Promise<CoworkSessionSummary[]> {
-  const entries = await readdir(SESSIONS_DIR, { withFileTypes: true }).catch(
-    () => [] as Dirent[],
-  )
+  const entries = await readdir(SESSIONS_DIR, { withFileTypes: true }).catch(() => [] as Dirent[])
   const summaries: CoworkSessionSummary[] = []
   for (const entry of entries) {
     if (!entry.isDirectory()) continue
@@ -296,4 +292,3 @@ export function findArtifact(
 export function artifactFilePath(session: SandboxSession, artifact: CoworkArtifact): string {
   return path.join(session.artifactsDir, artifact.filename)
 }
-

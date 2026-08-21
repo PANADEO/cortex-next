@@ -10,12 +10,7 @@ export type CoworkSkillId = string
 // `detail` carries the drilldown payload: tool arguments for tool_start,
 // a result excerpt for tool_end, the full thinking text for thinking.
 export type AgentActivityKind =
-  | "thinking"
-  | "thinking_start"
-  | "tool_start"
-  | "tool_end"
-  | "assistant"
-  | "lifecycle"
+  "thinking" | "thinking_start" | "tool_start" | "tool_end" | "assistant" | "lifecycle"
 
 export interface AgentActivityStep {
   id: string

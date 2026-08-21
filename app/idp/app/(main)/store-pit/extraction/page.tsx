@@ -94,9 +94,7 @@ const columns: ColumnDef<ExtractionRow, unknown>[] = [
     accessorKey: "net",
     header: "GLS net",
     size: 110,
-    cell: ({ row }) => (
-      <span className="text-xs tabular-nums">{eur(row.original.net)}</span>
-    ),
+    cell: ({ row }) => <span className="text-xs tabular-nums">{eur(row.original.net)}</span>,
   },
   {
     accessorKey: "shopDiscount",
@@ -104,7 +102,9 @@ const columns: ColumnDef<ExtractionRow, unknown>[] = [
     size: 100,
     cell: ({ row }) =>
       row.original.shopDiscount ? (
-        <span className="text-xs tabular-nums text-destructive">{eur(row.original.shopDiscount)}</span>
+        <span className="text-xs tabular-nums text-destructive">
+          {eur(row.original.shopDiscount)}
+        </span>
       ) : (
         <span className="text-xs text-muted-foreground">—</span>
       ),
@@ -245,7 +245,9 @@ export default function ExtractionPage() {
               Reset
             </Button>
           ) : null}
-          <div className="ml-auto text-xs text-muted-foreground">{count(total)} of sample shown</div>
+          <div className="ml-auto text-xs text-muted-foreground">
+            {count(total)} of sample shown
+          </div>
         </div>
 
         <DataTable
@@ -265,8 +267,9 @@ export default function ExtractionPage() {
 
         <p className="flex items-center gap-2 text-[11px] text-muted-foreground">
           <Table2 className="h-3.5 w-3.5" />
-          Showing a representative sample of the {count(INVOICE.shipmentRows)} parcel lines extracted
-          for invoice {INVOICE.glsInvoiceNo}. Invoice-level charges are handled under Reconciliation.
+          Showing a representative sample of the {count(INVOICE.shipmentRows)} parcel lines
+          extracted for invoice {INVOICE.glsInvoiceNo}. Invoice-level charges are handled under
+          Reconciliation.
         </p>
       </div>
     </>

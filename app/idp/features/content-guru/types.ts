@@ -119,7 +119,8 @@ export interface MarketProfileInputDto {
 
 export type GenerationJobMode = "batch" | "package"
 export type GenerationJobStatus = "queued" | "running" | "done" | "done-with-errors"
-export type GenerationJobItemStatus = "pending" | "running" | "done" | "done-with-warnings" | "error"
+export type GenerationJobItemStatus =
+  "pending" | "running" | "done" | "done-with-warnings" | "error"
 
 export interface GenerationJobItemDto {
   templateId: string

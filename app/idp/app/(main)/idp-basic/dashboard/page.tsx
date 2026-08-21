@@ -160,7 +160,9 @@ export default function IdpBasicDashboardPage() {
 
   const stats = useIdpBasicStats()
   const settings = useIdpBasicSettings()
-  const recentPackages = useIdpBasicPackages(packageListQuery({ limit: 8, offset: 0 }, serverSearch))
+  const recentPackages = useIdpBasicPackages(
+    packageListQuery({ limit: 8, offset: 0 }, serverSearch),
+  )
   const pollMail = useIdpBasicPollMail()
 
   useEffect(() => {
@@ -205,10 +207,7 @@ export default function IdpBasicDashboardPage() {
     () => buildAuditEvents(recentPackages.data?.items ?? []),
     [recentPackages.data?.items],
   )
-  const totalOnBoard = visibleMetas.reduce(
-    (sum, meta) => sum + boardState.totals[meta.id],
-    0,
-  )
+  const totalOnBoard = visibleMetas.reduce((sum, meta) => sum + boardState.totals[meta.id], 0)
 
   const handlePoll = async () => {
     try {
@@ -289,7 +288,7 @@ export default function IdpBasicDashboardPage() {
               <p className="text-xs text-muted-foreground">Refreshing...</p>
             ) : null}
           </div>
-          <div className="-mx-2 flex h-[36vh] min-h-[260px] max-h-[390px] gap-3 overflow-x-auto overflow-y-hidden px-2 pb-4">
+          <div className="-mx-2 flex h-[36vh] max-h-[390px] min-h-[260px] gap-3 overflow-x-auto overflow-y-hidden px-2 pb-4">
             {visibleMetas.map((meta) => (
               <BasicKanbanColumn
                 key={meta.id}
@@ -474,9 +473,7 @@ function BasicKanbanColumn({
           <h2 className={cn("text-sm font-semibold leading-none", meta.headerText)}>
             {meta.label}
           </h2>
-          <p className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">
-            {meta.description}
-          </p>
+          <p className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">{meta.description}</p>
         </div>
         <span
           className={cn(
@@ -606,7 +603,7 @@ function SystemStatusItem({
   tone: "default" | "success" | "warning"
 }) {
   return (
-    <div className="flex items-start gap-3 border-b border-border px-4 py-3 last:border-b-0 md:border-b-0 md:border-r md:[&:nth-child(2n)]:border-r-0 xl:[&:nth-child(2n)]:border-r xl:last:border-r-0">
+    <div className="flex items-start gap-3 border-b border-border px-4 py-3 last:border-b-0 md:border-b-0 md:border-r xl:last:border-r-0 md:[&:nth-child(2n)]:border-r-0 xl:[&:nth-child(2n)]:border-r">
       <span
         className={cn(
           "flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
@@ -618,9 +615,7 @@ function SystemStatusItem({
         <Icon className="h-4 w-4" />
       </span>
       <div className="min-w-0">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {label}
-        </p>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
         <p
           className={cn(
             "mt-0.5 text-sm font-semibold",

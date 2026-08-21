@@ -12,7 +12,6 @@ vi.mock("@cortex/service/rbac-store", () => ({
   loadGrantedScopes: vi.fn(async () => []),
 }))
 
-
 interface GenerateRoute {
   POST: (request: Request) => Promise<Response>
 }
@@ -131,9 +130,8 @@ describe("/api/ai-tools/generate route handler", () => {
       prompt: expect.stringContaining("system"),
     })
 
-    const { closeAiToolHistoryDatabasesForTests, listAiToolHistory } = await import(
-      "../../_lib/ai-tools-history"
-    )
+    const { closeAiToolHistoryDatabasesForTests, listAiToolHistory } =
+      await import("../../_lib/ai-tools-history")
     const history = listAiToolHistory("text-highlighter", "u@example.com", 5)
     closeAiToolHistoryDatabasesForTests()
     rmSync(historyDir, { force: true, recursive: true })

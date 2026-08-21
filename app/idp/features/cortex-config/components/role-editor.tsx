@@ -1,7 +1,7 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
 import { Card, CardContent, ErrorState, Input, Label, LoadingState } from "@cortex/ui"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { useGovernanceConfig, useUpdateGovernance } from "../hooks/use-governance"
@@ -29,7 +29,11 @@ export function RoleEditorScreen({ roleId }: { roleId?: string | undefined }) {
   return (
     <RoleForm
       key={role?.id ?? "new"}
-      defaultValues={{ id: role?.id ?? "", name: role?.name ?? "", description: role?.description ?? "" }}
+      defaultValues={{
+        id: role?.id ?? "",
+        name: role?.name ?? "",
+        description: role?.description ?? "",
+      }}
       editing={Boolean(role)}
       isSaving={updateGovernance.isPending}
       onSubmit={async (values) => {

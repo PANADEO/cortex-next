@@ -66,7 +66,9 @@ export function DimensionPanel({
       header: "Udział",
       enableSorting: true,
       cell: ({ row }) => (
-        <span className="tabular-nums text-muted-foreground">{formatShare(row.original.share)}</span>
+        <span className="tabular-nums text-muted-foreground">
+          {formatShare(row.original.share)}
+        </span>
       ),
     },
   ]
@@ -112,8 +114,8 @@ export function DimensionPanel({
 
       {groups.length > chartLimit ? (
         <p className="text-xs text-muted-foreground">
-          Lista słupkowa pokazuje {chartLimit} największych pozycji z {groups.length}. Tabela poniżej
-          zawiera komplet.
+          Lista słupkowa pokazuje {chartLimit} największych pozycji z {groups.length}. Tabela
+          poniżej zawiera komplet.
         </p>
       ) : null}
 

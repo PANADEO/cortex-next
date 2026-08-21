@@ -15,10 +15,10 @@
 // komponent React, który nigdy nie owija Route Handlerów — dokładnie ta sama
 // diagnoza, którą project-gate.ts postawił dla sesji Cortex Cowork.
 
+import type { Film } from "@/features/okna-czasowe/types"
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import type { Film } from "@/features/okna-czasowe/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // Podmieniany jest WYŁĄCZNIE odczyt uprawnień z bazy — sama bramka
@@ -287,9 +287,9 @@ describe("skutki uboczne, których odmowa nie może wywołać", () => {
     const response = await POST(buildRequest("POST", GRANTED_EMAIL) as Parameters<typeof POST>[0])
 
     expect(response.status).toBe(200)
-    expect(fetchSpy.mock.calls.some(([input]) => String(input).includes("apis.justwatch.com"))).toBe(
-      true,
-    )
+    expect(
+      fetchSpy.mock.calls.some(([input]) => String(input).includes("apis.justwatch.com")),
+    ).toBe(true)
   })
 })
 

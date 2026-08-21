@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
+import { HUB_LAYOUTS } from "@/components/shell/hub/registry"
 import { describe, expect, it } from "vitest"
 import tailwind from "../../../../tailwind.config"
-import { HUB_LAYOUTS } from "@/components/shell/hub/registry"
 import { migrateLegacySkin, usePresetStore } from "./preset-store"
 import {
   DEFAULT_PRESET,

@@ -1,11 +1,11 @@
+import { setGrants } from "@/lib/cortex-governance/testing/grants"
+import type * as CortexService from "@cortex/service"
+import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { mkdtempSync, rmSync } from "node:fs"
 import { readFile, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import type * as CortexService from "@cortex/service"
-import { setGrants } from "@/lib/cortex-governance/testing/grants"
 
 // Extension of the tile-level auth gate (Obsidian task note, "Rozszerzenie:
 // 5 dodatkowych route'ów") to a route the original 4-handler pass left
@@ -14,7 +14,6 @@ import { setGrants } from "@/lib/cortex-governance/testing/grants"
 // sessions/[sessionId]/route.test.ts; the export share itself is a second
 // real temp directory (distinct from COWORK_DATA_DIR) so the ALLOW case
 // proves a real file landed on disk, not just a 200 status.
-
 
 // Open mode stopped meaning "no restrictions" on 30.07.2026: it still skips
 // the governance ROLE filter, but the caller must hold the cortex-cowork
@@ -104,9 +103,8 @@ async function createSessionWithArtifact(): Promise<{
   artifactId: string
   filename: string
 }> {
-  const { createSandboxSession, registerArtifact, artifactFilePath } = await import(
-    "@/features/cortex-cowork/server/sandbox-store"
-  )
+  const { createSandboxSession, registerArtifact, artifactFilePath } =
+    await import("@/features/cortex-cowork/server/sandbox-store")
   const session = await createSandboxSession(project(), [], 100_000)
   const artifact = {
     id: "artifact-1",

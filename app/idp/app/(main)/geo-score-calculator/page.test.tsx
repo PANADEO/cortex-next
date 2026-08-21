@@ -10,14 +10,15 @@
 // `curl -X POST http://localhost:8010/analyze` z tym samym tekstem) — nie
 // wymyślony fixture. Zweryfikowane niezależnie w Pythonie:
 // text[21:26] == "5 mln", text[49:58] == "najlepszy".
+import type { AnalyzeGeoScoreResponseDto } from "@/features/geo-score-calculator/types"
 import "@testing-library/jest-dom/vitest"
 import { cleanup, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import type { AnalyzeGeoScoreResponseDto } from "@/features/geo-score-calculator/types"
 import GeoScoreCalculatorPage from "./page"
 
-const ANALYZED_TEXT = "Spółka zainwestowała 5 mln w nowy zakład. To był najlepszy rok w historii firmy."
+const ANALYZED_TEXT =
+  "Spółka zainwestowała 5 mln w nowy zakład. To był najlepszy rok w historii firmy."
 
 // Odpowiedź prawdziwego mikroserwisu (curl http://localhost:8010/analyze),
 // patrz nagłówek pliku.
@@ -25,7 +26,12 @@ const FIRST_RESPONSE: AnalyzeGeoScoreResponseDto = {
   totalScore: 62.1,
   grade: "C",
   wordCount: 14,
-  statistics: { score: 100, count: 1, per100Words: 7.14, examples: [{ value: "5 mln", position: 21 }] },
+  statistics: {
+    score: 100,
+    count: 1,
+    per100Words: 7.14,
+    examples: [{ value: "5 mln", position: 21 }],
+  },
   actionVerbs: {
     score: 100,
     actionVerbCount: 1,
@@ -53,7 +59,12 @@ const SECOND_RESPONSE: AnalyzeGeoScoreResponseDto = {
   ...FIRST_RESPONSE,
   totalScore: 74.6,
   grade: "C",
-  statistics: { score: 100, count: 1, per100Words: 6.25, examples: [{ value: "5 mln", position: 21 }] },
+  statistics: {
+    score: 100,
+    count: 1,
+    per100Words: 6.25,
+    examples: [{ value: "5 mln", position: 21 }],
+  },
   objectivity: { score: 100, subjectiveCount: 0, subjectiveRatio: 0, foundWords: [] },
   recommendations: [
     "Dodaj bullet points lub listę numerowaną z kluczowymi informacjami",
@@ -149,7 +160,9 @@ describe("GeoScoreCalculatorPage", () => {
       screen.getByText("Dodaj bullet points lub listę numerowaną z kluczowymi informacjami"),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole("button", { name: "Dodaj bullet points lub listę numerowaną z kluczowymi informacjami" }),
+      screen.queryByRole("button", {
+        name: "Dodaj bullet points lub listę numerowaną z kluczowymi informacjami",
+      }),
     ).not.toBeInTheDocument()
   })
 

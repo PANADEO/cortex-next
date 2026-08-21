@@ -39,8 +39,7 @@ export interface TokenUsageConfig {
 }
 
 export type TokenUsageConfigResult =
-  | { ok: true; config: TokenUsageConfig }
-  | { ok: false; missing: string[] }
+  { ok: true; config: TokenUsageConfig } | { ok: false; missing: string[] }
 
 /** Pusty string to NIE jest wartość — docker-compose wstawia `VAR: ${VAR:-}`,
  *  więc nieustawiona zmienna dociera tu jako "". Bez tej normalizacji pusty

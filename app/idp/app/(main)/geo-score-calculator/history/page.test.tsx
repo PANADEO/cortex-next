@@ -8,12 +8,12 @@
 // wcześniejszej realnej weryfikacji: dwa o ocenie C (ten sam tekst
 // przeanalizowany dwukrotnie), jeden o ocenie F — celowo dobra mieszanka
 // pod testy wyszukiwania i filtra oceny.
+import type { GeoScoreCalculationSummaryDto } from "@/features/geo-score-calculator/types"
 import { formatAbsolute } from "@cortex/utils"
 import "@testing-library/jest-dom/vitest"
 import { cleanup, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
-import type { GeoScoreCalculationSummaryDto } from "@/features/geo-score-calculator/types"
 import GeoScoreCalculatorHistoryPage from "./page"
 
 const REAL_HISTORY: GeoScoreCalculationSummaryDto[] = [
@@ -96,10 +96,16 @@ describe("GeoScoreCalculatorHistoryPage", () => {
     // zwracana przez realny listMyCalculations()) — daty formatowane przez
     // `formatAbsolute` samej strony, nie sztywny string, żeby test nie
     // zależał od strefy czasowej maszyny uruchamiającej testy.
-    expect(within(rows[0]!).getByText(formatAbsolute(REAL_HISTORY[0]!.createdAt))).toBeInTheDocument()
+    expect(
+      within(rows[0]!).getByText(formatAbsolute(REAL_HISTORY[0]!.createdAt)),
+    ).toBeInTheDocument()
     expect(within(rows[1]!).getByText("F")).toBeInTheDocument()
-    expect(within(rows[1]!).getByText(formatAbsolute(REAL_HISTORY[1]!.createdAt))).toBeInTheDocument()
-    expect(within(rows[2]!).getByText(formatAbsolute(REAL_HISTORY[2]!.createdAt))).toBeInTheDocument()
+    expect(
+      within(rows[1]!).getByText(formatAbsolute(REAL_HISTORY[1]!.createdAt)),
+    ).toBeInTheDocument()
+    expect(
+      within(rows[2]!).getByText(formatAbsolute(REAL_HISTORY[2]!.createdAt)),
+    ).toBeInTheDocument()
   })
 
   it("wyszukiwanie filtruje po TREŚCI PODGLĄDU — 'uprawnień' zostawia dokładnie 1 z 3 wierszy", async () => {

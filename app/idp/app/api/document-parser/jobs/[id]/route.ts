@@ -3,15 +3,15 @@
 // Postgresa PRZED odpowiedzią — Postgres jest jedynym trwałym źródłem
 // prawdy, backend jest tylko efemerycznym "silnikiem obliczeniowym" (D2).
 
-import type { JobRow } from "@cortex/db"
-import { getMyJob, getRequestEmail, markJobDone, markJobError } from "@cortex/service"
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
 import {
   DocumentParserBackendError,
   getBackendJob,
   mapBackendErrorToCode,
 } from "@/lib/document-parser/backend-client"
+import type { JobRow } from "@cortex/db"
+import { getMyJob, getRequestEmail, markJobDone, markJobError } from "@cortex/service"
+import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
 import { denyUnlessAllowed } from "../../_lib/guard"
 
 export const runtime = "nodejs"
@@ -55,7 +55,8 @@ async function syncFromBackend(email: string, row: JobRow, backendJobId: string)
       // Backend nie zna już tego zadania — TTL eviction albo restart
       // kontenera w trakcie przetwarzania (D4, zaakceptowany kompromis MVP).
       const updated = await markJobError(email, row.id, {
-        errorMessage: "Usługa przetwarzania utraciła stan zadania — spróbuj wgrać dokument ponownie.",
+        errorMessage:
+          "Usługa przetwarzania utraciła stan zadania — spróbuj wgrać dokument ponownie.",
         errorCode: "conversion-failed",
       })
       return updated ?? row

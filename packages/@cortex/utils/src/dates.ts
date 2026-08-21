@@ -4,10 +4,7 @@ function toDate(value: string | Date): Date {
   return value instanceof Date ? value : parseISO(value)
 }
 
-export function formatAbsolute(
-  value: string | Date,
-  pattern = "yyyy-MM-dd HH:mm",
-): string {
+export function formatAbsolute(value: string | Date, pattern = "yyyy-MM-dd HH:mm"): string {
   return format(toDate(value), pattern)
 }
 

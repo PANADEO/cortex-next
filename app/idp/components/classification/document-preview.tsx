@@ -1,10 +1,6 @@
 "use client"
 
-import {
-  endpoints,
-  toastApiError,
-  useUpdateDocumentClassification,
-} from "@cortex/api"
+import { endpoints, toastApiError, useUpdateDocumentClassification } from "@cortex/api"
 import {
   DOC_MODE,
   DOC_TYPE,
@@ -49,12 +45,7 @@ interface DocumentPreviewProps {
   drafts: CleanPackageDraft[]
 }
 
-
-export function DocumentPreview({
-  dirtyPackageId,
-  document,
-  drafts,
-}: DocumentPreviewProps) {
+export function DocumentPreview({ dirtyPackageId, document, drafts }: DocumentPreviewProps) {
   const update = useUpdateDocumentClassification(dirtyPackageId)
   const [notes, setNotes] = useState("")
 
@@ -71,10 +62,7 @@ export function DocumentPreview({
   }
 
   const apply = (body: Parameters<typeof update.mutate>[0]["body"]) => {
-    update.mutate(
-      { docId: document.id, body },
-      { onError: (err) => toastApiError(err) },
-    )
+    update.mutate({ docId: document.id, body }, { onError: (err) => toastApiError(err) })
   }
 
   const saveNotes = () => {
@@ -86,7 +74,7 @@ export function DocumentPreview({
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
         <div className="flex flex-col">
-          <span className="font-medium text-sm">{document.file_name}</span>
+          <span className="text-sm font-medium">{document.file_name}</span>
           <span className="text-xs text-muted-foreground">
             {document.page_count} page{document.page_count > 1 ? "s" : ""} ·{" "}
             {formatFileSizeBytes(document.size_bytes)}
@@ -119,9 +107,7 @@ export function DocumentPreview({
 
       <div className="grid grid-cols-3 gap-3 border-t border-border bg-background/40 px-4 py-3">
         <div className="space-y-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            Type
-          </Label>
+          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Type</Label>
           <Select
             value={document.doc_type}
             onValueChange={(v) => apply({ doc_type: v as DocType })}
@@ -139,13 +125,8 @@ export function DocumentPreview({
           </Select>
         </div>
         <div className="space-y-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            Mode
-          </Label>
-          <Select
-            value={document.mode}
-            onValueChange={(v) => apply({ mode: v as DocMode })}
-          >
+          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Mode</Label>
+          <Select value={document.mode} onValueChange={(v) => apply({ mode: v as DocMode })}>
             <SelectTrigger className="h-8">
               <SelectValue />
             </SelectTrigger>
@@ -170,9 +151,7 @@ export function DocumentPreview({
           />
         </div>
         <div className="col-span-3 space-y-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            Notes
-          </Label>
+          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Notes</Label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -326,8 +305,8 @@ function DocumentBody({
           <FileX className="h-8 w-8 text-muted-foreground" />
           <p className="text-sm font-medium">No inline preview</p>
           <p className="max-w-sm text-xs text-muted-foreground">
-            {document.media_type} files are attached as references — open
-            externally if you need to peek.
+            {document.media_type} files are attached as references — open externally if you need to
+            peek.
           </p>
           <Badge variant="outline" className="text-[10px]">
             {document.media_type}

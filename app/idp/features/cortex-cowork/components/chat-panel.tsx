@@ -128,9 +128,7 @@ export function ChatPanel({
                       {brief.title}
                     </span>
                     {brief.hint ? (
-                      <span className="mt-1 block text-xs text-muted-foreground">
-                        {brief.hint}
-                      </span>
+                      <span className="mt-1 block text-xs text-muted-foreground">{brief.hint}</span>
                     ) : null}
                   </button>
                 ))}

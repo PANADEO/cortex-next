@@ -10,12 +10,17 @@
 // docu §4.4 wprost: "Zod na route'ie też, nie tylko w UI" — klient blokuje
 // submit wcześniej, ale serwer nigdy nie ufa klientowi na słowo.
 
-import { GeoScoreConfigMissingError, getGeoScoreConfig, getRequestEmail, updateGeoScoreConfig } from "@cortex/service"
-import { NextResponse } from "next/server"
+import {
+  GeoScoreConfigMissingError,
+  getGeoScoreConfig,
+  getRequestEmail,
+  updateGeoScoreConfig,
+} from "@cortex/service"
 import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
 import { z } from "zod"
-import { denyUnlessAllowed } from "../_lib/guard"
 import { toGeoScoreConfigDto } from "../_lib/config-dto"
+import { denyUnlessAllowed } from "../_lib/guard"
 
 export const runtime = "nodejs"
 

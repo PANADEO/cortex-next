@@ -94,13 +94,9 @@ describe("ImportQueue", () => {
     )
     expect(
       window.localStorage.getItem("cortex.idp.export.emailRecipients:user@example.com"),
-    ).toContain(
-      "user@example.com",
-    )
+    ).toContain("user@example.com")
     expect(
-      window.localStorage.getItem(
-        "cortex.idp.import.notificationExportTemplate:user@example.com",
-      ),
+      window.localStorage.getItem("cortex.idp.import.notificationExportTemplate:user@example.com"),
     ).toBe("sad_xml")
   })
 

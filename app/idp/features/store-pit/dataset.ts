@@ -17,7 +17,7 @@ export const INVOICE = {
   pdfGrossTotal: 18302.89,
   csvRows: 3299,
   shipmentRows: 3111,
-  parcelCount: 3111
+  parcelCount: 3111,
 } as const
 
 export const PIPELINE = [
@@ -28,7 +28,7 @@ export const PIPELINE = [
     layer: "input",
     stat: "2 files",
     detail: "CSV line detail + PDF summary registered",
-    rows: 2
+    rows: 2,
   },
   {
     id: "extraction",
@@ -37,7 +37,7 @@ export const PIPELINE = [
     layer: "idp",
     stat: "3,299 rows",
     detail: "Parse CSV + PDF into structured lines",
-    rows: 3299
+    rows: 3299,
   },
   {
     id: "reconciliation",
@@ -46,7 +46,7 @@ export const PIPELINE = [
     layer: "engine",
     stat: "variance 0.00",
     detail: "CSV total vs PDF total, service & count checks",
-    rows: 21
+    rows: 21,
   },
   {
     id: "classification",
@@ -55,7 +55,7 @@ export const PIPELINE = [
     layer: "engine",
     stat: "3,111 parcels",
     detail: "Assign every parcel to a client by reference/name",
-    rows: 3111
+    rows: 3111,
   },
   {
     id: "netting",
@@ -64,7 +64,7 @@ export const PIPELINE = [
     layer: "engine",
     stat: "181 matched",
     detail: "Match -0.50 discounts to parcels, net freight",
-    rows: 181
+    rows: 181,
   },
   {
     id: "re-rating",
@@ -73,7 +73,7 @@ export const PIPELINE = [
     layer: "engine",
     stat: "4 rule sets",
     detail: "Apply per-client pricing (FlatPay x1.1, BT, DAO)",
-    rows: 4
+    rows: 4,
   },
   {
     id: "aggregation",
@@ -82,7 +82,7 @@ export const PIPELINE = [
     layer: "engine",
     stat: "4 clients",
     detail: "Roll up per client and country with surcharges",
-    rows: 4
+    rows: 4,
   },
   {
     id: "export",
@@ -91,8 +91,8 @@ export const PIPELINE = [
     layer: "output",
     stat: "6 sheets",
     detail: "Build customer workbook (FP-DE/FR/NL, BT, DW, NV)",
-    rows: 6
-  }
+    rows: 6,
+  },
 ]
 
 export const EXTRACTION_ROWS = [
@@ -115,7 +115,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 18.72,
     articleNo: "31205",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 39,
@@ -136,7 +136,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30236",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 43,
@@ -157,7 +157,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 3.1,
     articleNo: "30205",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 44,
@@ -178,7 +178,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30236",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 62,
@@ -199,7 +199,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 3.1,
     articleNo: "30205",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 63,
@@ -220,7 +220,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30236",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 73,
@@ -241,7 +241,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 6.46,
     articleNo: "30205",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 103,
@@ -262,7 +262,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30236",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 134,
@@ -283,7 +283,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 4,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 164,
@@ -304,7 +304,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 19.11,
     articleNo: "31003",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 195,
@@ -325,7 +325,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 229,
@@ -346,7 +346,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 259,
@@ -367,7 +367,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 293,
@@ -388,7 +388,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 323,
@@ -409,7 +409,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 353,
@@ -430,7 +430,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 387,
@@ -451,7 +451,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 417,
@@ -472,7 +472,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 457,
@@ -493,7 +493,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 487,
@@ -514,7 +514,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 517,
@@ -535,7 +535,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 547,
@@ -556,7 +556,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 580,
@@ -577,7 +577,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 620,
@@ -598,7 +598,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 657,
@@ -619,7 +619,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 698,
@@ -640,7 +640,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 728,
@@ -661,7 +661,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 761,
@@ -682,7 +682,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 793,
@@ -703,7 +703,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 823,
@@ -724,7 +724,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 853,
@@ -745,7 +745,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 888,
@@ -766,7 +766,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 918,
@@ -787,7 +787,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 948,
@@ -808,7 +808,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 979,
@@ -829,7 +829,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1009,
@@ -850,7 +850,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1039,
@@ -871,7 +871,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30236",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1069,
@@ -892,7 +892,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1099,
@@ -913,7 +913,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1129,
@@ -934,7 +934,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1159,
@@ -955,7 +955,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 5.36,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 1189,
@@ -976,7 +976,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 3.1,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 1219,
@@ -997,7 +997,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 4,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 1249,
@@ -1018,7 +1018,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 5.36,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 1279,
@@ -1039,7 +1039,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 4,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 1309,
@@ -1060,7 +1060,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 5.36,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 1339,
@@ -1081,7 +1081,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 13.52,
     articleNo: "31003",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 1341,
@@ -1102,7 +1102,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: -0.5,
     netAfter: 2.6,
     articleNo: "30000",
-    priceKey: "daoGLOBAL HOME 1.001-2.000 g Tyskland"
+    priceKey: "daoGLOBAL HOME 1.001-2.000 g Tyskland",
   },
   {
     row: 1343,
@@ -1123,7 +1123,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1372,
@@ -1144,7 +1144,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 6.89,
     articleNo: "31003",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 1402,
@@ -1165,7 +1165,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 8,
     articleNo: "31210",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1432,
@@ -1186,7 +1186,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1462,
@@ -1207,7 +1207,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1492,
@@ -1228,7 +1228,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1522,
@@ -1249,7 +1249,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 8,
     articleNo: "31210",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1552,
@@ -1270,7 +1270,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1582,
@@ -1291,7 +1291,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1612,
@@ -1312,7 +1312,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1642,
@@ -1333,7 +1333,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1672,
@@ -1354,7 +1354,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1702,
@@ -1375,7 +1375,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1732,
@@ -1396,7 +1396,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1762,
@@ -1417,7 +1417,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1795,
@@ -1438,7 +1438,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1828,
@@ -1459,7 +1459,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1837,
@@ -1480,7 +1480,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 4.75,
     articleNo: "31003",
-    priceKey: "Danmark"
+    priceKey: "Danmark",
   },
   {
     row: 1838,
@@ -1501,7 +1501,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1860,
@@ -1522,7 +1522,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 4,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 1890,
@@ -1543,7 +1543,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1921,
@@ -1564,7 +1564,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1951,
@@ -1585,7 +1585,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 1981,
@@ -1606,7 +1606,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2019,
@@ -1627,7 +1627,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2024,
@@ -1648,7 +1648,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 6.7,
     articleNo: "31003",
-    priceKey: "Danmark"
+    priceKey: "Danmark",
   },
   {
     row: 2025,
@@ -1669,7 +1669,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2026,
@@ -1690,7 +1690,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 4.75,
     articleNo: "31003",
-    priceKey: "Danmark"
+    priceKey: "Danmark",
   },
   {
     row: 2027,
@@ -1711,7 +1711,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2054,
@@ -1732,7 +1732,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2084,
@@ -1753,7 +1753,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2114,
@@ -1774,7 +1774,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2144,
@@ -1795,7 +1795,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2174,
@@ -1816,7 +1816,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2204,
@@ -1837,7 +1837,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2234,
@@ -1858,7 +1858,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2272,
@@ -1879,7 +1879,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2304,
@@ -1900,7 +1900,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2334,
@@ -1921,7 +1921,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2372,
@@ -1942,7 +1942,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2406,
@@ -1963,7 +1963,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.5,
     articleNo: "31130",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2439,
@@ -1984,7 +1984,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2478,
@@ -2005,7 +2005,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2489,
@@ -2026,7 +2026,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 3.1,
     articleNo: "30000",
-    priceKey: "daoGLOBAL HOME 501-1.000 g Tyskland"
+    priceKey: "daoGLOBAL HOME 501-1.000 g Tyskland",
   },
   {
     row: 2490,
@@ -2047,7 +2047,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2511,
@@ -2068,7 +2068,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2544,
@@ -2089,7 +2089,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 0.1,
     articleNo: "30200",
-    priceKey: "Pass-through / service"
+    priceKey: "Pass-through / service",
   },
   {
     row: 2578,
@@ -2110,7 +2110,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 3.1,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 2611,
@@ -2131,7 +2131,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 19.11,
     articleNo: "31003",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 2641,
@@ -2152,7 +2152,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 8.52,
     articleNo: "31003",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 2671,
@@ -2173,7 +2173,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 5.53,
     articleNo: "31003",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 2701,
@@ -2194,7 +2194,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 8.52,
     articleNo: "31003",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 2731,
@@ -2215,7 +2215,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 5.36,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 2766,
@@ -2236,7 +2236,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 6.24,
     articleNo: "31003",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 2798,
@@ -2257,7 +2257,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: -0.5,
     netAfter: 4.86,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 2836,
@@ -2278,7 +2278,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 8.52,
     articleNo: "31003",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 2866,
@@ -2299,7 +2299,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 11.44,
     articleNo: "31003",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 2902,
@@ -2320,7 +2320,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 8.19,
     articleNo: "31003",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 2942,
@@ -2341,7 +2341,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: -0.5,
     netAfter: 3.5,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 2973,
@@ -2362,7 +2362,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 5.36,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 3009,
@@ -2383,7 +2383,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: -0.5,
     netAfter: 3.5,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 3046,
@@ -2404,7 +2404,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: -0.5,
     netAfter: 4.86,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 3077,
@@ -2425,7 +2425,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 5.36,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 3107,
@@ -2446,7 +2446,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 4,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 3137,
@@ -2467,7 +2467,7 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 5.36,
     articleNo: "30000",
-    priceKey: null
+    priceKey: null,
   },
   {
     row: 3167,
@@ -2488,106 +2488,106 @@ export const EXTRACTION_ROWS = [
     shopDiscount: 0,
     netAfter: 4,
     articleNo: "30000",
-    priceKey: null
-  }
+    priceKey: null,
+  },
 ]
 
 export const CHECKS = [
   {
     check: "CSV rows",
     value: 3299,
-    comment: null
+    comment: null,
   },
   {
     check: "PDF net total",
     value: 15380.58,
-    comment: null
+    comment: null,
   },
   {
     check: "CSV net total",
     value: 15380.58,
-    comment: null
+    comment: null,
   },
   {
     check: "Net total variance",
     value: 0,
-    comment: "Should be 0.00"
+    comment: "Should be 0.00",
   },
   {
     check: "PDF gross total",
     value: 18302.89,
-    comment: null
+    comment: null,
   },
   {
     check: "PDF VAT",
     value: 2922.31,
-    comment: null
+    comment: null,
   },
   {
     check: "ShopDelivery rows",
     value: 181,
-    comment: null
+    comment: null,
   },
   {
     check: "ShopDelivery matched",
     value: 181,
-    comment: null
+    comment: null,
   },
   {
     check: "ShopDelivery unmatched",
     value: 0,
-    comment: "Should be 0"
+    comment: "Should be 0",
   },
   {
     check: "Shipment_ALL rows",
     value: 3111,
-    comment: null
+    comment: null,
   },
   {
     check: "Unassigned parcel rows",
     value: 0,
-    comment: "Excludes invoice-level charge rows"
+    comment: "Excludes invoice-level charge rows",
   },
   {
     check: "BusinessParcel count",
     value: 785,
-    comment: "PDF says 785"
+    comment: "PDF says 785",
   },
   {
     check: "EuroBusinessParcel count",
     value: 707,
-    comment: "PDF says 707"
+    comment: "PDF says 707",
   },
   {
     check: "National servicep/pkg",
     value: 0.01,
-    comment: null
+    comment: null,
   },
   {
     check: "Export servicep/pkg",
     value: 0.01,
-    comment: null
+    comment: null,
   },
   {
     check: "Export freight kg",
     value: 5493.93,
-    comment: null
+    comment: null,
   },
   {
     check: "Vorfinanz / export kg",
     value: 0.13,
-    comment: null
+    comment: null,
   },
   {
     check: "Net energy rate",
     value: 0.28,
-    comment: "32% + (-4%)"
+    comment: "32% + (-4%)",
   },
   {
     check: "Formula note",
     value: "Working sheets keep formulas visible; customer sheets are value-only.",
-    comment: null
-  }
+    comment: null,
+  },
 ]
 
 export const SERVICE_SUMMARY = [
@@ -2597,7 +2597,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 10,
     weight: 0,
     pdfAmount: 10,
-    variance: 0
+    variance: 0,
   },
   {
     service: "BusinessParcel",
@@ -2605,7 +2605,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 3474.93,
     weight: 5755.47,
     pdfAmount: 3474.93,
-    variance: 0
+    variance: 0,
   },
   {
     service: "Energie",
@@ -2613,7 +2613,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 1155.7,
     weight: 0,
     pdfAmount: 1155.7,
-    variance: 0
+    variance: 0,
   },
   {
     service: "Energie (E)",
@@ -2621,7 +2621,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 2487.88,
     weight: 0,
     pdfAmount: 2487.88,
-    variance: 0
+    variance: 0,
   },
   {
     service: "Energie Discount",
@@ -2629,7 +2629,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: -144.46,
     weight: 0,
     pdfAmount: -144.46,
-    variance: 0
+    variance: 0,
   },
   {
     service: "Energie Discount (E)",
@@ -2637,7 +2637,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: -310.99,
     weight: 0,
     pdfAmount: -310.99,
-    variance: 0
+    variance: 0,
   },
   {
     service: "EuroBusinessParcel",
@@ -2645,7 +2645,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 6779.81,
     weight: 5493.93,
     pdfAmount: 6779.81,
-    variance: 0
+    variance: 0,
   },
   {
     service: "Großpaket (E)",
@@ -2653,7 +2653,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 8,
     weight: 0,
     pdfAmount: 8,
-    variance: 0
+    variance: 0,
   },
   {
     service: "Maut Verkehr National",
@@ -2661,7 +2661,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 78.6,
     weight: 0,
     pdfAmount: 81.8,
-    variance: -3.2
+    variance: -3.2,
   },
   {
     service: "Maut Verkehr National Retoure",
@@ -2669,7 +2669,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 3.2,
     weight: 0,
     pdfAmount: null,
-    variance: null
+    variance: null,
   },
   {
     service: "Nicht sorterfähiges Gut (E)",
@@ -2677,7 +2677,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 216,
     weight: 0,
     pdfAmount: 224,
-    variance: -8
+    variance: -8,
   },
   {
     service: "Nicht sorterfähiges Gut Retoure",
@@ -2685,7 +2685,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 88,
     weight: 0,
     pdfAmount: null,
-    variance: null
+    variance: null,
   },
   {
     service: "Nicht sorterfähiges Gut Retoure (E)",
@@ -2693,7 +2693,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 8,
     weight: 0,
     pdfAmount: null,
-    variance: null
+    variance: null,
   },
   {
     service: "Rückführung nicht zustellbare Pakete",
@@ -2701,7 +2701,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 139.14,
     weight: 0,
     pdfAmount: 139.14,
-    variance: 0
+    variance: 0,
   },
   {
     service: "Rückführung nicht zustellbare Pakete (E)",
@@ -2709,7 +2709,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 352.82,
     weight: 0,
     pdfAmount: 352.82,
-    variance: 0
+    variance: 0,
   },
   {
     service: "Servicepauschale Export",
@@ -2717,7 +2717,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 5,
     weight: 0,
     pdfAmount: 5,
-    variance: 0
+    variance: 0,
   },
   {
     service: "Servicepauschale National",
@@ -2725,7 +2725,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 5,
     weight: 0,
     pdfAmount: 5,
-    variance: 0
+    variance: 0,
   },
   {
     service: "ShopDeliveryService",
@@ -2733,7 +2733,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: -90.5,
     weight: 0,
     pdfAmount: -90.5,
-    variance: 0
+    variance: 0,
   },
   {
     service: "Vorfinanzierungskosten",
@@ -2741,7 +2741,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 704.45,
     weight: 0,
     pdfAmount: 704.45,
-    variance: 0
+    variance: 0,
   },
   {
     service: "WeighingService (E)",
@@ -2749,7 +2749,7 @@ export const SERVICE_SUMMARY = [
     csvAmount: 350,
     weight: 0,
     pdfAmount: 350,
-    variance: 0
+    variance: 0,
   },
   {
     service: "Übermaßpaket  (E)",
@@ -2757,46 +2757,46 @@ export const SERVICE_SUMMARY = [
     csvAmount: 60,
     weight: 0,
     pdfAmount: null,
-    variance: null
-  }
+    variance: null,
+  },
 ]
 
 export const INVOICE_CHARGES = [
   {
     articleNo: "30201",
     description: "Energie",
-    amount: 1155.7
+    amount: 1155.7,
   },
   {
     articleNo: "30215",
     description: "Servicepauschale National",
-    amount: 5
+    amount: 5,
   },
   {
     articleNo: "30230",
     description: "Energie Discount",
-    amount: -144.46
+    amount: -144.46,
   },
   {
     articleNo: "31201",
     description: "Energie (E)",
-    amount: 2487.88
+    amount: 2487.88,
   },
   {
     articleNo: "31215",
     description: "Servicepauschale Export",
-    amount: 5
+    amount: 5,
   },
   {
     articleNo: "31230",
     description: "Energie Discount (E)",
-    amount: -310.99
+    amount: -310.99,
   },
   {
     articleNo: "34220",
     description: "Vorfinanzierungskosten",
-    amount: 704.45
-  }
+    amount: 704.45,
+  },
 ]
 
 export const NETTING_ROWS = [
@@ -2809,7 +2809,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103148727",
@@ -2820,7 +2820,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103155308",
@@ -2831,7 +2831,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103155327",
@@ -2842,7 +2842,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103155328",
@@ -2853,7 +2853,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103155329",
@@ -2864,7 +2864,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103157202",
@@ -2875,7 +2875,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103157228",
@@ -2886,7 +2886,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103157229",
@@ -2897,7 +2897,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103157613",
@@ -2908,7 +2908,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103164274",
@@ -2919,7 +2919,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 6.46,
     after: 5.96,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103164278",
@@ -2930,7 +2930,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103164279",
@@ -2941,7 +2941,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103164280",
@@ -2952,7 +2952,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103164476",
@@ -2963,7 +2963,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103164814",
@@ -2974,7 +2974,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103164825",
@@ -2985,7 +2985,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103164826",
@@ -2996,7 +2996,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103164827",
@@ -3007,7 +3007,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103164828",
@@ -3018,7 +3018,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103164829",
@@ -3029,7 +3029,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103164830",
@@ -3040,7 +3040,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103164831",
@@ -3051,7 +3051,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103164832",
@@ -3062,7 +3062,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103174204",
@@ -3073,7 +3073,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103174227",
@@ -3084,7 +3084,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103174228",
@@ -3095,7 +3095,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103174259",
@@ -3106,7 +3106,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103174262",
@@ -3117,7 +3117,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103174286",
@@ -3128,7 +3128,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 8.11,
     after: 7.61,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103174293",
@@ -3139,7 +3139,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103174296",
@@ -3150,7 +3150,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103174312",
@@ -3161,7 +3161,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103174365",
@@ -3172,7 +3172,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103174386",
@@ -3183,7 +3183,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103174407",
@@ -3194,7 +3194,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103174415",
@@ -3205,7 +3205,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103174472",
@@ -3216,7 +3216,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175463",
@@ -3227,7 +3227,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175478",
@@ -3238,7 +3238,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175497",
@@ -3249,7 +3249,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175505",
@@ -3260,7 +3260,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175510",
@@ -3271,7 +3271,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175529",
@@ -3282,7 +3282,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175534",
@@ -3293,7 +3293,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175535",
@@ -3304,7 +3304,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175543",
@@ -3315,7 +3315,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175544",
@@ -3326,7 +3326,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175545",
@@ -3337,7 +3337,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175555",
@@ -3348,7 +3348,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175584",
@@ -3359,7 +3359,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175594",
@@ -3370,7 +3370,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175617",
@@ -3381,7 +3381,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175634",
@@ -3392,7 +3392,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175635",
@@ -3403,7 +3403,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175865",
@@ -3414,7 +3414,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 6.46,
     after: 5.96,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175891",
@@ -3425,7 +3425,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175930",
@@ -3436,7 +3436,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175955",
@@ -3447,7 +3447,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103175956",
@@ -3458,7 +3458,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103176474",
@@ -3469,7 +3469,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103176475",
@@ -3480,7 +3480,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103176476",
@@ -3491,7 +3491,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103176477",
@@ -3502,7 +3502,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103176478",
@@ -3513,7 +3513,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103178610",
@@ -3524,7 +3524,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103183428",
@@ -3535,7 +3535,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "Drywear"
+    client: "Drywear",
   },
   {
     parcel: "23103204518",
@@ -3546,7 +3546,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103204522",
@@ -3557,7 +3557,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103204527",
@@ -3568,7 +3568,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103204528",
@@ -3579,7 +3579,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103204529",
@@ -3590,7 +3590,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103204616",
@@ -3601,7 +3601,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103215756",
@@ -3612,7 +3612,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103217410",
@@ -3623,7 +3623,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103217426",
@@ -3634,7 +3634,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103217427",
@@ -3645,7 +3645,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103217428",
@@ -3656,7 +3656,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103217532",
@@ -3667,7 +3667,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103217548",
@@ -3678,7 +3678,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103217549",
@@ -3689,7 +3689,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103217617",
@@ -3700,7 +3700,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103217618",
@@ -3711,7 +3711,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103220134",
@@ -3722,7 +3722,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103220145",
@@ -3733,7 +3733,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103220146",
@@ -3744,7 +3744,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103220169",
@@ -3755,7 +3755,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103220182",
@@ -3766,7 +3766,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103220183",
@@ -3777,7 +3777,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103220184",
@@ -3788,7 +3788,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103220185",
@@ -3799,7 +3799,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103220186",
@@ -3810,7 +3810,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103220187",
@@ -3821,7 +3821,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103226044",
@@ -3832,7 +3832,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103226049",
@@ -3843,7 +3843,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103226901",
@@ -3854,7 +3854,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103226903",
@@ -3865,7 +3865,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103226904",
@@ -3876,7 +3876,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103226905",
@@ -3887,7 +3887,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103226906",
@@ -3898,7 +3898,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103227250",
@@ -3909,7 +3909,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103227462",
@@ -3920,7 +3920,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 6.46,
     after: 5.96,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103227474",
@@ -3931,7 +3931,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103227475",
@@ -3942,7 +3942,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103227476",
@@ -3953,7 +3953,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103227577",
@@ -3964,7 +3964,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103227596",
@@ -3975,7 +3975,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103227597",
@@ -3986,7 +3986,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103227948",
@@ -3997,7 +3997,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103227950",
@@ -4008,7 +4008,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103227978",
@@ -4019,7 +4019,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228022",
@@ -4030,7 +4030,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228023",
@@ -4041,7 +4041,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228024",
@@ -4052,7 +4052,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228025",
@@ -4063,7 +4063,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228026",
@@ -4074,7 +4074,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228027",
@@ -4085,7 +4085,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228201",
@@ -4096,7 +4096,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228228",
@@ -4107,7 +4107,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228229",
@@ -4118,7 +4118,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228230",
@@ -4129,7 +4129,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228357",
@@ -4140,7 +4140,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228358",
@@ -4151,7 +4151,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228359",
@@ -4162,7 +4162,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228457",
@@ -4173,7 +4173,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228515",
@@ -4184,7 +4184,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 9.99,
     after: 9.49,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228526",
@@ -4195,7 +4195,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103228527",
@@ -4206,7 +4206,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103230863",
@@ -4217,7 +4217,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103230879",
@@ -4228,7 +4228,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103230880",
@@ -4239,7 +4239,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103230967",
@@ -4250,7 +4250,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103230968",
@@ -4261,7 +4261,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103232867",
@@ -4272,7 +4272,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103232876",
@@ -4283,7 +4283,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103232885",
@@ -4294,7 +4294,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103232916",
@@ -4305,7 +4305,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 8.11,
     after: 7.61,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103232930",
@@ -4316,7 +4316,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103232931",
@@ -4327,7 +4327,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103232932",
@@ -4338,7 +4338,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103232933",
@@ -4349,7 +4349,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103232934",
@@ -4360,7 +4360,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103232935",
@@ -4371,7 +4371,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234662",
@@ -4382,7 +4382,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234663",
@@ -4393,7 +4393,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234669",
@@ -4404,7 +4404,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234672",
@@ -4415,7 +4415,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234692",
@@ -4426,7 +4426,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234693",
@@ -4437,7 +4437,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234709",
@@ -4448,7 +4448,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234711",
@@ -4459,7 +4459,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234717",
@@ -4470,7 +4470,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234720",
@@ -4481,7 +4481,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234722",
@@ -4492,7 +4492,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234723",
@@ -4503,7 +4503,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234757",
@@ -4514,7 +4514,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234791",
@@ -4525,7 +4525,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234880",
@@ -4536,7 +4536,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234884",
@@ -4547,7 +4547,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234885",
@@ -4558,7 +4558,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103234987",
@@ -4569,7 +4569,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 6.46,
     after: 5.96,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103235026",
@@ -4580,7 +4580,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103235036",
@@ -4591,7 +4591,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103235040",
@@ -4602,7 +4602,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103235041",
@@ -4613,7 +4613,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103235053",
@@ -4624,7 +4624,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103235054",
@@ -4635,7 +4635,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103235058",
@@ -4646,7 +4646,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103235061",
@@ -4657,7 +4657,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103235064",
@@ -4668,7 +4668,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 3.1,
     after: 2.6,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103235067",
@@ -4679,7 +4679,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4.69,
     after: 4.19,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103235690",
@@ -4690,7 +4690,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103235695",
@@ -4701,7 +4701,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103235697",
@@ -4712,7 +4712,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103236193",
@@ -4723,7 +4723,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103236194",
@@ -4734,7 +4734,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103236196",
@@ -4745,7 +4745,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103236200",
@@ -4756,7 +4756,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103236204",
@@ -4767,7 +4767,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103236207",
@@ -4778,7 +4778,7 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 4,
     after: 3.5,
-    client: "FlatPay"
+    client: "FlatPay",
   },
   {
     parcel: "23103236208",
@@ -4789,8 +4789,8 @@ export const NETTING_ROWS = [
     matchedService: "BusinessParcel",
     before: 5.36,
     after: 4.86,
-    client: "FlatPay"
-  }
+    client: "FlatPay",
+  },
 ]
 
 export const CLIENT_SUMMARY = [
@@ -4803,7 +4803,7 @@ export const CLIENT_SUMMARY = [
     glsTotal: 17.7,
     spFreight: 31.91,
     spSurcharge: 9.43,
-    spTotal: 41.34
+    spTotal: 41.34,
   },
   {
     client: "Drywear",
@@ -4814,7 +4814,7 @@ export const CLIENT_SUMMARY = [
     glsTotal: 5.9,
     spFreight: 13.44,
     spSurcharge: 3.78,
-    spTotal: 17.22
+    spTotal: 17.22,
   },
   {
     client: "FlatPay",
@@ -4825,7 +4825,7 @@ export const CLIENT_SUMMARY = [
     glsTotal: 11538,
     spFreight: 12691.8,
     spSurcharge: 4283.86,
-    spTotal: 16975.66
+    spTotal: 16975.66,
   },
   {
     client: "Nordvio",
@@ -4836,8 +4836,8 @@ export const CLIENT_SUMMARY = [
     glsTotal: 6.4,
     spFreight: 12.89,
     spSurcharge: 3.64,
-    spTotal: 16.53
-  }
+    spTotal: 16.53,
+  },
 ]
 
 export const GRAND_TOTAL = {
@@ -4848,14 +4848,14 @@ export const GRAND_TOTAL = {
   glsTotal: 15470.58,
   spFreight: 12750.04,
   spSurcharge: 4300.71,
-  spTotal: 17050.74
+  spTotal: 17050.74,
 }
 
 export const MARGIN = {
   freight: 1182.04,
   surcharge: 398.13,
   total: 1580.16,
-  pct: 0.1
+  pct: 0.1,
 }
 
 export const SP_MARKUP = [
@@ -4863,490 +4863,490 @@ export const SP_MARKUP = [
     rule: "FlatPay",
     basis: "GLS net after ShopDelivery discount",
     formula: "1.1",
-    notes: "Apply to all FlatPay line-level net amounts"
+    notes: "Apply to all FlatPay line-level net amounts",
   },
   {
     rule: "Braintimizer",
     basis: "BT contractual GLS pricing",
     formula: "Manual review",
-    notes: "Use Braintimizer GLS Pricing / BT_Price_Map"
+    notes: "Use Braintimizer GLS Pricing / BT_Price_Map",
   },
   {
     rule: "Others",
     basis: "DAO price",
     formula: "DAO lookup",
-    notes: "Nordvio, Drywear, Nurocore/others unless newer rule given"
+    notes: "Nordvio, Drywear, Nurocore/others unless newer rule given",
   },
   {
     rule: "Energy",
     basis: "Net rate",
     formula: "0.28",
-    notes: "Gross 32% less 4% discount"
-  }
+    notes: "Gross 32% less 4% discount",
+  },
 ]
 
 export const DAO_PRICES = [
   {
     tier: "Contractual",
     priceKey: "daoHOME 0-250 g",
-    price: 28
+    price: 28,
   },
   {
     tier: null,
     priceKey: "daoHOME 1.001-2.000 g",
-    price: 32
+    price: 32,
   },
   {
     tier: null,
     priceKey: "daoHOME 2.001-3.000 g",
-    price: 36
+    price: 36,
   },
   {
     tier: null,
     priceKey: "daoHOME 251-500 g",
-    price: 28
+    price: 28,
   },
   {
     tier: null,
     priceKey: "daoHOME 3.001-5.000 g",
-    price: 40
+    price: 40,
   },
   {
     tier: null,
     priceKey: "daoHOME 501-1.000 g",
-    price: 28
+    price: 28,
   },
   {
     tier: null,
     priceKey: "daoSHOP 0-250 g",
-    price: 28
+    price: 28,
   },
   {
     tier: null,
     priceKey: "daoSHOP 1.001-2.000 g",
-    price: 32
+    price: 32,
   },
   {
     tier: null,
     priceKey: "daoSHOP 2.001-3.000 g",
-    price: 36
+    price: 36,
   },
   {
     tier: null,
     priceKey: "daoSHOP 251-500 g",
-    price: 28
+    price: 28,
   },
   {
     tier: null,
     priceKey: "daoSHOP 3.001-5.000 g",
-    price: 40
+    price: 40,
   },
   {
     tier: null,
     priceKey: "daoSHOP 5.001-10.000 g",
-    price: 45
+    price: 45,
   },
   {
     tier: null,
     priceKey: "daoSHOP 501-1.000 g",
-    price: 28
+    price: 28,
   },
   {
     tier: "New",
     priceKey: "daoSHOP 10.001-15.000 g",
-    price: 53
+    price: 53,
   },
   {
     tier: null,
     priceKey: "daoSHOP retur 501-1.000 g",
-    price: 27
+    price: 27,
   },
   {
     tier: null,
     priceKey: "daoSHOP retur ej afhentet 1.001-2.000 g",
-    price: 31
+    price: 31,
   },
   {
     tier: null,
     priceKey: "daoSHOP retur ej afhentet 251-500 g",
-    price: 26
+    price: 26,
   },
   {
     tier: null,
     priceKey: "Tillæg for overstørrelse - daoHOME",
-    price: 50
+    price: 50,
   },
   {
     tier: null,
     priceKey: "Tillæg for overvægt - daoHOME",
-    price: 50
+    price: 50,
   },
   {
     tier: null,
     priceKey: "daoSHOP retur 3.001-5.000 g",
-    price: 37
+    price: 37,
   },
   {
     tier: null,
     priceKey: "daoSHOP retur 1.001-2.000 g",
-    price: 32
+    price: 32,
   },
   {
     tier: null,
     priceKey: "Labelless daoSHOP",
-    price: 2
+    price: 2,
   },
   {
     tier: null,
     priceKey: "daoSHOP retur 251-500 g",
-    price: 26
+    price: 26,
   },
   {
     tier: null,
     priceKey: "daoSHOP retur ej afhentet 501-1.000 g",
-    price: 27
+    price: 27,
   },
   {
     tier: null,
     priceKey: "daoSHOP retur ej afhentet 0-250 g",
-    price: 27
+    price: 27,
   },
   {
     tier: null,
     priceKey: "daoSHOP retur 0-250 g",
-    price: 27
+    price: 27,
   },
   {
     tier: null,
     priceKey: "Tillæg for overvægt - daoSHOP",
-    price: 50
+    price: 50,
   },
   {
     tier: null,
     priceKey: "daoGLOBAL HOME 5.001-10.000 g Polen",
-    price: 135
+    price: 135,
   },
   {
     tier: null,
     priceKey: "daoGLOBAL HOME 0-250 g Tyskland",
-    price: 60
+    price: 60,
   },
   {
     tier: null,
     priceKey: "daoGLOBAL HOME 251-500 g Tyskland",
-    price: 60
+    price: 60,
   },
   {
     tier: null,
     priceKey: "daoGLOBAL HOME 501-1.000 g Tyskland",
-    price: 71
+    price: 71,
   },
   {
     tier: null,
     priceKey: "daoGLOBAL HOME 1.001-2.000 g Tyskland",
-    price: 75
+    price: 75,
   },
   {
     tier: null,
     priceKey: "daoGLOBAL HOME 2.001-3.000 g Tyskland",
-    price: 101
+    price: 101,
   },
   {
     tier: null,
     priceKey: "daoGLOBAL HOME 3.001-5.000 g Tyskland",
-    price: 113
+    price: 113,
   },
   {
     tier: null,
     priceKey: "daoGLOBAL HOME 5.001-10.000 g Germany-DK",
-    price: 126.43
+    price: 126.43,
   },
   {
     tier: null,
     priceKey: "daoGLOBAL HOME 0-250 g Østrig",
-    price: 89
+    price: 89,
   },
   {
     tier: null,
     priceKey: "daoGLOBAL HOME 251-500 g Østrig",
-    price: 89
+    price: 89,
   },
   {
     tier: null,
     priceKey: "daoGLOBAL HOME 1.001-2.000 g Østrig",
-    price: 112
+    price: 112,
   },
   {
     tier: null,
     priceKey: "daoSHOP retur 2.001-3.000 g",
-    price: 36
+    price: 36,
   },
   {
     tier: null,
     priceKey: "daoSHOP retur ej afhentet 2.001-3.000 g",
-    price: 36
+    price: 36,
   },
   {
     tier: null,
     priceKey: "daoSHOP retur ej afhentet 3.001-5.000 g",
-    price: 40
+    price: 40,
   },
   {
     tier: null,
     priceKey: "daoSHOP retur ej afhentet 5.001-10.000 g",
-    price: 45
-  }
+    price: 45,
+  },
 ]
 
 export const BT_PRICES = [
   {
     country: "Holland",
     priceDkkUnder5: 85,
-    transit: "3 dage"
+    transit: "3 dage",
   },
   {
     country: "Sverige",
     priceDkkUnder5: 75,
-    transit: "5 dage"
+    transit: "5 dage",
   },
   {
     country: "Tyskland",
     priceDkkUnder5: 75,
-    transit: "3 dage"
+    transit: "3 dage",
   },
   {
     country: "Belgien",
     priceDkkUnder5: 85,
-    transit: "3 dage"
+    transit: "3 dage",
   },
   {
     country: "Luxembourg",
     priceDkkUnder5: 85,
-    transit: "3 dage"
+    transit: "3 dage",
   },
   {
     country: "Polen",
     priceDkkUnder5: 85,
-    transit: "3 dage"
+    transit: "3 dage",
   },
   {
     country: "Tjekkiet",
     priceDkkUnder5: 85,
-    transit: "3 dage"
+    transit: "3 dage",
   },
   {
     country: "Finland",
     priceDkkUnder5: 110,
-    transit: "6 dage"
+    transit: "6 dage",
   },
   {
     country: "Frankrig",
     priceDkkUnder5: 110,
-    transit: "4 dage"
+    transit: "4 dage",
   },
   {
     country: "Østrig",
     priceDkkUnder5: 110,
-    transit: "3 dage"
+    transit: "3 dage",
   },
   {
     country: "Italien",
     priceDkkUnder5: 140,
-    transit: "5 dage"
+    transit: "5 dage",
   },
   {
     country: "Spanien",
     priceDkkUnder5: 140,
-    transit: "5 dage"
+    transit: "5 dage",
   },
   {
     country: "Bulgarien",
     priceDkkUnder5: 140,
-    transit: "5 dage"
+    transit: "5 dage",
   },
   {
     country: "Estland",
     priceDkkUnder5: 140,
-    transit: "5 dage"
+    transit: "5 dage",
   },
   {
     country: "Grækenland",
     priceDkkUnder5: 140,
-    transit: "6 dage"
+    transit: "6 dage",
   },
   {
     country: "Irland",
     priceDkkUnder5: 140,
-    transit: "6 dage"
+    transit: "6 dage",
   },
   {
     country: "Kroatien",
     priceDkkUnder5: 140,
-    transit: "5 dage"
+    transit: "5 dage",
   },
   {
     country: "Letland",
     priceDkkUnder5: 140,
-    transit: "5 dage"
+    transit: "5 dage",
   },
   {
     country: "Litauen",
     priceDkkUnder5: 140,
-    transit: "5 dage"
+    transit: "5 dage",
   },
   {
     country: "Portugal",
     priceDkkUnder5: 140,
-    transit: "5 dage"
+    transit: "5 dage",
   },
   {
     country: "Rumænien",
     priceDkkUnder5: 115,
-    transit: "5 dage"
+    transit: "5 dage",
   },
   {
     country: "Slovakiet",
     priceDkkUnder5: 140,
-    transit: "4 dage"
+    transit: "4 dage",
   },
   {
     country: "Slovenien",
     priceDkkUnder5: 140,
-    transit: "4 dage"
+    transit: "4 dage",
   },
   {
     country: "Ungarn",
     priceDkkUnder5: 140,
-    transit: "5 dage"
-  }
+    transit: "5 dage",
+  },
 ]
 
 export const SETTINGS = [
   {
     setting: "GLS invoice number",
     value: "3230613421",
-    source: "PDF summary"
+    source: "PDF summary",
   },
   {
     setting: "Customer number",
     value: "910104622",
-    source: "CSV Gepard Kundennr."
+    source: "CSV Gepard Kundennr.",
   },
   {
     setting: "Invoice date",
     value: "2026-06-12",
-    source: "PDF Beleg-Datum"
+    source: "PDF Beleg-Datum",
   },
   {
     setting: "Invoice period",
     value: "01.06.2026 - 07.06.2026",
-    source: "PDF Abrechnungszeitraum"
+    source: "PDF Abrechnungszeitraum",
   },
   {
     setting: "Currency",
     value: "EUR",
-    source: "PDF amounts in EUR"
+    source: "PDF amounts in EUR",
   },
   {
     setting: "Gross energy rate",
     value: "0.32",
-    source: "PDF Energie"
+    source: "PDF Energie",
   },
   {
     setting: "Energy discount rate",
     value: "-0.04",
-    source: "PDF Energie Discount"
+    source: "PDF Energie Discount",
   },
   {
     setting: "Net energy charged",
     value: "0.28",
-    source: "Energy + discount, passed to client"
+    source: "Energy + discount, passed to client",
   },
   {
     setting: "PDF net total",
     value: "15380.58",
-    source: "PDF Gesamt"
+    source: "PDF Gesamt",
   },
   {
     setting: "PDF VAT",
     value: "2922.31",
-    source: "PDF Umsatzsteuer"
+    source: "PDF Umsatzsteuer",
   },
   {
     setting: "PDF gross total",
     value: "18302.89",
-    source: "PDF Gesamtbetrag"
+    source: "PDF Gesamtbetrag",
   },
   {
     setting: "Servicepauschale National total",
     value: "5",
-    source: "PDF Servicepauschale National"
+    source: "PDF Servicepauschale National",
   },
   {
     setting: "National freight packages",
     value: "785",
-    source: "BusinessParcel rows"
+    source: "BusinessParcel rows",
   },
   {
     setting: "National freight amount",
     value: "3474.93",
-    source: "BusinessParcel net amount"
+    source: "BusinessParcel net amount",
   },
   {
     setting: "Servicepauschale National per package",
     value: "0.01",
-    source: "Total / BusinessParcel count; formula reference cell"
+    source: "Total / BusinessParcel count; formula reference cell",
   },
   {
     setting: "Servicepauschale Export total",
     value: "5",
-    source: "PDF Servicepauschale Export"
+    source: "PDF Servicepauschale Export",
   },
   {
     setting: "Export freight packages",
     value: "707",
-    source: "EuroBusinessParcel rows"
+    source: "EuroBusinessParcel rows",
   },
   {
     setting: "Servicepauschale Export per package",
     value: "0.01",
-    source: "Total / EuroBusinessParcel count; formula reference cell"
+    source: "Total / EuroBusinessParcel count; formula reference cell",
   },
   {
     setting: "Vorfinanz total",
     value: "704.45",
-    source: "PDF Vorfinanzierungskosten"
+    source: "PDF Vorfinanzierungskosten",
   },
   {
     setting: "Export freight weight kg",
     value: "5493.93",
-    source: "EuroBusinessParcel weight"
+    source: "EuroBusinessParcel weight",
   },
   {
     setting: "Vorfinanz rate %",
     value: "0.05",
-    source: "PDF Vorfinanzierungskosten percentage"
+    source: "PDF Vorfinanzierungskosten percentage",
   },
   {
     setting: "Vorfinanz rate per export kg",
     value: "0.13",
-    source: "Vorfinanz total / export freight kg; formula reference cell"
+    source: "Vorfinanz total / export freight kg; formula reference cell",
   },
   {
     setting: "FlatPay multiplier",
     value: "1.1",
-    source: "Agreed Store-Pit rule; formula reference cell"
+    source: "Agreed Store-Pit rule; formula reference cell",
   },
   {
     setting: "EUR/DKK conversion",
     value: "7.4",
-    source: "Used for DAO/BT DKK price conversion; formula reference cell"
+    source: "Used for DAO/BT DKK price conversion; formula reference cell",
   },
   {
     setting: "BT pricing note",
     value: "Manual review may be needed",
-    source: "BT contractual pricing can be manually decided"
-  }
+    source: "BT contractual pricing can be manually decided",
+  },
 ]
 
 export const BREAKDOWNS = {
@@ -5362,7 +5362,7 @@ export const BREAKDOWNS = {
         energy: 3.08,
         serviceP: 0.01,
         vorfinance: 0,
-        grandTotal: 14.09
+        grandTotal: 14.09,
       },
       {
         domExport: "",
@@ -5374,7 +5374,7 @@ export const BREAKDOWNS = {
         energy: 1074.3,
         serviceP: 0.55,
         vorfinance: 0,
-        grandTotal: 4890.45
+        grandTotal: 4890.45,
       },
       {
         domExport: "",
@@ -5386,7 +5386,7 @@ export const BREAKDOWNS = {
         energy: 31.36,
         serviceP: 0.55,
         vorfinance: 0,
-        grandTotal: 118.15
+        grandTotal: 118.15,
       },
       {
         domExport: "",
@@ -5398,7 +5398,7 @@ export const BREAKDOWNS = {
         energy: 1.2,
         serviceP: 0.18,
         vorfinance: 0,
-        grandTotal: 4.68
+        grandTotal: 4.68,
       },
       {
         domExport: "",
@@ -5410,7 +5410,7 @@ export const BREAKDOWNS = {
         energy: 27.17,
         serviceP: 0.07,
         vorfinance: 0,
-        grandTotal: 124.04
+        grandTotal: 124.04,
       },
       {
         domExport: "",
@@ -5422,7 +5422,7 @@ export const BREAKDOWNS = {
         energy: 41.17,
         serviceP: 0.18,
         vorfinance: 0,
-        grandTotal: 187.59
+        grandTotal: 187.59,
       },
       {
         domExport: "Export",
@@ -5434,7 +5434,7 @@ export const BREAKDOWNS = {
         energy: 1576.11,
         serviceP: 0.41,
         vorfinance: 461.4,
-        grandTotal: 7656.7
+        grandTotal: 7656.7,
       },
       {
         domExport: "",
@@ -5446,7 +5446,7 @@ export const BREAKDOWNS = {
         energy: 2.47,
         serviceP: 0,
         vorfinance: 0,
-        grandTotal: 11.27
+        grandTotal: 11.27,
       },
       {
         domExport: "",
@@ -5458,7 +5458,7 @@ export const BREAKDOWNS = {
         energy: 66.69,
         serviceP: 0,
         vorfinance: 0,
-        grandTotal: 304.29
+        grandTotal: 304.29,
       },
       {
         domExport: "",
@@ -5470,7 +5470,7 @@ export const BREAKDOWNS = {
         energy: 2.47,
         serviceP: 0.01,
         vorfinance: 0,
-        grandTotal: 11.28
+        grandTotal: 11.28,
       },
       {
         domExport: "",
@@ -5482,7 +5482,7 @@ export const BREAKDOWNS = {
         energy: 102.86,
         serviceP: 0.16,
         vorfinance: 0,
-        grandTotal: 469.95
+        grandTotal: 469.95,
       },
       {
         domExport: "",
@@ -5494,7 +5494,7 @@ export const BREAKDOWNS = {
         energy: 18.48,
         serviceP: 0,
         vorfinance: 0,
-        grandTotal: 84.48
+        grandTotal: 84.48,
       },
       {
         domExport: "",
@@ -5506,7 +5506,7 @@ export const BREAKDOWNS = {
         energy: 73.76,
         serviceP: 0.41,
         vorfinance: 0,
-        grandTotal: 327.72
+        grandTotal: 327.72,
       },
       {
         domExport: "Export",
@@ -5518,7 +5518,7 @@ export const BREAKDOWNS = {
         energy: 511.63,
         serviceP: 0.42,
         vorfinance: 242.59,
-        grandTotal: 2575.84
+        grandTotal: 2575.84,
       },
       {
         domExport: "",
@@ -5530,7 +5530,7 @@ export const BREAKDOWNS = {
         energy: 5.95,
         serviceP: 0.02,
         vorfinance: 0,
-        grandTotal: 27.15
+        grandTotal: 27.15,
       },
       {
         domExport: "",
@@ -5542,8 +5542,8 @@ export const BREAKDOWNS = {
         energy: 37.76,
         serviceP: 0.42,
         vorfinance: 0,
-        grandTotal: 167.98
-      }
+        grandTotal: 167.98,
+      },
     ],
     countryTotals: [
       {
@@ -5555,7 +5555,7 @@ export const BREAKDOWNS = {
         energy: 1178.28,
         serviceP: 1.55,
         vorfinance: 0,
-        grandTotal: 5339.01
+        grandTotal: 5339.01,
       },
       {
         country: "FR",
@@ -5566,7 +5566,7 @@ export const BREAKDOWNS = {
         energy: 1842.84,
         serviceP: 0.99,
         vorfinance: 461.4,
-        grandTotal: 8865.68
+        grandTotal: 8865.68,
       },
       {
         country: "NL",
@@ -5577,8 +5577,8 @@ export const BREAKDOWNS = {
         energy: 555.34,
         serviceP: 0.86,
         vorfinance: 242.59,
-        grandTotal: 2770.96
-      }
+        grandTotal: 2770.96,
+      },
     ],
     parcels: [
       {
@@ -5591,7 +5591,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Berlin",
         recipient: "PaketStation #10995",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5603,7 +5603,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Berlin",
         recipient: "PaketStation #10995",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5615,7 +5615,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Berlin",
         recipient: "PaketStation #10995",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5627,7 +5627,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Berlin",
         recipient: "PaketStation #10995",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5639,7 +5639,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Gera",
         recipient: "Enrico Ciesielski",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5651,7 +5651,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Gera",
         recipient: "Enrico Ciesielski",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5663,7 +5663,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Delmenhorst",
         recipient: "DK Kiosk",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5675,7 +5675,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Delmenhorst",
         recipient: "DK Kiosk",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5687,7 +5687,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Delmenhorst",
         recipient: "DK Kiosk",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5699,7 +5699,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Delmenhorst",
         recipient: "DK Kiosk",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5711,7 +5711,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Delmenhorst",
         recipient: "DK Kiosk",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5723,7 +5723,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Delmenhorst",
         recipient: "DK Kiosk",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5735,7 +5735,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "NEUENSTEIN",
         recipient: "GLS GERMANY",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5747,7 +5747,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Essen",
         recipient: "Kiosk Miran",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5759,7 +5759,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Essen",
         recipient: "Kiosk Miran",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5771,7 +5771,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Bielefeld",
         recipient: "Angelsport Kastrup",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5783,7 +5783,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Bielefeld",
         recipient: "Angelsport Kastrup",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5795,7 +5795,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Lünen",
         recipient: "Extensions by Jensen",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5807,7 +5807,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Lünen",
         recipient: "Extensions by Jensen",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5819,7 +5819,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Magdeburg",
         recipient: "Alomar Rösterei",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5831,7 +5831,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Magdeburg",
         recipient: "Alomar Rösterei",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5843,7 +5843,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Augsburg",
         recipient: "My Hane",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5855,7 +5855,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Augsburg",
         recipient: "My Hane",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5867,7 +5867,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Aachen",
         recipient: "Bastei Kiosk",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5879,7 +5879,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Aachen",
         recipient: "Bastei Kiosk",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5891,7 +5891,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Düsseldorf",
         recipient: "Edem Doglo",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5903,7 +5903,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Düsseldorf",
         recipient: "Edem Doglo",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5915,7 +5915,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Düsseldorf",
         recipient: "Edem Doglo",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5927,7 +5927,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Gelsenkirchen",
         recipient: "Lotto Kiosk",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -5939,7 +5939,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Gelsenkirchen",
         recipient: "Lotto Kiosk",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -5951,7 +5951,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "Paris",
         recipient: "LAV MARCK",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -5963,7 +5963,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "PARIS",
         recipient: "CHEZ LIDIA XINGUI HAIR",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -5975,7 +5975,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "PARIS",
         recipient: "CHEZ LIDIA XINGUI HAIR",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -5987,7 +5987,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "ST PRIX",
         recipient: "LOCATION LECLERC",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -5999,7 +5999,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "ST PRIX",
         recipient: "LOCATION LECLERC",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6011,7 +6011,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "ST PRIX",
         recipient: "LOCATION LECLERC",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6023,7 +6023,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "ST PRIX",
         recipient: "LOCATION LECLERC",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6035,7 +6035,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "ST PRIX",
         recipient: "LOCATION LECLERC",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6047,7 +6047,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "ST PRIX",
         recipient: "LOCATION LECLERC",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6059,7 +6059,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "ST PRIX",
         recipient: "LOCATION LECLERC",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6071,7 +6071,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "ST PRIX",
         recipient: "LOCATION LECLERC",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6083,7 +6083,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "ST PRIX",
         recipient: "LOCATION LECLERC",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6095,7 +6095,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "RIVESALTES",
         recipient: "CARREFOUR CITY",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6107,7 +6107,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "MErignac",
         recipient: "DIS TRANSFERT",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6119,7 +6119,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "ST GERMAIN EN LAYE",
         recipient: "BON PRIX EXPRESS",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6131,7 +6131,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "Balma",
         recipient: "MARCHE OCCITANS",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6143,7 +6143,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "CONFLANS STE HONORINE",
         recipient: "VIVAL CONFLANS ST HONORINE",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6155,7 +6155,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "NANTERRE",
         recipient: "LE MARCHE D A COTE",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6167,7 +6167,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "RENNES",
         recipient: "U EXPRESS",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6179,7 +6179,7 @@ export const BREAKDOWNS = {
         country: "FR",
         city: "MAISONS ALFORT",
         recipient: "COCCIMARKET",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6191,7 +6191,7 @@ export const BREAKDOWNS = {
         country: "NL",
         city: "DEN HAAG",
         recipient: "Twixza",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6203,7 +6203,7 @@ export const BREAKDOWNS = {
         country: "NL",
         city: "ROTTERDAM",
         recipient: "Pakketautomaat",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6215,7 +6215,7 @@ export const BREAKDOWNS = {
         country: "NL",
         city: "AMERSFOORT",
         recipient: "Pakketautomaat",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6227,7 +6227,7 @@ export const BREAKDOWNS = {
         country: "NL",
         city: "GIESSENBURG",
         recipient: "Buurtpunt van den Heuvel",
-        weight: 3.02
+        weight: 3.02,
       },
       {
         domExport: "Export",
@@ -6239,7 +6239,7 @@ export const BREAKDOWNS = {
         country: "NL",
         city: "GIESSENBURG",
         recipient: "Buurtpunt van den Heuvel",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6251,7 +6251,7 @@ export const BREAKDOWNS = {
         country: "NL",
         city: "WEESP",
         recipient: "Pakketautomaat",
-        weight: 1.64
+        weight: 1.64,
       },
       {
         domExport: "Export",
@@ -6263,7 +6263,7 @@ export const BREAKDOWNS = {
         country: "NL",
         city: "WEESP",
         recipient: "Pakketautomaat",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6275,7 +6275,7 @@ export const BREAKDOWNS = {
         country: "NL",
         city: "Amstelveen",
         recipient: "Pakketautomaat",
-        weight: 5.68
+        weight: 5.68,
       },
       {
         domExport: "Export",
@@ -6287,7 +6287,7 @@ export const BREAKDOWNS = {
         country: "NL",
         city: "Amstelveen",
         recipient: "Pakketautomaat",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6299,7 +6299,7 @@ export const BREAKDOWNS = {
         country: "NL",
         city: "EDE",
         recipient: "Pakketautomaat",
-        weight: 13.24
+        weight: 13.24,
       },
       {
         domExport: "Export",
@@ -6311,7 +6311,7 @@ export const BREAKDOWNS = {
         country: "NL",
         city: "EDE",
         recipient: "Pakketautomaat",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6323,7 +6323,7 @@ export const BREAKDOWNS = {
         country: "NL",
         city: "EDE",
         recipient: "Pakketautomaat",
-        weight: 29.2
+        weight: 29.2,
       },
       {
         domExport: "Export",
@@ -6335,7 +6335,7 @@ export const BREAKDOWNS = {
         country: "NL",
         city: "EDE",
         recipient: "Pakketautomaat",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6347,7 +6347,7 @@ export const BREAKDOWNS = {
         country: "NL",
         city: "EDE",
         recipient: "Pakketautomaat",
-        weight: 8.64
+        weight: 8.64,
       },
       {
         domExport: "Export",
@@ -6359,9 +6359,9 @@ export const BREAKDOWNS = {
         country: "NL",
         city: "EDE",
         recipient: "Pakketautomaat",
-        weight: 0
-      }
-    ]
+        weight: 0,
+      },
+    ],
   },
   Braintimizer: {
     rows: [
@@ -6375,7 +6375,7 @@ export const BREAKDOWNS = {
         energy: 8.52,
         serviceP: 0.02,
         vorfinance: 0.47,
-        grandTotal: 39.42
+        grandTotal: 39.42,
       },
       {
         domExport: "",
@@ -6387,8 +6387,8 @@ export const BREAKDOWNS = {
         energy: 0.42,
         serviceP: 0,
         vorfinance: 0,
-        grandTotal: 1.92
-      }
+        grandTotal: 1.92,
+      },
     ],
     total: {
       shipments: 6,
@@ -6397,7 +6397,7 @@ export const BREAKDOWNS = {
       energy: 8.94,
       serviceP: 0.02,
       vorfinance: 0.47,
-      grandTotal: 41.34
+      grandTotal: 41.34,
     },
     parcels: [
       {
@@ -6410,7 +6410,7 @@ export const BREAKDOWNS = {
         country: "DK",
         city: "Randers NV",
         recipient: "Johnny Tempeldal",
-        weight: 0.15
+        weight: 0.15,
       },
       {
         domExport: "Export",
@@ -6422,7 +6422,7 @@ export const BREAKDOWNS = {
         country: "DK",
         city: "Randers NV",
         recipient: "Johnny Tempeldal",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6434,7 +6434,7 @@ export const BREAKDOWNS = {
         country: "DK",
         city: "Gråsten",
         recipient: "Bianca Timm Schwarz",
-        weight: 2.55
+        weight: 2.55,
       },
       {
         domExport: "Export",
@@ -6446,7 +6446,7 @@ export const BREAKDOWNS = {
         country: "DK",
         city: "Gråsten",
         recipient: "Bianca Timm Schwarz",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Export",
@@ -6458,7 +6458,7 @@ export const BREAKDOWNS = {
         country: "DK",
         city: "Gråsten",
         recipient: "Bianca Timm Schwarz",
-        weight: 0.88
+        weight: 0.88,
       },
       {
         domExport: "Export",
@@ -6470,9 +6470,9 @@ export const BREAKDOWNS = {
         country: "DK",
         city: "Gråsten",
         recipient: "Bianca Timm Schwarz",
-        weight: 0
-      }
-    ]
+        weight: 0,
+      },
+    ],
   },
   Drywear: {
     rows: [
@@ -6486,7 +6486,7 @@ export const BREAKDOWNS = {
         energy: 2.84,
         serviceP: 0.01,
         vorfinance: 0,
-        grandTotal: 12.98
+        grandTotal: 12.98,
       },
       {
         domExport: "",
@@ -6498,7 +6498,7 @@ export const BREAKDOWNS = {
         energy: 0.03,
         serviceP: 0.01,
         vorfinance: 0,
-        grandTotal: 0.13
+        grandTotal: 0.13,
       },
       {
         domExport: "",
@@ -6510,7 +6510,7 @@ export const BREAKDOWNS = {
         energy: 0.03,
         serviceP: 0.01,
         vorfinance: 0,
-        grandTotal: 0.13
+        grandTotal: 0.13,
       },
       {
         domExport: "",
@@ -6522,8 +6522,8 @@ export const BREAKDOWNS = {
         energy: 0.87,
         serviceP: 0,
         vorfinance: 0,
-        grandTotal: 3.97
-      }
+        grandTotal: 3.97,
+      },
     ],
     total: {
       shipments: 4,
@@ -6532,7 +6532,7 @@ export const BREAKDOWNS = {
       energy: 3.76,
       serviceP: 0.02,
       vorfinance: 0,
-      grandTotal: 17.22
+      grandTotal: 17.22,
     },
     parcels: [
       {
@@ -6545,7 +6545,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Nürnberg",
         recipient: "Kai Klipper",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -6557,7 +6557,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Nürnberg",
         recipient: "Kai Klipper",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -6569,7 +6569,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Potsdam",
         recipient: "Media Markt Potsdam City",
-        weight: 1.57
+        weight: 1.57,
       },
       {
         domExport: "Domestic",
@@ -6581,9 +6581,9 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Potsdam",
         recipient: "Media Markt Potsdam City",
-        weight: 0
-      }
-    ]
+        weight: 0,
+      },
+    ],
   },
   Nordvio: {
     rows: [
@@ -6597,7 +6597,7 @@ export const BREAKDOWNS = {
         energy: 2.69,
         serviceP: 0.01,
         vorfinance: 0,
-        grandTotal: 12.29
+        grandTotal: 12.29,
       },
       {
         domExport: "",
@@ -6609,7 +6609,7 @@ export const BREAKDOWNS = {
         energy: 0.03,
         serviceP: 0.01,
         vorfinance: 0,
-        grandTotal: 0.13
+        grandTotal: 0.13,
       },
       {
         domExport: "",
@@ -6621,7 +6621,7 @@ export const BREAKDOWNS = {
         energy: 0.03,
         serviceP: 0.01,
         vorfinance: 0,
-        grandTotal: 0.13
+        grandTotal: 0.13,
       },
       {
         domExport: "",
@@ -6633,8 +6633,8 @@ export const BREAKDOWNS = {
         energy: 0.87,
         serviceP: 0.01,
         vorfinance: 0,
-        grandTotal: 3.97
-      }
+        grandTotal: 3.97,
+      },
     ],
     total: {
       shipments: 4,
@@ -6643,7 +6643,7 @@ export const BREAKDOWNS = {
       energy: 3.61,
       serviceP: 0.03,
       vorfinance: 0,
-      grandTotal: 16.53
+      grandTotal: 16.53,
     },
     parcels: [
       {
@@ -6656,7 +6656,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Westerland",
         recipient: "Beate Schäpler",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -6668,7 +6668,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Westerland",
         recipient: "Beate Schäpler",
-        weight: 0
+        weight: 0,
       },
       {
         domExport: "Domestic",
@@ -6680,7 +6680,7 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Plau am See",
         recipient: "Yvonne Wawrzyn",
-        weight: 0.72
+        weight: 0.72,
       },
       {
         domExport: "Domestic",
@@ -6692,10 +6692,10 @@ export const BREAKDOWNS = {
         country: "DE",
         city: "Plau am See",
         recipient: "Yvonne Wawrzyn",
-        weight: 0
-      }
-    ]
-  }
+        weight: 0,
+      },
+    ],
+  },
 }
 
 export const NETTING_SUMMARY = {
@@ -6703,5 +6703,5 @@ export const NETTING_SUMMARY = {
   matched: 181,
   unmatched: 0,
   discountPerParcel: -0.5,
-  discountTotal: -90.5
+  discountTotal: -90.5,
 } as const

@@ -1,15 +1,15 @@
 "use client"
 
-import { toastApiError } from "@cortex/api"
-import { Button, Card, CardContent, Label, PageHeader, Textarea } from "@cortex/ui"
-import { ArrowLeft, Sparkles } from "lucide-react"
-import { useState } from "react"
-import { toast } from "sonner"
 import { GeoScoreResultView } from "@/features/geo-score-calculator/components/result-view"
 import { useAnalyzeGeoScore } from "@/features/geo-score-calculator/hooks"
 import type { AnalyzeGeoScoreResponseDto } from "@/features/geo-score-calculator/types"
 import { EXAMPLE_TEXT } from "@/lib/geo-score-calculator/example-text"
 import { TEXT_MAX_CHARS } from "@/lib/geo-score-calculator/limits"
+import { toastApiError } from "@cortex/api"
+import { Button, Card, CardContent, Label, PageHeader, Textarea } from "@cortex/ui"
+import { ArrowLeft, Sparkles } from "lucide-react"
+import { useState } from "react"
+import { toast } from "sonner"
 
 function countWords(text: string): number {
   const trimmed = text.trim()
@@ -42,7 +42,9 @@ export default function GeoScoreCalculatorPage() {
 
     try {
       const response = await analyze.mutateAsync({ text })
-      setDelta(previousScore === null ? null : Number((response.totalScore - previousScore).toFixed(1)))
+      setDelta(
+        previousScore === null ? null : Number((response.totalScore - previousScore).toFixed(1)),
+      )
       setPreviousScore(response.totalScore)
       setAnalyzedText(text)
       setResult(response)
@@ -85,7 +87,11 @@ export default function GeoScoreCalculatorPage() {
                 onChange={(event) => setText(event.target.value)}
               />
               <div className="flex flex-wrap gap-2">
-                <Button type="button" onClick={handleAnalyze} disabled={analyze.isPending || !text.trim()}>
+                <Button
+                  type="button"
+                  onClick={handleAnalyze}
+                  disabled={analyze.isPending || !text.trim()}
+                >
                   <Sparkles className="mr-2 h-4 w-4" />
                   {analyze.isPending ? "Analizuję…" : "Analizuj"}
                 </Button>

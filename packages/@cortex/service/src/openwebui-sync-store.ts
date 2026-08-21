@@ -14,7 +14,10 @@ import {
 import { and, eq } from "drizzle-orm"
 
 export async function getRole(roleId: string): Promise<{ id: string; code: string } | null> {
-  const [row] = await getDb().select({ id: roles.id, code: roles.code }).from(roles).where(eq(roles.id, roleId))
+  const [row] = await getDb()
+    .select({ id: roles.id, code: roles.code })
+    .from(roles)
+    .where(eq(roles.id, roleId))
   return row ?? null
 }
 
@@ -46,7 +49,9 @@ export async function findGroupMappingOwner(
 }
 
 export async function listMappedRoleIds(): Promise<string[]> {
-  const rows = await getDb().select({ roleId: openwebuiGroupMappings.roleId }).from(openwebuiGroupMappings)
+  const rows = await getDb()
+    .select({ roleId: openwebuiGroupMappings.roleId })
+    .from(openwebuiGroupMappings)
   return rows.map((row) => row.roleId)
 }
 
@@ -71,7 +76,10 @@ export async function loadActiveRoleMemberEmails(roleId: string): Promise<string
  *  (przełącznik isActive) do ustalenia, które grupy trzeba uzgodnić: zmiana
  *  aktywności rusza WSZYSTKIE grupy ról tego użytkownika naraz. */
 export async function listRoleIdsForUser(userId: string): Promise<string[]> {
-  const rows = await getDb().select({ roleId: userRoles.roleId }).from(userRoles).where(eq(userRoles.userId, userId))
+  const rows = await getDb()
+    .select({ roleId: userRoles.roleId })
+    .from(userRoles)
+    .where(eq(userRoles.userId, userId))
   return rows.map((row) => row.roleId)
 }
 

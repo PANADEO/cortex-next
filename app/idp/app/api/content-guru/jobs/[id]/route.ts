@@ -6,8 +6,8 @@
 // (lib/content-guru/run-batch-generation.ts) pisze do niego bezpośrednio w
 // miarę postępu, ten route tylko czyta.
 
-import { NextResponse, type NextRequest } from "next/server"
 import { getMyGenerationJob } from "@cortex/service"
+import { NextResponse, type NextRequest } from "next/server"
 import { requireContentGuruAccess } from "../../_lib/guard"
 
 export const runtime = "nodejs"

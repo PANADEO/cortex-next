@@ -1,7 +1,15 @@
 "use client"
 
+import { ContentGuruMarkdownPreview } from "@/features/content-guru/components/markdown-preview"
+import {
+  useCreateMarketProfile,
+  useDeleteMarketProfile,
+  useMyMarketProfiles,
+  useUpdateMarketProfile,
+} from "@/features/content-guru/hooks"
+import type { MarketProfileDto } from "@/features/content-guru/types"
+import { marketProfileToMarkdown } from "@/lib/content-guru/profile-markdown"
 import { toastApiError } from "@cortex/api"
-import { formatAbsolute } from "@cortex/utils"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,19 +35,11 @@ import {
   PageHeader,
   Textarea,
 } from "@cortex/ui"
+import { formatAbsolute } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
 import { LineChart, Pencil, Plus, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
-import { ContentGuruMarkdownPreview } from "@/features/content-guru/components/markdown-preview"
-import {
-  useCreateMarketProfile,
-  useDeleteMarketProfile,
-  useMyMarketProfiles,
-  useUpdateMarketProfile,
-} from "@/features/content-guru/hooks"
-import type { MarketProfileDto } from "@/features/content-guru/types"
-import { marketProfileToMarkdown } from "@/lib/content-guru/profile-markdown"
 
 const NEW_PROFILE_SENTINEL = "__new__"
 
@@ -84,7 +84,10 @@ export default function ContentGuruMarketProfilesPage() {
   // app/idp/app/api/content-guru/generate/route.ts i profile-markdown.ts.
   const previewMarkdown = useMemo(
     () =>
-      marketProfileToMarkdown({ ...draft, profileName: draft.profileName || "(nienazwany profil)" }),
+      marketProfileToMarkdown({
+        ...draft,
+        profileName: draft.profileName || "(nienazwany profil)",
+      }),
     [draft],
   )
 
@@ -209,7 +212,9 @@ export default function ContentGuruMarketProfilesPage() {
       <Dialog open={editorOpen} onOpenChange={(open) => !open && closeEditor()}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>{isNew ? "Nowy profil rynku" : `Edycja: ${draft.profileName}`}</DialogTitle>
+            <DialogTitle>
+              {isNew ? "Nowy profil rynku" : `Edycja: ${draft.profileName}`}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-6 lg:grid-cols-2">
@@ -294,7 +299,9 @@ export default function ContentGuruMarketProfilesPage() {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={!draft.profileName.trim() || createProfile.isPending || updateProfile.isPending}
+              disabled={
+                !draft.profileName.trim() || createProfile.isPending || updateProfile.isPending
+              }
             >
               Zapisz profil
             </Button>
@@ -302,13 +309,16 @@ export default function ContentGuruMarketProfilesPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={profileToDelete !== null} onOpenChange={(open) => !open && setProfileToDelete(null)}>
+      <AlertDialog
+        open={profileToDelete !== null}
+        onOpenChange={(open) => !open && setProfileToDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Usunąć profil {profileToDelete?.profileName}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Treści wygenerowane z jego użyciem w przeszłości zostają w archiwum bez zmian. Tej operacji
-              nie da się cofnąć.
+              Treści wygenerowane z jego użyciem w przeszłości zostają w archiwum bez zmian. Tej
+              operacji nie da się cofnąć.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

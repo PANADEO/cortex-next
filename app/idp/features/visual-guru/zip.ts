@@ -40,9 +40,13 @@ function crc32(data: Uint8Array): number {
 // DOS date/time — stała wartość generacji, momentu tworzenia ZIP-a nie warto
 // tu odwzorowywać dokładniej niż to wymaga formatu.
 function dosDateTime(date: Date): { time: number; date: number } {
-  const time = ((date.getHours() & 0x1f) << 11) | ((date.getMinutes() & 0x3f) << 5) | ((date.getSeconds() >> 1) & 0x1f)
+  const time =
+    ((date.getHours() & 0x1f) << 11) |
+    ((date.getMinutes() & 0x3f) << 5) |
+    ((date.getSeconds() >> 1) & 0x1f)
   const dosYear = Math.max(0, date.getFullYear() - 1980)
-  const dosDate = ((dosYear & 0x7f) << 9) | (((date.getMonth() + 1) & 0xf) << 5) | (date.getDate() & 0x1f)
+  const dosDate =
+    ((dosYear & 0x7f) << 9) | (((date.getMonth() + 1) & 0xf) << 5) | (date.getDate() & 0x1f)
   return { time, date: dosDate }
 }
 

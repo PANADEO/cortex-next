@@ -36,7 +36,9 @@ export interface MarketProfileMarkdownFields {
   plans?: string | null
 }
 
-type FieldEntries<T extends { profileName: string }> = Array<[Exclude<keyof T, "profileName">, string]>
+type FieldEntries<T extends { profileName: string }> = Array<
+  [Exclude<keyof T, "profileName">, string]
+>
 
 const CLIENT_FIELDS: FieldEntries<ClientProfileMarkdownFields> = [
   ["history", "Historia"],

@@ -1,3 +1,8 @@
+import { InvalidColorError } from "@/lib/ilustromat/color"
+import { MissingFontFileError } from "@/lib/ilustromat/composer"
+import { UnreadableFontError } from "@/lib/ilustromat/glyph-coverage"
+import { InvalidLogoError } from "@/lib/ilustromat/logo"
+import { IncompleteCustomFontError, TemplateNotFoundError } from "@/lib/ilustromat/render"
 import {
   ILUSTROMAT_APP_CODE,
   MANAGE_TEMPLATES_SCOPE,
@@ -6,11 +11,6 @@ import {
   requireTileScope,
 } from "@cortex/service"
 import { NextResponse } from "next/server"
-import { InvalidColorError } from "@/lib/ilustromat/color"
-import { MissingFontFileError } from "@/lib/ilustromat/composer"
-import { UnreadableFontError } from "@/lib/ilustromat/glyph-coverage"
-import { InvalidLogoError } from "@/lib/ilustromat/logo"
-import { IncompleteCustomFontError, TemplateNotFoundError } from "@/lib/ilustromat/render"
 
 /**
  * Bramka kafelka. Zwraca gotową odpowiedź odmowną albo null, gdy wolno
@@ -63,7 +63,10 @@ export function toErrorResponse(error: unknown): NextResponse {
   // zastępczym; taki kafelek wyglądałby "prawie dobrze".
   if (error instanceof MissingFontFileError || error instanceof IncompleteCustomFontError) {
     console.error("[ilustromat] szablon bez kompletu plików fontu:", error)
-    return NextResponse.json({ error: "template-font-missing", message: error.message }, { status: 500 })
+    return NextResponse.json(
+      { error: "template-font-missing", message: error.message },
+      { status: 500 },
+    )
   }
 
   if (isUniqueViolation(error)) {

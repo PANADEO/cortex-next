@@ -25,12 +25,18 @@ import {
   type OpenwebuiConfig,
 } from "./openwebui-client"
 
-const CONFIG: OpenwebuiConfig = { baseUrl: "http://chat.internal", adminToken: "sekret-admina-nie-do-logow" }
+const CONFIG: OpenwebuiConfig = {
+  baseUrl: "http://chat.internal",
+  adminToken: "sekret-admina-nie-do-logow",
+}
 
 type FetchMock = ReturnType<typeof stubFetch>
 
 function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } })
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  })
 }
 
 function stubFetch(response: Response | (() => Response | Promise<Response>)) {
@@ -63,7 +69,9 @@ describe("uwierzytelnienie — sekret WYŁĄCZNIE nagłówkiem", () => {
     await listGroups(CONFIG)
 
     const [url, init] = readCall(fetchMock)
-    expect((init.headers as Record<string, string>).Authorization).toBe(`Bearer ${CONFIG.adminToken}`)
+    expect((init.headers as Record<string, string>).Authorization).toBe(
+      `Bearer ${CONFIG.adminToken}`,
+    )
     expect(url).not.toContain(CONFIG.adminToken)
   })
 })
@@ -89,7 +97,8 @@ describe("getGroup — GET /api/v1/groups/id/{id}/export", () => {
     id: "a9238499-84e0-44ba-ab1e-a39fe7532423",
     user_id: "4ebbb9f4-51ee-4b11-9f43-2ce3f17706a1",
     name: "cortex:konsultanci",
-    description: "Zarządzane przez Konfigurację Systemu Cortex360 — nie edytuj członkostwa ręcznie.",
+    description:
+      "Zarządzane przez Konfigurację Systemu Cortex360 — nie edytuj członkostwa ręcznie.",
     data: { config: { share: "members" } },
     meta: null,
     permissions: {},
@@ -109,7 +118,9 @@ describe("getGroup — GET /api/v1/groups/id/{id}/export", () => {
 
     const group = await getGroup(CONFIG, EXPORT_0_11_0.id)
 
-    expect(readCall(fetchMock)[0]).toBe(`http://chat.internal/api/v1/groups/id/${EXPORT_0_11_0.id}/export`)
+    expect(readCall(fetchMock)[0]).toBe(
+      `http://chat.internal/api/v1/groups/id/${EXPORT_0_11_0.id}/export`,
+    )
     expect(group).toEqual({
       id: EXPORT_0_11_0.id,
       name: "cortex:konsultanci",
@@ -160,14 +171,18 @@ describe("getGroup — GET /api/v1/groups/id/{id}/export", () => {
   it("member_count niezgodny z liczbą user_ids (obcięty odczyt) -> awaria", async () => {
     stubFetch(jsonResponse({ ...EXPORT_0_11_0, member_count: 5 }))
 
-    await expect(getGroup(CONFIG, EXPORT_0_11_0.id)).rejects.toMatchObject({ failure: "malformed-response" })
+    await expect(getGroup(CONFIG, EXPORT_0_11_0.id)).rejects.toMatchObject({
+      failure: "malformed-response",
+    })
   })
 
   it("brak member_count (albo nie-liczba) -> awaria: znika jedyna kontrola krzyżowa odczytu", async () => {
     for (const broken of [undefined, null, "2", 1.5, [2]]) {
       stubFetch(jsonResponse({ ...EXPORT_0_11_0, member_count: broken }))
 
-      await expect(getGroup(CONFIG, EXPORT_0_11_0.id)).rejects.toMatchObject({ failure: "malformed-response" })
+      await expect(getGroup(CONFIG, EXPORT_0_11_0.id)).rejects.toMatchObject({
+        failure: "malformed-response",
+      })
     }
   })
 
@@ -175,7 +190,9 @@ describe("getGroup — GET /api/v1/groups/id/{id}/export", () => {
     for (const broken of [null, "u1,u2", { 0: "u1" }, ["u1", 42]]) {
       stubFetch(jsonResponse({ ...EXPORT_0_11_0, user_ids: broken }))
 
-      await expect(getGroup(CONFIG, EXPORT_0_11_0.id)).rejects.toMatchObject({ failure: "malformed-response" })
+      await expect(getGroup(CONFIG, EXPORT_0_11_0.id)).rejects.toMatchObject({
+        failure: "malformed-response",
+      })
     }
   })
 
@@ -194,7 +211,9 @@ describe("getGroup — GET /api/v1/groups/id/{id}/export", () => {
     // za "grupy nie ma" zamieniłoby emptyGroupMembership() w cichy no-op.
     stubFetch(jsonResponse({ detail: "We could not find what you're looking for :/" }, 401))
 
-    await expect(getGroup(CONFIG, "nieznana-grupa")).rejects.toMatchObject({ failure: "unauthorized" })
+    await expect(getGroup(CONFIG, "nieznana-grupa")).rejects.toMatchObject({
+      failure: "unauthorized",
+    })
   })
 })
 
@@ -205,7 +224,10 @@ describe("updateGroupMeta — POST .../update — NIGDY user_ids (D4)", () => {
     await updateGroupMeta(CONFIG, "g1", "cortex:hr", "Zarządzane przez Konfigurację Systemu")
 
     const body = readBody(fetchMock) as Record<string, unknown>
-    expect(body).toEqual({ name: "cortex:hr", description: "Zarządzane przez Konfigurację Systemu" })
+    expect(body).toEqual({
+      name: "cortex:hr",
+      description: "Zarządzane przez Konfigurację Systemu",
+    })
     expect(body).not.toHaveProperty("user_ids")
     expect(readCall(fetchMock)[0]).toBe("http://chat.internal/api/v1/groups/id/g1/update")
   })

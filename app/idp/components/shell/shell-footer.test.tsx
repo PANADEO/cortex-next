@@ -71,9 +71,18 @@ describe("ShellFooter — wariant powłoki", () => {
 
     expect(classSet(container.querySelector("footer > div"))).toEqual(
       [
-        "mx-auto", "flex", "max-w-7xl", "flex-wrap", "items-center",
-        "justify-between", "gap-x-6", "gap-y-1", "px-6", "py-3",
-        "text-[11px]", "text-muted-foreground",
+        "mx-auto",
+        "flex",
+        "max-w-7xl",
+        "flex-wrap",
+        "items-center",
+        "justify-between",
+        "gap-x-6",
+        "gap-y-1",
+        "px-6",
+        "py-3",
+        "text-[11px]",
+        "text-muted-foreground",
       ].sort(),
     )
   })

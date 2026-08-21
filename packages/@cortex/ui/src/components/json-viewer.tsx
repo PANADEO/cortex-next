@@ -12,7 +12,9 @@ interface JsonViewerProps {
 
 export function JsonViewer({ data, initialDepth = 2, className }: JsonViewerProps) {
   return (
-    <div className={cn("rounded-md border border-border bg-muted/30 p-3 font-mono text-xs", className)}>
+    <div
+      className={cn("rounded-md border border-border bg-muted/30 p-3 font-mono text-xs", className)}
+    >
       <Node value={data} depth={0} initialDepth={initialDepth} path="$" />
     </div>
   )
@@ -29,9 +31,11 @@ function Node({ value, depth, initialDepth, path }: NodeProps) {
   const [open, setOpen] = useState(depth < initialDepth)
 
   if (value === null) return <span className="text-muted-foreground">null</span>
-  if (typeof value === "string") return <span className="text-success-foreground">&quot;{value}&quot;</span>
+  if (typeof value === "string")
+    return <span className="text-success-foreground">&quot;{value}&quot;</span>
   if (typeof value === "number") return <span className="text-info">{value}</span>
-  if (typeof value === "boolean") return <span className="text-warning-foreground">{String(value)}</span>
+  if (typeof value === "boolean")
+    return <span className="text-warning-foreground">{String(value)}</span>
 
   if (Array.isArray(value)) {
     if (value.length === 0) return <span>[]</span>
@@ -43,7 +47,12 @@ function Node({ value, depth, initialDepth, path }: NodeProps) {
             {value.map((item, i) => (
               <li key={`${path}.${i}`} className="py-0.5">
                 <span className="text-muted-foreground">{i}:</span>{" "}
-                <Node value={item} depth={depth + 1} initialDepth={initialDepth} path={`${path}.${i}`} />
+                <Node
+                  value={item}
+                  depth={depth + 1}
+                  initialDepth={initialDepth}
+                  path={`${path}.${i}`}
+                />
               </li>
             ))}
           </ul>
@@ -63,7 +72,12 @@ function Node({ value, depth, initialDepth, path }: NodeProps) {
             {entries.map(([k, v]) => (
               <li key={`${path}.${k}`} className="py-0.5">
                 <span className="text-foreground">{k}:</span>{" "}
-                <Node value={v} depth={depth + 1} initialDepth={initialDepth} path={`${path}.${k}`} />
+                <Node
+                  value={v}
+                  depth={depth + 1}
+                  initialDepth={initialDepth}
+                  path={`${path}.${k}`}
+                />
               </li>
             ))}
           </ul>

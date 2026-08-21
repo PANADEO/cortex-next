@@ -45,7 +45,9 @@ describe("middleware Invoice Supervisor rewrite", () => {
 
     const response = middleware(request)
 
-    expect(response.headers.get("x-middleware-rewrite")).toBe("http://invoice-supervisor-app/invoices")
+    expect(response.headers.get("x-middleware-rewrite")).toBe(
+      "http://invoice-supervisor-app/invoices",
+    )
   })
 
   it("rewrites /invoice-supervisor/version to backend /version", async () => {
@@ -55,6 +57,8 @@ describe("middleware Invoice Supervisor rewrite", () => {
 
     const response = middleware(request)
 
-    expect(response.headers.get("x-middleware-rewrite")).toBe("http://invoice-supervisor-app/version")
+    expect(response.headers.get("x-middleware-rewrite")).toBe(
+      "http://invoice-supervisor-app/version",
+    )
   })
 })

@@ -1,12 +1,17 @@
 "use client"
 
+import { JobOutcome } from "@/features/document-parser/components/job-outcome"
+import { useCreateJob, useJob } from "@/features/document-parser/hooks"
+import {
+  ACCEPT_ATTRIBUTE,
+  ALLOWED_EXTENSIONS,
+  MAX_UPLOAD_MB,
+  validateDocumentFile,
+} from "@/lib/document-parser/constraints"
 import { toastApiError } from "@cortex/api"
 import { Button, Card, CardContent, FileUploader, LoadingState, PageHeader } from "@cortex/ui"
 import { RotateCcw, Upload } from "lucide-react"
 import { useState } from "react"
-import { JobOutcome } from "@/features/document-parser/components/job-outcome"
-import { useCreateJob, useJob } from "@/features/document-parser/hooks"
-import { ACCEPT_ATTRIBUTE, ALLOWED_EXTENSIONS, MAX_UPLOAD_MB, validateDocumentFile } from "@/lib/document-parser/constraints"
 
 const UPLOADER_DESCRIPTION = `Dozwolone formaty: ${ALLOWED_EXTENSIONS.join(", ").toUpperCase()}. Limit rozmiaru: ${MAX_UPLOAD_MB} MB.`
 
@@ -90,7 +95,11 @@ export default function DocumentParserUploadPage() {
               {jobQuery.isLoading && !job ? (
                 <LoadingState label="Wczytywanie stanu zadania…" />
               ) : job ? (
-                <JobOutcome job={job} detailsHref={`/document-parser/history/${job.id}`} previewOnly />
+                <JobOutcome
+                  job={job}
+                  detailsHref={`/document-parser/history/${job.id}`}
+                  previewOnly
+                />
               ) : null}
 
               {isFinished ? (

@@ -1,10 +1,6 @@
-import type { Story } from "@ladle/react"
 import { PROCESSING_STATE, VERIFICATION_STATE } from "@cortex/types"
-import {
-  PackageStatusBadges,
-  ProcessingStateBadge,
-  VerificationStateBadge,
-} from "./status-badge"
+import type { Story } from "@ladle/react"
+import { PackageStatusBadges, ProcessingStateBadge, VerificationStateBadge } from "./status-badge"
 
 export default {
   title: "Domain / StatusBadge",
@@ -49,26 +45,10 @@ export const Sizes: Story = () => (
 
 export const Composite: Story = () => (
   <div className="flex flex-col gap-4 p-6">
-    <PackageStatusBadges
-      processingState="analysing"
-      verificationState="not_started"
-      showIcon
-    />
-    <PackageStatusBadges
-      processingState="ready"
-      verificationState="not_started"
-      showIcon
-    />
-    <PackageStatusBadges
-      processingState="ready"
-      verificationState="in_progress"
-      showIcon
-    />
-    <PackageStatusBadges
-      processingState="ready"
-      verificationState="completed"
-      showIcon
-    />
+    <PackageStatusBadges processingState="analysing" verificationState="not_started" showIcon />
+    <PackageStatusBadges processingState="ready" verificationState="not_started" showIcon />
+    <PackageStatusBadges processingState="ready" verificationState="in_progress" showIcon />
+    <PackageStatusBadges processingState="ready" verificationState="completed" showIcon />
     <PackageStatusBadges
       processingState="analysis_failed"
       verificationState="not_started"

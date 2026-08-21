@@ -3,14 +3,7 @@
 import type { Invoice, Party, TransportOrder } from "@cortex/types"
 import { Button } from "@cortex/ui"
 import { cn, formatRoute } from "@cortex/utils"
-import {
-  Building2,
-  ChevronDown,
-  ChevronRight,
-  FileText,
-  Truck,
-  User,
-} from "lucide-react"
+import { Building2, ChevronDown, ChevronRight, FileText, Truck, User } from "lucide-react"
 import { Fragment, useState, type ReactNode } from "react"
 
 interface Props {
@@ -57,10 +50,7 @@ export function InvoiceHeaderPanel({ order, invoice }: Props) {
         </span>
       </Button>
       {open ? (
-        <div
-          id="invoice-header-panel-content"
-          className="grid gap-3 px-3 pb-3 pt-1 md:grid-cols-2"
-        >
+        <div id="invoice-header-panel-content" className="grid gap-3 px-3 pb-3 pt-1 md:grid-cols-2">
           <PartySection icon={Building2} label="Seller" party={order.seller} />
           <PartySection icon={User} label="Buyer" party={order.buyer} />
           <InvoiceMetaSection invoice={invoice} dispatchToDestination={dispatchToDestination} />
@@ -98,10 +88,7 @@ function PartySection({ icon: Icon, label, party }: PartySectionProps) {
           <Row label="Name" value={party.name} />
           <Row label="VAT ID" value={party.vat_id} emphasize />
           <Row label="Street" value={party.street} />
-          <Row
-            label="City"
-            value={formatCity(party.postal_code, party.city, party.country_code)}
-          />
+          <Row label="City" value={formatCity(party.postal_code, party.city, party.country_code)} />
         </dl>
       ) : (
         <p className="text-xs italic text-muted-foreground">Not provided</p>
@@ -160,10 +147,9 @@ function formatCity(
   city: string | null,
   countryCode: string | null,
 ): string | null {
-  const parts = [
-    [postalCode, city].filter(Boolean).join(" ").trim() || null,
-    countryCode,
-  ].filter(Boolean) as string[]
+  const parts = [[postalCode, city].filter(Boolean).join(" ").trim() || null, countryCode].filter(
+    Boolean,
+  ) as string[]
   if (parts.length === 0) return null
   return parts.join(", ")
 }

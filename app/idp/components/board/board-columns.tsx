@@ -1,8 +1,8 @@
 "use client"
 
-import { cn } from "@cortex/utils"
 import { BOARD_COLUMNS } from "@/lib/board/pipeline"
 import type { PipelineBoardState } from "@/lib/board/use-pipeline-board"
+import { cn } from "@cortex/utils"
 import { KanbanColumn } from "./kanban-column"
 
 interface BoardColumnsProps {

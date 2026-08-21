@@ -79,7 +79,8 @@ export function useDuplicateTemplate() {
  *  zapisuje niczego (ani szablonu, ani wpisu w archiwum). */
 export function useTestTemplateGeneration() {
   return useMutation({
-    mutationFn: (body: TestTemplateGenerationRequestDto) => endpoints.templates.testGeneration(body),
+    mutationFn: (body: TestTemplateGenerationRequestDto) =>
+      endpoints.templates.testGeneration(body),
   })
 }
 
@@ -158,7 +159,9 @@ export function useDeleteMarketProfile() {
 // ---- generation jobs (Round C, D4 — tryby "Kilka"/"Pakiet") ----
 
 export function useCreateGenerationJob() {
-  return useMutation({ mutationFn: (body: CreateGenerationJobRequestDto) => endpoints.jobs.create(body) })
+  return useMutation({
+    mutationFn: (body: CreateGenerationJobRequestDto) => endpoints.jobs.create(body),
+  })
 }
 
 /**
@@ -200,7 +203,9 @@ export function useArchiveEntry(id: string | null) {
 // ---- mini-generatory (Round D, D8) ----
 
 export function useGenerateTopics() {
-  return useMutation({ mutationFn: (body: GenerateTopicsRequestDto) => endpoints.miniGenerators.topics(body) })
+  return useMutation({
+    mutationFn: (body: GenerateTopicsRequestDto) => endpoints.miniGenerators.topics(body),
+  })
 }
 
 export function useGenerateKeywordPhrase() {
@@ -211,6 +216,7 @@ export function useGenerateKeywordPhrase() {
 
 export function useGenerateMetaDescriptionMini() {
   return useMutation({
-    mutationFn: (body: GenerateMetaDescriptionRequestDto) => endpoints.miniGenerators.metaDescription(body),
+    mutationFn: (body: GenerateMetaDescriptionRequestDto) =>
+      endpoints.miniGenerators.metaDescription(body),
   })
 }

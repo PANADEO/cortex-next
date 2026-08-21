@@ -9,10 +9,10 @@
 // Za tą bramką leży lista e-maili WSZYSTKICH użytkowników wraz z ich
 // aktywnością — waga tego pliku jest wyższa niż przy zwykłym kafelku.
 
+import { TOKEN_USAGE_APP_CODE } from "@/lib/token-usage/config"
+import { CortexProxyUsageError } from "@cortex/api/cortex-proxy-client"
 import { requireTileAccess } from "@cortex/service"
 import { NextResponse } from "next/server"
-import { CortexProxyUsageError } from "@cortex/api/cortex-proxy-client"
-import { TOKEN_USAGE_APP_CODE } from "@/lib/token-usage/config"
 
 /**
  * Zwraca gotową odpowiedź odmowną albo null, gdy wolno przepuścić dalej.

@@ -15,8 +15,9 @@ const service = vi.hoisted(() => ({
       ? undefined
       : { id, name: "Post", category: "Główne", content: "Treść", createdBy: "system" },
   ),
-  updateTemplate: vi.fn(async (id: string, input: { name: string; category: string; content: string }) =>
-    id === "missing" ? undefined : { id, ...input, createdBy: "system" },
+  updateTemplate: vi.fn(
+    async (id: string, input: { name: string; category: string; content: string }) =>
+      id === "missing" ? undefined : { id, ...input, createdBy: "system" },
   ),
   deleteTemplate: vi.fn(async (id: string) => id !== "missing"),
 }))

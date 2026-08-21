@@ -48,9 +48,10 @@ function buildGeneration(
 }
 
 const service = vi.hoisted(() => ({
-  getMyGeneration: vi.fn<
-    (userEmail: string, id: string) => Promise<CortexService.GenerationWithVariants | undefined>
-  >(),
+  getMyGeneration:
+    vi.fn<
+      (userEmail: string, id: string) => Promise<CortexService.GenerationWithVariants | undefined>
+    >(),
   deleteGeneration: vi.fn<(userEmail: string, id: string) => Promise<boolean>>(),
 }))
 vi.mock("@cortex/service", async (importOriginal) => ({
@@ -64,7 +65,10 @@ const { DELETE, GET } = await import("./route")
 function request(method: string, email: string | null = EMAIL): Request {
   const headers = new Headers()
   if (email !== null) headers.set("x-auth-request-email", email)
-  return new Request(`http://localhost/api/visual-guru/history/${GENERATION_ID}`, { method, headers })
+  return new Request(`http://localhost/api/visual-guru/history/${GENERATION_ID}`, {
+    method,
+    headers,
+  })
 }
 
 const context = { params: Promise.resolve({ id: GENERATION_ID }) }
@@ -110,18 +114,22 @@ describe("GET /api/visual-guru/history/[id]", () => {
     // D5: żadne pole odpowiedzi nie niesie bajtów obrazu referencyjnego —
     // jedyne "image"-podobne dane w kontrakcie to warianty WYNIKOWE (osobno,
     // niżej), nie referencja.
-    expect(JSON.stringify(body)).not.toContain("referenceImage\":\"data:")
+    expect(JSON.stringify(body)).not.toContain('referenceImage":"data:')
   })
 
   it("200: warianty jako gotowe data URI, w kolejności variantIndex", async () => {
     service.getMyGeneration.mockResolvedValueOnce(buildGeneration())
 
     const response = await GET(request("GET") as never, context)
-    const body = (await response.json()) as { variants: { variantIndex: number; dataUrl: string }[] }
+    const body = (await response.json()) as {
+      variants: { variantIndex: number; dataUrl: string }[]
+    }
 
     expect(body.variants).toHaveLength(2)
     expect(body.variants[0]).toMatchObject({ variantIndex: 0 })
-    expect(body.variants[0]!.dataUrl).toBe(`data:image/png;base64,${Buffer.from("aaa").toString("base64")}`)
+    expect(body.variants[0]!.dataUrl).toBe(
+      `data:image/png;base64,${Buffer.from("aaa").toString("base64")}`,
+    )
   })
 
   it("woła getMyGeneration z access.email z bramki, NIE z żądania", async () => {

@@ -1,9 +1,9 @@
 import type { Story } from "@ladle/react"
 import { Inbox, Upload } from "lucide-react"
-import { Button } from "./ui/button"
 import { EmptyState } from "./empty-state"
 import { ErrorState } from "./error-state"
 import { LoadingState } from "./loading-state"
+import { Button } from "./ui/button"
 
 export default {
   title: "Domain / States",

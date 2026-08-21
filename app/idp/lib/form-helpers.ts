@@ -6,9 +6,7 @@ export function trimToNull(value: string | null | undefined): string | null {
   return trimmed ? trimmed : null
 }
 
-export function mapTrimToNull<T extends object>(
-  values: T,
-): { [K in keyof T]: string | null } {
+export function mapTrimToNull<T extends object>(values: T): { [K in keyof T]: string | null } {
   const out: Record<string, string | null> = {}
   for (const [k, v] of Object.entries(values)) {
     out[k] = typeof v === "string" ? trimToNull(v) : null

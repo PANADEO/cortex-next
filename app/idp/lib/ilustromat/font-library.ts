@@ -33,7 +33,8 @@ function withPaths(entry: FontCatalogEntry): FontLibraryEntry {
 }
 
 export function resolveFontLibraryEntry(id: string | null): FontLibraryEntry {
-  const entry = FONT_CATALOG[id ?? DEFAULT_FONT_LIBRARY_ID] ?? FONT_CATALOG[DEFAULT_FONT_LIBRARY_ID]!
+  const entry =
+    FONT_CATALOG[id ?? DEFAULT_FONT_LIBRARY_ID] ?? FONT_CATALOG[DEFAULT_FONT_LIBRARY_ID]!
   return withPaths(entry)
 }
 

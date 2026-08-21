@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import "@testing-library/jest-dom/vitest"
 import type { HubTile } from "@cortex/api"
+import "@testing-library/jest-dom/vitest"
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
@@ -62,8 +62,16 @@ const HUB_TILES_FIXTURE = [
   }),
   hubRow({ code: "idp-basic", name: "IDP Basic", route: "/idp-basic/dashboard" }),
   hubRow({ code: "intrastat", name: "Intrastat", route: "/intrastat/dashboard" }),
-  hubRow({ code: "text-highlighter", name: "Podświetlacz tekstu", route: "/ai-tools/text-highlighter" }),
-  hubRow({ code: "text-transformer", name: "Transformator tekstu", route: "/ai-tools/text-transformer" }),
+  hubRow({
+    code: "text-highlighter",
+    name: "Podświetlacz tekstu",
+    route: "/ai-tools/text-highlighter",
+  }),
+  hubRow({
+    code: "text-transformer",
+    name: "Transformator tekstu",
+    route: "/ai-tools/text-transformer",
+  }),
   hubRow({ code: "fakturomat", name: "Analizator faktur", route: "/ai-tools/fakturomat" }),
 ]
 

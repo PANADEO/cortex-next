@@ -4,9 +4,12 @@
 // app/idp/app/api/ai-tools/generate-hardening.test.ts i
 // app/idp/app/api/ilustromat/guard-coverage.test.ts.
 
-import type * as CortexService from "@cortex/service"
 import type * as CortexProxyClient from "@cortex/api/cortex-proxy-client"
-import type { CortexProxyImageRequest, CortexProxyImageResult } from "@cortex/api/cortex-proxy-client"
+import type {
+  CortexProxyImageRequest,
+  CortexProxyImageResult,
+} from "@cortex/api/cortex-proxy-client"
+import type * as CortexService from "@cortex/service"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const loadGrantedApplicationCodes = vi.hoisted(() => vi.fn<(email: string) => Promise<string[]>>())
@@ -30,8 +33,20 @@ function buildGenerationRow(overrides: Partial<CortexService.GenerationWithVaria
     variantCount: 2,
     createdAt: new Date("2026-08-03T10:00:00Z"),
     variants: [
-      { id: "v0", generationId: GENERATION_ID, variantIndex: 0, image: Buffer.from("aaa"), contentType: "image/png" },
-      { id: "v1", generationId: GENERATION_ID, variantIndex: 1, image: Buffer.from("bbb"), contentType: "image/png" },
+      {
+        id: "v0",
+        generationId: GENERATION_ID,
+        variantIndex: 0,
+        image: Buffer.from("aaa"),
+        contentType: "image/png",
+      },
+      {
+        id: "v1",
+        generationId: GENERATION_ID,
+        variantIndex: 1,
+        image: Buffer.from("bbb"),
+        contentType: "image/png",
+      },
     ],
     ...overrides,
   } as CortexService.GenerationWithVariants
@@ -247,7 +262,9 @@ describe("POST /api/visual-guru/generate — happy path Z obrazem referencyjnym"
     await POST(
       makeRequest({
         prompt: "przerób to zdjęcie na akwarelę",
-        referenceImages: [{ dataUrl: "data:image/png;base64,iVBORw0KGgo=", fileName: "zdjecie.png" }],
+        referenceImages: [
+          { dataUrl: "data:image/png;base64,iVBORw0KGgo=", fileName: "zdjecie.png" },
+        ],
         fidelity: "high",
         variantCount: 2,
       }),
@@ -255,14 +272,21 @@ describe("POST /api/visual-guru/generate — happy path Z obrazem referencyjnym"
 
     const [firstCall] = callCortexProxyImage.mock.calls
     const messages = (firstCall![0] as { messages: { content: unknown }[] }).messages
-    const content = messages[0]!.content as { type: string; text?: string; image_url?: { url: string } }[]
+    const content = messages[0]!.content as {
+      type: string
+      text?: string
+      image_url?: { url: string }
+    }[]
 
     expect(Array.isArray(content)).toBe(true)
     expect(content[0]).toMatchObject({ type: "text" })
     expect(content[0]!.text).toContain("przerób to zdjęcie")
     // Dopisek o wierności trafia do promptu WYSYŁANEGO do modelu...
     expect(content[0]!.text).toContain("wysoką wierność")
-    expect(content[1]).toMatchObject({ type: "image_url", image_url: { url: "data:image/png;base64,iVBORw0KGgo=" } })
+    expect(content[1]).toMatchObject({
+      type: "image_url",
+      image_url: { url: "data:image/png;base64,iVBORw0KGgo=" },
+    })
   })
 
   it("zapisuje generację z hadReferenceImage=true, nazwą pliku i BEZ dopisku o wierności w kolumnie prompt", async () => {
@@ -270,7 +294,9 @@ describe("POST /api/visual-guru/generate — happy path Z obrazem referencyjnym"
     await POST(
       makeRequest({
         prompt: "przerób to zdjęcie na akwarelę",
-        referenceImages: [{ dataUrl: "data:image/png;base64,iVBORw0KGgo=", fileName: "zdjecie.png" }],
+        referenceImages: [
+          { dataUrl: "data:image/png;base64,iVBORw0KGgo=", fileName: "zdjecie.png" },
+        ],
         fidelity: "high",
         variantCount: 2,
       }),

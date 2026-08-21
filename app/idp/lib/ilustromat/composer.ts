@@ -293,7 +293,10 @@ export async function compose(input: ComposeInput): Promise<Buffer> {
     })
     .ensureAlpha()
     .composite([
-      { input: roundedMask(contentWidth, imageAreaHeight, template.cornerRadius), blend: "dest-in" },
+      {
+        input: roundedMask(contentWidth, imageAreaHeight, template.cornerRadius),
+        blend: "dest-in",
+      },
     ])
     .png()
     .toBuffer()
@@ -309,9 +312,7 @@ export async function compose(input: ComposeInput): Promise<Buffer> {
       ? PADDING + Math.max(0, Math.trunc((contentWidth - renderedWidth) / 2))
       : PADDING
 
-  const overlays: Overlay[] = [
-    { input: imageArea, top: placement.imageTop, left: PADDING },
-  ]
+  const overlays: Overlay[] = [{ input: imageArea, top: placement.imageTop, left: PADDING }]
 
   if (textBlock.title) {
     overlays.push({
@@ -321,8 +322,7 @@ export async function compose(input: ComposeInput): Promise<Buffer> {
     })
   }
   if (textBlock.subtitle) {
-    const subtitleTop =
-      placement.textTop + (textBlock.title?.height ?? 0) + TITLE_SUBTITLE_GAP
+    const subtitleTop = placement.textTop + (textBlock.title?.height ?? 0) + TITLE_SUBTITLE_GAP
     overlays.push({
       input: textBlock.subtitle.buffer,
       top: subtitleTop,

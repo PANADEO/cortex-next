@@ -6,12 +6,17 @@
 // fire-and-forget). Właściwy postęp widać dopiero przez polling
 // GET /jobs/:id (route obok), zgodnie z architecture_rules.md §5.
 
-import { getRequestEmail } from "@cortex/service"
-import { createQueuedJob, listMyJobs, markJobError, markJobProcessing } from "@cortex/service"
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
 import { createBackendJob, DocumentParserBackendError } from "@/lib/document-parser/backend-client"
 import { validateDocumentFile } from "@/lib/document-parser/constraints"
+import {
+  createQueuedJob,
+  getRequestEmail,
+  listMyJobs,
+  markJobError,
+  markJobProcessing,
+} from "@cortex/service"
+import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
 import { denyUnlessAllowed } from "../_lib/guard"
 
 export const runtime = "nodejs"
@@ -39,7 +44,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     form = await request.formData()
   } catch {
-    return NextResponse.json({ error: "invalid-request", message: "Nieprawidłowe żądanie." }, { status: 400 })
+    return NextResponse.json(
+      { error: "invalid-request", message: "Nieprawidłowe żądanie." },
+      { status: 400 },
+    )
   }
 
   const file = form.get("file")

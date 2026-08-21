@@ -40,9 +40,7 @@ const components: Components = {
     // react-markdown passes `language-*` on fenced blocks; inline code has none.
     const isBlock = /language-/.test(className ?? "")
     if (isBlock) return <code className={cn("font-mono text-xs", className)}>{children}</code>
-    return (
-      <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]">{children}</code>
-    )
+    return <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]">{children}</code>
   },
   pre: ({ children }) => (
     <pre className="my-2 overflow-x-auto rounded-lg border border-border/60 bg-muted/50 p-3 leading-relaxed">

@@ -1,28 +1,9 @@
 "use client"
 
-import {
-  CLIENT_SUMMARY,
-  GRAND_TOTAL,
-  MARGIN,
-  SP_MARKUP,
-} from "@/features/store-pit/dataset"
-import {
-  ACCENT_DOT,
-  CLIENT_META,
-  count,
-  eur,
-  pct,
-  signedEur,
-} from "@/features/store-pit/helpers"
+import { CLIENT_SUMMARY, GRAND_TOTAL, MARGIN, SP_MARKUP } from "@/features/store-pit/dataset"
+import { ACCENT_DOT, CLIENT_META, count, eur, pct, signedEur } from "@/features/store-pit/helpers"
 import type { ClientKey } from "@/features/store-pit/types"
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  DataCard,
-  PageHeader,
-} from "@cortex/ui"
+import { Badge, Button, Card, CardContent, DataCard, PageHeader } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { ArrowUpRight, Percent, Receipt, TrendingUp, Wallet } from "lucide-react"
 import Link from "next/link"

@@ -1,14 +1,7 @@
 "use client"
 
 import { CLIENT_SUMMARY, GRAND_TOTAL, MARGIN } from "@/features/store-pit/dataset"
-import {
-  ACCENT_DOT,
-  CLIENT_META,
-  count,
-  eur,
-  pct,
-  signedEur,
-} from "@/features/store-pit/helpers"
+import { ACCENT_DOT, CLIENT_META, count, eur, pct, signedEur } from "@/features/store-pit/helpers"
 import type { ClientKey } from "@/features/store-pit/types"
 import { Badge, Card, CardContent, PageHeader } from "@cortex/ui"
 import { cn } from "@cortex/utils"
@@ -34,9 +27,7 @@ export default function ClientsPage() {
                 <Card className="cursor-pointer transition-colors hover:border-primary/40">
                   <CardContent className="space-y-3 p-4">
                     <div className="flex items-center gap-2">
-                      <span
-                        className={cn("h-2.5 w-2.5 rounded-full", ACCENT_DOT[meta.accent])}
-                      />
+                      <span className={cn("h-2.5 w-2.5 rounded-full", ACCENT_DOT[meta.accent])} />
                       <span className="text-sm font-medium">{meta.name}</span>
                       <Badge variant="outline" className="ml-auto text-[10px]">
                         {meta.market}
@@ -53,9 +44,7 @@ export default function ClientsPage() {
                     <div className="grid grid-cols-3 gap-2 border-t border-border/60 pt-2 text-xs">
                       <div>
                         <div className="text-muted-foreground">Parcels</div>
-                        <div className="font-medium tabular-nums">
-                          {count(summary?.qty ?? 0)}
-                        </div>
+                        <div className="font-medium tabular-nums">{count(summary?.qty ?? 0)}</div>
                       </div>
                       <div>
                         <div className="text-muted-foreground">GLS cost</div>

@@ -248,7 +248,9 @@ describe("callCortexProxyImage — content: string (Ilustromat, wsteczna kompaty
     )
 
     const payload = readPayload(fetchMock)
-    expect(payload.messages).toEqual([{ role: "user", content: "ilustracja teł do posta LinkedIn" }])
+    expect(payload.messages).toEqual([
+      { role: "user", content: "ilustracja teł do posta LinkedIn" },
+    ])
   })
 
   it("wysyła modalities:[image,text] i domyślną temperaturę 0.7", async () => {
@@ -328,7 +330,9 @@ describe("callCortexProxyImage — content: część[] (Visual Guru, nowy kszta�
 describe("callCortexProxyImage — nagłówki, timeout, błędy", () => {
   it("wysyła te same nagłówki identyfikujące co callCortexProxy", async () => {
     const fetchMock = stubFetch(okResponse(imageValidBody))
-    await callCortexProxyImage(baseImageInput({ appLabel: "Visual Guru", sourceApp: "Cortex360 Visual Guru" }))
+    await callCortexProxyImage(
+      baseImageInput({ appLabel: "Visual Guru", sourceApp: "Cortex360 Visual Guru" }),
+    )
 
     const headers = readHeaders(fetchMock)
     expect(headers["X-User-ID"]).toBe("user@example.com")
@@ -339,16 +343,26 @@ describe("callCortexProxyImage — nagłówki, timeout, błędy", () => {
 
   it("rzuca CortexProxyImageError gdy brak obrazu w odpowiedzi", async () => {
     stubFetch(okResponse({ choices: [{ message: {} }] }))
-    await expect(callCortexProxyImage(baseImageInput())).rejects.toBeInstanceOf(CortexProxyImageError)
+    await expect(callCortexProxyImage(baseImageInput())).rejects.toBeInstanceOf(
+      CortexProxyImageError,
+    )
   })
 
   it("rzuca CortexProxyImageError gdy url nie jest data URI", async () => {
-    stubFetch(okResponse({ choices: [{ message: { images: [{ image_url: { url: "https://example.com/x.png" } }] } }] }))
-    await expect(callCortexProxyImage(baseImageInput())).rejects.toThrow("Nieoczekiwany format obrazu")
+    stubFetch(
+      okResponse({
+        choices: [{ message: { images: [{ image_url: { url: "https://example.com/x.png" } }] } }],
+      }),
+    )
+    await expect(callCortexProxyImage(baseImageInput())).rejects.toThrow(
+      "Nieoczekiwany format obrazu",
+    )
   })
 
   it("rzuca CortexProxyImageError na odpowiedź nie-ok", async () => {
     stubFetch(new Response("model niedostępny", { status: 400 }))
-    await expect(callCortexProxyImage(baseImageInput())).rejects.toBeInstanceOf(CortexProxyImageError)
+    await expect(callCortexProxyImage(baseImageInput())).rejects.toBeInstanceOf(
+      CortexProxyImageError,
+    )
   })
 })

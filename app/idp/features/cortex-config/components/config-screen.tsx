@@ -6,17 +6,8 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 
 /** The one access-denied state for every cortex-config admin surface. */
-export function AccessDeniedState({
-  title = "Brak dostępu do konfiguracji",
-}: {
-  title?: string
-}) {
-  return (
-    <ErrorState
-      title={title}
-      message="Panel Cortex Config wymaga uprawnień administratora."
-    />
-  )
+export function AccessDeniedState({ title = "Brak dostępu do konfiguracji" }: { title?: string }) {
+  return <ErrorState title={title} message="Panel Cortex Config wymaga uprawnień administratora." />
 }
 
 interface ConfigScreenProps {

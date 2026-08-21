@@ -165,9 +165,7 @@ function assistUserPrompt({ field, mode, text, context, avoid }: AssistInput): s
     mode === "propose"
       ? [
           `Tytuł: ${context?.title?.trim() ?? ""}`,
-          ...(field === "idea"
-            ? [`Podtytuł/hasło: ${context?.subtitle?.trim() || "(brak)"}`]
-            : []),
+          ...(field === "idea" ? [`Podtytuł/hasło: ${context?.subtitle?.trim() || "(brak)"}`] : []),
         ]
       : [text?.trim() ?? ""]
 
@@ -193,5 +191,9 @@ export function buildAssistMessages(input: AssistInput): ChatMessage[] {
 /** Model bywa rozmowny mimo instrukcji — obcinamy cudzysłowy i limit znaków
  *  po stronie serwera, nie ufając samej treści promptu. */
 export function normalizeAssistedText(content: string, maxChars: number): string {
-  return content.trim().replace(/^["']+|["']+$/g, "").trim().slice(0, maxChars)
+  return content
+    .trim()
+    .replace(/^["']+|["']+$/g, "")
+    .trim()
+    .slice(0, maxChars)
 }

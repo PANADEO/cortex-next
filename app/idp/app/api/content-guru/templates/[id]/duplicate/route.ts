@@ -2,8 +2,8 @@
 // pod nazwą "(kopia)" (design doc §4.2 "duplikuj" w DropdownMenu wiersza).
 // `manage-templates`, jak każda inna mutacja szablonów.
 
-import { NextResponse, type NextRequest } from "next/server"
 import { duplicateTemplate, getRequestEmail } from "@cortex/service"
+import { NextResponse, type NextRequest } from "next/server"
 import { isUniqueViolation, requireContentGuruManageTemplates } from "../../../_lib/guard"
 
 export const runtime = "nodejs"

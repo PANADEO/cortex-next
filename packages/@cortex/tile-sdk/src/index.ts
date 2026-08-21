@@ -155,7 +155,10 @@ export const TileManifestSchema = z
     icon: z
       .string()
       .max(64)
-      .regex(/^[A-Z][A-Za-z0-9]*$/, "icon musi być nazwą ikony lucide-react w PascalCase, np. ScanText")
+      .regex(
+        /^[A-Z][A-Za-z0-9]*$/,
+        "icon musi być nazwą ikony lucide-react w PascalCase, np. ScanText",
+      )
       .optional(),
     color: TileColor.optional(),
     categoryFunctional: TileCategoryFunctional.optional(),

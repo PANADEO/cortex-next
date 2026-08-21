@@ -5,7 +5,12 @@ describe("buildHighlightRanges", () => {
   it("wycina statystykę dokładnie na position..position+value.length", () => {
     const text = "Wzrost wyniósł 30% w tym roku."
     const analysis = {
-      statistics: { score: 0, count: 1, per100Words: 0, examples: [{ value: "30%", position: 15 }] },
+      statistics: {
+        score: 0,
+        count: 1,
+        per100Words: 0,
+        examples: [{ value: "30%", position: 15 }],
+      },
       objectivity: { score: 0, subjectiveCount: 0, subjectiveRatio: 0, foundWords: [] },
     }
 
@@ -82,7 +87,9 @@ describe("buildHighlightRanges", () => {
 
     const ranges = buildHighlightRanges(text, analysis)
 
-    expect(ranges).toEqual([{ start: position, end: position + "najlepszy".length, kind: "subjective" }])
+    expect(ranges).toEqual([
+      { start: position, end: position + "najlepszy".length, kind: "subjective" },
+    ])
   })
 
   it("token na samym końcu tekstu (bez trailing whitespace) nie wychodzi poza długość tekstu", () => {
@@ -106,7 +113,12 @@ describe("buildHighlightRanges", () => {
   it("odrzuca nakładające się zakresy, zachowując pierwszy (sortowany po starcie)", () => {
     const text = "najlepszy 30% wynik"
     const analysis = {
-      statistics: { score: 0, count: 1, per100Words: 0, examples: [{ value: "30%", position: 10 }] },
+      statistics: {
+        score: 0,
+        count: 1,
+        per100Words: 0,
+        examples: [{ value: "30%", position: 10 }],
+      },
       objectivity: {
         score: 0,
         subjectiveCount: 1,
@@ -125,7 +137,12 @@ describe("buildHighlightRanges", () => {
   it("ignoruje position poza zakresem tekstu zamiast rzucać/psuć slice", () => {
     const text = "Krótki tekst."
     const analysis = {
-      statistics: { score: 0, count: 1, per100Words: 0, examples: [{ value: "30%", position: 999 }] },
+      statistics: {
+        score: 0,
+        count: 1,
+        per100Words: 0,
+        examples: [{ value: "30%", position: 999 }],
+      },
       objectivity: { score: 0, subjectiveCount: 0, subjectiveRatio: 0, foundWords: [] },
     }
 

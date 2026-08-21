@@ -52,8 +52,15 @@ export function invoiceSupervisorClientColumns(): ColumnDef<
       header: "Należność",
       size: 140,
       cell: ({ row }) => (
-        <span className={row.original.total_outstanding > 0 ? "font-medium text-destructive" : undefined}>
-          {formatInvoiceSupervisorMultiCurrency(row.original.total_outstanding, row.original.currency_breakdown)}
+        <span
+          className={
+            row.original.total_outstanding > 0 ? "font-medium text-destructive" : undefined
+          }
+        >
+          {formatInvoiceSupervisorMultiCurrency(
+            row.original.total_outstanding,
+            row.original.currency_breakdown,
+          )}
         </span>
       ),
     },

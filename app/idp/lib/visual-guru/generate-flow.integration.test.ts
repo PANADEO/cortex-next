@@ -63,7 +63,10 @@ const JPEG_MAGIC = Buffer.from([0xff, 0xd8, 0xff])
 function assertRealImage(variant: { image: Buffer; contentType: string }): void {
   const isPng = variant.image.subarray(0, 4).equals(PNG_MAGIC)
   const isJpeg = variant.image.subarray(0, 3).equals(JPEG_MAGIC)
-  expect(isPng || isJpeg, `nieoczekiwana sygnatura pliku (contentType zgłoszony: ${variant.contentType})`).toBe(true)
+  expect(
+    isPng || isJpeg,
+    `nieoczekiwana sygnatura pliku (contentType zgłoszony: ${variant.contentType})`,
+  ).toBe(true)
   expect(variant.contentType).toBe(isPng ? "image/png" : "image/jpeg")
   expect(variant.image.length).toBeGreaterThan(1000)
 }
@@ -84,112 +87,127 @@ async function cleanup() {
   await db.$client`DELETE FROM visual_guru.generations WHERE user_email = ${OWNER_EMAIL}`
 }
 
-describe.skipIf(!hasDatabase || !hasProxy)("Visual Guru — przepływ generacji na prawdziwym cortex-proxy + Postgresie", () => {
-  beforeEach(async () => {
-    await cleanup()
-    mkdirSync(ARTIFACT_DIR, { recursive: true })
-  })
-  afterAll(async () => {
-    await cleanup()
-    await closeDb()
-  })
+describe.skipIf(!hasDatabase || !hasProxy)(
+  "Visual Guru — przepływ generacji na prawdziwym cortex-proxy + Postgresie",
+  () => {
+    beforeEach(async () => {
+      await cleanup()
+      mkdirSync(ARTIFACT_DIR, { recursive: true })
+    })
+    afterAll(async () => {
+      await cleanup()
+      await closeDb()
+    })
 
-  it(
-    "generuje BEZ obrazu referencyjnego i zapisuje generację z hadReferenceImage=false",
-    { timeout: 120_000 },
-    async () => {
-      const prompt = buildModelPrompt({
-        prompt: "prosta, płaska ilustracja wektorowa niebieskiego lisa siedzącego na trawie",
-        hasReferenceImages: false,
-      })
+    it(
+      "generuje BEZ obrazu referencyjnego i zapisuje generację z hadReferenceImage=false",
+      { timeout: 120_000 },
+      async () => {
+        const prompt = buildModelPrompt({
+          prompt: "prosta, płaska ilustracja wektorowa niebieskiego lisa siedzącego na trawie",
+          hasReferenceImages: false,
+        })
 
-      const variants = await generateVariants({
-        baseUrl: baseUrl as string,
-        email: OWNER_EMAIL,
-        model: IMAGE_MODEL,
-        prompt,
-        referenceImages: [],
-        variantCount: 2,
-      })
+        const variants = await generateVariants({
+          baseUrl: baseUrl as string,
+          email: OWNER_EMAIL,
+          model: IMAGE_MODEL,
+          prompt,
+          referenceImages: [],
+          variantCount: 2,
+        })
 
-      expect(variants).toHaveLength(2)
-      for (const variant of variants) {
-        assertRealImage(variant)
-      }
-      // eslint-disable-next-line no-console
-      console.log("[visual-guru verify] bez referencji — contentType:", variants[0]!.contentType)
+        expect(variants).toHaveLength(2)
+        for (const variant of variants) {
+          assertRealImage(variant)
+        }
+        // eslint-disable-next-line no-console
+        console.log("[visual-guru verify] bez referencji — contentType:", variants[0]!.contentType)
 
-      writeFileSync(`${ARTIFACT_DIR}/bez-referencji-1.${extensionFor(variants[0]!.contentType)}`, variants[0]!.image)
-      writeFileSync(`${ARTIFACT_DIR}/bez-referencji-2.${extensionFor(variants[1]!.contentType)}`, variants[1]!.image)
+        writeFileSync(
+          `${ARTIFACT_DIR}/bez-referencji-1.${extensionFor(variants[0]!.contentType)}`,
+          variants[0]!.image,
+        )
+        writeFileSync(
+          `${ARTIFACT_DIR}/bez-referencji-2.${extensionFor(variants[1]!.contentType)}`,
+          variants[1]!.image,
+        )
 
-      const saved = await createGeneration(OWNER_EMAIL, {
-        prompt: "prosta, płaska ilustracja wektorowa niebieskiego lisa siedzącego na trawie",
-        hadReferenceImage: false,
-        model: IMAGE_MODEL,
-        variants: variants.map((variant, index) => ({
-          variantIndex: index,
-          image: variant.image,
-          contentType: variant.contentType,
-        })),
-      })
+        const saved = await createGeneration(OWNER_EMAIL, {
+          prompt: "prosta, płaska ilustracja wektorowa niebieskiego lisa siedzącego na trawie",
+          hadReferenceImage: false,
+          model: IMAGE_MODEL,
+          variants: variants.map((variant, index) => ({
+            variantIndex: index,
+            image: variant.image,
+            contentType: variant.contentType,
+          })),
+        })
 
-      const reloaded = await getMyGeneration(OWNER_EMAIL, saved.id)
-      expect(reloaded?.userEmail).toBe(OWNER_EMAIL)
-      expect(reloaded?.hadReferenceImage).toBe(false)
-      expect(reloaded?.referenceImageFileName).toBeNull()
-      expect(reloaded?.variants).toHaveLength(2)
-    },
-  )
+        const reloaded = await getMyGeneration(OWNER_EMAIL, saved.id)
+        expect(reloaded?.userEmail).toBe(OWNER_EMAIL)
+        expect(reloaded?.hadReferenceImage).toBe(false)
+        expect(reloaded?.referenceImageFileName).toBeNull()
+        expect(reloaded?.variants).toHaveLength(2)
+      },
+    )
 
-  it(
-    "generuje Z obrazem referencyjnym (multi-part content) i zapisuje generację z hadReferenceImage=true",
-    { timeout: 120_000 },
-    async () => {
-      const referenceDataUrl = `data:image/png;base64,${REFERENCE_PNG_BASE64}`
+    it(
+      "generuje Z obrazem referencyjnym (multi-part content) i zapisuje generację z hadReferenceImage=true",
+      { timeout: 120_000 },
+      async () => {
+        const referenceDataUrl = `data:image/png;base64,${REFERENCE_PNG_BASE64}`
 
-      const prompt = buildModelPrompt({
-        prompt: "przekształć załączony obraz w ilustrację w stylu akwareli",
-        fidelity: "high",
-        hasReferenceImages: true,
-      })
-      // Dopisek o wierności faktycznie doklejony do promptu wysyłanego do modelu.
-      expect(prompt).toContain("wysoką wierność")
+        const prompt = buildModelPrompt({
+          prompt: "przekształć załączony obraz w ilustrację w stylu akwareli",
+          fidelity: "high",
+          hasReferenceImages: true,
+        })
+        // Dopisek o wierności faktycznie doklejony do promptu wysyłanego do modelu.
+        expect(prompt).toContain("wysoką wierność")
 
-      const variants = await generateVariants({
-        baseUrl: baseUrl as string,
-        email: OWNER_EMAIL,
-        model: IMAGE_MODEL,
-        prompt,
-        referenceImages: [{ dataUrl: referenceDataUrl }],
-        variantCount: 2,
-      })
+        const variants = await generateVariants({
+          baseUrl: baseUrl as string,
+          email: OWNER_EMAIL,
+          model: IMAGE_MODEL,
+          prompt,
+          referenceImages: [{ dataUrl: referenceDataUrl }],
+          variantCount: 2,
+        })
 
-      expect(variants).toHaveLength(2)
-      for (const variant of variants) {
-        assertRealImage(variant)
-      }
-      // eslint-disable-next-line no-console
-      console.log("[visual-guru verify] z referencją — contentType:", variants[0]!.contentType)
+        expect(variants).toHaveLength(2)
+        for (const variant of variants) {
+          assertRealImage(variant)
+        }
+        // eslint-disable-next-line no-console
+        console.log("[visual-guru verify] z referencją — contentType:", variants[0]!.contentType)
 
-      writeFileSync(`${ARTIFACT_DIR}/z-referencja-1.${extensionFor(variants[0]!.contentType)}`, variants[0]!.image)
-      writeFileSync(`${ARTIFACT_DIR}/z-referencja-2.${extensionFor(variants[1]!.contentType)}`, variants[1]!.image)
+        writeFileSync(
+          `${ARTIFACT_DIR}/z-referencja-1.${extensionFor(variants[0]!.contentType)}`,
+          variants[0]!.image,
+        )
+        writeFileSync(
+          `${ARTIFACT_DIR}/z-referencja-2.${extensionFor(variants[1]!.contentType)}`,
+          variants[1]!.image,
+        )
 
-      const saved = await createGeneration(OWNER_EMAIL, {
-        prompt: "przekształć załączony obraz w ilustrację w stylu akwareli",
-        hadReferenceImage: true,
-        referenceImageFileName: "reference.png",
-        model: IMAGE_MODEL,
-        variants: variants.map((variant, index) => ({
-          variantIndex: index,
-          image: variant.image,
-          contentType: variant.contentType,
-        })),
-      })
+        const saved = await createGeneration(OWNER_EMAIL, {
+          prompt: "przekształć załączony obraz w ilustrację w stylu akwareli",
+          hadReferenceImage: true,
+          referenceImageFileName: "reference.png",
+          model: IMAGE_MODEL,
+          variants: variants.map((variant, index) => ({
+            variantIndex: index,
+            image: variant.image,
+            contentType: variant.contentType,
+          })),
+        })
 
-      const reloaded = await getMyGeneration(OWNER_EMAIL, saved.id)
-      expect(reloaded?.hadReferenceImage).toBe(true)
-      expect(reloaded?.referenceImageFileName).toBe("reference.png")
-      expect(reloaded?.variants).toHaveLength(2)
-    },
-  )
-})
+        const reloaded = await getMyGeneration(OWNER_EMAIL, saved.id)
+        expect(reloaded?.hadReferenceImage).toBe(true)
+        expect(reloaded?.referenceImageFileName).toBe("reference.png")
+        expect(reloaded?.variants).toHaveLength(2)
+      },
+    )
+  },
+)

@@ -2,7 +2,15 @@ import type { Story } from "@ladle/react"
 import { useState } from "react"
 import { Combobox } from "./combobox"
 
-const CATEGORIES = ["Dokumenty", "Finanse", "Badania", "Administracja", "Agenci", "AI Tools", "Uprawnienia"]
+const CATEGORIES = [
+  "Dokumenty",
+  "Finanse",
+  "Badania",
+  "Administracja",
+  "Agenci",
+  "AI Tools",
+  "Uprawnienia",
+]
 
 export default {
   title: "Primitives / Combobox",
@@ -22,7 +30,12 @@ export const Empty: Story = () => {
   const [value, setValue] = useState("")
   return (
     <div className="max-w-xs p-6">
-      <Combobox value={value} onChange={setValue} options={CATEGORIES} placeholder="np. Administracja" />
+      <Combobox
+        value={value}
+        onChange={setValue}
+        options={CATEGORIES}
+        placeholder="np. Administracja"
+      />
     </div>
   )
 }

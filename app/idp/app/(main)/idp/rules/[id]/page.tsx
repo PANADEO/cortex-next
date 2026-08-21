@@ -1,6 +1,12 @@
 "use client"
 
 import {
+  hasMeaningfulNl,
+  RULE_CATEGORY_LABEL,
+  RULE_STATUS_LABEL,
+  RULE_TRIGGER_LABEL,
+} from "@/components/rules/labels"
+import {
   toastApiError,
   useCompileRule,
   useExplainRule,
@@ -42,6 +48,7 @@ import {
   TabsTrigger,
   Textarea,
 } from "@cortex/ui"
+import { formatAbsolute } from "@cortex/utils"
 import {
   AlertCircle,
   ArrowLeft,
@@ -57,17 +64,10 @@ import {
   Save,
   Sparkles,
 } from "lucide-react"
-import { formatAbsolute } from "@cortex/utils"
 import Link from "next/link"
 import { useParams, useSearchParams } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
-import {
-  hasMeaningfulNl,
-  RULE_CATEGORY_LABEL,
-  RULE_STATUS_LABEL,
-  RULE_TRIGGER_LABEL,
-} from "@/components/rules/labels"
 
 interface PreviewRow {
   line_number: number
@@ -601,16 +601,18 @@ export default function RuleEditorPage() {
                         <tbody className="divide-y divide-border">
                           {previewRows.flatMap((row) => {
                             const keys = Array.from(
-                              new Set([
-                                ...Object.keys(row.before),
-                                ...Object.keys(row.after),
-                              ]),
+                              new Set([...Object.keys(row.before), ...Object.keys(row.after)]),
                             )
                             return keys.map((k) => {
                               const changed = row.changed_columns.includes(k)
                               return (
-                                <tr key={`${row.line_number}-${k}`} className={changed ? "bg-emerald-500/5" : ""}>
-                                  <td className="px-2 py-1 font-mono text-[10px]">{row.line_number}</td>
+                                <tr
+                                  key={`${row.line_number}-${k}`}
+                                  className={changed ? "bg-emerald-500/5" : ""}
+                                >
+                                  <td className="px-2 py-1 font-mono text-[10px]">
+                                    {row.line_number}
+                                  </td>
                                   <td className="px-2 py-1 font-mono text-[10px]">{k}</td>
                                   <td className="px-2 py-1">{String(row.before[k] ?? "—")}</td>
                                   <td className="px-2 py-1 font-medium">
@@ -651,7 +653,9 @@ export default function RuleEditorPage() {
                       >
                         <div className="flex flex-col gap-0.5">
                           <div className="flex items-center gap-2">
-                            <Badge variant={v.version === rule.current_version ? "default" : "outline"}>
+                            <Badge
+                              variant={v.version === rule.current_version ? "default" : "outline"}
+                            >
                               v{v.version}
                             </Badge>
                             {v.version === rule.current_version ? (
@@ -711,8 +715,8 @@ function ExplanationPanel({
       <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-muted-foreground">
         <Lightbulb className="h-8 w-8 text-muted-foreground/60" />
         <p className="max-w-sm">
-          Zacznij pisać regułę po lewej. AI w locie podsumuje co robi i zaproponuje
-          przykład na konkretnych liczbach.
+          Zacznij pisać regułę po lewej. AI w locie podsumuje co robi i zaproponuje przykład na
+          konkretnych liczbach.
         </p>
       </div>
     )

@@ -56,7 +56,9 @@ describe("GET /api/content-guru/jobs/:id", () => {
       userEmail: EMAIL,
       mode: "batch",
       status: "running",
-      items: [{ templateId: "t1", templateLabel: "Kategoria — Nazwa", topic: "Temat", status: "running" }],
+      items: [
+        { templateId: "t1", templateLabel: "Kategoria — Nazwa", topic: "Temat", status: "running" },
+      ],
       createdAt: new Date("2026-08-03T00:00:00Z"),
       completedAt: null,
     }

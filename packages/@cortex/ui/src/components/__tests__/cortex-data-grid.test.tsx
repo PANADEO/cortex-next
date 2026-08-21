@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import "@testing-library/jest-dom/vitest"
 import type { ColumnDef } from "@tanstack/react-table"
+import "@testing-library/jest-dom/vitest"
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
@@ -48,7 +48,9 @@ describe("<CortexDataGrid>", () => {
     })
 
     it("pageSize enables pagination: fewer rows render, with pager controls present", () => {
-      const { container } = render(<CortexDataGrid columns={PLAIN_COLUMNS} data={ROWS} pageSize={2} />)
+      const { container } = render(
+        <CortexDataGrid columns={PLAIN_COLUMNS} data={ROWS} pageSize={2} />,
+      )
       const rows = bodyRows(container)
       expect(rows).toHaveLength(2)
       expect(rows.length).toBeLessThan(ROWS.length)
@@ -109,7 +111,9 @@ describe("<CortexDataGrid>", () => {
   describe("search", () => {
     it("typing a query narrows rendered rows to matches", async () => {
       const user = userEvent.setup()
-      const { container } = render(<CortexDataGrid columns={PLAIN_COLUMNS} data={ROWS} searchable />)
+      const { container } = render(
+        <CortexDataGrid columns={PLAIN_COLUMNS} data={ROWS} searchable />,
+      )
       expect(bodyRows(container)).toHaveLength(ROWS.length)
 
       await user.type(screen.getByPlaceholderText("Szukaj..."), "alpha")
@@ -153,10 +157,7 @@ describe("<CortexDataGrid>", () => {
   describe("sort + meta-passing mechanism (adversarial, added in review)", () => {
     it("sort applies to the filtered subset, not the full unfiltered set", async () => {
       const user = userEvent.setup()
-      const rowsWithAlphPrefix: Row[] = [
-        ...ROWS,
-        { id: "6", name: "Alphonse", amount: 15 },
-      ]
+      const rowsWithAlphPrefix: Row[] = [...ROWS, { id: "6", name: "Alphonse", amount: 15 }]
       const { container } = render(
         <CortexDataGrid columns={SORTABLE_COLUMNS} data={rowsWithAlphPrefix} searchable />,
       )
@@ -170,7 +171,9 @@ describe("<CortexDataGrid>", () => {
 
     it("sort order stays internally consistent across an unrelated re-render (search typing)", async () => {
       const user = userEvent.setup()
-      const { container } = render(<CortexDataGrid columns={SORTABLE_COLUMNS} data={ROWS} searchable />)
+      const { container } = render(
+        <CortexDataGrid columns={SORTABLE_COLUMNS} data={ROWS} searchable />,
+      )
       await user.click(screen.getByRole("button", { name: /Name/ })) // asc
       await user.type(screen.getByPlaceholderText("Szukaj..."), "a")
       const rows = bodyRows(container).map(firstCellText)

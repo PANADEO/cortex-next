@@ -48,12 +48,8 @@
           "tableFrom": "application_scopes",
           "tableTo": "applications",
           "schemaTo": "system_config",
-          "columnsFrom": [
-            "application_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["application_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -63,10 +59,7 @@
         "application_scopes_application_code_unique": {
           "name": "application_scopes_application_code_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "application_id",
-            "code"
-          ]
+          "columns": ["application_id", "code"]
         }
       },
       "policies": {},
@@ -206,9 +199,7 @@
         "applications_code_unique": {
           "name": "applications_code_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "code"
-          ]
+          "columns": ["code"]
         }
       },
       "policies": {},
@@ -284,12 +275,8 @@
           "tableFrom": "openwebui_group_mappings",
           "tableTo": "roles",
           "schemaTo": "system_config",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -299,9 +286,7 @@
         "openwebui_group_mappings_group_id_unique": {
           "name": "openwebui_group_mappings_group_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "group_id"
-          ]
+          "columns": ["group_id"]
         }
       },
       "policies": {},
@@ -355,12 +340,8 @@
           "tableFrom": "permissions_matrix",
           "tableTo": "roles",
           "schemaTo": "system_config",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -369,12 +350,8 @@
           "tableFrom": "permissions_matrix",
           "tableTo": "applications",
           "schemaTo": "system_config",
-          "columnsFrom": [
-            "application_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["application_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -382,10 +359,7 @@
       "compositePrimaryKeys": {
         "permissions_matrix_role_id_application_id_pk": {
           "name": "permissions_matrix_role_id_application_id_pk",
-          "columns": [
-            "role_id",
-            "application_id"
-          ]
+          "columns": ["role_id", "application_id"]
         }
       },
       "uniqueConstraints": {},
@@ -424,12 +398,8 @@
           "tableFrom": "role_application_scopes",
           "tableTo": "roles",
           "schemaTo": "system_config",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -438,12 +408,8 @@
           "tableFrom": "role_application_scopes",
           "tableTo": "application_scopes",
           "schemaTo": "system_config",
-          "columnsFrom": [
-            "application_scope_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["application_scope_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -451,10 +417,7 @@
       "compositePrimaryKeys": {
         "role_application_scopes_role_id_application_scope_id_pk": {
           "name": "role_application_scopes_role_id_application_scope_id_pk",
-          "columns": [
-            "role_id",
-            "application_scope_id"
-          ]
+          "columns": ["role_id", "application_scope_id"]
         }
       },
       "uniqueConstraints": {},
@@ -520,9 +483,7 @@
         "roles_code_unique": {
           "name": "roles_code_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "code"
-          ]
+          "columns": ["code"]
         }
       },
       "policies": {},
@@ -576,12 +537,8 @@
           "tableFrom": "user_roles",
           "tableTo": "users",
           "schemaTo": "system_config",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -590,12 +547,8 @@
           "tableFrom": "user_roles",
           "tableTo": "roles",
           "schemaTo": "system_config",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -603,10 +556,7 @@
       "compositePrimaryKeys": {
         "user_roles_user_id_role_id_pk": {
           "name": "user_roles_user_id_role_id_pk",
-          "columns": [
-            "user_id",
-            "role_id"
-          ]
+          "columns": ["user_id", "role_id"]
         }
       },
       "uniqueConstraints": {},
@@ -666,9 +616,7 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},

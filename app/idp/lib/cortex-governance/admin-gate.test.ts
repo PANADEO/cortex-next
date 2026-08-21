@@ -1,10 +1,10 @@
+import type * as CortexService from "@cortex/service"
+import type { CoworkGovernanceConfig } from "@cortex/types"
+import type { NextRequest } from "next/server"
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import type { CoworkGovernanceConfig } from "@cortex/types"
-import type { NextRequest } from "next/server"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import type * as CortexService from "@cortex/service"
 
 // Regression coverage for the critical finding of audyt 6.1: on a FRESH
 // cortex-next deployment the whole /api/cortex-config panel was reachable by

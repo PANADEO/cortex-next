@@ -31,9 +31,9 @@ describe("findMatchedForbiddenPhrases", () => {
   })
 
   it("nie łapie fraz, których nie ma w treści", () => {
-    expect(findMatchedForbiddenPhrases("Neutralny tekst bez niczego złego.", ["gwarancja"])).toEqual(
-      [],
-    )
+    expect(
+      findMatchedForbiddenPhrases("Neutralny tekst bez niczego złego.", ["gwarancja"]),
+    ).toEqual([])
   })
 
   it("łapie wiele różnych fraz naraz, w kolejności listy usera", () => {

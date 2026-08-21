@@ -1,10 +1,10 @@
 "use client"
 
+import type { BoardCard } from "@/lib/board/pipeline"
 import { PackageStatusBadges } from "@cortex/ui"
 import { cn, formatRelative, useFeatureFlag } from "@cortex/utils"
 import { AlertTriangle, ArchiveRestore, Files, Flag, UserRound } from "lucide-react"
 import Link from "next/link"
-import type { BoardCard } from "@/lib/board/pipeline"
 
 function initials(identifier: string): string {
   return (identifier[0] ?? "?").toUpperCase()
@@ -56,9 +56,7 @@ export function KanbanCard({ card }: KanbanCardProps) {
       </p>
 
       {card.subtitle ? (
-        <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">
-          {card.subtitle}
-        </p>
+        <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">{card.subtitle}</p>
       ) : null}
 
       <div className="mt-2.5">
@@ -84,7 +82,10 @@ export function KanbanCard({ card }: KanbanCardProps) {
             </span>
           ) : null}
           {card.kind === "clean" && card.hasError ? (
-            <AlertTriangle className="h-3.5 w-3.5 text-red-600 dark:text-red-400" aria-label="Processing error" />
+            <AlertTriangle
+              className="h-3.5 w-3.5 text-red-600 dark:text-red-400"
+              aria-label="Processing error"
+            />
           ) : null}
           {assignee ? (
             <span
@@ -126,7 +127,9 @@ function DirtyStatusRow({ card }: { card: Extract<BoardCard, { kind: "dirty" }> 
         className,
       )}
     >
-      <Icon className={cn("h-2.5 w-2.5", card.source.status === "classifying" && "animate-pulse")} />
+      <Icon
+        className={cn("h-2.5 w-2.5", card.source.status === "classifying" && "animate-pulse")}
+      />
       <span className="capitalize">{label}</span>
     </span>
   )

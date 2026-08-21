@@ -133,7 +133,9 @@ function connectorValues(overrides: Partial<ConnectorFormValues> = {}): Connecto
 describe("connectorFormValuesToConfig", () => {
   it("parses credential refs from name=path lines", () => {
     const config = connectorFormValuesToConfig(
-      connectorValues({ credentialRefs: "Authorization=finanse/jira/token\nX-Extra=finanse/extra" }),
+      connectorValues({
+        credentialRefs: "Authorization=finanse/jira/token\nX-Extra=finanse/extra",
+      }),
     )
     expect(config.credentialRefs).toEqual({
       Authorization: "finanse/jira/token",

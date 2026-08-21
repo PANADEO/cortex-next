@@ -5,8 +5,6 @@
 // listy tematów) i NIE zapisuje do content_archive — dokładnie jak "Testuj
 // generację" (templates/test-generation/route.ts, Round B).
 
-import { NextResponse, type NextRequest } from "next/server"
-import { z } from "zod"
 import { ContentGuruServiceError, generateContent } from "@/lib/content-guru/integration-client"
 import {
   MINI_GENERATOR_MAX_TOKENS,
@@ -16,6 +14,8 @@ import {
   buildTopicsPrompt,
   parseJsonStringArray,
 } from "@/lib/content-guru/mini-generators"
+import { NextResponse, type NextRequest } from "next/server"
+import { z } from "zod"
 import { requireContentGuruAccess } from "../../_lib/guard"
 
 export const runtime = "nodejs"
@@ -66,7 +66,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     if (error instanceof ContentGuruServiceError) {
       if (error.code === "model-not-allowed") {
-        return NextResponse.json({ error: "invalid-request", message: error.message }, { status: 400 })
+        return NextResponse.json(
+          { error: "invalid-request", message: error.message },
+          { status: 400 },
+        )
       }
       console.error("[content-guru] błąd generatora tematów:", error)
       return NextResponse.json({ error: "upstream-error", message: error.message }, { status: 502 })

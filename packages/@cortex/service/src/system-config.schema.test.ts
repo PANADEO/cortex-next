@@ -107,7 +107,9 @@ describe("niezmienniki kształtu", () => {
 
   it("kod ograniczony do małych liter, cyfr i myślnika", () => {
     for (const code of ["Wielkie", "ze spacja", "kropka.kropka", "slash/slash", ""]) {
-      expect(applicationInputSchema.safeParse({ ...NATIVE, code, route: "/ok" }).success).toBe(false)
+      expect(applicationInputSchema.safeParse({ ...NATIVE, code, route: "/ok" }).success).toBe(
+        false,
+      )
     }
   })
 })
@@ -115,9 +117,9 @@ describe("niezmienniki kształtu", () => {
 describe("userInputSchema — pre-provisioning użytkownika", () => {
   it("przyjmuje sam e-mail, fullName opcjonalne", () => {
     expect(userInputSchema.safeParse({ email: "jan@firma.pl" }).success).toBe(true)
-    expect(userInputSchema.safeParse({ email: "jan@firma.pl", fullName: "Jan Kowalski" }).success).toBe(
-      true,
-    )
+    expect(
+      userInputSchema.safeParse({ email: "jan@firma.pl", fullName: "Jan Kowalski" }).success,
+    ).toBe(true)
     expect(userInputSchema.safeParse({ email: "jan@firma.pl", fullName: null }).success).toBe(true)
   })
 
@@ -158,7 +160,8 @@ describe("roleInputSchema — tworzenie roli", () => {
   it("przyjmuje kod/nazwę, opis opcjonalny", () => {
     expect(roleInputSchema.safeParse({ code: "marketing", name: "Marketing" }).success).toBe(true)
     expect(
-      roleInputSchema.safeParse({ code: "marketing", name: "Marketing", description: "Opis" }).success,
+      roleInputSchema.safeParse({ code: "marketing", name: "Marketing", description: "Opis" })
+        .success,
     ).toBe(true)
   })
 
@@ -169,7 +172,11 @@ describe("roleInputSchema — tworzenie roli", () => {
   })
 
   it("isSystem nie jest polem tego schematu — nigdy nie da się go ustawić z formularza", () => {
-    const parsed = roleInputSchema.safeParse({ code: "marketing", name: "Marketing", isSystem: true })
+    const parsed = roleInputSchema.safeParse({
+      code: "marketing",
+      name: "Marketing",
+      isSystem: true,
+    })
     expect(parsed.success).toBe(true)
     if (parsed.success) expect(parsed.data).not.toHaveProperty("isSystem")
   })
@@ -199,7 +206,9 @@ describe("nextSortOrder — nowy wiersz ląduje na końcu listy", () => {
     // PATCH-u, który sam nie niesie `sortOrder` — czyli przy zwykłej edycji
     // nazwy/opisu/ikony. PATCH z własnym `sortOrder` (tryb "Zmień kolejność")
     // przechodzi, bo mergeApplicationInput woli wartość z patcha.
-    expect(applicationPatchSchema.safeParse({ sortOrder: nextSortOrder(10_000) }).success).toBe(true)
+    expect(applicationPatchSchema.safeParse({ sortOrder: nextSortOrder(10_000) }).success).toBe(
+      true,
+    )
     expect(applicationPatchSchema.safeParse({ sortOrder: 10_010 }).success).toBe(false)
   })
 

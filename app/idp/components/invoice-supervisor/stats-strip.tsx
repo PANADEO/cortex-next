@@ -27,7 +27,10 @@ export function InvoiceSupervisorStatsStrip() {
         label="Łączna kwota po terminie"
         value={
           data
-            ? formatInvoiceSupervisorMultiCurrency(data.total_overdue, data.overdue_currency_breakdown)
+            ? formatInvoiceSupervisorMultiCurrency(
+                data.total_overdue,
+                data.overdue_currency_breakdown,
+              )
             : undefined
         }
         isLoading={isLoading}
@@ -86,7 +89,10 @@ function StatItem({
         {isLoading ? (
           <Skeleton className="mt-0.5 h-4 w-12" />
         ) : isError ? (
-          <div className="truncate text-sm font-semibold text-destructive" title="Nie udało się wczytać">
+          <div
+            className="truncate text-sm font-semibold text-destructive"
+            title="Nie udało się wczytać"
+          >
             —
           </div>
         ) : (

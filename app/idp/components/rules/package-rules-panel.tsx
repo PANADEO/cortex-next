@@ -5,15 +5,10 @@ import {
   useAttachRule,
   useDetachRule,
   usePackageRuleAttachments,
-  useRunAttachedRule,
   useRules,
+  useRunAttachedRule,
 } from "@cortex/api"
-import {
-  RULE_TRIGGER,
-  type PackageRuleAttachment,
-  type RuleTrigger,
-} from "@cortex/types"
-import { formatAbsolute } from "@cortex/utils"
+import { RULE_TRIGGER, type PackageRuleAttachment, type RuleTrigger } from "@cortex/types"
 import {
   Badge,
   Button,
@@ -34,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@cortex/ui"
+import { formatAbsolute } from "@cortex/utils"
 import {
   AlertCircle,
   CheckCircle2,
@@ -126,8 +122,8 @@ export function PackageRulesPanel({ packageId, canEdit }: PackageRulesPanelProps
               <DialogHeader>
                 <DialogTitle>Attach a rule</DialogTitle>
                 <DialogDescription>
-                  Pick from active rules. Manual triggers require explicit run; auto runs on
-                  every extraction.
+                  Pick from active rules. Manual triggers require explicit run; auto runs on every
+                  extraction.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-3">

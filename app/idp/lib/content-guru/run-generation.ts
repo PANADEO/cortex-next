@@ -9,13 +9,13 @@
 // Zero Drizzle/RBAC — to warstwa orkiestracji promptu, nie serwis ani
 // kontroler.
 
-import { buildContentGuruPrompt } from "./prompt-builder"
 import {
   findMatchedForbiddenPhrases,
   resolveGenerationStatus,
   type ContentGuruGenerationStatus,
 } from "./forbidden-phrase-check"
 import { generateContent } from "./integration-client"
+import { buildContentGuruPrompt } from "./prompt-builder"
 
 // 1:1 z dzisiejszym limitem cienkiego narzędzia AI Tools (registry.ts,
 // content-guru maxTokens: 8000) — nie zmieniany przy porcie (Round A).

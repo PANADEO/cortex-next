@@ -6,11 +6,11 @@
 // — mapowane tu na 404, NIGDY 403 (403 zdradzałby, że rekord o tym id w
 // ogóle istnieje).
 
-import { deleteGeneration, getMyGeneration } from "@cortex/service"
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { requireVisualGuruAccess, toErrorResponse } from "../../_lib/guard"
 import type { GenerationDetailDto } from "@/features/visual-guru/types"
+import { deleteGeneration, getMyGeneration } from "@cortex/service"
+import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
+import { requireVisualGuruAccess, toErrorResponse } from "../../_lib/guard"
 
 export const runtime = "nodejs"
 

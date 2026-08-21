@@ -23,7 +23,9 @@ export function formatInvoiceSupervisorMultiCurrency(
     const [currency, amount] = entries[0]!
     return formatInvoiceSupervisorCurrency(amount, currency)
   }
-  return entries.map(([currency, amount]) => formatInvoiceSupervisorCurrency(amount, currency)).join(" · ")
+  return entries
+    .map(([currency, amount]) => formatInvoiceSupervisorCurrency(amount, currency))
+    .join(" · ")
 }
 
 export function formatInvoiceSupervisorDate(value: string): string {
@@ -35,12 +37,12 @@ export function formatInvoiceSupervisorDateTime(value: string): string {
 }
 
 export type InvoiceSupervisorEscalationStage =
-  | "proactive"
-  | "first_reminder"
-  | "follow_up_reminder"
-  | "payment_demand"
+  "proactive" | "first_reminder" | "follow_up_reminder" | "payment_demand"
 
-export const INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS: Record<InvoiceSupervisorEscalationStage, string> = {
+export const INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS: Record<
+  InvoiceSupervisorEscalationStage,
+  string
+> = {
   proactive: "Proaktywne",
   first_reminder: "Pierwsze przypomnienie",
   follow_up_reminder: "Kolejne przypomnienie",
@@ -49,7 +51,10 @@ export const INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS: Record<InvoiceSuperviso
 
 // Tailwind classes per stage — deliberately escalating in visual intensity
 // (blue -> amber -> orange -> red) so the urgency is legible at a glance.
-export const INVOICE_SUPERVISOR_ESCALATION_STAGE_COLORS: Record<InvoiceSupervisorEscalationStage, string> = {
+export const INVOICE_SUPERVISOR_ESCALATION_STAGE_COLORS: Record<
+  InvoiceSupervisorEscalationStage,
+  string
+> = {
   proactive: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
   first_reminder: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
   follow_up_reminder: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300",
@@ -57,15 +62,12 @@ export const INVOICE_SUPERVISOR_ESCALATION_STAGE_COLORS: Record<InvoiceSuperviso
 }
 
 export type InvoiceSupervisorInvoiceStatus =
-  | "pending"
-  | "upcoming"
-  | "due_today"
-  | "overdue"
-  | "paid"
-  | "partially_paid"
-  | "disputed"
+  "pending" | "upcoming" | "due_today" | "overdue" | "paid" | "partially_paid" | "disputed"
 
-export const INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS: Record<InvoiceSupervisorInvoiceStatus, string> = {
+export const INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS: Record<
+  InvoiceSupervisorInvoiceStatus,
+  string
+> = {
   pending: "Oczekująca",
   upcoming: "Zbliża się termin",
   due_today: "Termin dzisiaj",
@@ -75,7 +77,10 @@ export const INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS: Record<InvoiceSupervisorI
   disputed: "Sporna",
 }
 
-export const INVOICE_SUPERVISOR_INVOICE_STATUS_COLORS: Record<InvoiceSupervisorInvoiceStatus, string> = {
+export const INVOICE_SUPERVISOR_INVOICE_STATUS_COLORS: Record<
+  InvoiceSupervisorInvoiceStatus,
+  string
+> = {
   pending: "bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-300",
   upcoming: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
   due_today: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
@@ -92,7 +97,8 @@ export const INVOICE_SUPERVISOR_CHANNEL_LABELS: Record<InvoiceSupervisorChannel,
   sms: "SMS",
 }
 
-export type InvoiceSupervisorProposalStatus = "pending" | "approved" | "rejected" | "edited" | "sent"
+export type InvoiceSupervisorProposalStatus =
+  "pending" | "approved" | "rejected" | "edited" | "sent"
 
 export type InvoiceSupervisorRestrictiveness = "mała" | "średnia" | "duża" | "surowa"
 

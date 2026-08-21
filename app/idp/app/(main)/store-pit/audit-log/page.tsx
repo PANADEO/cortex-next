@@ -3,13 +3,7 @@
 import { INVOICE, PIPELINE } from "@/features/store-pit/dataset"
 import { count } from "@/features/store-pit/helpers"
 import type { AuditEntry, PipelineStep } from "@/features/store-pit/types"
-import {
-  Badge,
-  Card,
-  CardContent,
-  DataCard,
-  PageHeader,
-} from "@cortex/ui"
+import { Badge, Card, CardContent, DataCard, PageHeader } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { CheckCircle2, Layers, Package, TrendingUp } from "lucide-react"
 
@@ -71,12 +65,7 @@ export default function AuditLogPage() {
 
       <div className="flex flex-1 flex-col gap-6 px-8 py-6">
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <DataCard
-            label="Run status"
-            value="Completed"
-            tone="success"
-            icon={CheckCircle2}
-          />
+          <DataCard label="Run status" value="Completed" tone="success" icon={CheckCircle2} />
           <DataCard label="Steps" value="8 / 8" icon={Layers} />
           <DataCard label="Rows processed" value={count(3299)} icon={Package} />
           <DataCard label="Variance" value="0.00" tone="success" icon={TrendingUp} />
@@ -115,10 +104,10 @@ export default function AuditLogPage() {
                           {LAYER_LABEL[entry.layer]}
                         </Badge>
                       </td>
-                      <td className="px-3 py-3 text-right tabular-nums text-xs">
+                      <td className="px-3 py-3 text-right text-xs tabular-nums">
                         {count(entry.rows)}
                       </td>
-                      <td className="px-3 py-3 text-right tabular-nums text-xs">
+                      <td className="px-3 py-3 text-right text-xs tabular-nums">
                         {entry.duration}
                       </td>
                       <td className="px-3 py-3 font-mono text-xs text-muted-foreground">
@@ -127,7 +116,7 @@ export default function AuditLogPage() {
                       <td className="px-4 py-3">
                         <Badge
                           variant="outline"
-                          className="border-emerald-500/30 bg-emerald-500/15 text-emerald-700 text-xs dark:text-emerald-300"
+                          className="border-emerald-500/30 bg-emerald-500/15 text-xs text-emerald-700 dark:text-emerald-300"
                         >
                           OK
                         </Badge>

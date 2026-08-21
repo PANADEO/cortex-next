@@ -1,13 +1,13 @@
 "use client"
 
-import { Button, PageHeader } from "@cortex/ui"
-import { FileDown, Loader2 } from "lucide-react"
-import { useState } from "react"
-import { toast } from "sonner"
 import { ExportConfig } from "@/components/export/export-config"
 import { PackagePicker } from "@/components/export/package-picker"
 import { EXPORT_FORMATS, type ExportFormat } from "@/lib/export/fields"
 import { useExportBuilder } from "@/lib/export/use-export-builder"
+import { Button, PageHeader } from "@cortex/ui"
+import { FileDown, Loader2 } from "lucide-react"
+import { useState } from "react"
+import { toast } from "sonner"
 
 function formatLabel(id: ExportFormat): string {
   return EXPORT_FORMATS.find((f) => f.id === id)?.label ?? id
@@ -22,8 +22,7 @@ export default function ExportPage() {
   const state = useExportBuilder()
   const [running, setRunning] = useState(false)
 
-  const canRun =
-    state.selectedPackageIds.size > 0 && state.selectedFields.size > 0 && !running
+  const canRun = state.selectedPackageIds.size > 0 && state.selectedFields.size > 0 && !running
 
   const handleRun = async () => {
     setRunning(true)
@@ -98,9 +97,7 @@ function SummaryBar({
 function SummaryChip({ label, value }: { label: string; value: string | number }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1">
-      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-        {label}
-      </span>
+      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
       <span className="text-xs font-semibold text-foreground">{value}</span>
     </span>
   )

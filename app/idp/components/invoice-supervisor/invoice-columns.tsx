@@ -33,7 +33,8 @@ export function invoiceSupervisorColumns(): ColumnDef<InvoiceSupervisorInvoice, 
     {
       accessorKey: "amount",
       header: "Kwota",
-      cell: ({ row }) => formatInvoiceSupervisorCurrency(row.original.amount, row.original.currency),
+      cell: ({ row }) =>
+        formatInvoiceSupervisorCurrency(row.original.amount, row.original.currency),
     },
     {
       accessorKey: "due_date",

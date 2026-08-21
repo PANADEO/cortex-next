@@ -134,11 +134,7 @@ export default function NettingPage() {
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <DataCard label="Discount lines" value={count(NETTING_SUMMARY.rows)} />
-          <DataCard
-            label="Matched"
-            value={count(NETTING_SUMMARY.matched)}
-            tone="success"
-          />
+          <DataCard label="Matched" value={count(NETTING_SUMMARY.matched)} tone="success" />
           <DataCard
             label="Unmatched"
             value={count(NETTING_SUMMARY.unmatched)}

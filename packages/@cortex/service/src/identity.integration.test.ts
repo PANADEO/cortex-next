@@ -9,8 +9,8 @@
 //     packages/@cortex/service/src/identity.integration.test.ts
 
 import { closeDb, getDb, users } from "@cortex/db"
-import { randomUUID } from "node:crypto"
 import { eq } from "drizzle-orm"
+import { randomUUID } from "node:crypto"
 import { afterAll, beforeEach, describe, expect, it } from "vitest"
 import { getUserDisplayName } from "./identity"
 

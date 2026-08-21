@@ -1,10 +1,10 @@
+import { setGrants } from "@/lib/cortex-governance/testing/grants"
+import type * as CortexService from "@cortex/service"
+import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import type * as CortexService from "@cortex/service"
-import { setGrants } from "@/lib/cortex-governance/testing/grants"
 
 // Extension of the tile-level auth gate (Obsidian task note, "Rozszerzenie:
 // 5 dodatkowych route'ów") to a route the original 4-handler pass left
@@ -17,7 +17,6 @@ import { setGrants } from "@/lib/cortex-governance/testing/grants"
 // that, so message-count assertions are a reliable, un-flaky proxy for
 // "did the handler do real work" without needing to drain or mock the SSE
 // stream / chat engine.
-
 
 // Open mode stopped meaning "no restrictions" on 30.07.2026: it still skips
 // the governance ROLE filter, but the caller must hold the cortex-cowork

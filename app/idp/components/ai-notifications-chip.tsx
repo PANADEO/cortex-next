@@ -1,7 +1,7 @@
 "use client"
 
-import { AlertTriangle, Info } from "lucide-react"
 import { useAiNotificationCounts } from "@/components/ai-notifications-panel"
+import { AlertTriangle, Info } from "lucide-react"
 
 interface AiNotificationsChipProps {
   packageId: string

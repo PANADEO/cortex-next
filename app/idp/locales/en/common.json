@@ -8,6 +8,14 @@
     "yes": "Yes",
     "no": "No"
   },
-  "actions": { "cancel": "Cancel", "save": "Save", "create": "Create", "delete": "Delete", "edit": "Edit", "close": "Close", "retry": "Try again" },
+  "actions": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "create": "Create",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "retry": "Try again"
+  },
   "state": { "loading": "Loading…", "empty": "No data", "error": "Something went wrong" }
 }

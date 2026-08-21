@@ -97,7 +97,11 @@ describe("POST /api/content-guru/mini-generators/keyword", () => {
   })
 
   it("502 gdy model zwraca pustą odpowiedź", async () => {
-    generateContent.mockResolvedValueOnce({ content: "   ", tokensUsed: 5, model: VALID_BODY.model })
+    generateContent.mockResolvedValueOnce({
+      content: "   ",
+      tokensUsed: 5,
+      model: VALID_BODY.model,
+    })
 
     const response = await POST(makeRequest(VALID_BODY) as never)
 

@@ -6,14 +6,14 @@
 // po treści promptu. Jedna dominująca akcja wiersza — "zobacz szczegóły"
 // (code-ui "Listy: row-actions").
 
+import { useHistory } from "@/features/visual-guru/hooks"
+import type { GenerationListItemDto } from "@/features/visual-guru/types"
 import { Badge, Button, CortexDataGrid, EmptyState, LoadingState, PageHeader } from "@cortex/ui"
 import { formatAbsolute } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
 import { ChevronRight, ImageOff, Images } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useMemo } from "react"
-import { useHistory } from "@/features/visual-guru/hooks"
-import type { GenerationListItemDto } from "@/features/visual-guru/types"
 
 // Referencja stabilna między renderami — wzorem document-parser/history/page.tsx.
 const EMPTY_ITEMS: GenerationListItemDto[] = []
@@ -95,7 +95,10 @@ export default function VisualGuruHistoryPage() {
 
   return (
     <>
-      <PageHeader title="Archiwum" description="Wszystkie generacje, które wykonałeś — prompt, warianty i metadane." />
+      <PageHeader
+        title="Archiwum"
+        description="Wszystkie generacje, które wykonałeś — prompt, warianty i metadane."
+      />
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         {historyQuery.isLoading ? (

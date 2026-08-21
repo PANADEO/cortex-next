@@ -1,5 +1,5 @@
-import * as Icons from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import * as Icons from "lucide-react"
 
 // Siostrzany plik `icon-picker.tsx` obok — TA SAMA izolacja i TEN SAM powód
 // (komentarz w ../../index.ts, regresja bundle-size 31.07.2026: `import *

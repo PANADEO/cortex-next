@@ -173,7 +173,9 @@ function DocumentAiFields({ document }: { document: IdpBasicDocument }) {
     ["Issuer/carrier", document.issuer_or_carrier],
     ["Invoice no.", document.invoice_number],
     ["CMR notes", document.cmr_notes],
-    ...document.extracted_data.map((field) => [formatAiFieldLabel(field.name), field.value] as const),
+    ...document.extracted_data.map(
+      (field) => [formatAiFieldLabel(field.name), field.value] as const,
+    ),
   ].filter(([, value]) => Boolean(value))
 
   if (fields.length === 0 && document.ai_alerts.length === 0) return null

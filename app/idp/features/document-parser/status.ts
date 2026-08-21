@@ -49,7 +49,10 @@ export const ERROR_CODE_MESSAGES: Record<JobErrorCode, { title: string; hint: st
   },
 }
 
-export function errorMessageFor(errorCode: JobErrorCode | null, fallback: string | null): {
+export function errorMessageFor(
+  errorCode: JobErrorCode | null,
+  fallback: string | null,
+): {
   title: string
   hint: string
 } {

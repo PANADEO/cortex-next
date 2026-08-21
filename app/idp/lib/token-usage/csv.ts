@@ -117,7 +117,10 @@ export function buildDetailCsv(rows: readonly UsageDetailRow[]): string {
  * bywa przekazywany dalej bez ekranu, na którym ta nota jest widoczna, a bez
  * niej łatwo wziąć te liczby za rozliczenie co do tokena (patrz 1.4 projektu).
  */
-export function buildDetailJson(report: UsageReport, range: { start: string; end: string }): string {
+export function buildDetailJson(
+  report: UsageReport,
+  range: { start: string; end: string },
+): string {
   return JSON.stringify(
     {
       zakres: { od: range.start, do: range.end, strefa: "Europe/Warsaw (cortex-proxy)" },

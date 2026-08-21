@@ -36,7 +36,8 @@ export const geoScoreSettingsSchema = z
     bulletPatterns: wordList,
   })
   .superRefine((data, ctx) => {
-    const sum = data.weightStatistics + data.weightActionVerbs + data.weightStructure + data.weightObjectivity
+    const sum =
+      data.weightStatistics + data.weightActionVerbs + data.weightStructure + data.weightObjectivity
     if (sum !== 100) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -80,7 +81,9 @@ export function configDtoToFormValues(dto: GeoScoreConfigDto): GeoScoreSettingsF
   }
 }
 
-export function formValuesToUpdateRequest(values: GeoScoreSettingsFormValues): UpdateGeoScoreConfigRequestDto {
+export function formValuesToUpdateRequest(
+  values: GeoScoreSettingsFormValues,
+): UpdateGeoScoreConfigRequestDto {
   return {
     weightStatistics: values.weightStatistics / 100,
     weightActionVerbs: values.weightActionVerbs / 100,

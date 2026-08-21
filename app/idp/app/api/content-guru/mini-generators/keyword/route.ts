@@ -3,8 +3,6 @@
 // generowania. Utility call, wzorem topics/route.ts: NIE przechodzi przez
 // run-generation.ts, NIE zapisuje do content_archive.
 
-import { NextResponse, type NextRequest } from "next/server"
-import { z } from "zod"
 import { ContentGuruServiceError, generateContent } from "@/lib/content-guru/integration-client"
 import {
   MINI_GENERATOR_MAX_TOKENS,
@@ -12,6 +10,8 @@ import {
   buildKeywordPhrasePrompt,
   stripWrappingQuotes,
 } from "@/lib/content-guru/mini-generators"
+import { NextResponse, type NextRequest } from "next/server"
+import { z } from "zod"
 import { requireContentGuruAccess } from "../../_lib/guard"
 
 export const runtime = "nodejs"
@@ -51,7 +51,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const keywordPhrase = stripWrappingQuotes(generated.content)
     if (!keywordPhrase) {
       return NextResponse.json(
-        { error: "generation-failed", message: "Model nie zwrócił frazy kluczowej. Spróbuj ponownie." },
+        {
+          error: "generation-failed",
+          message: "Model nie zwrócił frazy kluczowej. Spróbuj ponownie.",
+        },
         { status: 502 },
       )
     }
@@ -60,7 +63,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     if (error instanceof ContentGuruServiceError) {
       if (error.code === "model-not-allowed") {
-        return NextResponse.json({ error: "invalid-request", message: error.message }, { status: 400 })
+        return NextResponse.json(
+          { error: "invalid-request", message: error.message },
+          { status: 400 },
+        )
       }
       console.error("[content-guru] błąd generatora frazy kluczowej:", error)
       return NextResponse.json({ error: "upstream-error", message: error.message }, { status: 502 })

@@ -45,8 +45,7 @@ export function DotGrid({
     if (!ctx) return
 
     const reduceMotion =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
     const shouldAnimate = animate && !reduceMotion
 
     let rafId: number | null = null

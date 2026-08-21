@@ -7,6 +7,11 @@
 // przycisk w pozycji breadcrumb-adjacent (PageHeader actions), nie
 // zagrzebany pod tabelą jak w legacy Streamlicie.
 
+import { GeoScoreResultView } from "@/features/geo-score-calculator/components/result-view"
+import {
+  useDeleteGeoScoreCalculation,
+  useGeoScoreCalculation,
+} from "@/features/geo-score-calculator/hooks"
 import { toastApiError } from "@cortex/api"
 import {
   AlertDialog,
@@ -32,8 +37,6 @@ import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
-import { GeoScoreResultView } from "@/features/geo-score-calculator/components/result-view"
-import { useDeleteGeoScoreCalculation, useGeoScoreCalculation } from "@/features/geo-score-calculator/hooks"
 
 export default function GeoScoreCalculatorHistoryDetailPage() {
   const params = useParams<{ id: string }>()
@@ -62,7 +65,9 @@ export default function GeoScoreCalculatorHistoryDetailPage() {
       <PageHeader
         title="Szczegóły analizy"
         description={
-          calculation ? `Zapisano ${formatAbsolute(calculation.createdAt)}` : "Pełny wynik i konfiguracja użyta do jego policzenia."
+          calculation
+            ? `Zapisano ${formatAbsolute(calculation.createdAt)}`
+            : "Pełny wynik i konfiguracja użyta do jego policzenia."
         }
         actions={
           <div className="flex items-center gap-2">

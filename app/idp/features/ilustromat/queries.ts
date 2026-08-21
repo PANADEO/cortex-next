@@ -12,7 +12,8 @@ const BASE = "/api/ilustromat"
 
 export const queryKeys = {
   all: ["ilustromat"] as const,
-  templates: (activeOnly?: boolean) => [...queryKeys.all, "templates", activeOnly ?? false] as const,
+  templates: (activeOnly?: boolean) =>
+    [...queryKeys.all, "templates", activeOnly ?? false] as const,
 }
 
 export const endpoints = {

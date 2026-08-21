@@ -38,10 +38,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-class TestErrorBoundary extends Component<
-  { children: ReactNode },
-  { error: Error | null }
-> {
+class TestErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null }
   static getDerivedStateFromError(error: Error) {
     return { error }
@@ -61,13 +58,7 @@ function freshClient(): QueryClient {
   })
 }
 
-function Wrapper({
-  client,
-  children,
-}: {
-  client: QueryClient
-  children: ReactNode
-}) {
+function Wrapper({ client, children }: { client: QueryClient; children: ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <TestErrorBoundary>{children}</TestErrorBoundary>
@@ -83,7 +74,7 @@ interface RouteResponse {
 function makeFetchMock(routes: Record<string, RouteResponse>) {
   return vi.fn((input: RequestInfo | URL) => {
     const url = typeof input === "string" ? input : input.toString()
-    const path = url.startsWith("http") ? new URL(url).pathname : url.split("?")[0] ?? url
+    const path = url.startsWith("http") ? new URL(url).pathname : (url.split("?")[0] ?? url)
     const route = routes[path ?? ""]
     if (!route) {
       return new Promise<Response>(() => {}) // hang for unexpected routes
@@ -134,9 +125,7 @@ describe("ClassificationWorkspacePage — feature flag gating", () => {
       expect(notFound).toHaveBeenCalled()
     })
     const calls = fetchMock.mock.calls.map((c) => String(c[0]))
-    expect(
-      calls.some((u) => u.includes("/classification/dirty-packages/test-1")),
-    ).toBe(false)
+    expect(calls.some((u) => u.includes("/classification/dirty-packages/test-1"))).toBe(false)
   })
 
   it("renders LoadingState while /config is in flight", async () => {

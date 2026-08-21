@@ -128,12 +128,16 @@ export default function UsersPage() {
     try {
       await updateUser.mutateAsync({ id: user.id, body: { isActive: !user.isActive } })
       toast.success(
-        user.isActive ? `Dezaktywowano użytkownika ${user.email}` : `Aktywowano użytkownika ${user.email}`,
+        user.isActive
+          ? `Dezaktywowano użytkownika ${user.email}`
+          : `Aktywowano użytkownika ${user.email}`,
       )
     } catch (error) {
       toastApiError(
         error,
-        user.isActive ? "Nie udało się dezaktywować użytkownika" : "Nie udało się aktywować użytkownika",
+        user.isActive
+          ? "Nie udało się dezaktywować użytkownika"
+          : "Nie udało się aktywować użytkownika",
       )
     }
   }
@@ -265,7 +269,9 @@ export default function UsersPage() {
                 id="new-user-email"
                 type="email"
                 value={newUser.email}
-                onChange={(event) => setNewUser((current) => ({ ...current, email: event.target.value }))}
+                onChange={(event) =>
+                  setNewUser((current) => ({ ...current, email: event.target.value }))
+                }
                 placeholder="jan.kowalski@firma.pl"
               />
               <span className="text-xs text-muted-foreground">
@@ -298,7 +304,10 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={editedDetails !== null} onOpenChange={(open) => !open && setEditedDetails(null)}>
+      <Dialog
+        open={editedDetails !== null}
+        onOpenChange={(open) => !open && setEditedDetails(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Dane użytkownika {editedDetails?.email}</DialogTitle>
@@ -341,9 +350,7 @@ export default function UsersPage() {
           </DialogHeader>
 
           {roles.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nie zdefiniowano jeszcze żadnej roli.
-            </p>
+            <p className="text-sm text-muted-foreground">Nie zdefiniowano jeszcze żadnej roli.</p>
           ) : (
             <div className="flex flex-col gap-3">
               {roles.map((role: RoleSummary) => (

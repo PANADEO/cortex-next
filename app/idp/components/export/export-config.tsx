@@ -1,7 +1,10 @@
 "use client"
 
+import { EXPORT_FIELD_GROUPS, EXPORT_FORMATS, type ExportFormat } from "@/lib/export/fields"
+import type { ExportBuilderState } from "@/lib/export/use-export-builder"
 import { Checkbox, Input, Label, ScrollArea, Switch } from "@cortex/ui"
 import { cn } from "@cortex/utils"
+import type { LucideIcon } from "lucide-react"
 import {
   Download,
   FileCode,
@@ -11,9 +14,6 @@ import {
   FolderTree,
   Layers,
 } from "lucide-react"
-import type { LucideIcon } from "lucide-react"
-import { EXPORT_FIELD_GROUPS, EXPORT_FORMATS, type ExportFormat } from "@/lib/export/fields"
-import type { ExportBuilderState } from "@/lib/export/use-export-builder"
 
 const FORMAT_ICON: Record<ExportFormat, LucideIcon> = {
   csv: FileText,
@@ -74,22 +74,15 @@ function FormatSection({ state }: { state: ExportBuilderState }) {
               onClick={() => state.setFormat(fmt.id)}
               className={cn(
                 "flex items-start gap-2 rounded-md border px-3 py-2 text-left transition-colors",
-                active
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:bg-muted/50",
+                active ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50",
               )}
             >
               <Icon
-                className={cn(
-                  "mt-0.5 h-4 w-4",
-                  active ? "text-primary" : "text-muted-foreground",
-                )}
+                className={cn("mt-0.5 h-4 w-4", active ? "text-primary" : "text-muted-foreground")}
               />
               <div className="min-w-0">
                 <p className="text-xs font-semibold">{fmt.label}</p>
-                <p className="truncate text-[10px] text-muted-foreground">
-                  {fmt.description}
-                </p>
+                <p className="truncate text-[10px] text-muted-foreground">{fmt.description}</p>
               </div>
             </button>
           )
@@ -177,10 +170,7 @@ function PackagingSection({ state }: { state: ExportBuilderState }) {
               Original PDF / DOCX / XLSX alongside the extracted result.
             </p>
           </div>
-          <Switch
-            checked={state.includeSources}
-            onCheckedChange={state.setIncludeSources}
-          />
+          <Switch checked={state.includeSources} onCheckedChange={state.setIncludeSources} />
         </div>
 
         <div className="space-y-2 px-3 py-2">

@@ -230,12 +230,8 @@
           "tableFrom": "template_assets",
           "tableTo": "frame_templates",
           "schemaTo": "ilustromat",
-          "columnsFrom": [
-            "template_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["template_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -245,10 +241,7 @@
         "template_assets_template_kind_unique": {
           "name": "template_assets_template_kind_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "template_id",
-            "kind"
-          ]
+          "columns": ["template_id", "kind"]
         }
       },
       "policies": {},

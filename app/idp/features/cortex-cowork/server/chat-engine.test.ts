@@ -1,8 +1,8 @@
+import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { EventEmitter } from "node:events"
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // Regression coverage for the X-User-ID plumbing (Obsidian:
@@ -169,7 +169,11 @@ describe("runFlueTurn spawn env (via runChatTurn)", () => {
     await runChatTurn(session, "hello", { userEmail: "bob@example.com" })
 
     expect(spawnMock).toHaveBeenCalledTimes(1)
-    const [, , spawnOptions] = spawnMock.mock.calls[0] as [unknown, unknown, { env: NodeJS.ProcessEnv }]
+    const [, , spawnOptions] = spawnMock.mock.calls[0] as [
+      unknown,
+      unknown,
+      { env: NodeJS.ProcessEnv },
+    ]
     expect(spawnOptions.env.COWORK_USER_EMAIL).toBe("bob@example.com")
   })
 
@@ -195,7 +199,11 @@ describe("runFlueTurn spawn env (via runChatTurn)", () => {
     await runChatTurn(session, "hello", {})
 
     expect(spawnMock).toHaveBeenCalledTimes(1)
-    const [, , spawnOptions] = spawnMock.mock.calls[0] as [unknown, unknown, { env: NodeJS.ProcessEnv }]
+    const [, , spawnOptions] = spawnMock.mock.calls[0] as [
+      unknown,
+      unknown,
+      { env: NodeJS.ProcessEnv },
+    ]
     expect(spawnOptions.env.COWORK_USER_EMAIL).toBeUndefined()
   })
 })

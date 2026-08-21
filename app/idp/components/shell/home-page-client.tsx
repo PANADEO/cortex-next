@@ -1,10 +1,10 @@
 "use client"
 
-import { useAuthorizedApps, useMe } from "@cortex/api"
+import { getAuthErrorMessage } from "@/lib/auth-error-message"
 import type { TileHrefOverrides } from "@/lib/tiles"
+import { useAuthorizedApps, useMe } from "@cortex/api"
 import { useSearchParams } from "next/navigation"
 import { Suspense } from "react"
-import { getAuthErrorMessage } from "@/lib/auth-error-message"
 import { HubGate } from "./app-gate"
 import { AuthedHome } from "./authed-home"
 import { LandingHero } from "./landing-hero"

@@ -1,9 +1,9 @@
 import { filmInputSchema } from "@/features/okna-czasowe/schemas"
 import type { Film } from "@/features/okna-czasowe/types"
 import { store } from "@/lib/okna-czasowe/store"
-import { randomUUID } from "node:crypto"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
+import { randomUUID } from "node:crypto"
 import { denyUnlessAllowed } from "../_lib/guard"
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -23,7 +23,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const parsed = filmInputSchema.safeParse(await request.json())
   if (!parsed.success) {
-    return NextResponse.json({ message: parsed.error.issues[0]?.message ?? "Nieprawidłowe dane" }, { status: 400 })
+    return NextResponse.json(
+      { message: parsed.error.issues[0]?.message ?? "Nieprawidłowe dane" },
+      { status: 400 },
+    )
   }
 
   const now = new Date().toISOString()

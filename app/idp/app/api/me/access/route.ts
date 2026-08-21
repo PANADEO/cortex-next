@@ -21,8 +21,8 @@
 // Odmowa NIE jest 4xx: `AppGate` rozróżnia "nie masz dostępu" (denied) od
 // "bramka się wywaliła" (error) po treści, a nie po kodzie HTTP. Zamiana na
 // 403 przeniosłaby usera na inny ekran dla tego samego stanu.
-import { getRequestEmail } from "@cortex/service"
 import type { AuthorizedAppsResponse } from "@cortex/api"
+import { getRequestEmail } from "@cortex/service"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { grantedAppCodes } from "../../_lib/granted-apps"

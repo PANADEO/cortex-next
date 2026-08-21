@@ -274,7 +274,9 @@ function HistoryPanel({ error, isLoading, items, onRefresh, onSelect }: HistoryP
               <p className="mb-2 line-clamp-2 text-xs text-muted-foreground">
                 {createPreview(item.userPrompt)}
               </p>
-              <p className="max-h-16 overflow-hidden text-sm leading-5">{createPreview(item.content)}</p>
+              <p className="max-h-16 overflow-hidden text-sm leading-5">
+                {createPreview(item.content)}
+              </p>
               <div className="mt-3 flex justify-end">
                 <Button type="button" size="sm" variant="outline" onClick={() => onSelect(item)}>
                   Pokaż

@@ -287,16 +287,13 @@ export function useVisibleInvoiceLineColumns(showAtrColumns = true) {
     writeStoredHiddenColumns(mergedHiddenColumns.length > 0 ? mergedHiddenColumns : null)
   }, [preferences.data])
 
-  const hiddenColumnValues = useMemo(
-    () => {
-      if (!preferencesIncludeInvoiceLineColumns(preferences.data)) return storedHiddenColumns
-      return mergeLocalOnlyHiddenColumns(
-        getInvoiceLineHiddenColumns(preferences.data),
-        storedHiddenColumns,
-      )
-    },
-    [preferences.data, storedHiddenColumns],
-  )
+  const hiddenColumnValues = useMemo(() => {
+    if (!preferencesIncludeInvoiceLineColumns(preferences.data)) return storedHiddenColumns
+    return mergeLocalOnlyHiddenColumns(
+      getInvoiceLineHiddenColumns(preferences.data),
+      storedHiddenColumns,
+    )
+  }, [preferences.data, storedHiddenColumns])
   const hiddenColumns = useMemo(() => new Set(hiddenColumnValues), [hiddenColumnValues])
   const availableColumns = useMemo(
     () => getAvailableInvoiceLineColumns(showAtrColumns),

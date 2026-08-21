@@ -143,10 +143,7 @@ describe("buildUsageReport — normalizacja obu wariantów pustych wymiarów", (
       row({ user_id: "unknown", total_tokens: 7 }),
     ])
 
-    expect(report.byUser.map((user) => user.key).sort()).toEqual([
-      UNKNOWN_USER_LABEL,
-      "anonymous",
-    ])
+    expect(report.byUser.map((user) => user.key).sort()).toEqual([UNKNOWN_USER_LABEL, "anonymous"])
   })
 
   // Proxy grupuje po SUROWYCH wartościach, więc "" i "unknown" przychodzą jako

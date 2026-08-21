@@ -18,8 +18,8 @@ import {
   userRoles,
   users,
 } from "@cortex/db"
-import { randomUUID } from "node:crypto"
 import { eq } from "drizzle-orm"
+import { randomUUID } from "node:crypto"
 import { afterAll, beforeEach, describe, expect, it } from "vitest"
 import { clearTileAccessCache, getGrantedApplicationCodes, requireTileAccess } from "./rbac"
 
@@ -53,16 +53,17 @@ describe.skipIf(!hasDatabase)("requireTileAccess — prawdziwy Postgres", () => 
     await db.delete(roles).where(eq(roles.code, ROLE_CODE))
 
     const [user] = await db.insert(users).values({ email: EMAIL }).returning()
-    const [role] = await db.insert(roles).values({ code: ROLE_CODE, name: "Rola testowa" }).returning()
+    const [role] = await db
+      .insert(roles)
+      .values({ code: ROLE_CODE, name: "Rola testowa" })
+      .returning()
     const [application] = await db
       .insert(applications)
       .values({ code: APP_CODE, name: "Kafelek testowy", kind: "native", route: `/${APP_CODE}` })
       .returning()
 
     await db.insert(userRoles).values({ userId: user!.id, roleId: role!.id })
-    await db
-      .insert(permissionsMatrix)
-      .values({ roleId: role!.id, applicationId: application!.id })
+    await db.insert(permissionsMatrix).values({ roleId: role!.id, applicationId: application!.id })
   })
 
   afterAll(async () => {

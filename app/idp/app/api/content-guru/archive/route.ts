@@ -4,8 +4,8 @@
 // żaden route go dotąd nie wołał — to jest ten pierwszy. PER-USER:
 // gate.email jedyne źródło filtra (code-service "Rekordy per-user" pkt 3).
 
-import { NextResponse, type NextRequest } from "next/server"
 import { listMyArchive } from "@cortex/service"
+import { NextResponse, type NextRequest } from "next/server"
 import { requireContentGuruAccess } from "../_lib/guard"
 
 export const runtime = "nodejs"

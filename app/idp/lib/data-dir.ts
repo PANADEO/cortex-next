@@ -26,5 +26,8 @@ export function resolveAppDataDir(subdir: string): string {
 
 /** Absolute path to the built-in skills folder shipped with the cowork tile. */
 export function builtinSkillsDir(): string {
-  return process.env.COWORK_BUILTIN_SKILLS_DIR ?? path.join(appIdpDir(), "features", "cortex-cowork", "skills")
+  return (
+    process.env.COWORK_BUILTIN_SKILLS_DIR ??
+    path.join(appIdpDir(), "features", "cortex-cowork", "skills")
+  )
 }

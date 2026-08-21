@@ -1,7 +1,7 @@
 "use client"
 
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMe } from "@cortex/api"
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { formatInvoiceSupervisorError, invoiceSupervisorApi } from "./api"
 import type {
@@ -28,13 +28,16 @@ export const invoiceSupervisorQueryKeys = {
   invoiceSearch: (params: { status?: string; client_id?: number; query?: string }) =>
     [...invoiceSupervisorQueryKeys.invoices(), "search", params] as const,
   invoiceDetail: (id: number) => [...invoiceSupervisorQueryKeys.invoices(), "detail", id] as const,
-  invoicePayments: (id: number) => [...invoiceSupervisorQueryKeys.invoices(), id, "payments"] as const,
+  invoicePayments: (id: number) =>
+    [...invoiceSupervisorQueryKeys.invoices(), id, "payments"] as const,
 
   clients: () => [...invoiceSupervisorQueryKeys.all, "clients"] as const,
-  clientSearch: (query: string | undefined) => [...invoiceSupervisorQueryKeys.clients(), "search", query] as const,
+  clientSearch: (query: string | undefined) =>
+    [...invoiceSupervisorQueryKeys.clients(), "search", query] as const,
   clientsWithExposure: () => [...invoiceSupervisorQueryKeys.clients(), "with-exposure"] as const,
   clientDetail: (id: number) => [...invoiceSupervisorQueryKeys.clients(), "detail", id] as const,
-  clientExposure: (id: number) => [...invoiceSupervisorQueryKeys.clients(), id, "exposure"] as const,
+  clientExposure: (id: number) =>
+    [...invoiceSupervisorQueryKeys.clients(), id, "exposure"] as const,
 
   policies: () => [...invoiceSupervisorQueryKeys.all, "policies"] as const,
   tones: () => [...invoiceSupervisorQueryKeys.all, "tones"] as const,
@@ -61,7 +64,9 @@ function invalidateInvoiceSupervisor(client: ReturnType<typeof useQueryClient>) 
 // Invoices
 // ---------------------------------------------------------------------------
 
-export function useInvoiceSupervisorInvoices(params: { status?: string; client_id?: number; query?: string } = {}) {
+export function useInvoiceSupervisorInvoices(
+  params: { status?: string; client_id?: number; query?: string } = {},
+) {
   return useQuery({
     queryKey: invoiceSupervisorQueryKeys.invoiceSearch(params),
     queryFn: () => invoiceSupervisorApi.searchInvoices(params),
@@ -92,24 +97,28 @@ export function useInvoiceSupervisorPayments(id: number) {
 export function useInvoiceSupervisorCreateInvoice() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (data: InvoiceSupervisorInvoiceCreateInput) => invoiceSupervisorApi.createInvoice(data),
+    mutationFn: (data: InvoiceSupervisorInvoiceCreateInput) =>
+      invoiceSupervisorApi.createInvoice(data),
     onSuccess: () => {
       toast.success("Faktura dodana")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się dodać faktury")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się dodać faktury")),
   })
 }
 
 export function useInvoiceSupervisorUpdateInvoice(id: number) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (data: Partial<InvoiceSupervisorInvoice>) => invoiceSupervisorApi.updateInvoice(id, data),
+    mutationFn: (data: Partial<InvoiceSupervisorInvoice>) =>
+      invoiceSupervisorApi.updateInvoice(id, data),
     onSuccess: () => {
       toast.success("Faktura zaktualizowana")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się zaktualizować faktury")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się zaktualizować faktury")),
   })
 }
 
@@ -122,20 +131,29 @@ export function useInvoiceSupervisorDeleteInvoice() {
       client.removeQueries({ queryKey: invoiceSupervisorQueryKeys.invoiceDetail(id) })
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się usunąć faktury")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się usunąć faktury")),
   })
 }
 
 export function useInvoiceSupervisorRegisterPayment(invoiceId: number) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: ({ amount, paymentDate, note }: { amount: number; paymentDate: string; note?: string }) =>
-      invoiceSupervisorApi.registerPayment(invoiceId, amount, paymentDate, note),
+    mutationFn: ({
+      amount,
+      paymentDate,
+      note,
+    }: {
+      amount: number
+      paymentDate: string
+      note?: string
+    }) => invoiceSupervisorApi.registerPayment(invoiceId, amount, paymentDate, note),
     onSuccess: () => {
       toast.success("Wpłata zarejestrowana")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się zarejestrować wpłaty")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się zarejestrować wpłaty")),
   })
 }
 
@@ -147,7 +165,8 @@ export function useInvoiceSupervisorMarkDisputed(invoiceId: number) {
       toast.success("Faktura oznaczona jako sporna")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się oznaczyć sporu")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się oznaczyć sporu")),
   })
 }
 
@@ -159,7 +178,8 @@ export function useInvoiceSupervisorClearDispute(invoiceId: number) {
       toast.success("Spór wyczyszczony")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się wyczyścić sporu")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się wyczyścić sporu")),
   })
 }
 
@@ -176,7 +196,8 @@ export function useInvoiceSupervisorImportInvoices() {
       )
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się zaimportować pliku")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się zaimportować pliku")),
   })
 }
 
@@ -190,7 +211,8 @@ export function useInvoiceSupervisorForceInvoiceEscalation(invoiceId: number) {
       toast.success("Etap eskalacji wymuszony")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się wymusić eskalacji")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się wymusić eskalacji")),
   })
 }
 
@@ -240,19 +262,22 @@ export function useInvoiceSupervisorCreateClient() {
       toast.success("Klient dodany")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się dodać klienta")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się dodać klienta")),
   })
 }
 
 export function useInvoiceSupervisorUpdateClient(id: number) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (data: Partial<InvoiceSupervisorClient>) => invoiceSupervisorApi.updateClient(id, data),
+    mutationFn: (data: Partial<InvoiceSupervisorClient>) =>
+      invoiceSupervisorApi.updateClient(id, data),
     onSuccess: () => {
       toast.success("Klient zaktualizowany")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się zaktualizować klienta")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się zaktualizować klienta")),
   })
 }
 
@@ -266,7 +291,8 @@ export function useInvoiceSupervisorForceClientEscalation(clientId: number) {
       toast.success(`Eskalowano ${result.escalated_invoice_count} faktur do etapu: ${result.stage}`)
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się wymusić eskalacji")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się wymusić eskalacji")),
   })
 }
 
@@ -275,11 +301,17 @@ export function useInvoiceSupervisorForceClientEscalation(clientId: number) {
 // ---------------------------------------------------------------------------
 
 export function useInvoiceSupervisorPolicies() {
-  return useQuery({ queryKey: invoiceSupervisorQueryKeys.policies(), queryFn: invoiceSupervisorApi.listPolicies })
+  return useQuery({
+    queryKey: invoiceSupervisorQueryKeys.policies(),
+    queryFn: invoiceSupervisorApi.listPolicies,
+  })
 }
 
 export function useInvoiceSupervisorTones() {
-  return useQuery({ queryKey: invoiceSupervisorQueryKeys.tones(), queryFn: invoiceSupervisorApi.listTones })
+  return useQuery({
+    queryKey: invoiceSupervisorQueryKeys.tones(),
+    queryFn: invoiceSupervisorApi.listTones,
+  })
 }
 
 export function useInvoiceSupervisorCreatePolicy() {
@@ -290,7 +322,8 @@ export function useInvoiceSupervisorCreatePolicy() {
       toast.success("Polityka dodana")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się dodać polityki")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się dodać polityki")),
   })
 }
 
@@ -303,7 +336,8 @@ export function useInvoiceSupervisorUpdatePolicy() {
       toast.success("Polityka zaktualizowana")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się zaktualizować polityki")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się zaktualizować polityki")),
   })
 }
 
@@ -315,7 +349,8 @@ export function useInvoiceSupervisorSetDefaultPolicy() {
       toast.success("Ustawiono jako domyślną")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się ustawić domyślnej")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się ustawić domyślnej")),
   })
 }
 
@@ -328,7 +363,8 @@ export function useInvoiceSupervisorCreateTone() {
       toast.success("Ton dodany")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się dodać tonu")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się dodać tonu")),
   })
 }
 
@@ -337,7 +373,10 @@ export function useInvoiceSupervisorCreateTone() {
 // ---------------------------------------------------------------------------
 
 export function useInvoiceSupervisorTemplates() {
-  return useQuery({ queryKey: invoiceSupervisorQueryKeys.templates(), queryFn: invoiceSupervisorApi.listTemplates })
+  return useQuery({
+    queryKey: invoiceSupervisorQueryKeys.templates(),
+    queryFn: invoiceSupervisorApi.listTemplates,
+  })
 }
 
 export function useInvoiceSupervisorTemplateCoverage() {
@@ -355,14 +394,17 @@ export function useInvoiceSupervisorSaveTemplate() {
       toast.success("Szablon zapisany")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się zapisać szablonu")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się zapisać szablonu")),
   })
 }
 
 export function useInvoiceSupervisorGenerateDraft() {
   return useMutation({
-    mutationFn: (data: InvoiceSupervisorGenerateDraftInput) => invoiceSupervisorApi.generateTemplateDraft(data),
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się wygenerować treści")),
+    mutationFn: (data: InvoiceSupervisorGenerateDraftInput) =>
+      invoiceSupervisorApi.generateTemplateDraft(data),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się wygenerować treści")),
   })
 }
 
@@ -374,7 +416,8 @@ export function useInvoiceSupervisorDeleteTemplate() {
       toast.success("Szablon usunięty")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się usunąć szablonu")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się usunąć szablonu")),
   })
 }
 
@@ -412,12 +455,14 @@ export function useInvoiceSupervisorSchedulerConfig() {
 export function useInvoiceSupervisorUpdateSchedulerConfig() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (data: Partial<InvoiceSupervisorSchedulerConfig>) => invoiceSupervisorApi.updateSchedulerConfig(data),
+    mutationFn: (data: Partial<InvoiceSupervisorSchedulerConfig>) =>
+      invoiceSupervisorApi.updateSchedulerConfig(data),
     onSuccess: () => {
       toast.success("Harmonogram zaktualizowany")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się zapisać harmonogramu")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się zapisać harmonogramu")),
   })
 }
 
@@ -431,7 +476,8 @@ export function useInvoiceSupervisorRunSchedulerNow() {
       )
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się uruchomić sprawdzenia")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się uruchomić sprawdzenia")),
   })
 }
 
@@ -450,7 +496,10 @@ export function useInvoiceSupervisorPendingProposals() {
 // No refetchInterval: not currently rendered by any page (no "all proposals" view exists
 // yet) — add the same OPERATIONAL_REFETCH_MS once a consuming page shows up.
 export function useInvoiceSupervisorAllProposals() {
-  return useQuery({ queryKey: invoiceSupervisorQueryKeys.inboxAll(), queryFn: invoiceSupervisorApi.listAllProposals })
+  return useQuery({
+    queryKey: invoiceSupervisorQueryKeys.inboxAll(),
+    queryFn: invoiceSupervisorApi.listAllProposals,
+  })
 }
 
 export function useInvoiceSupervisorApproveProposal() {
@@ -461,7 +510,8 @@ export function useInvoiceSupervisorApproveProposal() {
       toast.success("Propozycja zatwierdzona — wysyłka trafiła do kolejki")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się zatwierdzić propozycji")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się zatwierdzić propozycji")),
   })
 }
 
@@ -482,7 +532,8 @@ export function useInvoiceSupervisorBulkApproveProposals() {
       )
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się zatwierdzić propozycji")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się zatwierdzić propozycji")),
   })
 }
 
@@ -494,7 +545,8 @@ export function useInvoiceSupervisorRejectProposal() {
       toast.success("Propozycja odrzucona")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się odrzucić propozycji")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się odrzucić propozycji")),
   })
 }
 
@@ -506,20 +558,29 @@ export function useInvoiceSupervisorBulkRejectProposals() {
       toast.success(`Odrzucono ${result.rejected} propozycji`)
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się odrzucić propozycji")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się odrzucić propozycji")),
   })
 }
 
 export function useInvoiceSupervisorEditProposal() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, subject, content }: { id: string; subject: string | null; content: string }) =>
-      invoiceSupervisorApi.editProposal(id, subject, content),
+    mutationFn: ({
+      id,
+      subject,
+      content,
+    }: {
+      id: string
+      subject: string | null
+      content: string
+    }) => invoiceSupervisorApi.editProposal(id, subject, content),
     onSuccess: () => {
       toast.success("Treść zapisana")
       invalidateInvoiceSupervisor(client)
     },
-    onError: (error) => toast.error(formatInvoiceSupervisorError(error, "Nie udało się zapisać treści")),
+    onError: (error) =>
+      toast.error(formatInvoiceSupervisorError(error, "Nie udało się zapisać treści")),
   })
 }
 

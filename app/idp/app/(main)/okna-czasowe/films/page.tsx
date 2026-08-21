@@ -1,7 +1,12 @@
 "use client"
 
 import { FilmFormDialog } from "@/features/okna-czasowe/components/film-form-dialog"
-import { useCreateFilm, useDeleteFilm, useFilms, useUpdateFilm } from "@/features/okna-czasowe/hooks/use-films"
+import {
+  useCreateFilm,
+  useDeleteFilm,
+  useFilms,
+  useUpdateFilm,
+} from "@/features/okna-czasowe/hooks/use-films"
 import type { Film, FilmInput } from "@/features/okna-czasowe/types"
 import { toastApiError } from "@cortex/api"
 import {
@@ -118,7 +123,10 @@ export default function OknaCzasoweFilmsPage() {
         onSubmit={handleSubmit}
       />
 
-      <AlertDialog open={deletingFilm !== null} onOpenChange={(open) => !open && setDeletingFilm(null)}>
+      <AlertDialog
+        open={deletingFilm !== null}
+        onOpenChange={(open) => !open && setDeletingFilm(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Usunąć „{deletingFilm?.title}”?</AlertDialogTitle>

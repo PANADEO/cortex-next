@@ -11,6 +11,12 @@
 // reviewera). Jedna dominująca akcja wiersza (ChevronRight, code-ui
 // "row-actions") -> /content-guru/history/[id].
 
+import { useMyArchive } from "@/features/content-guru/hooks"
+import type {
+  ContentArchiveEntryDto,
+  ContentGuruGenerationStatus,
+} from "@/features/content-guru/types"
+import { ContentStatusBadge } from "@/features/content-guru/utils"
 import {
   Button,
   CortexDataGrid,
@@ -29,15 +35,13 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { ChevronRight, History } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
-import { ContentStatusBadge } from "@/features/content-guru/utils"
-import { useMyArchive } from "@/features/content-guru/hooks"
-import type { ContentArchiveEntryDto, ContentGuruGenerationStatus } from "@/features/content-guru/types"
 
-const STATUS_FILTER_OPTIONS: Array<{ value: ContentGuruGenerationStatus | "all"; label: string }> = [
-  { value: "all", label: "Wszystkie statusy" },
-  { value: "done", label: "Gotowe" },
-  { value: "done-with-warnings", label: "Zakazane frazy" },
-]
+const STATUS_FILTER_OPTIONS: Array<{ value: ContentGuruGenerationStatus | "all"; label: string }> =
+  [
+    { value: "all", label: "Wszystkie statusy" },
+    { value: "done", label: "Gotowe" },
+    { value: "done-with-warnings", label: "Zakazane frazy" },
+  ]
 const ALL_CONTENT_TYPES = "__all__"
 
 // Referencja stabilna między renderami — inaczej `archiveQuery.data ?? []`
@@ -52,13 +56,17 @@ export default function ContentGuruHistoryPage() {
 
   const rows = archiveQuery.data ?? EMPTY_ARCHIVE
 
-  const contentTypes = useMemo(() => Array.from(new Set(rows.map((row) => row.contentType))).sort(), [rows])
+  const contentTypes = useMemo(
+    () => Array.from(new Set(rows.map((row) => row.contentType))).sort(),
+    [rows],
+  )
 
   const filtered = useMemo(
     () =>
       rows.filter((row) => {
         if (statusFilter !== "all" && row.status !== statusFilter) return false
-        if (contentTypeFilter !== ALL_CONTENT_TYPES && row.contentType !== contentTypeFilter) return false
+        if (contentTypeFilter !== ALL_CONTENT_TYPES && row.contentType !== contentTypeFilter)
+          return false
         return true
       }),
     [rows, statusFilter, contentTypeFilter],
@@ -76,7 +84,9 @@ export default function ContentGuruHistoryPage() {
       {
         accessorKey: "topic",
         header: "Temat",
-        cell: ({ row }) => <span className="line-clamp-1 max-w-md">{row.original.topic ?? "—"}</span>,
+        cell: ({ row }) => (
+          <span className="line-clamp-1 max-w-md">{row.original.topic ?? "—"}</span>
+        ),
       },
       {
         accessorKey: "status",
@@ -120,7 +130,9 @@ export default function ContentGuruHistoryPage() {
             </Label>
             <Select
               value={statusFilter}
-              onValueChange={(value) => setStatusFilter(value as ContentGuruGenerationStatus | "all")}
+              onValueChange={(value) =>
+                setStatusFilter(value as ContentGuruGenerationStatus | "all")
+              }
             >
               <SelectTrigger id="content-guru-history-status" className="w-48">
                 <SelectValue />

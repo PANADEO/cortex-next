@@ -12,14 +12,7 @@
 // treścią (+ podświetlenie zakazanych fraz, D5 — ten sam renderer co tryb
 // "Pojedyncza", stąd wydzielenie do utils.tsx w tej rundzie).
 
-import {
-  Badge,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  Skeleton,
-} from "@cortex/ui"
+import { Badge, Dialog, DialogContent, DialogHeader, DialogTitle, Skeleton } from "@cortex/ui"
 import { AlertTriangle, CheckCircle2, CircleDashed, Loader2, XCircle } from "lucide-react"
 import { useMemo, useState } from "react"
 import type { GenerationJobDto, GenerationJobItemDto, GenerationJobMode } from "../types"
@@ -73,7 +66,9 @@ function ItemStatusBadge({ status }: { status: GenerationJobItemDto["status"] })
 
 function JobSummary({ job }: { job: GenerationJobDto }) {
   const total = job.items.length
-  const finished = job.items.filter((item) => item.status !== "pending" && item.status !== "running").length
+  const finished = job.items.filter(
+    (item) => item.status !== "pending" && item.status !== "running",
+  ).length
   return (
     <p className="text-xs text-muted-foreground">
       {job.status === "queued" || job.status === "running"
@@ -96,7 +91,7 @@ function ItemCell({ item, onSelect }: { item: GenerationJobItemDto; onSelect: ()
       type="button"
       onClick={clickable ? onSelect : undefined}
       disabled={!clickable}
-      className="flex w-full items-center justify-center rounded-md border border-border p-2 disabled:cursor-default enabled:hover:bg-muted/50"
+      className="flex w-full items-center justify-center rounded-md border border-border p-2 enabled:hover:bg-muted/50 disabled:cursor-default"
     >
       <ItemStatusBadge status={item.status} />
     </button>
@@ -158,7 +153,7 @@ export function GenerationJobCard({ job, mode, isLoading }: GenerationJobCardPro
               type="button"
               onClick={isClickable(item.status) ? () => setSelected(item) : undefined}
               disabled={!isClickable(item.status)}
-              className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-left disabled:cursor-default enabled:hover:bg-muted/50"
+              className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-left enabled:hover:bg-muted/50 disabled:cursor-default"
             >
               <span className="truncate text-sm">{item.topic}</span>
               <ItemStatusBadge status={item.status} />
@@ -231,7 +226,10 @@ export function GenerationJobCard({ job, mode, isLoading }: GenerationJobCardPro
                       </div>
                     ) : null}
                     <div className="whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-4 text-sm leading-relaxed">
-                      {renderHighlightedContent(selected.content ?? "", selected.matchedForbiddenPhrases ?? [])}
+                      {renderHighlightedContent(
+                        selected.content ?? "",
+                        selected.matchedForbiddenPhrases ?? [],
+                      )}
                     </div>
                   </>
                 )}

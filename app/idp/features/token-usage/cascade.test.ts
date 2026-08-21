@@ -95,7 +95,11 @@ describe("reconcileFilters", () => {
   // Wartość, która zniknęła z danych (np. po zmianie zakresu dat), jest
   // nieważna niezależnie od drugiego wymiaru.
   it("zwalnia wybór, którego w danych już w ogóle nie ma", () => {
-    const result = reconcileFilters(ROWS, { model: "model-ktorego-nie-ma", scope: ALL_OPTION }, "model")
+    const result = reconcileFilters(
+      ROWS,
+      { model: "model-ktorego-nie-ma", scope: ALL_OPTION },
+      "model",
+    )
 
     expect(result).toEqual({ model: ALL_OPTION, scope: ALL_OPTION })
   })

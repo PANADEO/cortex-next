@@ -34,9 +34,7 @@ export interface ExportBuilderState {
 export function useExportBuilder(): ExportBuilderState {
   const [selectedPackageIds, setSelected] = useState<Set<string>>(new Set())
   const [format, setFormat] = useState<ExportFormat>("csv")
-  const [selectedFields, setSelectedFields] = useState<Set<string>>(() =>
-    defaultSelectedFieldIds(),
-  )
+  const [selectedFields, setSelectedFields] = useState<Set<string>>(() => defaultSelectedFieldIds())
   const [includeSources, setIncludeSources] = useState(false)
   const [packaging, setPackaging] = useState<PackagingKind>("zip")
   const [destination, setDestination] = useState<ExportDestination>("download")

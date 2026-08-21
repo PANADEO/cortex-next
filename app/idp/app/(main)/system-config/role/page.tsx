@@ -207,7 +207,9 @@ export default function RolePage() {
       <Dialog open={dialog !== null} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{isCreating ? "Nowa rola" : `Edytuj rolę ${dialog?.role?.name ?? ""}`}</DialogTitle>
+            <DialogTitle>
+              {isCreating ? "Nowa rola" : `Edytuj rolę ${dialog?.role?.name ?? ""}`}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-4">
@@ -266,7 +268,10 @@ export default function RolePage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={roleToDelete !== null} onOpenChange={(open) => !open && setRoleToDelete(null)}>
+      <AlertDialog
+        open={roleToDelete !== null}
+        onOpenChange={(open) => !open && setRoleToDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Usunąć rolę {roleToDelete?.name}?</AlertDialogTitle>
@@ -314,7 +319,10 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
   async function handleAttachExisting() {
     if (!confirmGroup) return
     try {
-      await attach.mutateAsync({ id: role.id, body: { action: "existing", groupId: confirmGroup.id } })
+      await attach.mutateAsync({
+        id: role.id,
+        body: { action: "existing", groupId: confirmGroup.id },
+      })
       toast.success(`Podpięto grupę „${confirmGroup.name}” do roli ${role.name}`)
       setSelectedGroupName("")
     } catch (error) {
@@ -327,7 +335,9 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
   async function handleDetach() {
     try {
       await detach.mutateAsync(role.id)
-      toast.success("Odpięto grupę OpenWebUI od roli — jej członkostwo w OpenWebUI zostaje nietknięte")
+      toast.success(
+        "Odpięto grupę OpenWebUI od roli — jej członkostwo w OpenWebUI zostaje nietknięte",
+      )
     } catch (error) {
       toastApiError(error, "Nie udało się odpiąć grupy OpenWebUI")
     }
@@ -337,7 +347,9 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
     try {
       const result = await sync.mutateAsync(role.id)
       if (result.openwebuiSync.status === "failed") {
-        toast.error(`Synchronizacja nie powiodła się: ${result.openwebuiSync.message ?? "nieznany błąd"}`)
+        toast.error(
+          `Synchronizacja nie powiodła się: ${result.openwebuiSync.message ?? "nieznany błąd"}`,
+        )
       } else {
         toast.success("Zsynchronizowano grupę OpenWebUI")
       }
@@ -363,7 +375,9 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
     const groupOptions = data.availableGroups ?? []
     return (
       <div className="grid gap-2 rounded-md border border-dashed border-border p-3">
-        <p className="text-xs text-muted-foreground">Rola nie jest podpięta do żadnej grupy OpenWebUI.</p>
+        <p className="text-xs text-muted-foreground">
+          Rola nie jest podpięta do żadnej grupy OpenWebUI.
+        </p>
 
         <Button size="sm" variant="outline" onClick={handleCreate} disabled={attach.isPending}>
           <Link2 className="mr-1.5 h-3.5 w-3.5" />
@@ -393,7 +407,10 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
           </div>
         ) : null}
 
-        <AlertDialog open={confirmGroup !== null} onOpenChange={(open) => !open && setConfirmGroup(null)}>
+        <AlertDialog
+          open={confirmGroup !== null}
+          onOpenChange={(open) => !open && setConfirmGroup(null)}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Podpiąć istniejącą grupę „{confirmGroup?.name}”?</AlertDialogTitle>
@@ -436,8 +453,8 @@ function OpenwebuiGroupSection({ role }: { role: RoleSummary }) {
 
       {preview?.status === "ok" ? (
         <p className="text-xs text-muted-foreground">
-          Przy najbliższej synchronizacji: dodanych {preview.toAdd}, usuniętych {preview.toRemove} (cel:{" "}
-          {preview.targetCount} aktywnych użytkowników z kontem w OpenWebUI).
+          Przy najbliższej synchronizacji: dodanych {preview.toAdd}, usuniętych {preview.toRemove}{" "}
+          (cel: {preview.targetCount} aktywnych użytkowników z kontem w OpenWebUI).
         </p>
       ) : null}
 

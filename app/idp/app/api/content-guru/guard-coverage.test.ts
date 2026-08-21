@@ -237,7 +237,12 @@ function requiresScope(name: string, method: string): boolean {
 }
 
 const BYPASS_ATTEMPTS = [
-  { label: "brak nagłówka tożsamości", email: null, granted: [] as string[], scopes: [] as string[] },
+  {
+    label: "brak nagłówka tożsamości",
+    email: null,
+    granted: [] as string[],
+    scopes: [] as string[],
+  },
   { label: "obcy e-mail spoza bazy", email: "intruz@obca-firma.pl", granted: [], scopes: [] },
   { label: "znany e-mail bez żadnej roli", email: "bez-roli@firma.pl", granted: [], scopes: [] },
   {

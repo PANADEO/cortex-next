@@ -1,8 +1,8 @@
 "use client"
 
 import { cn } from "@cortex/utils"
-import { Monitor, Moon, Sun } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { Monitor, Moon, Sun } from "lucide-react"
 import { Button } from "./ui/button"
 import {
   DropdownMenu,

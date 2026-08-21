@@ -3,8 +3,8 @@
 // Zero surowego SQL poza tym plikiem i rbac-store.ts — dostęp przez Drizzle.
 
 import {
-  applicationScopes,
   applications,
+  applicationScopes,
   getDb,
   instanceSettings,
   permissionsMatrix,
@@ -119,10 +119,13 @@ export const applicationInputSchema = applicationFieldsSchema
     message: "Kafelek zewnętrzny nie może mieć route",
     path: ["route"],
   })
-  .refine((value) => (value.kind === "native" && value.route ? isInternalRoute(value.route) : true), {
-    message: "Ścieżka musi zaczynać się od pojedynczego / i wskazywać na tę aplikację",
-    path: ["route"],
-  })
+  .refine(
+    (value) => (value.kind === "native" && value.route ? isInternalRoute(value.route) : true),
+    {
+      message: "Ścieżka musi zaczynać się od pojedynczego / i wskazywać na tę aplikację",
+      path: ["route"],
+    },
+  )
   .refine((value) => (value.kind !== "native" && value.url ? isHttpUrl(value.url) : true), {
     message: "Adres musi zaczynać się od http:// albo https://",
     path: ["url"],
@@ -311,12 +314,19 @@ export async function updateUser(
     const nextIsActive = patch.isActive ?? existing.isActive
     activeChanged = nextIsActive !== existing.isActive
     if (activeChanged) {
-      await assertModuleStaysReachable(tx, { direction: "user-active", userId: id, isActive: nextIsActive })
+      await assertModuleStaysReachable(tx, {
+        direction: "user-active",
+        userId: id,
+        isActive: nextIsActive,
+      })
       // OpenWebUI (Wariant A): isActive gasi/przywraca WSZYSTKIE grupy ról
       // tego użytkownika naraz — zbiór ról zebrany TU, wewnątrz transakcji,
       // razem z resztą jej odczytów.
       roleIdsHeld = (
-        await tx.select({ roleId: userRoles.roleId }).from(userRoles).where(eq(userRoles.userId, id))
+        await tx
+          .select({ roleId: userRoles.roleId })
+          .from(userRoles)
+          .where(eq(userRoles.userId, id))
       ).map((row) => row.roleId)
     }
 
@@ -413,7 +423,9 @@ export async function updateRole(id: string, patch: RolePatch): Promise<RoleRow 
  * nie 409 self-lockout. Patrz test w system-config.integration.test.ts,
  * który wprost sprawdza tę kolejność.
  */
-export async function deleteRole(id: string): Promise<{ removed: boolean; openwebuiSync: OpenwebuiSyncResult }> {
+export async function deleteRole(
+  id: string,
+): Promise<{ removed: boolean; openwebuiSync: OpenwebuiSyncResult }> {
   const db = getDb()
 
   // Złapane PRZED transakcją — best-effort, w duchu D3 ("wyścigi... nie warto
@@ -444,7 +456,9 @@ export async function deleteRole(id: string): Promise<{ removed: boolean; openwe
   // kaskadą. Grupy w OpenWebUI NIE usuwamy." Wiersz mapowania już nie istnieje
   // w naszej bazie (kaskada powyżej) — opróżnianie idzie po groupId złapanym
   // przed transakcją, bez odczytu/zapisu nieistniejącego już wiersza.
-  const openwebuiSync = mapping ? await emptyGroupMembership(mapping.groupId) : { status: "skipped" as const }
+  const openwebuiSync = mapping
+    ? await emptyGroupMembership(mapping.groupId)
+    : { status: "skipped" as const }
 
   return { removed: true, openwebuiSync }
 }
@@ -453,7 +467,10 @@ export async function deleteRole(id: string): Promise<{ removed: boolean; openwe
  * Ustawia komplet ról użytkownika (zastępuje, nie dokłada).
  * W transakcji — inaczej nieudany insert zostawiłby użytkownika bez ról.
  */
-export async function setUserRoles(userId: string, roleIds: string[]): Promise<OpenwebuiSyncResult> {
+export async function setUserRoles(
+  userId: string,
+  roleIds: string[],
+): Promise<OpenwebuiSyncResult> {
   const db = getDb()
   const wanted = unique(roleIds)
   let previousRoleIds: string[] = []
@@ -466,7 +483,10 @@ export async function setUserRoles(userId: string, roleIds: string[]): Promise<O
     await assertModuleStaysReachable(tx, { direction: "user-roles", userId, roleIds: wanted })
 
     previousRoleIds = (
-      await tx.select({ roleId: userRoles.roleId }).from(userRoles).where(eq(userRoles.userId, userId))
+      await tx
+        .select({ roleId: userRoles.roleId })
+        .from(userRoles)
+        .where(eq(userRoles.userId, userId))
     ).map((row) => row.roleId)
 
     await tx.delete(userRoles).where(eq(userRoles.userId, userId))
@@ -621,7 +641,13 @@ export async function activateApplication(code: string): Promise<ApplicationRow 
   const [activated] = await db
     .update(applications)
     .set({ isActive: true, activatedAt: new Date(), updatedAt: new Date() })
-    .where(and(eq(applications.code, code), eq(applications.kind, "native"), isNull(applications.activatedAt)))
+    .where(
+      and(
+        eq(applications.code, code),
+        eq(applications.kind, "native"),
+        isNull(applications.activatedAt),
+      ),
+    )
     .returning()
 
   if (activated) {
@@ -814,9 +840,15 @@ export async function setApplicationRoles(applicationId: string, roleIds: string
  * ta funkcja tylko go czyta). Świadomie brak create/delete tutaj — patrz
  * brak POST/DELETE w route'ach `.../scopes`.
  */
-export async function listApplicationScopes(applicationId: string): Promise<ApplicationScopeSummary[]> {
+export async function listApplicationScopes(
+  applicationId: string,
+): Promise<ApplicationScopeSummary[]> {
   return getDb()
-    .select({ id: applicationScopes.id, code: applicationScopes.code, name: applicationScopes.name })
+    .select({
+      id: applicationScopes.id,
+      code: applicationScopes.code,
+      name: applicationScopes.name,
+    })
     .from(applicationScopes)
     .where(eq(applicationScopes.applicationId, applicationId))
     .orderBy(asc(applicationScopes.code))
@@ -843,7 +875,9 @@ export async function renameApplicationScope(
   const [updated] = await getDb()
     .update(applicationScopes)
     .set({ name })
-    .where(and(eq(applicationScopes.id, scopeId), eq(applicationScopes.applicationId, applicationId)))
+    .where(
+      and(eq(applicationScopes.id, scopeId), eq(applicationScopes.applicationId, applicationId)),
+    )
     .returning()
 
   return (updated as ApplicationScopeRow) ?? null
@@ -855,11 +889,16 @@ export async function renameApplicationScope(
  * pojawił się w wyniku (z pustą listą `roleIds`) — bez tego kolumna w UI nie
  * odróżniałaby "zakres istnieje, nikt go nie ma" od "zakres nie istnieje".
  */
-export async function listApplicationScopeGrants(applicationId: string): Promise<ApplicationScopeGrant[]> {
+export async function listApplicationScopeGrants(
+  applicationId: string,
+): Promise<ApplicationScopeGrant[]> {
   const rows = await getDb()
     .select({ scopeId: applicationScopes.id, roleId: roleApplicationScopes.roleId })
     .from(applicationScopes)
-    .leftJoin(roleApplicationScopes, eq(roleApplicationScopes.applicationScopeId, applicationScopes.id))
+    .leftJoin(
+      roleApplicationScopes,
+      eq(roleApplicationScopes.applicationScopeId, applicationScopes.id),
+    )
     .where(eq(applicationScopes.applicationId, applicationId))
     .orderBy(asc(applicationScopes.code))
 
@@ -900,12 +939,16 @@ export async function setApplicationScopeRoles(
     const [scope] = await tx
       .select({ id: applicationScopes.id })
       .from(applicationScopes)
-      .where(and(eq(applicationScopes.id, scopeId), eq(applicationScopes.applicationId, applicationId)))
+      .where(
+        and(eq(applicationScopes.id, scopeId), eq(applicationScopes.applicationId, applicationId)),
+      )
     if (!scope) throw new UnknownApplicationScopeError()
 
     await assertRolesExist(tx, wanted)
 
-    await tx.delete(roleApplicationScopes).where(eq(roleApplicationScopes.applicationScopeId, scopeId))
+    await tx
+      .delete(roleApplicationScopes)
+      .where(eq(roleApplicationScopes.applicationScopeId, scopeId))
     if (wanted.length > 0) {
       await tx
         .insert(roleApplicationScopes)
@@ -1035,7 +1078,7 @@ export class SystemRoleProtectedError extends Error {
 export class NativeCreationNotAllowedError extends Error {
   constructor() {
     super(
-      "Kafelek natywny (kind=\"native\") można utworzyć wyłącznie przez aktywację zarejestrowanego " +
+      'Kafelek natywny (kind="native") można utworzyć wyłącznie przez aktywację zarejestrowanego ' +
         "manifestu — wybierz go z listy niezaktywowanych modułów, nie z tego formularza.",
     )
     this.name = "NativeCreationNotAllowedError"
@@ -1079,7 +1122,10 @@ export class ModuleNotLicensedError extends Error {
  *
  * `input === null` oznacza próbę usunięcia wiersza.
  */
-function assertKeepsModuleReachable(existing: ApplicationRow, input: ApplicationInput | null): void {
+function assertKeepsModuleReachable(
+  existing: ApplicationRow,
+  input: ApplicationInput | null,
+): void {
   if (existing.code !== SYSTEM_CONFIG_APP_CODE) return
 
   if (input === null) {
@@ -1153,7 +1199,7 @@ function assertNativeApplicationImmutable(existing: ApplicationRow, input: Appli
   if (existing.kind !== "native") {
     if (next.kind === "native") {
       throw new NativeApplicationImmutableError(
-        "Nie można ustawić kind=\"native\" przez edycję (PATCH) — kafelek natywny powstaje wyłącznie " +
+        'Nie można ustawić kind="native" przez edycję (PATCH) — kafelek natywny powstaje wyłącznie ' +
           "przez aktywację zarejestrowanego manifestu, nie przez zmianę typu na istniejącym wierszu.",
       )
     }
@@ -1259,7 +1305,9 @@ function moduleGrantsAfter(
       // Zapis kasuje WSZYSTKIE granty tej roli i wstawia nowy zestaw, więc
       // grant do modułu przeżywa dokładnie wtedy, gdy moduł jest na liście.
       const withoutRole = grantsNow.filter((granted) => granted !== change.roleId)
-      return change.applicationIds.includes(moduleId) ? [...withoutRole, change.roleId] : withoutRole
+      return change.applicationIds.includes(moduleId)
+        ? [...withoutRole, change.roleId]
+        : withoutRole
     }
     case "user-roles":
     case "user-active":
@@ -1347,7 +1395,10 @@ async function hasActiveHolder(
 /** Stan `isActive` W BAZIE (jeszcze nie zapisany nowy stan) — używane, gdy
  *  override zmienia ROLE użytkownika, ale nie jego isActive. */
 async function isCurrentlyActive(tx: Transaction, userId: string): Promise<boolean> {
-  const [self] = await tx.select({ isActive: users.isActive }).from(users).where(eq(users.id, userId))
+  const [self] = await tx
+    .select({ isActive: users.isActive })
+    .from(users)
+    .where(eq(users.id, userId))
   return self?.isActive ?? false
 }
 
@@ -1396,8 +1447,10 @@ function mergeApplicationInput(existing: ApplicationRow, patch: ApplicationPatch
     sortOrder: patch.sortOrder ?? existing.sortOrder,
     showOnHub: patch.showOnHub ?? existing.showOnHub,
     color: "color" in patch ? patch.color : existing.color,
-    categoryFunctional: "categoryFunctional" in patch ? patch.categoryFunctional : existing.categoryFunctional,
-    categoryDepartment: "categoryDepartment" in patch ? patch.categoryDepartment : existing.categoryDepartment,
+    categoryFunctional:
+      "categoryFunctional" in patch ? patch.categoryFunctional : existing.categoryFunctional,
+    categoryDepartment:
+      "categoryDepartment" in patch ? patch.categoryDepartment : existing.categoryDepartment,
   }
 }
 

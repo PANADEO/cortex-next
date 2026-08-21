@@ -1,20 +1,8 @@
 "use client"
 
-import {
-  toastApiError,
-  useDeleteDraft,
-  useUpsertDraft,
-} from "@cortex/api"
+import { toastApiError, useDeleteDraft, useUpsertDraft } from "@cortex/api"
 import type { CleanPackageDraft, DirtyDocument } from "@cortex/types"
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  Input,
-  Label,
-  ScrollArea,
-} from "@cortex/ui"
+import { Badge, Button, Card, CardContent, Input, Label, ScrollArea } from "@cortex/ui"
 import { Plus, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
 import { DOC_TYPE_LABEL } from "./labels"
@@ -30,10 +18,7 @@ export function DraftList({ dirtyPackageId, drafts, documents }: DraftListProps)
   const remove = useDeleteDraft(dirtyPackageId)
   const [newName, setNewName] = useState("")
 
-  const docsById = useMemo(
-    () => new Map(documents.map((d) => [d.id, d])),
-    [documents],
-  )
+  const docsById = useMemo(() => new Map(documents.map((d) => [d.id, d])), [documents])
 
   const addDraft = () => {
     const name = newName.trim() || `Clean package ${String.fromCharCode(65 + drafts.length)}`
@@ -116,12 +101,7 @@ export function DraftList({ dirtyPackageId, drafts, documents }: DraftListProps)
                 placeholder={`Clean package ${String.fromCharCode(65 + drafts.length)}`}
                 className="h-8"
               />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={addDraft}
-                disabled={upsert.isPending}
-              >
+              <Button size="sm" variant="outline" onClick={addDraft} disabled={upsert.isPending}>
                 <Plus className="h-3.5 w-3.5" />
               </Button>
             </div>

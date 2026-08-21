@@ -27,12 +27,7 @@ interface FileUploaderUncontrolledProps extends FileUploaderBaseProps {
 type FileUploaderProps = FileUploaderControlledProps | FileUploaderUncontrolledProps
 
 export function FileUploader(props: FileUploaderProps) {
-  const {
-    accept,
-    multiple = false,
-    description,
-    className,
-  } = props
+  const { accept, multiple = false, description, className } = props
   const controlled = props.value !== undefined
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
@@ -100,9 +95,7 @@ export function FileUploader(props: FileUploaderProps) {
         <p className="text-sm font-medium">
           {multiple ? "Drop files here or click to browse" : "Drop a ZIP or click to browse"}
         </p>
-        {description ? (
-          <p className="text-xs text-muted-foreground">{description}</p>
-        ) : null}
+        {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
         <input
           ref={inputRef}
           type="file"

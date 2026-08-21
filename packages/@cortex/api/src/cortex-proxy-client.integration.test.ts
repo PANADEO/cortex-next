@@ -18,48 +18,40 @@ const baseUrl = process.env.CORTEX_PROXY_URL
 const model = process.env.CORTEX_PROXY_TEST_MODEL ?? "openai/gpt-5.4-nano"
 
 describe.skipIf(!baseUrl)("callCortexProxy — realny cortex-proxy", () => {
-  it(
-    "wykonuje prawdziwe wywołanie i zwraca treść",
-    { timeout: 120_000 },
-    async () => {
-      const result = await callCortexProxy({
-        appLabel: "Integration Test",
+  it("wykonuje prawdziwe wywołanie i zwraca treść", { timeout: 120_000 }, async () => {
+    const result = await callCortexProxy({
+      appLabel: "Integration Test",
+      baseUrl: baseUrl as string,
+      email: "integration-test@cortex.local",
+      image: undefined,
+      maxTokens: 512,
+      model,
+      scope: "summarizer",
+      sourceApp: "Cortex360 Integration Test",
+      systemPrompt: "Odpowiadasz wyłącznie jednym słowem, bez interpunkcji.",
+      temperature: 1,
+      userPrompt: "Napisz dokładnie jedno słowo: test",
+    })
+
+    expect(typeof result.content).toBe("string")
+    expect(result.content.trim().length).toBeGreaterThan(0)
+    expect(result.model).toBe(model)
+    expect(result.tokensUsed === null || typeof result.tokensUsed === "number").toBe(true)
+  })
+
+  it("mapuje odrzucenie nieznanego modelu na wyjątek", { timeout: 60_000 }, async () => {
+    await expect(
+      callCortexProxy({
         baseUrl: baseUrl as string,
         email: "integration-test@cortex.local",
         image: undefined,
         maxTokens: 512,
-        model,
+        model: "nieistniejacy/model-ktorego-nie-ma",
         scope: "summarizer",
-        sourceApp: "Cortex360 Integration Test",
-        systemPrompt: "Odpowiadasz wyłącznie jednym słowem, bez interpunkcji.",
+        systemPrompt: "system",
         temperature: 1,
-        userPrompt: "Napisz dokładnie jedno słowo: test",
-      })
-
-      expect(typeof result.content).toBe("string")
-      expect(result.content.trim().length).toBeGreaterThan(0)
-      expect(result.model).toBe(model)
-      expect(result.tokensUsed === null || typeof result.tokensUsed === "number").toBe(true)
-    },
-  )
-
-  it(
-    "mapuje odrzucenie nieznanego modelu na wyjątek",
-    { timeout: 60_000 },
-    async () => {
-      await expect(
-        callCortexProxy({
-          baseUrl: baseUrl as string,
-          email: "integration-test@cortex.local",
-          image: undefined,
-          maxTokens: 512,
-          model: "nieistniejacy/model-ktorego-nie-ma",
-          scope: "summarizer",
-          systemPrompt: "system",
-          temperature: 1,
-          userPrompt: "user",
-        }),
-      ).rejects.toThrow()
-    },
-  )
+        userPrompt: "user",
+      }),
+    ).rejects.toThrow()
+  })
 })

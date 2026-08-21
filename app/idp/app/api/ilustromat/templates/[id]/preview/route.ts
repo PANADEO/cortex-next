@@ -12,14 +12,14 @@
 // Tło: deterministyczny gradient ze stałym ziarnem. W PoC ten sam efekt dawało
 // @st.cache_data — bez tego każdy ruch suwaka koloru migotał nowym losowym tłem.
 
-import { frameTemplateInputSchema, getTemplateAsset } from "@cortex/service"
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { z } from "zod"
 import { compose } from "@/lib/ilustromat/composer"
 import { sampleGradientImage } from "@/lib/ilustromat/gradient"
 import { FORMAT_BY_KEY, SUBTITLE_MAX_CHARS, TITLE_MAX_CHARS } from "@/lib/ilustromat/presets"
 import { draftToFrameTemplate, resolveTemplateFonts } from "@/lib/ilustromat/render"
+import { frameTemplateInputSchema, getTemplateAsset } from "@cortex/service"
+import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
+import { z } from "zod"
 import { denyUnlessTemplateManager, toErrorResponse } from "../../../_lib/guard"
 
 export const runtime = "nodejs"
@@ -56,7 +56,8 @@ export async function POST(request: NextRequest, context: Context): Promise<Next
   try {
     const template = draftToFrameTemplate(parsed.data.template, id)
     const fonts = await resolveTemplateFonts(template)
-    const logo = id === NEW_TEMPLATE_ID ? null : ((await getTemplateAsset(id, "logo"))?.bytes ?? null)
+    const logo =
+      id === NEW_TEMPLATE_ID ? null : ((await getTemplateAsset(id, "logo"))?.bytes ?? null)
 
     const png = await compose({
       background: await sampleGradientImage({

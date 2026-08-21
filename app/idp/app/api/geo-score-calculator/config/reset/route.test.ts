@@ -49,7 +49,10 @@ const { POST } = await import("./route")
 function request(email: string | null = EMAIL): Request {
   const headers = new Headers()
   if (email) headers.set("x-auth-request-email", email)
-  return new Request("http://localhost/api/geo-score-calculator/config/reset", { method: "POST", headers })
+  return new Request("http://localhost/api/geo-score-calculator/config/reset", {
+    method: "POST",
+    headers,
+  })
 }
 
 beforeEach(() => {

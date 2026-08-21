@@ -16,8 +16,7 @@ export const FIDELITY_KEYS = ["high", "loose"] as const
 export type FidelityKey = (typeof FIDELITY_KEYS)[number]
 
 const FIDELITY_HINTS: Record<FidelityKey, string> = {
-  high:
-    "Zachowaj wysoką wierność względem załączonego obrazu (obrazów) referencyjnego — trzymaj się jego kompozycji, kolorystyki i głównych elementów tak ściśle, jak to możliwe.",
+  high: "Zachowaj wysoką wierność względem załączonego obrazu (obrazów) referencyjnego — trzymaj się jego kompozycji, kolorystyki i głównych elementów tak ściśle, jak to możliwe.",
   loose:
     "Potraktuj załączony obraz (obrazy) referencyjny wyłącznie jako luźną inspirację — możesz swobodnie odejść od jego kompozycji i szczegółów.",
 }

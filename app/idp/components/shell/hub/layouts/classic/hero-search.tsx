@@ -1,5 +1,7 @@
 "use client"
 
+import { useTranslation } from "react-i18next"
+
 import { cn } from "@cortex/utils"
 import { Search } from "lucide-react"
 import type { HeroView } from "../../types"
@@ -12,12 +14,11 @@ interface HeroSearchProps {
 }
 
 export function HeroSearch({ value, onChange, view, onViewChange }: HeroSearchProps) {
+  const { t } = useTranslation("shell")
   return (
     <section className="mb-8 text-center">
       <h1 className="text-xl font-semibold">Enterprise AI Hub</h1>
-      <p className="mt-0.5 text-xs text-muted-foreground">
-        Wybierz aplikację, której chcesz użyć
-      </p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{t("hub.subtitle")}</p>
 
       <div className="mx-auto mt-4 max-w-xl">
         <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 shadow-sm focus-within:ring-2 focus-within:ring-ring">
@@ -59,7 +60,7 @@ export function HeroSearch({ value, onChange, view, onViewChange }: HeroSearchPr
               : "text-muted-foreground hover:text-foreground",
           )}
         >
-          Wg działu
+          {t("hub.byDepartment")}
         </button>
       </div>
     </section>

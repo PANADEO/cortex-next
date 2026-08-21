@@ -1,8 +1,12 @@
 // GET/POST /api/content-guru/market-profiles — mirror client-profiles/route.ts,
 // PER-USER (D7), zero dodatkowego scope'u (D9).
 
+import {
+  createMarketProfile,
+  listMyMarketProfiles,
+  marketProfileInputSchema,
+} from "@cortex/service"
 import { NextResponse, type NextRequest } from "next/server"
-import { createMarketProfile, listMyMarketProfiles, marketProfileInputSchema } from "@cortex/service"
 import { isUniqueViolation, requireContentGuruAccess } from "../_lib/guard"
 
 export const runtime = "nodejs"

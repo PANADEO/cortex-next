@@ -9,15 +9,16 @@
 // faktycznie renderuje pełną, prawdziwą migawkę configu (design doc §4.3:
 // "czego dzisiejszy UI nie eksponuje mimo że dane już są zapisywane"), nie
 // tylko strukturę zgodną z typem.
+import type { AnalyzeGeoScoreResponseDto } from "@/features/geo-score-calculator/types"
 import "@testing-library/jest-dom/vitest"
 import { cleanup, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
-import type { AnalyzeGeoScoreResponseDto } from "@/features/geo-score-calculator/types"
 import GeoScoreCalculatorHistoryDetailPage from "./page"
 
 const REAL_ID = "f6993874-3ec0-4b12-94f4-bab81ee1b6c9"
-const REAL_TEXT_CONTENT = "Spółka zainwestowała 5 mln w nowy zakład. To był najlepszy rok w historii firmy."
+const REAL_TEXT_CONTENT =
+  "Spółka zainwestowała 5 mln w nowy zakład. To był najlepszy rok w historii firmy."
 
 const REAL_RESULT: AnalyzeGeoScoreResponseDto = JSON.parse(
   `{"grade": "C", "structure": {"score": 0, "hasHeaders": false, "bulletCount": 0, "per500Words": 0, "paragraphCount": 1}, "wordCount": 14, "statistics": {"count": 1, "score": 100, "examples": [{"value": "5 mln", "position": 21}], "per100Words": 7.14}, "totalScore": 62.1, "actionVerbs": {"ratio": 0.333, "score": 100, "method": "spacy", "foundVerbs": ["zainwestować"], "totalVerbCount": 3, "actionVerbCount": 1}, "objectivity": {"score": 28.6, "foundWords": [{"value": "najlepszy", "position": 49}], "subjectiveCount": 1, "subjectiveRatio": 0.0714}, "recommendations": ["Dodaj bullet points lub listę numerowaną z kluczowymi informacjami", "Rozważ dodanie śródtytułów dla lepszej czytelności", "'najlepszy' → 'wysoko oceniany'"]}`,

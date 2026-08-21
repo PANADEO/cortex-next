@@ -89,7 +89,10 @@ export async function reconcileRoleGroup(roleId: string): Promise<OpenwebuiSyncR
   if (!mapping) return { status: "skipped" }
 
   try {
-    await withBudget(() => pushGroupState(config, mapping.roleId, mapping.groupId, mapping.groupName), SYNC_BUDGET_MS)
+    await withBudget(
+      () => pushGroupState(config, mapping.roleId, mapping.groupId, mapping.groupName),
+      SYNC_BUDGET_MS,
+    )
     await store.recordSyncResult(roleId, null)
     return { status: "ok" }
   } catch (error) {
@@ -122,7 +125,9 @@ async function pushGroupState(
   // pomijany bez błędu — dołączy przy następnym uzgodnieniu po pierwszym
   // logowaniu. `undefined` filtrowany przez `Boolean`.
   const targetIds = new Set(
-    targetEmails.map((email) => emailToId.get(email.toLowerCase())).filter((id): id is string => Boolean(id)),
+    targetEmails
+      .map((email) => emailToId.get(email.toLowerCase()))
+      .filter((id): id is string => Boolean(id)),
   )
   const currentIds = new Set(group.userIds)
 
@@ -220,7 +225,9 @@ export async function previewRoleGroupSync(
         client.listAllUserEmailIds(config),
       ])
       const ids = new Set(
-        targetEmails.map((email) => emailToId.get(email.toLowerCase())).filter((id): id is string => Boolean(id)),
+        targetEmails
+          .map((email) => emailToId.get(email.toLowerCase()))
+          .filter((id): id is string => Boolean(id)),
       )
       return { targetIds: ids, group: groupState }
     }, SYNC_BUDGET_MS)
@@ -233,7 +240,13 @@ export async function previewRoleGroupSync(
     const toAdd = [...targetIds].filter((id) => !currentIds.has(id)).length
     const toRemove = [...currentIds].filter((id) => !targetIds.has(id)).length
 
-    return { status: "ok", groupName: mapping.groupName, targetCount: targetIds.size, toAdd, toRemove }
+    return {
+      status: "ok",
+      groupName: mapping.groupName,
+      targetCount: targetIds.size,
+      toAdd,
+      toRemove,
+    }
   } catch (error) {
     return { status: "failed", message: errorMessage(error) }
   }
@@ -312,7 +325,10 @@ export interface AttachRoleGroupInput {
 
 export async function attachRoleGroup(
   input: AttachRoleGroupInput,
-): Promise<{ mapping: Awaited<ReturnType<typeof store.upsertRoleGroupMapping>> } | { error: AttachRoleGroupError }> {
+): Promise<
+  | { mapping: Awaited<ReturnType<typeof store.upsertRoleGroupMapping>> }
+  | { error: AttachRoleGroupError }
+> {
   const config = openwebuiConfig()
   if (!config) return { error: "not-configured" }
 
@@ -443,7 +459,8 @@ export async function reconcileEverything(
   }
 
   const config = openwebuiConfig()
-  if (!config) return { ...empty, message: "OpenWebUI nie jest skonfigurowane (OPENWEBUI_URL/TOKEN)" }
+  if (!config)
+    return { ...empty, message: "OpenWebUI nie jest skonfigurowane (OPENWEBUI_URL/TOKEN)" }
 
   let target: Awaited<ReturnType<typeof store.loadOpenwebuiTargetUsers>>
   let knownEmails: string[]

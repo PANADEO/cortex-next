@@ -11,7 +11,7 @@ import {
   Input,
   LoadingState,
 } from "@cortex/ui"
-import { Folder, Pencil, Plus, Plug, Trash2, X } from "lucide-react"
+import { Folder, Pencil, Plug, Plus, Trash2, X } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import {
@@ -97,7 +97,9 @@ export function CatalogPanel() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-base">Źródła skilli</CardTitle>
-              <CardDescription>Folder na dysku → departament. Skanowany do katalogu.</CardDescription>
+              <CardDescription>
+                Folder na dysku → departament. Skanowany do katalogu.
+              </CardDescription>
             </div>
             <Button asChild size="sm">
               <Link href="/cortex-config/catalog/sources/new">
@@ -163,7 +165,9 @@ export function CatalogPanel() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-base">Konektory</CardTitle>
-              <CardDescription>MCP i CLI per departament. Sekrety jako credential ref.</CardDescription>
+              <CardDescription>
+                MCP i CLI per departament. Sekrety jako credential ref.
+              </CardDescription>
             </div>
             <Button asChild size="sm">
               <Link href="/cortex-config/catalog/connectors/new">

@@ -18,10 +18,10 @@ import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState, type ReactNode } from "react"
-import type { CoworkProjectTile } from "../queries"
 import { useCoworkSessionActions, useCoworkSessions } from "../hooks/use-cowork-sessions"
 import { useMyInstructions, useSaveMyInstructions } from "../hooks/use-my-instructions"
 import { useCoworkProjectTiles } from "../hooks/use-project-tiles"
+import type { CoworkProjectTile } from "../queries"
 import { DisclosureChevron } from "./disclosure"
 
 // Codex-style workspace shell for the cowork tile: a dark, session-centric
@@ -117,7 +117,9 @@ function ProjectRow({
         onClick={onOpen}
         className={cn(
           "flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm",
-          active ? "text-foreground" : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+          active
+            ? "text-foreground"
+            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
         )}
         title={project.description}
       >
@@ -211,9 +213,7 @@ export function CoworkShell({ children }: { children: ReactNode }) {
   const { projects } = useCoworkProjectTiles()
 
   const onChat = pathname.startsWith("/cortex-cowork/chat")
-  const activeProjectId = onChat
-    ? (searchParams.get("project") ?? DEFAULT_COWORK_PROJECT_ID)
-    : null
+  const activeProjectId = onChat ? (searchParams.get("project") ?? DEFAULT_COWORK_PROJECT_ID) : null
   const { create } = useCoworkSessionActions(activeProjectId ?? DEFAULT_COWORK_PROJECT_ID)
 
   // Tożsamość z powłoki (/api/me/identity), NIE z /user/me: Cowork jest trasą

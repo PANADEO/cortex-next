@@ -9,18 +9,18 @@
 //        push idzie dopiero przez POST albo przy najbliższej mutacji ról.
 // POST — "Synchronizuj teraz" dla TEJ jednej roli.
 
+import type { OpenwebuiGroupMappingRow } from "@cortex/db"
 import {
   attachRoleGroup,
   detachRoleGroup,
   getOpenwebuiRoleGroupMapping,
   listOpenwebuiGroups,
-  openwebuiConfig,
   OpenwebuiClientError,
+  openwebuiConfig,
   previewRoleGroupSync,
   reconcileRoleGroup,
   type OpenwebuiGroupSummary,
 } from "@cortex/service"
-import type { OpenwebuiGroupMappingRow } from "@cortex/db"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { z } from "zod"
@@ -68,10 +68,17 @@ export async function GET(request: NextRequest, context: RouteContext): Promise<
   if (invalidId) return invalidId
 
   try {
-    const [mapping, availableGroups] = await Promise.all([getOpenwebuiRoleGroupMapping(id), listAvailableGroups()])
+    const [mapping, availableGroups] = await Promise.all([
+      getOpenwebuiRoleGroupMapping(id),
+      listAvailableGroups(),
+    ])
 
     if (!mapping) {
-      return NextResponse.json({ mapping: null, configured: availableGroups !== null, availableGroups })
+      return NextResponse.json({
+        mapping: null,
+        configured: availableGroups !== null,
+        availableGroups,
+      })
     }
 
     const preview = await previewRoleGroupSync(id)
@@ -108,7 +115,9 @@ export async function PUT(request: NextRequest, context: RouteContext): Promise<
     const result = await attachRoleGroup({
       roleId: id,
       action:
-        parsed.data.action === "create" ? { kind: "create" } : { kind: "existing", groupId: parsed.data.groupId },
+        parsed.data.action === "create"
+          ? { kind: "create" }
+          : { kind: "existing", groupId: parsed.data.groupId },
     })
 
     if ("error" in result) {
@@ -122,7 +131,10 @@ export async function PUT(request: NextRequest, context: RouteContext): Promise<
     return NextResponse.json({ mapping: serializeMapping(result.mapping) })
   } catch (error) {
     if (error instanceof OpenwebuiClientError) {
-      return NextResponse.json({ error: "openwebui-upstream-error", message: error.message }, { status: 502 })
+      return NextResponse.json(
+        { error: "openwebui-upstream-error", message: error.message },
+        { status: 502 },
+      )
     }
     return toErrorResponse(error)
   }

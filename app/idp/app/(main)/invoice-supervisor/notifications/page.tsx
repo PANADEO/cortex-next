@@ -1,9 +1,28 @@
 "use client"
 
-import { Badge, Card, CardContent, CardHeader, CardTitle, EmptyState, ErrorState, LoadingState, PageHeader } from "@cortex/ui"
-import { useInvoiceSupervisorFailedTasks, useInvoiceSupervisorNotificationLog } from "@/lib/invoice-supervisor/hooks"
-import { formatInvoiceSupervisorDateTime, INVOICE_SUPERVISOR_CHANNEL_LABELS } from "@/lib/invoice-supervisor/types"
-import type { InvoiceSupervisorFailedTask, InvoiceSupervisorNotificationLogEntry } from "@/lib/invoice-supervisor/types"
+import {
+  useInvoiceSupervisorFailedTasks,
+  useInvoiceSupervisorNotificationLog,
+} from "@/lib/invoice-supervisor/hooks"
+import type {
+  InvoiceSupervisorFailedTask,
+  InvoiceSupervisorNotificationLogEntry,
+} from "@/lib/invoice-supervisor/types"
+import {
+  formatInvoiceSupervisorDateTime,
+  INVOICE_SUPERVISOR_CHANNEL_LABELS,
+} from "@/lib/invoice-supervisor/types"
+import {
+  Badge,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PageHeader,
+} from "@cortex/ui"
 import { Mail } from "lucide-react"
 
 // Notification log status isn't in the shared domain types (kept generic
@@ -31,7 +50,10 @@ function formatSentAt(value: string | null): string {
 
 function NotificationStatusBadge({ status }: { status: string }) {
   return (
-    <Badge variant="outline" className={NOTIFICATION_STATUS_CLASSES[status] ?? NOTIFICATION_STATUS_FALLBACK_CLASS}>
+    <Badge
+      variant="outline"
+      className={NOTIFICATION_STATUS_CLASSES[status] ?? NOTIFICATION_STATUS_FALLBACK_CLASS}
+    >
       {NOTIFICATION_STATUS_LABELS[status] ?? status}
     </Badge>
   )
@@ -43,7 +65,10 @@ export default function InvoiceSupervisorNotificationsPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <PageHeader title="Historia wysyłek" description="Pełny log audytowy każdej wysłanej wiadomości (AI-005)." />
+      <PageHeader
+        title="Historia wysyłek"
+        description="Pełny log audytowy każdej wysłanej wiadomości (AI-005)."
+      />
 
       <div className="space-y-4 px-8 py-6">
         <Card>
@@ -75,8 +100,8 @@ export default function InvoiceSupervisorNotificationsPage() {
             <CardContent className="space-y-3">
               <FailedTasksTable tasks={failed} />
               <p className="text-xs text-muted-foreground">
-                Najczęstsza przyczyna: klient nie ma zapisanego adresu e-mail/telefonu. Uzupełnij dane kontaktowe w
-                sekcji Klienci, a następnie zatwierdź propozycję ponownie.
+                Najczęstsza przyczyna: klient nie ma zapisanego adresu e-mail/telefonu. Uzupełnij
+                dane kontaktowe w sekcji Klienci, a następnie zatwierdź propozycję ponownie.
               </p>
             </CardContent>
           </Card>
@@ -92,13 +117,27 @@ function NotificationLogTable({ entries }: { entries: InvoiceSupervisorNotificat
       <table className="w-full text-sm">
         <thead className="bg-muted/40">
           <tr className="border-b border-border">
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Data wysyłki</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Faktura</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Klient</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Kanał</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Adresat</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Dostawca</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Status</th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+              Data wysyłki
+            </th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+              Faktura
+            </th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+              Klient
+            </th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+              Kanał
+            </th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+              Adresat
+            </th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+              Dostawca
+            </th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+              Status
+            </th>
             <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
               ID wiadomości
             </th>
@@ -110,7 +149,9 @@ function NotificationLogTable({ entries }: { entries: InvoiceSupervisorNotificat
               <td className="px-4 py-3 text-muted-foreground">{formatSentAt(entry.sent_at)}</td>
               <td className="px-4 py-3 font-medium">{entry.invoice_number}</td>
               <td className="px-4 py-3">{entry.client_name}</td>
-              <td className="px-4 py-3">{INVOICE_SUPERVISOR_CHANNEL_LABELS[entry.channel] ?? entry.channel}</td>
+              <td className="px-4 py-3">
+                {INVOICE_SUPERVISOR_CHANNEL_LABELS[entry.channel] ?? entry.channel}
+              </td>
               <td className="px-4 py-3">{entry.recipient}</td>
               <td className="px-4 py-3">
                 <Badge variant="secondary">{entry.provider}</Badge>
@@ -118,7 +159,10 @@ function NotificationLogTable({ entries }: { entries: InvoiceSupervisorNotificat
               <td className="px-4 py-3">
                 <NotificationStatusBadge status={entry.status} />
                 {entry.error_message ? (
-                  <p className="mt-1 max-w-48 truncate text-xs text-destructive" title={entry.error_message}>
+                  <p
+                    className="mt-1 max-w-48 truncate text-xs text-destructive"
+                    title={entry.error_message}
+                  >
                     {entry.error_message}
                   </p>
                 ) : null}
@@ -140,19 +184,33 @@ function FailedTasksTable({ tasks }: { tasks: InvoiceSupervisorFailedTask[] }) {
       <table className="w-full text-sm">
         <thead className="bg-muted/40">
           <tr className="border-b border-border">
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Data błędu</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Faktura</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Kanał</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Błąd</th>
-            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Liczba prób</th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+              Data błędu
+            </th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+              Faktura
+            </th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+              Kanał
+            </th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+              Błąd
+            </th>
+            <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+              Liczba prób
+            </th>
           </tr>
         </thead>
         <tbody>
           {tasks.map((task) => (
             <tr key={task.id} className="border-b border-border last:border-b-0">
-              <td className="px-4 py-3 text-muted-foreground">{formatSentAt(task.last_error_at)}</td>
+              <td className="px-4 py-3 text-muted-foreground">
+                {formatSentAt(task.last_error_at)}
+              </td>
               <td className="px-4 py-3 font-medium">#{task.invoice_id}</td>
-              <td className="px-4 py-3">{INVOICE_SUPERVISOR_CHANNEL_LABELS[task.task_type] ?? task.task_type}</td>
+              <td className="px-4 py-3">
+                {INVOICE_SUPERVISOR_CHANNEL_LABELS[task.task_type] ?? task.task_type}
+              </td>
               <td className="px-4 py-3 text-destructive">{task.error_message}</td>
               <td className="px-4 py-3">{task.retry_count}</td>
             </tr>

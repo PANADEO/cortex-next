@@ -43,8 +43,7 @@ describe("writeJsonAtomic concurrency", () => {
       }
 
       const finalContent = await readFile(file, "utf8")
-      const isExactlyOnePayload =
-        finalContent === serializedA || finalContent === serializedB
+      const isExactlyOnePayload = finalContent === serializedA || finalContent === serializedB
       expect(
         isExactlyOnePayload,
         `iteration ${i}: file content was neither payload verbatim (length ${finalContent.length}, expected ${serializedA.length} or ${serializedB.length}) — likely interleaved/corrupted write`,

@@ -1,5 +1,5 @@
-import type { Story } from "@ladle/react"
 import type { PackageActionReadModel } from "@cortex/types"
+import type { Story } from "@ladle/react"
 import { ActionLogTimeline } from "./action-log-timeline"
 
 export default {

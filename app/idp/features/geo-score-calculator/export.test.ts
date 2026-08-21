@@ -30,7 +30,9 @@ describe("buildHistoryCsv", () => {
     const lines = withoutBom.split("\r\n")
 
     expect(lines[0]).toBe("Data,Podgląd tekstu,Wynik,Ocena,Liczba słów")
-    expect(lines[1]).toBe("2026-08-03T10:00:00.000Z,Spółka zainwestowała 5 mln w nowy zakład.,82.4,B,7")
+    expect(lines[1]).toBe(
+      "2026-08-03T10:00:00.000Z,Spółka zainwestowała 5 mln w nowy zakład.,82.4,B,7",
+    )
 
     // Pole z cudzysłowem/przecinkiem/nową linią musi być poprawnie zacytowane
     // wg RFC 4180 — sprawdzamy przez realny round-trip parsera, nie tylko
@@ -49,9 +51,7 @@ describe("buildHistoryCsv", () => {
   })
 
   it("neutralizuje wiodące = + - @ apostrofem — ochrona przed CSV injection z podglądu wklejonego tekstu", () => {
-    const csv = buildHistoryCsv([
-      { ...ROWS[0]!, textPreview: "=CMD('calc.exe')" },
-    ])
+    const csv = buildHistoryCsv([{ ...ROWS[0]!, textPreview: "=CMD('calc.exe')" }])
     const parsed = parseCsv(csv.slice(1))
     expect(parsed[1]?.[1]).toBe("'=CMD('calc.exe')")
   })

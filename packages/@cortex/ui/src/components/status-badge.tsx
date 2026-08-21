@@ -1,5 +1,6 @@
 import type { ProcessingState, VerificationState } from "@cortex/types"
 import { cn } from "@cortex/utils"
+import type { LucideIcon } from "lucide-react"
 import {
   AlertCircle,
   CheckCircle2,
@@ -10,7 +11,6 @@ import {
   PlayCircle,
   XCircle,
 } from "lucide-react"
-import type { LucideIcon } from "lucide-react"
 import type { HTMLAttributes } from "react"
 
 interface BadgeMeta {
@@ -106,9 +106,7 @@ function renderBadge(
       )}
       {...rest}
     >
-      {showIcon ? (
-        <Icon className={cn(iconClasses(size), spin && "animate-spin")} />
-      ) : null}
+      {showIcon ? <Icon className={cn(iconClasses(size), spin && "animate-spin")} /> : null}
       {meta.label}
     </span>
   )

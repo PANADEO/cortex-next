@@ -8,6 +8,14 @@
     "yes": "Tak",
     "no": "Nie"
   },
-  "actions": { "cancel": "Anuluj", "save": "Zapisz", "create": "Utwórz", "delete": "Usuń", "edit": "Edytuj", "close": "Zamknij", "retry": "Spróbuj ponownie" },
+  "actions": {
+    "cancel": "Anuluj",
+    "save": "Zapisz",
+    "create": "Utwórz",
+    "delete": "Usuń",
+    "edit": "Edytuj",
+    "close": "Zamknij",
+    "retry": "Spróbuj ponownie"
+  },
   "state": { "loading": "Wczytywanie…", "empty": "Brak danych", "error": "Wystąpił błąd" }
 }

@@ -48,12 +48,8 @@
           "tableFrom": "generation_variants",
           "tableTo": "generations",
           "schemaTo": "visual_guru",
-          "columnsFrom": [
-            "generation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["generation_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -63,10 +59,7 @@
         "generation_variants_generation_index_unique": {
           "name": "generation_variants_generation_index_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "generation_id",
-            "variant_index"
-          ]
+          "columns": ["generation_id", "variant_index"]
         }
       },
       "policies": {},

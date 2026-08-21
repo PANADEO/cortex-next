@@ -1,9 +1,13 @@
 // GET/PUT/DELETE /api/content-guru/templates/:id — design doc §6. GET za
 // samą bramką kafelka (jak lista), PUT/DELETE wymagają `manage-templates`.
 
-import { NextResponse, type NextRequest } from "next/server"
 import { deleteTemplate, getTemplate, templateInputSchema, updateTemplate } from "@cortex/service"
-import { isUniqueViolation, requireContentGuruAccess, requireContentGuruManageTemplates } from "../../_lib/guard"
+import { NextResponse, type NextRequest } from "next/server"
+import {
+  isUniqueViolation,
+  requireContentGuruAccess,
+  requireContentGuruManageTemplates,
+} from "../../_lib/guard"
 
 export const runtime = "nodejs"
 

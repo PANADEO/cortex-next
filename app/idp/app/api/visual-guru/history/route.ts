@@ -3,11 +3,11 @@
 // stronie przeglądarki nad całą tablicą, więc ten route nie przyjmuje
 // page/sort/search (code-service/SKILL.md "Rekordy per-user" pkt 4).
 
-import { listMyGenerationsWithFirstVariant } from "@cortex/service"
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { requireVisualGuruAccess, toErrorResponse } from "../_lib/guard"
 import type { GenerationListItemDto } from "@/features/visual-guru/types"
+import { listMyGenerationsWithFirstVariant } from "@cortex/service"
+import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
+import { requireVisualGuruAccess, toErrorResponse } from "../_lib/guard"
 
 export const runtime = "nodejs"
 

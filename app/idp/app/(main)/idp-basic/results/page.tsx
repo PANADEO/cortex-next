@@ -3,9 +3,9 @@
 import { DateRangeFilter } from "@/components/date-range-filter"
 import { IdpBasicCsvDownloadButton } from "@/components/idp-basic/csv-download-dialog"
 import {
+  formatIdpBasicDisplayText,
   getIdpBasicDocumentTypeLabel,
   getIdpBasicStatusLabel,
-  formatIdpBasicDisplayText,
   IdpBasicCompletenessBadge,
   IdpBasicStatusBadge,
 } from "@/components/idp-basic/status"
@@ -299,12 +299,7 @@ export default function IdpBasicResultsPage() {
           }
         />
 
-        <Pagination
-          page={page}
-          pageCount={pageCount}
-          onChange={setPage}
-          className="shrink-0"
-        />
+        <Pagination page={page} pageCount={pageCount} onChange={setPage} className="shrink-0" />
       </div>
     </div>
   )

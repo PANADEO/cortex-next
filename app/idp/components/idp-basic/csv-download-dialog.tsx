@@ -63,7 +63,8 @@ export function IdpBasicCsvDownloadButton({
   const selectedIds = useMemo(() => [...selected], [selected])
   const customScopeLabel = source === "files" ? "Custom file range" : "Custom package range"
   const tableScopeLabel =
-    contextLabel ?? (source === "files" ? "Files matching the table" : "Packages matching the table")
+    contextLabel ??
+    (source === "files" ? "Files matching the table" : "Packages matching the table")
 
   useEffect(() => {
     if (!open || !columns.data) return

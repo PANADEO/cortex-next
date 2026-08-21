@@ -16,7 +16,13 @@ const components: Components = {
   strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
 }
 
-export function ContentGuruMarkdownPreview({ content, className }: { content: string; className?: string }) {
+export function ContentGuruMarkdownPreview({
+  content,
+  className,
+}: {
+  content: string
+  className?: string
+}) {
   return (
     <div className={cn("text-sm leading-relaxed", className)}>
       <ReactMarkdown components={components}>{content}</ReactMarkdown>

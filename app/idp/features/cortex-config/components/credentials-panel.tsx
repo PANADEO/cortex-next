@@ -14,11 +14,7 @@ import {
 } from "@cortex/ui"
 import { ChevronDown, ChevronRight, KeyRound, Plus, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
-import {
-  useCredentialPaths,
-  useDeleteCredential,
-  useSetCredential,
-} from "../hooks/use-governance"
+import { useCredentialPaths, useDeleteCredential, useSetCredential } from "../hooks/use-governance"
 
 // A credential path is "key/subkey[/...]". The tree groups by the first
 // segment so related secrets (one provider, one connector) sit together.
@@ -66,7 +62,11 @@ function TreeNode({
             className="text-muted-foreground"
             aria-label={open ? "Zwiń" : "Rozwiń"}
           >
-            {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            {open ? (
+              <ChevronDown className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5" />
+            )}
           </button>
         ) : (
           <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />

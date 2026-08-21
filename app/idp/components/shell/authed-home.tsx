@@ -1,5 +1,7 @@
 "use client"
 
+import { useTranslation } from "react-i18next"
+
 import { usePreset } from "@/lib/presets/preset-store"
 import type { TileHrefOverrides } from "@/lib/tiles"
 import { EmptyState, LoadingState } from "@cortex/ui"
@@ -45,6 +47,7 @@ interface AuthedHomeProps {
  * Odrzucony blokujący skrypt w nagłówku: patrz `theme-provider.tsx`.
  */
 export function AuthedHome({ tileHrefOverrides }: AuthedHomeProps) {
+  const { t } = useTranslation("shell")
   const model = useHubModel(tileHrefOverrides)
   const preset = usePreset()
   // Jedyne miejsce, w którym preset spotyka layout. Bez `if` po
@@ -65,12 +68,12 @@ export function AuthedHome({ tileHrefOverrides }: AuthedHomeProps) {
       <main className="relative flex-1">
         <div className="mx-auto max-w-7xl px-6 pb-20 pt-9">
           {model.state === "loading" ? (
-            <LoadingState label="Wczytywanie aplikacji…" />
+            <LoadingState label={t("hub.loading")} />
           ) : model.state === "error" ? (
             <EmptyState
               icon={Search}
-              title="Nie udało się wczytać aplikacji"
-              description="Spróbuj odświeżyć stronę. Jeśli problem się powtarza, sprawdź połączenie z bazą danych."
+              title={t("hub.loadFailedTitle")}
+              description={t("hub.loadFailedBody")}
             />
           ) : (
             <Hub model={model} variants={preset.variants} />

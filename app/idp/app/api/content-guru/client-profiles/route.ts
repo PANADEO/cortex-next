@@ -3,8 +3,12 @@
 // żądania (code-service "Rekordy per-user" pkt 3). Żaden dodatkowy scope —
 // właściciel zawsze zarządza własnymi profilami (D9).
 
+import {
+  clientProfileInputSchema,
+  createClientProfile,
+  listMyClientProfiles,
+} from "@cortex/service"
 import { NextResponse, type NextRequest } from "next/server"
-import { clientProfileInputSchema, createClientProfile, listMyClientProfiles } from "@cortex/service"
 import { isUniqueViolation, requireContentGuruAccess } from "../_lib/guard"
 
 export const runtime = "nodejs"

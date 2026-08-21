@@ -19,7 +19,9 @@ export default function PricingPage() {
   const [daoSearch, setDaoSearch] = useState("")
 
   const q = daoSearch.trim().toLowerCase()
-  const filteredDao = q ? DAO_PRICES.filter((d) => d.priceKey.toLowerCase().includes(q)) : DAO_PRICES
+  const filteredDao = q
+    ? DAO_PRICES.filter((d) => d.priceKey.toLowerCase().includes(q))
+    : DAO_PRICES
 
   return (
     <>
@@ -119,9 +121,7 @@ export default function PricingPage() {
                             )}
                           </td>
                           <td className="px-3 py-2.5 font-mono text-xs">{d.priceKey}</td>
-                          <td className="px-4 py-2.5 text-right tabular-nums">
-                            {count(d.price)}
-                          </td>
+                          <td className="px-4 py-2.5 text-right tabular-nums">{count(d.price)}</td>
                         </tr>
                       ))}
                     </tbody>

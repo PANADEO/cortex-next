@@ -1,16 +1,3 @@
-import { spawn } from "node:child_process"
-import { randomUUID } from "node:crypto"
-import { readdir, stat } from "node:fs/promises"
-import path from "node:path"
-import type { CoworkConnectorConfig, CoworkModelConfig, CoworkProjectConfig } from "@cortex/types"
-import { composeAgentsPrompt, cortexProxyModelBaseUrl } from "@cortex/types"
-import type {
-  AgentActivityStep,
-  ChatMessage,
-  CoworkArtifact,
-  CoworkSessionUsage,
-  CoworkSkillId,
-} from "../types"
 import {
   gateCredentials,
   readCredentialsDocument,
@@ -20,6 +7,19 @@ import {
 } from "@/lib/cortex-governance/credentials"
 import { grantedConnectors, readGovernanceConfig } from "@/lib/cortex-governance/store"
 import { readUserInstructions } from "@/lib/cortex-governance/user-instructions"
+import type { CoworkConnectorConfig, CoworkModelConfig, CoworkProjectConfig } from "@cortex/types"
+import { composeAgentsPrompt, cortexProxyModelBaseUrl } from "@cortex/types"
+import { spawn } from "node:child_process"
+import { randomUUID } from "node:crypto"
+import { readdir, stat } from "node:fs/promises"
+import path from "node:path"
+import type {
+  AgentActivityStep,
+  ChatMessage,
+  CoworkArtifact,
+  CoworkSessionUsage,
+  CoworkSkillId,
+} from "../types"
 import { appendMessage, recordUsage, registerArtifact, type SandboxSession } from "./sandbox-store"
 import { generateCsvExport } from "./skills/csv-export"
 import { generateExcelReport } from "./skills/excel-report"
@@ -320,9 +320,7 @@ async function runFlueTurn(
       instructions: config.agentsInstructions,
       projectDepartment: project.department,
       projectPrompt: project.systemPrompt,
-      userPrompt: options.userEmail
-        ? await readUserInstructions(options.userEmail)
-        : undefined,
+      userPrompt: options.userEmail ? await readUserInstructions(options.userEmail) : undefined,
     })
     if (composedPrompt) env.COWORK_SYSTEM_PROMPT = composedPrompt
     // Configs written before sandbox modes existed carry no `mode` field.

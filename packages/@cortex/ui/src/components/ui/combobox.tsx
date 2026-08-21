@@ -1,7 +1,7 @@
 "use client"
 
-import * as React from "react"
 import { Check, Plus } from "lucide-react"
+import * as React from "react"
 
 import { cn } from "@cortex/utils"
 import { Button } from "./button"
@@ -107,7 +107,10 @@ export function Combobox({
                   onClick={() => commit(option)}
                 >
                   <Check
-                    className={cn("h-4 w-4 shrink-0", option === value ? "opacity-100" : "opacity-0")}
+                    className={cn(
+                      "h-4 w-4 shrink-0",
+                      option === value ? "opacity-100" : "opacity-0",
+                    )}
                     aria-hidden="true"
                   />
                   <span className="truncate">{option}</span>

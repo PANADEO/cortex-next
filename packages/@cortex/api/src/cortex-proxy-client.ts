@@ -370,11 +370,7 @@ export type CortexProxyUsageRow = z.infer<typeof usageRowSchema>
  * u NAS (nie wina użytkownika), "unreachable" to niedostępny cudzy serwis.
  */
 export type CortexProxyUsageFailure =
-  | "unauthorized"
-  | "invalid-range"
-  | "upstream-error"
-  | "unreachable"
-  | "malformed-response"
+  "unauthorized" | "invalid-range" | "upstream-error" | "unreachable" | "malformed-response"
 
 export class CortexProxyUsageError extends Error {
   readonly failure: CortexProxyUsageFailure

@@ -11,9 +11,8 @@ const loadGrantedApplicationCodes = vi.hoisted(() => vi.fn<(email: string) => Pr
 
 vi.mock("./rbac-store", () => ({ loadGrantedApplicationCodes }))
 
-const { clearTileAccessCache, getGrantedApplicationCodes, requireTileAccess } = await import(
-  "./rbac",
-)
+const { clearTileAccessCache, getGrantedApplicationCodes, requireTileAccess } =
+  await import("./rbac")
 
 const ENTITLEMENT = "system-config"
 
@@ -296,7 +295,9 @@ describe("getGrantedApplicationCodes — wspólny cache z requireTileAccess", ()
     clearTileAccessCache()
 
     expect(await getGrantedApplicationCodes("admin@firma.pl")).toEqual([])
-    expect((await requireTileAccess(makeRequest("admin@firma.pl"), ENTITLEMENT)).allowed).toBe(false)
+    expect((await requireTileAccess(makeRequest("admin@firma.pl"), ENTITLEMENT)).allowed).toBe(
+      false,
+    )
   })
 
   it("dedupuje odczyt w locie razem z requireTileAccess (single-flight)", async () => {

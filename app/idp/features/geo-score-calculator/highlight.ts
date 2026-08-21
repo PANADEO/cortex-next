@@ -76,7 +76,11 @@ export function toTextSegments(text: string, ranges: HighlightRange[]): TextSegm
 
   ranges.forEach((range, index) => {
     if (range.start > cursor) {
-      segments.push({ highlighted: false, text: text.slice(cursor, range.start), key: `plain-${index}` })
+      segments.push({
+        highlighted: false,
+        text: text.slice(cursor, range.start),
+        key: `plain-${index}`,
+      })
     }
     segments.push({
       highlighted: true,

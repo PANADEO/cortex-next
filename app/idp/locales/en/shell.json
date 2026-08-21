@@ -1,0 +1,31 @@
+{
+  "gate": {
+    "checking": "Checking access…",
+    "deniedTitle": "No permission",
+    "deniedHeading": "Access denied",
+    "deniedBody": "Your account is not allowed to use this application. Please contact your administrator.",
+    "retry": "Try again",
+    "signOut": "Sign out"
+  },
+  "hub": {
+    "loadFailedTitle": "Could not load applications",
+    "loadFailedBody": "Try refreshing the page. If the problem persists, check the database connection.",
+    "subtitle": "Choose the application you want to use",
+    "byDepartment": "By department",
+    "grouping": "Group by",
+    "noResults": "Try changing your search or clearing the filters.",
+    "clearFilters": "Clear filters",
+    "loading": "Loading applications…"
+  },
+  "landing": {
+    "tagline": "An integrated hub of AI modules for enterprise operations.",
+    "featureExtraction": "Automatic data extraction from documents",
+    "featureSecurity": "Enterprise-grade security and audit",
+    "signIn": "Sign in",
+    "signInHint": "Access your Cortex360 modules",
+    "intro": "From document extraction to process automation — one platform, one design system, one sign-in.",
+    "featurePipeline": "AI pipeline for repeatable operations",
+    "authInterrupted": "Sign-in interrupted",
+    "continue": "Continue"
+  }
+}

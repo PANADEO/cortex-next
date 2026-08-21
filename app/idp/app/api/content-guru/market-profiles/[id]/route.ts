@@ -1,13 +1,13 @@
 // GET/PUT/DELETE /api/content-guru/market-profiles/:id — mirror
 // client-profiles/[id]/route.ts, PER-USER (D7).
 
-import { NextResponse, type NextRequest } from "next/server"
 import {
   deleteMyMarketProfile,
   getMyMarketProfile,
   marketProfileInputSchema,
   updateMyMarketProfile,
 } from "@cortex/service"
+import { NextResponse, type NextRequest } from "next/server"
 import { isUniqueViolation, requireContentGuruAccess } from "../../_lib/guard"
 
 export const runtime = "nodejs"

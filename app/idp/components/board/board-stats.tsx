@@ -1,10 +1,18 @@
 "use client"
 
-import { DataCard } from "@cortex/ui"
-import { AlertTriangle, CheckCircle2, FileStack, FileWarning, Loader2, PlayCircle, UserCheck } from "lucide-react"
-import type { LucideIcon } from "lucide-react"
 import { BOARD_COLUMNS, type BoardStage } from "@/lib/board/pipeline"
 import type { PipelineBoardState } from "@/lib/board/use-pipeline-board"
+import { DataCard } from "@cortex/ui"
+import type { LucideIcon } from "lucide-react"
+import {
+  AlertTriangle,
+  CheckCircle2,
+  FileStack,
+  FileWarning,
+  Loader2,
+  PlayCircle,
+  UserCheck,
+} from "lucide-react"
 
 type Tone = "default" | "info" | "success" | "warning" | "destructive"
 
@@ -32,7 +40,7 @@ interface BoardStatsProps {
 
 export function BoardStats({ board }: BoardStatsProps) {
   return (
-    <section className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
+    <section className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4">
       {BOARD_COLUMNS.map((meta) => (
         <DataCard
           key={meta.id}

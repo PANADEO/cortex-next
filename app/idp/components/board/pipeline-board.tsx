@@ -1,7 +1,7 @@
 "use client"
 
-import { cn } from "@cortex/utils"
 import { usePipelineBoard } from "@/lib/board/use-pipeline-board"
+import { cn } from "@cortex/utils"
 import { BoardColumns } from "./board-columns"
 import { BoardFilters } from "./board-filters"
 

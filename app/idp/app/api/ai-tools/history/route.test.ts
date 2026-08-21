@@ -25,7 +25,10 @@ async function loadHandler(): Promise<HistoryRoute> {
   return (await import("./route")) as unknown as HistoryRoute
 }
 
-function makeRequest(toolId: string, email: string | null = "u@example.com"): Request & { nextUrl: URL } {
+function makeRequest(
+  toolId: string,
+  email: string | null = "u@example.com",
+): Request & { nextUrl: URL } {
   const nextUrl = new URL(`http://localhost/api/ai-tools/history?toolId=${toolId}`)
   const headers = new Headers()
   if (email) headers.set("x-auth-request-email", email)

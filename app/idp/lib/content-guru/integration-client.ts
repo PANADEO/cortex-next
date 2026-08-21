@@ -87,10 +87,6 @@ export async function generateContent(
     })
     return result
   } catch (error) {
-    throw new ContentGuruServiceError(
-      "Błąd komunikacji z cortex-proxy.",
-      "upstream-error",
-      error,
-    )
+    throw new ContentGuruServiceError("Błąd komunikacji z cortex-proxy.", "upstream-error", error)
   }
 }

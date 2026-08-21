@@ -1,5 +1,7 @@
 "use client"
 
+import { useTranslation } from "react-i18next"
+
 import { cn } from "@cortex/utils"
 import { Search } from "lucide-react"
 import type { HeroView } from "../../types"
@@ -32,14 +34,13 @@ export function Masthead({
   tileCount,
   categoryCount,
 }: MastheadProps) {
+  const { t } = useTranslation("shell")
   return (
     <header className="mb-7">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
           <h1 className="text-3xl font-bold leading-[1.1] tracking-[-0.01em]">Enterprise AI Hub</h1>
-          <p className="mt-1 text-[13px] text-muted-foreground">
-            Wybierz aplikację, której chcesz użyć
-          </p>
+          <p className="mt-1 text-[13px] text-muted-foreground">{t("hub.subtitle")}</p>
         </div>
 
         {/* Fokus jako offsetowy cień w kolorze `--ring`, nie obwódka: to ta sama
@@ -79,12 +80,12 @@ export function Masthead({
         <span>
           Narzędzia: {tileCount} · Kategorie: {categoryCount}
         </span>
-        <span className="inline-flex" role="group" aria-label="Sposób grupowania">
+        <span className="inline-flex" role="group" aria-label={t("hub.grouping")}>
           <ViewButton isActive={view === "functional"} onClick={() => onViewChange("functional")}>
             Funkcjonalnie
           </ViewButton>
           <ViewButton isActive={view === "department"} onClick={() => onViewChange("department")}>
-            Wg działu
+            {t("hub.byDepartment")}
           </ViewButton>
         </span>
       </div>

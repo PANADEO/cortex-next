@@ -2,11 +2,11 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import {
   addExportEmailRecipient,
-  loadImportNotificationExportTemplate,
   loadExportEmailRecipients,
+  loadImportNotificationExportTemplate,
   normalizeExportEmailRecipient,
-  rememberImportNotificationExportTemplate,
   rememberExportEmailRecipient,
+  rememberImportNotificationExportTemplate,
 } from "./email-recipients"
 
 function installLocalStorage(): void {

@@ -6,12 +6,24 @@ import {
   useInvoiceSupervisorTemplates,
   useInvoiceSupervisorTones,
 } from "@/lib/invoice-supervisor/hooks"
+import type {
+  InvoiceSupervisorChannel,
+  InvoiceSupervisorEscalationStage,
+} from "@/lib/invoice-supervisor/types"
 import {
   INVOICE_SUPERVISOR_CHANNEL_LABELS,
   INVOICE_SUPERVISOR_ESCALATION_STAGE_LABELS,
 } from "@/lib/invoice-supervisor/types"
-import type { InvoiceSupervisorChannel, InvoiceSupervisorEscalationStage } from "@/lib/invoice-supervisor/types"
-import { Card, CardContent, CardHeader, CardTitle, EmptyState, ErrorState, LoadingState, PageHeader } from "@cortex/ui"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PageHeader,
+} from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import { Check, FileText, Pencil, Plus } from "lucide-react"
 import { useState } from "react"
@@ -128,7 +140,9 @@ export default function InvoiceSupervisorTemplatesPage() {
                                       setDialogTarget({
                                         toneId: Number(toneId),
                                         toneName: tone.tone_name,
-                                        toneDescription: tones?.find((t) => t.id === Number(toneId))?.description ?? "",
+                                        toneDescription:
+                                          tones?.find((t) => t.id === Number(toneId))
+                                            ?.description ?? "",
                                         channel,
                                         stage,
                                       })
@@ -140,7 +154,11 @@ export default function InvoiceSupervisorTemplatesPage() {
                                         : "bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20",
                                     )}
                                   >
-                                    {exists ? <Check className="size-3.5" /> : <Plus className="size-3.5" />}
+                                    {exists ? (
+                                      <Check className="size-3.5" />
+                                    ) : (
+                                      <Plus className="size-3.5" />
+                                    )}
                                     {exists ? "Gotowe" : "Utwórz"}
                                     {exists && <Pencil className="size-3 opacity-60" />}
                                   </button>

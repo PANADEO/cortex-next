@@ -1,6 +1,14 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { InvoiceSupervisorProposalDetailPanel } from "@/components/invoice-supervisor/proposal-detail-panel"
+import { InvoiceSupervisorProposalListItem } from "@/components/invoice-supervisor/proposal-list-item"
+import { InvoiceSupervisorStatsStrip } from "@/components/invoice-supervisor/stats-strip"
+import {
+  useInvoiceSupervisorBulkApproveProposals,
+  useInvoiceSupervisorBulkRejectProposals,
+  useInvoiceSupervisorGenerateProposals,
+  useInvoiceSupervisorPendingProposals,
+} from "@/lib/invoice-supervisor/hooks"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,15 +25,7 @@ import {
   Skeleton,
 } from "@cortex/ui"
 import { CheckCircle2, Inbox as InboxIcon, RefreshCw, XCircle } from "lucide-react"
-import { InvoiceSupervisorProposalDetailPanel } from "@/components/invoice-supervisor/proposal-detail-panel"
-import { InvoiceSupervisorProposalListItem } from "@/components/invoice-supervisor/proposal-list-item"
-import { InvoiceSupervisorStatsStrip } from "@/components/invoice-supervisor/stats-strip"
-import {
-  useInvoiceSupervisorBulkApproveProposals,
-  useInvoiceSupervisorBulkRejectProposals,
-  useInvoiceSupervisorGenerateProposals,
-  useInvoiceSupervisorPendingProposals,
-} from "@/lib/invoice-supervisor/hooks"
+import { useMemo, useState } from "react"
 
 export default function InvoiceSupervisorInboxPage() {
   const { data: proposals, isLoading, isError, refetch } = useInvoiceSupervisorPendingProposals()
@@ -53,8 +53,10 @@ export default function InvoiceSupervisorInboxPage() {
   const selectedIdsArray = Array.from(selectedIds)
 
   // ESC-003: payment_demand proposals can never be bulk-selected, so "select all" only targets the rest.
-  const selectableProposals = proposals?.filter((p) => p.escalation_stage !== "payment_demand") ?? []
-  const allSelected = selectableProposals.length > 0 && selectableProposals.every((p) => selectedIds.has(p.id))
+  const selectableProposals =
+    proposals?.filter((p) => p.escalation_stage !== "payment_demand") ?? []
+  const allSelected =
+    selectableProposals.length > 0 && selectableProposals.every((p) => selectedIds.has(p.id))
   const someSelected = selectableProposals.some((p) => selectedIds.has(p.id))
 
   function toggleSelectAll(checked: boolean) {
@@ -88,23 +90,32 @@ export default function InvoiceSupervisorInboxPage() {
           <div className="ml-auto flex gap-2">
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                >
                   <XCircle className="size-4" />
                   Odrzuć zaznaczone
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Odrzucić {selectedIdsArray.length} propozycji?</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    Odrzucić {selectedIdsArray.length} propozycji?
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Ta akcja nie wyśle żadnej wiadomości i można ją cofnąć wygenerowaniem propozycji ponownie.
+                    Ta akcja nie wyśle żadnej wiadomości i można ją cofnąć wygenerowaniem propozycji
+                    ponownie.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Anuluj</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => {
-                      bulkReject.mutate(selectedIdsArray, { onSuccess: () => setSelectedIds(new Set()) })
+                      bulkReject.mutate(selectedIdsArray, {
+                        onSuccess: () => setSelectedIds(new Set()),
+                      })
                     }}
                   >
                     Odrzuć
@@ -121,17 +132,21 @@ export default function InvoiceSupervisorInboxPage() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Zatwierdzić {selectedIdsArray.length} propozycji?</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    Zatwierdzić {selectedIdsArray.length} propozycji?
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Wysyłka trafi do kolejki i zostanie zrealizowana automatycznie. Wezwania do zapłaty w zaznaczeniu
-                    zostaną pominięte — wymagają pojedynczej akceptacji.
+                    Wysyłka trafi do kolejki i zostanie zrealizowana automatycznie. Wezwania do
+                    zapłaty w zaznaczeniu zostaną pominięte — wymagają pojedynczej akceptacji.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Anuluj</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => {
-                      bulkApprove.mutate(selectedIdsArray, { onSuccess: () => setSelectedIds(new Set()) })
+                      bulkApprove.mutate(selectedIdsArray, {
+                        onSuccess: () => setSelectedIds(new Set()),
+                      })
                     }}
                   >
                     Zatwierdź
@@ -152,7 +167,9 @@ export default function InvoiceSupervisorInboxPage() {
                 onCheckedChange={(checked) => toggleSelectAll(checked === true)}
                 aria-label="Zaznacz wszystkie"
               />
-              <span className="text-muted-foreground">{allSelected ? "Odznacz wszystkie" : "Zaznacz wszystkie"}</span>
+              <span className="text-muted-foreground">
+                {allSelected ? "Odznacz wszystkie" : "Zaznacz wszystkie"}
+              </span>
             </label>
           )}
           <div className="flex-1 overflow-y-auto">

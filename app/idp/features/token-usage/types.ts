@@ -7,7 +7,12 @@
 // gwarancję, że kontrakt klienta nie rozjedzie się z tym, co serwer faktycznie
 // wysyła, bo to dosłownie ten sam typ.
 
-import type { UsageDetailRow, UsageGroup, UsageReport, UsageTotals } from "@/lib/token-usage/aggregate"
+import type {
+  UsageDetailRow,
+  UsageGroup,
+  UsageReport,
+  UsageTotals,
+} from "@/lib/token-usage/aggregate"
 
 export type { UsageDetailRow, UsageGroup, UsageReport, UsageTotals }
 

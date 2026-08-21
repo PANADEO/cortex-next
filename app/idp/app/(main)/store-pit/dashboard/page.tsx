@@ -4,8 +4,8 @@ import { GRAND_TOTAL, INVOICE, MARGIN, PIPELINE } from "@/features/store-pit/dat
 import { count, eur, signedEur } from "@/features/store-pit/helpers"
 import { Badge, Card, CardContent, PageHeader } from "@cortex/ui"
 import { cn } from "@cortex/utils"
-import { ArrowRight, CheckCircle2, History, SlidersHorizontal } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { ArrowRight, CheckCircle2, History, SlidersHorizontal } from "lucide-react"
 import Link from "next/link"
 
 interface LayerStyle {
@@ -229,7 +229,9 @@ export default function StorePitOverviewPage() {
                             <CheckCircle2 className="h-3.5 w-3.5 text-success-foreground" />
                           </span>
                         </div>
-                        <p className="text-sm leading-relaxed text-muted-foreground">{link.blurb}</p>
+                        <p className="text-sm leading-relaxed text-muted-foreground">
+                          {link.blurb}
+                        </p>
                       </div>
                       <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                     </CardContent>

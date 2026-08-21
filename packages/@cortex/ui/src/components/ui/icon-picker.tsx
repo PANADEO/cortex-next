@@ -1,9 +1,9 @@
 "use client"
 
-import * as React from "react"
-import * as Icons from "lucide-react"
-import type { LucideIcon } from "lucide-react"
 import { useVirtualizer } from "@tanstack/react-virtual"
+import type { LucideIcon } from "lucide-react"
+import * as Icons from "lucide-react"
+import * as React from "react"
 
 import { cn } from "@cortex/utils"
 import { Button } from "./button"
@@ -73,7 +73,14 @@ const ROW_HEIGHT = 44
  * design doc D4/D5). Popover + pole filtra + wirtualizowana siatka
  * (`@tanstack/react-virtual`), bez `cmdk` (nie jest zależnością repo).
  */
-export function IconPicker({ value, onChange, id, disabled, className, autoOpen }: IconPickerProps) {
+export function IconPicker({
+  value,
+  onChange,
+  id,
+  disabled,
+  className,
+  autoOpen,
+}: IconPickerProps) {
   // Wartość początkowa czytana raz, na pierwszym renderze — dokładnie tyle
   // potrzeba: ten komponent montuje się raz na czas życia strony (gate
   // `isIconPickerActive` w wołającym nie wraca do false), więc `autoOpen`
@@ -141,7 +148,8 @@ function IconGrid({
     if (!normalized) return ICON_CATALOG
     return ICON_CATALOG.filter(
       (option) =>
-        option.name.toLowerCase().includes(normalized) || option.label.toLowerCase().includes(normalized),
+        option.name.toLowerCase().includes(normalized) ||
+        option.label.toLowerCase().includes(normalized),
     )
   }, [query])
 
@@ -153,7 +161,8 @@ function IconGrid({
     // wewnątrz Root (na który wskazuje ref); Viewport ma stały atrybut
     // `data-radix-scroll-area-viewport`, więc odnajdujemy go relatywnie.
     getScrollElement: () =>
-      scrollAreaRef.current?.querySelector<HTMLElement>("[data-radix-scroll-area-viewport]") ?? null,
+      scrollAreaRef.current?.querySelector<HTMLElement>("[data-radix-scroll-area-viewport]") ??
+      null,
     estimateSize: () => ROW_HEIGHT,
     overscan: 6,
   })

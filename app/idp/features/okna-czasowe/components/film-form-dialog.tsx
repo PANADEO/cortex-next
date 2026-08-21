@@ -1,6 +1,5 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
 import {
   Button,
   Dialog,
@@ -11,10 +10,16 @@ import {
   Input,
   Label,
 } from "@cortex/ui"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2, Plus, X } from "lucide-react"
 import { useEffect } from "react"
 import { useFieldArray, useForm } from "react-hook-form"
-import { EMPTY_FILM_FORM_VALUES, filmFormSchema, filmFormValuesToInput, type FilmFormValues } from "../schemas"
+import {
+  EMPTY_FILM_FORM_VALUES,
+  filmFormSchema,
+  filmFormValuesToInput,
+  type FilmFormValues,
+} from "../schemas"
 import type { Film } from "../types"
 
 interface FilmFormDialogProps {

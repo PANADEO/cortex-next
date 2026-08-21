@@ -51,9 +51,9 @@ export default function OknaCzasoweLogPage() {
             </div>
             <p className="text-sm leading-relaxed text-muted-foreground">
               Ten skan sprawdza dostępność każdego śledzonego filmu na Rakuten TV PL przez publiczne
-              GraphQL API JustWatch i zapisuje jeden wpis dziennie. Żeby zbierać dane przez cały okres
-              projektu (docelowo ok. 6 miesięcy), uruchamiaj go raz dziennie z crona na maszynie, która
-              ma dostęp do wdrożonej instancji frontendu:
+              GraphQL API JustWatch i zapisuje jeden wpis dziennie. Żeby zbierać dane przez cały
+              okres projektu (docelowo ok. 6 miesięcy), uruchamiaj go raz dziennie z crona na
+              maszynie, która ma dostęp do wdrożonej instancji frontendu:
             </p>
             <pre className="overflow-x-auto rounded-md bg-background p-3 text-xs">
               <code>
@@ -62,10 +62,13 @@ export default function OknaCzasoweLogPage() {
               </code>
             </pre>
             <p className="text-xs text-muted-foreground">
-              Lokalnie / dev: <code className="rounded bg-background px-1 py-0.5">npm run okna-czasowe:scan</code>{" "}
-              (domyślnie celuje w <code className="rounded bg-background px-1 py-0.5">http://localhost:3000</code>).
+              Lokalnie / dev:{" "}
+              <code className="rounded bg-background px-1 py-0.5">npm run okna-czasowe:scan</code>{" "}
+              (domyślnie celuje w{" "}
+              <code className="rounded bg-background px-1 py-0.5">http://localhost:3000</code>).
               Skrypt woła ten sam endpoint co przycisk „Skanuj teraz” —{" "}
-              <code className="rounded bg-background px-1 py-0.5">POST /api/okna-czasowe/scan</code>.
+              <code className="rounded bg-background px-1 py-0.5">POST /api/okna-czasowe/scan</code>
+              .
             </p>
           </CardContent>
         </Card>

@@ -8,14 +8,18 @@
 // awaria strony — code-service "Rekordy per-user" pkt 2 (nigdy 403, nigdy
 // wyciek istnienia cudzego wpisu).
 
+import {
+  useArchiveEntry,
+  useMyClientProfiles,
+  useMyMarketProfiles,
+} from "@/features/content-guru/hooks"
+import { ContentStatusBadge, renderHighlightedContent } from "@/features/content-guru/utils"
 import { Button, Card, CardContent, EmptyState, LoadingState, PageHeader } from "@cortex/ui"
 import { formatAbsolute } from "@cortex/utils"
 import { ChevronLeft, FileX } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useMemo } from "react"
-import { useArchiveEntry, useMyClientProfiles, useMyMarketProfiles } from "@/features/content-guru/hooks"
-import { ContentStatusBadge, renderHighlightedContent } from "@/features/content-guru/utils"
 
 const GENERATION_MODE_LABEL: Record<string, string> = {
   single: "Pojedyncza",
@@ -36,15 +40,24 @@ export default function ContentGuruHistoryDetailPage() {
 
   const clientProfileName = useMemo(() => {
     if (!entry?.clientProfileId) return null
-    return clientProfilesQuery.data?.find((profile) => profile.id === entry.clientProfileId)?.profileName ?? null
+    return (
+      clientProfilesQuery.data?.find((profile) => profile.id === entry.clientProfileId)
+        ?.profileName ?? null
+    )
   }, [entry, clientProfilesQuery.data])
 
   const marketProfileName = useMemo(() => {
     if (!entry?.marketProfileId) return null
-    return marketProfilesQuery.data?.find((profile) => profile.id === entry.marketProfileId)?.profileName ?? null
+    return (
+      marketProfilesQuery.data?.find((profile) => profile.id === entry.marketProfileId)
+        ?.profileName ?? null
+    )
   }, [entry, marketProfilesQuery.data])
 
-  const generationMode = entry && typeof entry.metadata.generationMode === "string" ? entry.metadata.generationMode : null
+  const generationMode =
+    entry && typeof entry.metadata.generationMode === "string"
+      ? entry.metadata.generationMode
+      : null
   const jobId = entry && typeof entry.metadata.jobId === "string" ? entry.metadata.jobId : null
 
   return (
@@ -91,7 +104,10 @@ export default function ContentGuruHistoryDetailPage() {
                 ) : null}
 
                 <div className="whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-4 text-sm leading-relaxed">
-                  {renderHighlightedContent(entry.generatedContent, entry.matchedForbiddenPhrases ?? [])}
+                  {renderHighlightedContent(
+                    entry.generatedContent,
+                    entry.matchedForbiddenPhrases ?? [],
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -111,7 +127,9 @@ export default function ContentGuruHistoryDetailPage() {
               </div>
               <div>
                 <dt className="font-medium text-foreground">Tryb generowania</dt>
-                <dd>{generationMode ? (GENERATION_MODE_LABEL[generationMode] ?? generationMode) : "—"}</dd>
+                <dd>
+                  {generationMode ? (GENERATION_MODE_LABEL[generationMode] ?? generationMode) : "—"}
+                </dd>
               </div>
               <div>
                 <dt className="font-medium text-foreground">Profil klienta</dt>

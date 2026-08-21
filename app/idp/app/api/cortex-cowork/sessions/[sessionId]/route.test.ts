@@ -1,17 +1,16 @@
+import { setGrants } from "@/lib/cortex-governance/testing/grants"
+import type * as CortexService from "@cortex/service"
+import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import type * as CortexService from "@cortex/service"
-import { setGrants } from "@/lib/cortex-governance/testing/grants"
 
 // Route-level proof for the "kryterium zrobione" in the Obsidian task note:
 // "User bez dostępu do sesji Y (utworzonej przez kogoś innego) dostaje
 // 403/404 na GET/POST/DELETE .../sessions/Y/*." Exercises the actual
 // exported GET/DELETE handlers (not just the underlying gate) against a real
 // temp COWORK_DATA_DIR and a real session created via sandbox-store.
-
 
 // Open mode stopped meaning "no restrictions" on 30.07.2026: it still skips
 // the governance ROLE filter, but the caller must hold the cortex-cowork

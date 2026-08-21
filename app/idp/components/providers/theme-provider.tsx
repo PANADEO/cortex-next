@@ -1,10 +1,10 @@
 "use client"
 
-import { useUserPreferences } from "@cortex/api"
-import { useEffect, useRef } from "react"
 import { usePreset } from "@/lib/presets/preset-store"
 import { PRESETS, type PresetId } from "@/lib/presets/registry"
 import { useThemeStore } from "@/lib/stores/theme-store"
+import { useUserPreferences } from "@cortex/api"
+import { useEffect, useRef } from "react"
 
 const DARK_QUERY = "(prefers-color-scheme: dark)"
 

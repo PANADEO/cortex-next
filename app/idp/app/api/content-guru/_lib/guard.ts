@@ -11,9 +11,12 @@
 // per-user" pkt 3: userEmail przekazywany dalej do warstwy serwisowej MUSI
 // pochodzić stąd, nigdy z ciała żądania.
 
+import {
+  CONTENT_GURU_APP_CODE,
+  CONTENT_GURU_MANAGE_TEMPLATES_SCOPE,
+} from "@/lib/content-guru/config"
 import { requireTileAccess, requireTileScope } from "@cortex/service"
 import { NextResponse } from "next/server"
-import { CONTENT_GURU_APP_CODE, CONTENT_GURU_MANAGE_TEMPLATES_SCOPE } from "@/lib/content-guru/config"
 
 export type ContentGuruAccessResult = { email: string } | { deny: NextResponse }
 

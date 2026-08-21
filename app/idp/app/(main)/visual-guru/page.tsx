@@ -5,6 +5,18 @@
 // bez kroku "N opisów kandydatów" legacy (D3). Każde "Generuj" auto-loguje
 // się do archiwum — brak osobnego przycisku "zapisz" (wzorem GEO Score).
 
+import {
+  DEFAULT_FIDELITY,
+  DEFAULT_VARIANT_COUNT,
+  FIDELITY_OPTIONS,
+  MAX_REFERENCE_IMAGES,
+  VARIANT_COUNTS,
+} from "@/features/visual-guru/constants"
+import { readFilesAsDataUrls } from "@/features/visual-guru/files"
+import { useGenerate } from "@/features/visual-guru/hooks"
+import type { FidelityKey, GenerateResponseDto } from "@/features/visual-guru/types"
+import { useObjectUrls } from "@/features/visual-guru/use-object-url"
+import { VariantGrid } from "@/features/visual-guru/variant-grid"
 import { toastApiError } from "@cortex/api"
 import {
   Button,
@@ -22,18 +34,6 @@ import {
 import { Image as ImageIcon, Sparkles } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
-import {
-  DEFAULT_FIDELITY,
-  DEFAULT_VARIANT_COUNT,
-  FIDELITY_OPTIONS,
-  MAX_REFERENCE_IMAGES,
-  VARIANT_COUNTS,
-} from "@/features/visual-guru/constants"
-import { readFilesAsDataUrls } from "@/features/visual-guru/files"
-import { useGenerate } from "@/features/visual-guru/hooks"
-import type { FidelityKey, GenerateResponseDto } from "@/features/visual-guru/types"
-import { useObjectUrls } from "@/features/visual-guru/use-object-url"
-import { VariantGrid } from "@/features/visual-guru/variant-grid"
 
 export default function VisualGuruGenerationPage() {
   const generate = useGenerate()
@@ -42,7 +42,8 @@ export default function VisualGuruGenerationPage() {
   const [additionalContext, setAdditionalContext] = useState("")
   const [referenceFiles, setReferenceFiles] = useState<File[]>([])
   const [fidelity, setFidelity] = useState<FidelityKey>(DEFAULT_FIDELITY)
-  const [variantCount, setVariantCount] = useState<(typeof VARIANT_COUNTS)[number]>(DEFAULT_VARIANT_COUNT)
+  const [variantCount, setVariantCount] =
+    useState<(typeof VARIANT_COUNTS)[number]>(DEFAULT_VARIANT_COUNT)
   const [result, setResult] = useState<GenerateResponseDto | null>(null)
 
   const hasReferenceImages = referenceFiles.length > 0
@@ -147,7 +148,10 @@ export default function VisualGuruGenerationPage() {
                   >
                     {FIDELITY_OPTIONS.map((option) => (
                       <div key={option.key} className="flex items-center gap-2">
-                        <RadioGroupItem id={`visual-guru-fidelity-${option.key}`} value={option.key} />
+                        <RadioGroupItem
+                          id={`visual-guru-fidelity-${option.key}`}
+                          value={option.key}
+                        />
                         <Label
                           htmlFor={`visual-guru-fidelity-${option.key}`}
                           className="font-normal"
@@ -159,7 +163,8 @@ export default function VisualGuruGenerationPage() {
                     ))}
                   </RadioGroup>
                   <p className="text-xs text-muted-foreground">
-                    Wierność steruje TREŚCIĄ promptu wysyłanego do modelu, nie osobnym parametrem API.
+                    Wierność steruje TREŚCIĄ promptu wysyłanego do modelu, nie osobnym parametrem
+                    API.
                   </p>
                 </div>
               ) : null}
@@ -169,7 +174,9 @@ export default function VisualGuruGenerationPage() {
                 <RadioGroup
                   className="flex gap-4"
                   value={String(variantCount)}
-                  onValueChange={(value) => setVariantCount(Number(value) as (typeof VARIANT_COUNTS)[number])}
+                  onValueChange={(value) =>
+                    setVariantCount(Number(value) as (typeof VARIANT_COUNTS)[number])
+                  }
                 >
                   {VARIANT_COUNTS.map((count) => (
                     <div key={count} className="flex items-center gap-2">
@@ -204,7 +211,10 @@ export default function VisualGuruGenerationPage() {
                   description="Wpisz opis i kliknij Generuj. Każda generacja trafia automatycznie do archiwum."
                 />
               ) : (
-                <VariantGrid variants={result.variants} fileNamePrefix={`visual-guru-${result.id}`} />
+                <VariantGrid
+                  variants={result.variants}
+                  fileNamePrefix={`visual-guru-${result.id}`}
+                />
               )}
             </CardContent>
           </Card>

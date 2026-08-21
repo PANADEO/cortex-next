@@ -1,12 +1,12 @@
 "use client"
 
+import { usePreset, usePresetStore } from "@/lib/presets/preset-store"
+import { PRESET_CHOICES, presetChoiceToStored, storedToPresetChoice } from "@/lib/presets/registry"
+import { useThemeStore } from "@/lib/stores/theme-store"
 import { useSetUserPreferences, useShellUser } from "@cortex/api"
 import { SkinToggle, ThemeToggle, UserMenu } from "@cortex/ui"
 import { cva } from "class-variance-authority"
 import Image from "next/image"
-import { usePreset, usePresetStore } from "@/lib/presets/preset-store"
-import { PRESET_CHOICES, presetChoiceToStored, storedToPresetChoice } from "@/lib/presets/registry"
-import { useThemeStore } from "@/lib/stores/theme-store"
 
 /**
  * Pasek nad hubem — odpowiednik `.ch-shellbar`. Ta sama zasada co w powłoce
@@ -57,7 +57,7 @@ export function ShellHeader() {
             alt="Cortex360"
             width={28}
             height={28}
-            className="dark:invert dark:hue-rotate-180"
+            className="dark:hue-rotate-180 dark:invert"
             priority
           />
           <span className="text-sm font-semibold">Cortex360</span>

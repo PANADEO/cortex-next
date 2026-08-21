@@ -310,7 +310,13 @@ describe("compose() — kontrakt layoutu", () => {
   })
 
   it("oba układy dają inny obraz, ale ten sam rozmiar", async () => {
-    const common = { background, title: POLISH_TITLE, subtitle: SUBTITLE, format: SQUARE_FORMAT, fonts }
+    const common = {
+      background,
+      title: POLISH_TITLE,
+      subtitle: SUBTITLE,
+      format: SQUARE_FORMAT,
+      fonts,
+    }
     const top = await compose({ ...common, template: { ...VIOLET, layout: "image-top" } })
     const bottom = await compose({ ...common, template: { ...VIOLET, layout: "image-bottom" } })
 
@@ -376,7 +382,11 @@ describe("compose() — LUKA 2: brakujący plik fontu", () => {
         subtitle: "",
         format: SQUARE_FORMAT,
         template: VIOLET,
-        fonts: { family: "Noto Sans", regularPath: "/nie/ma/regular.ttf", boldPath: "/nie/ma/bold.ttf" },
+        fonts: {
+          family: "Noto Sans",
+          regularPath: "/nie/ma/regular.ttf",
+          boldPath: "/nie/ma/bold.ttf",
+        },
       }),
     ).rejects.toThrow("/nie/ma/regular.ttf")
   })

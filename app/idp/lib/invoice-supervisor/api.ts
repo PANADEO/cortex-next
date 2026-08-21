@@ -72,7 +72,11 @@ function buildUrl(path: string, params?: Record<string, QueryValue>): string {
   return `${basePath}/invoice-supervisor/api${path}${qs ? `?${qs}` : ""}`
 }
 
-async function request<T>(path: string, params?: Record<string, QueryValue>, init?: RequestInit): Promise<T> {
+async function request<T>(
+  path: string,
+  params?: Record<string, QueryValue>,
+  init?: RequestInit,
+): Promise<T> {
   const headers = new Headers(init?.headers)
   if (!headers.has("Accept")) headers.set("Accept", "application/json")
 
@@ -90,7 +94,9 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
   return (await response.json()) as T
 }
 
-async function invoiceSupervisorErrorFromResponse(response: Response): Promise<InvoiceSupervisorApiError> {
+async function invoiceSupervisorErrorFromResponse(
+  response: Response,
+): Promise<InvoiceSupervisorApiError> {
   const body = await readErrorBody(response)
   const errorCode = typeof body?.error_code === "string" ? body.error_code : null
   const backendMessage =
@@ -149,14 +155,16 @@ export const invoiceSupervisorApi = {
   searchInvoices: (params: { status?: string; client_id?: number; query?: string }) =>
     get<InvoiceSupervisorInvoice[]>("/invoices", params),
   getInvoice: (id: number) => get<InvoiceSupervisorInvoice>(`/invoices/${id}`),
-  createInvoice: (data: InvoiceSupervisorInvoiceCreateInput) => post<{ id: number }>("/invoices", data),
+  createInvoice: (data: InvoiceSupervisorInvoiceCreateInput) =>
+    post<{ id: number }>("/invoices", data),
   updateInvoice: (id: number, data: Partial<InvoiceSupervisorInvoice>) =>
     put<{ success: boolean }>(`/invoices/${id}`, data),
   deleteInvoice: (id: number) => del<{ success: boolean }>(`/invoices/${id}`),
   registerPayment: (id: number, amount: number, paymentDate: string, note?: string) =>
     post<{ id: number }>(`/invoices/${id}/payments`, { amount, payment_date: paymentDate, note }),
   getPayments: (id: number) => get<InvoiceSupervisorPayment[]>(`/invoices/${id}/payments`),
-  markInvoiceDisputed: (id: number, note: string) => post<{ success: boolean }>(`/invoices/${id}/dispute`, { note }),
+  markInvoiceDisputed: (id: number, note: string) =>
+    post<{ success: boolean }>(`/invoices/${id}/dispute`, { note }),
   clearInvoiceDispute: (id: number) => post<{ success: boolean }>(`/invoices/${id}/dispute/clear`),
   importInvoices: (file: File, onConflict: string = "ask") => {
     const formData = new FormData()
@@ -171,15 +179,21 @@ export const invoiceSupervisorApi = {
     post<{ success: boolean }>(`/invoices/${id}/escalation/force`, { stage, user }),
 
   // Clients — CLI-*
-  listClients: (query?: string) => get<InvoiceSupervisorClient[]>("/clients", query ? { query } : undefined),
-  listClientsWithExposure: () => get<InvoiceSupervisorClientWithExposure[]>("/clients", { with_exposure: true }),
+  listClients: (query?: string) =>
+    get<InvoiceSupervisorClient[]>("/clients", query ? { query } : undefined),
+  listClientsWithExposure: () =>
+    get<InvoiceSupervisorClientWithExposure[]>("/clients", { with_exposure: true }),
   getClient: (id: number) => get<InvoiceSupervisorClient>(`/clients/${id}`),
-  getClientExposure: (id: number) => get<InvoiceSupervisorClientExposure>(`/clients/${id}/exposure`),
+  getClientExposure: (id: number) =>
+    get<InvoiceSupervisorClientExposure>(`/clients/${id}/exposure`),
   createClient: (data: Partial<InvoiceSupervisorClient>) => post<{ id: number }>("/clients", data),
   updateClient: (id: number, data: Partial<InvoiceSupervisorClient>) =>
     put<{ success: boolean }>(`/clients/${id}`, data),
   forceClientEscalation: (clientId: number, stage: string, user: string) =>
-    post<InvoiceSupervisorForceClientEscalationResult>(`/clients/${clientId}/escalation/force`, { stage, user }),
+    post<InvoiceSupervisorForceClientEscalationResult>(`/clients/${clientId}/escalation/force`, {
+      stage,
+      user,
+    }),
 
   // Policies — POL-*
   listPolicies: () => get<InvoiceSupervisorPolicy[]>("/policies"),
@@ -190,7 +204,8 @@ export const invoiceSupervisorApi = {
 
   // Tones — policy-adjacent
   listTones: () => get<InvoiceSupervisorTone[]>("/tones"),
-  createTone: (name: string, description: string) => post<{ id: number }>("/tones", { name, description }),
+  createTone: (name: string, description: string) =>
+    post<{ id: number }>("/tones", { name, description }),
 
   // Templates — TMPL-*
   listTemplates: () => get<InvoiceSupervisorMessageTemplate[]>("/templates"),
@@ -223,7 +238,9 @@ export const invoiceSupervisorApi = {
   listAllProposals: () => get<InvoiceSupervisorProposal[]>("/proposals"),
   approveProposal: (id: string) => post<{ success: boolean }>(`/proposals/${id}/approve`),
   bulkApproveProposals: (proposalIds: string[]) =>
-    post<InvoiceSupervisorBulkApproveResult>("/proposals/bulk-approve", { proposal_ids: proposalIds }),
+    post<InvoiceSupervisorBulkApproveResult>("/proposals/bulk-approve", {
+      proposal_ids: proposalIds,
+    }),
   rejectProposal: (id: string) => post<{ success: boolean }>(`/proposals/${id}/reject`),
   bulkRejectProposals: (proposalIds: string[]) =>
     post<{ rejected: number }>("/proposals/bulk-reject", { proposal_ids: proposalIds }),

@@ -1,8 +1,8 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
 import type { CoworkRole } from "@cortex/types"
 import { Card, CardContent, Input, Label, LoadingState } from "@cortex/ui"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
 import { Controller, useForm } from "react-hook-form"
 import { useGovernanceConfig, useUpdateGovernance } from "../hooks/use-governance"

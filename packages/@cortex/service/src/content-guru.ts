@@ -216,7 +216,10 @@ export async function createTemplate(
   input: TemplateInput,
   createdBy: string,
 ): Promise<TemplateRow> {
-  const [row] = await getDb().insert(templates).values({ ...input, createdBy }).returning()
+  const [row] = await getDb()
+    .insert(templates)
+    .values({ ...input, createdBy })
+    .returning()
   if (!row) throw new Error("Nie udało się utworzyć szablonu Content Guru")
   return row
 }

@@ -41,7 +41,9 @@ describe("pangoFontDescription()", () => {
 
   it("dla rodziny bez słowa kluczowego jest bezstratna wobec zwykłego przypadku", () => {
     expect(pangoFontDescription({ family: "Georgia", bold: false, size: 64 })).toBe("Georgia, 64")
-    expect(pangoFontDescription({ family: "Noto Sans", bold: false, size: 44 })).toBe("Noto Sans, 44")
+    expect(pangoFontDescription({ family: "Noto Sans", bold: false, size: 44 })).toBe(
+      "Noto Sans, 44",
+    )
   })
 
   it("waga jedzie w opisie, bo sam plik fontu jej nie narzuca (LUKA 3)", () => {

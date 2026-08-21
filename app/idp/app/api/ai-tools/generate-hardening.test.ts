@@ -14,11 +14,11 @@
 // Asercje celują w to, co FAKTYCZNIE wychodzi do cortex-proxy (nagłówki i
 // payload), bo to one decydują o atrybucji kosztów — nie w kształt body żądania.
 
+import { AI_TOOLS_TILE_ID } from "@/lib/ai-tools/app-codes"
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { AI_TOOLS_TILE_ID } from "@/lib/ai-tools/app-codes"
 
 // Uprawnienia idą z własnego Postgresa (@cortex/service), nie po HTTP do
 // cortex-admina — podmieniamy wyłącznie odczyt z bazy, sama bramka w handlerze

@@ -1,9 +1,9 @@
 "use client"
 
-import { PageHeader } from "@cortex/ui"
 import { BoardColumns } from "@/components/board/board-columns"
 import { BoardFilters } from "@/components/board/board-filters"
 import { usePipelineBoard } from "@/lib/board/use-pipeline-board"
+import { PageHeader } from "@cortex/ui"
 
 export default function BoardPage() {
   const board = usePipelineBoard()

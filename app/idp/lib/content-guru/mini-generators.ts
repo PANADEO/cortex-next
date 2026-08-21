@@ -94,7 +94,9 @@ export interface BuildKeywordPhrasePromptInput {
   additionalInfo: string
 }
 
-export function buildKeywordPhrasePrompt(input: BuildKeywordPhrasePromptInput): MiniGeneratorPrompt {
+export function buildKeywordPhrasePrompt(
+  input: BuildKeywordPhrasePromptInput,
+): MiniGeneratorPrompt {
   return {
     systemPrompt: `Jesteś specjalistą SEO. Na podstawie tematu treści zaproponuj JEDNĄ, krótką frazę kluczową (2-5 słów), naturalnie pasującą do treści i wartościową pod kątem wyszukiwarek.
 
@@ -117,7 +119,9 @@ export interface BuildMetaDescriptionPromptInput {
   additionalInfo: string
 }
 
-export function buildMetaDescriptionPrompt(input: BuildMetaDescriptionPromptInput): MiniGeneratorPrompt {
+export function buildMetaDescriptionPrompt(
+  input: BuildMetaDescriptionPromptInput,
+): MiniGeneratorPrompt {
   const sections = [
     `Jesteś specjalistą SEO. Napisz meta description (maksymalnie ${META_DESCRIPTION_MAX_CHARS} znaków) dla treści na podany temat — zachęcającą do kliknięcia, zgodną z tematem.`,
   ]

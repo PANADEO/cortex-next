@@ -94,7 +94,11 @@ describe("POST /api/content-guru/templates/test-generation", () => {
 
   it("bez podanego topic używa przykładowego tematu domyślnego", async () => {
     service.listMyForbiddenPhrases.mockResolvedValueOnce([])
-    generateContent.mockResolvedValueOnce({ content: "Treść.", tokensUsed: 10, model: VALID_BODY.model })
+    generateContent.mockResolvedValueOnce({
+      content: "Treść.",
+      tokensUsed: 10,
+      model: VALID_BODY.model,
+    })
 
     await POST(makeRequest(VALID_BODY) as never)
 
@@ -106,8 +110,16 @@ describe("POST /api/content-guru/templates/test-generation", () => {
   it("D5 nadal działa: zakazana fraza -> retry eskalowany, done-with-warnings, ale bez zapisu archiwum", async () => {
     service.listMyForbiddenPhrases.mockResolvedValueOnce([{ phrase: "najlepszy na rynku" }])
     generateContent
-      .mockResolvedValueOnce({ content: "Jesteśmy najlepszy na rynku.", tokensUsed: 50, model: VALID_BODY.model })
-      .mockResolvedValueOnce({ content: "Wciąż najlepszy na rynku.", tokensUsed: 55, model: VALID_BODY.model })
+      .mockResolvedValueOnce({
+        content: "Jesteśmy najlepszy na rynku.",
+        tokensUsed: 50,
+        model: VALID_BODY.model,
+      })
+      .mockResolvedValueOnce({
+        content: "Wciąż najlepszy na rynku.",
+        tokensUsed: 55,
+        model: VALID_BODY.model,
+      })
 
     const response = await POST(makeRequest(VALID_BODY) as never)
     const json = await response.json()

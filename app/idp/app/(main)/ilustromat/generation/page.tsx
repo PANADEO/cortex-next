@@ -1,6 +1,11 @@
 "use client"
 
-import { useAssistText, useCompose, useFrameTemplates, useGenerate } from "@/features/ilustromat/hooks"
+import {
+  useAssistText,
+  useCompose,
+  useFrameTemplates,
+  useGenerate,
+} from "@/features/ilustromat/hooks"
 import type {
   AssistFieldDto,
   AssistModeDto,
@@ -152,7 +157,8 @@ export default function GenerationPage() {
 
   const recomposedUrl = useObjectUrl(recomposed)
   const selectedVariant: GeneratedVariantDto | undefined = result?.variants[selectedIndex]
-  const previewUrl = recomposedUrl ?? (selectedVariant ? toPngDataUrl(selectedVariant.composed) : null)
+  const previewUrl =
+    recomposedUrl ?? (selectedVariant ? toPngDataUrl(selectedVariant.composed) : null)
 
   // Format jest "zamrożony" na czas życia bieżących teł: przycięcie kwadratu
   // do 1.91:1 wygląda źle, więc zmiana formatu czeka na kolejne "Generuj"
@@ -407,7 +413,10 @@ export default function GenerationPage() {
                     />
                   )}
                   {assistState.subtitle.undo !== null ? (
-                    <UndoButton disabled={assist.isPending} onClick={() => undoAssist("subtitle")} />
+                    <UndoButton
+                      disabled={assist.isPending}
+                      onClick={() => undoAssist("subtitle")}
+                    />
                   ) : null}
                 </div>
               </div>
@@ -468,7 +477,8 @@ export default function GenerationPage() {
                 </Select>
                 {formatChanged ? (
                   <p className="text-xs text-muted-foreground">
-                    Nowy format zostanie użyty przy kolejnej generacji — bieżące tła mają inne proporcje.
+                    Nowy format zostanie użyty przy kolejnej generacji — bieżące tła mają inne
+                    proporcje.
                   </p>
                 ) : null}
               </div>

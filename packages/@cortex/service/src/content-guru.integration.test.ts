@@ -30,8 +30,8 @@ import {
   userRoles,
   users,
 } from "@cortex/db"
-import { randomUUID } from "node:crypto"
 import { eq } from "drizzle-orm"
+import { randomUUID } from "node:crypto"
 import { afterAll, beforeEach, describe, expect, it } from "vitest"
 import {
   addForbiddenPhrase,
@@ -111,7 +111,10 @@ async function cleanup() {
  *  BEZPIECZNE pod współbieżnym użyciem: `ON CONFLICT DO NOTHING`, nigdy nie
  *  nadpisuje ani nie kasuje cudzego stanu, jeśli wiersz już istnieje (np. z
  *  realnego seeda albo z równoległej pracy innego agenta). */
-async function ensureContentGuruScopeBaseline(): Promise<{ applicationId: string; scopeId: string }> {
+async function ensureContentGuruScopeBaseline(): Promise<{
+  applicationId: string
+  scopeId: string
+}> {
   const db = getDb()
 
   await db
@@ -331,7 +334,10 @@ describe.skipIf(!hasDatabase)("content-guru service — prawdziwy Postgres", () 
       )
 
       await expect(
-        createTemplate({ name: "Unikalny", category: TEMPLATE_CATEGORY, content: "B" }, OWNER_EMAIL),
+        createTemplate(
+          { name: "Unikalny", category: TEMPLATE_CATEGORY, content: "B" },
+          OWNER_EMAIL,
+        ),
       ).rejects.toMatchObject({ code: "23505" })
     })
 
@@ -506,7 +512,9 @@ describe.skipIf(!hasDatabase)("content-guru service — prawdziwy Postgres", () 
         .returning()
       await db.insert(userRoles).values({ userId: user!.id, roleId: role!.id })
       await db.insert(permissionsMatrix).values({ roleId: role!.id, applicationId })
-      await db.insert(roleApplicationScopes).values({ roleId: role!.id, applicationScopeId: scopeId })
+      await db
+        .insert(roleApplicationScopes)
+        .values({ roleId: role!.id, applicationScopeId: scopeId })
 
       clearTileAccessCache()
       const scoped = await requireTileScope(
@@ -629,7 +637,12 @@ describe.skipIf(!hasDatabase)("content-guru service — prawdziwy Postgres", () 
       )
 
       const reloaded = await getMyGenerationJob(OWNER_EMAIL, job.id)
-      const items = reloaded!.items as { status: string; content?: string; archiveId?: string; topic: string }[]
+      const items = reloaded!.items as {
+        status: string
+        content?: string
+        archiveId?: string
+        topic: string
+      }[]
 
       expect(items).toHaveLength(itemCount)
       for (let i = 0; i < itemCount; i++) {

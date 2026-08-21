@@ -3,8 +3,8 @@
 import { INVOICE } from "@/features/store-pit/dataset"
 import { count, eur } from "@/features/store-pit/helpers"
 import { Badge, Card, CardContent, PageHeader } from "@cortex/ui"
-import { FileSpreadsheet, FileText } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { FileSpreadsheet, FileText } from "lucide-react"
 
 interface FileEntry {
   icon: LucideIcon
@@ -123,9 +123,8 @@ export default function SourceFilesPage() {
         </section>
 
         <p className="text-[11px] text-muted-foreground">
-          The CSV carries {count(INVOICE.csvRows)} lines that become{" "}
-          {count(INVOICE.shipmentRows)} parcel rows after invoice-level charges are split out -
-          handled under Reconciliation.
+          The CSV carries {count(INVOICE.csvRows)} lines that become {count(INVOICE.shipmentRows)}{" "}
+          parcel rows after invoice-level charges are split out - handled under Reconciliation.
         </p>
       </div>
     </>

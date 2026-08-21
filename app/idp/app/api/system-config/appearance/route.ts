@@ -1,4 +1,8 @@
-import { getInstanceAppearance, instanceAppearanceInputSchema, setInstanceAppearance } from "@cortex/service"
+import {
+  getInstanceAppearance,
+  instanceAppearanceInputSchema,
+  setInstanceAppearance,
+} from "@cortex/service"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { denyUnlessAllowed, toErrorResponse } from "../_lib/guard"

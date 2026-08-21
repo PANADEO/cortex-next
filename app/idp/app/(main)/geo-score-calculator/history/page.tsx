@@ -7,6 +7,13 @@
 // nie klik-w-wiersz"). Pasek KPI (liczba/średnia/trend) i eksport całości nad
 // tabelą.
 
+import { downloadHistoryExport } from "@/features/geo-score-calculator/export"
+import { computeHistoryStats } from "@/features/geo-score-calculator/history-stats"
+import { useMyGeoScoreHistory } from "@/features/geo-score-calculator/hooks"
+import type {
+  GeoScoreCalculationSummaryDto,
+  GeoScoreGrade,
+} from "@/features/geo-score-calculator/types"
 import {
   Badge,
   Button,
@@ -28,13 +35,17 @@ import {
 } from "@cortex/ui"
 import { cn, formatAbsolute } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
-import { BarChart3, ChevronRight, Download, FileSearch, FileText, TrendingDown, TrendingUp } from "lucide-react"
+import {
+  BarChart3,
+  ChevronRight,
+  Download,
+  FileSearch,
+  FileText,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
-import { downloadHistoryExport } from "@/features/geo-score-calculator/export"
-import { computeHistoryStats } from "@/features/geo-score-calculator/history-stats"
-import { useMyGeoScoreHistory } from "@/features/geo-score-calculator/hooks"
-import type { GeoScoreCalculationSummaryDto, GeoScoreGrade } from "@/features/geo-score-calculator/types"
 
 const GRADE_FILTER_OPTIONS: Array<{ value: GeoScoreGrade | "all"; label: string }> = [
   { value: "all", label: "Wszystkie oceny" },
@@ -80,13 +91,17 @@ export default function GeoScoreCalculatorHistoryPage() {
       {
         accessorKey: "textPreview",
         header: "Podgląd",
-        cell: ({ row }) => <span className="line-clamp-1 max-w-md">{row.original.textPreview}</span>,
+        cell: ({ row }) => (
+          <span className="line-clamp-1 max-w-md">{row.original.textPreview}</span>
+        ),
       },
       {
         accessorKey: "totalScore",
         header: "Wynik",
         enableSorting: true,
-        cell: ({ row }) => <span className="tabular-nums">{row.original.totalScore.toFixed(1)}</span>,
+        cell: ({ row }) => (
+          <span className="tabular-nums">{row.original.totalScore.toFixed(1)}</span>
+        ),
       },
       {
         accessorKey: "grade",
@@ -151,7 +166,12 @@ export default function GeoScoreCalculatorHistoryPage() {
 
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         <div className="grid gap-4 sm:grid-cols-3">
-          <DataCard label="Liczba analiz" value={stats.count} icon={FileText} isLoading={historyQuery.isLoading} />
+          <DataCard
+            label="Liczba analiz"
+            value={stats.count}
+            icon={FileText}
+            isLoading={historyQuery.isLoading}
+          />
           <DataCard
             label="Średni wynik"
             value={stats.averageScore !== null ? stats.averageScore.toFixed(1) : "—"}
@@ -173,7 +193,9 @@ export default function GeoScoreCalculatorHistoryPage() {
                   : "bez zmiany"
             }
             icon={stats.trend?.direction === "down" ? TrendingDown : TrendingUp}
-            tone={stats.trend ? (stats.trend.direction === "up" ? "success" : "destructive") : "default"}
+            tone={
+              stats.trend ? (stats.trend.direction === "up" ? "success" : "destructive") : "default"
+            }
             isLoading={historyQuery.isLoading}
           />
         </div>
@@ -182,7 +204,10 @@ export default function GeoScoreCalculatorHistoryPage() {
           <Label htmlFor="geo-score-grade-filter" className="text-xs text-muted-foreground">
             Ocena
           </Label>
-          <Select value={gradeFilter} onValueChange={(value) => setGradeFilter(value as GeoScoreGrade | "all")}>
+          <Select
+            value={gradeFilter}
+            onValueChange={(value) => setGradeFilter(value as GeoScoreGrade | "all")}
+          >
             <SelectTrigger id="geo-score-grade-filter" className="w-48">
               <SelectValue />
             </SelectTrigger>

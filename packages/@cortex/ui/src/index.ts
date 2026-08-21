@@ -22,7 +22,14 @@ export {
   BreadcrumbSeparator,
 } from "./components/ui/breadcrumb"
 export { Button, buttonVariants } from "./components/ui/button"
-export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./components/ui/card"
+export {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./components/ui/card"
 export { Checkbox } from "./components/ui/checkbox"
 export { ChipInput } from "./components/ui/chip-input"
 export type { ChipInputProps } from "./components/ui/chip-input"
@@ -83,7 +90,15 @@ export {
   SelectValue,
 } from "./components/ui/select"
 export { Separator } from "./components/ui/separator"
-export { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "./components/ui/sheet"
+export {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "./components/ui/sheet"
 export { Skeleton } from "./components/ui/skeleton"
 export { Slider } from "./components/ui/slider"
 export { Switch } from "./components/ui/switch"
@@ -92,6 +107,14 @@ export { Textarea } from "./components/ui/textarea"
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/ui/tooltip"
 
 // Compositions
+export { AppShell } from "./components/app-shell"
+export { CortexDataGrid } from "./components/cortex-data-grid"
+export type { CortexDataGridProps } from "./components/cortex-data-grid"
+export { DataCard } from "./components/data-card"
+export { DataTable } from "./components/data-table"
+export { EmptyState } from "./components/empty-state"
+export { PageHeader } from "./components/page-header"
+export { Pagination } from "./components/pagination"
 export {
   PackageStatusBadges,
   ProcessingStateBadge,
@@ -99,33 +122,25 @@ export {
   getProcessingStateLabel,
   getVerificationStateLabel,
 } from "./components/status-badge"
-export { Pagination } from "./components/pagination"
-export { DataCard } from "./components/data-card"
-export { PageHeader } from "./components/page-header"
-export { DataTable } from "./components/data-table"
-export { CortexDataGrid } from "./components/cortex-data-grid"
-export type { CortexDataGridProps } from "./components/cortex-data-grid"
-export { EmptyState } from "./components/empty-state"
-export { AppShell } from "./components/app-shell"
 // Typ MUSI wyjść przez barrel razem z komponentem: konsument spoza tego repo
 // nie ma jak nazwać wartości, którą podaje w `variant`, a to jest dokładnie
 // przypadek, dla którego wariant jedzie propsem, a nie kontekstem.
 export type { AppShellVariant } from "./components/app-shell"
+export { JsonEditor } from "./components/json-editor"
+export { JsonViewer } from "./components/json-viewer"
+export { SkinToggle } from "./components/skin-toggle"
+export type { SkinOption } from "./components/skin-toggle"
+export { ThemeToggle } from "./components/theme-toggle"
+export type { ThemeMode } from "./components/theme-toggle"
 export { TileMenu } from "./components/tile-menu"
 export type { TileMenuItem, TileMenuSection } from "./components/tile-menu"
 export { UserMenu } from "./components/user-menu"
-export { ThemeToggle } from "./components/theme-toggle"
-export type { ThemeMode } from "./components/theme-toggle"
-export { SkinToggle } from "./components/skin-toggle"
-export type { SkinOption } from "./components/skin-toggle"
-export { JsonViewer } from "./components/json-viewer"
-export { JsonEditor } from "./components/json-editor"
 // DocumentViewer intentionally NOT reexported — pdfjs-dist breaks SSR.
 // Import via subpath: "@cortex/ui/components/document-viewer" + next/dynamic.
 export { ActionLogTimeline } from "./components/action-log-timeline"
-export { FileUploader } from "./components/file-uploader"
 export { AutoRefreshIndicator } from "./components/auto-refresh-indicator"
-export { LoadingState } from "./components/loading-state"
-export { ErrorState } from "./components/error-state"
 export { BarList } from "./components/bar-list"
 export type { BarListItem } from "./components/bar-list"
+export { ErrorState } from "./components/error-state"
+export { FileUploader } from "./components/file-uploader"
+export { LoadingState } from "./components/loading-state"

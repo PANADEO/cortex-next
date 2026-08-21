@@ -1,6 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { callCortexProxy } from "@cortex/api/cortex-proxy-client"
-import { ContentGuruServiceError, generateContent, type GenerateContentRequest } from "./integration-client"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import {
+  ContentGuruServiceError,
+  generateContent,
+  type GenerateContentRequest,
+} from "./integration-client"
 
 vi.mock("@cortex/api/cortex-proxy-client", () => ({
   callCortexProxy: vi.fn(),
@@ -63,9 +67,7 @@ describe("generateContent", () => {
   })
 
   it("odmawia fail-closed model spoza CONTENT_GURU_MODELS — nie woła cortex-proxy", async () => {
-    await expect(
-      generateContent({ ...REQUEST, model: "nieznany/model" }),
-    ).rejects.toMatchObject({
+    await expect(generateContent({ ...REQUEST, model: "nieznany/model" })).rejects.toMatchObject({
       name: "ContentGuruServiceError",
       code: "model-not-allowed",
     })

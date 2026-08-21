@@ -1,7 +1,7 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
 import { Button, Card, CardContent, Input, Label } from "@cortex/ui"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 import { Fragment, useEffect, useId } from "react"
 import { useForm, type Path } from "react-hook-form"
@@ -60,9 +60,7 @@ export function FieldsForm<T extends Record<string, string>>({
             {fields.map((f) => (
               <Fragment key={String(f.name)}>
                 <dt className="text-muted-foreground">{f.label}</dt>
-                <dd className="truncate font-mono text-xs">
-                  {defaults[f.name as keyof T] || "—"}
-                </dd>
+                <dd className="truncate font-mono text-xs">{defaults[f.name as keyof T] || "—"}</dd>
               </Fragment>
             ))}
           </dl>
@@ -90,10 +88,7 @@ export function FieldsForm<T extends Record<string, string>>({
             const fieldId = `${idPrefix}-${String(f.name)}`
             const error = form.formState.errors[f.name as Path<T>]
             return (
-              <div
-                key={String(f.name)}
-                className={f.span === 2 ? "md:col-span-2" : undefined}
-              >
+              <div key={String(f.name)} className={f.span === 2 ? "md:col-span-2" : undefined}>
                 <Label htmlFor={fieldId} className="text-xs text-muted-foreground">
                   {f.label}
                 </Label>

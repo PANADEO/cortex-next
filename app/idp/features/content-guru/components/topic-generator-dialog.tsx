@@ -15,6 +15,11 @@
 //  - true (tryb "Kilka"/"Pakiet"): wielokrotny wybór, każdy zaznaczony
 //    temat dochodzi jako osobny wiersz do tabeli tematów.
 
+import {
+  TOPIC_COUNT_DEFAULT,
+  TOPIC_COUNT_MAX,
+  TOPIC_COUNT_MIN,
+} from "@/lib/content-guru/mini-generators"
 import { toastApiError } from "@cortex/api"
 import {
   Button,
@@ -31,7 +36,6 @@ import {
 } from "@cortex/ui"
 import { Sparkles } from "lucide-react"
 import { useState } from "react"
-import { TOPIC_COUNT_DEFAULT, TOPIC_COUNT_MAX, TOPIC_COUNT_MIN } from "@/lib/content-guru/mini-generators"
 import { useGenerateTopics } from "../hooks"
 
 const TRANSCRIPT_MAX = 20000
@@ -73,7 +77,11 @@ export function TopicGeneratorDialog({
   async function handleGenerate() {
     if (!transcript.trim() || !model) return
     try {
-      const response = await generateTopics.mutateAsync({ transcript: transcript.trim(), topicCount, model })
+      const response = await generateTopics.mutateAsync({
+        transcript: transcript.trim(),
+        topicCount,
+        model,
+      })
       setCandidates(response.topics)
       setSelected(new Set())
     } catch (error) {
@@ -157,7 +165,10 @@ export function TopicGeneratorDialog({
                   key={`${candidateTopic}-${index}`}
                   className="flex items-center gap-2 rounded-sm px-1 py-1.5 text-sm hover:bg-muted/50"
                 >
-                  <Checkbox checked={selected.has(candidateTopic)} onCheckedChange={() => toggle(candidateTopic)} />
+                  <Checkbox
+                    checked={selected.has(candidateTopic)}
+                    onCheckedChange={() => toggle(candidateTopic)}
+                  />
                   <span>{candidateTopic}</span>
                 </label>
               ))}

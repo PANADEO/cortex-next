@@ -102,7 +102,13 @@ export function DepartmentSelect({
               placeholder="nowa/sciezka"
               className="h-7 font-mono text-xs"
             />
-            <Button type="submit" size="sm" variant="outline" className="h-7" disabled={!draftValid}>
+            <Button
+              type="submit"
+              size="sm"
+              variant="outline"
+              className="h-7"
+              disabled={!draftValid}
+            >
               <Plus className="h-3.5 w-3.5" />
             </Button>
           </form>

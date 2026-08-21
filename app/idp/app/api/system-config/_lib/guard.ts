@@ -1,9 +1,9 @@
 import {
-  SYSTEM_CONFIG_APP_CODE,
   ModuleNotLicensedError,
   NativeApplicationImmutableError,
   NativeCreationNotAllowedError,
   OpenwebuiGroupAlreadyMappedError,
+  SYSTEM_CONFIG_APP_CODE,
   SelfLockoutError,
   SystemRoleProtectedError,
   requireTileAccess,

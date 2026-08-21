@@ -13,8 +13,8 @@
 // THRESHOLD) doklejane jest drugie pole "Szukaj" — czysto WIZUALNY filtr
 // wyświetlanych chipów, nie modyfikuje `value`.
 
-import * as React from "react"
 import { X } from "lucide-react"
+import * as React from "react"
 
 import { cn } from "@cortex/utils"
 import { Badge } from "./badge"
@@ -78,7 +78,9 @@ export function ChipInput({
   }
 
   const trimmedSearch = search.trim().toLowerCase()
-  const visible = trimmedSearch ? value.filter((chip) => chip.toLowerCase().includes(trimmedSearch)) : value
+  const visible = trimmedSearch
+    ? value.filter((chip) => chip.toLowerCase().includes(trimmedSearch))
+    : value
 
   return (
     <div className={cn("space-y-2", className)}>

@@ -1,11 +1,8 @@
 "use client"
 
+import { DateRangeFilter } from "@/components/date-range-filter"
 import { useActionLogs } from "@cortex/api"
-import {
-  PACKAGE_ACTION_TYPE,
-  type ActionLogReadModel,
-  type PackageActionType,
-} from "@cortex/types"
+import { PACKAGE_ACTION_TYPE, type ActionLogReadModel, type PackageActionType } from "@cortex/types"
 import {
   Button,
   DataTable,
@@ -24,7 +21,6 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { History, RotateCw } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState } from "react"
-import { DateRangeFilter } from "@/components/date-range-filter"
 
 const columns: ColumnDef<ActionLogReadModel, unknown>[] = [
   {
@@ -41,9 +37,7 @@ const columns: ColumnDef<ActionLogReadModel, unknown>[] = [
     accessorKey: "action_type",
     header: "Event",
     size: 200,
-    cell: ({ row }) => (
-      <span className="text-xs">{humanizeEnum(row.original.action_type)}</span>
-    ),
+    cell: ({ row }) => <span className="text-xs">{humanizeEnum(row.original.action_type)}</span>,
   },
   {
     accessorKey: "package_file_name",
@@ -62,9 +56,7 @@ const columns: ColumnDef<ActionLogReadModel, unknown>[] = [
     header: "Actor",
     size: 200,
     cell: ({ row }) => (
-      <span className="font-mono text-xs text-muted-foreground">
-        {row.original.performed_by}
-      </span>
+      <span className="font-mono text-xs text-muted-foreground">{row.original.performed_by}</span>
     ),
   },
 ]
@@ -156,7 +148,11 @@ export default function AuditLogPage() {
           data={data?.items ?? []}
           isLoading={isLoading}
           emptyState={
-            <EmptyState icon={History} title="No events match" description="Try clearing filters." />
+            <EmptyState
+              icon={History}
+              title="No events match"
+              description="Try clearing filters."
+            />
           }
           getRowId={(row) => row.id}
         />

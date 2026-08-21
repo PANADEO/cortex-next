@@ -1,7 +1,7 @@
-import { readFile, readdir } from "node:fs/promises"
-import path from "node:path"
 import type { CoworkCatalogSkill, CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { grantMatches } from "@cortex/types"
+import { readFile, readdir } from "node:fs/promises"
+import path from "node:path"
 import type { CoworkSkillSummary } from "../types"
 import { parseSkillFrontmatter } from "./skill-frontmatter"
 

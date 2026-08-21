@@ -49,8 +49,14 @@ const ERROR_COPY: Record<TokenUsageErrorCode, { title: string; message: string }
     title: "Nieoczekiwana odpowiedź cortex-proxy",
     message: "cortex-proxy odpowiedział w sposób, którego nie potrafimy odczytać.",
   },
-  "invalid-format": { title: "Nieprawidłowy zakres dat", message: "Daty muszą mieć format RRRR-MM-DD." },
-  "invalid-date": { title: "Nieprawidłowa data", message: "Podana data nie istnieje w kalendarzu." },
+  "invalid-format": {
+    title: "Nieprawidłowy zakres dat",
+    message: "Daty muszą mieć format RRRR-MM-DD.",
+  },
+  "invalid-date": {
+    title: "Nieprawidłowa data",
+    message: "Podana data nie istnieje w kalendarzu.",
+  },
   "reversed-range": {
     title: "Nieprawidłowy zakres dat",
     message: "Data początkowa nie może być późniejsza niż końcowa.",

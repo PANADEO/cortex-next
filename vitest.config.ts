@@ -22,6 +22,9 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // i18next musi wstać, zanim jakikolwiek komponent zawoła useTranslation() —
+    // testy renderują je bez AppProviders, czyli poza ścieżką inicjalizacji.
+    setupFiles: ["./app/idp/lib/i18n/test-setup.ts"],
     globals: true,
     exclude: ["**/node_modules/**", "**/dist/**", "**/e2e/**", "**/.next*/**"],
   },

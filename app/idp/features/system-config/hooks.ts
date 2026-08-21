@@ -101,7 +101,8 @@ export function useAttachRoleOpenwebuiGroup() {
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: AttachOpenwebuiGroupInput }) =>
       endpoints.roles.attachOpenwebuiGroup(id, body),
-    onSuccess: (_data, { id }) => client.invalidateQueries({ queryKey: queryKeys.roleOpenwebuiGroup(id) }),
+    onSuccess: (_data, { id }) =>
+      client.invalidateQueries({ queryKey: queryKeys.roleOpenwebuiGroup(id) }),
   })
 }
 
@@ -109,7 +110,8 @@ export function useDetachRoleOpenwebuiGroup() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => endpoints.roles.detachOpenwebuiGroup(id),
-    onSuccess: (_data, id) => client.invalidateQueries({ queryKey: queryKeys.roleOpenwebuiGroup(id) }),
+    onSuccess: (_data, id) =>
+      client.invalidateQueries({ queryKey: queryKeys.roleOpenwebuiGroup(id) }),
   })
 }
 
@@ -119,7 +121,8 @@ export function useSyncRoleOpenwebuiGroup() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => endpoints.roles.syncOpenwebuiGroup(id),
-    onSuccess: (_data, id) => client.invalidateQueries({ queryKey: queryKeys.roleOpenwebuiGroup(id) }),
+    onSuccess: (_data, id) =>
+      client.invalidateQueries({ queryKey: queryKeys.roleOpenwebuiGroup(id) }),
   })
 }
 
@@ -230,7 +233,8 @@ export function useRenameApplicationScope() {
   return useMutation({
     mutationFn: ({ id, scopeId, name }: RenameApplicationScopeVars) =>
       endpoints.applications.renameScope(id, scopeId, name),
-    onSuccess: (_data, { id }) => client.invalidateQueries({ queryKey: queryKeys.applicationScopes(id) }),
+    onSuccess: (_data, { id }) =>
+      client.invalidateQueries({ queryKey: queryKeys.applicationScopes(id) }),
   })
 }
 

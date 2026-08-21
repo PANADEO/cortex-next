@@ -7,12 +7,12 @@
 // (poprawny nagłówek, name, cmap) i wywrócił się dopiero na renderze — inaczej
 // odrzuciłaby go istniejąca walidacja i test przechodziłby z innego powodu.
 
+import { resolveFontLibraryEntry } from "@/lib/ilustromat/font-library"
+import { clearFontFileSupportMemo, supportsFontFiles } from "@/lib/ilustromat/font-verification"
 import type * as CortexService from "@cortex/service"
 import { readFileSync } from "node:fs"
 import sharp from "sharp"
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
-import { resolveFontLibraryEntry } from "@/lib/ilustromat/font-library"
-import { clearFontFileSupportMemo, supportsFontFiles } from "@/lib/ilustromat/font-verification"
 
 const EMAIL = "menedzer@firma.pl"
 
@@ -101,7 +101,10 @@ describe("POST /api/ilustromat/templates/[id]/assets — bramka renderu weryfika
   })
 
   it("odrzuca śmieć zamiast fontu już na fontkicie", async () => {
-    const response = await POST(upload("font-regular", Buffer.alloc(400, 0x41), "smiec.ttf"), context)
+    const response = await POST(
+      upload("font-regular", Buffer.alloc(400, 0x41), "smiec.ttf"),
+      context,
+    )
 
     expect(response.status).toBe(400)
     await expect(response.json()).resolves.toMatchObject({ error: "invalid-asset" })
@@ -124,7 +127,10 @@ describe("POST /api/ilustromat/templates/[id]/assets — bramka renderu weryfika
     const applies = await supportsFontFiles()
     clearFontFileSupportMemo()
 
-    const response = await POST(upload("font-regular", healthyFont, "NotoSans-Regular.ttf"), context)
+    const response = await POST(
+      upload("font-regular", healthyFont, "NotoSans-Regular.ttf"),
+      context,
+    )
 
     if (applies) {
       expect(response.status).toBe(200)

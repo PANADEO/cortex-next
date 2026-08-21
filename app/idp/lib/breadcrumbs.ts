@@ -59,7 +59,9 @@ const PACKAGE_DETAIL_PATTERN = /^\/idp\/packages\/([^/]+)\/?$/
 function navLabelsForSegment(segment: string): Record<string, string> {
   const sections = NAV_SECTIONS_BY_SEGMENT[segment]
   const fromNav = sections
-    ? Object.fromEntries(sections.flatMap((section) => section.items).map((item) => [item.id, item.label]))
+    ? Object.fromEntries(
+        sections.flatMap((section) => section.items).map((item) => [item.id, item.label]),
+      )
     : {}
   return { ...EXTRA_ROUTE_LABELS_BY_SEGMENT[segment], ...fromNav }
 }

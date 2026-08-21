@@ -81,7 +81,11 @@ describe("POST /api/content-guru/mini-generators/topics", () => {
     const json = await response.json()
 
     expect(response.status).toBe(200)
-    expect(json.topics).toEqual(["Premiera nowej funkcji", "Rekrutacja na 2027", "Case study klienta"])
+    expect(json.topics).toEqual([
+      "Premiera nowej funkcji",
+      "Rekrutacja na 2027",
+      "Case study klienta",
+    ])
     expect(service.saveArchiveEntry).not.toHaveBeenCalled()
 
     const promptArgs = generateContent.mock.calls[0]?.[0]
@@ -117,7 +121,9 @@ describe("POST /api/content-guru/mini-generators/topics", () => {
   })
 
   it("mapuje model spoza dozwolonej listy na 400", async () => {
-    generateContent.mockRejectedValueOnce(new ContentGuruServiceError("zły model", "model-not-allowed"))
+    generateContent.mockRejectedValueOnce(
+      new ContentGuruServiceError("zły model", "model-not-allowed"),
+    )
 
     const response = await POST(makeRequest({ ...VALID_BODY, model: "nieznany/model" }) as never)
 

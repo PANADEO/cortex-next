@@ -11,8 +11,8 @@
 //     packages/@cortex/service/src/hub-tiles.integration.test.ts
 
 import { applications, closeDb, getDb, permissionsMatrix, roles } from "@cortex/db"
-import { randomUUID } from "node:crypto"
 import { eq, inArray } from "drizzle-orm"
+import { randomUUID } from "node:crypto"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { listHubApplications } from "./system-config"
 
@@ -66,8 +66,14 @@ describe.skipIf(!hasDatabase)("listHubApplications — prawdziwy Postgres", () =
     const db = getDb()
     await cleanup()
 
-    const [roleA] = await db.insert(roles).values({ code: ROLE_A, name: "Rola A (hub itest)" }).returning()
-    const [roleB] = await db.insert(roles).values({ code: ROLE_B, name: "Rola B (hub itest)" }).returning()
+    const [roleA] = await db
+      .insert(roles)
+      .values({ code: ROLE_A, name: "Rola A (hub itest)" })
+      .returning()
+    const [roleB] = await db
+      .insert(roles)
+      .values({ code: ROLE_B, name: "Rola B (hub itest)" })
+      .returning()
 
     await db.insert(applications).values([
       {
@@ -190,7 +196,9 @@ describe.skipIf(!hasDatabase)("listHubApplications — prawdziwy Postgres", () =
     })
 
     it("wiersz z DWOMA grantami w permissions_matrix pojawia się DOKŁADNIE RAZ (obala fan-out z JOIN-a bez DISTINCT)", async () => {
-      const rows = onlyThisSuite(await listHubApplications()).filter((row) => row.code === MULTI_GRANT)
+      const rows = onlyThisSuite(await listHubApplications()).filter(
+        (row) => row.code === MULTI_GRANT,
+      )
 
       expect(rows).toHaveLength(1)
     })

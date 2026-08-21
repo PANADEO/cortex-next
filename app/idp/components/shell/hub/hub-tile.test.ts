@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest"
 import type { HubTile } from "@cortex/api"
+import { describe, expect, it } from "vitest"
 import { hubApplicationToTile } from "./hub-tile"
 
 /**

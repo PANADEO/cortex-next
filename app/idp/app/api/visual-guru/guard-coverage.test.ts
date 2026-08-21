@@ -10,9 +10,12 @@
 // zasobu współdzielonego do zarządzania, więc brak granularnych scope'ów),
 // więc tu nie ma sekcji "warstwa granularna".
 
-import type * as CortexService from "@cortex/service"
 import type * as CortexProxyClient from "@cortex/api/cortex-proxy-client"
-import type { CortexProxyImageRequest, CortexProxyImageResult } from "@cortex/api/cortex-proxy-client"
+import type {
+  CortexProxyImageRequest,
+  CortexProxyImageResult,
+} from "@cortex/api/cortex-proxy-client"
+import type * as CortexService from "@cortex/service"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const loadGrantedApplicationCodes = vi.hoisted(() => vi.fn<(email: string) => Promise<string[]>>())
@@ -34,7 +37,13 @@ function buildGenerationRow(): CortexService.GenerationWithVariants {
     variantCount: 1,
     createdAt: new Date(),
     variants: [
-      { id: "v0", generationId: GENERATION_ID, variantIndex: 0, image: Buffer.from("aaa"), contentType: "image/png" },
+      {
+        id: "v0",
+        generationId: GENERATION_ID,
+        variantIndex: 0,
+        image: Buffer.from("aaa"),
+        contentType: "image/png",
+      },
     ],
   }
 }
@@ -127,8 +136,16 @@ const BYPASS_ATTEMPTS = [
   { label: "brak nagłówka tożsamości", email: null, granted: [] as string[] },
   { label: "obcy e-mail spoza bazy", email: "intruz@obca-firma.pl", granted: [] },
   { label: "znany e-mail bez żadnej roli", email: "bez-roli@firma.pl", granted: [] },
-  { label: "rola z grantem do innego kafelka", email: "ktos@firma.pl", granted: ["intrastat", "idp"] },
-  { label: "grant do łudząco podobnego kodu", email: "ktos@firma.pl", granted: ["visual-guru-legacy"] },
+  {
+    label: "rola z grantem do innego kafelka",
+    email: "ktos@firma.pl",
+    granted: ["intrastat", "idp"],
+  },
+  {
+    label: "grant do łudząco podobnego kodu",
+    email: "ktos@firma.pl",
+    granted: ["visual-guru-legacy"],
+  },
 ]
 
 beforeEach(() => {

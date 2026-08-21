@@ -101,10 +101,7 @@
         "client_profiles_user_email_profile_name_unique": {
           "name": "client_profiles_user_email_profile_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_email",
-            "profile_name"
-          ]
+          "columns": ["user_email", "profile_name"]
         }
       },
       "policies": {},
@@ -245,12 +242,8 @@
           "tableFrom": "content_archive",
           "tableTo": "client_profiles",
           "schemaTo": "content_guru",
-          "columnsFrom": [
-            "client_profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["client_profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -259,12 +252,8 @@
           "tableFrom": "content_archive",
           "tableTo": "market_profiles",
           "schemaTo": "content_guru",
-          "columnsFrom": [
-            "market_profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["market_profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -528,10 +517,7 @@
         "market_profiles_user_email_profile_name_unique": {
           "name": "market_profiles_user_email_profile_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_email",
-            "profile_name"
-          ]
+          "columns": ["user_email", "profile_name"]
         }
       },
       "policies": {},
@@ -596,10 +582,7 @@
         "templates_category_name_unique": {
           "name": "templates_category_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "category",
-            "name"
-          ]
+          "columns": ["category", "name"]
         }
       },
       "policies": {},

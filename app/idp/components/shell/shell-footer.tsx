@@ -1,12 +1,12 @@
 "use client"
 
-import { cva } from "class-variance-authority"
-import { Globe } from "lucide-react"
-import { useTranslation } from "react-i18next"
-import { useEffect, useState } from "react"
 import { LOCALES, type Locale } from "@/lib/i18n/config"
 import { useLocaleStore } from "@/lib/i18n/locale-store"
 import { usePreset } from "@/lib/presets/preset-store"
+import { cva } from "class-variance-authority"
+import { Globe } from "lucide-react"
+import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import pkg from "../../../../package.json"
 import { SHELL_VERSION, stripLeadingV } from "./version-label"
 
@@ -98,9 +98,15 @@ export function ShellFooter() {
       <div className={footText({ variant })}>
         <div>Cortex360 © {new Date().getFullYear()}</div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
-          <span>{t("footer.version")}: {APP_VERSION}</span>
-          <span>{t("footer.time")}: {diag?.time ?? "—"}</span>
-          <span>{t("footer.resolution")}: {diag?.resolution ?? "—"}</span>
+          <span>
+            {t("footer.version")}: {APP_VERSION}
+          </span>
+          <span>
+            {t("footer.time")}: {diag?.time ?? "—"}
+          </span>
+          <span>
+            {t("footer.resolution")}: {diag?.resolution ?? "—"}
+          </span>
           {/* Przełącznik języka stoi W STOPCE, bo tak prosił Cezary i tak było
               w `cortex-box-prototype` — na dole ekranu kafelków. Natywny
               `<select>`, nie `Select` z Radiksa: ta stopka renderuje się także

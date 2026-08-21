@@ -17,13 +17,13 @@
 // nastąpić ZANIM handler cokolwiek zapisze. 403 zwrócone po zapisaniu zmiany
 // jest nadal luką.
 
+import { setGrants } from "@/lib/cortex-governance/testing/grants"
+import type * as CortexService from "@cortex/service"
+import type { CoworkGovernanceConfig } from "@cortex/types"
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { setGrants } from "@/lib/cortex-governance/testing/grants"
-import type { CoworkGovernanceConfig } from "@cortex/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import type * as CortexService from "@cortex/service"
 
 const ADMIN_EMAIL = "admin@example.com"
 const OUTSIDER_EMAIL = "obcy@example.com"
@@ -88,7 +88,9 @@ async function writeConfig(config: CoworkGovernanceConfig): Promise<void> {
 /** Zawartość całego katalogu danych — governance.json ORAZ credentials.json.
  *  Porównanie przed/po jest dowodem, że odmowa wyprzedziła każdy zapis. */
 function dirSnapshot(): string {
-  const files = readdirSync(dataDir).filter((name) => name.endsWith(".json")).sort()
+  const files = readdirSync(dataDir)
+    .filter((name) => name.endsWith(".json"))
+    .sort()
   return files.map((name) => `${name}:${readFileSync(path.join(dataDir, name), "utf8")}`).join("\n")
 }
 
@@ -180,7 +182,9 @@ describe("cortex-config — bramka admina na ścieżce żądania", () => {
 
           // Odmowa nie może po drodze wypuścić treści konfiguracji.
           const body = await response.text()
-          expect(body, `${modulePath} ${method} wypuścił dane w ciele odmowy`).not.toContain("proj-a")
+          expect(body, `${modulePath} ${method} wypuścił dane w ciele odmowy`).not.toContain(
+            "proj-a",
+          )
         }
       })
 
@@ -263,9 +267,7 @@ describe("cortex-config — jawny admin przechodzi (kontrola pozytywna)", () => 
     await writeConfig({ ...closedConfig(), adminEmails: [] })
     const { GET } = await import("./route")
 
-    const response = await GET(
-      buildRequest("GET", DEPLOY_ADMIN_EMAIL) as Parameters<typeof GET>[0],
-    )
+    const response = await GET(buildRequest("GET", DEPLOY_ADMIN_EMAIL) as Parameters<typeof GET>[0])
 
     expect(response.status).toBe(200)
   })

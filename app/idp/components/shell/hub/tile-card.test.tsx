@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
+import { PRESETS, presetUsesApplicationColor } from "@/lib/presets/registry"
+import type { Tile } from "@/lib/tiles"
 import "@testing-library/jest-dom/vitest"
 import { cleanup, render } from "@testing-library/react"
 import { Wand2 } from "lucide-react"
 import { afterEach, describe, expect, it } from "vitest"
-import { PRESETS, presetUsesApplicationColor } from "@/lib/presets/registry"
-import type { Tile } from "@/lib/tiles"
 import { TileCard } from "./tile-card"
 
 /** Klasa z 11-kolorowej palety admina (`applications.color` →

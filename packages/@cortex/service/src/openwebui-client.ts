@@ -51,11 +51,7 @@ export interface OpenwebuiGroup extends OpenwebuiGroupSummary {
  * `CortexProxyUsageFailure` w cortex-proxy-client.ts.
  */
 export type OpenwebuiClientFailure =
-  | "unauthorized"
-  | "not-found"
-  | "upstream-error"
-  | "unreachable"
-  | "malformed-response"
+  "unauthorized" | "not-found" | "upstream-error" | "unreachable" | "malformed-response"
 
 export class OpenwebuiClientError extends Error {
   readonly failure: OpenwebuiClientFailure
@@ -122,7 +118,11 @@ async function request(
     )
   }
   if (!response.ok) {
-    throw new OpenwebuiClientError("upstream-error", `OpenWebUI zwrócił ${response.status}`, response.status)
+    throw new OpenwebuiClientError(
+      "upstream-error",
+      `OpenWebUI zwrócił ${response.status}`,
+      response.status,
+    )
   }
 
   if (response.status === 204) return null
@@ -222,7 +222,10 @@ export async function createGroup(
     permissions: {},
   })
   if (!isRecord(data) || typeof data.id !== "string" || typeof data.name !== "string") {
-    throw new OpenwebuiClientError("malformed-response", "OpenWebUI nie zwrócił poprawnej grupy po utworzeniu")
+    throw new OpenwebuiClientError(
+      "malformed-response",
+      "OpenWebUI nie zwrócił poprawnej grupy po utworzeniu",
+    )
   }
   return { id: data.id, name: data.name }
 }
@@ -259,13 +262,23 @@ export async function createGroup(
  * realnie zły token w cichy no-op `emptyGroupMembership()`, czyli dokładnie tę
  * klasę błędu, którą ten commit likwiduje. Głośno i mylnie > cicho i błędnie.
  */
-export async function getGroup(config: OpenwebuiConfig, groupId: string): Promise<OpenwebuiGroup | null> {
+export async function getGroup(
+  config: OpenwebuiConfig,
+  groupId: string,
+): Promise<OpenwebuiGroup | null> {
   try {
-    const data = await request(config, "GET", `/api/v1/groups/id/${encodeURIComponent(groupId)}/export`)
+    const data = await request(
+      config,
+      "GET",
+      `/api/v1/groups/id/${encodeURIComponent(groupId)}/export`,
+    )
     if (!isRecord(data) || typeof data.id !== "string" || typeof data.name !== "string") {
       throw new OpenwebuiClientError("malformed-response", "OpenWebUI nie zwrócił poprawnej grupy")
     }
-    const userIds = requireStringArray(data.user_ids, `członkostwa grupy ${data.id} (pole user_ids)`)
+    const userIds = requireStringArray(
+      data.user_ids,
+      `członkostwa grupy ${data.id} (pole user_ids)`,
+    )
     requireMemberCountAgrees(data.member_count, userIds, data.id)
 
     return {
@@ -342,9 +355,13 @@ export async function removeUsersFromGroup(
  */
 export async function listAllUserEmailIds(config: OpenwebuiConfig): Promise<Map<string, string>> {
   const data = await request(config, "GET", "/api/v1/users/all")
-  const rows = isRecord(data) && Array.isArray(data.users) ? data.users : Array.isArray(data) ? data : null
+  const rows =
+    isRecord(data) && Array.isArray(data.users) ? data.users : Array.isArray(data) ? data : null
   if (rows === null) {
-    throw new OpenwebuiClientError("malformed-response", "Lista użytkowników OpenWebUI ma nieoczekiwany kształt")
+    throw new OpenwebuiClientError(
+      "malformed-response",
+      "Lista użytkowników OpenWebUI ma nieoczekiwany kształt",
+    )
   }
 
   const byEmail = new Map<string, string>()
@@ -372,9 +389,13 @@ export interface OpenwebuiUser {
  */
 export async function listAllUsers(config: OpenwebuiConfig): Promise<OpenwebuiUser[]> {
   const data = await request(config, "GET", "/api/v1/users/all")
-  const rows = isRecord(data) && Array.isArray(data.users) ? data.users : Array.isArray(data) ? data : null
+  const rows =
+    isRecord(data) && Array.isArray(data.users) ? data.users : Array.isArray(data) ? data : null
   if (rows === null) {
-    throw new OpenwebuiClientError("malformed-response", "Lista użytkowników OpenWebUI ma nieoczekiwany kształt")
+    throw new OpenwebuiClientError(
+      "malformed-response",
+      "Lista użytkowników OpenWebUI ma nieoczekiwany kształt",
+    )
   }
 
   const out: OpenwebuiUser[] = []

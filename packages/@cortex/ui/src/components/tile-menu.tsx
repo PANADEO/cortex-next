@@ -34,41 +34,44 @@ const menu = {
     },
     defaultVariants: { variant: "plain" },
   }),
-  link: cva("group flex h-8 items-center rounded-md text-sm transition-colors motion-reduce:transition-none", {
-    variants: {
-      variant: { plain: "", ruled: "border-[1.5px] border-transparent" },
-      active: { true: "", false: "" },
+  link: cva(
+    "group flex h-8 items-center rounded-md text-sm transition-colors motion-reduce:transition-none",
+    {
+      variants: {
+        variant: { plain: "", ruled: "border-[1.5px] border-transparent" },
+        active: { true: "", false: "" },
+      },
+      compoundVariants: [
+        {
+          variant: "plain",
+          active: true,
+          class: "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
+        },
+        {
+          variant: "plain",
+          active: false,
+          class:
+            "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        },
+        {
+          variant: "ruled",
+          active: true,
+          // `border-sidebar-border` nadpisuje `border-transparent` z wariantu
+          // WYŁĄCZNIE dlatego, że konsument owija wynik w `cn()` — twMerge
+          // wyrzuca wcześniejszą klasę tej samej rodziny. Wywołane surowo
+          // (`menu.link(...)` bez `cn`) pojechałyby obie i o kolorze
+          // rozstrzygałaby kolejność reguł w arkuszu. Nośne, nie kosmetyczne.
+          class: "bg-chart-1 text-chart-1-foreground border-sidebar-border font-semibold",
+        },
+        {
+          variant: "ruled",
+          active: false,
+          class: "text-sidebar-foreground hover:bg-sidebar-accent",
+        },
+      ],
+      defaultVariants: { variant: "plain", active: false },
     },
-    compoundVariants: [
-      {
-        variant: "plain",
-        active: true,
-        class: "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
-      },
-      {
-        variant: "plain",
-        active: false,
-        class:
-          "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-      },
-      {
-        variant: "ruled",
-        active: true,
-        // `border-sidebar-border` nadpisuje `border-transparent` z wariantu
-        // WYŁĄCZNIE dlatego, że konsument owija wynik w `cn()` — twMerge
-        // wyrzuca wcześniejszą klasę tej samej rodziny. Wywołane surowo
-        // (`menu.link(...)` bez `cn`) pojechałyby obie i o kolorze
-        // rozstrzygałaby kolejność reguł w arkuszu. Nośne, nie kosmetyczne.
-        class: "bg-chart-1 text-chart-1-foreground border-sidebar-border font-semibold",
-      },
-      {
-        variant: "ruled",
-        active: false,
-        class: "text-sidebar-foreground hover:bg-sidebar-accent",
-      },
-    ],
-    defaultVariants: { variant: "plain", active: false },
-  }),
+  ),
   foot: cva("border-sidebar-border p-3", {
     variants: {
       variant: { plain: "border-t", ruled: "border-t-2" },
@@ -130,7 +133,7 @@ export function TileMenu({
     <div className="flex h-full flex-col">
       {brand || brandIcon ? (
         <div className={cn(menu.brand({ variant }), collapsed ? "justify-center px-0" : "px-5")}>
-          {collapsed ? brandIcon ?? brand : brand}
+          {collapsed ? (brandIcon ?? brand) : brand}
         </div>
       ) : null}
 
@@ -180,9 +183,7 @@ export function TileMenu({
         ))}
       </nav>
 
-      {footerSlot && !collapsed ? (
-        <div className={menu.foot({ variant })}>{footerSlot}</div>
-      ) : null}
+      {footerSlot && !collapsed ? <div className={menu.foot({ variant })}>{footerSlot}</div> : null}
     </div>
   )
 }

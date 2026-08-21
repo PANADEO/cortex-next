@@ -4,8 +4,6 @@
 // klient ją poda. Utility call, wzorem topics/keyword: NIE przechodzi przez
 // run-generation.ts, NIE zapisuje do content_archive.
 
-import { NextResponse, type NextRequest } from "next/server"
-import { z } from "zod"
 import { ContentGuruServiceError, generateContent } from "@/lib/content-guru/integration-client"
 import {
   META_DESCRIPTION_MAX_CHARS,
@@ -14,6 +12,8 @@ import {
   buildMetaDescriptionPrompt,
   stripWrappingQuotes,
 } from "@/lib/content-guru/mini-generators"
+import { NextResponse, type NextRequest } from "next/server"
+import { z } from "zod"
 import { requireContentGuruAccess } from "../../_lib/guard"
 
 export const runtime = "nodejs"
@@ -60,10 +60,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // to advisory (dokładnie jak D5 Warstwa 1) — twarde ucięcie tutaj
     // gwarantuje, że pole na ekranie generowania (maxLength=160) nigdy nie
     // dostanie wartości, którą samo by odrzuciło.
-    const metaDescription = stripWrappingQuotes(generated.content).slice(0, META_DESCRIPTION_MAX_CHARS)
+    const metaDescription = stripWrappingQuotes(generated.content).slice(
+      0,
+      META_DESCRIPTION_MAX_CHARS,
+    )
     if (!metaDescription) {
       return NextResponse.json(
-        { error: "generation-failed", message: "Model nie zwrócił meta description. Spróbuj ponownie." },
+        {
+          error: "generation-failed",
+          message: "Model nie zwrócił meta description. Spróbuj ponownie.",
+        },
         { status: 502 },
       )
     }
@@ -72,7 +78,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     if (error instanceof ContentGuruServiceError) {
       if (error.code === "model-not-allowed") {
-        return NextResponse.json({ error: "invalid-request", message: error.message }, { status: 400 })
+        return NextResponse.json(
+          { error: "invalid-request", message: error.message },
+          { status: 400 },
+        )
       }
       console.error("[content-guru] błąd generatora meta description:", error)
       return NextResponse.json({ error: "upstream-error", message: error.message }, { status: 502 })

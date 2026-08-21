@@ -30,16 +30,22 @@
 // samą frazą/meta, poza zakresem Round D). `metaDescription` capowane na 160
 // znaków — legacy walidował to twardo przed submitem.
 
-import { NextResponse, type NextRequest } from "next/server"
-import { z } from "zod"
-import { getMyClientProfile, getMyMarketProfile, getTemplate, listMyForbiddenPhrases, saveArchiveEntry } from "@cortex/service"
+import { ContentGuruServiceError } from "@/lib/content-guru/integration-client"
+import { META_DESCRIPTION_MAX_CHARS } from "@/lib/content-guru/mini-generators"
 import {
   clientProfileToMarkdown,
   marketProfileToMarkdown,
 } from "@/lib/content-guru/profile-markdown"
-import { ContentGuruServiceError } from "@/lib/content-guru/integration-client"
-import { META_DESCRIPTION_MAX_CHARS } from "@/lib/content-guru/mini-generators"
 import { runContentGeneration } from "@/lib/content-guru/run-generation"
+import {
+  getMyClientProfile,
+  getMyMarketProfile,
+  getTemplate,
+  listMyForbiddenPhrases,
+  saveArchiveEntry,
+} from "@cortex/service"
+import { NextResponse, type NextRequest } from "next/server"
+import { z } from "zod"
 import { requireContentGuruAccess } from "../_lib/guard"
 
 export const runtime = "nodejs"
@@ -162,7 +168,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     if (error instanceof ContentGuruServiceError) {
       if (error.code === "model-not-allowed") {
-        return NextResponse.json({ error: "invalid-request", message: error.message }, { status: 400 })
+        return NextResponse.json(
+          { error: "invalid-request", message: error.message },
+          { status: 400 },
+        )
       }
       console.error("[content-guru] błąd generowania:", error)
       return NextResponse.json({ error: "upstream-error", message: error.message }, { status: 502 })

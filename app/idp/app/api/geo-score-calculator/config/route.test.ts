@@ -59,7 +59,8 @@ const VALID_UPDATE_BODY = {
 
 const service = vi.hoisted(() => ({
   getGeoScoreConfig: vi.fn<() => Promise<Record<string, unknown>>>(),
-  updateGeoScoreConfig: vi.fn<(updatedBy: string, input: unknown) => Promise<Record<string, unknown>>>(),
+  updateGeoScoreConfig:
+    vi.fn<(updatedBy: string, input: unknown) => Promise<Record<string, unknown>>>(),
 }))
 vi.mock("@cortex/service", async (importOriginal) => ({
   ...(await importOriginal<typeof CortexService>()),

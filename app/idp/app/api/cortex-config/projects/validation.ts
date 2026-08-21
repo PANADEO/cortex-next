@@ -1,6 +1,6 @@
+import { resolveSkillCatalog } from "@/features/cortex-cowork/server/skills-catalog"
 import { listCredentialPaths } from "@/lib/cortex-governance/credentials"
 import { allDepartments, type UpsertProjectInput } from "@/lib/cortex-governance/store"
-import { resolveSkillCatalog } from "@/features/cortex-cowork/server/skills-catalog"
 import type {
   CoworkGovernanceConfig,
   CoworkModelConfig,
@@ -72,9 +72,7 @@ function isComposition(value: unknown): value is CoworkProjectComposition {
   if (typeof value !== "object" || value === null) return false
   const composition = value as CoworkProjectComposition
   return (
-    isGrant(composition.skills) &&
-    isGrant(composition.connectors) &&
-    isGrant(composition.secrets)
+    isGrant(composition.skills) && isGrant(composition.connectors) && isGrant(composition.secrets)
   )
 }
 
@@ -91,7 +89,8 @@ export function parseProjectBody(body: unknown): ParsedProject {
   if (typeof input.description !== "string") return { error: "description is required" }
   if (typeof input.enabled !== "boolean") return { error: "enabled must be a boolean" }
   if (input.archetype !== "task-chat") return { error: 'archetype must be "task-chat"' }
-  if (!isStringArray(input.allowedRoleIds)) return { error: "allowedRoleIds must be a string array" }
+  if (!isStringArray(input.allowedRoleIds))
+    return { error: "allowedRoleIds must be a string array" }
   if (!isModelConfig(input.model)) {
     return { error: 'model needs provider ("openai-compatible") and modelId' }
   }

@@ -14,10 +14,13 @@ const service = vi.hoisted(() => ({
   getMyMarketProfile: vi.fn(async (userEmail: string, id: string) =>
     id === "foreign-or-missing" ? undefined : { id, userEmail, profileName: "Rynek IT" },
   ),
-  updateMyMarketProfile: vi.fn(async (userEmail: string, id: string, input: { profileName: string }) =>
-    id === "foreign-or-missing" ? undefined : { id, userEmail, ...input },
+  updateMyMarketProfile: vi.fn(
+    async (userEmail: string, id: string, input: { profileName: string }) =>
+      id === "foreign-or-missing" ? undefined : { id, userEmail, ...input },
   ),
-  deleteMyMarketProfile: vi.fn(async (_userEmail: string, id: string) => id !== "foreign-or-missing"),
+  deleteMyMarketProfile: vi.fn(
+    async (_userEmail: string, id: string) => id !== "foreign-or-missing",
+  ),
 }))
 vi.mock("@cortex/service", async (importOriginal) => ({
   ...(await importOriginal<typeof CortexService>()),

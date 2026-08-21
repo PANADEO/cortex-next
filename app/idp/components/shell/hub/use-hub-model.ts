@@ -1,6 +1,7 @@
 "use client"
 
 import { useCoworkProjectTiles } from "@/features/cortex-cowork"
+import { useLocaleStore } from "@/lib/i18n/locale-store"
 import { useFavoritesStore } from "@/lib/stores/favorites-store"
 import {
   canAccessTile,
@@ -13,7 +14,6 @@ import {
 import { useAuthorizedApps, useHubTiles } from "@cortex/api"
 import { useDeferredValue, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useLocaleStore } from "@/lib/i18n/locale-store"
 import { hubApplicationsToTiles } from "./hub-tile"
 import type { ActiveCategory, CategoryTab, HeroView, HubModel } from "./types"
 

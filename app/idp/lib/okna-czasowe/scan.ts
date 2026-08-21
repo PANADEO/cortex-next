@@ -3,9 +3,9 @@
 // flips from not-available to available. The public JustWatch API doesn't expose an arrival
 // date, so this transition — caught by comparing against the previous scan — is the only
 // source of truth for "od kiedy".
-import { randomUUID } from "node:crypto"
 import { latestSnapshotsByFilm } from "@/features/okna-czasowe/helpers"
 import type { Film, LogEntry, ScanResult, Snapshot } from "@/features/okna-czasowe/types"
+import { randomUUID } from "node:crypto"
 import { findRakutenAvailability } from "./justwatch"
 import { store } from "./store"
 
@@ -56,7 +56,10 @@ async function scanFilm(film: Film, scannedAt: string): Promise<FilmScanOutcome>
 }
 
 /** Polite bounded-concurrency map: at most `CONCURRENCY` in-flight requests, throttled between calls. */
-async function scanFilmsWithConcurrency(films: readonly Film[], scannedAt: string): Promise<FilmScanOutcome[]> {
+async function scanFilmsWithConcurrency(
+  films: readonly Film[],
+  scannedAt: string,
+): Promise<FilmScanOutcome[]> {
   const queue = films.map((film, index) => ({ film, index }))
   const results: FilmScanOutcome[] = new Array(films.length)
 

@@ -1,15 +1,11 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
 import { Card, CardContent, ErrorState, Input, Label, LoadingState } from "@cortex/ui"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
 import { Controller, useForm } from "react-hook-form"
 import { useCatalog, useUpdateSkillSources } from "../hooks/use-governance"
-import {
-  skillSourceFormSchema,
-  skillSourceToConfig,
-  type SkillSourceFormValues,
-} from "../schemas"
+import { skillSourceFormSchema, skillSourceToConfig, type SkillSourceFormValues } from "../schemas"
 import { AccessDeniedState, ConfigScreen } from "./config-screen"
 import { FieldError } from "./form-fields"
 import { DepartmentSelect } from "./pickers"
@@ -23,7 +19,8 @@ export function SourceEditorScreen({ sourceId }: { sourceId?: string | undefined
   const router = useRouter()
 
   if (catalog.isPending) return <LoadingState label="Wczytywanie katalogu..." />
-  if (catalog.isError || !catalog.data) return <AccessDeniedState title="Brak dostępu do katalogu" />
+  if (catalog.isError || !catalog.data)
+    return <AccessDeniedState title="Brak dostępu do katalogu" />
 
   const { skillSources, departments } = catalog.data
   const source = sourceId ? skillSources.find((s) => s.id === sourceId) : undefined
@@ -87,12 +84,7 @@ function SourceForm({
           <CardContent className="grid grid-cols-1 gap-4 pt-6 sm:grid-cols-2">
             <div>
               <Label htmlFor="source-id">Identyfikator</Label>
-              <Input
-                id="source-id"
-                className="mt-1"
-                disabled={editing}
-                {...form.register("id")}
-              />
+              <Input id="source-id" className="mt-1" disabled={editing} {...form.register("id")} />
               <FieldError message={form.formState.errors.id?.message} />
             </div>
             <div>

@@ -19,9 +19,9 @@ import {
   LineChart,
   ListChecks,
   Package,
-  RefreshCw,
   Palette,
   Receipt,
+  RefreshCw,
   ScrollText,
   Settings,
   SlidersHorizontal,
@@ -211,9 +211,7 @@ export const TOKEN_USAGE_NAV: TileMenuSection[] = [
   {
     id: "raport",
     label: "Raport",
-    items: [
-      { id: "dashboard", label: "Zużycie tokenów", icon: BarChart3, href: "/token-usage" },
-    ],
+    items: [{ id: "dashboard", label: "Zużycie tokenów", icon: BarChart3, href: "/token-usage" }],
   },
 ]
 
@@ -319,7 +317,12 @@ export const GEO_SCORE_CALCULATOR_NAV: TileMenuSection[] = [
     id: "konfiguracja",
     label: "Konfiguracja",
     items: [
-      { id: "settings", label: "Ustawienia", icon: Settings, href: "/geo-score-calculator/settings" },
+      {
+        id: "settings",
+        label: "Ustawienia",
+        icon: Settings,
+        href: "/geo-score-calculator/settings",
+      },
     ],
   },
 ]
@@ -408,7 +411,12 @@ export const INVOICE_SUPERVISOR_NAV: TileMenuSection[] = [
     id: "audyt",
     label: "Audyt",
     items: [
-      { id: "notifications", label: "Historia wysyłek", icon: History, href: "/invoice-supervisor/notifications" },
+      {
+        id: "notifications",
+        label: "Historia wysyłek",
+        icon: History,
+        href: "/invoice-supervisor/notifications",
+      },
     ],
   },
 ]
@@ -592,7 +600,6 @@ export function useAiToolsNavSections(): TileMenuSection[] {
     ]
   }, [authorized.apps])
 }
-
 
 export function useCortexConfigNavSections(): TileMenuSection[] {
   return CORTEX_CONFIG_NAV

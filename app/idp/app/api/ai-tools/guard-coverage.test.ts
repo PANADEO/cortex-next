@@ -10,12 +10,12 @@
 // nastąpić ZANIM cokolwiek poleci do cortex-proxy. 403, który po drodze spalił
 // tokeny, jest nadal błędem bezpieczeństwa i kosztu.
 
+import { AI_TOOL_APP_CODES, AI_TOOLS_TILE_ID, type AiToolId } from "@/lib/ai-tools/app-codes"
+import { getAiToolDefinition } from "@/lib/ai-tools/registry"
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { AI_TOOL_APP_CODES, AI_TOOLS_TILE_ID, type AiToolId } from "@/lib/ai-tools/app-codes"
-import { getAiToolDefinition } from "@/lib/ai-tools/registry"
 
 // Uprawnienia idą z własnego Postgresa (@cortex/service), nie po HTTP do
 // cortex-admina — podmieniamy więc wyłącznie odczyt z bazy. Bramka

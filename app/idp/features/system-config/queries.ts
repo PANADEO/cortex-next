@@ -29,9 +29,9 @@ export const queryKeys = {
   applications: () => [...queryKeys.all, "applications"] as const,
   applicationRoles: (id: string) => [...queryKeys.applications(), id, "roles"] as const,
   applicationScopes: (id: string) => [...queryKeys.applications(), id, "scopes"] as const,
-  applicationScopeGrants: (id: string) => [...queryKeys.applications(), id, "scope-grants"] as const,
-  unactivatedNativeApplications: () =>
-    [...queryKeys.applications(), "unactivated-native"] as const,
+  applicationScopeGrants: (id: string) =>
+    [...queryKeys.applications(), id, "scope-grants"] as const,
+  unactivatedNativeApplications: () => [...queryKeys.applications(), "unactivated-native"] as const,
   roleOpenwebuiGroup: (id: string) => [...queryKeys.roles(), id, "openwebui-group"] as const,
   appearance: () => [...queryKeys.all, "appearance"] as const,
 }
@@ -64,7 +64,10 @@ export const endpoints = {
         jsonBody: { action: "detach" },
       }),
     syncOpenwebuiGroup: (id: string) =>
-      apiClient.post<{ openwebuiSync: OpenwebuiSyncResult }>(`${BASE}/roles/${id}/openwebui-group`, {}),
+      apiClient.post<{ openwebuiSync: OpenwebuiSyncResult }>(
+        `${BASE}/roles/${id}/openwebui-group`,
+        {},
+      ),
   },
   applications: {
     list: () => apiClient.get<Application[]>(`${BASE}/applications`),
@@ -79,7 +82,8 @@ export const endpoints = {
       apiClient.put<{ ok: true }>(`${BASE}/applications/${id}/roles`, { jsonBody: { roleIds } }),
     // D8-D10: katalog zakresów jest tylko do odczytu z tego panelu (brak
     // create/remove — nie ma tu endpointów POST/DELETE do wywołania).
-    listScopes: (id: string) => apiClient.get<ApplicationScope[]>(`${BASE}/applications/${id}/scopes`),
+    listScopes: (id: string) =>
+      apiClient.get<ApplicationScope[]>(`${BASE}/applications/${id}/scopes`),
     renameScope: (id: string, scopeId: string, name: string) =>
       apiClient.patch<ApplicationScope>(`${BASE}/applications/${id}/scopes/${scopeId}`, {
         jsonBody: { name },

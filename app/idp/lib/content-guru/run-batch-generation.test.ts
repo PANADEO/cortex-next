@@ -20,7 +20,9 @@ interface ItemPatch {
 const service = vi.hoisted(() => ({
   markGenerationJobRunning: vi.fn<(userEmail: string, jobId: string) => Promise<void>>(),
   updateGenerationJobItem:
-    vi.fn<(userEmail: string, jobId: string, itemIndex: number, patch: ItemPatch) => Promise<void>>(),
+    vi.fn<
+      (userEmail: string, jobId: string, itemIndex: number, patch: ItemPatch) => Promise<void>
+    >(),
   saveArchiveEntry: vi.fn(async (_userEmail: string, input: { modelUsed: string }) => ({
     id: `archive-${Math.random().toString(36).slice(2)}`,
     modelUsed: input.modelUsed,
@@ -38,7 +40,12 @@ const EMAIL = "tworca@firma.pl"
 const JOB_ID = "job-1"
 
 function makeItem(topic: string, templateId = "template-1"): BatchGenerationItemInput {
-  return { templateId, templateLabel: "Kategoria — Nazwa", templateContent: "treść szablonu", topic }
+  return {
+    templateId,
+    templateLabel: "Kategoria — Nazwa",
+    templateContent: "treść szablonu",
+    topic,
+  }
 }
 
 function baseInput(items: BatchGenerationItemInput[]): ProcessGenerationJobInput {
@@ -88,7 +95,13 @@ describe("processGenerationJob — pula współbieżności (D4)", () => {
       return new Promise((resolve) => {
         releases.push(() => {
           inFlight -= 1
-          resolve({ content: "treść", status: "done", matchedForbiddenPhrases: [], model: "m", tokensUsed: 1 })
+          resolve({
+            content: "treść",
+            status: "done",
+            matchedForbiddenPhrases: [],
+            model: "m",
+            tokensUsed: 1,
+          })
         })
       })
     })
@@ -144,7 +157,13 @@ describe("processGenerationJob — pula współbieżności (D4)", () => {
       // różnej kolejności, nie FIFO.
       await new Promise((resolve) => setTimeout(resolve, Math.random() * 5))
       inFlight -= 1
-      return { content: "treść", status: "done", matchedForbiddenPhrases: [], model: "m", tokensUsed: 1 }
+      return {
+        content: "treść",
+        status: "done",
+        matchedForbiddenPhrases: [],
+        model: "m",
+        tokensUsed: 1,
+      }
     })
 
     await processGenerationJob(baseInput(items))
@@ -169,15 +188,21 @@ describe("processGenerationJob — postęp per-pozycyjny (nie all-at-once)", () 
     await processGenerationJob(baseInput(items))
 
     const calls = service.updateGenerationJobItem.mock.calls
-    const runningCalls = calls.filter((call) => (call[3] as { status?: string }).status === "running")
+    const runningCalls = calls.filter(
+      (call) => (call[3] as { status?: string }).status === "running",
+    )
     const doneCalls = calls.filter((call) => (call[3] as { status?: string }).status === "done")
     expect(runningCalls).toHaveLength(2)
     expect(doneCalls).toHaveLength(2)
 
     // Dla KAŻDEGO indeksu "running" poprzedza jego własny status końcowy.
     for (const index of [0, 1]) {
-      const runningIdx = calls.findIndex((call) => call[2] === index && (call[3] as { status?: string }).status === "running")
-      const doneIdx = calls.findIndex((call) => call[2] === index && (call[3] as { status?: string }).status === "done")
+      const runningIdx = calls.findIndex(
+        (call) => call[2] === index && (call[3] as { status?: string }).status === "running",
+      )
+      const doneIdx = calls.findIndex(
+        (call) => call[2] === index && (call[3] as { status?: string }).status === "done",
+      )
       expect(runningIdx).toBeGreaterThanOrEqual(0)
       expect(doneIdx).toBeGreaterThan(runningIdx)
     }
@@ -242,12 +267,18 @@ describe("processGenerationJob — partial failure widoczny (D4 krok 5)", () => 
     await processGenerationJob(baseInput(items))
 
     const calls = service.updateGenerationJobItem.mock.calls
-    const errorPatch = calls.find((call) => call[2] === 1 && (call[3] as { status?: string }).status === "error")
+    const errorPatch = calls.find(
+      (call) => call[2] === 1 && (call[3] as { status?: string }).status === "error",
+    )
     expect(errorPatch).toBeDefined()
     expect((errorPatch![3] as { errorMessage?: string }).errorMessage).toContain("upstream timeout")
 
-    const okPatch0 = calls.find((call) => call[2] === 0 && (call[3] as { status?: string }).status === "done")
-    const okPatch2 = calls.find((call) => call[2] === 2 && (call[3] as { status?: string }).status === "done")
+    const okPatch0 = calls.find(
+      (call) => call[2] === 0 && (call[3] as { status?: string }).status === "done",
+    )
+    const okPatch2 = calls.find(
+      (call) => call[2] === 2 && (call[3] as { status?: string }).status === "done",
+    )
     expect((okPatch0![3] as { content?: string }).content).toBe("treść dla temat OK 1")
     expect((okPatch2![3] as { content?: string }).content).toBe("treść dla temat OK 2")
 

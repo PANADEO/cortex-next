@@ -44,9 +44,7 @@ const columns: ColumnDef<ClientParcel, unknown>[] = [
     header: "Parcel / reference",
     cell: ({ row }) => (
       <div className="min-w-0">
-        <span className="block truncate font-mono text-xs font-medium">
-          {row.original.parcel}
-        </span>
+        <span className="block truncate font-mono text-xs font-medium">{row.original.parcel}</span>
         <span className="block truncate font-mono text-[10px] text-muted-foreground">
           {row.original.reference}
         </span>
@@ -225,25 +223,25 @@ export default function ClientDetailPage() {
                           </td>
                           <td className="px-3 py-2.5 font-mono text-xs">{r.country}</td>
                           <td className="px-3 py-2.5 text-xs">{r.service}</td>
-                          <td className="px-3 py-2.5 text-right tabular-nums text-xs">
+                          <td className="px-3 py-2.5 text-right text-xs tabular-nums">
                             {count(r.shipments)}
                           </td>
-                          <td className="px-3 py-2.5 text-right tabular-nums text-xs text-muted-foreground">
+                          <td className="px-3 py-2.5 text-right text-xs tabular-nums text-muted-foreground">
                             {r.weight ? kg(r.weight) : "—"}
                           </td>
-                          <td className="px-3 py-2.5 text-right tabular-nums text-xs">
+                          <td className="px-3 py-2.5 text-right text-xs tabular-nums">
                             {eur(r.freight)}
                           </td>
-                          <td className="px-3 py-2.5 text-right tabular-nums text-xs">
+                          <td className="px-3 py-2.5 text-right text-xs tabular-nums">
                             {eur(r.energy)}
                           </td>
-                          <td className="px-3 py-2.5 text-right tabular-nums text-xs">
+                          <td className="px-3 py-2.5 text-right text-xs tabular-nums">
                             {eur(r.serviceP)}
                           </td>
-                          <td className="px-3 py-2.5 text-right tabular-nums text-xs text-muted-foreground">
+                          <td className="px-3 py-2.5 text-right text-xs tabular-nums text-muted-foreground">
                             {r.vorfinance ? eur(r.vorfinance) : "—"}
                           </td>
-                          <td className="px-4 py-2.5 text-right font-medium tabular-nums text-xs">
+                          <td className="px-4 py-2.5 text-right text-xs font-medium tabular-nums">
                             {eur(r.grandTotal)}
                           </td>
                         </tr>
@@ -260,25 +258,25 @@ export default function ClientDetailPage() {
                               {ct.label}
                             </td>
                             <td className="px-3 py-2.5 text-xs" />
-                            <td className="px-3 py-2.5 text-right tabular-nums text-xs">
+                            <td className="px-3 py-2.5 text-right text-xs tabular-nums">
                               {count(ct.shipments)}
                             </td>
-                            <td className="px-3 py-2.5 text-right tabular-nums text-xs text-muted-foreground">
+                            <td className="px-3 py-2.5 text-right text-xs tabular-nums text-muted-foreground">
                               {ct.weight ? kg(ct.weight) : "—"}
                             </td>
-                            <td className="px-3 py-2.5 text-right tabular-nums text-xs">
+                            <td className="px-3 py-2.5 text-right text-xs tabular-nums">
                               {eur(ct.freight)}
                             </td>
-                            <td className="px-3 py-2.5 text-right tabular-nums text-xs">
+                            <td className="px-3 py-2.5 text-right text-xs tabular-nums">
                               {eur(ct.energy)}
                             </td>
-                            <td className="px-3 py-2.5 text-right tabular-nums text-xs">
+                            <td className="px-3 py-2.5 text-right text-xs tabular-nums">
                               {eur(ct.serviceP)}
                             </td>
-                            <td className="px-3 py-2.5 text-right tabular-nums text-xs text-muted-foreground">
+                            <td className="px-3 py-2.5 text-right text-xs tabular-nums text-muted-foreground">
                               {ct.vorfinance ? eur(ct.vorfinance) : "—"}
                             </td>
-                            <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-xs">
+                            <td className="px-4 py-2.5 text-right text-xs font-semibold tabular-nums">
                               {eur(ct.grandTotal)}
                             </td>
                           </tr>
@@ -290,25 +288,25 @@ export default function ClientDetailPage() {
                           <td className="px-4 py-2.5 text-xs" colSpan={3}>
                             Total
                           </td>
-                          <td className="px-3 py-2.5 text-right tabular-nums text-xs">
+                          <td className="px-3 py-2.5 text-right text-xs tabular-nums">
                             {count(bdTotal.shipments)}
                           </td>
-                          <td className="px-3 py-2.5 text-right tabular-nums text-xs text-muted-foreground">
+                          <td className="px-3 py-2.5 text-right text-xs tabular-nums text-muted-foreground">
                             {bdTotal.weight ? kg(bdTotal.weight) : "—"}
                           </td>
-                          <td className="px-3 py-2.5 text-right tabular-nums text-xs">
+                          <td className="px-3 py-2.5 text-right text-xs tabular-nums">
                             {eur(bdTotal.freight)}
                           </td>
-                          <td className="px-3 py-2.5 text-right tabular-nums text-xs">
+                          <td className="px-3 py-2.5 text-right text-xs tabular-nums">
                             {eur(bdTotal.energy)}
                           </td>
-                          <td className="px-3 py-2.5 text-right tabular-nums text-xs">
+                          <td className="px-3 py-2.5 text-right text-xs tabular-nums">
                             {eur(bdTotal.serviceP)}
                           </td>
-                          <td className="px-3 py-2.5 text-right tabular-nums text-xs text-muted-foreground">
+                          <td className="px-3 py-2.5 text-right text-xs tabular-nums text-muted-foreground">
                             {bdTotal.vorfinance ? eur(bdTotal.vorfinance) : "—"}
                           </td>
-                          <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-xs">
+                          <td className="px-4 py-2.5 text-right text-xs font-semibold tabular-nums">
                             {eur(bdTotal.grandTotal)}
                           </td>
                         </tr>

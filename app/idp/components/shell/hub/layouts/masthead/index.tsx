@@ -1,5 +1,7 @@
 "use client"
 
+import { useTranslation } from "react-i18next"
+
 import { Button, EmptyState } from "@cortex/ui"
 import { Search } from "lucide-react"
 import { CategoryTabs } from "../../category-tabs"
@@ -29,6 +31,7 @@ import { Masthead } from "./masthead"
  * D3 dopuszcza warstwę 3.
  */
 export function MastheadHub({ model, variants }: HubLayoutProps) {
+  const { t } = useTranslation("shell")
   return (
     <>
       <Masthead
@@ -64,10 +67,10 @@ export function MastheadHub({ model, variants }: HubLayoutProps) {
           <EmptyState
             icon={Search}
             title="Nie znaleziono aplikacji"
-            description="Spróbuj zmienić zapytanie lub wyczyścić filtry."
+            description={t("hub.noResults")}
             action={
               <Button variant="outline" size="sm" onClick={model.clearFilters}>
-                Wyczyść filtry
+                {t("hub.clearFilters")}
               </Button>
             }
           />

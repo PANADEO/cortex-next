@@ -46,9 +46,7 @@ export function PackageTransportSummary({ packageId }: Props) {
                     <span className="text-muted-foreground">—</span>
                   )}
                 </td>
-                <td className="px-3 py-2 capitalize text-muted-foreground">
-                  {order.mode ?? "—"}
-                </td>
+                <td className="px-3 py-2 capitalize text-muted-foreground">{order.mode ?? "—"}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{order.invoices.length}</td>
               </tr>
             )
@@ -58,9 +56,7 @@ export function PackageTransportSummary({ packageId }: Props) {
               <td colSpan={3} className="px-3 py-1.5 font-semibold text-muted-foreground">
                 Total
               </td>
-              <td className="px-3 py-1.5 text-right font-semibold tabular-nums">
-                {totalInvoices}
-              </td>
+              <td className="px-3 py-1.5 text-right font-semibold tabular-nums">{totalInvoices}</td>
             </tr>
           ) : null}
         </tbody>

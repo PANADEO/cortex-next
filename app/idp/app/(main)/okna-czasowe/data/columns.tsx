@@ -50,7 +50,9 @@ export const snapshotColumns: ColumnDef<SnapshotRow, unknown>[] = [
     header: "Dopasowany tytuł",
     cell: ({ row }) =>
       row.original.snapshot.ambiguous ? (
-        <span className="text-warning-foreground">{row.original.snapshot.matchedTitle ?? "?"} (niepewne)</span>
+        <span className="text-warning-foreground">
+          {row.original.snapshot.matchedTitle ?? "?"} (niepewne)
+        </span>
       ) : (
         (row.original.snapshot.matchedTitle ?? "—")
       ),

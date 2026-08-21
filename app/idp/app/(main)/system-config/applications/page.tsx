@@ -90,7 +90,9 @@ export default function ApplicationsPage() {
   // (dialog otwarty i wybrany typ to native), nie na każde otwarcie strony.
   const unactivatedNativeQuery = useUnactivatedNativeApplications(isOpen && form.kind === "native")
   const unactivatedNative = unactivatedNativeQuery.data ?? []
-  const selectedManifest = unactivatedNative.find((candidate) => candidate.code === form.manifestCode)
+  const selectedManifest = unactivatedNative.find(
+    (candidate) => candidate.code === form.manifestCode,
+  )
 
   // Tryb zmiany kolejności: `localOrder` to robocza kopia listy, edytowana
   // strzałkami góra/dół. Poza tym trybem renderujemy zawsze świeże dane z
@@ -153,7 +155,9 @@ export default function ApplicationsPage() {
     } catch (error) {
       toastApiError(
         error,
-        form.kind === "native" ? "Nie udało się aktywować aplikacji" : "Nie udało się dodać aplikacji",
+        form.kind === "native"
+          ? "Nie udało się aktywować aplikacji"
+          : "Nie udało się dodać aplikacji",
       )
     }
   }
@@ -178,7 +182,9 @@ export default function ApplicationsPage() {
     } catch (error) {
       toastApiError(
         error,
-        application.isActive ? "Nie udało się wyłączyć aplikacji" : "Nie udało się włączyć aplikacji",
+        application.isActive
+          ? "Nie udało się wyłączyć aplikacji"
+          : "Nie udało się włączyć aplikacji",
       )
     }
   }
@@ -283,8 +289,8 @@ export default function ApplicationsPage() {
       <div className="flex flex-1 flex-col gap-4 px-8 py-6">
         {isReordering ? (
           <p className="text-xs text-muted-foreground">
-            Tryb zmiany kolejności: strzałki przenoszą wiersz i zapisują od razu. Kolejność decyduje o
-            układzie kafelków na hubie.
+            Tryb zmiany kolejności: strzałki przenoszą wiersz i zapisują od razu. Kolejność decyduje
+            o układzie kafelków na hubie.
           </p>
         ) : null}
         {applicationsQuery.isLoading ? (
@@ -389,7 +395,9 @@ export default function ApplicationsPage() {
                               size="icon"
                               variant="ghost"
                               aria-label={`Otwórz szczegóły ${application.name}`}
-                              onClick={() => router.push(`/system-config/applications/${application.code}`)}
+                              onClick={() =>
+                                router.push(`/system-config/applications/${application.code}`)
+                              }
                             >
                               <ChevronRight className="h-4 w-4" />
                             </Button>
@@ -414,7 +422,10 @@ export default function ApplicationsPage() {
           <div className="grid gap-4">
             <div className="grid gap-1.5">
               <Label htmlFor="kind">Typ</Label>
-              <Select value={form.kind} onValueChange={(value) => handleKindChange(value as TileKind)}>
+              <Select
+                value={form.kind}
+                onValueChange={(value) => handleKindChange(value as TileKind)}
+              >
                 <SelectTrigger id="kind">
                   <SelectValue />
                 </SelectTrigger>

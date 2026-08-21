@@ -2,10 +2,6 @@
 // "Podpowiedz" (propose). Wołana wyłącznie na jawne kliknięcie — nigdy
 // automatycznie w tle, żeby nie podmieniać cicho tego, co user napisał.
 
-import { callCortexProxy } from "@cortex/api/cortex-proxy-client"
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { z } from "zod"
 import { APP_LABEL, SCOPES, SOURCE_APP, ilustromatConfig } from "@/lib/ilustromat/config"
 import { IDEA_MAX_CHARS, SUBTITLE_MAX_CHARS, TITLE_MAX_CHARS } from "@/lib/ilustromat/presets"
 import type { AssistField } from "@/lib/ilustromat/prompt-builder"
@@ -15,6 +11,10 @@ import {
   isSupportedAssist,
   normalizeAssistedText,
 } from "@/lib/ilustromat/prompt-builder"
+import { callCortexProxy } from "@cortex/api/cortex-proxy-client"
+import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
+import { z } from "zod"
 import { denyUnlessAllowed, toUpstreamErrorResponse } from "../_lib/guard"
 
 export const runtime = "nodejs"
@@ -36,7 +36,9 @@ const requestSchema = z
   })
   .refine(
     (value) =>
-      value.mode === "propose" ? Boolean(value.context?.title?.trim()) : Boolean(value.text?.trim()),
+      value.mode === "propose"
+        ? Boolean(value.context?.title?.trim())
+        : Boolean(value.text?.trim()),
     { message: "Brak tekstu wejściowego dla wybranego trybu" },
   )
 

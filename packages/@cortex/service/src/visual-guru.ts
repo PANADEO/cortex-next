@@ -76,7 +76,9 @@ export interface GenerationListItem extends GenerationRow {
  *  potrzebuje miniatury w kolumnie listy bez pobierania WSZYSTKICH wariantów
  *  każdej generacji (to, co zrobiłoby wielokrotne wywołanie getMyGeneration,
  *  niepotrzebnie ciągnąc bajty pozostałych wariantów przez sieć). */
-export async function listMyGenerationsWithFirstVariant(userEmail: string): Promise<GenerationListItem[]> {
+export async function listMyGenerationsWithFirstVariant(
+  userEmail: string,
+): Promise<GenerationListItem[]> {
   const rows = await getDb()
     .select({
       id: generations.id,
@@ -94,7 +96,10 @@ export async function listMyGenerationsWithFirstVariant(userEmail: string): Prom
     .from(generations)
     .leftJoin(
       generationVariants,
-      and(eq(generationVariants.generationId, generations.id), eq(generationVariants.variantIndex, 0)),
+      and(
+        eq(generationVariants.generationId, generations.id),
+        eq(generationVariants.variantIndex, 0),
+      ),
     )
     .where(eq(generations.userEmail, userEmail))
     .orderBy(desc(generations.createdAt))

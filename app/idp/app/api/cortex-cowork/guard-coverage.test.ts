@@ -20,13 +20,13 @@
 // wyjątek zniknął — tryb otwarty nadal pomija filtr RÓL, ale nie pomija już
 // grantu `cortex-cowork` z system_config (lib/cortex-governance/bootstrap-trust.ts).
 
+import { setGrants } from "@/lib/cortex-governance/testing/grants"
+import type * as CortexService from "@cortex/service"
+import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { setGrants } from "@/lib/cortex-governance/testing/grants"
-import type { CoworkGovernanceConfig, CoworkProjectConfig } from "@cortex/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import type * as CortexService from "@cortex/service"
 
 const ADMIN_EMAIL = "admin@example.com"
 const ANALYST_EMAIL = "analityk@example.com"
@@ -51,7 +51,12 @@ const routeModules = import.meta.glob<Record<string, unknown>>("./**/route.ts")
 
 let dataDir: string
 
-function project(id: string, name: string, allowedRoleIds: string[], enabled = true): CoworkProjectConfig {
+function project(
+  id: string,
+  name: string,
+  allowedRoleIds: string[],
+  enabled = true,
+): CoworkProjectConfig {
   return {
     id,
     name,
@@ -112,7 +117,15 @@ function buildRequest(method: HttpMethod, email: string | null, search = ""): un
   const init: RequestInit =
     method === "GET" || method === "DELETE"
       ? { method, headers }
-      : { method, headers, body: JSON.stringify({ projectId: "proj-analiza", content: "test", instructions: "test" }) }
+      : {
+          method,
+          headers,
+          body: JSON.stringify({
+            projectId: "proj-analiza",
+            content: "test",
+            instructions: "test",
+          }),
+        }
   const request = new Request(nextUrl, init) as Request & { nextUrl: URL }
   request.nextUrl = nextUrl
   return request
@@ -186,7 +199,9 @@ describe("cortex-cowork — bramki na ścieżce żądania", () => {
 // jedyną rzeczą, która stoi między użytkownikiem a cudzym projektem agentowym —
 // UI go nie powtarza, tylko renderuje to, co dostanie.
 describe("GET /api/cortex-cowork/projects — filtr ról po stronie serwera", () => {
-  async function listProjectsAs(email: string | null): Promise<{ status: number; names: string[] }> {
+  async function listProjectsAs(
+    email: string | null,
+  ): Promise<{ status: number; names: string[] }> {
     const { GET } = await import("./projects/route")
     const response = await GET(buildRequest("GET", email) as Parameters<typeof GET>[0])
     const body: unknown = await response.json()
@@ -356,7 +371,10 @@ describe("GET/PUT /api/cortex-cowork/my-instructions — warstwa użytkownika", 
     const nextUrl = new URL("http://localhost/api/cortex-cowork/my-instructions")
     const write = new Request(nextUrl, {
       method: "PUT",
-      headers: new Headers({ "content-type": "application/json", "x-auth-request-email": ANALYST_EMAIL }),
+      headers: new Headers({
+        "content-type": "application/json",
+        "x-auth-request-email": ANALYST_EMAIL,
+      }),
       body: JSON.stringify({ instructions: "sekret analityka" }),
     }) as Request & { nextUrl: URL }
     write.nextUrl = nextUrl

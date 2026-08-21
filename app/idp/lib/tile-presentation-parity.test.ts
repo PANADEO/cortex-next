@@ -26,8 +26,8 @@ import {
 } from "@cortex/tile-sdk"
 import { describe, expect, it } from "vitest"
 import { TILE_COLOR_OPTIONS } from "../features/system-config/colors"
-import { DEPARTMENT_CATEGORIES, FUNCTIONAL_CATEGORIES } from "./tiles"
 import type { TileCategoryDepartment, TileCategoryFunctional } from "./tiles"
+import { DEPARTMENT_CATEGORIES, FUNCTIONAL_CATEGORIES } from "./tiles"
 
 /** `true` wyłącznie gdy oba typy są wzajemnie przypisywalne. Asercję egzekwuje
  *  `pnpm typecheck`, NIE `expect` niżej — przy rozjeździe typ wyliczy się na

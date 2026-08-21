@@ -1,8 +1,8 @@
+import type { AiToolId } from "@/lib/ai-tools/app-codes"
 import { randomUUID } from "node:crypto"
 import { existsSync, mkdirSync } from "node:fs"
 import path from "node:path"
 import { DatabaseSync, type SQLOutputValue } from "node:sqlite"
-import type { AiToolId } from "@/lib/ai-tools/app-codes"
 
 export interface AiToolHistoryRecord {
   id: string

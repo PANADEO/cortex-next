@@ -2,8 +2,8 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import i18n from "./index"
 import { DEFAULT_LOCALE, isLocale, type Locale } from "./config"
+import i18n from "./index"
 
 interface LocaleState {
   locale: Locale

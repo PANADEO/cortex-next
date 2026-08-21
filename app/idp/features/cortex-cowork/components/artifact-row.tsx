@@ -77,7 +77,11 @@ export function ArtifactRow({ artifact, downloadHref, onExport }: ArtifactRowPro
             aria-label={`Export ${artifact.filename} to share`}
             title="Wyślij na dysk sieciowy"
           >
-            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
+            {exporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Share2 className="h-4 w-4" />
+            )}
           </Button>
         ) : null}
         <Button variant="outline" size="icon" asChild aria-label={`Download ${artifact.filename}`}>

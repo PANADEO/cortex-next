@@ -42,7 +42,9 @@ const ADMIN_OWNED_COLUMNS = [
  *  nazwy kolumn (właśnie po to, żeby wyjaśnić, czemu ich tam nie ma), więc bez
  *  ich odcięcia test padałby na własnej dokumentacji. Zakotwiczone na `insert
  *  into`, bo fraza "do update set" pada też w nagłówku pliku. */
-const statement = (source.match(/insert into system_config\.applications[\s\S]*?returning/i)?.[0] ?? "")
+const statement = (
+  source.match(/insert into system_config\.applications[\s\S]*?returning/i)?.[0] ?? ""
+)
   .split("\n")
   .filter((line) => !line.trim().startsWith("--"))
   .join("\n")
@@ -91,9 +93,12 @@ describe("seed-tile-manifests.mjs — pola prezentacyjne wyłącznie na INSERCIE
     expect(valuesClause).toContain("manifest.entitlementOnly")
   })
 
-  it.each(ADMIN_OWNED_COLUMNS)("%s NIE JEST w do update set — edycja admina przeżywa deploy", (column) => {
-    expect(updateClause).not.toMatch(new RegExp(`\\b${column}\\s*=`))
-  })
+  it.each(ADMIN_OWNED_COLUMNS)(
+    "%s NIE JEST w do update set — edycja admina przeżywa deploy",
+    (column) => {
+      expect(updateClause).not.toMatch(new RegExp(`\\b${column}\\s*=`))
+    },
+  )
 
   // Świadoma nadmiarowość, nie luka: wstrzyknięcie
   // `show_on_hub = ${manifest.entitlementOnly !== true}` do `do update set`

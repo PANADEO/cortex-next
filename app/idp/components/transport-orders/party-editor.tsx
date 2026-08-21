@@ -1,8 +1,8 @@
 "use client"
 
+import { countryCodeSchema, mapTrimToNull } from "@/lib/form-helpers"
 import type { Party, UpdatePartyRequest } from "@cortex/types"
 import { z } from "zod"
-import { countryCodeSchema, mapTrimToNull } from "@/lib/form-helpers"
 import { FieldsForm, type FieldSpec } from "./fields-form"
 
 const schema = z.object({

@@ -1,6 +1,8 @@
-import plCommon from "@/locales/pl/common.json"
 import enCommon from "@/locales/en/common.json"
+import enShell from "@/locales/en/shell.json"
 import enTiles from "@/locales/en/tiles.json"
+import plCommon from "@/locales/pl/common.json"
+import plShell from "@/locales/pl/shell.json"
 
 /**
  * Języki interfejsu. `pl` jest źródłowy — to w nim pisze się nowe napisy,
@@ -47,8 +49,8 @@ export function isLocale(value: unknown): value is Locale {
  * kilkadziesiąt kilobajtów w bundlu — przy dwóch językach akceptowalna.
  */
 export const resources = {
-  pl: { common: plCommon },
-  en: { common: enCommon, tiles: enTiles },
+  pl: { common: plCommon, shell: plShell },
+  en: { common: enCommon, shell: enShell, tiles: enTiles },
 } as const
 
 export const DEFAULT_NS = "common"

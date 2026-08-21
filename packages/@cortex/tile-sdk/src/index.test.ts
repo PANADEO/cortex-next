@@ -92,7 +92,9 @@ describe("pola prezentacyjne — komplet przechodzi przez parse i NIE jest ucina
 // pole domyślnie ukrywające dałoby zniknięcie prawdziwego kafelka (ciche).
 describe("entitlementOnly — wiersz-uprawnienie zamiast kafelka", () => {
   it("przechodzi przez parse i NIE jest ucinany", () => {
-    expect(defineTile({ ...NATIVE, entitlementOnly: true })).toMatchObject({ entitlementOnly: true })
+    expect(defineTile({ ...NATIVE, entitlementOnly: true })).toMatchObject({
+      entitlementOnly: true,
+    })
   })
 
   it("pominięcie pola znaczy 'to jest kafelek' — klucza nie ma w wyniku, nie ma też false", () => {
@@ -107,7 +109,11 @@ describe("entitlementOnly — wiersz-uprawnienie zamiast kafelka", () => {
     expect(TileManifestSchema.safeParse({ ...NATIVE, entitlementOnly: false }).success).toBe(false)
   })
 
-  it.each([["truthy string", "true"], ["jedynka", 1], ["null", null]])(
+  it.each([
+    ["truthy string", "true"],
+    ["jedynka", 1],
+    ["null", null],
+  ])(
     "odrzuca %s — kolumna jest booleanem, a cicha koercja ukryłaby kafelek",
     (_opis, entitlementOnly) => {
       expect(TileManifestSchema.safeParse({ ...NATIVE, entitlementOnly }).success).toBe(false)
@@ -134,7 +140,9 @@ describe("kategorie — wyłącznie wartości z zamkniętych list huba", () => {
   // spoza listy używa dziś ręczna edycja SQL-em, a hub wyrzuca wtedy kafelek ze
   // WSZYSTKICH zakładek kategorii, nie sygnalizując niczego.
   it.each(["analytics", "Misc", "admin_system", ""])("categoryFunctional odrzuca [%s]", (value) => {
-    expect(TileManifestSchema.safeParse({ ...NATIVE, categoryFunctional: value }).success).toBe(false)
+    expect(TileManifestSchema.safeParse({ ...NATIVE, categoryFunctional: value }).success).toBe(
+      false,
+    )
   })
 
   it.each([
@@ -150,9 +158,9 @@ describe("kategorie — wyłącznie wartości z zamkniętych list huba", () => {
   })
 
   it("categoryDepartment odrzuca goły string zamiast tablicy", () => {
-    expect(TileManifestSchema.safeParse({ ...NATIVE, categoryDepartment: "operations" }).success).toBe(
-      false,
-    )
+    expect(
+      TileManifestSchema.safeParse({ ...NATIVE, categoryDepartment: "operations" }).success,
+    ).toBe(false)
   })
 })
 
@@ -175,8 +183,12 @@ describe("description", () => {
   })
 
   it("odrzuca dłuższy niż 500 znaków (limit kolumny po stronie @cortex/service)", () => {
-    expect(TileManifestSchema.safeParse({ ...NATIVE, description: "a".repeat(501) }).success).toBe(false)
-    expect(TileManifestSchema.safeParse({ ...NATIVE, description: "a".repeat(500) }).success).toBe(true)
+    expect(TileManifestSchema.safeParse({ ...NATIVE, description: "a".repeat(501) }).success).toBe(
+      false,
+    )
+    expect(TileManifestSchema.safeParse({ ...NATIVE, description: "a".repeat(500) }).success).toBe(
+      true,
+    )
   })
 })
 

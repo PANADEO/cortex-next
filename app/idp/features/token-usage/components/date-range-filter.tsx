@@ -84,8 +84,8 @@ export function DateRangeFilter({ value, onChange, isLoading }: DateRangeFilterP
         // parsowane i tam `end` jest inkluzywny. Bez tego liczby wyglądałyby
         // na przesunięte o dzień dla kogoś w innej strefie.
         <p className="text-xs text-muted-foreground">
-          Zakres obejmuje obie daty włącznie, liczony w strefie cortex-proxy
-          (Europe/Warsaw, CET/CEST). Maksymalna długość zakresu: {MAX_RANGE_DAYS} dni.
+          Zakres obejmuje obie daty włącznie, liczony w strefie cortex-proxy (Europe/Warsaw,
+          CET/CEST). Maksymalna długość zakresu: {MAX_RANGE_DAYS} dni.
         </p>
       ) : (
         <p className="text-xs text-destructive">{parsed.message}</p>

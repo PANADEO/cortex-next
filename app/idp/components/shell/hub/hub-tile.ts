@@ -1,9 +1,9 @@
 import { resolveTileColor } from "@/features/system-config/colors"
 import { resolveApplicationIcon } from "@/features/system-config/icons"
+import { SOURCE_LOCALE } from "@/lib/i18n/config"
 import type { Tile, TileCategoryDepartment, TileCategoryFunctional } from "@/lib/tiles"
 import type { HubTile } from "@cortex/api"
 import type { TFunction } from "i18next"
-import { SOURCE_LOCALE } from "@/lib/i18n/config"
 
 /**
  * `GET /api/hub/tiles` row -> `Tile` (kształt bez zmian, Krok 3,

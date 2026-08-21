@@ -45,7 +45,10 @@ export function ContentStatusBadge({ status }: { status: ContentGuruGenerationSt
  * trafienie, nie dostaje cichego sukcesu. Paleta amber spójna z resztą repo
  * (packages/@cortex/ui/src/components/status-badge.tsx: amber = ostrzeżenie).
  */
-export function renderHighlightedContent(content: string, matchedPhrases: readonly string[]): ReactNode {
+export function renderHighlightedContent(
+  content: string,
+  matchedPhrases: readonly string[],
+): ReactNode {
   if (matchedPhrases.length === 0) return content
 
   const escaped = matchedPhrases.map((phrase) => phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))

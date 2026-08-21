@@ -4,10 +4,10 @@
 // przycisków jest widoczna, co ląduje w `avoid` przy kolejnym kliknięciu i czy
 // "Cofnij" wraca do tekstu usera. Tego czyste funkcje nie łapią.
 
+import type { AssistRequestDto } from "@/features/ilustromat/types"
 import { cleanup, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import type { AssistRequestDto } from "@/features/ilustromat/types"
 
 const assistCalls: AssistRequestDto[] = []
 let assistReply = "wynik AI"

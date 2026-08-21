@@ -1,6 +1,6 @@
-import path from "node:path"
 import type { CoworkResourceGrant } from "@cortex/types"
 import { secretPathGranted } from "@cortex/types"
+import path from "node:path"
 import { readJsonOr, writeJsonAtomic } from "./json-file"
 import { COWORK_DATA_DIR } from "./store"
 

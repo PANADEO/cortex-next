@@ -44,5 +44,9 @@ export function computeHistoryStats(
   const delta = Number((newerAvg - olderAvg).toFixed(1))
 
   if (delta === 0) return { count: rows.length, averageScore, trend: null }
-  return { count: rows.length, averageScore, trend: { direction: delta > 0 ? "up" : "down", delta } }
+  return {
+    count: rows.length,
+    averageScore,
+    trend: { direction: delta > 0 ? "up" : "down", delta },
+  }
 }

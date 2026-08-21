@@ -45,7 +45,10 @@ const storeMock = vi.hoisted(() => ({
   listAllRoles: vi.fn(),
 }))
 
-vi.mock("./openwebui-client", () => ({ ...clientMock, OpenwebuiClientError: FakeOpenwebuiClientError }))
+vi.mock("./openwebui-client", () => ({
+  ...clientMock,
+  OpenwebuiClientError: FakeOpenwebuiClientError,
+}))
 vi.mock("./openwebui-sync-store", () => storeMock)
 
 const {
@@ -62,7 +65,13 @@ const {
 
 const ROLE_ID = "role-1"
 const GROUP_ID = "group-1"
-const MAPPING = { roleId: ROLE_ID, groupId: GROUP_ID, groupName: "cortex:hr", lastSyncedAt: null, lastSyncError: null }
+const MAPPING = {
+  roleId: ROLE_ID,
+  groupId: GROUP_ID,
+  groupName: "cortex:hr",
+  lastSyncedAt: null,
+  lastSyncError: null,
+}
 
 beforeEach(() => {
   for (const fn of Object.values(clientMock)) fn.mockReset()
@@ -73,7 +82,12 @@ beforeEach(() => {
 
   storeMock.recordSyncResult.mockResolvedValue(undefined)
   storeMock.findGroupMappingOwner.mockResolvedValue(null)
-  clientMock.getGroup.mockResolvedValue({ id: GROUP_ID, name: "cortex:hr", description: "", userIds: [] })
+  clientMock.getGroup.mockResolvedValue({
+    id: GROUP_ID,
+    name: "cortex:hr",
+    description: "",
+    userIds: [],
+  })
   clientMock.listAllUserEmailIds.mockResolvedValue(new Map())
   clientMock.updateGroupMeta.mockResolvedValue(undefined)
   clientMock.addUsersToGroup.mockResolvedValue(undefined)
@@ -147,7 +161,12 @@ describe("reconcileRoleGroup — NIGDY nie rzuca, zawsze zwraca SyncResult", () 
         ["c@firma.pl", "owui-c"],
       ]),
     )
-    clientMock.getGroup.mockResolvedValue({ id: GROUP_ID, name: "cortex:hr", description: "", userIds: ["owui-c"] })
+    clientMock.getGroup.mockResolvedValue({
+      id: GROUP_ID,
+      name: "cortex:hr",
+      description: "",
+      userIds: ["owui-c"],
+    })
 
     const result = await reconcileRoleGroup(ROLE_ID)
 
@@ -157,7 +176,9 @@ describe("reconcileRoleGroup — NIGDY nie rzuca, zawsze zwraca SyncResult", () 
       GROUP_ID,
       expect.arrayContaining(["owui-a", "owui-b"]),
     )
-    expect(clientMock.removeUsersFromGroup).toHaveBeenCalledWith(expect.anything(), GROUP_ID, ["owui-c"])
+    expect(clientMock.removeUsersFromGroup).toHaveBeenCalledWith(expect.anything(), GROUP_ID, [
+      "owui-c",
+    ])
     expect(storeMock.recordSyncResult).toHaveBeenCalledWith(ROLE_ID, null)
   })
 
@@ -165,7 +186,12 @@ describe("reconcileRoleGroup — NIGDY nie rzuca, zawsze zwraca SyncResult", () 
     storeMock.getRoleGroupMapping.mockResolvedValue(MAPPING)
     storeMock.loadActiveRoleMemberEmails.mockResolvedValue(["a@firma.pl"])
     clientMock.listAllUserEmailIds.mockResolvedValue(new Map([["a@firma.pl", "owui-a"]]))
-    clientMock.getGroup.mockResolvedValue({ id: GROUP_ID, name: "cortex:hr", description: "", userIds: ["owui-a"] })
+    clientMock.getGroup.mockResolvedValue({
+      id: GROUP_ID,
+      name: "cortex:hr",
+      description: "",
+      userIds: ["owui-a"],
+    })
 
     await reconcileRoleGroup(ROLE_ID)
 
@@ -175,7 +201,10 @@ describe("reconcileRoleGroup — NIGDY nie rzuca, zawsze zwraca SyncResult", () 
 
   it("użytkownik bez konta w OpenWebUI jest pomijany, BEZ błędu (D6)", async () => {
     storeMock.getRoleGroupMapping.mockResolvedValue(MAPPING)
-    storeMock.loadActiveRoleMemberEmails.mockResolvedValue(["ma-konto@firma.pl", "brak-konta@firma.pl"])
+    storeMock.loadActiveRoleMemberEmails.mockResolvedValue([
+      "ma-konto@firma.pl",
+      "brak-konta@firma.pl",
+    ])
     clientMock.listAllUserEmailIds.mockResolvedValue(new Map([["ma-konto@firma.pl", "owui-1"]]))
 
     const result = await reconcileRoleGroup(ROLE_ID)
@@ -198,7 +227,9 @@ describe("reconcileRoleGroup — NIGDY nie rzuca, zawsze zwraca SyncResult", () 
   it("IZOLACJA AWARII: błąd sieci -> failed, NIGDY nie rzuca, add/remove nie były wołane", async () => {
     storeMock.getRoleGroupMapping.mockResolvedValue(MAPPING)
     storeMock.loadActiveRoleMemberEmails.mockResolvedValue(["a@firma.pl"])
-    clientMock.getGroup.mockRejectedValue(new FakeOpenwebuiClientError("unreachable", "OpenWebUI nieosiągalny"))
+    clientMock.getGroup.mockRejectedValue(
+      new FakeOpenwebuiClientError("unreachable", "OpenWebUI nieosiągalny"),
+    )
 
     const result = await reconcileRoleGroup(ROLE_ID)
 
@@ -213,7 +244,10 @@ describe("reconcileRoleGroup — NIGDY nie rzuca, zawsze zwraca SyncResult", () 
     clientMock.getGroup.mockRejectedValue(new Error("boom"))
     storeMock.recordSyncResult.mockRejectedValue(new Error("db down"))
 
-    await expect(reconcileRoleGroup(ROLE_ID)).resolves.toEqual({ status: "failed", message: "boom" })
+    await expect(reconcileRoleGroup(ROLE_ID)).resolves.toEqual({
+      status: "failed",
+      message: "boom",
+    })
   })
 
   it("budżet czasu: uzgodnienie, które nigdy się nie kończy, wraca jako failed po limicie — nie wisi w nieskończoność", async () => {
@@ -251,11 +285,15 @@ describe("reconcileRoleGroups — jedna awaria nie blokuje uzgodnienia pozostał
 
   it("jedna rola failed, druga ok -> zbiorczy wynik failed, ale OBIE zostały uzgodnione", async () => {
     storeMock.getRoleGroupMapping.mockImplementation(async (roleId: string) =>
-      roleId === "bad" ? { ...MAPPING, roleId: "bad", groupId: "g-bad" } : { ...MAPPING, roleId: "good" },
+      roleId === "bad"
+        ? { ...MAPPING, roleId: "bad", groupId: "g-bad" }
+        : { ...MAPPING, roleId: "good" },
     )
     storeMock.loadActiveRoleMemberEmails.mockResolvedValue([])
     clientMock.getGroup.mockImplementation(async (_config: unknown, groupId: string) =>
-      groupId === "g-bad" ? null : { id: GROUP_ID, name: "cortex:hr", description: "", userIds: [] },
+      groupId === "g-bad"
+        ? null
+        : { id: GROUP_ID, name: "cortex:hr", description: "", userIds: [] },
     )
 
     const result = await reconcileRoleGroups(["bad", "good"])
@@ -299,12 +337,24 @@ describe("attachRoleGroup — podpięcie jest RĘCZNE i nie pushuje członkostwa
   it("kind:create -> tworzy grupę cortex:<code roli> i zapisuje mapowanie, BEZ pushu członkostwa", async () => {
     storeMock.getRole.mockResolvedValue({ id: ROLE_ID, code: "hr" })
     clientMock.createGroup.mockResolvedValue({ id: "nowa-grupa", name: "cortex:hr" })
-    storeMock.upsertRoleGroupMapping.mockResolvedValue({ ...MAPPING, groupId: "nowa-grupa", groupName: "cortex:hr" })
+    storeMock.upsertRoleGroupMapping.mockResolvedValue({
+      ...MAPPING,
+      groupId: "nowa-grupa",
+      groupName: "cortex:hr",
+    })
 
     const result = await attachRoleGroup({ roleId: ROLE_ID, action: { kind: "create" } })
 
-    expect(clientMock.createGroup).toHaveBeenCalledWith(expect.anything(), "cortex:hr", expect.any(String))
-    expect(storeMock.upsertRoleGroupMapping).toHaveBeenCalledWith(ROLE_ID, "nowa-grupa", "cortex:hr")
+    expect(clientMock.createGroup).toHaveBeenCalledWith(
+      expect.anything(),
+      "cortex:hr",
+      expect.any(String),
+    )
+    expect(storeMock.upsertRoleGroupMapping).toHaveBeenCalledWith(
+      ROLE_ID,
+      "nowa-grupa",
+      "cortex:hr",
+    )
     expect(clientMock.addUsersToGroup).not.toHaveBeenCalled()
     expect("mapping" in result).toBe(true)
   })
@@ -313,7 +363,10 @@ describe("attachRoleGroup — podpięcie jest RĘCZNE i nie pushuje członkostwa
     storeMock.getRole.mockResolvedValue({ id: ROLE_ID, code: "hr" })
     clientMock.getGroup.mockResolvedValue(null)
 
-    const result = await attachRoleGroup({ roleId: ROLE_ID, action: { kind: "existing", groupId: "brak" } })
+    const result = await attachRoleGroup({
+      roleId: ROLE_ID,
+      action: { kind: "existing", groupId: "brak" },
+    })
 
     expect(result).toEqual({ error: "group-not-found" })
     expect(storeMock.upsertRoleGroupMapping).not.toHaveBeenCalled()
@@ -326,12 +379,15 @@ describe("attachRoleGroup — podpięcie jest RĘCZNE i nie pushuje członkostwa
     storeMock.getRole.mockResolvedValue({ id: ROLE_ID, code: "hr" })
     storeMock.findGroupMappingOwner.mockResolvedValue({ roleId: "role-2", roleCode: "konsultanci" })
 
-    const error = await attachRoleGroup({ roleId: ROLE_ID, action: { kind: "existing", groupId: GROUP_ID } }).catch(
-      (caught: unknown) => caught,
-    )
+    const error = await attachRoleGroup({
+      roleId: ROLE_ID,
+      action: { kind: "existing", groupId: GROUP_ID },
+    }).catch((caught: unknown) => caught)
 
     expect(error).toBeInstanceOf(OpenwebuiGroupAlreadyMappedError)
-    expect((error as InstanceType<typeof OpenwebuiGroupAlreadyMappedError>).conflictingRoleCode).toBe("konsultanci")
+    expect(
+      (error as InstanceType<typeof OpenwebuiGroupAlreadyMappedError>).conflictingRoleCode,
+    ).toBe("konsultanci")
     // Sedno komunikatu: admin ma wiedzieć, KTÓRĄ rolę odpiąć.
     expect((error as Error).message).toContain("konsultanci")
     expect(storeMock.upsertRoleGroupMapping).not.toHaveBeenCalled()
@@ -342,10 +398,18 @@ describe("attachRoleGroup — podpięcie jest RĘCZNE i nie pushuje członkostwa
   it("ponowne podpięcie TEJ SAMEJ grupy pod TĘ SAMĄ rolę to odświeżenie, nie konflikt", async () => {
     storeMock.getRole.mockResolvedValue({ id: ROLE_ID, code: "hr" })
     storeMock.findGroupMappingOwner.mockResolvedValue({ roleId: ROLE_ID, roleCode: "hr" })
-    clientMock.getGroup.mockResolvedValue({ id: GROUP_ID, name: "cortex:hr", description: "", userIds: [] })
+    clientMock.getGroup.mockResolvedValue({
+      id: GROUP_ID,
+      name: "cortex:hr",
+      description: "",
+      userIds: [],
+    })
     storeMock.upsertRoleGroupMapping.mockResolvedValue(MAPPING)
 
-    const result = await attachRoleGroup({ roleId: ROLE_ID, action: { kind: "existing", groupId: GROUP_ID } })
+    const result = await attachRoleGroup({
+      roleId: ROLE_ID,
+      action: { kind: "existing", groupId: GROUP_ID },
+    })
 
     expect("mapping" in result).toBe(true)
     expect(storeMock.upsertRoleGroupMapping).toHaveBeenCalledWith(ROLE_ID, GROUP_ID, "cortex:hr")

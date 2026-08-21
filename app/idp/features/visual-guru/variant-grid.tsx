@@ -8,8 +8,8 @@
 import { Button, Dialog, DialogContent, DialogHeader, DialogTitle } from "@cortex/ui"
 import { Download, FolderDown } from "lucide-react"
 import { useState } from "react"
-import { dataUrlToBytes, downloadZip, extensionFromDataUrl } from "./zip"
 import type { GeneratedVariantDto } from "./types"
+import { dataUrlToBytes, downloadZip, extensionFromDataUrl } from "./zip"
 
 interface VariantGridProps {
   variants: GeneratedVariantDto[]

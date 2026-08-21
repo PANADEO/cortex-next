@@ -1,11 +1,7 @@
 "use client"
 
-import {
-  toastApiError,
-  useCreateRule,
-  useRuleTemplates,
-  useRules,
-} from "@cortex/api"
+import { RULE_CATEGORY_LABEL, RULE_STATUS_LABEL, RULE_STATUS_TONE } from "@/components/rules/labels"
+import { toastApiError, useCreateRule, useRuleTemplates, useRules } from "@cortex/api"
 import {
   RULE_CATEGORY,
   RULE_STATUS,
@@ -41,24 +37,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@cortex/ui"
-import type { ColumnDef } from "@tanstack/react-table"
-import {
-  ArrowRight,
-  Loader2,
-  Plus,
-  Search,
-  ScrollText,
-  Sparkles,
-} from "lucide-react"
 import { formatAbsolute } from "@cortex/utils"
+import type { ColumnDef } from "@tanstack/react-table"
+import { ArrowRight, Loader2, Plus, ScrollText, Search, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
-import {
-  RULE_CATEGORY_LABEL,
-  RULE_STATUS_LABEL,
-  RULE_STATUS_TONE,
-} from "@/components/rules/labels"
 
 const PAGE_SIZE = 25
 const TRIGGER_AUTO: RuleTrigger = "auto_on_extraction"
@@ -156,9 +140,7 @@ export default function RulesPage() {
       {
         id: "attached",
         header: "Packages",
-        cell: ({ row }) => (
-          <span className="text-sm">{row.original.attached_package_count}</span>
-        ),
+        cell: ({ row }) => <span className="text-sm">{row.original.attached_package_count}</span>,
       },
       {
         id: "lastRun",
@@ -204,8 +186,8 @@ export default function RulesPage() {
               <DialogHeader>
                 <DialogTitle>Start from a template</DialogTitle>
                 <DialogDescription>
-                  Pick a customs preset or start blank. You can edit the natural-language
-                  definition in the next step.
+                  Pick a customs preset or start blank. You can edit the natural-language definition
+                  in the next step.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -217,9 +199,7 @@ export default function RulesPage() {
                   >
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm">{tpl.name}</CardTitle>
-                      <CardDescription className="text-xs">
-                        {tpl.description}
-                      </CardDescription>
+                      <CardDescription className="text-xs">{tpl.description}</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <Badge variant="outline" className="text-[10px]">
@@ -234,17 +214,13 @@ export default function RulesPage() {
                 ))}
               </div>
               <DialogFooter className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">
-                  Or start from scratch.
-                </span>
+                <span className="text-xs text-muted-foreground">Or start from scratch.</span>
                 <Button
                   variant="outline"
                   onClick={() => onCreateFromTemplate(null)}
                   disabled={create.isPending}
                 >
-                  {create.isPending ? (
-                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                  ) : null}
+                  {create.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
                   Blank rule
                 </Button>
               </DialogFooter>

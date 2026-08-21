@@ -5,10 +5,6 @@
 // pokazania (REQ-06 — wariant ma wyglądać jak produkt końcowy, nie jak surowy
 // obraz), tło do późniejszej rekompozycji bez ponownego płacenia za AI (REQ-08).
 
-import { callCortexProxy, callCortexProxyImage, decodeDataUrl } from "@cortex/api/cortex-proxy-client"
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { z } from "zod"
 import { compose } from "@/lib/ilustromat/composer"
 import { APP_LABEL, SCOPES, SOURCE_APP, ilustromatConfig } from "@/lib/ilustromat/config"
 import {
@@ -22,6 +18,14 @@ import {
 } from "@/lib/ilustromat/presets"
 import { buildImagePromptMessages } from "@/lib/ilustromat/prompt-builder"
 import { resolveTemplateRender } from "@/lib/ilustromat/render"
+import {
+  callCortexProxy,
+  callCortexProxyImage,
+  decodeDataUrl,
+} from "@cortex/api/cortex-proxy-client"
+import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
+import { z } from "zod"
 import { denyUnlessAllowed, toErrorResponse, toUpstreamErrorResponse } from "../_lib/guard"
 
 export const runtime = "nodejs"
@@ -86,7 +90,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const system = messages[0]!.content
     const conversation = messages
       .slice(1)
-      .map((message) => `${message.role === "assistant" ? "Assistant" : "User"}: ${message.content}`)
+      .map(
+        (message) => `${message.role === "assistant" ? "Assistant" : "User"}: ${message.content}`,
+      )
       .join("\n\n")
 
     const result = await callCortexProxy({

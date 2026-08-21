@@ -14,6 +14,7 @@
 // i dodaj import + wpis niżej. Import zapomniany tutaj = moduł nigdy nie
 // zarejestruje się jako kandydat do aktywacji w żadnej instancji.
 
+import { cortexCoworkTile } from "@/app/(cowork)/cortex-cowork/manifest"
 import { aiToolsTile } from "@/app/(main)/ai-tools/manifest"
 import { cortexConfigTile } from "@/app/(main)/cortex-config/manifest"
 import { documentParserTile } from "@/app/(main)/document-parser/manifest"
@@ -31,7 +32,7 @@ import { spConsoleTile } from "@/app/(main)/store-pit/dashboard/manifest"
 import { systemConfigTile } from "@/app/(main)/system-config/manifest"
 import { tokenUsageTile } from "@/app/(main)/token-usage/manifest"
 import { visualGuruTile } from "@/app/(main)/visual-guru/manifest"
-import { cortexCoworkTile } from "@/app/(cowork)/cortex-cowork/manifest"
+import type { TileManifest } from "@cortex/tile-sdk"
 import { aiDailyAssistantTile } from "./ai-tools/manifests/ai-daily-assistant.manifest"
 import { aiSummarizerTile } from "./ai-tools/manifests/ai-summarizer.manifest"
 import { contentGuruTile } from "./ai-tools/manifests/content-guru.manifest"
@@ -41,7 +42,6 @@ import { presentationGeneratorTile } from "./ai-tools/manifests/presentation-gen
 import { textAnalyzerTile } from "./ai-tools/manifests/text-analyzer.manifest"
 import { textHighlighterTile } from "./ai-tools/manifests/text-highlighter.manifest"
 import { textTransformerTile } from "./ai-tools/manifests/text-transformer.manifest"
-import type { TileManifest } from "@cortex/tile-sdk"
 
 export const ALL_TILE_MANIFESTS: readonly TileManifest[] = [
   idpTile,

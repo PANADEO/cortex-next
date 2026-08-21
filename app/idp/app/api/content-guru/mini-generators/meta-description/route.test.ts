@@ -100,7 +100,11 @@ describe("POST /api/content-guru/mini-generators/meta-description", () => {
 
   it("ucina odpowiedź modelu do 160 znaków (advisory w promptcie, twarde tutaj)", async () => {
     const tooLong = "A".repeat(200)
-    generateContent.mockResolvedValueOnce({ content: tooLong, tokensUsed: 50, model: VALID_BODY.model })
+    generateContent.mockResolvedValueOnce({
+      content: tooLong,
+      tokensUsed: 50,
+      model: VALID_BODY.model,
+    })
 
     const response = await POST(makeRequest(VALID_BODY) as never)
     const json = await response.json()
@@ -122,7 +126,11 @@ describe("POST /api/content-guru/mini-generators/meta-description", () => {
   })
 
   it("502 gdy model zwraca pustą odpowiedź", async () => {
-    generateContent.mockResolvedValueOnce({ content: "   ", tokensUsed: 5, model: VALID_BODY.model })
+    generateContent.mockResolvedValueOnce({
+      content: "   ",
+      tokensUsed: 5,
+      model: VALID_BODY.model,
+    })
 
     const response = await POST(makeRequest(VALID_BODY) as never)
 

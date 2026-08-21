@@ -1,6 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import {
+  useInvoiceSupervisorRunSchedulerNow,
+  useInvoiceSupervisorSchedulerConfig,
+  useInvoiceSupervisorUpdateSchedulerConfig,
+} from "@/lib/invoice-supervisor/hooks"
+import type { InvoiceSupervisorSchedulerConfig } from "@/lib/invoice-supervisor/types"
+import { formatInvoiceSupervisorDateTime } from "@/lib/invoice-supervisor/types"
 import {
   Badge,
   Button,
@@ -15,14 +21,8 @@ import {
   Separator,
   Switch,
 } from "@cortex/ui"
-import {
-  useInvoiceSupervisorRunSchedulerNow,
-  useInvoiceSupervisorSchedulerConfig,
-  useInvoiceSupervisorUpdateSchedulerConfig,
-} from "@/lib/invoice-supervisor/hooks"
-import { formatInvoiceSupervisorDateTime } from "@/lib/invoice-supervisor/types"
-import type { InvoiceSupervisorSchedulerConfig } from "@/lib/invoice-supervisor/types"
 import { PlayCircle } from "lucide-react"
+import { useState } from "react"
 
 const DAY_LABELS: Record<string, string> = {
   monday: "Pon",
@@ -46,7 +46,8 @@ export default function InvoiceSupervisorSettingsPage() {
         {/* AI-002: always visible, not tucked behind a hover tooltip — this is
             the reassurance that the scheduler never sends anything itself. */}
         <p className="mb-4 max-w-2xl text-sm text-muted-foreground">
-          Harmonogram tylko generuje propozycje do przeglądu — nigdy nie wysyła niczego automatycznie (AI-002).
+          Harmonogram tylko generuje propozycje do przeglądu — nigdy nie wysyła niczego
+          automatycznie (AI-002).
         </p>
 
         <Card className="max-w-2xl">
@@ -54,7 +55,11 @@ export default function InvoiceSupervisorSettingsPage() {
             <CardTitle className="text-base">Harmonogram</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {isLoading || !config ? <LoadingState variant="skeleton" rows={4} /> : <SchedulerForm config={config} />}
+            {isLoading || !config ? (
+              <LoadingState variant="skeleton" rows={4} />
+            ) : (
+              <SchedulerForm config={config} />
+            )}
           </CardContent>
         </Card>
       </div>
@@ -87,7 +92,10 @@ function SchedulerForm({ config }: { config: InvoiceSupervisorSchedulerConfig })
               ` · następne uruchomienie: ${formatInvoiceSupervisorDateTime(config.next_run_time)}`}
           </p>
         </div>
-        <Switch checked={config.enabled} onCheckedChange={(enabled) => updateConfig.mutate({ enabled })} />
+        <Switch
+          checked={config.enabled}
+          onCheckedChange={(enabled) => updateConfig.mutate({ enabled })}
+        />
       </div>
 
       <div className="space-y-2">
@@ -109,11 +117,23 @@ function SchedulerForm({ config }: { config: InvoiceSupervisorSchedulerConfig })
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label>Godzina</Label>
-          <Input type="number" min={0} max={23} value={hour} onChange={(e) => setHour(Number(e.target.value))} />
+          <Input
+            type="number"
+            min={0}
+            max={23}
+            value={hour}
+            onChange={(e) => setHour(Number(e.target.value))}
+          />
         </div>
         <div className="space-y-1">
           <Label>Minuta</Label>
-          <Input type="number" min={0} max={59} value={minute} onChange={(e) => setMinute(Number(e.target.value))} />
+          <Input
+            type="number"
+            min={0}
+            max={59}
+            value={minute}
+            onChange={(e) => setMinute(Number(e.target.value))}
+          />
         </div>
       </div>
 

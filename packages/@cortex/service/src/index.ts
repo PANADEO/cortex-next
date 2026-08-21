@@ -1,16 +1,97 @@
 export {
-  clearTileAccessCache,
-  getGrantedApplicationCodes,
-  getRequestEmail,
-  normalizeEmail,
-  requireTileAccess,
-  requireTileScope,
-} from "./rbac"
-export type { TileAccessResult } from "./rbac"
-export { loadGrantedApplicationCodes, loadGrantedScopes } from "./rbac-store"
+  GENERATION_JOB_ITEM_STATUSES,
+  addForbiddenPhrase,
+  clientProfileInputSchema,
+  createClientProfile,
+  createGenerationJob,
+  createMarketProfile,
+  createTemplate,
+  deleteMyClientProfile,
+  deleteMyMarketProfile,
+  deleteTemplate,
+  duplicateTemplate,
+  finishGenerationJob,
+  getMyArchiveEntry,
+  getMyClientProfile,
+  getMyGenerationJob,
+  getMyMarketProfile,
+  getTemplate,
+  listMyArchive,
+  listMyClientProfiles,
+  listMyForbiddenPhrases,
+  listMyMarketProfiles,
+  listTemplates,
+  markGenerationJobRunning,
+  marketProfileInputSchema,
+  removeForbiddenPhrase,
+  saveArchiveEntry,
+  templateInputSchema,
+  updateGenerationJobItem,
+  updateMyClientProfile,
+  updateMyMarketProfile,
+  updateTemplate,
+} from "./content-guru"
+export type {
+  AddForbiddenPhraseInput,
+  ClientProfileInput,
+  CreateGenerationJobItemInput,
+  GenerationJobItem,
+  GenerationJobItemStatus,
+  MarketProfileInput,
+  SaveArchiveEntryInput,
+  TemplateInput,
+} from "./content-guru"
+export {
+  DOCUMENT_PARSER_APP_CODE,
+  createQueuedJob,
+  getMyJob,
+  listMyJobs,
+  markJobDone,
+  markJobError,
+  markJobProcessing,
+} from "./document-parser"
+export type { CreateQueuedJobInput, MarkJobDoneInput, MarkJobErrorInput } from "./document-parser"
+export {
+  GEO_SCORE_CALCULATOR_APP_CODE,
+  GEO_SCORE_CONFIG_DEFAULTS,
+  GeoScoreConfigMissingError,
+  deleteMyCalculation,
+  getGeoScoreConfig,
+  getMyCalculation,
+  listMyCalculations,
+  resetGeoScoreConfig,
+  saveGeoScoreCalculation,
+  updateGeoScoreConfig,
+} from "./geo-score-calculator"
+export type { SaveCalculationInput, UpdateGeoScoreConfigInput } from "./geo-score-calculator"
 export { getUserDisplayName } from "./identity"
+export {
+  ILUSTROMAT_APP_CODE,
+  MANAGE_TEMPLATES_SCOPE,
+  MissingTemplateAssetError,
+  UnknownTemplateError,
+  createFrameTemplate,
+  deleteFrameTemplate,
+  duplicateFrameTemplate,
+  frameTemplateInputSchema,
+  generateTemplateId,
+  getFrameTemplate,
+  getTemplateAsset,
+  listFrameTemplates,
+  listTemplateAssets,
+  saveTemplateAsset,
+  setFrameTemplateActive,
+  updateFrameTemplate,
+} from "./ilustromat"
+export type { FrameTemplateInput, TemplateAssetInput } from "./ilustromat"
 export { isModuleEnabled, moduleLicensingConfig } from "./module-licensing"
 export type { ModuleLicensingConfig } from "./module-licensing"
+export { OpenwebuiClientError } from "./openwebui-client"
+export type {
+  OpenwebuiClientFailure,
+  OpenwebuiConfig,
+  OpenwebuiGroupSummary,
+} from "./openwebui-client"
 export {
   GROUP_DESCRIPTION as OPENWEBUI_GROUP_DESCRIPTION,
   GROUP_NAME_PREFIX as OPENWEBUI_GROUP_NAME_PREFIX,
@@ -36,33 +117,22 @@ export type {
   OpenwebuiSyncResult,
   RoleGroupSyncPreview,
 } from "./openwebui-sync"
-export { OpenwebuiClientError } from "./openwebui-client"
-export type { OpenwebuiClientFailure, OpenwebuiConfig, OpenwebuiGroupSummary } from "./openwebui-client"
 export {
-  ILUSTROMAT_APP_CODE,
-  MANAGE_TEMPLATES_SCOPE,
-  MissingTemplateAssetError,
-  UnknownTemplateError,
-  createFrameTemplate,
-  deleteFrameTemplate,
-  duplicateFrameTemplate,
-  frameTemplateInputSchema,
-  generateTemplateId,
-  getFrameTemplate,
-  getTemplateAsset,
-  listFrameTemplates,
-  listTemplateAssets,
-  saveTemplateAsset,
-  setFrameTemplateActive,
-  updateFrameTemplate,
-} from "./ilustromat"
-export type { FrameTemplateInput, TemplateAssetInput } from "./ilustromat"
+  clearTileAccessCache,
+  getGrantedApplicationCodes,
+  getRequestEmail,
+  normalizeEmail,
+  requireTileAccess,
+  requireTileScope,
+} from "./rbac"
+export type { TileAccessResult } from "./rbac"
+export { loadGrantedApplicationCodes, loadGrantedScopes } from "./rbac-store"
 export {
   ADMIN_ROLE_CODE,
-  SYSTEM_CONFIG_APP_CODE,
   ModuleNotLicensedError,
   NativeApplicationImmutableError,
   NativeCreationNotAllowedError,
+  SYSTEM_CONFIG_APP_CODE,
   SelfLockoutError,
   SystemRoleProtectedError,
   UnknownApplicationError,
@@ -86,8 +156,8 @@ export {
   listApplicationScopes,
   listApplications,
   listHubApplications,
-  listUnactivatedNativeApplications,
   listRoles,
+  listUnactivatedNativeApplications,
   listUsers,
   renameApplicationScope,
   roleInputSchema,
@@ -133,73 +203,3 @@ export type {
   GenerationVariantInput,
   GenerationWithVariants,
 } from "./visual-guru"
-export {
-  DOCUMENT_PARSER_APP_CODE,
-  createQueuedJob,
-  getMyJob,
-  listMyJobs,
-  markJobDone,
-  markJobError,
-  markJobProcessing,
-} from "./document-parser"
-export type {
-  CreateQueuedJobInput,
-  MarkJobDoneInput,
-  MarkJobErrorInput,
-} from "./document-parser"
-export {
-  GEO_SCORE_CALCULATOR_APP_CODE,
-  GEO_SCORE_CONFIG_DEFAULTS,
-  GeoScoreConfigMissingError,
-  deleteMyCalculation,
-  getGeoScoreConfig,
-  getMyCalculation,
-  listMyCalculations,
-  resetGeoScoreConfig,
-  saveGeoScoreCalculation,
-  updateGeoScoreConfig,
-} from "./geo-score-calculator"
-export type { SaveCalculationInput, UpdateGeoScoreConfigInput } from "./geo-score-calculator"
-export {
-  addForbiddenPhrase,
-  clientProfileInputSchema,
-  createClientProfile,
-  createGenerationJob,
-  createMarketProfile,
-  createTemplate,
-  deleteMyClientProfile,
-  deleteMyMarketProfile,
-  deleteTemplate,
-  duplicateTemplate,
-  finishGenerationJob,
-  GENERATION_JOB_ITEM_STATUSES,
-  getMyArchiveEntry,
-  getMyClientProfile,
-  getMyGenerationJob,
-  getMyMarketProfile,
-  getTemplate,
-  listMyArchive,
-  listMyClientProfiles,
-  listMyForbiddenPhrases,
-  listMyMarketProfiles,
-  listTemplates,
-  markGenerationJobRunning,
-  marketProfileInputSchema,
-  removeForbiddenPhrase,
-  saveArchiveEntry,
-  templateInputSchema,
-  updateGenerationJobItem,
-  updateMyClientProfile,
-  updateMyMarketProfile,
-  updateTemplate,
-} from "./content-guru"
-export type {
-  AddForbiddenPhraseInput,
-  ClientProfileInput,
-  CreateGenerationJobItemInput,
-  GenerationJobItem,
-  GenerationJobItemStatus,
-  MarketProfileInput,
-  SaveArchiveEntryInput,
-  TemplateInput,
-} from "./content-guru"

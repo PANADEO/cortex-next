@@ -1,5 +1,9 @@
 "use client"
 
+import { DocumentPreview } from "@/components/classification/document-preview"
+import { DocumentTree } from "@/components/classification/document-tree"
+import { DraftList } from "@/components/classification/draft-list"
+import { DIRTY_STATUS_LABEL } from "@/components/classification/labels"
 import {
   toastApiError,
   useAutoClassify,
@@ -27,10 +31,6 @@ import { notFound, useParams, useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { toast } from "sonner"
-import { DocumentPreview } from "@/components/classification/document-preview"
-import { DocumentTree } from "@/components/classification/document-tree"
-import { DraftList } from "@/components/classification/draft-list"
-import { DIRTY_STATUS_LABEL } from "@/components/classification/labels"
 
 export default function ClassificationWorkspacePage() {
   const flagState = useFeatureFlagState("idp.classification")
@@ -95,9 +95,7 @@ export default function ClassificationWorkspacePage() {
       onSuccess: (res) => {
         toast.success(
           `Promoted to ${res.clean_package_ids.length} clean package(s)` +
-            (res.skipped_documents
-              ? ` · ${res.skipped_documents} doc(s) skipped`
-              : ""),
+            (res.skipped_documents ? ` · ${res.skipped_documents} doc(s) skipped` : ""),
         )
         setConfirmPromote(false)
         router.push("/idp/packages")
@@ -126,9 +124,7 @@ export default function ClassificationWorkspacePage() {
             </span>
           </div>
           <Badge variant="outline">{DIRTY_STATUS_LABEL[data.status]}</Badge>
-          {data.customer_tag ? (
-            <Badge variant="secondary">{data.customer_tag}</Badge>
-          ) : null}
+          {data.customer_tag ? <Badge variant="secondary">{data.customer_tag}</Badge> : null}
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -171,19 +167,11 @@ export default function ClassificationWorkspacePage() {
           </Panel>
           <PanelResizeHandle className="w-1 shrink-0 bg-border transition-colors hover:bg-primary/40" />
           <Panel defaultSize={50} minSize={30}>
-            <DocumentPreview
-              dirtyPackageId={id}
-              document={selectedDoc}
-              drafts={data.drafts}
-            />
+            <DocumentPreview dirtyPackageId={id} document={selectedDoc} drafts={data.drafts} />
           </Panel>
           <PanelResizeHandle className="w-1 shrink-0 bg-border transition-colors hover:bg-primary/40" />
           <Panel defaultSize={28} minSize={20} className="border-l border-border">
-            <DraftList
-              dirtyPackageId={id}
-              drafts={data.drafts}
-              documents={data.documents}
-            />
+            <DraftList dirtyPackageId={id} drafts={data.drafts} documents={data.documents} />
           </Panel>
         </PanelGroup>
       </div>
@@ -196,10 +184,9 @@ export default function ClassificationWorkspacePage() {
               {data.drafts.length === 1 ? "" : "s"}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {data.documents.filter((d) => d.mode === "process").length} document(s)
-              will be sent to LLM processing,{" "}
-              {data.documents.filter((d) => d.mode === "pass_through").length} will be
-              attached as reference, and{" "}
+              {data.documents.filter((d) => d.mode === "process").length} document(s) will be sent
+              to LLM processing, {data.documents.filter((d) => d.mode === "pass_through").length}{" "}
+              will be attached as reference, and{" "}
               {data.documents.filter((d) => d.mode === "skip").length} will be dropped.
             </AlertDialogDescription>
           </AlertDialogHeader>

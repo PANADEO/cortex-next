@@ -1,4 +1,3 @@
-import path from "node:path"
 import { builtinSkillsDir, resolveAppDataDir } from "@/lib/data-dir"
 import type {
   CoworkConnectorConfig,
@@ -15,6 +14,7 @@ import {
   grantMatches,
 } from "@cortex/types"
 import { emailsMatch } from "@cortex/utils"
+import path from "node:path"
 import { readJsonOr, writeJsonAtomic } from "./json-file"
 
 // Governance config store for the cortex-config tile: department tree, skill
@@ -302,10 +302,7 @@ export async function upsertProject(
     createdAt: existing?.createdAt ?? nowIso(),
     updatedAt: nowIso(),
   }
-  config.projects = [
-    ...config.projects.filter((candidate) => candidate.id !== project.id),
-    project,
-  ]
+  config.projects = [...config.projects.filter((candidate) => candidate.id !== project.id), project]
   await saveGovernanceConfig(config)
   return project
 }

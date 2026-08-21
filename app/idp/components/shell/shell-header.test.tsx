@@ -59,7 +59,15 @@ describe("ShellHeader — wariant powłoki", () => {
     const { container } = await renderHeader(null)
 
     expect(classSet(container.querySelector("header"))).toEqual(
-      ["sticky", "top-0", "z-30", "border-b", "border-border", "bg-card/80", "backdrop-blur"].sort(),
+      [
+        "sticky",
+        "top-0",
+        "z-30",
+        "border-b",
+        "border-border",
+        "bg-card/80",
+        "backdrop-blur",
+      ].sort(),
     )
   })
 

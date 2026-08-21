@@ -168,9 +168,7 @@ describe("VersionLabel", () => {
     const { VersionLabel } = await import("./version-label")
     const Wrapper = wrapper(freshClient())
 
-    render(
-      createElement(Wrapper, null, createElement(VersionLabel, { tileId: "ghost" })),
-    )
+    render(createElement(Wrapper, null, createElement(VersionLabel, { tileId: "ghost" })))
 
     expect(labelText()).toBe("FE v0.2.10 · GHOST")
     expect(fetchMock).not.toHaveBeenCalled()

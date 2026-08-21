@@ -118,10 +118,12 @@ describe("document-parser backend-client", () => {
   describe("mapBackendErrorToCode", () => {
     it("mapuje błędy etapu konwersji/renderu na conversion-failed", () => {
       expect(mapBackendErrorToCode("Uploaded file is empty.")).toBe("conversion-failed")
-      expect(
-        mapBackendErrorToCode("unoconvert failed (exit 1): some libreoffice error"),
-      ).toBe("conversion-failed")
-      expect(mapBackendErrorToCode("Unable to render PDF pages: bad xref")).toBe("conversion-failed")
+      expect(mapBackendErrorToCode("unoconvert failed (exit 1): some libreoffice error")).toBe(
+        "conversion-failed",
+      )
+      expect(mapBackendErrorToCode("Unable to render PDF pages: bad xref")).toBe(
+        "conversion-failed",
+      )
     })
 
     it("mapuje błędy etapu modelu wizyjnego na vision-call-failed", () => {

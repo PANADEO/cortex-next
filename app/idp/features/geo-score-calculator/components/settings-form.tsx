@@ -111,7 +111,9 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
         <CardHeader className="flex flex-row items-center justify-between gap-4">
           <div>
             <CardTitle className="text-base">Wagi wymiarów</CardTitle>
-            <CardDescription>Cztery ważone wymiary oceny — muszą sumować się do 100%.</CardDescription>
+            <CardDescription>
+              Cztery ważone wymiary oceny — muszą sumować się do 100%.
+            </CardDescription>
           </div>
           <Badge
             variant="outline"
@@ -149,7 +151,9 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
             </div>
           ))}
           {form.formState.errors.weightStatistics ? (
-            <p className="text-xs text-destructive">{form.formState.errors.weightStatistics.message}</p>
+            <p className="text-xs text-destructive">
+              {form.formState.errors.weightStatistics.message}
+            </p>
           ) : null}
         </CardContent>
       </Card>
@@ -157,13 +161,30 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Benchmarki i progi ocen</CardTitle>
-          <CardDescription>Punkty odniesienia (raport Muck Rack) i minimalne wyniki dla ocen A-D.</CardDescription>
+          <CardDescription>
+            Punkty odniesienia (raport Muck Rack) i minimalne wyniki dla ocen A-D.
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <NumberField form={form} name="benchmarkStats" label="Statystyki / 100 słów" step={0.1} />
-          <NumberField form={form} name="benchmarkVerbs" label="Udział czasowników akcji" step={0.01} />
-          <NumberField form={form} name="benchmarkStructure" label="Bullet-y / 500 słów" step={0.1} />
-          <NumberField form={form} name="benchmarkObjectivity" label="Maks. udział subiektywności" step={0.01} />
+          <NumberField
+            form={form}
+            name="benchmarkVerbs"
+            label="Udział czasowników akcji"
+            step={0.01}
+          />
+          <NumberField
+            form={form}
+            name="benchmarkStructure"
+            label="Bullet-y / 500 słów"
+            step={0.1}
+          />
+          <NumberField
+            form={form}
+            name="benchmarkObjectivity"
+            label="Maks. udział subiektywności"
+            step={0.01}
+          />
           <NumberField form={form} name="gradeAMin" label="Próg oceny A" step={1} />
           <NumberField form={form} name="gradeBMin" label="Próg oceny B" step={1} />
           <NumberField form={form} name="gradeCMin" label="Próg oceny C" step={1} />
@@ -174,7 +195,9 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Listy słów</CardTitle>
-          <CardDescription>Używane przez analizatory czasowników akcji i obiektywności.</CardDescription>
+          <CardDescription>
+            Używane przez analizatory czasowników akcji i obiektywności.
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6 sm:grid-cols-2">
           <div className="space-y-1.5">
@@ -192,7 +215,9 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
               )}
             />
             {form.formState.errors.actionVerbs ? (
-              <p className="text-xs text-destructive">{form.formState.errors.actionVerbs.message as string}</p>
+              <p className="text-xs text-destructive">
+                {form.formState.errors.actionVerbs.message as string}
+              </p>
             ) : null}
           </div>
           <div className="space-y-1.5">
@@ -210,7 +235,9 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
               )}
             />
             {form.formState.errors.subjectiveWords ? (
-              <p className="text-xs text-destructive">{form.formState.errors.subjectiveWords.message as string}</p>
+              <p className="text-xs text-destructive">
+                {form.formState.errors.subjectiveWords.message as string}
+              </p>
             ) : null}
           </div>
         </CardContent>
@@ -219,15 +246,22 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
       <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen} asChild>
         <Card>
           <CollapsibleTrigger asChild>
-            <button type="button" className="flex w-full items-center justify-between p-6 text-left">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between p-6 text-left"
+            >
               <div>
                 <p className="text-base font-semibold leading-none tracking-tight">Zaawansowane</p>
                 <p className="mt-1.5 text-sm text-muted-foreground">
-                  Wzorce regex bullet-pointów i wyjątki false-positive — konfiguracja dla zaawansowanych.
+                  Wzorce regex bullet-pointów i wyjątki false-positive — konfiguracja dla
+                  zaawansowanych.
                 </p>
               </div>
               <ChevronDown
-                className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", advancedOpen && "rotate-180")}
+                className={cn(
+                  "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+                  advancedOpen && "rotate-180",
+                )}
               />
             </button>
           </CollapsibleTrigger>
@@ -289,8 +323,9 @@ export function GeoScoreSettingsForm({ config }: { config: GeoScoreConfigDto }) 
               <AlertDialogHeader>
                 <AlertDialogTitle>Przywrócić domyślną konfigurację?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  To nadpisze wagi, benchmarki, progi ocen i listy słów WSPÓLNEJ konfiguracji kalkulatora — dla
-                  wszystkich użytkowników tej instancji, nie tylko dla Ciebie. Tej operacji nie można cofnąć.
+                  To nadpisze wagi, benchmarki, progi ocen i listy słów WSPÓLNEJ konfiguracji
+                  kalkulatora — dla wszystkich użytkowników tej instancji, nie tylko dla Ciebie. Tej
+                  operacji nie można cofnąć.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -316,7 +351,15 @@ function NumberField({
   step,
 }: {
   form: UseFormReturn<GeoScoreSettingsFormValues>
-  name: "benchmarkStats" | "benchmarkVerbs" | "benchmarkStructure" | "benchmarkObjectivity" | "gradeAMin" | "gradeBMin" | "gradeCMin" | "gradeDMin"
+  name:
+    | "benchmarkStats"
+    | "benchmarkVerbs"
+    | "benchmarkStructure"
+    | "benchmarkObjectivity"
+    | "gradeAMin"
+    | "gradeBMin"
+    | "gradeCMin"
+    | "gradeDMin"
   label: string
   step: number
 }) {
@@ -324,7 +367,12 @@ function NumberField({
   return (
     <div className="space-y-1.5">
       <Label htmlFor={`geo-score-${name}`}>{label}</Label>
-      <Input id={`geo-score-${name}`} type="number" step={step} {...form.register(name, { valueAsNumber: true })} />
+      <Input
+        id={`geo-score-${name}`}
+        type="number"
+        step={step}
+        {...form.register(name, { valueAsNumber: true })}
+      />
       {error ? <p className="text-xs text-destructive">{error.message}</p> : null}
     </div>
   )

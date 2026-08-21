@@ -38,7 +38,9 @@ interface AiToolHistoryResponse {
   items: AiToolHistoryItem[]
 }
 
-export function aiToolHistoryQueryKey(toolId: AiToolId): readonly ["ai-tools", "history", AiToolId] {
+export function aiToolHistoryQueryKey(
+  toolId: AiToolId,
+): readonly ["ai-tools", "history", AiToolId] {
   return ["ai-tools", "history", toolId] as const
 }
 
@@ -48,10 +50,7 @@ export function generateAiToolContent(
   return apiClient.post<AiToolGenerateResponse>("/api/ai-tools/generate", { jsonBody: body })
 }
 
-export async function getAiToolHistory(
-  toolId: AiToolId,
-  limit = 10,
-): Promise<AiToolHistoryItem[]> {
+export async function getAiToolHistory(toolId: AiToolId, limit = 10): Promise<AiToolHistoryItem[]> {
   const response = await apiClient.get<AiToolHistoryResponse>("/api/ai-tools/history", {
     params: { limit, toolId },
   })

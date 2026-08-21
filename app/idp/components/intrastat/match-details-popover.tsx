@@ -149,8 +149,8 @@ export function IntrastatMatchDetailsPopover({ line }: { line: IntrastatDeclarat
               <span>{formatConfidence(line.confidence)}</span>
             </div>
             <p className="text-[11px] leading-4 text-muted-foreground">
-              Overall line confidence uses the lower of document extraction confidence and CN
-              match confidence.
+              Overall line confidence uses the lower of document extraction confidence and CN match
+              confidence.
             </p>
           </section>
 

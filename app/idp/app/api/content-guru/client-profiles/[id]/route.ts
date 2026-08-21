@@ -2,13 +2,13 @@
 // gate.email w każdej warstwie serwisowej. `undefined`/`false` (nie istnieje
 // LUB cudzy) mapowane na 404, nigdy 403 (code-service "Rekordy per-user" pkt 2).
 
-import { NextResponse, type NextRequest } from "next/server"
 import {
   clientProfileInputSchema,
   deleteMyClientProfile,
   getMyClientProfile,
   updateMyClientProfile,
 } from "@cortex/service"
+import { NextResponse, type NextRequest } from "next/server"
 import { isUniqueViolation, requireContentGuruAccess } from "../../_lib/guard"
 
 export const runtime = "nodejs"

@@ -18,9 +18,17 @@
 // zakończyłyby się błędem "model-not-allowed" (D3, fail-closed) w tle,
 // zamiast natychmiastowego, czytelnego 400.
 
+import { isAllowedContentGuruModel } from "@/lib/content-guru/config"
+import { MAX_COMBINATIONS } from "@/lib/content-guru/job-limits"
+import {
+  clientProfileToMarkdown,
+  marketProfileToMarkdown,
+} from "@/lib/content-guru/profile-markdown"
+import {
+  processGenerationJob,
+  type BatchGenerationItemInput,
+} from "@/lib/content-guru/run-batch-generation"
 import type { TemplateRow } from "@cortex/db"
-import { NextResponse, type NextRequest } from "next/server"
-import { z } from "zod"
 import {
   createGenerationJob,
   getMyClientProfile,
@@ -28,10 +36,8 @@ import {
   getTemplate,
   listMyForbiddenPhrases,
 } from "@cortex/service"
-import { isAllowedContentGuruModel } from "@/lib/content-guru/config"
-import { MAX_COMBINATIONS } from "@/lib/content-guru/job-limits"
-import { clientProfileToMarkdown, marketProfileToMarkdown } from "@/lib/content-guru/profile-markdown"
-import { processGenerationJob, type BatchGenerationItemInput } from "@/lib/content-guru/run-batch-generation"
+import { NextResponse, type NextRequest } from "next/server"
+import { z } from "zod"
 import { requireContentGuruAccess } from "../_lib/guard"
 
 export const runtime = "nodejs"
@@ -81,7 +87,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   if (!isAllowedContentGuruModel(model)) {
     return NextResponse.json(
-      { error: "invalid-request", message: `Model "${model}" nie jest na liście dozwolonych modeli.` },
+      {
+        error: "invalid-request",
+        message: `Model "${model}" nie jest na liście dozwolonych modeli.`,
+      },
       { status: 400 },
     )
   }

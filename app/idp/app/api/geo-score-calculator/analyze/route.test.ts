@@ -5,8 +5,8 @@
 // (rbac-store) i warstwy dotykające sieci/Postgresa (adapter mikroserwisu,
 // getGeoScoreConfig/saveGeoScoreCalculation z @cortex/service).
 
-import { beforeEach, describe, expect, it, vi } from "vitest"
 import type * as CortexService from "@cortex/service"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const loadGrantedApplicationCodes = vi.hoisted(() => vi.fn<(email: string) => Promise<string[]>>())
 
@@ -220,7 +220,9 @@ describe("POST /api/geo-score-calculator/analyze", () => {
     loadGrantedApplicationCodes.mockResolvedValue([GEO_SCORE_CALCULATOR_APP_CODE_FOR_TEST])
     const { POST } = await loadHandler()
 
-    const response = await POST(makeRequest({ text: "Firma wdrożyła system." }, "analityk@firma.pl"))
+    const response = await POST(
+      makeRequest({ text: "Firma wdrożyła system." }, "analityk@firma.pl"),
+    )
     const body = await response.json()
 
     expect(response.status).toBe(200)

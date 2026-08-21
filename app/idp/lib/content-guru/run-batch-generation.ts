@@ -172,7 +172,10 @@ export async function processGenerationJob(input: ProcessGenerationJobInput): Pr
     try {
       await finishGenerationJob(email, jobId, "done-with-errors")
     } catch (finishError) {
-      console.error(`[content-guru] processGenerationJob: finishGenerationJob też zawiódł dla joba ${jobId}:`, finishError)
+      console.error(
+        `[content-guru] processGenerationJob: finishGenerationJob też zawiódł dla joba ${jobId}:`,
+        finishError,
+      )
     }
   }
 }

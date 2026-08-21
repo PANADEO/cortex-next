@@ -1,12 +1,12 @@
 "use client"
 
+import type { TileVariant } from "@/lib/presets/registry"
+import type { Tile } from "@/lib/tiles"
 import { cn } from "@cortex/utils"
 import { cva } from "class-variance-authority"
 import { Star } from "lucide-react"
 import Link from "next/link"
 import type { CSSProperties } from "react"
-import type { TileVariant } from "@/lib/presets/registry"
-import type { Tile } from "@/lib/tiles"
 import { type Accent, accentFor } from "./accent"
 
 /**
@@ -53,7 +53,11 @@ const slots = {
       active: { true: "opacity-100", false: "" },
     },
     compoundVariants: [
-      { variant: "card", active: false, class: "opacity-0 group-hover:opacity-100 focus:opacity-100" },
+      {
+        variant: "card",
+        active: false,
+        class: "opacity-0 group-hover:opacity-100 focus:opacity-100",
+      },
       // `group-focus-within` zamiast `focus` z gałęzi `card`: u Cezarego
       // gwiazdka wychodzi także wtedy, gdy fokus jest gdziekolwiek w kafelku,
       // nie tylko na niej samej.
@@ -78,7 +82,8 @@ const slots = {
     variants: {
       variant: {
         card: "mb-4 flex h-12 w-12 items-center justify-center rounded-lg",
-        chiclet: "flex h-[42px] w-[42px] items-center justify-center rounded-sm border-token border-border",
+        chiclet:
+          "flex h-[42px] w-[42px] items-center justify-center rounded-sm border-token border-border",
       },
     },
   }),
@@ -176,7 +181,9 @@ export function TileCard({
           e.stopPropagation()
           onToggleFavorite(tile.id)
         }}
-        aria-label={isFavorite ? `Usuń ${tile.label} z ulubionych` : `Dodaj ${tile.label} do ulubionych`}
+        aria-label={
+          isFavorite ? `Usuń ${tile.label} z ulubionych` : `Dodaj ${tile.label} do ulubionych`
+        }
         aria-pressed={isFavorite}
         className={slots.fav({ variant, active: isFavorite })}
       >
@@ -193,7 +200,9 @@ export function TileCard({
           `tile.iconBg` obok akcentu i liczyć na `tailwind-merge` — wygrywałby
           ostatni napis, czyli o kolorze rozstrzygałaby kolejność argumentów. */}
       <div className={cn(slots.icon({ variant }), isChiclet ? ACCENT_BG[accent] : tile.iconBg)}>
-        <Icon className={cn(slots.glyph({ variant }), isChiclet ? ACCENT_FG[accent] : tile.iconFg)} />
+        <Icon
+          className={cn(slots.glyph({ variant }), isChiclet ? ACCENT_FG[accent] : tile.iconFg)}
+        />
       </div>
       <div className={slots.name({ variant })}>{tile.label}</div>
       <div className={slots.desc({ variant })}>{tile.description}</div>

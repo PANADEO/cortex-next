@@ -32,12 +32,7 @@ function confidenceTone(confidence: number | null): string {
   return "text-emerald-600"
 }
 
-export function DocumentTree({
-  documents,
-  selectedId,
-  onSelect,
-  draftLookup,
-}: DocumentTreeProps) {
+export function DocumentTree({ documents, selectedId, onSelect, draftLookup }: DocumentTreeProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
@@ -72,9 +67,7 @@ export function DocumentTree({
                   <div className="flex w-full flex-col gap-1.5">
                     <div className="flex items-start gap-2">
                       <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                      <span className="flex-1 truncate text-sm font-medium">
-                        {doc.file_name}
-                      </span>
+                      <span className="flex-1 truncate text-sm font-medium">{doc.file_name}</span>
                       {doc.human_reviewed ? (
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                       ) : needsReview ? (

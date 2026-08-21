@@ -32,7 +32,11 @@ describe("buildKeywordPhrasePrompt", () => {
   })
 
   it("odbiorca/dodatkowe informacje puste -> fallback tekst, nie pusty string", () => {
-    const { userPrompt } = buildKeywordPhrasePrompt({ topic: "Temat", targetAudience: "  ", additionalInfo: "  " })
+    const { userPrompt } = buildKeywordPhrasePrompt({
+      topic: "Temat",
+      targetAudience: "  ",
+      additionalInfo: "  ",
+    })
     expect(userPrompt).toContain("Nie sprecyzowano.")
     expect(userPrompt).toContain("Brak.")
   })
@@ -76,7 +80,8 @@ describe("parseJsonStringArray", () => {
   })
 
   it("fallback: wyciąga tablicę spośród code fence + tekstu wokół", () => {
-    const raw = 'Oto tematy:\n```json\n["Temat A", "Temat B", "Temat C"]\n```\nMam nadzieję, że pomoże.'
+    const raw =
+      'Oto tematy:\n```json\n["Temat A", "Temat B", "Temat C"]\n```\nMam nadzieję, że pomoże.'
     expect(parseJsonStringArray(raw)).toEqual(["Temat A", "Temat B", "Temat C"])
   })
 
@@ -111,7 +116,9 @@ describe("stripWrappingQuotes", () => {
   })
 
   it("nie rusza cudzysłowu, który nie otacza całego stringa", () => {
-    expect(stripWrappingQuotes('Klient powiedział "nie" wprost.')).toBe('Klient powiedział "nie" wprost.')
+    expect(stripWrappingQuotes('Klient powiedział "nie" wprost.')).toBe(
+      'Klient powiedział "nie" wprost.',
+    )
   })
 
   it("przycina otaczające białe znaki niezależnie od cudzysłowów", () => {

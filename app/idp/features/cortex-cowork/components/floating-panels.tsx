@@ -36,7 +36,9 @@ function FloatingPanel({
           <DisclosureChevron open={open} className="h-3.5 w-3.5" />
         </span>
       </button>
-      {open ? <div className="max-h-[45vh] overflow-y-auto border-t border-border/60">{children}</div> : null}
+      {open ? (
+        <div className="max-h-[45vh] overflow-y-auto border-t border-border/60">{children}</div>
+      ) : null}
     </section>
   )
 }

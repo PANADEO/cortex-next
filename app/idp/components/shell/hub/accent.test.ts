@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest"
 import { FUNCTIONAL_CATEGORIES, type TileCategoryFunctional } from "@/lib/tiles"
+import { describe, expect, it } from "vitest"
 import { type Accent, accentFor } from "./accent"
 
 describe("akcent kafelka z kategorii", () => {

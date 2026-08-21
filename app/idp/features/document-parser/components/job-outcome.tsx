@@ -1,7 +1,7 @@
 "use client"
 
-import { formatFileSizeBytes } from "@cortex/utils"
 import { Badge, Button, ErrorState, LoadingState } from "@cortex/ui"
+import { formatFileSizeBytes } from "@cortex/utils"
 import { Download, TriangleAlert } from "lucide-react"
 import Link from "next/link"
 import { errorMessageFor, STATUS_BADGE_VARIANT, STATUS_LABELS } from "../status"
@@ -38,7 +38,9 @@ export function JobOutcome({ job, detailsHref, previewOnly = false }: JobOutcome
       <div className="flex flex-wrap items-center gap-2">
         <span className="truncate text-sm font-medium">{job.fileName}</span>
         <Badge variant={STATUS_BADGE_VARIANT[job.status]}>{STATUS_LABELS[job.status]}</Badge>
-        <span className="text-xs text-muted-foreground">{formatFileSizeBytes(job.fileSizeBytes)}</span>
+        <span className="text-xs text-muted-foreground">
+          {formatFileSizeBytes(job.fileSizeBytes)}
+        </span>
       </div>
 
       {(job.status === "queued" || job.status === "processing") && (

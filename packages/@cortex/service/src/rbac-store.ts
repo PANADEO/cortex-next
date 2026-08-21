@@ -28,9 +28,7 @@ export async function loadGrantedApplicationCodes(email: string): Promise<string
     .innerJoin(userRoles, eq(userRoles.userId, users.id))
     .innerJoin(permissionsMatrix, eq(permissionsMatrix.roleId, userRoles.roleId))
     .innerJoin(applications, eq(applications.id, permissionsMatrix.applicationId))
-    .where(
-      and(eq(users.email, email), eq(users.isActive, true), eq(applications.isActive, true)),
-    )
+    .where(and(eq(users.email, email), eq(users.isActive, true), eq(applications.isActive, true)))
 
   return rows.map((row) => row.code)
 }
@@ -58,9 +56,7 @@ export async function loadGrantedScopes(email: string): Promise<string[]> {
       eq(applicationScopes.id, roleApplicationScopes.applicationScopeId),
     )
     .innerJoin(applications, eq(applications.id, applicationScopes.applicationId))
-    .where(
-      and(eq(users.email, email), eq(users.isActive, true), eq(applications.isActive, true)),
-    )
+    .where(and(eq(users.email, email), eq(users.isActive, true), eq(applications.isActive, true)))
 
   return rows.map((row) => `${row.application}:${row.scope}`)
 }

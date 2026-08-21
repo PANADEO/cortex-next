@@ -11,11 +11,11 @@
 // realne, płatne wywołanie LLM, więc tylko ten, kto i tak może zmieniać
 // szablony, może je odpalać.
 
-import { NextResponse, type NextRequest } from "next/server"
-import { z } from "zod"
-import { listMyForbiddenPhrases } from "@cortex/service"
 import { ContentGuruServiceError } from "@/lib/content-guru/integration-client"
 import { runContentGeneration } from "@/lib/content-guru/run-generation"
+import { listMyForbiddenPhrases } from "@cortex/service"
+import { NextResponse, type NextRequest } from "next/server"
+import { z } from "zod"
 import { requireContentGuruManageTemplates } from "../../_lib/guard"
 
 export const runtime = "nodejs"
@@ -72,7 +72,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     if (error instanceof ContentGuruServiceError) {
       if (error.code === "model-not-allowed") {
-        return NextResponse.json({ error: "invalid-request", message: error.message }, { status: 400 })
+        return NextResponse.json(
+          { error: "invalid-request", message: error.message },
+          { status: 400 },
+        )
       }
       console.error("[content-guru] błąd testowej generacji szablonu:", error)
       return NextResponse.json({ error: "upstream-error", message: error.message }, { status: 502 })

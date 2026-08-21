@@ -19,7 +19,11 @@ import {
   DEFAULT_MIN_IMAGE_AREA_RATIO,
   MIN_IMAGE_AREA_RATIO_RANGE,
 } from "@/lib/ilustromat/presets"
-import { FRAME_LAYOUT_LABELS, LOGO_POSITION_LABELS, TEXT_ALIGN_LABELS } from "@/lib/ilustromat/types"
+import {
+  FRAME_LAYOUT_LABELS,
+  LOGO_POSITION_LABELS,
+  TEXT_ALIGN_LABELS,
+} from "@/lib/ilustromat/types"
 import { toastApiError } from "@cortex/api"
 import {
   Alert,
@@ -191,7 +195,9 @@ export default function TemplatesPage() {
           <Card>
             <CardContent className="flex flex-col gap-4 pt-6">
               <div className="flex items-center justify-between">
-                <Label>{editedId === NEW_TEMPLATE_ID ? "Nowy szablon" : `Edycja: ${editedId}`}</Label>
+                <Label>
+                  {editedId === NEW_TEMPLATE_ID ? "Nowy szablon" : `Edycja: ${editedId}`}
+                </Label>
                 <Button type="button" variant="outline" size="sm" onClick={startNew}>
                   <Plus className="mr-2 h-4 w-4" />
                   Nowy
@@ -284,7 +290,10 @@ export default function TemplatesPage() {
                 <RadioGroup
                   value={draft.logoPosition}
                   onValueChange={(logoPosition) =>
-                    setDraft({ ...draft, logoPosition: logoPosition as FrameTemplateDto["logoPosition"] })
+                    setDraft({
+                      ...draft,
+                      logoPosition: logoPosition as FrameTemplateDto["logoPosition"],
+                    })
                   }
                 >
                   {Object.entries(LOGO_POSITION_LABELS).map(([value, label]) => (
@@ -337,9 +346,7 @@ export default function TemplatesPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="template-radius">
-                  Zaokrąglenie rogów: {draft.cornerRadius} px
-                </Label>
+                <Label htmlFor="template-radius">Zaokrąglenie rogów: {draft.cornerRadius} px</Label>
                 <Slider
                   id="template-radius"
                   min={CORNER_RADIUS_RANGE[0]}
@@ -451,7 +458,12 @@ export default function TemplatesPage() {
                         )}
                       </div>
                       <div className="flex gap-2">
-                        <Button type="button" variant="ghost" size="sm" onClick={() => edit(template)}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => edit(template)}
+                        >
                           Edytuj
                         </Button>
                         <Button

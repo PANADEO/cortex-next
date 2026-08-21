@@ -1,5 +1,21 @@
 "use client"
 
+import { InvoiceSupervisorClientTypeBadge } from "@/components/invoice-supervisor/client-columns"
+import { InvoiceSupervisorClientEscalationSection } from "@/components/invoice-supervisor/client-escalation-section"
+import { InvoiceSupervisorClientFormDialog } from "@/components/invoice-supervisor/client-form-dialog"
+import {
+  useInvoiceSupervisorClient,
+  useInvoiceSupervisorClientExposure,
+  useInvoiceSupervisorInvoices,
+} from "@/lib/invoice-supervisor/hooks"
+import {
+  formatInvoiceSupervisorCurrency,
+  formatInvoiceSupervisorDate,
+  formatInvoiceSupervisorMultiCurrency,
+  INVOICE_SUPERVISOR_INVOICE_STATUS_COLORS,
+  INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS,
+  type InvoiceSupervisorInvoice,
+} from "@/lib/invoice-supervisor/types"
 import {
   Badge,
   Button,
@@ -20,26 +36,16 @@ import { AlertTriangle, ArrowLeft, Eye, Receipt, Wallet } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useMemo } from "react"
-import { InvoiceSupervisorClientTypeBadge } from "@/components/invoice-supervisor/client-columns"
-import { InvoiceSupervisorClientEscalationSection } from "@/components/invoice-supervisor/client-escalation-section"
-import { InvoiceSupervisorClientFormDialog } from "@/components/invoice-supervisor/client-form-dialog"
-import {
-  useInvoiceSupervisorClient,
-  useInvoiceSupervisorClientExposure,
-  useInvoiceSupervisorInvoices,
-} from "@/lib/invoice-supervisor/hooks"
-import {
-  formatInvoiceSupervisorCurrency,
-  formatInvoiceSupervisorMultiCurrency,
-  formatInvoiceSupervisorDate,
-  INVOICE_SUPERVISOR_INVOICE_STATUS_COLORS,
-  INVOICE_SUPERVISOR_INVOICE_STATUS_LABELS,
-  type InvoiceSupervisorInvoice,
-} from "@/lib/invoice-supervisor/types"
 
 // Mirrors the escalation section's definition of "open" — statuses that still represent
 // money owed, as opposed to paid/disputed which are settled or on hold.
-const OPEN_INVOICE_STATUSES = new Set(["pending", "upcoming", "due_today", "overdue", "partially_paid"])
+const OPEN_INVOICE_STATUSES = new Set([
+  "pending",
+  "upcoming",
+  "due_today",
+  "overdue",
+  "partially_paid",
+])
 
 function clientInvoiceColumns(): ColumnDef<InvoiceSupervisorInvoice, unknown>[] {
   return [
@@ -59,7 +65,8 @@ function clientInvoiceColumns(): ColumnDef<InvoiceSupervisorInvoice, unknown>[] 
       accessorKey: "amount",
       header: "Kwota",
       size: 140,
-      cell: ({ row }) => formatInvoiceSupervisorCurrency(row.original.amount, row.original.currency),
+      cell: ({ row }) =>
+        formatInvoiceSupervisorCurrency(row.original.amount, row.original.currency),
     },
     {
       accessorKey: "due_date",

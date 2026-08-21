@@ -28,9 +28,7 @@ function RootFallback({ error, resetErrorBoundary }: FallbackProps) {
           {chunk ? "A new version shipped" : "Something went wrong"}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {chunk
-            ? "Refresh to load the latest app bundle."
-            : formatMessage(error)}
+          {chunk ? "Refresh to load the latest app bundle." : formatMessage(error)}
         </p>
       </div>
       <div className="flex gap-2">
@@ -81,11 +79,7 @@ export function FeatureErrorBoundary({ children }: { children: ReactNode }) {
   return (
     <QueryErrorResetBoundary>
       {({ reset }) => (
-        <ErrorBoundary
-          FallbackComponent={FeatureFallback}
-          onReset={reset}
-          resetKeys={[pathname]}
-        >
+        <ErrorBoundary FallbackComponent={FeatureFallback} onReset={reset} resetKeys={[pathname]}>
           {children}
         </ErrorBoundary>
       )}

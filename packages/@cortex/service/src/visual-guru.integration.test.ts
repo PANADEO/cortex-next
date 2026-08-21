@@ -11,8 +11,8 @@
 //     packages/@cortex/service/src/visual-guru.integration.test.ts
 
 import { closeDb, generationVariants, generations, getDb } from "@cortex/db"
-import { randomUUID } from "node:crypto"
 import { eq } from "drizzle-orm"
+import { randomUUID } from "node:crypto"
 import { afterAll, beforeEach, describe, expect, it } from "vitest"
 import {
   createGeneration,

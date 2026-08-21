@@ -1,8 +1,8 @@
+import { builtinSkillsDir } from "@/lib/data-dir"
+import type { CoworkGovernanceConfig, CoworkProjectComposition } from "@cortex/types"
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { builtinSkillsDir } from "@/lib/data-dir"
-import type { CoworkGovernanceConfig, CoworkProjectComposition } from "@cortex/types"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 // Tylko typ — znika przy transpilacji, więc nie ładuje modułu przed
 // podstawieniem COWORK_DATA_DIR (patrz komentarz niżej).
