@@ -6,7 +6,7 @@
 // fire-and-forget). Właściwy postęp widać dopiero przez polling
 // GET /jobs/:id (route obok), zgodnie z architecture_rules.md §5.
 
-import { createBackendJob, DocumentParserBackendError } from "@/lib/document-parser/backend-client"
+import { createBackendJob } from "@/lib/document-parser/backend-client"
 import { validateDocumentFile } from "@/lib/document-parser/constraints"
 import {
   createQueuedJob,
@@ -40,22 +40,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const email = getRequestEmail(request.headers)
   if (!email) return NextResponse.json({ error: "forbidden" }, { status: 403 })
 
+  // Same KODY, bez napisów — jak przy walidacji pliku niżej: serwer nie zna
+  // języka użytkownika, więc zdanie powstaje na kliencie.
   let form: FormData
   try {
     form = await request.formData()
   } catch {
-    return NextResponse.json(
-      { error: "invalid-request", message: "Nieprawidłowe żądanie." },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: "invalid-request" }, { status: 400 })
   }
 
   const file = form.get("file")
   if (!(file instanceof File)) {
-    return NextResponse.json(
-      { error: "invalid-request", message: "Brak pliku w żądaniu." },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: "missing-file" }, { status: 400 })
   }
 
   // Walidacja typu/rozmiaru NIGDY nie ufa wyłącznie klientowi (klient
@@ -63,8 +59,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // źródło prawdy jest tu, po stronie serwera, patrz constraints.ts).
   const validation = validateDocumentFile({ name: file.name, size: file.size })
   if (!validation.ok) {
+    // Sam KOD, bez napisu: serwer nie zna języka użytkownika, a klient waliduje
+    // to samo przed submitem (D1) i to on pokazuje przetłumaczony komunikat.
     const status = validation.error === "file-too-large" ? 413 : 400
-    return NextResponse.json({ error: validation.error, message: validation.message }, { status })
+    return NextResponse.json({ error: validation.error }, { status })
   }
 
   // D4 krok 2: wiersz istnieje PRZED wywołaniem backendu — dispatch, który
@@ -82,16 +80,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const backendJob = await createBackendJob(file, email)
     await markJobProcessing(email, id, backendJob.jobId)
   } catch (error) {
-    const message =
-      error instanceof DocumentParserBackendError
-        ? error.message
-        : "Nie udało się połączyć z usługą przetwarzania dokumentów."
     console.error("[document-parser] błąd wysyłki zadania do backendu:", error)
+    // `errorMessage` idzie do BAZY, nie na ekran: JobOutcome renderuje wiersz
+    // z `errorCode` (features/document-parser/status.ts, errorMessageFor sięga
+    // po ten napis wyłącznie gdy kodu NIE MA), a kod jest tu ustawiony zawsze.
     await markJobError(email, id, {
       errorMessage: "Nie udało się przekazać dokumentu do usługi przetwarzania. Spróbuj ponownie.",
       errorCode: "conversion-failed",
     })
-    return NextResponse.json({ error: "upstream-error", message }, { status: 502 })
+    return NextResponse.json({ error: "upstream-error" }, { status: 502 })
   }
 
   // 202: przyjęte, przetwarzanie w toku — przeglądarka odpytuje dalej stan

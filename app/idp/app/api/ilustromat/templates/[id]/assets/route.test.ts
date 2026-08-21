@@ -9,6 +9,7 @@
 
 import { resolveFontLibraryEntry } from "@/lib/ilustromat/font-library"
 import { clearFontFileSupportMemo, supportsFontFiles } from "@/lib/ilustromat/font-verification"
+import plIlustromat from "@/locales/pl/ilustromat.json"
 import type * as CortexService from "@cortex/service"
 import { readFileSync } from "node:fs"
 import sharp from "sharp"
@@ -96,7 +97,14 @@ describe("POST /api/ilustromat/templates/[id]/assets — bramka renderu weryfika
     const response = await POST(upload("font-regular", unrenderableFont, "uszkodzony.ttf"), context)
 
     expect(response.status).toBe(400)
-    await expect(response.json()).resolves.toMatchObject({ error: "font-render-failed" })
+    // `toEqual` na PEŁNYM ciele, nie `toMatchObject`: brak `message` ma być
+    // dowiedziony. Zdanie diagnostyczne (metryki, nazwa rodziny) jest wpisane
+    // w kodzie po polsku i szło prosto na ekran — teraz idzie do logu, a na
+    // zewnątrz wychodzi KLUCZ, z którego klient złoży napis w swoim języku.
+    await expect(response.json()).resolves.toEqual({
+      error: "font-render-failed",
+      messageKey: "errors.fontRenderFailed",
+    })
     expect(service.saveTemplateAsset).not.toHaveBeenCalled()
   })
 
@@ -107,7 +115,13 @@ describe("POST /api/ilustromat/templates/[id]/assets — bramka renderu weryfika
     )
 
     expect(response.status).toBe(400)
-    await expect(response.json()).resolves.toMatchObject({ error: "invalid-asset" })
+    // `detail` to komunikat fontkita — po angielsku i zależny od wersji
+    // biblioteki, więc asercja pilnuje jego OBECNOŚCI, nie treści.
+    await expect(response.json()).resolves.toEqual({
+      error: "invalid-asset",
+      messageKey: "errors.fontUnparsable",
+      messageParams: { detail: expect.any(String) },
+    })
     expect(service.saveTemplateAsset).not.toHaveBeenCalled()
   })
 
@@ -139,8 +153,27 @@ describe("POST /api/ilustromat/templates/[id]/assets — bramka renderu weryfika
       )
     } else {
       expect(response.status).toBe(400)
-      await expect(response.json()).resolves.toMatchObject({ error: "font-not-applied" })
+      // Środowisko bez fontconfig: wina leży po stronie obrazu, nie pliku —
+      // stąd inny klucz niż przy uszkodzonym pliku.
+      await expect(response.json()).resolves.toEqual({
+        error: "font-not-applied",
+        messageKey: "errors.fontEnvironmentIgnoresFiles",
+      })
       expect(service.saveTemplateAsset).not.toHaveBeenCalled()
     }
+  })
+})
+
+/**
+ * Dwa klucze, których powyższe scenariusze nie dotykają: brak polskich znaków
+ * wymagałby fontu-fixture'a bez diakrytyków, a „render użył innego kroju"
+ * odpala się tylko w obrazie Z fontconfigiem. Literówka w którymkolwiek z nich
+ * byłaby NIEWIDOCZNA w runtime — klient spadłby na ogólny zapas „Nie udało się
+ * wgrać pliku" i konkret, dla którego te odpowiedzi w ogóle niosą klucz,
+ * cicho by zniknął.
+ */
+describe("klucze komunikatów istnieją w pliku źródłowym", () => {
+  it.each(["missingPolishGlyphs", "fontNotApplied"])("errors.%s", (key) => {
+    expect(typeof (plIlustromat.errors as Record<string, string>)[key]).toBe("string")
   })
 })

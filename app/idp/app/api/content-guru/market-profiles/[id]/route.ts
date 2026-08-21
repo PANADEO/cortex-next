@@ -30,10 +30,7 @@ export async function PUT(request: NextRequest, context: Context): Promise<NextR
 
   const parsed = marketProfileInputSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "invalid-request", message: parsed.error.issues[0]?.message },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: "invalid-request" }, { status: 400 })
   }
 
   const { id } = await context.params

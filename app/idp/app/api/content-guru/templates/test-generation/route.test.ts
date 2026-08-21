@@ -66,6 +66,11 @@ describe("POST /api/content-guru/templates/test-generation", () => {
   it("400 na zły request (brak treści szablonu)", async () => {
     const response = await POST(makeRequest({ ...VALID_BODY, content: "" }) as never)
     expect(response.status).toBe(400)
+    // `toEqual` na PEŁNYM ciele, nie sam status: brak `message` ma być
+    // dowiedziony, a nie domniemany. Zdanie Zoda jest techniczne i wpisane
+    // w kodzie w jednym języku — przepuszczone do ciała trafiało na ekran
+    // zamiast przetłumaczonego zapasu podanego przez wołającego.
+    expect(await response.json()).toEqual({ error: "invalid-request" })
     expect(generateContent).not.toHaveBeenCalled()
   })
 

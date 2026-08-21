@@ -153,14 +153,23 @@ describe("POST /api/content-guru/jobs — walidacja", () => {
     expect(processGenerationJob).not.toHaveBeenCalled()
   })
 
-  it("400: nieznany templateId, zero utworzonego joba", async () => {
+  // KLUCZ komunikatu, nie gotowe zdanie: serwer nie zna wybranego języka
+  // (wybór siedzi w localStorage przeglądarki), a ogólny zapas klienta
+  // („Nie udało się uruchomić generowania") nie powiedziałby, CZEGO brakuje.
+  // Te same trzy klucze oddaje generate/route.ts — asercja tutaj jest po to,
+  // żeby literówka w TEJ trasie nie chowała się za poprawnym bliźniakiem.
+  it("400: nieznany templateId -> klucz komunikatu, zero utworzonego joba", async () => {
     service.getTemplate.mockResolvedValueOnce(undefined)
     const response = await POST(makeRequest(VALID_BATCH_BODY) as never)
     expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({
+      error: "invalid-request",
+      messageKey: "generate.errors.templateMissing",
+    })
     expect(service.createGenerationJob).not.toHaveBeenCalled()
   })
 
-  it("400: nieznany clientProfileId, zero utworzonego joba", async () => {
+  it("400: nieznany clientProfileId -> klucz komunikatu, zero utworzonego joba", async () => {
     const response = await POST(
       makeRequest({
         ...VALID_BATCH_BODY,
@@ -168,6 +177,25 @@ describe("POST /api/content-guru/jobs — walidacja", () => {
       }) as never,
     )
     expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({
+      error: "invalid-request",
+      messageKey: "generate.errors.clientProfileMissing",
+    })
+    expect(service.createGenerationJob).not.toHaveBeenCalled()
+  })
+
+  it("400: nieznany marketProfileId -> klucz komunikatu, zero utworzonego joba", async () => {
+    const response = await POST(
+      makeRequest({
+        ...VALID_BATCH_BODY,
+        marketProfileId: "88888888-8888-8888-8888-888888888888",
+      }) as never,
+    )
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({
+      error: "invalid-request",
+      messageKey: "generate.errors.marketProfileMissing",
+    })
     expect(service.createGenerationJob).not.toHaveBeenCalled()
   })
 

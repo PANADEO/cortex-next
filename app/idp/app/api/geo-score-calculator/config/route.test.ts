@@ -115,8 +115,13 @@ describe("PUT /api/geo-score-calculator/config", () => {
     const body = await response.json()
 
     expect(response.status).toBe(400)
-    expect(body.error).toBe("invalid-request")
-    expect(body.message).toMatch(/100%/)
+    // `toEqual` na CAŁYM ciele, nie `toBe` na jednym polu: brak `message` ma
+    // być DOWIEDZIONY, a nie domniemany. Zdanie Zoda jest techniczne i
+    // wpisane w kodzie po angielsku/polsku — przepuszczone do ciała trafiało
+    // na ekran niezależnie od wybranego języka. Klient ma ten sam `superRefine`
+    // (features/geo-score-calculator/config-schema.ts) i blokuje submit, więc
+    // konkret „suma wag" nie ginie: powstaje na kliencie, w jego języku.
+    expect(body).toEqual({ error: "invalid-request" })
     expect(service.updateGeoScoreConfig).not.toHaveBeenCalled()
   })
 

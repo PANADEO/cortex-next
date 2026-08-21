@@ -73,29 +73,41 @@ describe("walidacja identyfikatora ze ścieżki", () => {
 })
 
 describe("ochrona przed samo-zablokowaniem", () => {
-  it("PATCH odrzucony przez serwis wraca jako 409 z komunikatem", async () => {
+  // `toEqual` na PEŁNYM ciele, nie `toBe` na jednym polu: konkret ma jechać
+  // KLUCZEM (klient zna język, serwer nie), więc brak `message` musi być tu
+  // dowiedziony — dopisane z powrotem ma ten test wywrócić.
+  it("PATCH odrzucony przez serwis wraca jako 409 z KLUCZEM zdania", async () => {
     updateApplication.mockRejectedValue(
-      new SelfLockoutError("Nie można dezaktywować aplikacji Konfiguracja Systemu"),
+      new SelfLockoutError(
+        "application-deactivate",
+        "Nie można dezaktywować aplikacji Konfiguracja Systemu",
+      ),
     )
 
     const response = await PATCH(
       makeRequest("PATCH", { ...VALID_BODY, isActive: false }) as never,
       contextFor(APPLICATION_ID),
     )
-    const body = (await response.json()) as { error: string; message: string }
 
     expect(response.status).toBe(409)
-    expect(body.error).toBe("self-lockout")
-    expect(body.message).toContain("Konfiguracja Systemu")
+    expect(await response.json()).toEqual({
+      error: "self-lockout",
+      messageKey: "errors.selfLockout.applicationDeactivate",
+    })
   })
 
   it("DELETE odrzucony przez serwis wraca jako 409", async () => {
-    deleteApplication.mockRejectedValue(new SelfLockoutError("Nie można usunąć"))
+    deleteApplication.mockRejectedValue(
+      new SelfLockoutError("application-delete", "Nie można usunąć"),
+    )
 
     const response = await DELETE(makeRequest("DELETE") as never, contextFor(APPLICATION_ID))
 
     expect(response.status).toBe(409)
-    expect((await response.json()).error).toBe("self-lockout")
+    expect(await response.json()).toEqual({
+      error: "self-lockout",
+      messageKey: "errors.selfLockout.applicationDelete",
+    })
   })
 })
 
@@ -118,6 +130,11 @@ describe("ścieżki podstawowe", () => {
     )
 
     expect(response.status).toBe(400)
+    // `toEqual` na PEŁNYM ciele, nie sam status: brak `message` ma być
+    // dowiedziony, a nie domniemany. Zdanie Zoda jest techniczne i wpisane
+    // w kodzie w jednym języku — przepuszczone do ciała trafiało na ekran
+    // zamiast przetłumaczonego zapasu podanego przez wołającego.
+    expect(await response.json()).toEqual({ error: "invalid-request" })
     expect(updateApplication).not.toHaveBeenCalled()
   })
 

@@ -13,6 +13,7 @@ import {
   FontVerificationError,
   supportsFontFiles,
   verifyFontRendering,
+  type FontVerificationCode,
   type FontVerificationInput,
 } from "@/lib/ilustromat/font-verification"
 import { inspectFont } from "@/lib/ilustromat/glyph-coverage"
@@ -27,6 +28,14 @@ export const runtime = "nodejs"
 const MAX_ASSET_BYTES = 5 * 1024 * 1024
 const ASSET_KINDS = ["font-regular", "font-bold", "logo"] as const
 type AssetKind = (typeof ASSET_KINDS)[number]
+
+/** Kod odmowy renderu weryfikacyjnego -> klucz zdania w przestrzeni
+ *  `ilustromat`. Rada dla użytkownika różni się: uszkodzony plik wgrywa się
+ *  ponownie, a nieużyty plik znaczy rozjazd nazwy rodziny. */
+const VERIFICATION_MESSAGE_KEYS: Record<FontVerificationCode, string> = {
+  "font-render-failed": "errors.fontRenderFailed",
+  "font-not-applied": "errors.fontNotApplied",
+}
 
 type Context = { params: Promise<{ id: string }> }
 
@@ -79,11 +88,14 @@ export async function POST(request: NextRequest, context: Context): Promise<Next
     if (inspection.missingPolishChars.length > 0) {
       // Odmowa, nie ostrzeżenie: font bez polskich znaków łamie twarde
       // wymaganie produktu ("nigdy nie ma krzywych polskich znaków").
+      // KLUCZ + parametry, nie gotowe zdanie: serwer nie zna języka
+      // użytkownika, a sam kod błędu nie powiedziałby, KTÓRYCH znaków brakuje.
       return NextResponse.json(
         {
           error: "missing-polish-glyphs",
           missing: inspection.missingPolishChars,
-          message: `Font nie zawiera wymaganych polskich znaków: ${inspection.missingPolishChars.join(" ")}`,
+          messageKey: "errors.missingPolishGlyphs",
+          messageParams: { chars: inspection.missingPolishChars.join(" ") },
         },
         { status: 400 },
       )
@@ -136,13 +148,14 @@ async function verifyUploadedFont(input: FontVerificationInput): Promise<NextRes
     // uszkodzony niezależnie od środowiska i zwalanie tego na fontconfig
     // wysłałoby użytkownika w złą stronę.
     const blameEnvironment = error.code === "font-not-applied" && !(await supportsFontFiles())
-    const message = blameEnvironment
-      ? "Środowisko renderujące ignoruje własne pliki fontów — nawet font z biblioteki " +
-        "nie jest w nim stosowany, więc szablon składałby się fontem zastępczym. " +
-        "Sprawdź pakiet fontconfig w obrazie aplikacji."
-      : error.message
+    const messageKey = blameEnvironment
+      ? "errors.fontEnvironmentIgnoresFiles"
+      : VERIFICATION_MESSAGE_KEYS[error.code]
 
+    // Pełna diagnostyka (metryki, nazwa rodziny, powód parsera) idzie do LOGU,
+    // a nie na ekran: to zdanie techniczne, wpisane w kodzie w jednym języku.
+    // Użytkownik dostaje KLUCZ, z którego klient złoży napis w swoim języku.
     console.error("[ilustromat] render weryfikacyjny odrzucił font:", error.code, error.message)
-    return NextResponse.json({ error: error.code, message }, { status: 400 })
+    return NextResponse.json({ error: error.code, messageKey }, { status: 400 })
   }
 }

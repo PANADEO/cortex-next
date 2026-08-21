@@ -81,6 +81,11 @@ describe("PUT /api/content-guru/templates/:id", () => {
   it("400 na zły request", async () => {
     const response = await PUT(makeRequest("PUT", { name: "" }) as never, ctx("1"))
     expect(response.status).toBe(400)
+    // `toEqual` na PEŁNYM ciele, nie sam status: brak `message` ma być
+    // dowiedziony, a nie domniemany. Zdanie Zoda jest techniczne i wpisane
+    // w kodzie w jednym języku — przepuszczone do ciała trafiało na ekran
+    // zamiast przetłumaczonego zapasu podanego przez wołającego.
+    expect(await response.json()).toEqual({ error: "invalid-request" })
     expect(service.updateTemplate).not.toHaveBeenCalled()
   })
 

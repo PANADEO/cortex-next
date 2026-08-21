@@ -48,10 +48,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const parsed = requestSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "invalid-request", message: parsed.error.issues[0]?.message },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: "invalid-request" }, { status: 400 })
   }
 
   const format = FORMAT_BY_KEY.get(parsed.data.formatKey)

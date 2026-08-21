@@ -292,16 +292,21 @@ describe("POST /api/content-guru/generate", () => {
     const response = await POST(makeRequest({ ...VALID_BODY, model: "nieznany/model" }) as never)
 
     expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: "model-not-allowed" })
     expect(service.saveArchiveEntry).not.toHaveBeenCalled()
   })
 
-  it("mapuje błąd upstreamu cortex-proxy na 502", async () => {
+  // `error.message` z adaptera integracyjnego jest diagnostyką do logu, nie
+  // zdaniem dla człowieka — przepuszczony do ciała odpowiedzi lądował na
+  // ekranie w jednym, zamrożonym języku.
+  it("mapuje błąd upstreamu cortex-proxy na 502 bez treści komunikatu adaptera", async () => {
     service.listMyForbiddenPhrases.mockResolvedValueOnce([])
     generateContent.mockRejectedValueOnce(new ContentGuruServiceError("boom", "upstream-error"))
 
     const response = await POST(makeRequest(VALID_BODY) as never)
 
     expect(response.status).toBe(502)
+    expect(await response.json()).toEqual({ error: "upstream-error" })
     expect(service.saveArchiveEntry).not.toHaveBeenCalled()
   })
 
@@ -326,6 +331,7 @@ describe("POST /api/content-guru/generate", () => {
     const CLIENT_PROFILE_ID = "22222222-2222-2222-2222-222222222222"
     const FOREIGN_CLIENT_PROFILE_ID = "99999999-9999-9999-9999-999999999992"
     const MARKET_PROFILE_ID = "33333333-3333-3333-3333-333333333333"
+    const FOREIGN_MARKET_PROFILE_ID = "99999999-9999-9999-9999-999999999993"
 
     it("templateId: treść szablonu trafia do system promptu, a contentType w archiwum to kategoria — nazwa szablonu (nadpisuje wolny tekst z requestu)", async () => {
       service.listMyForbiddenPhrases.mockResolvedValueOnce([])
@@ -361,14 +367,23 @@ describe("POST /api/content-guru/generate", () => {
       expect(json.content).toBe("Treść wygenerowana z szablonu.")
     })
 
-    it("templateId nieznany -> 400, zero wywołania LLM/zapisu archiwum", async () => {
+    // KLUCZ komunikatu, nie gotowe zdanie: serwer nie zna wybranego języka
+    // (wybór siedzi w localStorage przeglądarki), a ogólny zapas klienta nie
+    // powiedziałby, CZEGO brakuje. `message` w ciele odpowiedzi zamroziłoby
+    // polski dla wszystkich — stąd asercja, że go NIE MA.
+    it("templateId nieznany -> 400 z kluczem komunikatu, bez gotowego zdania, zero wywołania LLM/zapisu archiwum", async () => {
       service.getTemplate.mockResolvedValueOnce(undefined)
 
       const response = await POST(
         makeRequest({ ...VALID_BODY, templateId: MISSING_TEMPLATE_ID }) as never,
       )
+      const json = await response.json()
 
       expect(response.status).toBe(400)
+      expect(json).toEqual({
+        error: "invalid-request",
+        messageKey: "generate.errors.templateMissing",
+      })
       expect(generateContent).not.toHaveBeenCalled()
       expect(service.saveArchiveEntry).not.toHaveBeenCalled()
     })
@@ -439,14 +454,35 @@ describe("POST /api/content-guru/generate", () => {
       )
     })
 
-    it("clientProfileId cudzy/nieznajomy (getMyClientProfile zwraca undefined) -> 400, nigdy 404 (nie zdradza istnienia)", async () => {
+    it("clientProfileId cudzy/nieznajomy (getMyClientProfile zwraca undefined) -> 400 z kluczem komunikatu, nigdy 404 (nie zdradza istnienia)", async () => {
       service.getMyClientProfile.mockResolvedValueOnce(undefined)
 
       const response = await POST(
         makeRequest({ ...VALID_BODY, clientProfileId: FOREIGN_CLIENT_PROFILE_ID }) as never,
       )
+      const json = await response.json()
 
       expect(response.status).toBe(400)
+      expect(json).toEqual({
+        error: "invalid-request",
+        messageKey: "generate.errors.clientProfileMissing",
+      })
+      expect(generateContent).not.toHaveBeenCalled()
+    })
+
+    it("marketProfileId cudzy/nieznajomy -> 400 z kluczem komunikatu", async () => {
+      service.getMyMarketProfile.mockResolvedValueOnce(undefined)
+
+      const response = await POST(
+        makeRequest({ ...VALID_BODY, marketProfileId: FOREIGN_MARKET_PROFILE_ID }) as never,
+      )
+      const json = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(json).toEqual({
+        error: "invalid-request",
+        messageKey: "generate.errors.marketProfileMissing",
+      })
       expect(generateContent).not.toHaveBeenCalled()
     })
 

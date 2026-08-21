@@ -23,10 +23,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const parsed = filmInputSchema.safeParse(await request.json())
   if (!parsed.success) {
-    return NextResponse.json(
-      { message: parsed.error.issues[0]?.message ?? "Nieprawidłowe dane" },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: "invalid-request" }, { status: 400 })
   }
 
   const now = new Date().toISOString()

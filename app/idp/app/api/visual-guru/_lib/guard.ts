@@ -36,11 +36,17 @@ function denial(email: string | null): NextResponse {
     : NextResponse.json({ error: "missing-email" }, { status: 401 })
 }
 
-/** Błąd wywołania modelu przez cortex-proxy — upstream, nie my. */
+/**
+ * Błąd wywołania modelu przez cortex-proxy — upstream, nie my.
+ *
+ * Sam KOD, bez napisu, dokładnie jak w bliźniaczej bramce Ilustromatu: serwer
+ * nie zna języka użytkownika (wybór siedzi w localStorage przeglądarki), a
+ * `error.message` z adaptera jest diagnostyką do logu wyżej. Zdanie powstaje
+ * na kliencie — generator.errors.generateFailed.
+ */
 export function toUpstreamErrorResponse(error: unknown): NextResponse {
   console.error("[visual-guru] błąd cortex-proxy:", error)
-  const message = error instanceof Error ? error.message : "Błąd komunikacji z modelem"
-  return NextResponse.json({ error: "upstream-error", message }, { status: 502 })
+  return NextResponse.json({ error: "upstream-error" }, { status: 502 })
 }
 
 /** Błędy warstwy serwisowej/nieoczekiwane — 500, nie zdradzamy szczegółów. */

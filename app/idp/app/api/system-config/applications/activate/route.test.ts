@@ -47,16 +47,19 @@ beforeEach(() => {
 })
 
 describe("odmowa licencyjna", () => {
-  it("odrzucenie przez serwis wraca jako 403 z czytelnym komunikatem", async () => {
+  // `toEqual` na PEŁNYM ciele: zdanie dla admina powstaje na kliencie z klucza
+  // i parametru, a `error.message` (po polsku) zostaje diagnostyką do logu.
+  it("odrzucenie przez serwis wraca jako 403 z KLUCZEM zdania i kodem modułu", async () => {
     activateApplication.mockRejectedValue(new ModuleNotLicensedError("document-parser"))
 
     const response = await POST(makeRequest({ code: "document-parser" }) as never)
-    const body = (await response.json()) as { error: string; message: string }
 
     expect(response.status).toBe(403)
-    expect(body.error).toBe("module-not-licensed")
-    expect(body.message).toContain("document-parser")
-    expect(body.message).toContain("ENABLED_MODULES")
+    expect(await response.json()).toEqual({
+      error: "module-not-licensed",
+      messageKey: "errors.moduleNotLicensed",
+      messageParams: { code: "document-parser" },
+    })
   })
 
   // SEDNO: dokładnie to żądanie, którym dawało się obejść allowlistę —
@@ -101,7 +104,12 @@ describe("ścieżki podstawowe — odmowa licencyjna nie miesza się z resztą",
   it("niepoprawne ciało daje 400 przed dotknięciem serwisu", async () => {
     const response = await POST(makeRequest({ code: "ZŁY KOD" }) as never)
 
+    // `toEqual` na PEŁNYM ciele, nie sam status: brak `message` ma być
+    // dowiedziony, a nie domniemany. Zdanie Zoda jest techniczne i wpisane
+    // w kodzie w jednym języku — przepuszczone do ciała trafiało na ekran
+    // zamiast przetłumaczonego zapasu podanego przez wołającego.
     expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: "invalid-request" })
     expect(activateApplication).not.toHaveBeenCalled()
   })
 

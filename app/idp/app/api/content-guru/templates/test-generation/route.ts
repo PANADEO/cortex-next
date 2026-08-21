@@ -37,10 +37,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const parsed = requestSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "invalid-request", message: parsed.error.issues[0]?.message },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: "invalid-request" }, { status: 400 })
   }
   const { category, name, content, topic, model } = parsed.data
 
@@ -72,13 +69,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     if (error instanceof ContentGuruServiceError) {
       if (error.code === "model-not-allowed") {
-        return NextResponse.json(
-          { error: "invalid-request", message: error.message },
-          { status: 400 },
-        )
+        return NextResponse.json({ error: "model-not-allowed" }, { status: 400 })
       }
       console.error("[content-guru] błąd testowej generacji szablonu:", error)
-      return NextResponse.json({ error: "upstream-error", message: error.message }, { status: 502 })
+      return NextResponse.json({ error: "upstream-error" }, { status: 502 })
     }
     console.error("[content-guru] nieoczekiwany błąd testowej generacji szablonu:", error)
     return NextResponse.json({ error: "internal-error" }, { status: 500 })

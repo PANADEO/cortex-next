@@ -16,10 +16,7 @@ export async function PUT(request: NextRequest, context: RouteContext): Promise<
   const { id } = await context.params
   const parsed = filmInputSchema.safeParse(await request.json())
   if (!parsed.success) {
-    return NextResponse.json(
-      { message: parsed.error.issues[0]?.message ?? "Nieprawidłowe dane" },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: "invalid-request" }, { status: 400 })
   }
 
   const films = await store.listFilms()

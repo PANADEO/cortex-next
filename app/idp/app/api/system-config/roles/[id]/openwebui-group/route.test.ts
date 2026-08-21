@@ -207,7 +207,9 @@ describe("PUT — podepnij/odepnij", () => {
     expect(response.status).toBe(404)
   })
 
-  it("grupa trzymana przez inną rolę -> 409 z komunikatem nazywającym tamtą rolę, NIE 500", async () => {
+  // Kod kolidującej roli jedzie PARAMETREM klucza, nie w gotowym zdaniu —
+  // `toEqual` na pełnym ciele dowodzi, że `message` już z niego nie wychodzi.
+  it("grupa trzymana przez inną rolę -> 409 z kluczem nazywającym tamtą rolę, NIE 500", async () => {
     attachRoleGroup.mockRejectedValue(new OpenwebuiGroupAlreadyMappedError("konsultanci"))
 
     const response = await PUT(
@@ -216,9 +218,11 @@ describe("PUT — podepnij/odepnij", () => {
     )
 
     expect(response.status).toBe(409)
-    const body = (await response.json()) as { error: string; message: string }
-    expect(body.error).toBe("openwebui-group-already-mapped")
-    expect(body.message).toContain("konsultanci")
+    expect(await response.json()).toEqual({
+      error: "openwebui-group-already-mapped",
+      messageKey: "errors.openwebuiGroupAlreadyMapped",
+      messageParams: { role: "konsultanci" },
+    })
   })
 
   it("awaria HTTP OpenWebUI (OpenwebuiClientError) -> 502, bez rzucenia dalej", async () => {

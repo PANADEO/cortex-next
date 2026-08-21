@@ -21,10 +21,7 @@ export async function PATCH(request: NextRequest, context: RouteContext): Promis
 
   const parsed = applicationScopePatchSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "invalid-request", message: parsed.error.issues[0]?.message },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: "invalid-request" }, { status: 400 })
   }
 
   const { id, scopeId } = await context.params

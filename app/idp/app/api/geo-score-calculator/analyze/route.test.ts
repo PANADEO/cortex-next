@@ -176,6 +176,11 @@ describe("POST /api/geo-score-calculator/analyze", () => {
     const response = await POST(makeRequest({ text: "   " }))
 
     expect(response.status).toBe(400)
+    // `toEqual` na PEŁNYM ciele, nie sam status: brak `message` ma być
+    // dowiedziony, a nie domniemany. Zdanie Zoda jest techniczne i wpisane
+    // w kodzie w jednym języku — przepuszczone do ciała trafiało na ekran
+    // zamiast przetłumaczonego zapasu podanego przez wołającego.
+    expect(await response.json()).toEqual({ error: "invalid-request" })
     expectNoServiceCall()
   })
 
@@ -186,6 +191,7 @@ describe("POST /api/geo-score-calculator/analyze", () => {
     const response = await POST(makeRequest({ text: "a".repeat(40_001) }))
 
     expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: "invalid-request" })
     expectNoServiceCall()
   })
 

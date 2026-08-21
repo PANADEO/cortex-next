@@ -17,10 +17,7 @@ export async function PATCH(request: NextRequest, context: RouteContext): Promis
   // name/description, code pozostaje niezmienny po utworzeniu roli.
   const parsed = rolePatchSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "invalid-request", message: parsed.error.issues[0]?.message },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: "invalid-request" }, { status: 400 })
   }
 
   const { id } = await context.params

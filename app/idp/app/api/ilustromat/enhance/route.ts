@@ -32,14 +32,14 @@ const requestSchema = z
     avoid: z.array(z.string().max(2000)).max(20).optional(),
   })
   .refine((value) => isSupportedAssist(value.field, value.mode), {
-    message: "Nieobsługiwana kombinacja pola i trybu",
+    message: "unsupported-field-mode",
   })
   .refine(
     (value) =>
       value.mode === "propose"
         ? Boolean(value.context?.title?.trim())
         : Boolean(value.text?.trim()),
-    { message: "Brak tekstu wejściowego dla wybranego trybu" },
+    { message: "missing-input-text" },
   )
 
 const MAX_CHARS: Record<AssistField, number> = {
@@ -54,10 +54,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const parsed = requestSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "invalid-request", message: parsed.error.issues[0]?.message },
-      { status: 400 },
-    )
+    // Sam KOD, bez napisu: serwer nie zna języka użytkownika (wybór siedzi w
+    // localStorage przeglądarki), więc zdanie powstaje po stronie klienta.
+    // Napisy `message` w `refine` wyżej są kodami maszynowymi dla nas — nie
+    // wychodzą poza ten proces. UI i tak nie potrafi zbudować takiego
+    // żądania: oferuje wyłącznie obsługiwane kombinacje pola i trybu, a
+    // przyciski asysty są wyłączone przy pustym tekście.
+    return NextResponse.json({ error: "invalid-request" }, { status: 400 })
   }
 
   const baseUrl = process.env.CORTEX_PROXY_URL

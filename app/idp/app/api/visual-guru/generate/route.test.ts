@@ -178,6 +178,11 @@ describe("POST /api/visual-guru/generate — walidacja Zod", () => {
     const { POST } = await loadHandler()
     const response = await POST(makeRequest({ ...VALID_BODY, prompt: "" }))
     expect(response.status).toBe(400)
+    // `toEqual` na PEŁNYM ciele, nie sam status: brak `message` ma być
+    // dowiedziony, a nie domniemany. Zdanie Zoda jest techniczne i wpisane
+    // w kodzie w jednym języku — przepuszczone do ciała trafiało na ekran
+    // zamiast przetłumaczonego zapasu podanego przez wołającego.
+    expect(await response.json()).toEqual({ error: "invalid-request" })
   })
 
   it("400: za dużo obrazów referencyjnych (>3)", async () => {
@@ -188,6 +193,7 @@ describe("POST /api/visual-guru/generate — walidacja Zod", () => {
     const { POST } = await loadHandler()
     const response = await POST(makeRequest({ ...VALID_BODY, referenceImages }))
     expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: "invalid-request" })
     expect(callCortexProxyImage).not.toHaveBeenCalled()
   })
 
@@ -195,6 +201,7 @@ describe("POST /api/visual-guru/generate — walidacja Zod", () => {
     const { POST } = await loadHandler()
     const response = await POST(makeRequest({ ...VALID_BODY, variantCount: 3 }))
     expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: "invalid-request" })
   })
 
   it("400: obraz referencyjny bez poprawnego data URI", async () => {
@@ -203,6 +210,7 @@ describe("POST /api/visual-guru/generate — walidacja Zod", () => {
       makeRequest({ ...VALID_BODY, referenceImages: [{ dataUrl: "https://example.com/x.png" }] }),
     )
     expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: "invalid-request" })
   })
 
   it("akceptuje request bez pola referenceImages (domyślnie puste)", async () => {

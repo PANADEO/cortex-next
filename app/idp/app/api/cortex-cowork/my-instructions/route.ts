@@ -11,23 +11,32 @@ import { NextResponse } from "next/server"
 // Identity comes from the oauth2-proxy header - each user can only read and
 // write their own note.
 
+// Odpowiedzi błędu niosą KOD, nie zdanie: serwer nie zna języka użytkownika
+// (wybór siedzi w localStorage przeglądarki). Limit długości dodatkowo podaje
+// klucz komunikatu i jego parametr - wartość limitu zna wyłącznie serwer
+// (user-instructions.ts sięga po node:path, więc nie da się jej zaimportować
+// na kliencie), wzorem lib/document-parser/constraints.ts.
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const email = requestEmail(request)
-  if (!email) return NextResponse.json({ message: "Brak tożsamości użytkownika" }, { status: 401 })
+  if (!email) return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
   return NextResponse.json({ instructions: (await readUserInstructions(email)) ?? "" })
 }
 
 export async function PUT(request: NextRequest): Promise<NextResponse> {
   const email = requestEmail(request)
-  if (!email) return NextResponse.json({ message: "Brak tożsamości użytkownika" }, { status: 401 })
+  if (!email) return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
 
   const body = (await request.json().catch(() => null)) as { instructions?: unknown } | null
   if (!body || typeof body.instructions !== "string") {
-    return NextResponse.json({ message: "instructions (string) is required" }, { status: 400 })
+    return NextResponse.json({ error: "invalid-request" }, { status: 400 })
   }
   if (body.instructions.length > USER_INSTRUCTIONS_MAX_LENGTH) {
     return NextResponse.json(
-      { message: `Maksymalnie ${USER_INSTRUCTIONS_MAX_LENGTH} znaków` },
+      {
+        error: "instructions-too-long",
+        messageKey: "sidebar.instructionsTooLong",
+        messageParams: { max: USER_INSTRUCTIONS_MAX_LENGTH },
+      },
       { status: 400 },
     )
   }

@@ -57,17 +57,13 @@ const requestSchema = z
     if (data.mode === "batch" && data.templateIds.length !== 1) {
       ctx.addIssue({
         code: "custom",
-        message: "Tryb 'Kilka' wymaga dokładnie jednego wybranego szablonu.",
+        message: "batch-requires-single-template",
         path: ["templateIds"],
       })
     }
     const combinations = data.topics.length * data.templateIds.length
     if (combinations > MAX_COMBINATIONS) {
-      ctx.addIssue({
-        code: "custom",
-        message: `Zbyt wiele kombinacji (${combinations}) — limit to ${MAX_COMBINATIONS}. Zmniejsz liczbę tematów lub szablonów.`,
-        path: ["topics"],
-      })
+      ctx.addIssue({ code: "custom", message: "too-many-combinations", path: ["topics"] })
     }
   })
 
@@ -78,32 +74,33 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const parsed = requestSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "invalid-request", message: parsed.error.issues[0]?.message },
-      { status: 400 },
-    )
+    // Sam KOD, bez napisu: serwer nie zna języka użytkownika (wybór siedzi w
+    // localStorage przeglądarki), więc zdanie powstaje na kliencie. Napisy w
+    // `addIssue` wyżej są kodami maszynowymi dla nas i nie opuszczają procesu
+    // — ekran generowania i tak nie zbuduje takiego żądania: liczy kombinacje
+    // i wyłącza submit powyżej limitu, a tryb "Kilka" zawsze niesie jeden
+    // szablon.
+    return NextResponse.json({ error: "invalid-request" }, { status: 400 })
   }
   const { mode, topics, templateIds, targetAudience, additionalInfo, model } = parsed.data
 
   if (!isAllowedContentGuruModel(model)) {
-    return NextResponse.json(
-      {
-        error: "invalid-request",
-        message: `Model "${model}" nie jest na liście dozwolonych modeli.`,
-      },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: "model-not-allowed" }, { status: 400 })
   }
 
   try {
     const uniqueTemplateIds = Array.from(new Set(templateIds))
     const templateRows = await Promise.all(uniqueTemplateIds.map((id) => getTemplate(id)))
     const templateById = new Map<string, TemplateRow>()
+    // Trzy poniższe "nie istnieje" są realnie osiągalne (rekord skasowany w
+    // innej karcie), więc obok kodu leci KLUCZ komunikatu — ogólny zapas
+    // klienta nie powiedziałby, CZEGO brakuje. Napis powstaje na kliencie,
+    // wzorem lib/document-parser/constraints.ts.
     for (let i = 0; i < uniqueTemplateIds.length; i++) {
       const row = templateRows[i]
       if (!row) {
         return NextResponse.json(
-          { error: "invalid-request", message: "Jeden z wybranych szablonów nie istnieje." },
+          { error: "invalid-request", messageKey: "generate.errors.templateMissing" },
           { status: 400 },
         )
       }
@@ -116,7 +113,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       const profile = await getMyClientProfile(email, parsed.data.clientProfileId)
       if (!profile) {
         return NextResponse.json(
-          { error: "invalid-request", message: "Wybrany profil klienta nie istnieje." },
+          { error: "invalid-request", messageKey: "generate.errors.clientProfileMissing" },
           { status: 400 },
         )
       }
@@ -130,7 +127,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       const profile = await getMyMarketProfile(email, parsed.data.marketProfileId)
       if (!profile) {
         return NextResponse.json(
-          { error: "invalid-request", message: "Wybrany profil rynku nie istnieje." },
+          { error: "invalid-request", messageKey: "generate.errors.marketProfileMissing" },
           { status: 400 },
         )
       }

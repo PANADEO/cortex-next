@@ -44,10 +44,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 
   const parsed = instanceAppearanceInputSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "invalid-request", message: parsed.error.issues[0]?.message },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: "invalid-request" }, { status: 400 })
   }
 
   try {
