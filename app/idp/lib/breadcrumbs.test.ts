@@ -257,16 +257,16 @@ describe("useResolvedBreadcrumbs", () => {
 
 describe("nazwy kafelków w drugim języku", () => {
   const tiles = () => i18nInstance.getFixedT(null, "tiles")
+  const aiTools = (locale: string) => i18nInstance.getFixedT(locale, "ai-tools")
 
-  // Ta ścieżka omijała przestrzeń `tiles`: okruszek narzędzia AI brał
+  // Ta ścieżka omijała tłumaczenia w ogóle: okruszek narzędzia AI brał
   // `shortLabel` wprost z rejestru, więc w interfejsie angielskim pokazywał
   // polską nazwę. Nie miała pokrycia, bo cała reszta okruszków chodzi przez
   // klucze nawigacji i wyglądała poprawnie.
   it("okruszek narzędzia AI jest tłumaczony, a nie brany z rejestru", () => {
-    expect(breadcrumbsFromPath("/ai-tools/text-highlighter", (k) => k, tiles(), "en")).toEqual([
-      { label: "nav.hub", href: "/" },
-      { label: "Highlighter" },
-    ])
+    expect(
+      breadcrumbsFromPath("/ai-tools/text-highlighter", (k) => k, tiles(), "en", aiTools("en")),
+    ).toEqual([{ label: "nav.hub", href: "/" }, { label: "Highlighter" }])
   })
 
   it("korzeń okruszka bierze nazwę kafelka z tłumaczenia", () => {
@@ -274,13 +274,12 @@ describe("nazwy kafelków w drugim języku", () => {
     expect(root).toEqual({ label: "IDP Basic", href: "/" })
   })
 
-  // Odwrotna strona tej samej reguły: w języku źródłowym wygrywa wartość
-  // lokalna, żeby zmiana nazwy przez administratora nie znikała pod plikiem
-  // tłumaczeń.
-  it("w języku źródłowym zostaje nazwa z rejestru", () => {
-    expect(breadcrumbsFromPath("/ai-tools/text-highlighter", (k) => k, tiles(), "pl")).toEqual([
-      { label: "nav.hub", href: "/" },
-      { label: "Podświetlacz" },
-    ])
+  // Krótka nazwa NIE jest daną instancji, więc — inaczej niż nazwa kafelka —
+  // w języku źródłowym też idzie z pliku tłumaczeń, nie z rejestru. Rejestr
+  // zostaje wyłącznie zapasem na narzędzie bez wpisu.
+  it("w języku źródłowym krótka nazwa idzie z przestrzeni `ai-tools`", () => {
+    expect(
+      breadcrumbsFromPath("/ai-tools/text-highlighter", (k) => k, tiles(), "pl", aiTools("pl")),
+    ).toEqual([{ label: "nav.hub", href: "/" }, { label: "Podświetlacz" }])
   })
 })

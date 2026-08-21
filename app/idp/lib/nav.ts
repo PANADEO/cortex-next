@@ -34,7 +34,7 @@ import {
 import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { getVisibleAiTools } from "./ai-tools/registry"
-import { tileName } from "./i18n/tile-names"
+import { aiToolShortLabel } from "./i18n/ai-tool-names"
 
 /**
  * Pozycja menu bocznego w postaci, w jakiej stoi w kodzie: z KLUCZEM
@@ -800,9 +800,9 @@ export function useContentGuruNavSections(): TileMenuSection[] {
 
 export function useAiToolsNavSections(): TileMenuSection[] {
   const { t } = useTranslation("common")
-  // Nazwy narzędzi mają własną przestrzeń — w języku źródłowym wygrywa
-  // rejestr, w pozostałych tłumaczenie (`i18n/tile-names.ts`).
-  const { t: tTiles, i18n: instance } = useTranslation("tiles")
+  // Krótkie nazwy narzędzi stoją w przestrzeni SAMEGO kafelka, nie w `tiles`:
+  // nie są daną instancji, tylko skrótem prezentacyjnym (`i18n/ai-tool-names.ts`).
+  const { t: tAiTools } = useTranslation("ai-tools")
   const authorized = useAuthorizedApps()
 
   return useMemo(() => {
@@ -811,7 +811,7 @@ export function useAiToolsNavSections(): TileMenuSection[] {
       const items = acc[tool.category] ?? []
       items.push({
         id: tool.id,
-        label: tileName(tTiles, instance.language, tool.id, "shortLabel", tool.shortLabel),
+        label: aiToolShortLabel(tAiTools, tool.id, tool.shortLabel),
         icon: tool.icon,
         href: `/ai-tools/${tool.id}`,
       })
@@ -833,7 +833,7 @@ export function useAiToolsNavSections(): TileMenuSection[] {
         items,
       })),
     ]
-  }, [authorized.apps, t, tTiles, instance.language])
+  }, [authorized.apps, t, tAiTools])
 }
 
 export function useCortexConfigNavSections(): TileMenuSection[] {

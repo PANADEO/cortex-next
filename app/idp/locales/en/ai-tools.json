@@ -24,6 +24,16 @@
     "documents": "Documents",
     "assistants": "Assistants"
   },
+  "shortLabels": {
+    "text-highlighter": "Highlighter",
+    "text-transformer": "Transformer",
+    "text-analyzer": "Analyser",
+    "ai-summarizer": "Summarizer",
+    "linkedin-generator": "LinkedIn",
+    "presentation-generator": "Presentations",
+    "fakturomat": "Invoices",
+    "ai-daily-assistant": "Chatbot"
+  },
   "workspace": {
     "unknownTitle": "Unknown tool",
     "unknownBody": "This address does not match any AI Tools application.",

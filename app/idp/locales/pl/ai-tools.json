@@ -24,6 +24,16 @@
     "documents": "Dokumenty",
     "assistants": "Asystenci"
   },
+  "shortLabels": {
+    "text-highlighter": "Podświetlacz",
+    "text-transformer": "Transformator",
+    "text-analyzer": "Analizator",
+    "ai-summarizer": "Sumaryzator",
+    "linkedin-generator": "LinkedIn",
+    "presentation-generator": "Prezentacje",
+    "fakturomat": "Faktury",
+    "ai-daily-assistant": "Chatbot"
+  },
   "workspace": {
     "unknownTitle": "Nieznane narzędzie",
     "unknownBody": "Ten adres nie odpowiada żadnej aplikacji AI Tools.",
@@ -293,6 +303,14 @@
     "categories.content": "nagłówek sekcji na liście narzędzi; kategoria narzędzi tworzących treści marketingowe; maks. 16 zn.",
     "categories.documents": "nagłówek sekcji na liście narzędzi; kategoria narzędzi czytających dokumenty; maks. 16 zn.",
     "categories.assistants": "nagłówek sekcji na liście narzędzi; kategoria asystentów konwersacyjnych; maks. 16 zn.",
+    "shortLabels.text-highlighter": "etykieta; skrócona nazwa narzędzia w menu bocznym i w okruszku, pełna nazwa „Podświetlacz tekstu”; maks. 16 zn.",
+    "shortLabels.text-transformer": "etykieta; skrócona nazwa narzędzia w menu bocznym i w okruszku, pełna nazwa „Transformator tekstu”; maks. 16 zn.",
+    "shortLabels.text-analyzer": "etykieta; skrócona nazwa narzędzia w menu bocznym i w okruszku, pełna nazwa „Analizator tekstu”; maks. 16 zn.",
+    "shortLabels.ai-summarizer": "etykieta; skrócona nazwa narzędzia w menu bocznym i w okruszku, pełna nazwa „Sumaryzator”; maks. 16 zn.",
+    "shortLabels.linkedin-generator": "etykieta; skrócona nazwa narzędzia w menu bocznym i w okruszku, pełna nazwa „Generator LinkedIn”; nazwa własna, nie tłumaczyć; maks. 16 zn.",
+    "shortLabels.presentation-generator": "etykieta; skrócona nazwa narzędzia w menu bocznym i w okruszku, pełna nazwa „Generator prezentacji”; maks. 16 zn.",
+    "shortLabels.fakturomat": "etykieta; skrócona nazwa narzędzia w menu bocznym i w okruszku, pełna nazwa „Analizator faktur”; maks. 16 zn.",
+    "shortLabels.ai-daily-assistant": "etykieta; skrócona nazwa narzędzia w menu bocznym i w okruszku, pełna nazwa „Chatbot AI”; nazwa własna, nie tłumaczyć; maks. 16 zn.",
     "workspace.unknownTitle": "nagłówek stanu pustego; slug w adresie nie pasuje do żadnego narzędzia; maks. 26 zn.",
     "workspace.unknownBody": "opis stanu pustego; adres nie odpowiada żadnej aplikacji AI Tools",
     "workspace.backToApps": "przycisk w nagłówku narzędzia; wraca na hub aplikacji; maks. 14 zn.",

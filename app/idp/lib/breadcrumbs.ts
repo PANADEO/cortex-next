@@ -4,6 +4,7 @@ import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { getAiToolDefinition } from "./ai-tools/registry"
 import i18n from "./i18n"
+import { aiToolShortLabel } from "./i18n/ai-tool-names"
 import { tileName } from "./i18n/tile-names"
 import type { NavSection } from "./nav"
 import {
@@ -75,6 +76,10 @@ const translateWithSharedInstance: Translate = (key) => i18n.t(key, { ns: "commo
 /** Nazwy kafelków mają WŁASNĄ przestrzeń — patrz `i18n/tile-names.ts`. */
 const sharedTileTranslator = () => i18n.getFixedT(null, "tiles")
 
+/** Krótka nazwa narzędzia AI stoi w przestrzeni kafelka AI Tools, nie
+ *  w `tiles` — patrz `i18n/ai-tool-names.ts`. */
+const sharedAiToolsTranslator = () => i18n.getFixedT(null, "ai-tools")
+
 const PACKAGE_DETAIL_PATTERN = /^\/idp\/packages\/([^/]+)\/?$/
 
 function navLabelKeysForSegment(segment: string): Record<string, string> {
@@ -117,6 +122,7 @@ export function breadcrumbsFromPath(
   t: Translate = translateWithSharedInstance,
   tTiles: TFunction<"tiles"> = sharedTileTranslator(),
   locale: string = i18n.language,
+  tAiTools: TFunction<"ai-tools"> = sharedAiToolsTranslator(),
 ): BreadcrumbEntry[] {
   const segments = pathname.split("/").filter(Boolean)
   if (segments.length === 0) return [{ label: "IDP" }]
@@ -124,8 +130,7 @@ export function breadcrumbsFromPath(
   if (segments[0] === "ai-tools") {
     const hub = { label: t("nav.hub"), href: "/" }
     const tool = getAiToolDefinition(segments[1] ?? "")
-    if (tool)
-      return [hub, { label: tileName(tTiles, locale, tool.id, "shortLabel", tool.shortLabel) }]
+    if (tool) return [hub, { label: aiToolShortLabel(tAiTools, tool.id, tool.shortLabel) }]
     return [hub]
   }
 
@@ -151,16 +156,17 @@ export function breadcrumbsFromPath(
 export function useResolvedBreadcrumbs(pathname: string): BreadcrumbEntry[] {
   const { t } = useTranslation("common")
   const { t: tTiles, i18n: instance } = useTranslation("tiles")
+  const { t: tAiTools } = useTranslation("ai-tools")
   const match = pathname.match(PACKAGE_DETAIL_PATTERN)
   const packageId = match?.[1] ?? ""
   const pkg = usePackage(packageId, { polling: false })
   const displayName = pkg.data ? (pkg.data.package_name ?? pkg.data.file_name) : undefined
 
   return useMemo(() => {
-    const trail = breadcrumbsFromPath(pathname, t, tTiles, instance.language)
+    const trail = breadcrumbsFromPath(pathname, t, tTiles, instance.language, tAiTools)
     if (!packageId || !displayName) return trail
     const last = trail[trail.length - 1]
     if (!last || last.label !== packageId) return trail
     return [...trail.slice(0, -1), { ...last, label: displayName }]
-  }, [pathname, packageId, displayName, t, tTiles, instance.language])
+  }, [pathname, packageId, displayName, t, tTiles, tAiTools, instance.language])
 }
