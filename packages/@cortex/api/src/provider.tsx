@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { useEffect, useState, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { setForbiddenHandler } from "./client"
 import { queryKeys } from "./query-keys"
@@ -13,6 +14,7 @@ interface ApiProviderProps {
 }
 
 export function ApiProvider({ children, devtools = false }: ApiProviderProps) {
+  const { t } = useTranslation("ui")
   const [client] = useState(
     () =>
       new QueryClient({
@@ -30,10 +32,12 @@ export function ApiProvider({ children, devtools = false }: ApiProviderProps) {
     setForbiddenHandler(() => {
       client.invalidateQueries({ queryKey: queryKeys.user() })
       client.invalidateQueries({ queryKey: queryKeys.authorizedApps() })
-      toast.error("Brak uprawnień")
+      toast.error(t("api.forbidden"))
     })
     return () => setForbiddenHandler(null)
-  }, [client])
+    // `t` w zależnościach: po zmianie języka handler musi zostać przerejestrowany,
+    // inaczej toast 403 zostałby na języku sprzed przełączenia.
+  }, [client, t])
 
   return (
     <QueryClientProvider client={client}>

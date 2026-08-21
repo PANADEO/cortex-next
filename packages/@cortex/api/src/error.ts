@@ -1,4 +1,5 @@
 import type { ErrorCode, ErrorResponse } from "@cortex/types"
+import i18next from "i18next"
 
 export class ApiError extends Error {
   readonly status: number
@@ -12,6 +13,17 @@ export class ApiError extends Error {
    * body wasn't valid JSON.
    */
   readonly details: unknown
+  /**
+   * Zdanie dla UŻYTKOWNIKA, jeśli serwer je przysłał — inaczej `null`.
+   *
+   * Rozdzielone od `message` celowo. `message` musi być zawsze niepuste, bo
+   * idzie do logów i do `Error.stack`, więc spada na `response.statusText`.
+   * Ale `statusText` to fraza protokołu HTTP: po HTTP/1.1 Node wypełnia ją
+   * zawsze, jest po angielsku i nie da się jej przetłumaczyć. Dopóki obie
+   * role dzieliły jedno pole, trasa zwracająca sam KOD błędu pokazywała
+   * użytkownikowi „Bad Request".
+   */
+  readonly userMessage: string | null
 
   constructor(params: {
     status: number
@@ -19,6 +31,7 @@ export class ApiError extends Error {
     errorCode?: ErrorCode | null
     variables?: Record<string, string>
     details?: unknown
+    userMessage?: string | null
   }) {
     super(params.message)
     this.name = "ApiError"
@@ -26,6 +39,7 @@ export class ApiError extends Error {
     this.errorCode = params.errorCode ?? null
     this.variables = params.variables ?? {}
     this.details = params.details
+    this.userMessage = params.userMessage ?? null
   }
 
   static async fromResponse(response: Response): Promise<ApiError> {
@@ -43,26 +57,36 @@ export class ApiError extends Error {
       errorCode: errorResponse?.error_code ?? null,
       variables: errorResponse?.variables ?? {},
       details: body ?? undefined,
+      userMessage: errorResponse?.message ?? null,
     })
   }
 }
 
-const ERROR_MESSAGES: Record<ErrorCode, string> = {
-  PACKAGE_DUPLICATE: "This package has already been imported.",
-  PACKAGE_NOT_FOUND: "Package not found.",
-  FILE_NOT_FOUND: "Source file not found.",
-  INVALID_PACKAGE_FILE: "Package file is invalid or corrupted.",
-  TRANSITION_NOT_ALLOWED: "This action is not allowed in the current state.",
-  RESULT_NOT_FOUND: "Result not available yet.",
-  ENTITY_NOT_FOUND: "Entity not found.",
-  CSV_EXPORT_VALIDATION_FAILED:
-    "CSV export failed validation. Fix the highlighted issues and retry.",
-  PERMISSION_DENIED: "You do not have permission to perform this action.",
-  EMAIL_DELIVERY_NOT_CONFIGURED: "Email delivery is not configured.",
-  EMAIL_DELIVERY_FAILED: "Email delivery failed.",
+/** Kody błędów trzymają KLUCZ z przestrzeni `common`, nie gotowe zdanie:
+ *  katalog jest stałą modułu, więc napis zamroziłby się na języku startowym. */
+const ERROR_MESSAGE_KEYS: Record<ErrorCode, string> = {
+  PACKAGE_DUPLICATE: "errors.packageDuplicate",
+  PACKAGE_NOT_FOUND: "errors.packageNotFound",
+  FILE_NOT_FOUND: "errors.fileNotFound",
+  INVALID_PACKAGE_FILE: "errors.invalidPackageFile",
+  TRANSITION_NOT_ALLOWED: "errors.transitionNotAllowed",
+  RESULT_NOT_FOUND: "errors.resultNotFound",
+  ENTITY_NOT_FOUND: "errors.entityNotFound",
+  CSV_EXPORT_VALIDATION_FAILED: "errors.csvExportValidationFailed",
+  PERMISSION_DENIED: "errors.permissionDenied",
+  EMAIL_DELIVERY_NOT_CONFIGURED: "errors.emailDeliveryNotConfigured",
+  EMAIL_DELIVERY_FAILED: "errors.emailDeliveryFailed",
 }
 
-export function errorCodeToMessage(code: ErrorCode | null, fallback = "Unexpected error"): string {
-  if (!code) return fallback
-  return ERROR_MESSAGES[code] ?? fallback
+/** Napis w języku wybranym w tej chwili. Ten pakiet zna WYŁĄCZNIE bibliotekę
+ *  i nazwę przestrzeni — nigdy aplikacji; instancję stawia host. */
+export function translateErrorKey(key: string, fallback: string): string {
+  return i18next.t(key, { ns: "common", defaultValue: fallback })
+}
+
+export function errorCodeToMessage(code: ErrorCode | null, fallback?: string): string {
+  const generic = fallback ?? translateErrorKey("errors.generic", "Something went wrong")
+  if (!code) return generic
+  const key = ERROR_MESSAGE_KEYS[code]
+  return key ? translateErrorKey(key, generic) : generic
 }

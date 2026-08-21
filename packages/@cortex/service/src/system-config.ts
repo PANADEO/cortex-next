@@ -438,9 +438,7 @@ export async function deleteRole(
     if (!existing) return false
 
     if (existing.isSystem) {
-      throw new SystemRoleProtectedError(
-        `Nie można usunąć roli systemowej "${existing.name}" — role systemowe są chronione przed usunięciem.`,
-      )
+      throw new SystemRoleProtectedError(existing.name)
     }
 
     await assertModuleStaysReachable(tx, { direction: "role-deleted", roleId: id })
@@ -1055,20 +1053,51 @@ export class UnknownApplicationScopeError extends Error {
   }
 }
 
+/**
+ * Powód odmowy jako POLE, nie zdanie do sparsowania.
+ *
+ * Dziewięć wariantów samo-zablokowania to dziewięć różnych rad dla admina
+ * („odznaczyłeś sobie ostatnią rolę" to co innego niż „ten wiersz opisuje sam
+ * moduł administracyjny"), więc bramka musi je rozróżnić, żeby wybrać klucz
+ * zdania. Cztery pierwsze opisują pola SAMEGO wiersza `system-config`
+ * (assertKeepsModuleReachable), pięć kolejnych to kierunki zmiany
+ * osiągalności modułu (ModuleAccessChange.direction niżej).
+ */
+export type SelfLockoutReason =
+  | "application-delete"
+  | "application-code"
+  | "application-deactivate"
+  | "application-target"
+  | "application-roles"
+  | "user-roles"
+  | "role-applications"
+  | "user-active"
+  | "role-deleted"
+
 /** Próba odcięcia sobie dostępu do modułu, z którego właśnie się korzysta. */
 export class SelfLockoutError extends Error {
-  constructor(message: string) {
+  readonly reason: SelfLockoutReason
+
+  constructor(reason: SelfLockoutReason, message: string) {
     super(message)
     this.name = "SelfLockoutError"
+    this.reason = reason
   }
 }
 
 /** Próba usunięcia roli systemowej (np. `admin`) — chroniona niezależnie od
- *  tego, ilu aktywnych użytkowników akurat ją trzyma. */
+ *  tego, ilu aktywnych użytkowników akurat ją trzyma. Nazwa roli jest POLEM,
+ *  bo bramka musi ją wstawić do zdania w języku użytkownika, a wyłuskiwanie
+ *  jej z `message` byłoby parsowaniem własnego napisu. */
 export class SystemRoleProtectedError extends Error {
-  constructor(message: string) {
-    super(message)
+  readonly roleName: string
+
+  constructor(roleName: string) {
+    super(
+      `Nie można usunąć roli systemowej "${roleName}" — role systemowe są chronione przed usunięciem.`,
+    )
     this.name = "SystemRoleProtectedError"
+    this.roleName = roleName
   }
 }
 
@@ -1088,10 +1117,15 @@ export class NativeCreationNotAllowedError extends Error {
 /** Próba zmiany `route`/`code`/`kind` na już istniejącym wierszu
  *  `kind='native'` przez `updateApplication()` — patrz
  *  assertNativeApplicationImmutable. */
+export type NativeApplicationImmutableReason = "kind-to-native" | "identity-locked"
+
 export class NativeApplicationImmutableError extends Error {
-  constructor(message: string) {
+  readonly reason: NativeApplicationImmutableReason
+
+  constructor(reason: NativeApplicationImmutableReason, message: string) {
     super(message)
     this.name = "NativeApplicationImmutableError"
+    this.reason = reason
   }
 }
 
@@ -1101,6 +1135,10 @@ export class NativeApplicationImmutableError extends Error {
  *  "instancja nie ma licencji na ten moduł" (kod istnieje, żądanie poprawne,
  *  odmowa autoryzacji -> 403) od "takiego kodu nie ma w rejestrze" (-> 404). */
 export class ModuleNotLicensedError extends Error {
+  /** Kod modułu, którego dotyczy odmowa — bramka wstawia go do zdania w
+   *  języku użytkownika, więc nie może go szukać w `message`. */
+  readonly code: string
+
   constructor(code: string) {
     super(
       `Moduł "${code}" nie jest objęty licencją tej instancji — nie ma go na liście ` +
@@ -1108,6 +1146,7 @@ export class ModuleNotLicensedError extends Error {
         "platformy, żeby rozszerzyć zakres licencji.",
     )
     this.name = "ModuleNotLicensedError"
+    this.code = code
   }
 }
 
@@ -1130,18 +1169,21 @@ function assertKeepsModuleReachable(
 
   if (input === null) {
     throw new SelfLockoutError(
+      "application-delete",
       "Nie można usunąć aplikacji Konfiguracja Systemu — to jej uprawnieniem chroniony jest ten moduł.",
     )
   }
 
   if (input.code !== existing.code) {
     throw new SelfLockoutError(
+      "application-code",
       "Nie można zmienić kodu aplikacji Konfiguracja Systemu — po tym kodzie pyta bramka tego modułu.",
     )
   }
 
   if (input.isActive === false) {
     throw new SelfLockoutError(
+      "application-deactivate",
       "Nie można dezaktywować aplikacji Konfiguracja Systemu — odcięłoby to dostęp do tego modułu wszystkim administratorom.",
     )
   }
@@ -1156,6 +1198,7 @@ function assertKeepsModuleReachable(
   const next = toApplicationValues(input, existing.sortOrder)
   if (next.kind !== existing.kind || next.route !== existing.route || next.url !== existing.url) {
     throw new SelfLockoutError(
+      "application-target",
       "Nie można zmienić typu ani adresu aplikacji Konfiguracja Systemu — ten wiersz opisuje sam moduł administracyjny, a podmiana go na adres zewnętrzny wyprowadzałaby administratorów poza tę aplikację.",
     )
   }
@@ -1199,6 +1242,7 @@ function assertNativeApplicationImmutable(existing: ApplicationRow, input: Appli
   if (existing.kind !== "native") {
     if (next.kind === "native") {
       throw new NativeApplicationImmutableError(
+        "kind-to-native",
         'Nie można ustawić kind="native" przez edycję (PATCH) — kafelek natywny powstaje wyłącznie ' +
           "przez aktywację zarejestrowanego manifestu, nie przez zmianę typu na istniejącym wierszu.",
       )
@@ -1208,6 +1252,7 @@ function assertNativeApplicationImmutable(existing: ApplicationRow, input: Appli
 
   if (next.code !== existing.code || next.kind !== existing.kind || next.route !== existing.route) {
     throw new NativeApplicationImmutableError(
+      "identity-locked",
       "Nie można zmienić kodu, typu ani ścieżki aktywowanego kafelka natywnego — route/code/kind ustala wyłącznie aktywacja zarejestrowanego manifestu.",
     )
   }
@@ -1289,7 +1334,7 @@ async function assertModuleStaysReachable(
   if (await hasActiveHolder(tx, grantsAfter, holderOverride)) return
   if (!(await hasActiveHolder(tx, grantsNow, null))) return
 
-  throw new SelfLockoutError(lockoutMessage(change))
+  throw new SelfLockoutError(change.direction, lockoutMessage(change))
 }
 
 /** Role z dostępem do modułu PO zapisie — każdy kierunek rusza inną oś. */

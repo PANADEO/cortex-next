@@ -57,9 +57,14 @@ export const frameTemplateInputSchema = z
 export type FrameTemplateInput = z.infer<typeof frameTemplateInputSchema>
 
 export class UnknownTemplateError extends Error {
+  /** Identyfikator szablonu — pole STRUKTURALNE dla kontrolera, który buduje
+   *  z niego `messageParams`; `message` zostaje diagnostyką do logu. */
+  readonly templateId: string
+
   constructor(templateId: string) {
     super(`Nie ma szablonu o id ${templateId}`)
     this.name = "UnknownTemplateError"
+    this.templateId = templateId
   }
 }
 
