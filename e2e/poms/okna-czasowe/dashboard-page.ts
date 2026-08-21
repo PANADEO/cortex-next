@@ -17,7 +17,7 @@ export class OknaCzasoweDashboardPage extends BasePage {
 
   constructor(page: Page) {
     super(page)
-    this.heading = page.getByRole("heading", { level: 1, name: "Okna czasowe — Dashboard" })
+    this.heading = page.getByRole("heading", { level: 1, name: "Dashboard", exact: true })
     this.accessDeniedShell = page.getByRole("heading", { level: 1, name: "Brak dostępu", exact: true })
     this.scanButton = page.getByRole("button", { name: "Skanuj teraz" })
     this.emptyState = page.getByText("Brak filmów w bazie")

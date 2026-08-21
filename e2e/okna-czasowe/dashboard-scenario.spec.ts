@@ -96,7 +96,7 @@ test.describe("Okna czasowe — dashboard", () => {
     // ceny. Bez tej asercji test przechodziłby też, gdyby wszystkie wiersze
     // renderowały się jednakowo.
     const unavailable = dashboard.filmRow(OKNA_UNAVAILABLE_FILM)
-    await expect(unavailable).toContainText("Brak")
+    await expect(unavailable).toContainText("Niedostępny")
     await expect(unavailable).not.toContainText("RENT")
   })
 

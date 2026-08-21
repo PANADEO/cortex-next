@@ -31,7 +31,7 @@ export class IlustromatGenerationPage extends BasePage {
   }
 
   get emptyState(): Locator {
-    return this.page.getByText("Brak wygenerowanych kafelków")
+    return this.page.getByText("Brak wygenerowanych grafik")
   }
 
   get downloadButton(): Locator {
@@ -47,7 +47,7 @@ export class IlustromatGenerationPage extends BasePage {
   }
 
   get selectedPreview(): Locator {
-    return this.page.getByRole("img", { name: "Wybrany kafelek" })
+    return this.page.getByRole("img", { name: "Wybrana grafika" })
   }
 
   /** `domcontentloaded`, nie domyślne `load`: powłoka odpytuje endpointy

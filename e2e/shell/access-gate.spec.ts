@@ -36,7 +36,7 @@ test.describe.configure({ timeout: 300_000 })
 const GRANT_ONLY_CODES = new Set(["intrastat-cn-editor", "intrastat-config-editor"])
 
 const DENIED_HEADING = "Brak dostępu"
-const ERROR_HEADING = "Brak uprawnień"
+const ERROR_HEADING = "Nie udało się sprawdzić uprawnień"
 
 /** Nazwa projektu task-chat podstawianego zamiast governance store. */
 const COWORK_TILE_LABEL = "Projekt E2E Cowork"
