@@ -1,5 +1,9 @@
 {
-  "language": { "label": "Język", "pl": "Polski", "en": "English" },
+  "language": {
+    "label": "Język",
+    "pl": "Polski",
+    "en": "English"
+  },
   "footer": {
     "version": "Wersja",
     "time": "Czas",
@@ -17,5 +21,30 @@
     "close": "Zamknij",
     "retry": "Spróbuj ponownie"
   },
-  "state": { "loading": "Wczytywanie…", "empty": "Brak danych", "error": "Wystąpił błąd" }
+  "state": {
+    "loading": "Wczytywanie…",
+    "empty": "Brak danych",
+    "error": "Wystąpił błąd"
+  },
+  "_ctx": {
+    "language.label": "etykieta a11y; ukryta, opisuje listę wyboru języka w stopce",
+    "language.pl": "nazwa języka na liście; ZAWSZE endonim — nie tłumaczyć",
+    "language.en": "nazwa języka na liście; ZAWSZE endonim — nie tłumaczyć",
+    "footer.version": "etykieta w pasku diagnostycznym; przed numerem wersji; maks. 12 zn.",
+    "footer.time": "etykieta w pasku diagnostycznym; przed zegarem; maks. 10 zn.",
+    "footer.resolution": "etykieta w pasku diagnostycznym; przed rozdzielczością ekranu; maks. 14 zn.",
+    "footer.online": "etykieta w pasku diagnostycznym; przed Tak/Nie; maks. 10 zn.",
+    "footer.yes": "wartość w pasku diagnostycznym; odpowiedź na Online; maks. 6 zn.",
+    "footer.no": "wartość w pasku diagnostycznym; odpowiedź na Online; maks. 6 zn.",
+    "actions.cancel": "przycisk; zamyka okno bez zapisu; maks. 12 zn.",
+    "actions.save": "przycisk; zapisuje zmiany w formularzu; maks. 12 zn.",
+    "actions.create": "przycisk; zakłada nowy rekord; maks. 12 zn.",
+    "actions.delete": "przycisk; operacja NIEODWRACALNA; maks. 12 zn.",
+    "actions.edit": "przycisk; otwiera formularz edycji; maks. 12 zn.",
+    "actions.close": "przycisk; zamyka panel lub okno; maks. 12 zn.",
+    "actions.retry": "przycisk; ponawia nieudaną operację; maks. 18 zn.",
+    "state.loading": "stan pośredni; widoczny w miejscu treści, gdy trwa pobieranie",
+    "state.empty": "stan pusty; lista bez rekordów, NIE błąd",
+    "state.error": "stan błędu; ogólny komunikat, gdy nie znamy przyczyny"
+  }
 }

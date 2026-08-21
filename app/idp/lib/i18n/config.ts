@@ -1,8 +1,36 @@
+import enAiTools from "@/locales/en/ai-tools.json"
 import enCommon from "@/locales/en/common.json"
+import enContentGuru from "@/locales/en/content-guru.json"
+import enCortexConfig from "@/locales/en/cortex-config.json"
+import enCortexCowork from "@/locales/en/cortex-cowork.json"
+import enDocumentParser from "@/locales/en/document-parser.json"
+import enGeoScoreCalculator from "@/locales/en/geo-score-calculator.json"
+import enIdp from "@/locales/en/idp.json"
+import enIlustromat from "@/locales/en/ilustromat.json"
+import enInvoiceSupervisor from "@/locales/en/invoice-supervisor.json"
+import enMisc from "@/locales/en/misc.json"
+import enOknaCzasowe from "@/locales/en/okna-czasowe.json"
 import enShell from "@/locales/en/shell.json"
+import enSystemConfig from "@/locales/en/system-config.json"
 import enTiles from "@/locales/en/tiles.json"
+import enTokenUsage from "@/locales/en/token-usage.json"
+import enVisualGuru from "@/locales/en/visual-guru.json"
+import plAiTools from "@/locales/pl/ai-tools.json"
 import plCommon from "@/locales/pl/common.json"
+import plContentGuru from "@/locales/pl/content-guru.json"
+import plCortexConfig from "@/locales/pl/cortex-config.json"
+import plCortexCowork from "@/locales/pl/cortex-cowork.json"
+import plDocumentParser from "@/locales/pl/document-parser.json"
+import plGeoScoreCalculator from "@/locales/pl/geo-score-calculator.json"
+import plIdp from "@/locales/pl/idp.json"
+import plIlustromat from "@/locales/pl/ilustromat.json"
+import plInvoiceSupervisor from "@/locales/pl/invoice-supervisor.json"
+import plMisc from "@/locales/pl/misc.json"
+import plOknaCzasowe from "@/locales/pl/okna-czasowe.json"
 import plShell from "@/locales/pl/shell.json"
+import plSystemConfig from "@/locales/pl/system-config.json"
+import plTokenUsage from "@/locales/pl/token-usage.json"
+import plVisualGuru from "@/locales/pl/visual-guru.json"
 
 /**
  * Języki interfejsu. `pl` jest źródłowy — to w nim pisze się nowe napisy,
@@ -49,8 +77,43 @@ export function isLocale(value: unknown): value is Locale {
  * kilkadziesiąt kilobajtów w bundlu — przy dwóch językach akceptowalna.
  */
 export const resources = {
-  pl: { common: plCommon, shell: plShell },
-  en: { common: enCommon, shell: enShell, tiles: enTiles },
+  pl: {
+    common: plCommon,
+    shell: plShell,
+    "system-config": plSystemConfig,
+    "ai-tools": plAiTools,
+    "invoice-supervisor": plInvoiceSupervisor,
+    "cortex-config": plCortexConfig,
+    "cortex-cowork": plCortexCowork,
+    "content-guru": plContentGuru,
+    "document-parser": plDocumentParser,
+    "geo-score-calculator": plGeoScoreCalculator,
+    "visual-guru": plVisualGuru,
+    "token-usage": plTokenUsage,
+    ilustromat: plIlustromat,
+    "okna-czasowe": plOknaCzasowe,
+    idp: plIdp,
+    misc: plMisc,
+  },
+  en: {
+    common: enCommon,
+    shell: enShell,
+    tiles: enTiles,
+    "system-config": enSystemConfig,
+    "ai-tools": enAiTools,
+    "invoice-supervisor": enInvoiceSupervisor,
+    "cortex-config": enCortexConfig,
+    "cortex-cowork": enCortexCowork,
+    "content-guru": enContentGuru,
+    "document-parser": enDocumentParser,
+    "geo-score-calculator": enGeoScoreCalculator,
+    "visual-guru": enVisualGuru,
+    "token-usage": enTokenUsage,
+    ilustromat: enIlustromat,
+    "okna-czasowe": enOknaCzasowe,
+    idp: enIdp,
+    misc: enMisc,
+  },
 } as const
 
 export const DEFAULT_NS = "common"

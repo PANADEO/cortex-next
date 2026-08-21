@@ -27,5 +27,30 @@
     "featurePipeline": "Pipeline AI dla powtarzalnych operacji",
     "authInterrupted": "Logowanie przerwane",
     "continue": "Kontynuuj"
+  },
+  "_ctx": {
+    "gate.checking": "stan pośredni; trwa sprawdzanie uprawnień do kafelka",
+    "gate.deniedTitle": "tytuł ekranu odmowy; wariant zwięzły; maks. 20 zn.",
+    "gate.deniedHeading": "nagłówek ekranu odmowy; nad opisem; maks. 20 zn.",
+    "gate.deniedBody": "opis odmowy; kieruje użytkownika do administratora instancji",
+    "gate.retry": "przycisk na ekranie odmowy; ponawia sprawdzenie uprawnień",
+    "gate.signOut": "przycisk na ekranie odmowy; wylogowuje przez oauth2-proxy",
+    "hub.loading": "stan pośredni; trwa pobieranie katalogu kafelków z bazy",
+    "hub.loadFailedTitle": "tytuł błędu; nie udało się pobrać katalogu kafelków",
+    "hub.loadFailedBody": "opis błędu; sugeruje odświeżenie i sprawdzenie bazy; tekst dla ADMINA, nie dla klienta",
+    "hub.subtitle": "podtytuł nad siatką kafelków; zdanie zachęty, nie polecenie",
+    "hub.byDepartment": "etykieta zakładki; grupowanie kafelków po dziale firmy; maks. 16 zn.",
+    "hub.grouping": "etykieta a11y; ukryta, opisuje przełącznik sposobu grupowania",
+    "hub.noResults": "stan pusty po filtrowaniu; podpowiada zmianę zapytania",
+    "hub.clearFilters": "przycisk; kasuje aktywne filtry siatki; maks. 18 zn.",
+    "landing.tagline": "hasło na ekranie logowania; animowane słowo po słowie, ton marketingowy",
+    "landing.intro": "akapit na ekranie logowania; rozwija hasło; ton marketingowy",
+    "landing.featureExtraction": "punkt listy atutów na ekranie logowania; maks. 48 zn.",
+    "landing.featurePipeline": "punkt listy atutów na ekranie logowania; maks. 48 zn.",
+    "landing.featureSecurity": "punkt listy atutów na ekranie logowania; maks. 48 zn.",
+    "landing.signIn": "nagłówek karty logowania; maks. 16 zn.",
+    "landing.signInHint": "podtytuł karty logowania; pod nagłówkiem",
+    "landing.authInterrupted": "tytuł alertu; logowanie przerwane błędem z oauth2-proxy",
+    "landing.continue": "przycisk główny; rozpoczyna logowanie przez SSO; maks. 14 zn."
   }
 }
