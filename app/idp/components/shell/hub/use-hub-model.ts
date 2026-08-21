@@ -12,6 +12,7 @@ import {
 } from "@/lib/tiles"
 import { useAuthorizedApps, useHubTiles } from "@cortex/api"
 import { useDeferredValue, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { hubApplicationsToTiles } from "./hub-tile"
 import type { ActiveCategory, CategoryTab, HeroView, HubModel } from "./types"
 
@@ -58,15 +59,19 @@ export function useHubModel(tileHrefOverrides?: TileHrefOverrides | undefined): 
   // dany kafelek nadal rozstrzyga wyłącznie canAccessTile() niżej — ten hook
   // nie ma i nie może mieć logiki dostępu.
   const hub = useHubTiles()
+  // Tłumaczenie katalogu idzie przestrzenią `tiles`, kluczowaną KODEM
+  // aplikacji — patrz `hub-tile.ts`. Hook musi tu być, bo `t` zmienia
+  // tożsamość przy zmianie języka i to ono przelicza `useMemo` niżej.
+  const { t: tTiles } = useTranslation("tiles")
 
   const tiles = useMemo(() => {
-    const mapped = hubApplicationsToTiles(hub.tiles)
+    const mapped = hubApplicationsToTiles(hub.tiles, tTiles)
     if (!tileHrefOverrides) return mapped
     return mapped.map((tile) => {
       const href = tileHrefOverrides[tile.id]
       return href ? { ...tile, href } : tile
     })
-  }, [hub.tiles, tileHrefOverrides])
+  }, [hub.tiles, tileHrefOverrides, tTiles])
 
   // Kafelki code-backed filtruje grant z `applications` (własny Postgres, przez
   // /api/me/access) przez JEDNO miejsce z regułą dostępu — canAccessTile()

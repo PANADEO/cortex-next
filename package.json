@@ -57,6 +57,7 @@
     "docx-preview": "^0.3.7",
     "fontkit": "^2.0.4",
     "framer-motion": "^11.11.0",
+    "i18next": "^26.4.0",
     "lucide-react": "^0.454.0",
     "next": "^15.4.6",
     "pdfjs-dist": "~3.11",
@@ -64,6 +65,7 @@
     "react-dom": "^18.3.1",
     "react-error-boundary": "^6.1.1",
     "react-hook-form": "^7.53.0",
+    "react-i18next": "^17.0.12",
     "react-markdown": "10.1.0",
     "react-resizable-panels": "^2.1.7",
     "remark-gfm": "4.0.1",
@@ -75,13 +77,12 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
-    "turbo": "^2.3.0",
-    "@turbo/gen": "^2.3.0",
     "@ladle/react": "^4.1.2",
     "@playwright/test": "^1.48.0",
     "@testing-library/jest-dom": "^6.7.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
+    "@turbo/gen": "^2.3.0",
     "@types/fontkit": "^2.0.9",
     "@types/node": "^22.15.29",
     "@types/react": "^18.3.23",
@@ -101,6 +102,7 @@
     "prettier-plugin-tailwindcss": "^0.6.8",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
+    "turbo": "^2.3.0",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   },

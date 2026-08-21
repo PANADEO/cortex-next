@@ -2,7 +2,10 @@
 
 import { cva } from "class-variance-authority"
 import { Globe } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { useEffect, useState } from "react"
+import { LOCALES, type Locale } from "@/lib/i18n/config"
+import { useLocaleStore } from "@/lib/i18n/locale-store"
 import { usePreset } from "@/lib/presets/preset-store"
 import pkg from "../../../../package.json"
 import { SHELL_VERSION, stripLeadingV } from "./version-label"
@@ -82,6 +85,9 @@ const footText = cva(
 export function ShellFooter() {
   const diag = useDiagnostics()
   const variant = usePreset().variants.shell
+  const { t } = useTranslation("common")
+  const locale = useLocaleStore((s) => s.locale)
+  const setLocale = useLocaleStore((s) => s.setLocale)
   // Stylowanie tokenami, NIE klasą zakresowaną do `.cortex-home` (D5: powłoka
   // zostaje na warstwie 1). Ta stopka renderuje się w DWÓCH miejscach — pod
   // hubem i w `landing-hero.tsx`, gdzie `.cortex-home` nie istnieje — więc
@@ -92,14 +98,35 @@ export function ShellFooter() {
       <div className={footText({ variant })}>
         <div>Cortex360 © {new Date().getFullYear()}</div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
-          <span>Wersja: {APP_VERSION}</span>
-          <span>Czas: {diag?.time ?? "—"}</span>
-          <span>Rozdzielczość: {diag?.resolution ?? "—"}</span>
+          <span>{t("footer.version")}: {APP_VERSION}</span>
+          <span>{t("footer.time")}: {diag?.time ?? "—"}</span>
+          <span>{t("footer.resolution")}: {diag?.resolution ?? "—"}</span>
+          {/* Przełącznik języka stoi W STOPCE, bo tak prosił Cezary i tak było
+              w `cortex-box-prototype` — na dole ekranu kafelków. Natywny
+              `<select>`, nie `Select` z Radiksa: ta stopka renderuje się także
+              na ekranie logowania, gdzie nie ma dostawców portalowych, a
+              element ma 13 pikseli wysokości i jedno zadanie. */}
           <span className="flex items-center gap-1.5">
             <Globe size={13} aria-hidden="true" />
-            Polski
+            <label htmlFor="locale" className="sr-only">
+              {t("language.label")}
+            </label>
+            <select
+              id="locale"
+              value={locale}
+              onChange={(event) => setLocale(event.target.value as Locale)}
+              className="cursor-pointer border-none bg-transparent text-[11px] text-inherit outline-none focus-visible:underline"
+            >
+              {LOCALES.map((value) => (
+                <option key={value} value={value}>
+                  {t(`language.${value}`)}
+                </option>
+              ))}
+            </select>
           </span>
-          <span>Online: {diag ? (diag.online ? "Tak" : "Nie") : "—"}</span>
+          <span>
+            {t("footer.online")}: {diag ? (diag.online ? t("footer.yes") : t("footer.no")) : "—"}
+          </span>
         </div>
       </div>
     </footer>

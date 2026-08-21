@@ -1,0 +1,13 @@
+{
+  "language": { "label": "Język", "pl": "Polski", "en": "English" },
+  "footer": {
+    "version": "Wersja",
+    "time": "Czas",
+    "resolution": "Rozdzielczość",
+    "online": "Online",
+    "yes": "Tak",
+    "no": "Nie"
+  },
+  "actions": { "cancel": "Anuluj", "save": "Zapisz", "create": "Utwórz", "delete": "Usuń", "edit": "Edytuj", "close": "Zamknij", "retry": "Spróbuj ponownie" },
+  "state": { "loading": "Wczytywanie…", "empty": "Brak danych", "error": "Wystąpił błąd" }
+}

@@ -1,0 +1,94 @@
+{
+  "ai-daily-assistant": {
+    "label": "AI Chatbot",
+    "description": "General-purpose assistant"
+  },
+  "ai-summarizer": {
+    "label": "Summarizer",
+    "description": "Condenses long texts into a summary"
+  },
+  "content-guru": {
+    "label": "Content Creator",
+    "description": "Generates marketing and editorial content"
+  },
+  "cortex-config": {
+    "label": "Cortex Config",
+    "description": "Platform governance — agent projects, roles and skill groups"
+  },
+  "document-parser": {
+    "label": "Document Parser",
+    "description": "Extracts structured content from PDF, Office and image files"
+  },
+  "fakturomat": {
+    "label": "Invoice Analyser",
+    "description": "Extracts data from invoices and summarises them"
+  },
+  "geo-score-calculator": {
+    "label": "GEO Score Calculator",
+    "description": "Scores press texts for generative-engine optimisation"
+  },
+  "idp": {
+    "label": "IDP",
+    "description": "Processing and data extraction from commercial documents"
+  },
+  "idp-basic": {
+    "label": "IDP Basic",
+    "description": "Simplified document processing in a separate pipeline"
+  },
+  "ilustromat": {
+    "label": "Ilustromat",
+    "description": "Generates branded graphics for LinkedIn posts from templates"
+  },
+  "intrastat": {
+    "label": "Intrastat",
+    "description": "Prepares ICA/ICS import spreadsheets from invoices"
+  },
+  "invoice-supervisor": {
+    "label": "Invoice Supervisor",
+    "description": "Tracks invoice due dates and generates AI reminders"
+  },
+  "linkedin-generator": {
+    "label": "LinkedIn Generator",
+    "description": "Creates LinkedIn posts"
+  },
+  "okna-czasowe": {
+    "label": "Release Windows",
+    "description": "Tracks film availability on Rakuten TV PL"
+  },
+  "presentation-generator": {
+    "label": "Presentation Generator",
+    "description": "Builds a presentation outline from a description"
+  },
+  "sp-client": {
+    "label": "Store-Pit Client Zone",
+    "description": "Client view — their shipments and the amount due"
+  },
+  "sp-console": {
+    "label": "Store-Pit Re-Rating",
+    "description": "Recalculates carrier invoices into per-client settlements"
+  },
+  "system-config": {
+    "label": "System Configuration",
+    "description": "Users, roles, permissions and instance applications"
+  },
+  "text-analyzer": {
+    "label": "Text Analyser",
+    "description": "Analyses content, tone and structure of a text"
+  },
+  "text-highlighter": {
+    "label": "Text Highlighter",
+    "description": "Marks key passages in a text"
+  },
+  "text-transformer": {
+    "label": "Text Transformer",
+    "description": "Rewrites text in a chosen style"
+  },
+  "token-usage": {
+    "label": "Token Reporting",
+    "description": "AI token usage by user, model and tool"
+  },
+  "visual-guru": {
+    "label": "Visual Guru",
+    "description": "Generates AI images from a free-form prompt and a reference image"
+  }
+}

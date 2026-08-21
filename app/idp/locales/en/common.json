@@ -1,0 +1,13 @@
+{
+  "language": { "label": "Language", "pl": "Polski", "en": "English" },
+  "footer": {
+    "version": "Version",
+    "time": "Time",
+    "resolution": "Resolution",
+    "online": "Online",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "actions": { "cancel": "Cancel", "save": "Save", "create": "Create", "delete": "Delete", "edit": "Edit", "close": "Close", "retry": "Try again" },
+  "state": { "loading": "Loading…", "empty": "No data", "error": "Something went wrong" }
+}

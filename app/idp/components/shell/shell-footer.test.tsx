@@ -99,3 +99,29 @@ describe("ShellFooter — wariant powłoki", () => {
     expect(inner?.className).toContain("text-sidebar-foreground")
   })
 })
+
+describe("ShellFooter — przełącznik języka", () => {
+  /**
+   * Cezary prosił o przełącznik NA DOLE ekranu kafelków, jak w
+   * `cortex-box-prototype`. Slot z globusem istniał tu wcześniej, ale napis
+   * „Polski" był statyczny — czyli wyglądał na przełącznik, nie będąc nim.
+   */
+  it("renderuje wybór języka z oboma językami", async () => {
+    const { ShellFooter } = await import("./shell-footer")
+    const { container } = render(createElement(ShellFooter))
+
+    const select = container.querySelector<HTMLSelectElement>("#locale")
+    expect(select).not.toBeNull()
+    expect(Array.from(select?.options ?? []).map((option) => option.value)).toEqual(["pl", "en"])
+  })
+
+  it("napisy stopki idą przez tłumaczenie, nie z literałów", async () => {
+    const { ShellFooter } = await import("./shell-footer")
+    const { container } = render(createElement(ShellFooter))
+
+    // `pl` jest językiem źródłowym, więc widoczny tekst ma zostać polski —
+    // dowodem, że klucz się rozwiązał, a nie że napis został zaszyty.
+    expect(container.textContent).toContain("Wersja:")
+    expect(container.textContent).not.toContain("footer.version")
+  })
+})

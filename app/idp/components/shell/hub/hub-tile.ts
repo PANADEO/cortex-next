@@ -2,6 +2,7 @@ import { resolveTileColor } from "@/features/system-config/colors"
 import { resolveApplicationIcon } from "@/features/system-config/icons"
 import type { Tile, TileCategoryDepartment, TileCategoryFunctional } from "@/lib/tiles"
 import type { HubTile } from "@cortex/api"
+import type { TFunction } from "i18next"
 
 /**
  * `GET /api/hub/tiles` row -> `Tile` (kształt bez zmian, Krok 3,
@@ -25,13 +26,31 @@ import type { HubTile } from "@cortex/api"
  * `Tile.external` to i tak tylko boolean (otwórz w nowej karcie / nie), bez
  * trzeciej opcji na "osadzony".
  */
-export function hubApplicationToTile(row: HubTile): Tile {
+/**
+ * Tłumaczenie nazwy i opisu kafelka.
+ *
+ * Katalog huba idzie Z BAZY (`applications.name/description`), więc żadna
+ * biblioteka i18n go nie obejmuje — to dane instancji, nie napisy w kodzie.
+ * Klucz to KOD aplikacji, nie nazwa: dzięki temu tłumaczenie przeżywa zmianę
+ * nazwy w panelu administratora.
+ *
+ * Brak klucza = wartość z bazy, czyli polska. Świadome i widoczne: kafelek
+ * założony przez admina nie ma skąd mieć tłumaczenia, a klient ma zobaczyć
+ * niedokończone tłumaczenie, nie surowy klucz (D2 projektu i18n).
+ */
+function translated(t: TFunction<"tiles">, code: string, field: "label" | "description", fallback: string): string {
+  const key = `${code}.${field}`
+  const value = t(key, { defaultValue: "" })
+  return value || fallback
+}
+
+export function hubApplicationToTile(row: HubTile, t: TFunction<"tiles">): Tile {
   const { iconBg, iconFg } = resolveTileColor(row.color)
 
   return {
     id: row.code,
-    label: row.name,
-    description: row.description ?? "",
+    label: translated(t, row.code, "label", row.name),
+    description: translated(t, row.code, "description", row.description ?? ""),
     // Niezmiennik kształtu w bazie (`applications_kind_shape`) gwarantuje
     // route dla native i url dla pozostałych — fallback tylko dla typów.
     href: (row.kind === "native" ? row.route : row.url) ?? "#",
@@ -45,6 +64,6 @@ export function hubApplicationToTile(row: HubTile): Tile {
   }
 }
 
-export function hubApplicationsToTiles(rows: readonly HubTile[]): Tile[] {
-  return rows.map(hubApplicationToTile)
+export function hubApplicationsToTiles(rows: readonly HubTile[], t: TFunction<"tiles">): Tile[] {
+  return rows.map((row) => hubApplicationToTile(row, t))
 }
