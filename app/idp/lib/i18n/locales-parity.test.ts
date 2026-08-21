@@ -29,12 +29,28 @@ function load(locale: string, namespace: string): unknown {
   return JSON.parse(readFileSync(path.join(localesDir, locale, namespace), "utf8"))
 }
 
+/**
+ * `tiles` NIE MA odpowiednika w języku źródłowym i to jest zamierzone:
+ * nazwy kafelków po polsku żyją w bazie i należą do administratora, więc
+ * plik w repo by je przykrywał (patrz `hub-tile.ts`). Parzystość liczymy
+ * więc po przestrzeniach ŹRÓDŁOWYCH, a nadmiar w `en` dopuszczamy wyłącznie
+ * dla tej jednej, wymienionej z nazwy.
+ */
+const TRANSLATION_ONLY_NAMESPACES = ["tiles.json"]
+
 const namespaces = readdirSync(path.join(localesDir, "pl")).filter((file) => file.endsWith(".json"))
 
 describe("przestrzenie tłumaczeń", () => {
   it("każda przestrzeń z `pl` ma odpowiednik w `en`", () => {
     const en = readdirSync(path.join(localesDir, "en")).filter((file) => file.endsWith(".json"))
-    expect(en.sort()).toEqual(namespaces.sort())
+    expect(en.filter((file) => !TRANSLATION_ONLY_NAMESPACES.includes(file)).sort()).toEqual(
+      namespaces.sort(),
+    )
+  })
+
+  it("przestrzenie wyłącznie tłumaczeniowe faktycznie istnieją w `en`", () => {
+    const en = readdirSync(path.join(localesDir, "en"))
+    for (const file of TRANSLATION_ONLY_NAMESPACES) expect(en).toContain(file)
   })
 
   it.each(namespaces)("%s ma identyczny zestaw kluczy w obu językach", (namespace) => {

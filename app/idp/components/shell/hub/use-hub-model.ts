@@ -13,6 +13,7 @@ import {
 import { useAuthorizedApps, useHubTiles } from "@cortex/api"
 import { useDeferredValue, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { useLocaleStore } from "@/lib/i18n/locale-store"
 import { hubApplicationsToTiles } from "./hub-tile"
 import type { ActiveCategory, CategoryTab, HeroView, HubModel } from "./types"
 
@@ -63,15 +64,16 @@ export function useHubModel(tileHrefOverrides?: TileHrefOverrides | undefined): 
   // aplikacji — patrz `hub-tile.ts`. Hook musi tu być, bo `t` zmienia
   // tożsamość przy zmianie języka i to ono przelicza `useMemo` niżej.
   const { t: tTiles } = useTranslation("tiles")
+  const locale = useLocaleStore((s) => s.locale)
 
   const tiles = useMemo(() => {
-    const mapped = hubApplicationsToTiles(hub.tiles, tTiles)
+    const mapped = hubApplicationsToTiles(hub.tiles, tTiles, locale)
     if (!tileHrefOverrides) return mapped
     return mapped.map((tile) => {
       const href = tileHrefOverrides[tile.id]
       return href ? { ...tile, href } : tile
     })
-  }, [hub.tiles, tileHrefOverrides, tTiles])
+  }, [hub.tiles, tileHrefOverrides, tTiles, locale])
 
   // Kafelki code-backed filtruje grant z `applications` (własny Postgres, przez
   // /api/me/access) przez JEDNO miejsce z regułą dostępu — canAccessTile()
