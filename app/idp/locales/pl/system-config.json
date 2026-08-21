@@ -231,7 +231,10 @@
       "showOnHubLabel": "Widoczna na stronie głównej (hub)",
       "showOnHubHint": "Osobny przełącznik od „Aplikacja aktywna”: „aktywna” decyduje o uprawnieniu, ten przełącznik wyłącznie o tym, czy kafelek renderuje się na hubie. Wyłączenie nie odbiera nikomu dostępu — tylko chowa kartę.",
       "nextStepNative": "Pozostałe pola i uprawnienia ról ustawisz na stronie szczegółów, zaraz po aktywacji.",
-      "nextStepExternal": "Pozostałe pola i uprawnienia ról ustawisz na stronie szczegółów, zaraz po utworzeniu."
+      "nextStepExternal": "Pozostałe pola i uprawnienia ról ustawisz na stronie szczegółów, zaraz po utworzeniu.",
+      "baseValueHint": "Edytujesz wartość bazową ({{language}}). Pozostałe języki ustawisz przyciskiem „Tłumaczenia”.",
+      "translationHint": "Edytujesz tłumaczenie ({{language}}). Puste pole kasuje tłumaczenie — kafelek wraca do wartości bazowej.",
+      "createBaseValueHint": "Zapisuje się jako wartość bazowa, niezależnie od języka interfejsu. Tłumaczenia ustawisz w szczegółach, po utworzeniu."
     },
     "detail": {
       "fallbackTitle": "Aplikacja",
@@ -275,6 +278,15 @@
         "scopesSaveFailed": "Nie udało się zapisać zakresów",
         "deleteFailed": "Nie udało się usunąć aplikacji"
       }
+    },
+    "translations": {
+      "openLabel": "Tłumaczenia",
+      "title": "Tłumaczenia",
+      "intro": "Nazwa i opis w każdym języku interfejsu. Zmiany zapisuje przycisk „Zapisz dane” w sekcji Podstawowe dane.",
+      "baseValueTag": "wartość bazowa",
+      "translationTag": "tłumaczenie",
+      "clearHint": "Puste pole kasuje tłumaczenie — kafelek wraca wtedy do wartości bazowej.",
+      "close": "Gotowe"
     }
   },
   "openwebui": {
@@ -595,6 +607,16 @@
     "errors.moduleNotLicensed": "komunikat błędu; instancja nie ma licencji na ten moduł; {{code}} to kod modułu, nazwy ENABLED_MODULES NIE tłumaczyć",
     "errors.openwebuiGroupAlreadyMapped": "komunikat błędu; wybrana grupa OpenWebUI stoi już za inną rolą; {{role}} to kod roli, NIE tłumaczyć",
     "errors.nativeImmutable.kindToNative": "komunikat błędu; odmowa zamiany istniejącej aplikacji na kafelek natywny przez edycję",
-    "errors.nativeImmutable.identityLocked": "komunikat błędu; odmowa zmiany kodu/typu/ścieżki aktywowanego kafelka natywnego"
+    "errors.nativeImmutable.identityLocked": "komunikat błędu; odmowa zmiany kodu/typu/ścieżki aktywowanego kafelka natywnego",
+    "applications.form.baseValueHint": "opis; podpowiedź pod polem edytowanym w języku wartości bazowych",
+    "applications.form.translationHint": "opis; podpowiedź pod polem edytowanym w tłumaczeniu, mówi też o kasowaniu",
+    "applications.form.createBaseValueHint": "opis; podpowiedź pod polem nazwy w oknie nowej aplikacji",
+    "applications.translations.openLabel": "etykieta a11y; przycisk z ikoną otwierający okno tłumaczeń; maks. 16 zn.",
+    "applications.translations.title": "tytuł okna; lista wszystkich języków interfejsu; maks. 16 zn.",
+    "applications.translations.intro": "opis; jedno zdanie pod tytułem okna tłumaczeń",
+    "applications.translations.baseValueTag": "wartość; znacznik przy języku wartości bazowych; maks. 16 zn.",
+    "applications.translations.translationTag": "wartość; znacznik przy języku tłumaczonym; maks. 14 zn.",
+    "applications.translations.clearHint": "opis; stopka okna tłumaczeń, mówi co robi puste pole",
+    "applications.translations.close": "przycisk; zamyka okno tłumaczeń bez zapisu; maks. 10 zn."
   }
 }

@@ -1,11 +1,11 @@
-import { usePackage } from "@cortex/api"
+import { useHubTiles, usePackage } from "@cortex/api"
 import type { TFunction } from "i18next"
 import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { getAiToolDefinition } from "./ai-tools/registry"
 import i18n from "./i18n"
 import { aiToolShortLabel } from "./i18n/ai-tool-names"
-import { tileName } from "./i18n/tile-names"
+import { tileText, type TileTranslations } from "./i18n/tile-translations"
 import type { NavSection } from "./nav"
 import {
   CORTEX_CONFIG_NAV,
@@ -73,8 +73,22 @@ type Translate = (key: string) => string
 
 const translateWithSharedInstance: Translate = (key) => i18n.t(key, { ns: "common" })
 
-/** Nazwy kafelków mają WŁASNĄ przestrzeń — patrz `i18n/tile-names.ts`. */
-const sharedTileTranslator = () => i18n.getFixedT(null, "tiles")
+/**
+ * Tłumaczenia nazw kafelków, kluczowane KODEM aplikacji — dokładnie ta sama
+ * dana, z której hub składa etykiety kafelków (`hub-tile.ts`), i ta sama
+ * reguła rozstrzygania. Korzeń okruszka JEST nazwą kafelka, więc drugie
+ * źródło dla niego znaczyłoby dwie różne nazwy tej samej rzeczy na jednym
+ * ekranie — w interfejsie angielskim „Konfiguracja Systemu" w topbarze nad
+ * kafelkiem „System Configuration".
+ *
+ * PUSTA MAPA jest poprawnym wejściem, nie awarią: `breadcrumbsFromPath` bywa
+ * wołane poza Reactem, katalog może jeszcze nie wrócić z sieci, a kafelek
+ * wyłączony albo ukryty z huba w ogóle w nim nie występuje (trasa filtruje po
+ * `is_active AND show_on_hub`). We wszystkich tych przypadkach spadamy na
+ * etykietę z rejestru `TILES` — nazwa zdegradowana do języka źródłowego, nigdy
+ * surowy segment URL-a.
+ */
+const NO_TILE_TRANSLATIONS: Record<string, TileTranslations> = {}
 
 /** Krótka nazwa narzędzia AI stoi w przestrzeni kafelka AI Tools, nie
  *  w `tiles` — patrz `i18n/ai-tool-names.ts`. */
@@ -106,21 +120,23 @@ function navLabelKeysForSegment(segment: string): Record<string, string> {
 function labelForSegment(
   pathname: string,
   segment: string,
-  tTiles: TFunction<"tiles">,
+  tileTranslations: Record<string, TileTranslations>,
   locale: string,
 ): string | undefined {
   const direct = TILES.find((tile) => tile.id === segment)
-  if (direct) return tileName(tTiles, locale, direct.id, "label", direct.label)
+  if (direct) return tileText(tileTranslations[direct.id], locale, "name", direct.label)
   const resolvedId = resolveRequiredTileId(pathname)
   if (!resolvedId) return undefined
   const resolved = TILES.find((tile) => tile.id === resolvedId)
-  return resolved ? tileName(tTiles, locale, resolved.id, "label", resolved.label) : undefined
+  return resolved
+    ? tileText(tileTranslations[resolved.id], locale, "name", resolved.label)
+    : undefined
 }
 
 export function breadcrumbsFromPath(
   pathname: string,
   t: Translate = translateWithSharedInstance,
-  tTiles: TFunction<"tiles"> = sharedTileTranslator(),
+  tileTranslations: Record<string, TileTranslations> = NO_TILE_TRANSLATIONS,
   locale: string = i18n.language,
   tAiTools: TFunction<"ai-tools"> = sharedAiToolsTranslator(),
 ): BreadcrumbEntry[] {
@@ -135,7 +151,7 @@ export function breadcrumbsFromPath(
   }
 
   const segment = segments[0] ?? ""
-  const label = labelForSegment(pathname, segment, tTiles, locale)
+  const label = labelForSegment(pathname, segment, tileTranslations, locale)
   const root: BreadcrumbEntry = label ? { label, href: "/" } : { label: "IDP" }
   const rest = label ? segments.slice(1) : segments
   if (rest.length === 0) return [root]
@@ -154,19 +170,27 @@ export function breadcrumbsFromPath(
 }
 
 export function useResolvedBreadcrumbs(pathname: string): BreadcrumbEntry[] {
-  const { t } = useTranslation("common")
-  const { t: tTiles, i18n: instance } = useTranslation("tiles")
+  const { t, i18n: instance } = useTranslation("common")
   const { t: tAiTools } = useTranslation("ai-tools")
   const match = pathname.match(PACKAGE_DETAIL_PATTERN)
   const packageId = match?.[1] ?? ""
   const pkg = usePackage(packageId, { polling: false })
   const displayName = pkg.data ? (pkg.data.package_name ?? pkg.data.file_name) : undefined
+  // Ten sam katalog i to samo zapytanie, z którego renderuje się hub —
+  // react-query trzyma je pod jednym kluczem, więc topbar nie dokłada rundy
+  // do sieci na każdą nawigację, tylko dołącza do wpisu, który hub i tak
+  // pobiera (`staleTime` 30 s, bez refetchu na focus).
+  const hub = useHubTiles()
+  const tileTranslations = useMemo(
+    () => Object.fromEntries(hub.tiles.map((tile) => [tile.code, tile.translations])),
+    [hub.tiles],
+  )
 
   return useMemo(() => {
-    const trail = breadcrumbsFromPath(pathname, t, tTiles, instance.language, tAiTools)
+    const trail = breadcrumbsFromPath(pathname, t, tileTranslations, instance.language, tAiTools)
     if (!packageId || !displayName) return trail
     const last = trail[trail.length - 1]
     if (!last || last.label !== packageId) return trail
     return [...trail.slice(0, -1), { ...last, label: displayName }]
-  }, [pathname, packageId, displayName, t, tTiles, tAiTools, instance.language])
+  }, [pathname, packageId, displayName, t, tileTranslations, tAiTools, instance.language])
 }

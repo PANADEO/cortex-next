@@ -1,3 +1,4 @@
+import type { TileTranslations } from "@/lib/i18n/tile-translations"
 import type { TileKind } from "@cortex/tile-sdk"
 
 export interface RoleSummary {
@@ -59,8 +60,22 @@ export interface RolePatch {
 export interface Application {
   id: string
   code: string
+  /** WARTOŚĆ BAZOWA nazwy, w języku wartości bazowych (`BASE_VALUE_LOCALE`
+   *  w @cortex/service). Nazwa pokazywana użytkownikowi rozstrzyga się z niej
+   *  i z `translations` — jedną regułą, `tileText()` w lib/i18n/tile-translations.ts. */
   name: string
   description: string | null
+  /**
+   * Komplet tłumaczeń kafelka, kluczowany kodem języka ("en").
+   *
+   * OPCJONALNE, i to nie z ostrożności: katalog wraca z czterech tras, a dwie
+   * z nich (`POST .../activate` i `GET .../unactivated-native`) oddają surowy
+   * wiersz `applications`, bez dołączonych tłumaczeń — obie obsługują wybór
+   * manifestu do aktywacji, gdzie nazwa jest jeszcze wartością początkową
+   * z kodu, nie daną instancji. Lista, szczegóły, POST i PATCH niosą to pole
+   * ZAWSZE, także jako pustą mapę dla kafelka bez ani jednego tłumaczenia.
+   */
+  translations?: TileTranslations
   icon: string | null
   kind: TileKind
   route: string | null
@@ -100,8 +115,21 @@ export interface ApplicationInput {
 
 /** PATCH przyjmuje wyłącznie zmieniane pola (`applicationPatchSchema` w
  *  serwisie) — reguły międzypolowe (natywny ↔ route, embed ↔ url) walidowane
- *  są po scaleniu z wierszem w bazie, nie tutaj. */
-export type ApplicationPatch = Partial<ApplicationInput>
+ *  są po scaleniu z wierszem w bazie, nie tutaj.
+ *
+ *  `translations` jest CZĘŚCIOWE NA DWÓCH POZIOMACH: język nieobecny w mapie
+ *  zostaje w bazie bez zmian, pole nieobecne we wpisie języka zostaje bez zmian
+ *  w swoim wierszu. `null` (albo pusty napis) KASUJE tłumaczenie — dlatego
+ *  formularz wysyła klucz z wartością pustą, a nie pomija go.
+ *
+ *  Języka wartości bazowych (`pl`) w tej mapie być NIE MOŻE — trasa odrzuca go
+ *  błędem 400 (`BASE_VALUE_LOCALE` w @cortex/service): wiersz tłumaczenia
+ *  wygrywałby z kolumną `applications.name`, czyli chowałby nazwę wpisaną przez
+ *  admina pod wartością, której panel nie pokazuje. Wartość bazową zapisuje się
+ *  polami `name`/`description` obok. */
+export type ApplicationPatch = Partial<ApplicationInput> & {
+  translations?: Record<string, { name?: string | null; description?: string | null }>
+}
 
 /** Katalog zakresów granularnych jednej aplikacji (D8: definiowany przez kod
  *  modułu/seed, nie tworzony z UI — `code` jest wyłącznie do wyświetlenia). */

@@ -107,7 +107,8 @@ services:
         node packages/@cortex/db/scripts/seed-ilustromat.mjs &&
         node packages/@cortex/db/scripts/seed-token-usage.mjs &&
         node packages/@cortex/db/scripts/seed-geo-score-calculator.mjs &&
-        node packages/@cortex/db/scripts/seed-content-guru.mjs
+        node packages/@cortex/db/scripts/seed-content-guru.mjs &&
+        node packages/@cortex/db/scripts/seed-application-translations.mjs
     logging:
       driver: "json-file"
       options:

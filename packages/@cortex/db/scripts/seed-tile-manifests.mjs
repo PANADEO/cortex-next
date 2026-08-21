@@ -71,6 +71,14 @@
 // jedzie więc jednorazową migracją danych, razem z K1b:
 // drizzle/system-config/0005_bitter_shadowcat.sql.
 //
+// TŁUMACZENIA (PROJECT/cortex-frontend/ARTIFACTS/i18n/cortex-frontend-
+// tlumaczenia-nazw-kafelkow-projekt.md, rozstrzygnięcie 4): manifest może
+// nieść opcjonalne `translations`, wstawiane do system_config.
+// application_translations przez "on conflict do nothing" — czyli tą samą
+// regułą INSERT-only co `name`. Bez tego dzisiejsze 24 kafelki dostają
+// angielskie nazwy z seed-application-translations.mjs, a każdy NASTĘPNY
+// kafelek odtwarza problem od zera.
+//
 // KOLEJNOŚĆ W ŁAŃCUCHU MIGRATE: musi wyprzedzać seed-system-config.mjs — blok
 // grantowania admina w tamtym skrypcie ("wszystkie wiersze w applications")
 // ma wtedy nadać adminowi grant też do świeżo zarejestrowanych, choć
@@ -114,6 +122,7 @@ const sql = postgres(databaseUrl, { max: 1 })
 async function main() {
   await sql.begin(async (tx) => {
     let inserted = 0
+    let translationsInserted = 0
     for (const manifest of manifests) {
       const [row] = await tx`
         insert into system_config.applications
@@ -155,10 +164,36 @@ async function main() {
         returning id, (xmax = 0) as inserted
       `
       if (row?.inserted) inserted += 1
+
+      // Tłumaczenia z manifestu (defineTile({ translations })) — TĄ SAMĄ
+      // REGUŁĄ INSERT-ONLY co pola prezentacyjne wyżej, tyle że wyrażoną
+      // wprost przez "on conflict do nothing": wartość początkowa pochodzi z
+      // kodu, właścicielem w runtime jest admin edytujący ją w oknie
+      // Tłumaczenia. Bez tego bloku rozwiązalibyśmy problem dla dzisiejszych
+      // kafelków (seed-application-translations.mjs) i odtworzyli go dla
+      // każdego następnego.
+      //
+      // Osobny INSERT, a nie kolumna w upsercie wyżej: to inna tabela i inna
+      // ziarnistość (jeden kafelek ma po wierszu na język).
+      for (const [locale, translation] of Object.entries(manifest.translations ?? {})) {
+        const name = translation?.name ?? null
+        const description = translation?.description ?? null
+        // Wpis bez ani jednej wartości nie jest tłumaczeniem — nie ma powodu
+        // zakładać dla niego wiersza (ta sama reguła, którą stosuje zapis z
+        // panelu: wiersz bez wartości jest kasowany).
+        if (name === null && description === null) continue
+        await tx`
+          insert into system_config.application_translations
+            (application_id, locale, name, description)
+          values (${row.id}, ${locale}, ${name}, ${description})
+          on conflict (application_id, locale) do nothing
+        `
+        translationsInserted += 1
+      }
     }
     console.log(
       `[seed:tile-manifests] rejestr manifestów: ${manifests.length} kodów, dopisano ${inserted} nowych ` +
-        "(pozostałe: sync kind/route/url/target z kodu)",
+        `(pozostałe: sync kind/route/url/target z kodu), tłumaczeń z manifestów: ${translationsInserted}`,
     )
   })
 }

@@ -28,6 +28,7 @@ const FIXTURE_TILE = {
   code: "raportowanie-tokenow",
   name: "Raportowanie Tokenów",
   description: null,
+  translations: { en: { name: "Token Reporting", description: null } },
   icon: "BarChart3",
   kind: "native",
   route: "/token-usage",

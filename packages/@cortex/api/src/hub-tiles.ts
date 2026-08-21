@@ -15,6 +15,19 @@ export interface HubTile {
   code: string
   name: string
   description: string | null
+  /**
+   * Komplet tłumaczeń kafelka, kluczowany kodem języka ("en") —
+   * PROJECT/cortex-frontend/ARTIFACTS/i18n/cortex-frontend-tlumaczenia-nazw-
+   * kafelkow-projekt.md. Klucz obecny => w bazie stoi wiersz, w którym co
+   * najmniej jedno z pól jest nie-NULL; oba pola są osobno nullowalne, bo
+   * wolno przetłumaczyć samą nazwę i zostawić opis na wartości bazowej.
+   *
+   * Serwer NIE rozstrzyga nazwy — nie zna języka użytkownika (wybór siedzi w
+   * `localStorage`, §3 projektu). Rozstrzyga KLIENT, jedną regułą:
+   *   nazwa(locale) = translations[locale]?.name ?? name
+   * Kafelek bez tłumaczeń dostaje pustą mapę, nigdy `undefined`.
+   */
+  translations: Record<string, { name: string | null; description: string | null }>
   icon: string | null
   kind: TileKind
   route: string | null

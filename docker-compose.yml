@@ -62,6 +62,11 @@ services:
   # log i exit 0 — kafelek rejestrował się bez dostępu dla kogokolwiek).
   # Każdy nowy kafelek z własnym seedem dopisujemy TUTAJ, na koniec łańcucha —
   # inaczej jest zarejestrowany w kodzie i niewidoczny na wdrożonym środowisku.
+  # seed-application-translations.mjs stoi na końcu z tego samego powodu, co
+  # seed-system-config.mjs stoi po manifestach: dopasowuje tłumaczenia po
+  # `applications.code`, więc musi widzieć komplet zarejestrowanych wierszy
+  # (PROJECT/cortex-frontend/ARTIFACTS/i18n/cortex-frontend-tlumaczenia-nazw-
+  # kafelkow-projekt.md, Krok 3).
   migrate:
     build:
       context: .
@@ -104,7 +109,8 @@ services:
         node packages/@cortex/db/scripts/seed-ilustromat.mjs &&
         node packages/@cortex/db/scripts/seed-token-usage.mjs &&
         node packages/@cortex/db/scripts/seed-geo-score-calculator.mjs &&
-        node packages/@cortex/db/scripts/seed-content-guru.mjs
+        node packages/@cortex/db/scripts/seed-content-guru.mjs &&
+        node packages/@cortex/db/scripts/seed-application-translations.mjs
     security_opt:
       - no-new-privileges:true
 

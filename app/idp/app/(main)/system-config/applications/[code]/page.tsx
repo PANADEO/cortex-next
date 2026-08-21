@@ -14,8 +14,16 @@ import {
 } from "@/features/system-config/hooks"
 import { resolveApplicationIcon } from "@/features/system-config/icons"
 import { KIND_LABEL_KEYS } from "@/features/system-config/kinds"
-import type { Application, ApplicationInput, RoleSummary } from "@/features/system-config/types"
+import type {
+  Application,
+  ApplicationInput,
+  ApplicationPatch,
+  RoleSummary,
+} from "@/features/system-config/types"
 import { apiErrorMessage } from "@/lib/i18n/api-error"
+import { LOCALES, SOURCE_LOCALE } from "@/lib/i18n/config"
+import { useLocaleStore } from "@/lib/i18n/locale-store"
+import { tileText } from "@/lib/i18n/tile-translations"
 import { usePreset } from "@/lib/presets/preset-store"
 import { presetUsesApplicationColor } from "@/lib/presets/registry"
 import { DEPARTMENT_CATEGORIES, FUNCTIONAL_CATEGORIES } from "@/lib/tiles"
@@ -37,6 +45,12 @@ import {
   Button,
   Checkbox,
   DataTable,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   EmptyState,
   Input,
   Label,
@@ -59,11 +73,19 @@ import {
 } from "@cortex/ui"
 import { cn } from "@cortex/utils"
 import type { ColumnDef } from "@tanstack/react-table"
-import { ArrowLeft, ChevronDown, Info, LayoutDashboard, ShieldAlert, Trash2 } from "lucide-react"
+import {
+  ArrowLeft,
+  ChevronDown,
+  Info,
+  Languages,
+  LayoutDashboard,
+  ShieldAlert,
+  Trash2,
+} from "lucide-react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { systemConfigTile } from "../../manifest"
@@ -197,6 +219,24 @@ function ClosedListMultiSelect({
 const NO_TARGET = "default"
 const NO_FUNCTIONAL_CATEGORY = "none"
 
+/**
+ * Języki, w których kafelek może mieć TŁUMACZENIE — czyli wszystkie POZA
+ * językiem wartości bazowych (PROJECT/cortex-frontend/ARTIFACTS/i18n/
+ * cortex-frontend-tlumaczenia-nazw-kafelkow-projekt.md).
+ *
+ * Wartość bazowa mieszka w kolumnach `applications.name`/`.description`, więc
+ * wiersz tłumaczenia w tym samym języku byłby DRUGIM źródłem prawdy dla jednej
+ * nazwy — i to wygrywającym, bo reguła rozstrzygania czyta najpierw mapę.
+ * Nazwa wpisana przez admina znikałaby pod wartością, której panel nie
+ * pokazuje. Trasa PATCH odrzuca ten kod języka błędem 400 (`BASE_VALUE_LOCALE`
+ * w @cortex/service); ta stała sprawia, że formularz NIE MA JAK go wysłać —
+ * ani ze stanu, ani z okna Tłumaczenia.
+ */
+const TRANSLATABLE_LOCALES = LOCALES.filter((locale) => locale !== SOURCE_LOCALE)
+
+/** Pola tekstowe, które istnieją naraz w wartości bazowej i w tłumaczeniu. */
+type TranslatableField = "name" | "description"
+
 interface FormState {
   name: string
   description: string
@@ -213,6 +253,16 @@ interface FormState {
   /** Pole „Kategoria” w UI — kolumna nazywa się `category_department`,
    *  patrz komentarz przy schemacie w @cortex/db. */
   categoryDepartment: string[]
+  /**
+   * Tłumaczenia nazwy i opisu, po jednym wpisie na KAŻDY język tłumaczony —
+   * bez języka wartości bazowych, dla którego stanem są pola `name`/
+   * `description` wyżej.
+   *
+   * Puste napisy, nie `null`: to jest stan kontrolowanych `<Input>`, a pole,
+   * któremu React poda `null`, przechodzi w tryb niekontrolowany. Na `null`
+   * zamienia je dopiero `toTranslationsPatch()` w chwili zapisu.
+   */
+  translations: Record<string, { name: string; description: string }>
 }
 
 function toFormState(application: Application): FormState {
@@ -232,7 +282,43 @@ function toFormState(application: Application): FormState {
     color: application.color ?? "",
     categoryFunctional: application.categoryFunctional ?? NO_FUNCTIONAL_CATEGORY,
     categoryDepartment: application.categoryDepartment ?? [],
+    // KOMPLET języków tłumaczonych, także tych bez ani jednego wiersza w bazie
+    // — okno Tłumaczenia pokazuje wszystkie języki naraz, więc każdy musi mieć
+    // gdzie trzymać wpisywaną wartość.
+    translations: Object.fromEntries(
+      TRANSLATABLE_LOCALES.map((locale) => [
+        locale,
+        {
+          name: application.translations?.[locale]?.name ?? "",
+          description: application.translations?.[locale]?.description ?? "",
+        },
+      ]),
+    ),
   }
+}
+
+/**
+ * Mapa tłumaczeń dla PATCH-a: KOMPLET języków tłumaczonych, oba pola zawsze
+ * obecne, pusta wartość jako `null`.
+ *
+ * Klucza NIE WOLNO tu pominąć, choć PATCH jest częściowy: pominięcie znaczy
+ * „zostaw w bazie bez zmian", więc wyczyszczonego pola nie dałoby się
+ * wyczyścić — admin kasowałby nazwę angielską, zapisywał i dostawał ją
+ * z powrotem. `null` znaczy „skasuj", i serwis kasuje wtedy cały wiersz, jeśli
+ * po scaleniu nie zostaje w nim ani jedna wartość.
+ *
+ * Języka wartości bazowych w tej mapie nie ma — patrz TRANSLATABLE_LOCALES.
+ */
+function toTranslationsPatch(form: FormState): NonNullable<ApplicationPatch["translations"]> {
+  return Object.fromEntries(
+    TRANSLATABLE_LOCALES.map((locale) => [
+      locale,
+      {
+        name: form.translations[locale]?.name.trim() || null,
+        description: form.translations[locale]?.description.trim() || null,
+      },
+    ]),
+  )
 }
 
 /** Formularz wysyła KOMPLET pól wiersza, łącznie z `target` — pominięcie
@@ -298,6 +384,28 @@ export default function ApplicationDetailPage() {
   // jawna lista co lista Aplikacje, `resolveApplicationIcon`), więc przejście
   // placeholder -> prawdziwy picker nie skacze wizualnie.
   const [isIconPickerActive, setIsIconPickerActive] = useState(false)
+  // Okno „Tłumaczenia" — wszystkie języki naraz, po dwa pola na język. NIE ma
+  // własnego zapisu: edytuje TEN SAM stan formularza co pola wyżej, więc
+  // zamknięcie okna niczego nie porzuca, a „Zapisz dane" zapisuje jedną
+  // czynnością wartość bazową i wszystkie tłumaczenia (serwis robi to w jednej
+  // transakcji). Osobny zapis w oknie byłby drugim przyciskiem zapisu dla tej
+  // samej sekcji formularza.
+  const [isTranslationsOpen, setIsTranslationsOpen] = useState(false)
+
+  /**
+   * Okno tłumaczeń stoi w drzewie daleko od przycisku, który je otwiera, więc
+   * nie da się go podpiąć przez `DialogTrigger` bez przenoszenia całej sekcji.
+   * Radix przywraca wtedy fokus tam, gdzie był przed otwarciem — a przy
+   * przerenderowaniu formularza referencja wskazuje węzeł już odpięty i fokus
+   * ląduje na `<body>`. Dla użytkownika klawiatury znaczy to utratę miejsca:
+   * po zamknięciu okna musi tabować od góry strony.
+   *
+   * Stąd jawne przywrócenie w `onCloseAutoFocus`, odporne na tożsamość węzła.
+   * Hook stoi RAZEM Z POZOSTAŁYMI, przed pierwszym wyjściem z komponentu —
+   * niżej, przy miejscu użycia, byłby wołany warunkowo i React przewracał
+   * render („Rendered more hooks than during the previous render").
+   */
+  const translationsTriggerRef = useRef<HTMLButtonElement>(null)
   // Sekcje strony (D-taby, wydzielone z jednego długiego scrolla — Podstawowe
   // dane/Uprawnienia/Zakresy miały już wcześniej osobne zapisy per sekcja,
   // taby tylko grupują to, co i tak było niezależne). Zwykły stan komponentu,
@@ -311,6 +419,14 @@ export default function ApplicationDetailPage() {
   // jak każdy inny w tym komponencie.
   const preset = usePreset()
   const isColorInertHere = !presetUsesApplicationColor(preset)
+
+  // Język, w którym admin TERAZ ogląda panel — ta sama dana, po której hub
+  // rozstrzyga nazwę kafelka. Decyduje, którą wartość pokazuje i zapisuje pole
+  // „Nazwa": bazową czy tłumaczenie (§"Gdzie edytuje się którą wartość"
+  // w projekcie). Ze store'a, nie z `i18n.language`, żeby wybór użytkownika
+  // i render szły z jednego źródła — dokładnie jak w hub/use-hub-model.ts.
+  const locale = useLocaleStore((s) => s.locale)
+  const isEditingBaseValue = locale === SOURCE_LOCALE
 
   // Wiersz, którego uprawnieniem chroniony jest ten moduł — tę samą regułę
   // egzekwuje serwer (SelfLockoutError), UI tylko ją tłumaczy.
@@ -424,8 +540,60 @@ export default function ApplicationDetailPage() {
   // linią obrony, dokładnie jak isSelfManaged wyżej.
   const isNativeLocked = application.kind === "native"
 
+  // W jakim języku admin edytuje pola „Nazwa" i „Opis". Nazwa języka idzie
+  // z przestrzeni `common` (te same ENDONIMY co przełącznik języka), klucz
+  // sklejany z kodu — kompletności listy pilnuje parzystość plików tłumaczeń.
+  const localeName = t(`common:language.${locale}`)
+  const fieldLocaleHint = isEditingBaseValue
+    ? t("applications.form.baseValueHint", { language: localeName })
+    : t("applications.form.translationHint", { language: localeName })
+
+  // Nagłówek pokazuje nazwę TĄ SAMĄ regułą co hub — inaczej admin w interfejsie
+  // angielskim czytałby u góry strony polską nazwę bazową, edytując pod nią
+  // nazwę angielską, i nie miałby jak stwierdzić, która z nich jest „tą
+  // prawdziwą".
+  const displayName = tileText(application.translations, locale, "name", application.name)
+
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => (current ? { ...current, [key]: value } : current))
+  }
+
+  /**
+   * Odczyt pola tekstowego W JEDNYM JĘZYKU — JEDNO źródło prawdy dla obu
+   * miejsc, w których to samo pole stoi: sekcji „Podstawowe dane" (język
+   * aktualnie wybrany) i wiersza w oknie „Tłumaczenia".
+   *
+   * Dla języka wartości bazowych czyta kolumnę, nie mapę. Dzięki temu wiersz
+   * języka źródłowego w oknie NIE JEST kopią pola wyżej — to dosłownie ta sama
+   * wartość stanu. Osobna kopia dałaby dwa źródła prawdy dla jednej nazwy
+   * i użytkownik nie wiedziałby, które wygrywa.
+   */
+  function textFor(entryLocale: string, field: TranslatableField): string {
+    if (entryLocale === SOURCE_LOCALE) return form?.[field] ?? ""
+    return form?.translations[entryLocale]?.[field] ?? ""
+  }
+
+  /** Zapis odwrotny do `textFor` — tą samą, jedyną ścieżką. */
+  function setTextFor(entryLocale: string, field: TranslatableField, value: string) {
+    if (entryLocale === SOURCE_LOCALE) {
+      update(field, value)
+      return
+    }
+    setForm((current) =>
+      current
+        ? {
+            ...current,
+            translations: {
+              ...current.translations,
+              [entryLocale]: {
+                name: current.translations[entryLocale]?.name ?? "",
+                description: current.translations[entryLocale]?.description ?? "",
+                [field]: value,
+              },
+            },
+          }
+        : current,
+    )
   }
 
   // D1/D5 (Krok 3): wyłączenie show_on_hub na kafelku, który TERAZ jest
@@ -456,7 +624,14 @@ export default function ApplicationDetailPage() {
   async function handleSaveDetails() {
     if (!application || !form) return
     try {
-      await updateApplication.mutateAsync({ id: application.id, body: toInput(code, form) })
+      // Wartość bazowa i tłumaczenia jadą JEDNYM żądaniem, bo są jedną
+      // czynnością admina — serwis zapisuje je w jednej transakcji, więc nie
+      // ma stanu pośredniego, w którym nazwa bazowa jest już nowa, a jej
+      // tłumaczenie jeszcze stare.
+      await updateApplication.mutateAsync({
+        id: application.id,
+        body: { ...toInput(code, form), translations: toTranslationsPatch(form) },
+      })
       toast.success(t("applications.detail.toast.detailsSaved"))
     } catch (error) {
       // apiErrorMessage, a nie toastApiError: samo-zablokowanie i niezmienność
@@ -544,7 +719,7 @@ export default function ApplicationDetailPage() {
   return (
     <>
       <PageHeader
-        title={application.name}
+        title={displayName}
         description={t("applications.detail.entitlementCodeCaption", { code })}
         actions={
           <div className="flex items-center gap-2">
@@ -596,13 +771,38 @@ export default function ApplicationDetailPage() {
                   </span>
                 </div>
 
+                {/* Pole pokazuje i zapisuje nazwę W AKTUALNIE WYBRANYM JĘZYKU:
+                    po polsku wartość bazową (kolumna), w każdym innym języku
+                    jej tłumaczenie. Bez podpowiedzi pod spodem admin
+                    w interfejsie angielskim nie wie, którą z dwóch wartości
+                    właśnie zmienia — a różnica jest widoczna dopiero po
+                    przełączeniu języka. */}
                 <div className="grid content-start gap-1.5">
                   <Label htmlFor="name">{t("applications.form.nameLabel")}</Label>
-                  <Input
-                    id="name"
-                    value={form.name}
-                    onChange={(event) => update("name", event.target.value)}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="name"
+                      className="flex-1"
+                      value={textFor(locale, "name")}
+                      onChange={(event) => setTextFor(locale, "name", event.target.value)}
+                    />
+                    {/* Przycisk, nie zakładki na języki: tłumaczenie jest
+                        czynnością rzadką i opcjonalną, a formularz w 95%
+                        przypadków wypełnia się raz i w jednym języku. */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                      ref={translationsTriggerRef}
+                      aria-label={t("applications.translations.openLabel")}
+                      title={t("applications.translations.openLabel")}
+                      onClick={() => setIsTranslationsOpen(true)}
+                    >
+                      <Languages className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{fieldLocaleHint}</span>
                 </div>
               </div>
 
@@ -610,9 +810,10 @@ export default function ApplicationDetailPage() {
                 <Label htmlFor="description">{t("applications.form.descriptionLabel")}</Label>
                 <Input
                   id="description"
-                  value={form.description}
-                  onChange={(event) => update("description", event.target.value)}
+                  value={textFor(locale, "description")}
+                  onChange={(event) => setTextFor(locale, "description", event.target.value)}
                 />
+                <span className="text-xs text-muted-foreground">{fieldLocaleHint}</span>
               </div>
 
               <div className="grid content-start gap-1.5">
@@ -930,6 +1131,86 @@ export default function ApplicationDetailPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Okno „Tłumaczenia": WSZYSTKIE języki naraz, po dwa pola na język.
+          Wiersz języka wartości bazowych jest związany z tymi samymi polami
+          stanu co „Nazwa"/„Opis" wyżej (patrz `textFor`), a nie z osobną
+          kopią — dlatego jest w nim oznaczony jako wartość bazowa, a nie jako
+          „tłumaczenie na polski": admin ma rozumieć, dlaczego edytuje to samo
+          pole dwa razy. Do bazy ten wiersz jedzie kolumnami `name`/
+          `description`, NIGDY jako `translations.pl` — trasa odrzuciłaby taki
+          klucz błędem 400 (`BASE_VALUE_LOCALE` w @cortex/service). */}
+      <Dialog open={isTranslationsOpen} onOpenChange={setIsTranslationsOpen}>
+        <DialogContent
+          className="max-h-[85vh] overflow-y-auto"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault()
+            translationsTriggerRef.current?.focus()
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>{t("applications.translations.title")}</DialogTitle>
+            <DialogDescription>{t("applications.translations.intro")}</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4">
+            {LOCALES.map((entryLocale) => {
+              const isBaseRow = entryLocale === SOURCE_LOCALE
+              return (
+                <div
+                  key={entryLocale}
+                  className="grid content-start gap-3 rounded-lg border border-border p-3"
+                >
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <span className="text-sm font-medium">
+                      {t(`common:language.${entryLocale}`)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {isBaseRow
+                        ? t("applications.translations.baseValueTag")
+                        : t("applications.translations.translationTag")}
+                    </span>
+                  </div>
+
+                  <div className="grid content-start gap-1.5">
+                    <Label htmlFor={`translation-name-${entryLocale}`}>
+                      {t("applications.form.nameLabel")}
+                    </Label>
+                    <Input
+                      id={`translation-name-${entryLocale}`}
+                      value={textFor(entryLocale, "name")}
+                      onChange={(event) => setTextFor(entryLocale, "name", event.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid content-start gap-1.5">
+                    <Label htmlFor={`translation-description-${entryLocale}`}>
+                      {t("applications.form.descriptionLabel")}
+                    </Label>
+                    <Input
+                      id={`translation-description-${entryLocale}`}
+                      value={textFor(entryLocale, "description")}
+                      onChange={(event) =>
+                        setTextFor(entryLocale, "description", event.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            {t("applications.translations.clearHint")}
+          </p>
+
+          <DialogFooter>
+            <Button onClick={() => setIsTranslationsOpen(false)}>
+              {t("applications.translations.close")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent>

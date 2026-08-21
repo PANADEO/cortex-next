@@ -5,6 +5,7 @@
 import {
   applications,
   applicationScopes,
+  applicationTranslations,
   getDb,
   instanceSettings,
   permissionsMatrix,
@@ -14,11 +15,12 @@ import {
   users,
   type ApplicationRow,
   type ApplicationScopeRow,
+  type ApplicationTranslationRow,
   type RoleRow,
   type UserRow,
 } from "@cortex/db"
 import { isHttpUrl, isInternalRoute, TileKind } from "@cortex/tile-sdk"
-import { and, asc, eq, inArray, isNotNull, isNull, max, ne, or } from "drizzle-orm"
+import { and, asc, eq, inArray, isNotNull, isNull, max, ne, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import { isModuleEnabled, moduleLicensingConfig } from "./module-licensing"
 import {
@@ -68,6 +70,159 @@ const MAX_SORT_ORDER = 10_000
  *  Obie liczby (ta i MAX_SORT_ORDER wyżej) trzyma razem strażnik parzystości
  *  system-config.sort-order-parity.test.ts — komentarz nie jest egzekucją. */
 const SORT_ORDER_STEP = 10
+
+/**
+ * Języki, w których wolno zapisać tłumaczenie kafelka (PROJECT/cortex-frontend/
+ * ARTIFACTS/i18n/cortex-frontend-tlumaczenia-nazw-kafelkow-projekt.md).
+ *
+ * KOPIA `LOCALES` z app/idp/lib/i18n/config.ts, nie import — kierunek
+ * zależności tego zabrania: @cortex/service jest importowane PRZEZ aplikację,
+ * nigdy odwrotnie, a tamten plik wciąga do bundla wszystkie pliki tłumaczeń.
+ * Ten sam układ co APPLICATION_KINDS w @cortex/db wobec TileKind i co
+ * TileColor w @cortex/tile-sdk wobec palety aplikacji.
+ *
+ * Rozjazd tych dwóch list jest CICHY w obie strony: język dołożony w
+ * `config.ts` bez dopisania tutaj daje 400 przy pierwszej próbie zapisu
+ * tłumaczenia (admin widzi "nieprawidłowe żądanie" bez wskazówki), a język
+ * usunięty z `config.ts` zostawia w bazie wiersze, których nikt już nie
+ * czyta. Dlatego pilnuje ich test parzystości
+ * (locales-parity.test.ts) — komentarz nie jest egzekucją.
+ *
+ * Język źródłowy (`pl`) JEST na tej liście, mimo że wartość bazowa nazwy
+ * mieszka w `applications.name`. Serwis nie rozstrzyga, który wiersz jest
+ * "tym samym co kolumna" — o powiązaniu pola formularza z wartością bazową
+ * decyduje klient (§"Gdzie edytuje się którą wartość" w projekcie). Zamknięta
+ * lista pilnuje tu WYŁĄCZNIE tego, że kod języka jest jednym ze znanych.
+ */
+export const SUPPORTED_LOCALES = ["pl", "en"] as const
+
+/**
+ * Język, w którym pisane są wartości BAZOWE — czyli kolumny
+ * `applications.name` i `.description`.
+ *
+ * Wiersz tłumaczenia w tym języku jest z definicji nadmiarowy: kolumna JEST
+ * tą wartością. Gorzej niż nadmiarowy — wygrywałby z nią w regule
+ * `translations[locale] ?? name`, więc nazwa wpisana przez admina w panelu
+ * znikałaby pod wartością, której panel nie pokazuje. To DOKŁADNIE ten defekt,
+ * dla którego powstała ta tabela; przeniesienie go z pliku w repo do bazy
+ * niczego nie naprawia.
+ *
+ * Odrzucamy więc ten kod języka na wejściu, a nie liczymy na dyscyplinę
+ * klienta: trasa jest osiągalna bez niego.
+ */
+export const BASE_VALUE_LOCALE = "pl"
+
+export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
+
+export function isSupportedLocale(value: string): value is SupportedLocale {
+  return (SUPPORTED_LOCALES as readonly string[]).includes(value)
+}
+
+/** Tłumaczenie JEDNEGO kafelka na JEDEN język. Oba pola osobno nullowalne:
+ *  wolno przetłumaczyć samą nazwę i zostawić opis na wartości bazowej. */
+export interface ApplicationTranslation {
+  name: string | null
+  description: string | null
+}
+
+/** Komplet tłumaczeń kafelka, kluczowany kodem języka ("en").
+ *  Klucz obecny => istnieje wiersz w bazie, w którym co najmniej jedno z pól
+ *  jest nie-NULL (wiersz bez ani jednej wartości jest kasowany przy zapisie). */
+export type ApplicationTranslations = Record<string, ApplicationTranslation>
+
+/**
+ * Wiersz `applications` RAZEM z kompletem tłumaczeń — kształt zwracany przez
+ * wszystkie odczyty katalogu.
+ *
+ * Serwer NIE ROZSTRZYGA nazwy i nie ma prawa zacząć: języka użytkownika nie
+ * zna, bo wybór siedzi w `localStorage` przeglądarki (§3 "Serwer nie zna
+ * języka" w projekcie). Trasa zwraca `name`, `description` ORAZ komplet
+ * tłumaczeń, a regułę `nazwa(locale) = translations[locale].name ?? name`
+ * stosuje klient. Alternatywy (język w query stringu albo w ciasteczku)
+ * dokładają stan do warstwy, która dziś jest bezstanowa, i to po to, żeby
+ * zaoszczędzić kilka kilobajtów przy dwóch językach i ~27 kafelkach.
+ */
+export interface ApplicationWithTranslations extends ApplicationRow {
+  translations: ApplicationTranslations
+}
+
+/**
+ * Jedno pole tłumaczenia w PATCH-u. Pusty (albo złożony z samych spacji)
+ * napis znaczy "wyczyść", czyli NULL — nie "zapisz pusty tekst".
+ *
+ * Dlaczego nie `z.string().min(1)`, jak przy `applications.name`: tam pusta
+ * nazwa jest po prostu błędem formularza, tutaj jest normalną czynnością
+ * (admin kasuje tłumaczenie, żeby kafelek wrócił na wartość bazową). Limit
+ * długości zostaje ten sam co dla kolumny bazowej, a niezmiennik "zapisana
+ * wartość ma co najmniej jeden znak" trzyma normalizacja niżej: po niej
+ * wartość jest albo NULL, albo napisem po `trim()` o niezerowej długości.
+ *
+ * `trim()` jest tu, a nie przy `applications.name`, celowo: wiersz tłumaczenia
+ * złożony z samych spacji przeżyłby kasowanie pustego wiersza (nie jest ani
+ * NULL, ani pustym napisem) i renderowałby się jako kafelek BEZ NAZWY —
+ * dokładnie ten "pusty rekord wyglądający jak tłumaczenie", przed którym
+ * ostrzega projekt.
+ */
+function normalizeTranslationText(value: string | null): string | null {
+  const trimmed = value?.trim() ?? ""
+  return trimmed.length === 0 ? null : trimmed
+}
+
+function translationTextSchema(maxLength: number) {
+  return z
+    .string()
+    .max(maxLength)
+    .nullish()
+    .transform((value) => {
+      // Klucz nieobecny w ciele PATCH-a MUSI zostać nieobecny również po
+      // parsowaniu — na tym stoi częściowość mapy (patrz applyTranslationPatch).
+      if (value === undefined) return undefined
+      return normalizeTranslationText(value)
+    })
+}
+
+const translationEntrySchema = z.object({
+  // Te same limity co kolumny bazowe w applicationFieldsSchema — to są dwie
+  // ścieżki zapisu tego samego napisu, tyle że w innym języku.
+  name: translationTextSchema(120),
+  description: translationTextSchema(500),
+})
+
+/**
+ * Częściowa mapa tłumaczeń: `{ "en": { "name": "Invoice Analyser" } }`.
+ * Częściowa NA DWÓCH POZIOMACH — język nieobecny w mapie zostaje w bazie bez
+ * zmian, a pole nieobecne w jego wpisie zostaje bez zmian w tym wierszu.
+ *
+ * `z.record(z.string(), ...)` + jawne sprawdzenie klucza, a nie
+ * `z.record(z.enum(SUPPORTED_LOCALES), ...)`: enum jako klucz rekordu daje w
+ * Zodzie typ `Record<"pl" | "en", T>`, czyli obiecuje KOMPLET języków, którego
+ * runtime nie egzekwuje. Kontrakt (uzgodniony z warstwą kliencką) mówi
+ * `Record<string, ...>` i tak też ma wyglądać typ.
+ */
+export const applicationTranslationsPatchSchema = z
+  .record(z.string(), translationEntrySchema)
+  .superRefine((value, ctx) => {
+    for (const locale of Object.keys(value)) {
+      if (locale === BASE_VALUE_LOCALE) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [locale],
+          message:
+            `Język ${BASE_VALUE_LOCALE} jest językiem wartości bazowych — ` +
+            "zapisz je w polach `name`/`description`, nie jako tłumaczenie.",
+        })
+        continue
+      }
+      if (isSupportedLocale(locale)) continue
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [locale],
+        message: `Nieznany kod języka: ${locale}. Dozwolone: ${SUPPORTED_LOCALES.join(", ")}`,
+      })
+    }
+  })
+
+export type ApplicationTranslationsPatch = z.infer<typeof applicationTranslationsPatchSchema>
 
 const applicationFieldsSchema = z.object({
   code: z
@@ -139,7 +294,14 @@ export type ApplicationInput = z.infer<typeof applicationInputSchema>
  * więc sprawdza je updateApplication na wyniku merge'a — inaczej `PATCH {name}`
  * musiałby powtarzać cały wiersz, a pominięte pola lądowałyby jako domyślne.
  */
-export const applicationPatchSchema = applicationFieldsSchema.partial()
+export const applicationPatchSchema = applicationFieldsSchema.partial().extend({
+  // Tłumaczenia świadomie POZA applicationFieldsSchema: nie są kolumną wiersza
+  // `applications`, więc nie mają czego szukać ani w applicationInputSchema
+  // (POST — okno tłumaczeń otwiera się dopiero po zapisaniu kafelka,
+  // rozstrzygnięcie 1 w projekcie), ani w mergeApplicationInput /
+  // toApplicationValues. updateApplication odcina to pole PRZED scaleniem.
+  translations: applicationTranslationsPatchSchema.optional(),
+})
 
 export type ApplicationPatch = z.infer<typeof applicationPatchSchema>
 
@@ -503,6 +665,61 @@ export async function setUserRoles(
 }
 
 /**
+ * Dokleja komplet tłumaczeń do wierszy katalogu — JEDNYM dodatkowym
+ * zapytaniem `where application_id in (...)`, niezależnie od liczby kafelków.
+ *
+ * Świadomie NIE JOIN-em do zapytania wyżej: `applications` ma 19 kolumn, a
+ * LEFT JOIN po tłumaczeniach zwielokrotniłby każdy wiersz razy liczba języków
+ * i wymagał ręcznego składania grup po stronie JS — czyli tej samej pracy co
+ * tutaj, tylko przy większym transferze i z ryzykiem, że ktoś kiedyś doda
+ * `.limit()` do zapytania, które po JOIN-ie liczy WIERSZE, a nie kafelki.
+ * Drugie zapytanie jest też jedynym wariantem, który nie dotyka
+ * listHubApplications() — a to zapytanie ma pozostać wolne od JOIN-ów z
+ * definicji (D7, patrz komentarz przy tej funkcji).
+ *
+ * NIE jest to N+1: liczba zapytań wynosi dokładnie 2 dla dowolnej liczby
+ * kafelków, a przy pustym katalogu 1 (pusty `in (...)` nie ma czego szukać w
+ * bazie i w niektórych dialektach jest wręcz błędem składni).
+ */
+async function attachTranslations(rows: ApplicationRow[]): Promise<ApplicationWithTranslations[]> {
+  if (rows.length === 0) return []
+
+  const translationRows = await getDb()
+    .select()
+    .from(applicationTranslations)
+    .where(
+      inArray(
+        applicationTranslations.applicationId,
+        rows.map((row) => row.id),
+      ),
+    )
+
+  return withTranslations(rows, translationRows)
+}
+
+/** Czysta część attachTranslations — składanie wierszy w mapę. Wydzielona,
+ *  żeby ta sama reguła obsłużyła odczyt po zapisie (updateApplication), który
+ *  ma już wiersze tłumaczeń w ręku i nie ma po co pytać bazy drugi raz. */
+function withTranslations(
+  rows: ApplicationRow[],
+  translationRows: ApplicationTranslationRow[],
+): ApplicationWithTranslations[] {
+  const byApplication = new Map<string, ApplicationTranslations>()
+  for (const row of translationRows) {
+    const bucket = byApplication.get(row.applicationId) ?? {}
+    bucket[row.locale] = { name: row.name, description: row.description }
+    byApplication.set(row.applicationId, bucket)
+  }
+
+  // `?? {}` na KAŻDYM wierszu, nie tylko na tych z tłumaczeniami: pole
+  // `translations` jest częścią kontraktu odpowiedzi, więc kafelek bez ani
+  // jednego tłumaczenia ma oddać pustą mapę, a nie `undefined`. Klient
+  // rozstrzyga nazwę przez `translations[locale]?.name ?? name` i brak pola
+  // przewróciłby mu ten odczyt.
+  return rows.map((row) => ({ ...row, translations: byApplication.get(row.id) ?? {} }))
+}
+
+/**
  * Katalog dla ekranu admina Aplikacje. Wyklucza wiersze `kind='native'` z
  * `activated_at is null` (Krok 5, PROJECT/cortex-frontend-hub-db-driven-projekt.md
  * — "rozróżnienie wizualne na liście Aplikacje"): taki wiersz jest tylko
@@ -520,12 +737,28 @@ export async function setUserRoles(
  * liście jak każdy inny wyłączony wiersz, zgodnie z dzisiejszą konwencją
  * (Badge "Wyłączona", `691da0c`).
  */
-export async function listApplications(): Promise<ApplicationRow[]> {
-  return getDb()
-    .select()
-    .from(applications)
-    .where(or(ne(applications.kind, "native"), isNotNull(applications.activatedAt)))
-    .orderBy(asc(applications.sortOrder), asc(applications.code))
+export async function listApplications(): Promise<ApplicationWithTranslations[]> {
+  return attachTranslations(
+    await getDb()
+      .select()
+      .from(applications)
+      .where(or(ne(applications.kind, "native"), isNotNull(applications.activatedAt)))
+      .orderBy(asc(applications.sortOrder), asc(applications.code)),
+  )
+}
+
+/**
+ * Jeden wiersz katalogu razem z tłumaczeniami — `GET /api/system-config/
+ * applications/[id]`. Ten sam kształt co element listy wyżej (kontrakt
+ * uzgodniony z warstwą kliencką), więc ekran szczegółów nie musi wybierać
+ * między "pobierz całą listę" a "pobierz inny kształt niż lista".
+ */
+export async function getApplication(id: string): Promise<ApplicationWithTranslations | null> {
+  const [row] = await getDb().select().from(applications).where(eq(applications.id, id))
+  if (!row) return null
+
+  const [withTranslationsRow] = await attachTranslations([row])
+  return withTranslationsRow ?? null
 }
 
 /**
@@ -542,13 +775,21 @@ export async function listApplications(): Promise<ApplicationRow[]> {
  * `/api/me/access` — powtórzenie tej reguły w SQL byłoby TRZECIM miejscem z
  * tą samą logiką biznesową i realnie gubiłoby userów z samym zbiorczym
  * grantem `ai-tools` (D7, rozważona i odrzucona alternatywa (b)).
+ *
+ * attachTranslations() dokłada drugie zapytanie, ale ta własność zostaje
+ * nietknięta: `application_translations` nie ma ani jednej kolumny opisującej
+ * użytkownika ani rolę, więc wynik nadal nie zależy od tego, KTO pyta.
+ * Serwer nie rozstrzyga też nazwy — nie zna języka użytkownika (§3 projektu
+ * tłumaczeń); zwraca komplet i zostawia wybór klientowi.
  */
-export async function listHubApplications(): Promise<ApplicationRow[]> {
-  return getDb()
-    .select()
-    .from(applications)
-    .where(and(eq(applications.isActive, true), eq(applications.showOnHub, true)))
-    .orderBy(asc(applications.sortOrder), asc(applications.code))
+export async function listHubApplications(): Promise<ApplicationWithTranslations[]> {
+  return attachTranslations(
+    await getDb()
+      .select()
+      .from(applications)
+      .where(and(eq(applications.isActive, true), eq(applications.showOnHub, true)))
+      .orderBy(asc(applications.sortOrder), asc(applications.code)),
+  )
 }
 
 /**
@@ -684,7 +925,9 @@ export async function activateApplication(code: string): Promise<ApplicationRow 
  * 39/40 remisów wobec 40/40 przy dwóch instrukcjach. Okno zwęża się
  * marginalnie, nie znika, a płaci się za to SQL-em w `values()`.
  */
-export async function createApplication(input: ApplicationInput): Promise<ApplicationRow> {
+export async function createApplication(
+  input: ApplicationInput,
+): Promise<ApplicationWithTranslations> {
   if (input.kind === "native") {
     throw new NativeCreationNotAllowedError()
   }
@@ -697,7 +940,11 @@ export async function createApplication(input: ApplicationInput): Promise<Applic
     .values(toApplicationValues(input, nextSortOrder(highest?.value ?? null)))
     .returning()
 
-  return created as ApplicationRow
+  // Świeży wiersz nie ma tłumaczeń i nie ma skąd ich wziąć — okno tłumaczeń
+  // otwiera się dopiero po zapisaniu (rozstrzygnięcie 1 w projekcie), więc
+  // POST nie przyjmuje mapy. Pusta mapa, a nie brak pola: kształt odpowiedzi
+  // ma być ten sam co na liście i na szczegółach.
+  return { ...(created as ApplicationRow), translations: {} }
 }
 
 /**
@@ -711,26 +958,150 @@ export async function createApplication(input: ApplicationInput): Promise<Applic
 export async function updateApplication(
   id: string,
   patch: ApplicationPatch,
-): Promise<ApplicationRow | null> {
+): Promise<ApplicationWithTranslations | null> {
   const db = getDb()
 
-  const [existing] = await db.select().from(applications).where(eq(applications.id, id))
-  if (!existing) return null
+  // Tłumaczenia odcinamy PRZED scaleniem: nie są kolumną wiersza, a
+  // mergeApplicationInput/toApplicationValues wypisują kolumny jawnie, więc
+  // pole zostawione w `patch` byłoby po prostu ignorowane po cichu.
+  const { translations: translationsPatch, ...columnsPatch } = patch
 
-  const merged = applicationInputSchema.parse(mergeApplicationInput(existing, patch))
-  assertKeepsModuleReachable(existing, merged)
-  assertNativeApplicationImmutable(existing, merged)
+  const result = await db.transaction(async (tx) => {
+    const [existing] = await tx.select().from(applications).where(eq(applications.id, id))
+    if (!existing) return null
 
-  const [updated] = await db
-    .update(applications)
-    .set({ ...toApplicationValues(merged, existing.sortOrder), updatedAt: new Date() })
-    .where(eq(applications.id, id))
-    .returning()
+    const merged = applicationInputSchema.parse(mergeApplicationInput(existing, columnsPatch))
+    assertKeepsModuleReachable(existing, merged)
+    assertNativeApplicationImmutable(existing, merged)
 
-  if (!updated) return null
+    // Kolumny aktualizujemy zawsze — także przy PATCH-u niosącym SAME
+    // tłumaczenia. `merged` jest wtedy wiernym odbiciem wiersza z bazy, więc
+    // jedyną realną zmianą jest `updated_at`, a to jest poprawne: wiersz
+    // katalogu zmienił się z punktu widzenia każdego, kto go czyta.
+    const [updated] = await tx
+      .update(applications)
+      .set({ ...toApplicationValues(merged, existing.sortOrder), updatedAt: new Date() })
+      .where(eq(applications.id, id))
+      .returning()
+
+    if (!updated) return null
+
+    if (translationsPatch) await applyTranslationPatch(tx, id, translationsPatch)
+
+    // Odczyt tłumaczeń W TEJ SAMEJ transakcji, co zapis — inaczej odpowiedź
+    // mogłaby pokazać stan sprzed równoległego PATCH-a i admin zobaczyłby
+    // swoją zmianę "cofniętą", mimo że w bazie jest.
+    const translationRows = await tx
+      .select()
+      .from(applicationTranslations)
+      .where(eq(applicationTranslations.applicationId, id))
+
+    return withTranslations([updated as ApplicationRow], translationRows)[0] ?? null
+  })
+
+  if (!result) return null
 
   clearTileAccessCache()
-  return updated
+  return result
+}
+
+/**
+ * Zapis CZĘŚCIOWEJ mapy tłumaczeń — częściowej na dwóch poziomach: język
+ * nieobecny w mapie zostaje bez zmian, pole nieobecne we wpisie języka zostaje
+ * bez zmian w swoim wierszu. Stąd odczyt istniejących wierszy przed zapisem:
+ * `PATCH { en: { description } }` nie ma prawa skasować nazwy angielskiej.
+ *
+ * DWIE REGUŁY, na których stoi czystość tej tabeli (§"Model danych" projektu):
+ *  - pusty (albo złożony z samych spacji) napis zapisujemy jako NULL —
+ *    normalizeTranslationText(), TĄ SAMĄ funkcją co schemat Zod (patrz
+ *    komentarz przy scalaniu niżej: serwis jest wołany także z pominięciem
+ *    schematu, bezpośrednio z innych modułów monolitu);
+ *  - wiersz, w którym po scaleniu ANI JEDNO pole nie ma wartości, KASUJEMY.
+ *    Bez tego admin czyszczący oba pola zostawia w bazie rekord, który dla
+ *    każdego czytającego wygląda jak istniejące tłumaczenie (klucz obecny w
+ *    mapie `translations`), a nim nie jest.
+ *
+ * Wykonywane w tej samej transakcji co UPDATE wiersza `applications`: PATCH
+ * niosący naraz nazwę bazową i jej tłumaczenie jest JEDNĄ czynnością admina i
+ * ma się zapisać w całości albo wcale.
+ */
+async function applyTranslationPatch(
+  tx: Transaction,
+  applicationId: string,
+  patch: ApplicationTranslationsPatch,
+): Promise<void> {
+  const locales = Object.keys(patch)
+  if (locales.length === 0) return
+
+  const existingRows = await tx
+    .select()
+    .from(applicationTranslations)
+    .where(
+      and(
+        eq(applicationTranslations.applicationId, applicationId),
+        inArray(applicationTranslations.locale, locales),
+      ),
+    )
+  const existingByLocale = new Map(existingRows.map((row) => [row.locale, row]))
+
+  const toUpsert: {
+    applicationId: string
+    locale: string
+    name: string | null
+    description: string | null
+  }[] = []
+  const toDelete: string[] = []
+
+  for (const locale of locales) {
+    const entry = patch[locale]
+    if (!entry) continue
+    const current = existingByLocale.get(locale)
+
+    // `"name" in entry` (a nie `??`) rozróżnia "nie podano" od "podano null" —
+    // ta sama zasada co w mergeApplicationInput. Bez tego wyczyszczenie
+    // JEDNEGO pola byłoby nieodróżnialne od pominięcia go.
+    // normalizeTranslationText() jest tu POWTÓRZONE ze schematu Zod świadomie,
+    // przez tę samą funkcję (nie drugą jej kopię). @cortex/service jest
+    // importowane BEZPOŚREDNIO przez inne moduły monolitu, nie tylko przez
+    // route, który parsuje wejście — a niezmiennik "pusta wartość to NULL"
+    // należy do tej warstwy, nie do kontrolera HTTP. Bez tego wywołanie z
+    // pominięciem schematu zakłada dokładnie ten pusty rekord wyglądający jak
+    // tłumaczenie, przed którym ostrzega projekt.
+    const name =
+      "name" in entry ? normalizeTranslationText(entry.name ?? null) : (current?.name ?? null)
+    const description =
+      "description" in entry
+        ? normalizeTranslationText(entry.description ?? null)
+        : (current?.description ?? null)
+
+    if (name === null && description === null) toDelete.push(locale)
+    else toUpsert.push({ applicationId, locale, name, description })
+  }
+
+  if (toDelete.length > 0) {
+    await tx
+      .delete(applicationTranslations)
+      .where(
+        and(
+          eq(applicationTranslations.applicationId, applicationId),
+          inArray(applicationTranslations.locale, toDelete),
+        ),
+      )
+  }
+
+  if (toUpsert.length > 0) {
+    await tx
+      .insert(applicationTranslations)
+      .values(toUpsert)
+      .onConflictDoUpdate({
+        target: [applicationTranslations.applicationId, applicationTranslations.locale],
+        set: {
+          name: sql`excluded.name`,
+          description: sql`excluded.description`,
+          updatedAt: new Date(),
+        },
+      })
+  }
 }
 
 export async function deleteApplication(id: string): Promise<boolean> {

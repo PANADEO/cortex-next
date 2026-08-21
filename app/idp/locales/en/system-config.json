@@ -231,7 +231,10 @@
       "showOnHubLabel": "Visible on the home page (hub)",
       "showOnHubHint": "A switch separate from “Application active”: “active” decides the entitlement, this one only decides whether the tile renders on the hub. Turning it off takes access away from nobody — it only hides the card.",
       "nextStepNative": "You set the remaining fields and role permissions on the details page, right after activation.",
-      "nextStepExternal": "You set the remaining fields and role permissions on the details page, right after creating it."
+      "nextStepExternal": "You set the remaining fields and role permissions on the details page, right after creating it.",
+      "baseValueHint": "You are editing the base value ({{language}}). Set the other languages with the „Translations” button.",
+      "translationHint": "You are editing the {{language}} translation. Clearing the field removes it — the tile falls back to the base value.",
+      "createBaseValueHint": "Saved as the base value, whatever the interface language. Translations are set on the details page, once the tile exists."
     },
     "detail": {
       "fallbackTitle": "Application",
@@ -275,6 +278,15 @@
         "scopesSaveFailed": "Could not save the scopes",
         "deleteFailed": "Could not delete the application"
       }
+    },
+    "translations": {
+      "openLabel": "Translations",
+      "title": "Translations",
+      "intro": "Name and description in every interface language. Changes are saved by “Save details” in the Basics section.",
+      "baseValueTag": "base value",
+      "translationTag": "translation",
+      "clearHint": "Clearing a field removes the translation — the tile falls back to the base value.",
+      "close": "Done"
     }
   },
   "openwebui": {

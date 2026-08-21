@@ -53,6 +53,35 @@ export type TileCategoryFunctional = z.infer<typeof TileCategoryFunctional>
 export const TileCategoryDepartment = z.enum(["operations", "marketing", "finance", "it", "hr"])
 export type TileCategoryDepartment = z.infer<typeof TileCategoryDepartment>
 
+/**
+ * Języki interfejsu, w których manifest może podać tłumaczenie
+ * (PROJECT/cortex-frontend/ARTIFACTS/i18n/cortex-frontend-tlumaczenia-nazw-
+ * kafelkow-projekt.md, rozstrzygnięcie 4).
+ *
+ * TRZECIA kopia tej samej listy — obok `LOCALES` w app/idp/lib/i18n/config.ts
+ * i `SUPPORTED_LOCALES` w @cortex/service. Kopia, a nie import, z tego samego
+ * powodu co TileColor niżej: tile-sdk jest liściem, importują z niego i
+ * aplikacja, i serwis, więc żaden import w drugą stronę nie jest możliwy.
+ * Wszystkie trzy trzyma razem strażnik parzystości
+ * (packages/@cortex/service/src/locales-parity.test.ts).
+ *
+ * Dlaczego enum, a nie `z.string()` jako klucz mapy: literówka w kodzie języka
+ * ("eng", "EN") nie daje błędu, tylko cichą degradację — seed wstawia wiersz,
+ * po którym nikt nigdy nie sięgnie, a kafelek dalej pokazuje polską nazwę w
+ * angielskim interfejsie, czyli dokładnie ten defekt, którego naprawie służy
+ * to pole.
+ */
+export const TILE_LOCALES = ["pl", "en"] as const
+
+/**
+ * Język wartości bazowych manifestu — `label` i `description` SĄ tą wartością.
+ * Tłumaczenie na ten sam język wygrywałoby z nimi w regule rozstrzygania, więc
+ * manifest nie ma prawa go nieść. Ten sam niezmiennik, co po stronie serwisu.
+ */
+export const MANIFEST_BASE_LOCALE = "pl"
+export const TileLocale = z.enum(TILE_LOCALES)
+export type TileLocale = z.infer<typeof TileLocale>
+
 /** Adres zewnętrzny musi być realnym linkiem HTTP(S). `z.string().url()` tego
  *  NIE pilnuje — przepuszcza `javascript:`/`data:`/`file:`, czyli uśpiony stored
  *  XSS na moment, w którym rejestr zacznie zasilać nawigację.
@@ -183,6 +212,33 @@ export const TileManifestSchema = z
     // wiersz zakładany z panelu ląduje na końcu listy" — tamto dotyczy
     // toApplicationValues() w @cortex/service i jest osobnym krokiem (K4).
     sortOrder: z.number().int().min(0).max(10_000).optional(),
+    // Wartości POCZĄTKOWE tłumaczeń nazwy/opisu — ta sama zasada co pola
+    // prezentacyjne wyżej: manifest odpowiada na "skąd bierze się wartość
+    // początkowa", nigdy na "kto jest właścicielem w runtime" (właścicielem
+    // jest admin edytujący ją w oknie Tłumaczenia). seed-tile-manifests.mjs
+    // wstawia je INSERT-only, przez `on conflict do nothing`.
+    //
+    // Pole istnieje po to, żeby problem nie odtworzył się dla NASTĘPNYCH
+    // kafelków (rozstrzygnięcie 4 projektu): seed przenosi dzisiejsze 24
+    // tłumaczenia z app/idp/locales/en/tiles.json, ale kafelek dodany za
+    // miesiąc znów nie miałby angielskiej nazwy, dopóki ktoś nie wpisze jej
+    // ręcznie w panelu.
+    //
+    // Oba pola wpisu opcjonalne i `min(1)`: wolno przetłumaczyć samą nazwę i
+    // zostawić opis na wartości bazowej, ale pusty literał jest zawsze
+    // pomyłką — "brak tłumaczenia" wyraża się pominięciem klucza (ta sama
+    // zasada co przy `description` wyżej). Limity jak w kolumnach bazowych.
+    translations: z
+      .record(
+        TileLocale.refine((locale) => locale !== MANIFEST_BASE_LOCALE, {
+          message: `Manifest nie niesie tłumaczenia na ${MANIFEST_BASE_LOCALE} — to język pól label/description.`,
+        }),
+        z.object({
+          name: z.string().min(1).max(120).optional(),
+          description: z.string().min(1).max(500).optional(),
+        }),
+      )
+      .optional(),
   })
   .refine((tile) => tile.kind !== "native" || Boolean(tile.route), {
     message: "route wymagane dla kind='native'",

@@ -1,9 +1,8 @@
 import { resolveTileColor } from "@/features/system-config/colors"
 import { resolveApplicationIcon } from "@/features/system-config/icons"
-import { tileName } from "@/lib/i18n/tile-names"
+import { tileText } from "@/lib/i18n/tile-translations"
 import type { Tile, TileCategoryDepartment, TileCategoryFunctional } from "@/lib/tiles"
 import type { HubTile } from "@cortex/api"
-import type { TFunction } from "i18next"
 
 /**
  * `GET /api/hub/tiles` row -> `Tile` (kształt bez zmian, Krok 3,
@@ -21,19 +20,25 @@ import type { TFunction } from "i18next"
  * innym źródłem danych) — stała `"dashboard"` jest więc bezpieczna dla
  * wszystkich kafelków z tej mapy.
  *
+ * Nazwa i opis idą JEDNĄ regułą `translations[locale] ?? wartość bazowa`
+ * (`lib/i18n/tile-translations.ts`) — tłumaczenia są daną instancji, przywożoną
+ * w wierszu katalogu, a nie plikiem w repo. Wcześniejsza reguła asymetryczna
+ * (`tile-names.ts`) istniała po to, żeby plik nie przykrywał nazwy wpisanej
+ * przez admina; przy tłumaczeniach w bazie ten powód znika.
+ *
  * `kind="iframe"` traktowany jak `external-link` (`external: true`) — Faza 2
  * osadzania w chrome shellu jeszcze nie istnieje (tile-sdk: "jeszcze
  * nieużywane"), więc dziś nie ma ani jednego wiersza tego typu w rejestrze;
  * `Tile.external` to i tak tylko boolean (otwórz w nowej karcie / nie), bez
  * trzeciej opcji na "osadzony".
  */
-export function hubApplicationToTile(row: HubTile, t: TFunction<"tiles">, locale: string): Tile {
+export function hubApplicationToTile(row: HubTile, locale: string): Tile {
   const { iconBg, iconFg } = resolveTileColor(row.color)
 
   return {
     id: row.code,
-    label: tileName(t, locale, row.code, "label", row.name),
-    description: tileName(t, locale, row.code, "description", row.description ?? ""),
+    label: tileText(row.translations, locale, "name", row.name),
+    description: tileText(row.translations, locale, "description", row.description ?? ""),
     // Niezmiennik kształtu w bazie (`applications_kind_shape`) gwarantuje
     // route dla native i url dla pozostałych — fallback tylko dla typów.
     href: (row.kind === "native" ? row.route : row.url) ?? "#",
@@ -47,10 +52,6 @@ export function hubApplicationToTile(row: HubTile, t: TFunction<"tiles">, locale
   }
 }
 
-export function hubApplicationsToTiles(
-  rows: readonly HubTile[],
-  t: TFunction<"tiles">,
-  locale: string,
-): Tile[] {
-  return rows.map((row) => hubApplicationToTile(row, t, locale))
+export function hubApplicationsToTiles(rows: readonly HubTile[], locale: string): Tile[] {
+  return rows.map((row) => hubApplicationToTile(row, locale))
 }

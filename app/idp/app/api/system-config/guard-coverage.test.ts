@@ -49,6 +49,7 @@ const service = vi.hoisted(() => {
     listUsers: vi.fn(async () => []),
     listRoles: vi.fn(async () => []),
     listApplications: vi.fn(async () => []),
+    getApplication: vi.fn(async () => application),
     listApplicationRoleIds: vi.fn(async () => []),
     createApplication: vi.fn(async () => application),
     updateApplication: vi.fn(async () => application),

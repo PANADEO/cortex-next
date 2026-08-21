@@ -517,6 +517,17 @@ export default function ApplicationsPage() {
                   <span className="text-xs text-muted-foreground">{t("shared.codeHint")}</span>
                 </div>
 
+                {/* Przy TWORZENIU pole zapisuje ZAWSZE wartość bazową,
+                    niezależnie od języka interfejsu — kolumna `applications.
+                    name` jest NOT NULL, więc każdy nowy wiersz musi ją mieć
+                    (rozstrzygnięcie 1 w PROJECT/cortex-frontend/ARTIFACTS/
+                    i18n/cortex-frontend-tlumaczenia-nazw-kafelkow-projekt.md).
+                    Okno „Tłumaczenia" jest dostępne dopiero w szczegółach, po
+                    zapisaniu: bez wiersza w bazie nie ma czego tłumaczyć,
+                    a wymuszanie polskiej nazwy na adminie pracującym po
+                    angielsku byłoby gorsze — nie musi znać polskiego.
+                    Konsekwencja do przyjęcia: wartość bazowa nie zawsze będzie
+                    polska. Jest zapasem, a nie „polską nazwą". */}
                 <div className="grid content-start gap-1.5">
                   <Label htmlFor="name">{t("applications.form.nameLabel")}</Label>
                   <Input
@@ -525,6 +536,9 @@ export default function ApplicationsPage() {
                     onChange={(event) => update("name", event.target.value)}
                     placeholder={t("applications.form.namePlaceholder")}
                   />
+                  <span className="text-xs text-muted-foreground">
+                    {t("applications.form.createBaseValueHint")}
+                  </span>
                 </div>
 
                 <div className="grid content-start gap-1.5">

@@ -256,8 +256,15 @@ describe("useResolvedBreadcrumbs", () => {
 })
 
 describe("nazwy kafelków w drugim języku", () => {
-  const tiles = () => i18nInstance.getFixedT(null, "tiles")
   const aiTools = (locale: string) => i18nInstance.getFixedT(locale, "ai-tools")
+
+  /** Tłumaczenia nazw kafelków przychodzą z KATALOGU (`GET /api/hub/tiles`),
+   *  kluczowane kodem aplikacji — nie z pliku w repo. Ta sama dana, z której
+   *  hub składa etykiety kafelków. */
+  const catalogue = {
+    "idp-basic": { en: { name: "Simple IDP", description: null } },
+    "system-config": { en: { name: "System Configuration", description: null } },
+  }
 
   // Ta ścieżka omijała tłumaczenia w ogóle: okruszek narzędzia AI brał
   // `shortLabel` wprost z rejestru, więc w interfejsie angielskim pokazywał
@@ -265,13 +272,30 @@ describe("nazwy kafelków w drugim języku", () => {
   // klucze nawigacji i wyglądała poprawnie.
   it("okruszek narzędzia AI jest tłumaczony, a nie brany z rejestru", () => {
     expect(
-      breadcrumbsFromPath("/ai-tools/text-highlighter", (k) => k, tiles(), "en", aiTools("en")),
+      breadcrumbsFromPath("/ai-tools/text-highlighter", (k) => k, catalogue, "en", aiTools("en")),
     ).toEqual([{ label: "nav.hub", href: "/" }, { label: "Highlighter" }])
   })
 
-  it("korzeń okruszka bierze nazwę kafelka z tłumaczenia", () => {
-    const [root] = breadcrumbsFromPath("/idp-basic/dashboard", (k) => k, tiles(), "en")
-    expect(root).toEqual({ label: "IDP Basic", href: "/" })
+  /** Korzeń okruszka JEST nazwą kafelka — musi brzmieć tak samo jak kafelek
+   *  na hubie, bo stoi w topbarze nad nim. Wcześniej brał ją z `locales/en/
+   *  tiles.json`, czyli z pliku, którego admin nie edytuje; teraz z katalogu. */
+  it("korzeń okruszka bierze nazwę kafelka z tłumaczeń katalogu", () => {
+    const [root] = breadcrumbsFromPath("/system-config/users", (k) => k, catalogue, "en")
+    expect(root).toEqual({ label: "System Configuration", href: "/" })
+  })
+
+  it("po polsku korzeń zostaje na wartości bazowej", () => {
+    const [root] = breadcrumbsFromPath("/system-config/users", (k) => k, catalogue, "pl")
+    expect(root).toEqual({ label: "Konfiguracja Systemu", href: "/" })
+  })
+
+  /** Katalog jeszcze nie wrócił z sieci, albo kafelek jest ukryty z huba
+   *  (`show_on_hub=false`) i w katalogu go nie ma. Okruszek ma wtedy pokazać
+   *  etykietę z rejestru — nazwę zdegradowaną do języka źródłowego, NIGDY
+   *  surowy segment URL-a. */
+  it("bez wpisu w katalogu korzeń spada na etykietę z rejestru", () => {
+    const [root] = breadcrumbsFromPath("/token-usage", (k) => k, {}, "en")
+    expect(root).toEqual({ label: "Raportowanie Tokenów", href: "/" })
   })
 
   // Krótka nazwa NIE jest daną instancji, więc — inaczej niż nazwa kafelka —
@@ -279,7 +303,7 @@ describe("nazwy kafelków w drugim języku", () => {
   // zostaje wyłącznie zapasem na narzędzie bez wpisu.
   it("w języku źródłowym krótka nazwa idzie z przestrzeni `ai-tools`", () => {
     expect(
-      breadcrumbsFromPath("/ai-tools/text-highlighter", (k) => k, tiles(), "pl", aiTools("pl")),
+      breadcrumbsFromPath("/ai-tools/text-highlighter", (k) => k, catalogue, "pl", aiTools("pl")),
     ).toEqual([{ label: "nav.hub", href: "/" }, { label: "Podświetlacz" }])
   })
 })

@@ -151,6 +151,60 @@ export const applications = systemConfig.table(
   }),
 )
 
+/**
+ * Tłumaczenia nazwy i opisu kafelka — PROJECT/cortex-frontend/ARTIFACTS/i18n/
+ * cortex-frontend-tlumaczenia-nazw-kafelkow-projekt.md.
+ *
+ * Zamyka lukę: angielskiej nazwy kafelka nie dało się zmienić z panelu, bo
+ * siedziała w pliku `app/idp/locales/en/tiles.json`. Kafelek założony przez
+ * admina pokazywał w angielskim interfejsie swoją polską nazwę.
+ *
+ * KLUCZ ZŁOŻONY (application_id, locale), a nie własne `id` z UNIQUE obok:
+ * "jedno tłumaczenie na język na aplikację" to tożsamość tego wiersza, nie
+ * dodatkowe ograniczenie. Ten sam układ co user_roles/permissions_matrix
+ * wyżej. Efekt uboczny, na którym stoi zapis: `on conflict (application_id,
+ * locale)` działa bez dodatkowego indeksu.
+ *
+ * `name` i `description` są OSOBNO NULL-owalne — wolno przetłumaczyć samą
+ * nazwę i zostawić opis na wartości bazowej (`applications.description`).
+ * Pusty napis z formularza zapisujemy jako NULL, a wiersz bez ANI JEDNEJ
+ * wartości KASUJEMY (setApplicationTranslations w @cortex/service) — inaczej
+ * baza zbiera puste rekordy, które wyglądają jak tłumaczenie, a nim nie są.
+ * Tego niezmiennika NIE da się wyrazić CHECK-iem tak, żeby był użyteczny:
+ * ograniczenie `name is not null or description is not null` odbiłoby zapis
+ * błędem Postgresa zamiast po prostu usunąć wiersz, a to jest normalna
+ * ścieżka (admin czyści oba pola), nie pomyłka wołającego.
+ *
+ * BEZ CHECK-a NA `locale`, tą samą decyzją co `instance_settings.
+ * appearance_preset` niżej: lista języków żyje w kodzie aplikacji
+ * (`LOCALES` w app/idp/lib/i18n/config.ts), więc ograniczenie w bazie
+ * oznaczałoby migrację przy każdym nowym języku. Zamkniętą listę egzekwuje
+ * warstwa serwisowa (`SUPPORTED_LOCALES` + test parzystości
+ * system-config.locales-parity.test.ts), a wiersz w nieznanym języku jest
+ * dla klienta martwy, nie wywracający (reguła rozstrzygania czyta
+ * `translations[locale]`, więc klucz spoza listy nikogo nie dotyczy).
+ *
+ * `ON DELETE CASCADE`, bo tłumaczenie bez aplikacji nie znaczy nic.
+ */
+export const applicationTranslations = systemConfig.table(
+  "application_translations",
+  {
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => applications.id, { onDelete: "cascade" }),
+    // Kod języka interfejsu ("en"), nie BCP-47 z regionem — dokładnie te same
+    // wartości, co klucze w `resources` po stronie aplikacji.
+    locale: text("locale").notNull(),
+    name: text("name"),
+    description: text("description"),
+    createdAt,
+    updatedAt,
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.applicationId, table.locale] }),
+  }),
+)
+
 /** Gruboziarnisty grant: rola ma dostęp do aplikacji (kafelka) albo nie.
  *  Odpowiednik permissions_matrix z cortex-admin. */
 export const permissionsMatrix = systemConfig.table(
@@ -303,6 +357,7 @@ export const instanceSettings = systemConfig.table(
 export type UserRow = typeof users.$inferSelect
 export type RoleRow = typeof roles.$inferSelect
 export type ApplicationRow = typeof applications.$inferSelect
+export type ApplicationTranslationRow = typeof applicationTranslations.$inferSelect
 export type ApplicationScopeRow = typeof applicationScopes.$inferSelect
 export type OpenwebuiGroupMappingRow = typeof openwebuiGroupMappings.$inferSelect
 export type InstanceSettingsRow = typeof instanceSettings.$inferSelect

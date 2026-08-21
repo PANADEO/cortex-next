@@ -32,6 +32,9 @@ function hubRow(partial: { code: string; name: string } & Partial<HubTile>) {
   return {
     id: partial.code,
     description: null,
+    // Kontrakt GET /api/hub/tiles: pole jest ZAWSZE obecne, kafelek bez ani
+    // jednego tłumaczenia dostaje pustą mapę (nigdy undefined).
+    translations: {},
     icon: null,
     kind: "native" as const,
     route: `/${partial.code}`,

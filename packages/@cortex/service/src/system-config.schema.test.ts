@@ -6,9 +6,12 @@ import { describe, expect, it } from "vitest"
 import {
   applicationInputSchema,
   applicationPatchSchema,
+  applicationTranslationsPatchSchema,
+  BASE_VALUE_LOCALE,
   nextSortOrder,
   roleInputSchema,
   rolePatchSchema,
+  SUPPORTED_LOCALES,
   userInputSchema,
   userPatchSchema,
 } from "./system-config"
@@ -232,5 +235,158 @@ describe("rolePatchSchema — edycja roli", () => {
       expect(parsed.data).not.toHaveProperty("code")
       expect(parsed.data).not.toHaveProperty("isSystem")
     }
+  })
+})
+
+// PROJECT/cortex-frontend/ARTIFACTS/i18n/cortex-frontend-tlumaczenia-nazw-
+// kafelkow-projekt.md. Trzy własności, na których stoi czystość tabeli
+// application_translations, i wszystkie trzy da się udowodnić bez bazy.
+describe("applicationTranslationsPatchSchema — kod języka wobec zamkniętej listy", () => {
+  it.each(["en"])("przepuszcza znany kod języka [%s]", (locale) => {
+    expect(applicationTranslationsPatchSchema.safeParse({ [locale]: { name: "X" } }).success).toBe(
+      true,
+    )
+  })
+
+  /**
+   * Język wartości bazowych jest ODRZUCANY, mimo że stoi na zamkniętej liście.
+   *
+   * Wiersz tłumaczenia na `pl` wygrywałby z kolumną `applications.name`
+   * w regule `translations[locale] ?? name` — czyli nazwa wpisana przez admina
+   * w panelu znikałaby pod wartością, której panel nie pokazuje. To DOKŁADNIE
+   * defekt, dla którego powstała ta tabela; przepuszczenie go tutaj
+   * przeniosłoby go tylko z pliku w repo do bazy.
+   *
+   * Egzekwowane po stronie SERWERA, a nie zostawione dyscyplinie klienta,
+   * bo trasa jest osiągalna bez niego.
+   */
+  it("odrzuca język wartości bazowych, choć jest na liście obsługiwanych", () => {
+    expect(SUPPORTED_LOCALES).toContain(BASE_VALUE_LOCALE)
+
+    const result = applicationTranslationsPatchSchema.safeParse({
+      [BASE_VALUE_LOCALE]: { name: "Nadzorca Faktur" },
+    })
+
+    expect(result.success).toBe(false)
+    expect(result.error?.issues[0]?.path).toEqual([BASE_VALUE_LOCALE])
+  })
+
+  it("odrzucenie języka bazowego nie blokuje pozostałych w tej samej mapie", () => {
+    const result = applicationTranslationsPatchSchema.safeParse({
+      en: { name: "Invoice Supervisor" },
+    })
+
+    expect(result.success).toBe(true)
+  })
+
+  // Literówka w kodzie języka nie daje żadnego objawu poza wierszem, po który
+  // nikt nigdy nie sięgnie — kafelek dalej pokazuje polską nazwę w angielskim
+  // interfejsie, czyli dokładnie defekt, którego naprawie służy ta tabela.
+  it.each(["eng", "EN", "en-GB", "de", "", "polski"])(
+    "odrzuca nieznany kod języka [%s]",
+    (locale) => {
+      expect(
+        applicationTranslationsPatchSchema.safeParse({ [locale]: { name: "X" } }).success,
+      ).toBe(false)
+    },
+  )
+
+  // `__proto__` jest wyjątkiem, który wolno tu opisać zachowaniem zamiast
+  // odmową: Zod składa wynik rekordu przez przypisanie, więc taki klucz nie
+  // staje się własnością obiektu wyjściowego i nie ma go w Object.keys().
+  // Zapis nigdy go więc nie zobaczy — mapa jest PUSTA, a nie "przepuszczona".
+  // Test istnieje po to, żeby ta własność nie zmieniła się po cichu przy
+  // podmianie schematu na taki, który klucz zachowuje.
+  it("klucz __proto__ nie dociera do zapisu (mapa wychodzi pusta)", () => {
+    const parsed = applicationTranslationsPatchSchema.parse(
+      JSON.parse('{"__proto__": {"name": "X"}}') as Record<string, { name: string }>,
+    )
+
+    expect(Object.keys(parsed)).toEqual([])
+  })
+
+  it("wskazuje w błędzie WINNY klucz, a nie całe ciało", () => {
+    const parsed = applicationTranslationsPatchSchema.safeParse({
+      en: { name: "Invoice Analyser" },
+      klingon: { name: "ghItlh" },
+    })
+
+    expect(parsed.success).toBe(false)
+    if (parsed.success) return
+    expect(parsed.error.issues.map((issue) => issue.path)).toEqual([["klingon"]])
+  })
+})
+
+describe("applicationTranslationsPatchSchema — pusty napis to NULL, nie tekst", () => {
+  it.each(["", "   ", "\t\n "])("normalizuje [%j] do null", (value) => {
+    const parsed = applicationTranslationsPatchSchema.parse({ en: { name: value } })
+    expect(parsed.en).toEqual({ name: null })
+  })
+
+  it("jawny null zostaje nullem (wyczyszczenie pola)", () => {
+    expect(applicationTranslationsPatchSchema.parse({ en: { name: null } }).en).toEqual({
+      name: null,
+    })
+  })
+
+  // Na tym stoi CZĘŚCIOWOŚĆ mapy: pole nieobecne w ciele musi zostać nieobecne
+  // po parsowaniu, bo applyTranslationPatch rozróżnia "nie podano" od "podano
+  // null" przez `"name" in entry`. Gdyby Zod dokładał tu klucz z wartością
+  // undefined, PATCH niosący sam opis kasowałby nazwę.
+  it("pole pominięte NIE pojawia się w wyniku parsowania", () => {
+    const parsed = applicationTranslationsPatchSchema.parse({ en: { description: "Opis" } })
+
+    expect(parsed.en).toEqual({ description: "Opis" })
+    expect("name" in parsed.en!).toBe(false)
+  })
+
+  it("przycina białe znaki wokół zachowanej wartości", () => {
+    expect(applicationTranslationsPatchSchema.parse({ en: { name: "  Summarizer  " } }).en).toEqual(
+      {
+        name: "Summarizer",
+      },
+    )
+  })
+
+  it.each([
+    ["name", 121],
+    ["description", 501],
+  ])("odrzuca %s dłuższe niż limit kolumny", (field, length) => {
+    const tooLong = "x".repeat(length)
+    expect(applicationTranslationsPatchSchema.safeParse({ en: { [field]: tooLong } }).success).toBe(
+      false,
+    )
+    expect(
+      applicationTranslationsPatchSchema.safeParse({ en: { [field]: tooLong.slice(1) } }).success,
+    ).toBe(true)
+  })
+})
+
+describe("applicationPatchSchema — tłumaczenia jadą tym samym PATCH-em", () => {
+  it("przyjmuje sam blok translations, bez ani jednej kolumny wiersza", () => {
+    const parsed = applicationPatchSchema.safeParse({
+      translations: { en: { name: "Invoice Analyser", description: null } },
+    })
+
+    expect(parsed.success).toBe(true)
+    if (!parsed.success) return
+    expect(parsed.data).toEqual({
+      translations: { en: { name: "Invoice Analyser", description: null } },
+    })
+  })
+
+  it("odrzuca CAŁY PATCH, gdy kod języka jest nieznany — także gdy kolumny są poprawne", () => {
+    const parsed = applicationPatchSchema.safeParse({
+      name: "Analizator faktur",
+      translations: { xx: { name: "Whatever" } },
+    })
+
+    expect(parsed.success).toBe(false)
+  })
+
+  it("PATCH bez translations zostaje bez tego pola (nie kasuje tłumaczeń)", () => {
+    const parsed = applicationPatchSchema.parse({ name: "Analizator faktur" })
+
+    expect("translations" in parsed).toBe(false)
   })
 })
