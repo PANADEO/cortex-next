@@ -17,6 +17,24 @@ module.exports = {
     "no-console": ["error", { allow: ["warn", "error"] }],
     "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/consistent-type-imports": "warn",
+    // `plugin:@typescript-eslint/recommended` włącza tę regułę gołym "error",
+    // czyli BEZ `ignoreRestSiblings` i bez konwencji podkreślnika. Efekt:
+    // standardowy idiom pomijania klucza — `const { [K]: _pominiete, ...reszta }`
+    // — jest błędem, mimo że nazwa z podkreślnikiem jawnie deklaruje, że
+    // wiązanie istnieje wyłącznie po to, żeby czegoś NIE było w `reszta`.
+    // Kosztowało to zatrzymany build (`next build` przerywa na błędzie lintu,
+    // nie na ostrzeżeniu), więc konwencja jest tu zapisana wprost.
+    // To nie jest poluzowanie reguły: nieużyta zmienna nadal jest błędem,
+    // chyba że autor OZNACZY ją podkreślnikiem jako świadomie odrzuconą.
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        ignoreRestSiblings: true,
+        varsIgnorePattern: "^_",
+        argsIgnorePattern: "^_",
+        caughtErrorsIgnorePattern: "^_",
+      },
+    ],
   },
   overrides: [
     {
