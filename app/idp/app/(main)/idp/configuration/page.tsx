@@ -723,7 +723,12 @@ export default function ConfigurationPage() {
                 />
               </div>
             </div>
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_96px]">
+            {/* Trzecia kolumna bierze SZEROKOŚĆ TREŚCI, nie zaszyte 96 px. Ta wartość
+                była dobrana pod angielskie „Secure" i polskie „Szyfrowanie"
+                wychodziło poza nią o 30 px — ograniczenie układu zaszyte pod
+                jeden język. `auto` rośnie z tłumaczeniem, a dwie kolumny obok
+                zostają elastyczne, więc proporcje się nie zmieniają. */}
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
               <div>
                 <Label htmlFor="imap-user">{t("configuration.fields.imapUser")}</Label>
                 <Input

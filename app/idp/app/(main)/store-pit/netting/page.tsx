@@ -180,7 +180,7 @@ export default function NettingPage() {
               setCountry(v)
             }}
           >
-            <SelectTrigger className="h-9 w-[130px]">
+            <SelectTrigger className="h-9 w-auto min-w-[130px]">
               <SelectValue placeholder={t("fields.country")} />
             </SelectTrigger>
             <SelectContent>
@@ -199,7 +199,7 @@ export default function NettingPage() {
               setMatched(v)
             }}
           >
-            <SelectTrigger className="h-9 w-[130px]">
+            <SelectTrigger className="h-9 w-auto min-w-[130px]">
               <SelectValue placeholder={t("netting.filters.matched")} />
             </SelectTrigger>
             <SelectContent>

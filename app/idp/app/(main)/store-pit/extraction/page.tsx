@@ -209,7 +209,7 @@ export default function ExtractionPage() {
               setCountry(v)
             }}
           >
-            <SelectTrigger className="h-9 w-[130px]">
+            <SelectTrigger className="h-9 w-auto min-w-[130px]">
               <SelectValue placeholder={t("fields.country")} />
             </SelectTrigger>
             <SelectContent>

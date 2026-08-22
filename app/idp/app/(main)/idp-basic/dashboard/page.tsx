@@ -642,7 +642,10 @@ function SystemStatusItem({
         >
           {value}
         </p>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">{description}</p>
+        {/* Bez `truncate`: to podpowiedź NIOSĄCA INSTRUKCJĘ, nie komórka tabeli.
+            Ucięta do jednej linii gubiła właśnie sedno („…w backendzie id…"),
+            i to w obu językach — kontener był za wąski niezależnie od tłumaczenia. */}
+        <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
       </div>
     </div>
   )

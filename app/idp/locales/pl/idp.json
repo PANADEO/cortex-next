@@ -1939,7 +1939,7 @@
     "configuration.fields.pollLimit": "etykieta pola; ile wiadomości pobierać za jednym razem; maks. 18 zn.",
     "configuration.fields.imapUser": "etykieta pola; login do skrzynki przychodzącej; maks. 18 zn.",
     "configuration.fields.imapPassword": "etykieta pola; hasło do skrzynki przychodzącej; maks. 14 zn.",
-    "configuration.fields.secure": "etykieta przełącznika; połączenie szyfrowane do skrzynki; maks. 14 zn.",
+    "configuration.fields.secure": "etykieta przełącznika; połączenie szyfrowane do skrzynki IMAP",
     "configuration.fields.mailbox": "etykieta pola; folder skrzynki, z którego pobierane są wiadomości; maks. 12 zn.",
     "configuration.fields.processedMailbox": "etykieta pola; folder, do którego trafiają wiadomości po przetworzeniu; maks. 26 zn.",
     "configuration.fields.draftsMailbox": "etykieta pola; folder z wersjami roboczymi; maks. 24 zn.",
