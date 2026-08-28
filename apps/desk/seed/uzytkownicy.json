@@ -1,0 +1,16 @@
+{
+  "uzytkownicy": [
+    { "id": "anna",   "imie": "Anna",   "nazwisko": "Kowalska", "dzial": "Księgowość", "rola": "szeregowy",
+      "zlecenia": [
+        { "tytul": "Zestawienie kosztów miesiąca", "podpowiedz": "dodaj plik z fakturami (CSV lub XLSX)", "tresc": "Zrób zestawienie kosztów z pliku faktury-08.csv: pogrupuj po kategorii, policz sumy i zapisz gotowy dokument." },
+        { "tytul": "Sprawdź, czego brakuje w dokumencie", "podpowiedz": "dodaj dokument do sprawdzenia", "tresc": "Przejrzyj dokument i wypisz, które pola są puste albo wymagają uzupełnienia." },
+        { "tytul": "Notatka ze spotkania", "podpowiedz": "dodaj transkrypcję albo notatki", "tresc": "Zrób z tego zwięzłą notatkę: ustalenia, kto co robi, terminy." }
+      ] },
+    { "id": "robert", "imie": "Robert", "nazwisko": "Nowak",    "dzial": "Zarząd",      "rola": "zarzad",
+      "zlecenia": [
+        { "tytul": "Zestawienie kosztów miesiąca", "podpowiedz": "dodaj plik z fakturami (CSV lub XLSX)", "tresc": "Zrób zestawienie kosztów z pliku faktury-08.csv: pogrupuj po kategorii, policz sumy i zapisz jako arkusz." },
+        { "tytul": "Analiza z wykresem", "podpowiedz": "dodaj dane", "tresc": "Policz sumy po kategoriach i przygotuj krótką analizę z rekomendacją." },
+        { "tytul": "Grafika do prezentacji", "podpowiedz": "opisz, co ma być na obrazku", "tresc": "Wygeneruj grafikę tytułową do prezentacji o wynikach kwartału." }
+      ] }
+  ]
+}

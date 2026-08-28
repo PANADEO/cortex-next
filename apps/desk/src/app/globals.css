@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius-xl: 16px; --radius-lg: 12px; --radius-md: 8px;
+  --bg: 40 20% 98%;      --surface: 0 0% 100%;   --raised: 40 20% 96%;
+  --line: 35 12% 88%;    --ink: 30 12% 14%;      --muted: 30 8% 45%;
+  --accent: 24 88% 46%;  --accent-ink: 0 0% 100%;
+  --ok: 152 45% 34%;     --warn: 35 85% 42%;     --bad: 5 65% 46%;
+}
+.dark {
+  --bg: 30 8% 9%;        --surface: 30 8% 12%;   --raised: 30 8% 16%;
+  --line: 30 8% 22%;     --ink: 40 20% 94%;      --muted: 35 8% 62%;
+  --accent: 24 88% 56%;  --accent-ink: 30 20% 10%;
+  --ok: 152 40% 52%;     --warn: 38 80% 58%;     --bad: 5 70% 62%;
+}
+* { border-color: hsl(var(--line)); }
+html, body { height: 100%; }
+body { background: hsl(var(--bg)); color: hsl(var(--ink)); font-family: var(--font-sans); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: hsl(var(--line)); border-radius: 8px; }
+@keyframes puls { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+.puls { animation: puls 1.4s ease-in-out infinite; }
+.prose-desk h1,.prose-desk h2,.prose-desk h3 { font-weight: 650; margin: .9em 0 .35em; }
+.prose-desk h1 { font-size: 1.3rem } .prose-desk h2 { font-size: 1.12rem } .prose-desk h3 { font-size: 1rem }
+.prose-desk p { margin: .5em 0; } .prose-desk ul,.prose-desk ol { margin: .5em 0 .5em 1.15em; }
+.prose-desk ul { list-style: disc } .prose-desk ol { list-style: decimal }
+.prose-desk code { background: hsl(var(--raised)); padding: .1em .35em; border-radius: 6px; font-size: .9em }
+.prose-desk table { width: 100%; border-collapse: collapse; margin: .6em 0; font-size: .92em }
+.prose-desk th,.prose-desk td { border: 1px solid hsl(var(--line)); padding: .35em .55em; text-align: left }
+.prose-desk th { background: hsl(var(--raised)); font-weight: 600 }
