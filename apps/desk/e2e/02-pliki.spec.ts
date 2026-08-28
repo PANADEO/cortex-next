@@ -4,6 +4,21 @@ import type { Page } from '@playwright/test'
 /** Nazwa pliku pojawia się też w tostach, więc asercje celują w samą listę. */
 const lista = (page: Page) => page.getByRole('list', { name: 'Pliki w tym folderze' })
 
+/**
+ * Wgranie nie nadpisuje plików, więc bez sprzątania każdy kolejny przebieg zostawiałby
+ * „test-wgrany (2).txt", „(3)" i tak dalej — a zestaw, który zaśmieca stan, prędzej czy
+ * później zaczyna migotać.
+ */
+test.beforeAll(async ({ request }) => {
+  const headers = { Cookie: 'desk_persona=anna' }
+  const d = await (await request.get('/api/pliki', { headers })).json()
+  for (const p of d.pliki ?? []) {
+    if (p.nazwa.startsWith('test-wgrany')) {
+      await request.post('/api/pliki', { headers, data: { akcja: 'kosz', sciezka: p.sciezka } })
+    }
+  }
+})
+
 test.describe('Obszar 2 · Moje pliki — teczka, która przeżywa sprawę', () => {
   test('Wgrany plik zostaje na biurku i przeżywa przeładowanie', async ({ page }) => {
     await jako(page, 'anna')
@@ -79,5 +94,18 @@ test.describe('Obszar 2 · Moje pliki — teczka, która przeżywa sprawę', () 
     await jako(page, 'robert')
     await page.goto('/pliki')
     await expect(lista(page).getByText('test-wgrany.txt')).toHaveCount(0)
+  })
+})
+
+test.describe('Skróty klawiszowe z menu naprawdę działają', () => {
+  test('F2 na wierszu otwiera edycję nazwy', async ({ page }) => {
+    await jako(page, 'anna')
+    await page.goto('/pliki')
+    await lista(page).getByText('test-wgrany.txt').click()
+    await page.keyboard.press('Escape')
+    await lista(page).getByRole('button', { name: /test-wgrany/ }).first().focus()
+    await page.keyboard.press('F2')
+    await expect(page.getByRole('textbox', { name: 'Nowa nazwa pliku' })).toBeVisible()
+    await page.keyboard.press('Escape')
   })
 })

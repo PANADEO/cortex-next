@@ -63,9 +63,16 @@ export function WierszPliku({ p, akcje, aktywny }: { p: PlikMeta; akcje: AkcjePl
     else akcje.podglad?.(p)
   }
 
+  // menu obiecuje F2 i Delete — więc muszą działać, nie tylko widnieć jako napis
+  function skroty(e: React.KeyboardEvent) {
+    if (edycja) return
+    if (e.key === 'F2' && akcje.zmienNazwe) { e.preventDefault(); setEdycja(true) }
+    if (e.key === 'Delete' && akcje.usun) { e.preventDefault(); akcje.usun(p) }
+  }
+
   return (
     <li className={aktywny ? 'bg-raised' : undefined}>
-      <div className="group flex h-wiersz items-center gap-2 px-3 hover:bg-raised/60">
+      <div onKeyDown={skroty} className="group flex h-wiersz items-center gap-2 px-3 hover:bg-raised/60">
         <span className="grid w-7 shrink-0 place-items-center text-muted">
           <Ikona jako={ikonaPliku(p)} px={16} />
         </span>
