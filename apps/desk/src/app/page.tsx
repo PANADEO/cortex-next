@@ -1,75 +1,63 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import { Powloka } from '@/components/powloka'
+import { Zlecenia } from '@/components/zlecenia'
+import { ListaSpraw, type WierszSprawy } from '@/components/lista-spraw'
 import { ktoTo } from '@/core/tozsamosc'
 import { polityka } from '@/core/brama-zdolnosci'
 import { pool, migracja } from '@/core/db'
-import { Zlecenia } from '@/components/zlecenia'
-import { kiedy } from '@/lib'
+import * as biurko from '@/core/biurko'
 
-const ETYKIETA: Record<string, string> = {
-  nowa: 'nowa', pracuje: 'pracuje', gotowe: 'gotowe', przerwane: 'przerwane', blad: 'nie udało się',
-}
-const KROPKA: Record<string, string> = {
-  nowa: 'bg-muted', pracuje: 'bg-accent puls', gotowe: 'bg-ok', przerwane: 'bg-warn', blad: 'bg-bad',
-}
+const NA_BIURKU = 12
 
-export default async function Biurko({ searchParams }: { searchParams: Promise<{ nowa?: string }> }) {
+export default async function Biurko() {
   await migracja()
-  const sp = await searchParams
   const u = await ktoTo()
   const p = polityka(u)
   const s = await pool.query(
-    `select id, tytul, stan, powod, zmieniona from desk.sprawa where wlasciciel=$1 order by zmieniona desc limit 20`, [u.id],
+    `select id, tytul, stan, powod, zmieniona from desk.sprawa where wlasciciel=$1 order by zmieniona desc limit $2`,
+    [u.id, NA_BIURKU],
   )
-  if (sp.nowa) redirect('/')
+
+  const sprawy: WierszSprawy[] = await Promise.all(
+    s.rows.map(async (r) => ({
+      id: r.id, tytul: r.tytul, stan: r.stan, powod: r.powod,
+      zmieniona: r.zmieniona.toISOString(),
+      dokumenty: (await biurko.lista(u.id, biurko.katalogSprawy(u.id, r.id)).catch(() => []))
+        .filter((x) => !x.katalog).length,
+    })),
+  )
 
   return (
     <Powloka>
-      <div className="h-full overflow-y-auto">
-        <div className="mx-auto max-w-3xl px-5 py-8 md:py-12">
-          <h1 className="text-2xl font-semibold md:text-[28px]">Dzień dobry, {u.imie}.</h1>
-          <p className="mt-1 text-muted">To jest Twoje biurko. Nikt inny go nie widzi.</p>
+      <div className="h-full overflow-y-auto pb-pasek md:pb-0">
+        <div className="mx-auto max-w-strumien px-5 py-8 md:py-10">
+          {/* Powitanie zostaje na stałe — „nikt inny go nie widzi" to obietnica produktu,
+              a obietnica wypowiedziana raz i nigdy więcej przestaje działać. Przy pełnym
+              biurku schodzi o stopień, żeby nie zabierać miejsca polu zlecenia. */}
+          <div className="mb-5">
+            <h1 className={sprawy.length === 0 ? 't-display' : 't-h2'}>Dzień dobry, {u.imie}.</h1>
+            <p className="mt-0.5 t-meta">To jest Twoje biurko. Nikt inny go nie widzi.</p>
+          </div>
 
-          <Zlecenia zlecenia={u.zlecenia} />
+          <Suspense>
+            <Zlecenia zlecenia={u.zlecenia} polityka={p} maSprawy={sprawy.length} />
+          </Suspense>
 
-          <div className="mt-10">
+          <div className="mt-9">
             <div className="mb-2 flex items-baseline justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Moje sprawy</h2>
-              <Link href="/pliki" className="text-sm text-muted underline-offset-2 hover:underline md:hidden">Moje pliki →</Link>
+              <h2 className="t-sekcja">Sprawy</h2>
+              {sprawy.length >= NA_BIURKU && (
+                <Link href="/sprawy" className="t-meta hover:text-ink">Wszystkie →</Link>
+              )}
             </div>
-            {s.rows.length === 0 ? (
-              <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted">
+            {sprawy.length === 0 ? (
+              <div className="rounded-lg border border-dashed p-6 text-center t-meta">
                 Nie masz jeszcze żadnej sprawy. Zacznij od kafelka powyżej albo napisz własne zlecenie.
               </div>
             ) : (
-              <ul className="divide-y overflow-hidden rounded-xl border bg-surface">
-                {s.rows.map((r) => (
-                  <li key={r.id}>
-                    <Link href={`/sprawa/${r.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-raised">
-                      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${KROPKA[r.stan]}`} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-medium">{r.tytul}</span>
-                        <span className="block truncate text-xs text-muted">
-                          {ETYKIETA[r.stan]}{r.powod ? ` · ${r.powod}` : ''} · {kiedy(r.zmieniona.toISOString())}
-                        </span>
-                      </span>
-                      <span className="shrink-0 text-muted">›</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <ListaSpraw sprawy={sprawy} />
             )}
-          </div>
-
-          <div className="mt-10 md:hidden">
-            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Co potrafię</h2>
-            <ul className="space-y-1 rounded-xl border bg-surface p-3 text-sm">
-              {p.przyznane.map((z) => <li key={z.id} className="flex gap-2"><span className="text-ok">✓</span>{z.nazwa}</li>)}
-              {p.zablokowane.map((z) => (
-                <li key={z.id} className="flex gap-2 text-muted"><span>🔒</span>{z.nazwa} <span className="text-[11px]">· dział: {z.dzial}</span></li>
-              ))}
-            </ul>
           </div>
         </div>
       </div>

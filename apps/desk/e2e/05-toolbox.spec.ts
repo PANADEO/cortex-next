@@ -1,32 +1,39 @@
 import { test, expect, jako } from './osoby'
 
-test.describe('Obszar 5 · Toolbox stopniowany wg roli', () => {
+test.describe('Obszar 5 · Zdolności stopniowane wg roli', () => {
   test('Dwie role, dwa zestawy', async ({ page }) => {
     await jako(page, 'anna')
-    await page.goto('/')
-    const polka = page.locator('aside')
-    await expect(polka.getByText('Tworzenie dokumentów')).toBeVisible()
-    await expect(polka.getByText('Uruchamianie obliczeń')).toBeVisible()
-    await expect(polka.getByRole('button', { name: 'Poproś o dostęp' })).toHaveCount(3)
+    await page.goto('/co-potrafie')
+    await expect(page.getByText('Tworzenie dokumentów')).toBeVisible()
+    await expect(page.getByText('Uruchamianie obliczeń')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Poproś o dostęp' })).toHaveCount(3)
 
     await jako(page, 'robert')
-    await page.goto('/')
-    await expect(page.locator('aside').getByRole('button', { name: 'Poproś o dostęp' })).toHaveCount(0)
-    await expect(page.locator('aside').getByText('Generowanie obrazów')).toBeVisible()
+    await page.goto('/co-potrafie')
+    await expect(page.getByRole('button', { name: 'Poproś o dostęp' })).toHaveCount(0)
+    await expect(page.getByText('Generowanie obrazów')).toBeVisible()
   })
 
   test('Zablokowana zdolność pokazuje dział-właściciela', async ({ page }) => {
     await jako(page, 'anna')
-    await page.goto('/')
-    await expect(page.locator('aside').getByText('dział: Marketing')).toBeVisible()
-    await expect(page.locator('aside').getByText('dział: IT')).toBeVisible()
+    await page.goto('/co-potrafie')
+    await expect(page.getByText('zgoda należy do działu: Marketing')).toBeVisible()
+    await expect(page.getByText('zgoda należy do działu: IT')).toBeVisible()
   })
 
   test('Prośba o dostęp zostawia potwierdzenie', async ({ page }) => {
     await jako(page, 'anna')
+    await page.goto('/co-potrafie')
+    await page.getByRole('button', { name: 'Poproś o dostęp' }).first().click()
+    await expect(page.getByText('Prośba wysłana — czeka na rozpatrzenie')).toBeVisible()
+  })
+
+  test('Zdolności są też pod ręką przy polu zlecenia', async ({ page }) => {
+    await jako(page, 'anna')
     await page.goto('/')
-    await page.locator('aside').getByRole('button', { name: 'Poproś o dostęp' }).first().click()
-    await expect(page.locator('aside').getByText('Prośba wysłana — oczekuje')).toBeVisible()
+    await page.getByRole('button', { name: /Umiem tu 4 rzeczy/ }).click()
+    await expect(page.getByText('Tego u Ciebie nie umiem:')).toBeVisible()
+    await expect(page.getByText('Generowanie obrazów')).toBeVisible()
   })
 
   test('Model nie dostaje narzędzia spoza roli', async ({ request }) => {

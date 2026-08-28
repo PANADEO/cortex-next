@@ -3,8 +3,8 @@ export type DeskEvent =
   | { typ: 'lifecycle'; stan: 'start' | 'koniec' | 'przerwane' | 'blad'; powod?: string }
   | { typ: 'mysl'; tekst: string }
   | { typ: 'assistant'; tekst: string }
-  | { typ: 'narzedzie_start'; nazwa: string; etykieta: string; argumenty: Record<string, unknown> }
-  | { typ: 'narzedzie_koniec'; nazwa: string; ok: boolean; podsumowanie: string; ms: number }
+  | { typ: 'narzedzie_start'; id?: string; nazwa: string; etykieta: string; argumenty: Record<string, unknown> }
+  | { typ: 'narzedzie_koniec'; id?: string; nazwa: string; ok: boolean; podsumowanie: string; ms: number }
   | { typ: 'koszt'; usd: number }
 
 export type Zdolnosc = { id: string; nazwa: string; dzial: string; opis: string }

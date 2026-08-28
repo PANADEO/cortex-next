@@ -17,3 +17,15 @@ export function kiedy(iso: string) {
   if (m < 60 * 24) return `${Math.round(m / 60)} godz. temu`
   return d.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' })
 }
+
+/**
+ * Polska odmiana liczebnika: 1 plik · 2 pliki · 5 plików · 22 pliki · 25 plików.
+ * Podajesz trzy formy — pojedynczą, mnogą "kilka" i mnogą dopełniaczową.
+ */
+export function ile(n: number, jeden: string, kilka: string, wiele: string) {
+  const d = n % 10
+  const s = n % 100
+  if (n === 1) return `${n} ${jeden}`
+  if (d >= 2 && d <= 4 && (s < 12 || s > 14)) return `${n} ${kilka}`
+  return `${n} ${wiele}`
+}

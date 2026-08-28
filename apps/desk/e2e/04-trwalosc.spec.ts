@@ -19,14 +19,18 @@ test.describe('Obszar 4 · Praca nie ginie', () => {
     await jako(page, 'anna')
     const id = await nowaZTura(request, DLUGIE)
     await page.goto(`/sprawa/${id}`)
-    await expect(page.getByText(/pracuje od/)).toBeVisible({ timeout: 30_000 })
-    await expect(page.locator('button', { hasText: /Czytam|Przeglądam/ }).first()).toBeVisible({ timeout: 60_000 })
-    const przed = await page.locator('button', { hasText: /Czytam|Zapisuję|Sprawdzam|Przeglądam/ }).count()
+    await expect(page.getByText(/pracuje ·/)).toBeVisible({ timeout: 30_000 })
+    const kroki = page.getByRole('list', { name: 'Kroki pracy' }).getByRole('button')
+    await expect(kroki.first()).toBeVisible({ timeout: 60_000 })
+    const przed = await kroki.count()
 
     await page.reload()
 
-    await expect(page.getByText(/pracuje od|gotowe/)).toBeVisible()
-    const po = await page.locator('button', { hasText: /Czytam|Zapisuję|Sprawdzam|Przeglądam/ }).count()
+    await expect(page.getByText(/pracuje ·|gotowe/).first()).toBeVisible()
+    // po odświeżeniu przebieg mógł się zwinąć — rozwijamy, żeby policzyć kroki
+    const naglowek = page.getByRole('region', { name: 'Przebieg pracy' }).getByRole('button').first()
+    if ((await naglowek.getAttribute('aria-expanded')) === 'false') await naglowek.click()
+    const po = await page.getByRole('list', { name: 'Kroki pracy' }).getByRole('button').count()
     expect(po).toBeGreaterThanOrEqual(przed)
     expect(po).toBeGreaterThan(0)
     // historia jest kompletna także w źródle prawdy, nie tylko na ekranie

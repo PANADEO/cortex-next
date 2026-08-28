@@ -1,6 +1,7 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import { generateText, stepCountIs, tool } from 'ai'
 import { z } from 'zod'
+import { randomUUID } from 'node:crypto'
 import { pool, migracja } from './db'
 import * as biurko from './biurko'
 import * as sandbox from './sandbox'
@@ -53,15 +54,15 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
       inputSchema: z.object({ katalog: z.string().optional().describe('domyślnie "Moje pliki"') }),
       execute: async ({ katalog }) => {
         const k = katalog?.trim() || 'Moje pliki'
-        const start = Date.now()
-        await zdarz({ typ: 'narzedzie_start', nazwa: 'lista_plikow', etykieta: `Przeglądam „${k}"`, argumenty: { katalog: k } })
+        const start = Date.now(), kid = randomUUID()
+        await zdarz({ typ: 'narzedzie_start', id: kid, nazwa: 'lista_plikow', etykieta: `Przeglądam „${k}"`, argumenty: { katalog: k } })
         const l = await biurko.lista(u.id, k)
         const lSprawy = await biurko.lista(u.id, katalogSprawy).catch(() => [])
         const opis = [
           ...l.map((x) => `${x.katalog ? '[katalog] ' : ''}${x.sciezka} (${x.rozmiar} B)`),
           ...lSprawy.map((x) => `${x.sciezka} (${x.rozmiar} B)`),
         ].join('\n') || '(pusto)'
-        await zdarz({ typ: 'narzedzie_koniec', nazwa: 'lista_plikow', ok: true, podsumowanie: `${l.length + lSprawy.length} pozycji`, ms: Date.now() - start })
+        await zdarz({ typ: 'narzedzie_koniec', id: kid, nazwa: 'lista_plikow', ok: true, podsumowanie: `${l.length + lSprawy.length} pozycji`, ms: Date.now() - start })
         return opis
       },
     })
@@ -72,15 +73,15 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
       description: 'Czyta zawartość pliku tekstowego z biurka użytkownika.',
       inputSchema: z.object({ sciezka: z.string().describe('np. "Moje pliki/faktury-08.csv"') }),
       execute: async ({ sciezka }) => {
-        const start = Date.now()
-        await zdarz({ typ: 'narzedzie_start', nazwa: 'czytaj_plik', etykieta: `Czytam ${sciezka}`, argumenty: { sciezka } })
+        const start = Date.now(), kid = randomUUID()
+        await zdarz({ typ: 'narzedzie_start', id: kid, nazwa: 'czytaj_plik', etykieta: `Czytam ${sciezka}`, argumenty: { sciezka } })
         try {
           const tresc = await biurko.czytaj(u.id, sciezka)
           const linie = tresc.split('\n').length
-          await zdarz({ typ: 'narzedzie_koniec', nazwa: 'czytaj_plik', ok: true, podsumowanie: `${linie} wierszy, ${tresc.length} znaków`, ms: Date.now() - start })
+          await zdarz({ typ: 'narzedzie_koniec', id: kid, nazwa: 'czytaj_plik', ok: true, podsumowanie: `${linie} wierszy, ${tresc.length} znaków`, ms: Date.now() - start })
           return tresc.slice(0, 60000)
         } catch (e) {
-          await zdarz({ typ: 'narzedzie_koniec', nazwa: 'czytaj_plik', ok: false, podsumowanie: 'nie udało się otworzyć', ms: Date.now() - start })
+          await zdarz({ typ: 'narzedzie_koniec', id: kid, nazwa: 'czytaj_plik', ok: false, podsumowanie: 'nie udało się otworzyć', ms: Date.now() - start })
           return `Nie udało się otworzyć pliku ${sciezka}.`
         }
       },
@@ -92,10 +93,10 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
       description: 'Zapisuje gotowy dokument do teczki bieżącej sprawy. Format markdown albo zwykły tekst.',
       inputSchema: z.object({ nazwa: z.string().describe('np. "zestawienie-kosztow.md"'), tresc: z.string() }),
       execute: async ({ nazwa, tresc }) => {
-        const start = Date.now()
-        await zdarz({ typ: 'narzedzie_start', nazwa: 'zapisz_dokument', etykieta: `Zapisuję ${nazwa}`, argumenty: { nazwa } })
+        const start = Date.now(), kid = randomUUID()
+        await zdarz({ typ: 'narzedzie_start', id: kid, nazwa: 'zapisz_dokument', etykieta: `Zapisuję ${nazwa}`, argumenty: { nazwa } })
         await biurko.zapisz(u.id, `${katalogSprawy}/${nazwa}`, tresc)
-        await zdarz({ typ: 'narzedzie_koniec', nazwa: 'zapisz_dokument', ok: true, podsumowanie: `${tresc.length} znaków`, ms: Date.now() - start })
+        await zdarz({ typ: 'narzedzie_koniec', id: kid, nazwa: 'zapisz_dokument', ok: true, podsumowanie: `${tresc.length} znaków`, ms: Date.now() - start })
         return `Zapisano ${nazwa} w teczce sprawy.`
       },
     })
@@ -106,15 +107,15 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
       description: 'Odczytuje zapisany dokument z teczki sprawy, żeby potwierdzić, co w nim faktycznie jest.',
       inputSchema: z.object({ nazwa: z.string() }),
       execute: async ({ nazwa }) => {
-        const start = Date.now()
-        await zdarz({ typ: 'narzedzie_start', nazwa: 'sprawdz_dokument', etykieta: `Sprawdzam ${nazwa} po zapisie`, argumenty: { nazwa } })
+        const start = Date.now(), kid = randomUUID()
+        await zdarz({ typ: 'narzedzie_start', id: kid, nazwa: 'sprawdz_dokument', etykieta: `Sprawdzam ${nazwa} po zapisie`, argumenty: { nazwa } })
         try {
           const tresc = await biurko.czytaj(u.id, `${katalogSprawy}/${nazwa}`)
           const puste = (tresc.match(/\[(WPISZ|UZUPEŁNIJ|TODO)[^\]]*\]/gi) ?? []).length
-          await zdarz({ typ: 'narzedzie_koniec', nazwa: 'sprawdz_dokument', ok: true, podsumowanie: `${tresc.split('\n').length} wierszy, pustych pól: ${puste}`, ms: Date.now() - start })
+          await zdarz({ typ: 'narzedzie_koniec', id: kid, nazwa: 'sprawdz_dokument', ok: true, podsumowanie: `${tresc.split('\n').length} wierszy, pustych pól: ${puste}`, ms: Date.now() - start })
           return `Plik ma ${tresc.length} znaków. Nieuzupełnionych pól: ${puste}.\n\n${tresc.slice(0, 4000)}`
         } catch {
-          await zdarz({ typ: 'narzedzie_koniec', nazwa: 'sprawdz_dokument', ok: false, podsumowanie: 'pliku nie ma', ms: Date.now() - start })
+          await zdarz({ typ: 'narzedzie_koniec', id: kid, nazwa: 'sprawdz_dokument', ok: false, podsumowanie: 'pliku nie ma', ms: Date.now() - start })
           return `Pliku ${nazwa} nie ma w teczce sprawy.`
         }
       },
@@ -126,10 +127,10 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
       description: 'Zapisuje zestawienie jako arkusz CSV do teczki sprawy.',
       inputSchema: z.object({ nazwa: z.string(), csv: z.string() }),
       execute: async ({ nazwa, csv }) => {
-        const start = Date.now()
-        await zdarz({ typ: 'narzedzie_start', nazwa: 'zapisz_arkusz', etykieta: `Zapisuję arkusz ${nazwa}`, argumenty: { nazwa } })
+        const start = Date.now(), kid = randomUUID()
+        await zdarz({ typ: 'narzedzie_start', id: kid, nazwa: 'zapisz_arkusz', etykieta: `Zapisuję arkusz ${nazwa}`, argumenty: { nazwa } })
         await biurko.zapisz(u.id, `${katalogSprawy}/${nazwa}`, csv)
-        await zdarz({ typ: 'narzedzie_koniec', nazwa: 'zapisz_arkusz', ok: true, podsumowanie: `${csv.split('\n').length} wierszy`, ms: Date.now() - start })
+        await zdarz({ typ: 'narzedzie_koniec', id: kid, nazwa: 'zapisz_arkusz', ok: true, podsumowanie: `${csv.split('\n').length} wierszy`, ms: Date.now() - start })
         return `Zapisano arkusz ${nazwa}.`
       },
     })
@@ -140,8 +141,8 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
       description: 'Uruchamia obliczenia na danych. Podaj kod w JavaScript (Node) oraz listę plików z biurka w polu `pliki` — zostaną zamontowane w katalogu roboczym pod swoimi nazwami (np. "faktury-08.csv"). Wypisz wynik przez console.log.',
       inputSchema: z.object({ opis: z.string().describe('po ludzku, co liczysz'), kod: z.string(), pliki: z.array(z.string()).optional() }),
       execute: async ({ opis, kod, pliki }) => {
-        const start = Date.now()
-        await zdarz({ typ: 'narzedzie_start', nazwa: 'uruchom_obliczenia', etykieta: opis, argumenty: { opis } })
+        const start = Date.now(), kid = randomUUID()
+        await zdarz({ typ: 'narzedzie_start', id: kid, nazwa: 'uruchom_obliczenia', etykieta: opis, argumenty: { opis } })
         const box = await sandbox.utworz({
           uzytkownik: u.id,
           sprawaId,
@@ -150,7 +151,7 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
         })
         const r = await box.exec(kod)
         await box.dispose()
-        await zdarz({ typ: 'narzedzie_koniec', nazwa: 'uruchom_obliczenia', ok: r.ok, podsumowanie: r.ok ? 'policzone' : 'błąd wykonania', ms: Date.now() - start })
+        await zdarz({ typ: 'narzedzie_koniec', id: kid, nazwa: 'uruchom_obliczenia', ok: r.ok, podsumowanie: r.ok ? 'policzone' : 'błąd wykonania', ms: Date.now() - start })
         return r.wyjscie || '(brak wyjścia)'
       },
     })
@@ -161,8 +162,8 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
       description: 'Generuje obraz na podstawie opisu i zapisuje go w teczce sprawy.',
       inputSchema: z.object({ nazwa: z.string().describe('np. "grafika.png"'), opis: z.string() }),
       execute: async ({ nazwa, opis }) => {
-        const start = Date.now()
-        await zdarz({ typ: 'narzedzie_start', nazwa: 'generuj_obraz', etykieta: `Generuję obraz: ${opis.slice(0, 60)}`, argumenty: { nazwa, opis } })
+        const start = Date.now(), kid = randomUUID()
+        await zdarz({ typ: 'narzedzie_start', id: kid, nazwa: 'generuj_obraz', etykieta: `Generuję obraz: ${opis.slice(0, 60)}`, argumenty: { nazwa, opis } })
         try {
           const res = await fetch(`${process.env.CORTEX_PROXY_URL}/chat/completions`, {
             method: 'POST',
@@ -179,10 +180,10 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
           if (!url?.startsWith('data:')) throw new Error('dostawca nie zwrócił obrazu')
           const b64 = url.split(',')[1]
           await biurko.zapisz(u.id, `${katalogSprawy}/${nazwa}`, Buffer.from(b64, 'base64'))
-          await zdarz({ typ: 'narzedzie_koniec', nazwa: 'generuj_obraz', ok: true, podsumowanie: `zapisano ${nazwa}`, ms: Date.now() - start })
+          await zdarz({ typ: 'narzedzie_koniec', id: kid, nazwa: 'generuj_obraz', ok: true, podsumowanie: `zapisano ${nazwa}`, ms: Date.now() - start })
           return `Obraz zapisany jako ${nazwa}.`
         } catch (e) {
-          await zdarz({ typ: 'narzedzie_koniec', nazwa: 'generuj_obraz', ok: false, podsumowanie: String(e).slice(0, 120), ms: Date.now() - start })
+          await zdarz({ typ: 'narzedzie_koniec', id: kid, nazwa: 'generuj_obraz', ok: false, podsumowanie: String(e).slice(0, 120), ms: Date.now() - start })
           const m = String(e)
           const czytelnie = /modalit|not a valid model|404/i.test(m)
             ? 'Na tej instancji nie ma podłączonego modelu graficznego — administrator musi go udostępnić w cortex-proxy.'
@@ -231,7 +232,7 @@ export async function uruchomTure(u: Uzytkownik, p: Polityka, sprawaId: string, 
       if (koszt > 0) await dopiszZdarzenie(sprawaId, { typ: 'koszt', usd: koszt })
       await dopiszZdarzenie(sprawaId, { typ: 'lifecycle', stan: 'koniec' })
       await pool.query(
-        `update desk.sprawa set stan='gotowe', koszt_usd=koszt_usd+$2, zmieniona=now() where id=$1`,
+        `update desk.sprawa set stan='gotowe', powod=null, koszt_usd=koszt_usd+$2, zmieniona=now() where id=$1`,
         [sprawaId, koszt],
       )
       await dziennik.zapisz(u.id, 'tura.koniec', { sprawaId, kosztUsd: koszt })

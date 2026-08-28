@@ -24,9 +24,12 @@ export function Md({ tekst }: { tekst: string }) {
       const glowa = kom(l); i += 2
       const wiersze: string[][] = []
       while (i < linie.length && /^\|.*\|/.test(linie[i])) { wiersze.push(kom(linie[i])); i++ }
+      // tabela w wąskim panelu wyniku musi przewijać się w poziomie, a nie łamać liczb
       bloki.push(
-        <table key={`t${i}`}><thead><tr>{glowa.map((c, j) => <th key={j}>{inline(c, `th${j}`)}</th>)}</tr></thead>
-          <tbody>{wiersze.map((w, j) => <tr key={j}>{w.map((c, k) => <td key={k}>{inline(c, `td${j}${k}`)}</td>)}</tr>)}</tbody></table>)
+        <div key={`t${i}`} className="overflow-x-auto">
+          <table><thead><tr>{glowa.map((c, j) => <th key={j}>{inline(c, `th${j}`)}</th>)}</tr></thead>
+            <tbody>{wiersze.map((w, j) => <tr key={j}>{w.map((c, k) => <td key={k}>{inline(c, `td${j}${k}`)}</td>)}</tr>)}</tbody></table>
+        </div>)
       continue
     }
     if (/^[-*]\s+/.test(l)) {

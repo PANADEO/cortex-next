@@ -1,0 +1,132 @@
+'use client'
+import { useEffect, useState } from 'react'
+import { Download, FolderInput, Copy, Check, TriangleAlert, ShieldCheck, Inbox } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { Ikona } from './ikona'
+import { Podglad, adresPliku } from './podglad'
+import { ikonaPliku } from './wiersz-pliku'
+import { useToast } from './toast'
+import type { PlikMeta } from '@/core/typy'
+import type { Dowod } from '@/core/dowod'
+import { rozmiar, kiedy } from '@/lib'
+
+/**
+ * Wynik pracy to najważniejszy obiekt w całej aplikacji — dostaje własne miejsce,
+ * z którego nie ucieka razem z przewijaniem historii.
+ */
+export function Wynik({ pliki, dowod, doDowodu }: {
+  pliki: PlikMeta[]
+  dowod: Dowod
+  doDowodu?: () => void
+}) {
+  const [wybrany, setWybrany] = useState<string | null>(null)
+  const { pokaz } = useToast()
+  const [skopiowane, setSkopiowane] = useState(false)
+
+  const dokumenty = pliki.filter((p) => !p.katalog)
+  const aktywny = dokumenty.find((p) => p.sciezka === wybrany) ?? dokumenty[dokumenty.length - 1]
+
+  useEffect(() => {
+    if (aktywny && wybrany !== aktywny.sciezka) setWybrany(aktywny.sciezka)
+  }, [aktywny?.sciezka])
+
+  if (!dokumenty.length) {
+    return (
+      <div className="grid h-full place-items-center p-6 text-center">
+        <div>
+          <Ikona jako={Inbox} px={24} klasa="mx-auto text-muted-cichy" />
+          <p className="mt-2 t-tresc text-muted">Tu pojawi się gotowy dokument.</p>
+        </div>
+      </div>
+    )
+  }
+
+  /**
+   * Plakietka mówi wyłącznie to, co widać w zdarzeniach. „Sprawdzony" należy się dopiero wtedy,
+   * gdy plik faktycznie odczytano po zapisie; brak sprawdzenia to brak plakietki, nie pochwała.
+   */
+  const stanPliku: 'sprawdzony' | 'niesprawdzony' | null =
+    dowod.nieSprawdzone.some((n) => n.includes(aktywny.nazwa)) ? 'niesprawdzony'
+    : dowod.zrobione.some((z) => z.startsWith(`odczytano ${aktywny.nazwa} po zapisie`)) ? 'sprawdzony'
+    : null
+
+  async function kopiuj() {
+    if (!aktywny) return
+    try {
+      const t = await (await fetch(adresPliku(aktywny), { cache: 'no-store' })).text()
+      await navigator.clipboard.writeText(t)
+      setSkopiowane(true); setTimeout(() => setSkopiowane(false), 2000)
+    } catch {
+      pokaz({ tekst: 'Nie udało się skopiować treści.', ton: 'blad' })
+    }
+  }
+
+  async function doMoichPlikow() {
+    if (!aktywny) return
+    const r = await fetch('/api/pliki', {
+      method: 'POST',
+      body: JSON.stringify({ akcja: 'kopiuj', z: aktywny.sciezka, do: `Moje pliki/${aktywny.nazwa}` }),
+    })
+    const d = await r.json()
+    pokaz(r.ok
+      ? { tekst: `Zapisane w Moich plikach: ${d.gdzie?.split('/').pop() ?? aktywny.nazwa}` }
+      : { tekst: 'Nie udało się zapisać do Moich plików.', ton: 'blad' })
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="border-b px-4 py-3">
+        <div className="flex items-start gap-2">
+          <Ikona jako={ikonaPliku(aktywny)} px={20} klasa="mt-0.5 shrink-0 text-muted" />
+          <div className="min-w-0 flex-1">
+            <div className="t-h3 break-words">{aktywny.nazwa}</div>
+            <div className="t-meta">Dokument · {rozmiar(aktywny.rozmiar)} · zapisany {kiedy(aktywny.zmieniony)}</div>
+          </div>
+        </div>
+        {stanPliku && (
+          <button
+            onClick={doDowodu}
+            className={`mt-2 inline-flex items-center gap-1.5 rounded-pill px-2 py-0.5 text-[12px] ${
+              stanPliku === 'niesprawdzony' ? 'bg-warn-soft text-warn' : 'bg-raised text-muted'}`}
+          >
+            <Ikona jako={stanPliku === 'niesprawdzony' ? TriangleAlert : ShieldCheck} px={12} />
+            {stanPliku === 'niesprawdzony' ? 'niesprawdzony' : 'sprawdzony po zapisie'}
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1 border-b px-3 py-2">
+        <Akcja ikona={Download} tytul="Pobierz" na={() => window.open(adresPliku(aktywny, true), '_blank')} />
+        <Akcja ikona={FolderInput} tytul="Zapisz do Moich plików" na={doMoichPlikow} />
+        <Akcja ikona={skopiowane ? Check : Copy} tytul={skopiowane ? 'Skopiowane' : 'Kopiuj treść'} na={kopiuj} />
+      </div>
+
+      {dokumenty.length > 1 && (
+        <div className="flex gap-1 overflow-x-auto border-b px-2 py-1.5">
+          {dokumenty.map((p) => (
+            <button
+              key={p.sciezka} onClick={() => setWybrany(p.sciezka)}
+              className={`shrink-0 rounded-sm px-2 py-1 text-[13px] ${
+                p.sciezka === aktywny.sciezka ? 'bg-raised font-medium' : 'text-muted hover:bg-raised/60'}`}
+            >{p.nazwa}</button>
+          ))}
+        </div>
+      )}
+
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <Podglad plik={aktywny} />
+      </div>
+    </div>
+  )
+}
+
+function Akcja({ ikona, tytul, na }: { ikona: LucideIcon; tytul: string; na: () => void }) {
+  return (
+    <button
+      onClick={na} title={tytul} aria-label={tytul}
+      className="grid h-8 w-8 place-items-center rounded-sm text-muted hover:bg-raised hover:text-ink"
+    >
+      <Ikona jako={ikona} px={16} />
+    </button>
+  )
+}

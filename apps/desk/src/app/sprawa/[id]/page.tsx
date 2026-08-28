@@ -16,8 +16,8 @@ export default async function Strona({ params }: { params: Promise<{ id: string 
       <Powloka>
         <div className="grid h-full place-items-center p-8 text-center">
           <div>
-            <div className="text-lg font-medium">To nie jest Twoja sprawa</div>
-            <p className="mt-1 text-sm text-muted">Każdy pracownik widzi wyłącznie własne biurko.</p>
+            <div className="t-h2">To nie jest Twoja sprawa</div>
+            <p className="mt-1 t-tresc text-muted">Każdy pracownik widzi wyłącznie własne biurko.</p>
           </div>
         </div>
       </Powloka>
@@ -25,8 +25,8 @@ export default async function Strona({ params }: { params: Promise<{ id: string 
   }
   const p = polityka(u)
   return (
-    <Powloka aktywna={id}>
-      <SprawaWidok id={id} zdolnosci={p.przyznane.map((z) => z.id)} />
+    <Powloka aktywna={id} bezPaskaDolnego>
+      <SprawaWidok id={id} polityka={p} />
     </Powloka>
   )
 }

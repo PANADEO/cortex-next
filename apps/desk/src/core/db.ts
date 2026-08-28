@@ -1,18 +1,22 @@
 import { Pool } from 'pg'
 
-declare global { var __deskPool: Pool | undefined }
+declare global { var __deskPool: Pool | undefined; var __deskMigracja: Promise<void> | undefined }
 
 export const pool =
   global.__deskPool ??
   new Pool({ connectionString: process.env.DATABASE_URL, max: 8 })
 if (process.env.NODE_ENV !== 'production') global.__deskPool = pool
 
-let gotowe: Promise<void> | null = null
-
-/** Migracja idempotentna. Schemat `desk` — konwencja „schemat per moduł". */
+/**
+ * Migracja idempotentna. Schemat `desk` — konwencja „schemat per moduł".
+ *
+ * Memoizacja siedzi na `globalThis`, nie w module: w trybie dev Next tworzy osobną instancję
+ * modułu dla każdej skompilowanej trasy, więc zmienna modułowa pozwoliłaby reaperowi odpalić
+ * się ponownie i ubić turę, która właśnie trwa.
+ */
 export function migracja(): Promise<void> {
-  if (gotowe) return gotowe
-  gotowe = (async () => {
+  if (global.__deskMigracja) return global.__deskMigracja
+  const gotowe = (async () => {
     await pool.query(`
       create schema if not exists desk;
 
@@ -53,12 +57,20 @@ export function migracja(): Promise<void> {
         stan text not null default 'oczekuje'
       );
     `)
-    // Reaper: tura przerwana restartem procesu nie może zostać "pracuje" na zawsze.
+    // Reaper: tura przerwana restartem procesu nie może zostać „pracuje" na zawsze.
+    // Ruszamy WYŁĄCZNIE sprawy bez śladu życia od dwóch minut — inaczej start drugiej
+    // instancji zabijałby pracę, którą pierwsza właśnie wykonuje.
     const r = await pool.query(
-      `update desk.sprawa set stan='przerwane', powod='przerwane restartem serwera'
-       where stan='pracuje' returning id`,
+      `update desk.sprawa s set stan='przerwane', powod='przerwane restartem serwera'
+       where s.stan='pracuje'
+         and coalesce(
+               (select max(z.at) from desk.zdarzenie z where z.sprawa_id = s.id),
+               s.zmieniona
+             ) < now() - interval '2 minutes'
+       returning s.id`,
     )
     if (r.rowCount) console.log(`[desk] reaper: ${r.rowCount} spraw odwieszonych po restarcie`)
   })()
+  global.__deskMigracja = gotowe
   return gotowe
 }
