@@ -1,7 +1,7 @@
 import type { DeskEvent } from './typy'
 import { paruj } from './kroki'
 
-export type Dowod = { weszlo: string[]; zrobione: string[]; nieSprawdzone: string[] }
+export type Dowod = { weszlo: string[]; zrobione: string[]; nieSprawdzone: string[]; niewolno: string[] }
 
 /**
  * Dowód powstaje WYŁĄCZNIE ze zdarzeń narzędzi. Nigdy z tekstu modelu.
@@ -11,6 +11,11 @@ export function dowodZeZdarzen(zdarzenia: DeskEvent[]): Dowod {
   const weszlo: string[] = []
   const zrobione: string[] = []
   const nieSprawdzone: string[] = []
+  // czwarta lista: rzeczy, których agent nie zrobił nie dlatego, że nie umiał,
+  // tylko dlatego, że ta osoba nie ma na nie zgody
+  const niewolno = zdarzenia
+    .filter((e): e is Extract<DeskEvent, { typ: 'zablokowane' }> => e.typ === 'zablokowane')
+    .map((e) => (e.nazwa ? `${e.opis} — wymaga zdolności „${e.nazwa}" (dział ${e.dzial})` : e.opis))
 
   const przeczytane = new Set<string>()
   const zapisane = new Set<string>()
@@ -50,5 +55,5 @@ export function dowodZeZdarzen(zdarzenia: DeskEvent[]): Dowod {
   if (zapisane.size > 0 && przeczytane.size === 0) {
     nieSprawdzone.push('dokument powstał bez odczytania choćby jednego pliku z biurka')
   }
-  return { weszlo, zrobione, nieSprawdzone }
+  return { weszlo, zrobione, nieSprawdzone, niewolno }
 }

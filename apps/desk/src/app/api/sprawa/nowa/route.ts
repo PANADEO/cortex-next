@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     id, u.id, (tytul || 'Nowa sprawa').slice(0, 120),
   ])
   await biurko.utworzKatalog(u.id, biurko.katalogSprawy(u.id, id))
-  const p = polityka(u)
+  const p = await polityka(u)
   await dziennik.zapisz(u.id, 'sprawa.utworzona', { sprawaId: id, odcisk: p.odcisk, zdolnosci: p.przyznane.map(z => z.id) })
   return NextResponse.json({ id })
 }

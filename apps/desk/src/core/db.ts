@@ -56,6 +56,19 @@ export function migracja(): Promise<void> {
         zdolnosc text not null,
         stan text not null default 'oczekuje'
       );
+      alter table desk.prosba add column if not exists rozpatrzona timestamptz;
+      alter table desk.prosba add column if not exists rozpatrzyl text;
+      alter table desk.prosba add column if not exists uzasadnienie text;
+
+      -- Nadanie zdolności ponad to, co daje rola. Katalog i role zostają w pliku seed,
+      -- ale to, co ktoś dostał indywidualnie, musi przeżyć restart i mieć autora.
+      create table if not exists desk.grant (
+        kto text not null,
+        zdolnosc text not null,
+        nadal text not null,
+        at timestamptz not null default now(),
+        primary key (kto, zdolnosc)
+      );
     `)
     // Reaper: tura przerwana restartem procesu nie może zostać „pracuje" na zawsze.
     // Ruszamy WYŁĄCZNIE sprawy bez śladu życia od dwóch minut — inaczej start drugiej

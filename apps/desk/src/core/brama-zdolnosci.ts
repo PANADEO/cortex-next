@@ -7,13 +7,32 @@ const KATALOG = zdolnosciJson.zdolnosci as Zdolnosc[]
 const ROLE = zdolnosciJson.role as Record<Rola, string[]>
 const LIMITY = zdolnosciJson.limity as Record<Rola, { usdNaDzien: number }>
 
+export const katalogZdolnosci = KATALOG
+
 /**
  * F1 · BRAMA ZDOLNOŚCI — jedyna warstwa, której nikt nam nie sprzeda.
- * W POC źródłem jest plik seed; w produkcji tabela grantów w Postgresie.
- * Kontrakt się nie zmienia: resolve(user) -> zmaterializowany zestaw.
+ *
+ * Zestaw powstaje z dwóch źródeł: z roli (plik seed) oraz z indywidualnych nadań
+ * w tabeli `desk.grant`. Kontrakt się nie zmienia: resolve(user) → zmaterializowany zestaw,
+ * a odcisk obejmuje OBA źródła, więc nadanie zmienia zakres widoczny w dzienniku.
  */
-export function polityka(u: Uzytkownik): Polityka {
-  const idsPrzyznane = new Set(ROLE[u.rola] ?? [])
+export async function polityka(u: Uzytkownik): Promise<Polityka> {
+  await migracja()
+  const g = await pool.query<{ zdolnosc: string }>(
+    `select zdolnosc from desk.grant where kto=$1`, [u.id],
+  )
+  const nadane = g.rows.map((r) => r.zdolnosc)
+  return zbuduj(u, nadane)
+}
+
+/** Wariant bez bazy — do miejsc, które nie mogą czekać, oraz do testów bramy. */
+export function politykaZRoli(u: Uzytkownik): Polityka {
+  return zbuduj(u, [])
+}
+
+function zbuduj(u: Uzytkownik, nadane: string[]): Polityka {
+  const znane = new Set(KATALOG.map((z) => z.id))
+  const idsPrzyznane = new Set([...(ROLE[u.rola] ?? []), ...nadane.filter((z) => znane.has(z))])
   const przyznane = KATALOG.filter((z) => idsPrzyznane.has(z.id))
   const zablokowane = KATALOG.filter((z) => !idsPrzyznane.has(z.id))
   const odcisk = createHash('sha256')

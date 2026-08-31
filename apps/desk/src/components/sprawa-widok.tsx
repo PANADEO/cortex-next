@@ -14,6 +14,7 @@ import { Wynik } from './wynik'
 import { PrzyciskCoPotrafie } from './co-potrafie'
 import { ikonaPliku } from './wiersz-pliku'
 import { ListaZalacznikow, type Zalacznik } from './zalaczniki'
+import { Klodka } from './klodka'
 import { useToast } from './toast'
 import { dowodZeZdarzen } from '@/core/dowod'
 import { podzielTeczke } from '@/core/teczka'
@@ -47,7 +48,7 @@ function naTury(wpisy: Wpis[]): Tura[] {
       if (t === 'mysl') continue
     }
     if (t === 'narzedzie_start' || t === 'narzedzie_koniec') biezaca.praca.push(w)
-    else if (t === 'assistant' || t === 'lifecycle') biezaca.po.push(w)
+    else if (t === 'assistant' || t === 'lifecycle' || t === 'zablokowane') biezaca.po.push(w)
   }
   return tury
 }
@@ -289,6 +290,13 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
 
                   {tura.po.map((w) => {
                     const ev = w.event
+                    if (ev.typ === 'zablokowane')
+                      return (
+                        <Klodka
+                          key={w.seq} opis={ev.opis} nazwa={ev.nazwa}
+                          dzial={ev.dzial} zdolnoscId={ev.zdolnoscId}
+                        />
+                      )
                     if (ev.typ === 'assistant')
                       return <div key={w.seq} className="max-w-miara"><Md tekst={ev.tekst} /></div>
                     if (ev.typ === 'lifecycle' && (ev.stan === 'blad' || ev.stan === 'przerwane'))

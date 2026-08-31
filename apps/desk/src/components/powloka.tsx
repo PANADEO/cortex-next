@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Plus, FolderOpen, ListChecks, ChevronRight } from 'lucide-react'
+import { Plus, FolderOpen, ListChecks, ChevronRight, ShieldCheck } from 'lucide-react'
 import { ktoTo, UZYTKOWNICY } from '@/core/tozsamosc'
 import { polityka } from '@/core/brama-zdolnosci'
 import { pool, migracja } from '@/core/db'
@@ -26,7 +26,7 @@ export async function Powloka({ children, aktywna, bezPaskaDolnego }: {
 }) {
   await migracja()
   const u = await ktoTo()
-  const p = polityka(u)
+  const p = await polityka(u)
   const s = await pool.query(
     `select id, tytul, stan, zmieniona from desk.sprawa where wlasciciel=$1 order by zmieniona desc limit $2`,
     [u.id, W_PASKU + 1],
@@ -88,6 +88,11 @@ export async function Powloka({ children, aktywna, bezPaskaDolnego }: {
               <Link href="/pliki" className="flex h-9 items-center gap-2 rounded-sm px-2.5 t-tresc hover:bg-raised/70">
                 <Ikona jako={FolderOpen} px={16} klasa="text-muted" /> Moje pliki
               </Link>
+              {u.rola === 'zarzad' && (
+                <Link href="/nadzor" className="flex h-9 items-center gap-2 rounded-sm px-2.5 t-tresc hover:bg-raised/70">
+                  <Ikona jako={ShieldCheck} px={16} klasa="text-muted" /> Nadzór
+                </Link>
+              )}
             </div>
           </nav>
 

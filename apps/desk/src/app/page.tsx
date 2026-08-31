@@ -13,7 +13,7 @@ const NA_BIURKU = 12
 export default async function Biurko() {
   await migracja()
   const u = await ktoTo()
-  const p = polityka(u)
+  const p = await polityka(u)
   const s = await pool.query(
     `select id, tytul, stan, powod, zmieniona from desk.sprawa where wlasciciel=$1 order by zmieniona desc limit $2`,
     [u.id, NA_BIURKU],

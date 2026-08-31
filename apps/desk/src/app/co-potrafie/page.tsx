@@ -5,7 +5,7 @@ import { polityka } from '@/core/brama-zdolnosci'
 
 export default async function Strona() {
   const u = await ktoTo()
-  const p = polityka(u)
+  const p = await polityka(u)
   return (
     <Powloka>
       <div className="h-full overflow-y-auto">

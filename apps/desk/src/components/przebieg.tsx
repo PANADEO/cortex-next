@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import {
-  Check, LoaderCircle, TriangleAlert, ChevronDown,
+  Check, LoaderCircle, TriangleAlert, ChevronDown, Lock,
   ShieldCheck, FileText, FileSpreadsheet, FileImage,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -80,16 +80,17 @@ export function Przebieg({ wpisy, pracuje, teraz }: { wpisy: Wpis[]; pracuje: bo
   const dowod = dowodZeZdarzen(wpisy.map((w) => w.event))
   const potkniecie = kroki.some((k) => k.stan === 'blad')
   const niepewne = dowod.nieSprawdzone.length > 0
+  const zablokowane = dowod.niewolno.length > 0
   const [zwiniety, setZwiniety] = useState(false)
   const zwijano = useRef(false)
 
   // Zwijamy 800 ms po zakończeniu — ale zła wiadomość nigdy nie chowa się sama.
   useEffect(() => {
     if (pracuje || zwijano.current || !kroki.length) return
-    if (potkniecie || niepewne) { zwijano.current = true; return }
+    if (potkniecie || niepewne || zablokowane) { zwijano.current = true; return }
     const t = setTimeout(() => { setZwiniety(true); zwijano.current = true }, 800)
     return () => clearTimeout(t)
-  }, [pracuje, kroki.length, potkniecie, niepewne])
+  }, [pracuje, kroki.length, potkniecie, niepewne, zablokowane])
 
   if (!kroki.length) return null
 
@@ -145,7 +146,7 @@ export function Przebieg({ wpisy, pracuje, teraz }: { wpisy: Wpis[]; pracuje: bo
 
       {/* Stopka dowodu zostaje widoczna także po zwinięciu — bez niej zwinięcie chowa
           jedyną rzecz, która odróżnia to narzędzie od zwykłego czatu. */}
-      {(dowod.weszlo.length > 0 || dowod.zrobione.length > 0 || niepewne) && (
+      {(dowod.weszlo.length > 0 || dowod.zrobione.length > 0 || niepewne || zablokowane) && (
         <div className="space-y-1 border-t bg-raised/40 px-3 py-2.5">
           {(dowod.weszlo.length > 0 || dowod.zrobione.length > 0) && (
             <div className="flex gap-2 text-[13px] leading-5">
@@ -162,6 +163,15 @@ export function Przebieg({ wpisy, pracuje, teraz }: { wpisy: Wpis[]; pracuje: bo
               <div>
                 <span className="text-ink">Nie sprawdziłem:</span>{' '}
                 <span className="text-muted">{dowod.nieSprawdzone.join(' · ')}</span>
+              </div>
+            </div>
+          )}
+          {zablokowane && (
+            <div className="flex gap-2 text-[13px] leading-5">
+              <Ikona jako={Lock} px={14} klasa="mt-0.5 shrink-0 text-muted" />
+              <div>
+                <span className="text-ink">Na to nie masz zgody:</span>{' '}
+                <span className="text-muted">{dowod.niewolno.join(' · ')}</span>
               </div>
             </div>
           )}

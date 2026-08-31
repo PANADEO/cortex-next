@@ -9,7 +9,7 @@ import { polityka } from '@/core/brama-zdolnosci'
 /** Zakładka „Ja" istnieje po to, żeby na telefonie było gdzie trzymać rzeczy sprzed sprawy. */
 export default async function Strona() {
   const u = await ktoTo()
-  const p = polityka(u)
+  const p = await polityka(u)
   return (
     <Powloka>
       <div className="h-full overflow-y-auto pb-pasek">

@@ -23,7 +23,7 @@ export default async function Strona({ params }: { params: Promise<{ id: string 
       </Powloka>
     )
   }
-  const p = polityka(u)
+  const p = await polityka(u)
   return (
     <Powloka aktywna={id} bezPaskaDolnego>
       <SprawaWidok id={id} polityka={p} />

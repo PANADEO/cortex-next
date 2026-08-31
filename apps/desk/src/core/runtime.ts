@@ -48,6 +48,7 @@ PRACA NA PLIKACH
 - Gotową robotę zapisujesz narzędziem, nie wklejasz długiego dokumentu do rozmowy. Krótką odpowiedź (kilka zdań, jedna liczba, wyjaśnienie) mówisz normalnie w rozmowie — nie robisz z niej pliku.
 - Po zapisaniu dokumentu odczytaj go narzędziem sprawdzającym i napisz, co w nim faktycznie jest.
 - Pliki, które tworzysz, trafiają do teczki tej sprawy. Do trwałych „Moich plików" przenosisz coś WYŁĄCZNIE wtedy, gdy człowiek o to poprosi.
+- Jeśli do wykonania zlecenia brakuje Ci czynności, której nie masz, zgłoś ten brak narzędziem zglos_brak, z krótkim opisem tego, czego było trzeba — a potem zrób to, co da się zrobić bez niej, i powiedz o tym człowiekowi.
 - Jeśli czegoś nie da się zrobić dostępnymi narzędziami, powiedz to wprost, wyjaśnij dlaczego i zaproponuj drogę naokoło.`
 
 export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: string) {
@@ -57,6 +58,33 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
 
   // FILTR NA ODKRYCIU: rejestrujemy wyłącznie przyznane.
   // Model nie widzi narzędzia, którego rola nie dostała — nie ma czego odmawiać.
+
+  /**
+   * Rejestrowane ZAWSZE, dla każdej roli. Model nie zna listy zablokowanych zdolności
+   * i nie może jej poznać — opisuje własnymi słowami, czego mu zabrakło, a dopasowanie
+   * do katalogu robimy tutaj. Dzięki temu kłódka na ekranie pochodzi z CZYNNOŚCI agenta,
+   * a nie z naszego domysłu o treści polecenia.
+   */
+  t.zglos_brak = tool({
+    description:
+      'Zgłasza, że do wykonania zlecenia zabrakło Ci czynności, której nie masz. ' +
+      'Wywołaj to ZANIM napiszesz odpowiedź, a potem powiedz człowiekowi, co zrobiłeś zamiast tego.',
+    inputSchema: z.object({
+      czego_potrzebowalem: z.string().describe('krótko, po polsku, np. „zapisać to jako arkusz Excela"'),
+    }),
+    execute: async ({ czego_potrzebowalem }) => {
+      const trafiona = dopasujZdolnosc(czego_potrzebowalem, p.zablokowane)
+      await zdarz({
+        typ: 'zablokowane',
+        opis: czego_potrzebowalem,
+        ...(trafiona ? { zdolnoscId: trafiona.id, nazwa: trafiona.nazwa, dzial: trafiona.dzial } : {}),
+      })
+      await dziennik.zapisz(u.id, 'zdolnosc.brak', { sprawaId, opis: czego_potrzebowalem, zdolnosc: trafiona?.id })
+      return trafiona
+        ? `Odnotowane. Tej czynności nie masz włączonej — zgodę wydaje dział ${trafiona.dzial}. Człowiek zobaczył prośbę o dostęp; zrób teraz to, co da się zrobić bez niej.`
+        : 'Odnotowane. Powiedz człowiekowi wprost, czego nie da się zrobić, i zaproponuj drogę naokoło.'
+    },
+  })
 
   if (maZdolnosc(p, 'pliki.lista')) {
     t.lista_plikow = tool({
@@ -349,6 +377,21 @@ function nieDoOdczytu(sciezka: string): string | null {
     return 'To jest archiwum albo program, nie dokument. Nie umiem tego otworzyć.'
   }
   return null
+}
+
+const TROPY: Record<string, RegExp> = {
+  'arkusz.zapisz': /arkusz|excel|xlsx|spreadsheet|csv|tabel/i,
+  'kod.uruchom': /policz|oblicz|przelicz|wykres|skrypt|kod|statystyk/i,
+  'obraz.generuj': /obraz|grafik|rysun|ilustrac|zdjęci|wygeneruj.*obraz/i,
+  'pliki.zapisz': /moich plik|do moich|trwal/i,
+  'dokument.zapisz': /zapisa.*dokument|utworzy.*plik/i,
+  'pliki.czytaj': /przeczyta|odczyta|otworzy.*plik/i,
+  'pliki.lista': /lista plik|zajrze.*teczk|zobaczy.*plik/i,
+}
+
+/** Model opisuje brak swoimi słowami — nazwę zdolności i dział dokładamy my. */
+function dopasujZdolnosc(opis: string, zablokowane: Polityka['zablokowane']) {
+  return zablokowane.find((z) => TROPY[z.id]?.test(opis))
 }
 
 function typObrazu(nazwa: string) {

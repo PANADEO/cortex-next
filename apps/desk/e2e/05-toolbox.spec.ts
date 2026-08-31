@@ -1,5 +1,10 @@
 import { test, expect, jako } from './osoby'
 
+// zestaw zakłada Annę bez indywidualnych nadań — poprzedni przebieg mógł jej coś przyznać
+test.beforeAll(async ({ request }) => {
+  await request.post('/api/test/reset-uprawnien', { headers: { Cookie: 'desk_persona=robert' } })
+})
+
 test.describe('Obszar 5 · Zdolności stopniowane wg roli', () => {
   test('Dwie role, dwa zestawy', async ({ page }) => {
     await jako(page, 'anna')

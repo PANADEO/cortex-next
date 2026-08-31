@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import * as Menu from '@radix-ui/react-dropdown-menu'
 import { Check, Lock, ChevronDown, ShieldCheck } from 'lucide-react'
 import { Ikona } from './ikona'
@@ -13,7 +13,22 @@ import type { Polityka } from '@/core/typy'
  */
 export function ListaZdolnosci({ p, gesta }: { p: Polityka; gesta?: boolean }) {
   const [wyslane, setWyslane] = useState<string[]>([])
+  const [odrzucone, setOdrzucone] = useState<string[]>([])
   const { pokaz } = useToast()
+
+  // stan prośby żyje w bazie, nie w komponencie — inaczej znika przy pierwszym F5
+  useEffect(() => {
+    let zyje = true
+    fetch('/api/prosba', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d: { prosby?: { zdolnosc: string; stan: string }[] }) => {
+        if (!zyje) return
+        setWyslane((d.prosby ?? []).filter((x) => x.stan === 'oczekuje').map((x) => x.zdolnosc))
+        setOdrzucone((d.prosby ?? []).filter((x) => x.stan === 'odrzucona').map((x) => x.zdolnosc))
+      })
+      .catch(() => {})
+    return () => { zyje = false }
+  }, [])
 
   async function popros(id: string, nazwa: string) {
     await fetch('/api/prosba', { method: 'POST', body: JSON.stringify({ zdolnosc: id }) })
@@ -50,10 +65,15 @@ export function ListaZdolnosci({ p, gesta }: { p: Polityka; gesta?: boolean }) {
                       <Ikona jako={ShieldCheck} px={12} /> Prośba wysłana — czeka na rozpatrzenie
                     </div>
                   ) : (
-                    <button
-                      onClick={() => popros(z.id, z.nazwa)}
-                      className="mt-1 rounded-sm border px-2 py-0.5 text-[12px] hover:bg-raised"
-                    >Poproś o dostęp</button>
+                    <>
+                      {odrzucone.includes(z.id) && (
+                        <div className="mt-1 text-[12px] text-muted">Poprzednia prośba została odrzucona.</div>
+                      )}
+                      <button
+                        onClick={() => popros(z.id, z.nazwa)}
+                        className="mt-1 rounded-sm border px-2 py-0.5 text-[12px] hover:bg-raised"
+                      >{odrzucone.includes(z.id) ? 'Poproś ponownie' : 'Poproś o dostęp'}</button>
+                    </>
                   )}
                 </div>
               </li>

@@ -15,7 +15,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     await dziennik.zapisz(u.id, 'dostep.odrzucony', { sprawaId: id })
     return NextResponse.json({ blad: 'To nie jest Twoja sprawa.' }, { status: 403 })
   }
-  const p = polityka(u)
+  const p = await polityka(u)
   const wydano = await wydanoDzisiaj(u.id)
   if (wydano >= p.limitUsdNaDzien) {
     return NextResponse.json({ blad: 'Wyczerpany dzienny limit kosztów. Poproś przełożonego o podniesienie.' }, { status: 429 })
