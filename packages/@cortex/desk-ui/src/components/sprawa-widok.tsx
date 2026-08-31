@@ -132,7 +132,7 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
         setTeczka((t) => {
           const nowa: PlikMeta[] = d.teczka ?? []
           const takieSame = t.length === nowa.length
-            && t.every((x, i) => x.sciezka === nowa[i].sciezka && x.rozmiar === nowa[i].rozmiar && x.zmieniony === nowa[i].zmieniony)
+            && t.every((x, i) => x.sciezka === nowa[i]?.sciezka && x.rozmiar === nowa[i]?.rozmiar && x.zmieniony === nowa[i]?.zmieniony)
           return takieSame ? t : nowa
         })
 

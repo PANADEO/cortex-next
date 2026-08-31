@@ -21,7 +21,7 @@ function poDzialach(zd: Zdolnosc[]) {
   return [...m.entries()].sort((a, b) => (a[0] === 'wszyscy' ? -1 : b[0] === 'wszyscy' ? 1 : a[0].localeCompare(b[0], 'pl')))
 }
 
-export function ListaZdolnosci({ p, gesta, szukanie }: { p: Polityka; gesta?: boolean; szukanie?: boolean }) {
+export function ListaZdolnosci({ p, gesta, szukanie }: { p: Polityka; gesta?: boolean | undefined; szukanie?: boolean }) {
   const [wyslane, setWyslane] = useState<string[]>([])
   const [odrzucone, setOdrzucone] = useState<string[]>([])
   const [fraza, setFraza] = useState('')
@@ -117,7 +117,7 @@ export function ListaZdolnosci({ p, gesta, szukanie }: { p: Polityka; gesta?: bo
   )
 }
 
-function Pozycje({ zd, gesta }: { zd: Zdolnosc[]; gesta?: boolean }) {
+function Pozycje({ zd, gesta }: { zd: Zdolnosc[]; gesta?: boolean | undefined }) {
   return (
     <ul className="space-y-0.5">
       {zd.map((z) => (

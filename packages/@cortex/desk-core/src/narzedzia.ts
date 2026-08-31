@@ -140,8 +140,7 @@ export function dopiszKarte(k: KartaNarzedzia) {
 
 /** Nazwa serwera z klucza `mcp_<serwer>_<narzedzie>`; dla reszty — pusto. */
 function zrodloZNazwy(nazwa: string): string | null {
-  const m = /^mcp_([a-z0-9]+)_/.exec(nazwa)
-  return m ? m[1] : null
+  return /^mcp_([a-z0-9]+)_/.exec(nazwa)?.[1] ?? null
 }
 
 /**

@@ -27,11 +27,19 @@ export function paruj(zdarzenia: DeskEvent[]): Krok[] {
   const poId = new Map<string, Krok>()
   const bezId: Krok[] = []
 
-  for (let i = 0; i < zdarzenia.length; i++) {
-    const e = zdarzenia[i]
-
+  // `entries()`, a nie indeksowanie: pod `noUncheckedIndexedAccess` `zdarzenia[i]` ma typ
+  // `DeskEvent | undefined`, a to gasi rozróżnianie wariantu po `typ` — kompilator przestaje
+  // widzieć `e.nazwa` na starcie narzędzia. Iterator oddaje element bez tego `undefined`.
+  for (const [i, e] of zdarzenia.entries()) {
     if (e.typ === 'narzedzie_start') {
-      const k: Krok = { i, nazwa: e.nazwa, etykieta: e.etykieta, argumenty: e.argumenty, zrodlo: e.zrodlo, stan: 'trwa' }
+      const k: Krok = {
+        i,
+        nazwa: e.nazwa,
+        etykieta: e.etykieta,
+        argumenty: e.argumenty,
+        stan: 'trwa',
+        ...(e.zrodlo === undefined ? {} : { zrodlo: e.zrodlo }),
+      }
       kroki.push(k)
       if (e.id) poId.set(e.id, k)
       else bezId.push(k)
@@ -42,8 +50,11 @@ export function paruj(zdarzenia: DeskEvent[]): Krok[] {
       const k = e.id ? poId.get(e.id) : bezId.shift()
       if (!k) continue
       k.stan = e.ok ? 'ok' : 'blad'
-      k.podsumowanie = e.podsumowanie
-      k.ms = e.ms
+      // Pola opcjonalne przypisujemy tylko wtedy, gdy naprawdę przyszły: `exactOptionalPropertyTypes`
+      // odróżnia „klucza nie ma" od „klucz jest i ma wartość undefined", a drugie nie jest tym,
+      // co chcemy wpisać do kroku.
+      if (e.podsumowanie !== undefined) k.podsumowanie = e.podsumowanie
+      if (e.ms !== undefined) k.ms = e.ms
       if (e.id) poId.delete(e.id)
     }
   }
@@ -55,7 +66,14 @@ function samaNazwa(s: string) {
   return s.split('/').filter(Boolean).pop() ?? s
 }
 
-export type Opis = { tytul: string; plik?: string; sciezka?: string; detal?: string }
+/**
+ * `?: T | undefined`, a nie samo `?: T`. Pod `exactOptionalPropertyTypes` to dwie różne
+ * rzeczy, a tutaj naprawdę chodzi o tę drugą: opis kroku powstaje jednym literałem, w
+ * którym człon nieobecny jest po prostu `undefined` — rozróżnianie „klucza nie ma" od
+ * „klucz jest pusty" nie niesie tu żadnej informacji, a wymusza gimnastykę przy każdym
+ * budowaniu obiektu.
+ */
+export type Opis = { tytul: string; plik?: string | undefined; sciezka?: string | undefined; detal?: string | undefined }
 
 /**
  * Zamienia krok na zdanie po polsku. W toku — niedokonany, po zakończeniu — dokonany:
@@ -68,7 +86,8 @@ export type Opis = { tytul: string; plik?: string; sciezka?: string; detal?: str
 export function opisKroku(k: Krok): Opis {
   const a = k.argumenty as Record<string, string>
   const c = karta(k.nazwa, k.zrodlo)
-  const plik = c.argNazwa && a[c.argNazwa] ? samaNazwa(a[c.argNazwa]) : undefined
+  const nazwaZArg = c.argNazwa ? a[c.argNazwa] : undefined
+  const plik = nazwaZArg ? samaNazwa(nazwaZArg) : undefined
   const sciezka = c.argSciezka ? a[c.argSciezka] : undefined
   const detal = k.podsumowanie ?? (c.argDetal ? a[c.argDetal] : undefined)
   return {
@@ -133,7 +152,7 @@ export function podsumujGrupe(kroki: Krok[]): string {
   const wybrane = [...czlony]
   while (wybrane.length > 3) {
     let najsl = 0
-    for (let i = 1; i < wybrane.length; i++) if (wybrane[i].waga < wybrane[najsl].waga) najsl = i
+    for (let i = 1; i < wybrane.length; i++) if (wybrane[i]!.waga < wybrane[najsl]!.waga) najsl = i
     wybrane.splice(najsl, 1)
   }
   const pominieto = czlony.length - wybrane.length
@@ -141,6 +160,6 @@ export function podsumujGrupe(kroki: Krok[]): string {
   // jeden pominięty człon i tak był najmniej ważny — dopisek „i 1 inną czynność" to sam szum
   if (pominieto > 1) t.push(ile(pominieto, 'inną czynność', 'inne czynności', 'innych czynności'))
 
-  const zdanie = t.length === 1 ? t[0] : `${t.slice(0, -1).join(', ')} i ${t[t.length - 1]}`
+  const zdanie = t.length === 1 ? t[0]! : `${t.slice(0, -1).join(', ')} i ${t[t.length - 1]}`
   return zdanie.charAt(0).toUpperCase() + zdanie.slice(1)
 }

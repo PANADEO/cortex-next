@@ -122,7 +122,7 @@ export function NadzorMcp() {
               <div className="border-t bg-raised/30 px-4 py-3">
                 <div className="mb-2 t-sekcja">Co ten serwer wystawia</div>
                 <div className="space-y-3">
-                  {kandydaci[s.nazwa].map((k) => (
+                  {(kandydaci[s.nazwa] ?? []).map((k) => (
                     <Kandydat
                       key={k.nazwaZdalna} k={k} serwer={s.nazwa} zdolnosci={zdolnosci}
                       zajety={zajety === `z:${k.nazwaZdalna}`}

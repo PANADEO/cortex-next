@@ -40,7 +40,10 @@ export async function ktoTo(): Promise<Uzytkownik> {
   if (DEMO_PERSONY) {
     const c = await cookies()
     const id = c.get('desk_persona')?.value ?? 'anna'
-    return UZYTKOWNICY.find((u) => u.id === id) ?? UZYTKOWNICY[0]
+    const wybrany = UZYTKOWNICY.find((u) => u.id === id) ?? UZYTKOWNICY[0]
+    // Pusty zasiew person to błąd wdrożenia, nie stan do obsłużenia po cichu.
+    if (!wybrany) throw new Error('Zasiew użytkowników jest pusty — nie ma kogo podstawić.')
+    return wybrany
   }
 
   // Fail-closed i głośno. Cicha podmiana na pierwszego z listy dawała komuś

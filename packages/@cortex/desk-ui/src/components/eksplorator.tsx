@@ -53,7 +53,7 @@ export function Eksplorator() {
     if (!files?.length) return
     const zaDuze = Array.from(files).filter((f) => f.size > 25 * 1024 * 1024)
     if (zaDuze.length) {
-      pokaz({ tekst: `${zaDuze[0].name} waży więcej niż 25 MB — tyle nie przyjmę.`, ton: 'blad' })
+      pokaz({ tekst: `${zaDuze[0]!.name} waży więcej niż 25 MB — tyle nie przyjmę.`, ton: 'blad' })
       return
     }
     setZajete(true)
@@ -125,7 +125,7 @@ export function Eksplorator() {
             ) : i === okruchy.length - 1 ? (
               <span className="font-medium text-ink">{o}</span>
             ) : (
-              <button onClick={() => idzDo(sciezki[i - 1])} className="rounded-sm px-1 hover:bg-raised hover:text-ink">{o}</button>
+              <button onClick={() => idzDo(sciezki[i - 1] ?? '')} className="rounded-sm px-1 hover:bg-raised hover:text-ink">{o}</button>
             )}
           </span>
         ))}

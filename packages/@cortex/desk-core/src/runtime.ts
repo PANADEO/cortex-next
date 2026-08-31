@@ -270,7 +270,10 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
           const url: string | undefined = j?.choices?.[0]?.message?.images?.[0]?.image_url?.url
           if (j?.error?.message) throw new Error(String(j.error.message))
           if (!url?.startsWith('data:')) throw new Error('dostawca nie zwrócił obrazu')
+          // Bez przecinka nie ma ładunku, a `Buffer.from('', 'base64')` zapisałby pusty plik
+          // pod nazwą obrazu — czyli artefakt, który wygląda na powstały i nie da się otworzyć.
           const b64 = url.split(',')[1]
+          if (!b64) throw new Error('dostawca zwrócił obraz bez treści')
           await biurko.zapisz(u.id, `${katalogSprawy}/${nazwa}`, Buffer.from(b64, 'base64'))
           await zdarz({ typ: 'narzedzie_koniec', id: kid, nazwa: 'generuj_obraz', ok: true, podsumowanie: `zapisano ${nazwa}`, ms: Date.now() - start })
           return `Obraz zapisany jako ${nazwa}.`

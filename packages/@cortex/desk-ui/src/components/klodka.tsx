@@ -11,10 +11,10 @@ import { api } from '../trasy'
  */
 export function Klodka({ opis, nazwa, dzial, zdolnoscId, juzPoproszono }: {
   opis: string
-  nazwa?: string
-  dzial?: string
-  zdolnoscId?: string
-  juzPoproszono?: boolean
+  nazwa?: string | undefined
+  dzial?: string | undefined
+  zdolnoscId?: string | undefined
+  juzPoproszono?: boolean | undefined
 }) {
   const [wyslane, setWyslane] = useState(Boolean(juzPoproszono))
   const [zajete, setZajete] = useState(false)

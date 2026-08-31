@@ -16,6 +16,7 @@
 
 import { cortexCoworkTile } from "@/app/(cowork)/cortex-cowork/manifest"
 import { aiToolsTile } from "@/app/(main)/ai-tools/manifest"
+import { deskTile } from "@/app/(desk)/desk/manifest"
 import { cortexConfigTile } from "@/app/(main)/cortex-config/manifest"
 import { documentParserTile } from "@/app/(main)/document-parser/manifest"
 import { geoScoreCalculatorTile } from "@/app/(main)/geo-score-calculator/manifest"
@@ -71,4 +72,5 @@ export const ALL_TILE_MANIFESTS: readonly TileManifest[] = [
   geoScoreCalculatorTile,
   documentParserTile,
   visualGuruTile,
+  deskTile,
 ]

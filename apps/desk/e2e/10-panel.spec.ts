@@ -204,12 +204,23 @@ test.describe('Obszar 16 · Załącznik nie udaje wyniku pracy', () => {
 
 test.describe('Obszar 18 · Awaria mówi prawdę, ale nie cudzymi słowami', () => {
   test('Brak środków u dostawcy nie jest mylony z dziennym limitem pracownika', () => {
+    const m = czytelnyBlad(new Error('402 Insufficient credits to complete this request'))
+    expect(m).toContain('Skończyły się środki')
+    expect(m).toContain('To nie jest Twój dzienny limit')
+  })
+
+  // Scenariusz spisany po zdarzeniu: bramka stała 11 scenariuszami na zdaniu „skończyły się
+  // środki", a środki były — dostawca odbijał turę, bo rezerwował pod nią `max_tokens` równe
+  // maksimum modelu i nie mieścił się w pułapie klucza. Oba zdania mówią o pieniądzach,
+  // ale odblokowuje je co innego, więc muszą się różnić.
+  test('Za ciasny pułap na kluczu to inna awaria niż brak środków', () => {
     const m = czytelnyBlad(new Error(
       'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, ' +
       'but can only afford 54795. To increase, visit https://openrouter.ai/workspaces/default/keys/327df36',
     ))
-    expect(m).toContain('Skończyły się środki')
+    expect(m).toContain('Pułap na kluczu')
     expect(m).toContain('To nie jest Twój dzienny limit')
+    expect(m).not.toContain('Skończyły się środki')
   })
 
   test('Komunikat dla pracownika nie niesie adresu panelu dostawcy', () => {

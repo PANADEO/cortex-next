@@ -34,7 +34,7 @@ export function BezPokrycia({ nazwy, popros }: {
             nie tego, co napisał asystent.
           </p>
           <button
-            onClick={() => popros(nazwy[0])}
+            onClick={() => nazwy[0] && popros(nazwy[0])}
             className="mt-2 flex h-8 items-center rounded-md border border-warn/40 bg-surface px-2.5 t-btn hover:bg-raised"
           >Poproś jeszcze raz</button>
         </div>

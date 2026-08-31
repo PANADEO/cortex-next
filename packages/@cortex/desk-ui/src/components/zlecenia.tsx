@@ -43,7 +43,7 @@ export function Zlecenia({ zlecenia, polityka: p, maSprawy }: {
     if ((!t.trim() && !zal.length) || zajete) return
     setZajete(true)
     try {
-      const tytul = t.trim() ? t.slice(0, 60) : zal[0].nazwa
+      const tytul = t.trim() ? t.slice(0, 60) : (zal[0]?.nazwa ?? 'Bez tytułu')
       const r = await fetch(api('/sprawa/nowa'), { method: 'POST', body: JSON.stringify({ tytul }) })
       const { id } = await r.json()
 

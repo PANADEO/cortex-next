@@ -24,6 +24,9 @@ const nextConfig: NextConfig = {
     "@cortex/api",
     "@cortex/types",
     "@cortex/utils",
+    "@cortex/desk-core",
+    "@cortex/desk-ui",
+    "@cortex/desk-app",
   ],
   webpack: (config) => {
     config.resolve.alias = {

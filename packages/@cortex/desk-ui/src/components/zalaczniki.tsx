@@ -5,8 +5,8 @@ import { ikonaPliku } from './wiersz-pliku'
 
 export type Zalacznik = {
   nazwa: string
-  podglad?: string
-  wgrywa?: boolean
+  podglad?: string | undefined
+  wgrywa?: boolean | undefined
 }
 
 function rodzaj(nazwa: string) {
@@ -22,8 +22,8 @@ const jestObrazem = (n: string) => /\.(png|jpe?g|gif|webp|svg)$/i.test(n)
  */
 export function ChipZalacznika({ z, usun, otworz }: {
   z: Zalacznik
-  usun?: () => void
-  otworz?: () => void
+  usun?: (() => void) | undefined
+  otworz?: (() => void) | undefined
 }) {
   const obraz = jestObrazem(z.nazwa) && z.podglad
   const Tresc = (
@@ -70,9 +70,9 @@ export function ChipZalacznika({ z, usun, otworz }: {
 
 export function ListaZalacznikow({ pliki, usun, otworz, klasa }: {
   pliki: Zalacznik[]
-  usun?: (n: string) => void
-  otworz?: (n: string) => void
-  klasa?: string
+  usun?: ((n: string) => void) | undefined
+  otworz?: ((n: string) => void) | undefined
+  klasa?: string | undefined
 }) {
   if (!pliki.length) return null
   return (

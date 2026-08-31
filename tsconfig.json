@@ -30,6 +30,11 @@
       "@cortex/tile-sdk": ["packages/@cortex/tile-sdk/src/index.ts"],
       "@cortex/service": ["packages/@cortex/service/src/index.ts"],
       "@cortex/db": ["packages/@cortex/db/src/index.ts"],
+      "@cortex/desk-core/*": ["packages/@cortex/desk-core/src/*"],
+      "@cortex/desk-ui/components/*": ["packages/@cortex/desk-ui/src/components/*"],
+      "@cortex/desk-ui/*": ["packages/@cortex/desk-ui/src/*"],
+      "@cortex/desk-app/api/*": ["packages/@cortex/desk-app/src/api/*"],
+      "@cortex/desk-app/strony/*": ["packages/@cortex/desk-app/src/strony/*"],
       "@/*": ["app/idp/*"]
     },
     "types": ["node", "vitest/globals", "@testing-library/jest-dom"]
