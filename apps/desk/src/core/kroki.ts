@@ -1,4 +1,5 @@
 import type { DeskEvent } from './typy'
+import { karta, type GrupaKarty } from './narzedzia'
 
 /** Jeden krok pracy agenta: wywołanie narzędzia razem z jego wynikiem. */
 export type Krok = {
@@ -58,33 +59,22 @@ export type Opis = { tytul: string; plik?: string; sciezka?: string; detal?: str
  * Zamienia krok na zdanie po polsku. W toku — niedokonany, po zakończeniu — dokonany:
  * „Zapisuję zestawienie" w trakcie, „Zapisałem zestawienie" po. Bez tego zakończona
  * sprawa opowiada w czasie teraźniejszym o czymś, co już się stało.
+ *
+ * Czasowniki i argumenty biorą się z karty narzędzia, nie z `switch` po nazwach —
+ * dzięki temu narzędzie z serwera MCP dostaje zdanie, a nie surowy klucz.
  */
 export function opisKroku(k: Krok): Opis {
   const a = k.argumenty as Record<string, string>
-  const trwa = k.stan === 'trwa'
-  const detal = k.podsumowanie
-  const plik = a.nazwa ? samaNazwa(a.nazwa) : a.sciezka ? samaNazwa(a.sciezka) : undefined
-  const sciezka = a.sciezka ?? a.nazwa
-
-  switch (k.nazwa) {
-    case 'lista_plikow':
-      return { tytul: trwa ? 'Przeglądam teczkę' : 'Przejrzałem teczkę', detal }
-    case 'czytaj_plik':
-      return { tytul: trwa ? 'Czytam' : 'Przeczytałem', plik, sciezka, detal }
-    case 'zapisz_dokument':
-      return { tytul: trwa ? 'Zapisuję' : 'Zapisałem', plik, sciezka, detal }
-    case 'sprawdz_dokument':
-      return { tytul: trwa ? 'Sprawdzam po zapisie' : 'Sprawdziłem po zapisie', plik, sciezka, detal }
-    case 'zapisz_arkusz':
-      return { tytul: trwa ? 'Zapisuję arkusz' : 'Zapisałem arkusz', plik, sciezka, detal }
-    case 'uruchom_obliczenia':
-      return { tytul: trwa ? 'Liczę' : 'Policzyłem', detal: k.podsumowanie ?? String(a.opis ?? '') }
-    case 'generuj_obraz':
-      return { tytul: trwa ? 'Rysuję obraz' : 'Narysowałem', plik, sciezka, detal }
-    case 'zapisz_do_moich_plikow':
-      return { tytul: trwa ? 'Odkładam do Moich plików' : 'Odłożyłem do Moich plików', plik, sciezka: String(a.cel ?? ''), detal }
-    default:
-      return { tytul: k.etykieta, detal }
+  const c = karta(k.nazwa)
+  const plik = c.argNazwa && a[c.argNazwa] ? samaNazwa(a[c.argNazwa]) : undefined
+  const sciezka = c.argSciezka ? a[c.argSciezka] : undefined
+  const detal = k.podsumowanie ?? (c.argDetal ? a[c.argDetal] : undefined)
+  return {
+    tytul: k.stan === 'trwa' ? c.trwa : c.ok,
+    plik,
+    sciezka,
+    // etykieta jest NASZA — pisze ją nasz kod przy wywołaniu, nigdy obcy serwer
+    detal: c.klasa === 'zewnetrzna' ? (detal ?? k.etykieta) : detal,
   }
 }
 
@@ -98,6 +88,10 @@ export function czasKroku(ms?: number): string | null {
 /**
  * Jedno zdanie o całej grupie — to, co widać po zwinięciu przebiegu.
  * Liczymy czynności, nie kroki modelu: „przeczytałem 1 plik i zapisałem 1 dokument".
+ *
+ * Człony biorą się z kart. Dwa narzędzia o tym samym kluczu grupy sumują się w jeden
+ * człon (dokument i arkusz to dla człowieka ta sama rzecz), a karta bez `grupa`
+ * świadomie nie wchodzi do zdania.
  */
 export function podsumujGrupe(kroki: Krok[]): string {
   const ile = (n: number, j: string, k: string, w: string) => {
@@ -107,21 +101,24 @@ export function podsumujGrupe(kroki: Krok[]): string {
     return `${n} ${w}`
   }
   const zrobione = kroki.filter((k) => k.stan === 'ok')
-  const licz = (n: string) => zrobione.filter((k) => k.nazwa === n).length
 
-  // waga: przy nadmiarze odpadają najpierw człony najmniej niosące, nigdy powstały dokument
-  const czlony: { tekst: string; waga: number }[] = []
-  if (licz('lista_plikow')) czlony.push({ tekst: 'przejrzałem teczkę', waga: 1 })
-  const czytane = licz('czytaj_plik')
-  if (czytane) czlony.push({ tekst: `przeczytałem ${ile(czytane, 'plik', 'pliki', 'plików')}`, waga: 3 })
-  if (licz('uruchom_obliczenia')) czlony.push({ tekst: 'policzyłem', waga: 4 })
-  const dok = licz('zapisz_dokument') + licz('zapisz_arkusz')
-  if (dok) czlony.push({ tekst: `zapisałem ${ile(dok, 'dokument', 'dokumenty', 'dokumentów')}`, waga: 5 })
-  const obrazy = licz('generuj_obraz')
-  if (obrazy) czlony.push({ tekst: `narysowałem ${ile(obrazy, 'obraz', 'obrazy', 'obrazów')}`, waga: 5 })
-  const odlozone = licz('zapisz_do_moich_plikow')
-  if (odlozone) czlony.push({ tekst: `odłożyłem ${ile(odlozone, 'plik', 'pliki', 'plików')} do Moich plików`, waga: 5 })
-  // „sprawdziłem po zapisie" nie jest członem zdania — niesie je stopka dowodu i plakietka przy pliku
+  const wg = new Map<string, { g: GrupaKarty; n: number }>()
+  for (const k of zrobione) {
+    const g = karta(k.nazwa).grupa
+    if (!g) continue
+    const bylo = wg.get(g.klucz)
+    if (bylo) bylo.n += 1
+    else wg.set(g.klucz, { g, n: 1 })
+  }
+
+  // waga rośnie z wagą informacji; kolejność w zdaniu idzie od najlżejszego,
+  // czyli tak, jak człowiek pracuje: najpierw rozejrzenie, na końcu wynik
+  const czlony = [...wg.values()]
+    .map(({ g, n }) => ({
+      tekst: [g.czasownik, g.liczone ? ile(n, ...g.liczone) : null, g.sufiks].filter(Boolean).join(' '),
+      waga: g.waga,
+    }))
+    .sort((a, b) => a.waga - b.waga)
 
   if (!czlony.length) {
     return zrobione.length
@@ -129,7 +126,8 @@ export function podsumujGrupe(kroki: Krok[]): string {
       : 'Nic nie zostało zrobione'
   }
 
-  // trzy człony to granica czytelności jednym rzutem oka
+  // trzy człony to granica czytelności jednym rzutem oka; przy nadmiarze odpadają
+  // najpierw człony najmniej niosące, nigdy powstały dokument
   const wybrane = [...czlony]
   while (wybrane.length > 3) {
     let najsl = 0

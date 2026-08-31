@@ -1,16 +1,12 @@
 import type { DeskEvent, PlikMeta } from './typy'
 import { paruj } from './kroki'
+import { wytwarzaPlik } from './narzedzia'
 
 const ROZSZERZENIA = 'md|csv|tsv|txt|json|xlsx|xls|pdf|docx|png|jpe?g|gif|webp|svg'
 const NAZWA_PLIKU = new RegExp(String.raw`[\p{L}\p{N}_.()\-]+\.(?:${ROZSZERZENIA})\b`, 'giu')
 
 /** Zdania, w których model przypisuje sobie wytworzenie pliku. */
 const OBIETNICA = /zapis|utworz|stworz|wygenerow|przygotowa|powsta/i
-
-/** Narzędzia, po których w teczce naprawdę przybywa plik. */
-const WYTWARZAJACE = new Set([
-  'zapisz_dokument', 'zapisz_arkusz', 'generuj_obraz', 'zapisz_do_moich_plikow',
-])
 
 /**
  * Reguła dowodu obowiązuje TAKŻE PRZECIW tekstowi modelu.
@@ -34,7 +30,7 @@ export function obietniceBezPokrycia(
 
   const pokryte = new Set<string>()
   for (const k of paruj(zdarzeniaTury)) {
-    if (k.stan !== 'ok' || !WYTWARZAJACE.has(k.nazwa)) continue
+    if (k.stan !== 'ok' || !wytwarzaPlik(k.nazwa)) continue
     const n = (k.argumenty as Record<string, unknown>).nazwa
     if (typeof n === 'string') pokryte.add(n.toLowerCase())
   }
@@ -55,7 +51,7 @@ export function obietniceBezPokrycia(
 export function wytworzone(zdarzeniaTury: DeskEvent[]): string[] {
   const nazwy: string[] = []
   for (const k of paruj(zdarzeniaTury)) {
-    if (k.stan !== 'ok' || !WYTWARZAJACE.has(k.nazwa)) continue
+    if (k.stan !== 'ok' || !wytwarzaPlik(k.nazwa)) continue
     const n = (k.argumenty as Record<string, unknown>).nazwa
     if (typeof n === 'string' && !nazwy.includes(n)) nazwy.push(n)
   }
