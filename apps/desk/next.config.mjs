@@ -2,5 +2,6 @@
 export default {
   reactStrictMode: false,
   devIndicators: false,
-  experimental: { serverActions: { bodySizeLimit: '25mb' } },
+  // Server Actions są w tym repo zabronione (docs/modular-monolith.md), a Biurko ich nie używa —
+  // wgrywanie idzie przez route handler, więc `bodySizeLimit` i tak nic tu nie robiło.
 }
