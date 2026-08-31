@@ -184,3 +184,28 @@ test.describe('Obszar 12 · Potrzeby spoza katalogu', () => {
     await expect(page.getByText('Marketing', { exact: true })).toBeVisible()
   })
 })
+
+test.describe('Obszar 17 · Tożsamość wchodzi bramą, nie ciasteczkiem', () => {
+  test('Nagłówek od bramy logowania wygrywa z ciasteczkiem persony', async ({ request }) => {
+    // ciasteczko mówi „Robert", nagłówek mówi „Anna" — sprawa ma powstać na biurku Anny
+    const r = await request.post('/api/sprawa/nowa', {
+      headers: { Cookie: 'desk_persona=robert', 'x-auth-request-email': 'anna@itsg.pl' },
+      data: { tytul: 'Czyja to sprawa' },
+    })
+    expect(r.ok()).toBeTruthy()
+    const { id } = await r.json()
+
+    const anna = await request.get(`/api/sprawa/${id}/zdarzenia`, { headers: { Cookie: 'desk_persona=anna' } })
+    expect(anna.status()).toBe(200)
+    const robert = await request.get(`/api/sprawa/${id}/zdarzenia`, { headers: { Cookie: 'desk_persona=robert' } })
+    expect(robert.status()).toBe(403)
+  })
+
+  test('Nieznany adres z nagłówka nie dostaje cudzego biurka', async ({ request }) => {
+    const r = await request.get('/api/pliki', {
+      headers: { Cookie: 'desk_persona=anna', 'x-auth-request-email': 'ktos@obcy.pl' },
+    })
+    // cicha podmiana na pierwszego z listy dawała obcemu pełne biurko Anny
+    expect(r.status()).toBeGreaterThanOrEqual(400)
+  })
+})

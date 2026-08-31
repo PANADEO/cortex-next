@@ -7,6 +7,7 @@ import * as biurko from './biurko'
 import * as sandbox from './sandbox'
 import * as dziennik from './dziennik'
 import { maZdolnosc } from './brama-zdolnosci'
+import { czytelnyBlad } from './awaria'
 import type { DeskEvent, Polityka, Uzytkownik } from './typy'
 
 /**
@@ -411,14 +412,4 @@ function szacujKoszt(wynik: any): number {
   const we = u.inputTokens ?? u.promptTokens ?? 0
   const wy = u.outputTokens ?? u.completionTokens ?? 0
   return (we / 1e6) * 3 + (wy / 1e6) * 15 // stawki Sonnet 4.5, szacunek POC
-}
-
-/** Awaria mówi prawdę: po polsku, z powodem — i NIGDY nie produkuje pliku. */
-function czytelnyBlad(e: any): string {
-  const s = String(e?.message ?? e)
-  if (/401|unauthor|api key/i.test(s)) return 'Brak ważnego klucza do modelu — zgłoś to administratorowi.'
-  if (/timeout|ETIMEDOUT|aborted/i.test(s)) return 'Model nie odpowiedział na czas. Spróbuj ponownie za chwilę.'
-  if (/ECONNREFUSED|fetch failed/i.test(s)) return 'Nie udało się połączyć z usługą modelu. Sprawdź, czy cortex-proxy działa.'
-  if (/rate limit|429/i.test(s)) return 'Przekroczony limit zapytań u dostawcy modelu. Spróbuj za minutę.'
-  return `Wykonanie nie powiodło się: ${s.slice(0, 200)}`
 }

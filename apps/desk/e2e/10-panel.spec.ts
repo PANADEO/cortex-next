@@ -1,6 +1,7 @@
 import { test, expect, jako } from './osoby'
 import { obietniceBezPokrycia, wytworzone } from '../src/core/obietnice'
 import { podzielTeczke } from '../src/core/teczka'
+import { czytelnyBlad } from '../src/core/awaria'
 import type { DeskEvent, PlikMeta } from '../src/core/typy'
 
 const CIASTKO = (kto: string) => ({ Cookie: `desk_persona=${kto}` })
@@ -198,5 +199,28 @@ test.describe('Obszar 16 · Załącznik nie udaje wyniku pracy', () => {
 
     await expect(panelu(page).getByText('Tu pojawi się gotowy dokument.')).toBeVisible()
     await expect(panelu(page).getByRole('button', { name: /Od Ciebie \(1\)/ })).toBeVisible()
+  })
+})
+
+test.describe('Obszar 18 · Awaria mówi prawdę, ale nie cudzymi słowami', () => {
+  test('Brak środków u dostawcy nie jest mylony z dziennym limitem pracownika', () => {
+    const m = czytelnyBlad(new Error(
+      'This request requires more credits, or fewer max_tokens. You requested up to 64000 tokens, ' +
+      'but can only afford 54795. To increase, visit https://openrouter.ai/workspaces/default/keys/327df36',
+    ))
+    expect(m).toContain('Skończyły się środki')
+    expect(m).toContain('To nie jest Twój dzienny limit')
+  })
+
+  test('Komunikat dla pracownika nie niesie adresu panelu dostawcy', () => {
+    const m = czytelnyBlad(new Error('Coś padło. Szczegóły: https://openrouter.ai/workspaces/default/keys/327df36'))
+    expect(m).not.toMatch(/https?:\/\//)
+    expect(m).not.toMatch(/openrouter/i)
+  })
+
+  test('Znane awarie mają własne zdania, nie surowy tekst dostawcy', () => {
+    expect(czytelnyBlad(new Error('401 Unauthorized'))).toMatch(/klucza do modelu/)
+    expect(czytelnyBlad(new Error('rate limit exceeded'))).toMatch(/limit zapytań/)
+    expect(czytelnyBlad(new Error('fetch failed'))).toMatch(/cortex-proxy/)
   })
 })
