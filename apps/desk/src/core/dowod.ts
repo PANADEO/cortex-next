@@ -38,6 +38,9 @@ export function dowodZeZdarzen(zdarzenia: DeskEvent[]): Dowod {
     }
     if (k.nazwa === 'uruchom_obliczenia') zrobione.push(`policzono — ${k.podsumowanie}`)
     if (k.nazwa === 'generuj_obraz' && arg.nazwa) zrobione.push(`wygenerowano ${arg.nazwa}`)
+    if (k.nazwa === 'zapisz_do_moich_plikow' && k.podsumowanie) {
+      zrobione.push(`odłożono do Moich plików: ${k.podsumowanie}`)
+    }
   }
 
   // Reguła: zapisany dokument, którego nikt nie odczytał po zapisie, jest NIESPRAWDZONY.

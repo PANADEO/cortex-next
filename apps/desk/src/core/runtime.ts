@@ -21,24 +21,34 @@ export async function dopiszZdarzenie(sprawaId: string, e: DeskEvent) {
   ])
 }
 
-function model() {
+function model(uzytkownik: string) {
   const provider = createOpenAICompatible({
     name: 'cortex-proxy',
     baseURL: process.env.CORTEX_PROXY_URL!,
-    headers: { 'X-User-ID': 'desk' },
+    // rejestr cortex-proxy to księga, do której sięgnie audytor — musi widzieć osobę, nie aplikację
+    headers: { 'X-User-ID': uzytkownik },
   })
   return provider(process.env.DESK_MODEL!)
 }
 
-const SYSTEM = `Jesteś agentem przy biurku pracownika polskiej firmy. Mówisz po polsku, krótko i konkretnie.
+const SYSTEM = `Jesteś asystentem przy biurku pracownika polskiej firmy. Pomagasz w pracy — odpowiadasz na pytania, tłumaczysz, liczysz, piszesz, doradzasz — a do tego masz narzędzia, którymi sięgasz po pliki tej osoby i tworzysz dokumenty.
 
-ZASADY:
-- Pracujesz na plikach z biurka użytkownika. Zanim cokolwiek napiszesz, sprawdź, co jest w teczce (lista_plikow) i przeczytaj to, co potrzebne (czytaj_plik).
-- Gotową robotę ZAWSZE zapisujesz narzędziem zapisz_dokument. Nie wklejaj długiego dokumentu do rozmowy.
-- Po zapisaniu dokumentu sprawdź go narzędziem sprawdz_dokument i napisz, co faktycznie w nim jest.
-- Nigdy nie twierdź, że coś sprawdziłeś, jeśli nie wywołałeś narzędzia.
-- Jeśli czegoś nie da się zrobić dostępnymi narzędziami, powiedz to wprost i zaproponuj, co zrobić.
-- Odbiorcą jest osoba nietechniczna. Żadnego żargonu, żadnych nazw narzędzi w odpowiedzi.`
+JAK ROZMAWIASZ
+- Po polsku, krótko i konkretnie. Odbiorcą jest osoba nietechniczna: żadnego żargonu, żadnych nazw narzędzi w odpowiedzi.
+- Nie używasz form, które zdradzają płeć („zrobiłem"/„zrobiłam"). Piszesz bezosobowo: „Gotowe", „Zapisane w teczce sprawy", „Wychodzi 20 450,70 zł".
+- Zwykłe pytanie zasługuje na zwykłą odpowiedź. Jeśli ktoś pyta o rzecz spoza jego plików, po prostu odpowiadasz z własnej wiedzy — tak samo jak zrobiłby to kolega z biurka obok. NIE odsyłasz z kwitkiem tylko dlatego, że pytanie nie dotyczy dokumentów.
+- Gdy czegoś nie wiesz albo Twoja wiedza mogła się zdezaktualizować, mówisz to wprost i podajesz, czego jesteś pewny, a czego nie.
+
+CZEGO NIE ROBISZ NIGDY
+- Nie zmyślasz liczb, dat, kwot ani treści dokumentów. W robocie na plikach klienta pomyłka kosztuje — lepiej powiedzieć „tego nie ma w pliku" niż zgadnąć.
+- Nie twierdzisz, że coś sprawdziłeś, przeczytałeś albo zapisałeś, jeśli nie wywołałeś narzędzia. Człowiek widzi listę Twoich czynności i zobaczy rozbieżność.
+
+PRACA NA PLIKACH
+- Zanim policzysz cokolwiek z pliku, przeczytaj go narzędziem. Nie zgaduj zawartości z nazwy.
+- Gotową robotę zapisujesz narzędziem, nie wklejasz długiego dokumentu do rozmowy. Krótką odpowiedź (kilka zdań, jedna liczba, wyjaśnienie) mówisz normalnie w rozmowie — nie robisz z niej pliku.
+- Po zapisaniu dokumentu odczytaj go narzędziem sprawdzającym i napisz, co w nim faktycznie jest.
+- Pliki, które tworzysz, trafiają do teczki tej sprawy. Do trwałych „Moich plików" przenosisz coś WYŁĄCZNIE wtedy, gdy człowiek o to poprosi.
+- Jeśli czegoś nie da się zrobić dostępnymi narzędziami, powiedz to wprost, wyjaśnij dlaczego i zaproponuj drogę naokoło.`
 
 export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: string) {
   const katalogSprawy = biurko.katalogSprawy(u.id, sprawaId)
@@ -75,6 +85,13 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
       execute: async ({ sciezka }) => {
         const start = Date.now(), kid = randomUUID()
         await zdarz({ typ: 'narzedzie_start', id: kid, nazwa: 'czytaj_plik', etykieta: `Czytam ${sciezka}`, argumenty: { sciezka } })
+        // Bez tego readFile(utf8) na .jpg zwraca śmieci z ok:true i wpisuje je do dowodu
+        // jako „odczytany plik" — czyli dowód poświadcza coś, czego nie było.
+        const nieTekstowy = nieDoOdczytu(sciezka)
+        if (nieTekstowy) {
+          await zdarz({ typ: 'narzedzie_koniec', id: kid, nazwa: 'czytaj_plik', ok: false, podsumowanie: 'to nie jest plik tekstowy', ms: Date.now() - start })
+          return nieTekstowy
+        }
         try {
           const tresc = await biurko.czytaj(u.id, sciezka)
           const linie = tresc.split('\n').length
@@ -117,6 +134,32 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
         } catch {
           await zdarz({ typ: 'narzedzie_koniec', id: kid, nazwa: 'sprawdz_dokument', ok: false, podsumowanie: 'pliku nie ma', ms: Date.now() - start })
           return `Pliku ${nazwa} nie ma w teczce sprawy.`
+        }
+      },
+    })
+  }
+
+  if (maZdolnosc(p, 'pliki.zapisz')) {
+    t.zapisz_do_moich_plikow = tool({
+      description:
+        'Odkłada plik z teczki bieżącej sprawy do trwałych „Moich plików" użytkownika. ' +
+        'Wywołuj WYŁĄCZNIE wtedy, gdy człowiek wyraźnie o to poprosił — to jego prywatna przestrzeń, ' +
+        'a nie miejsce, w którym sam z siebie zostawiasz robocze wyniki.',
+      inputSchema: z.object({
+        nazwa: z.string().describe('nazwa pliku z teczki sprawy, np. "zestawienie-kosztow.md"'),
+        folder: z.string().optional().describe('podfolder w „Moich plikach", domyślnie korzeń'),
+      }),
+      execute: async ({ nazwa, folder }) => {
+        const start = Date.now(), kid = randomUUID()
+        const cel = folder?.trim() ? `Moje pliki/${folder.trim()}/${nazwa}` : `Moje pliki/${nazwa}`
+        await zdarz({ typ: 'narzedzie_start', id: kid, nazwa: 'zapisz_do_moich_plikow', etykieta: `Odkładam ${nazwa} do Moich plików`, argumenty: { nazwa, cel } })
+        try {
+          const gdzie = await biurko.kopiuj(u.id, `${katalogSprawy}/${nazwa}`, cel)
+          await zdarz({ typ: 'narzedzie_koniec', id: kid, nazwa: 'zapisz_do_moich_plikow', ok: true, podsumowanie: gdzie, ms: Date.now() - start })
+          return `Plik jest teraz w „Moich plikach" jako ${gdzie}.`
+        } catch (e) {
+          await zdarz({ typ: 'narzedzie_koniec', id: kid, nazwa: 'zapisz_do_moich_plikow', ok: false, podsumowanie: 'nie udało się odłożyć', ms: Date.now() - start })
+          return `Nie udało się odłożyć pliku ${nazwa} do Moich plików. ${String(e).slice(0, 120)}`
         }
       },
     })
@@ -198,7 +241,7 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
 }
 
 /** Uruchamia turę w tle. Zwraca natychmiast — praca trwa bez podpiętego klienta. */
-export async function uruchomTure(u: Uzytkownik, p: Polityka, sprawaId: string, tresc: string) {
+export async function uruchomTure(u: Uzytkownik, p: Polityka, sprawaId: string, tresc: string, zalaczniki: string[] = []) {
   await migracja()
   await pool.query(`update desk.sprawa set stan='pracuje', powod=null, zmieniona=now() where id=$1`, [sprawaId])
   await dopiszZdarzenie(sprawaId, { typ: 'lifecycle', stan: 'start' })
@@ -209,18 +252,60 @@ export async function uruchomTure(u: Uzytkownik, p: Polityka, sprawaId: string, 
   const historia = await pool.query<{ payload: DeskEvent }>(
     `select payload from desk.zdarzenie where sprawa_id=$1 order by seq`, [sprawaId],
   )
+  // Obrazy z załączników idą do modelu jako obraz, nie jako nazwa pliku — inaczej agent
+  // odpowiada „nie umiem czytać obrazków", choć model widzi. Limitujemy liczbę, bo każdy
+  // obraz kosztuje przy każdej kolejnej turze tej samej sprawy.
+  const MAX_OBRAZOW = 4
+
+  async function czesciWiadomosci(tekst: string, pliki: string[]) {
+    const obrazy = pliki.filter((n) => /\.(png|jpe?g|gif|webp)$/i.test(n))
+    const inne = pliki.filter((n) => !obrazy.includes(n))
+    const czesci: any[] = []
+    for (const nazwa of obrazy) {
+      try {
+        const dane = await biurko.czytajBinarnie(u.id, `${biurko.katalogSprawy(u.id, sprawaId)}/${nazwa}`)
+        czesci.push({ type: 'image', image: dane, mediaType: typObrazu(nazwa) })
+      } catch {
+        inne.push(nazwa)
+      }
+    }
+    const opisInnych = inne.length ? `\n\n[Załączone pliki w teczce sprawy: ${inne.join(', ')}]` : ''
+    czesci.push({ type: 'text', text: tekst + opisInnych })
+    return czesci
+  }
+
   const wiadomosci: any[] = []
+  let budzetObrazow = MAX_OBRAZOW
+  const historiaMysli = historia.rows.filter((r) => r.payload.typ === 'mysl')
+  const odKtorejWolnoObrazy = Math.max(0, historiaMysli.length - 1)
+
+  let licznikMysli = 0
   for (const r of historia.rows) {
     const e = r.payload
     if (e.typ === 'assistant') wiadomosci.push({ role: 'assistant', content: e.tekst })
-    if (e.typ === 'mysl') wiadomosci.push({ role: 'user', content: e.tekst })
+    if (e.typ === 'mysl') {
+      const stare = e.zalaczniki ?? []
+      // obrazy ze starszych tur pomijamy — liczy się bieżące pytanie i to bezpośrednio przed nim
+      const wolno = licznikMysli >= odKtorejWolnoObrazy && budzetObrazow > 0
+      licznikMysli++
+      if (wolno && stare.length) {
+        const czesci = await czesciWiadomosci(e.tekst, stare)
+        budzetObrazow -= czesci.filter((c) => c.type === 'image').length
+        wiadomosci.push({ role: 'user', content: czesci })
+      } else {
+        const opis = stare.length ? `\n\n[Załączone pliki w teczce sprawy: ${stare.join(', ')}]` : ''
+        wiadomosci.push({ role: 'user', content: e.tekst + opis })
+      }
+    }
   }
-  wiadomosci.push({ role: 'user', content: tresc })
+  // Uwaga: trasa dopisuje zdarzenie „mysl" PRZED wywołaniem tury, więc bieżące polecenie
+  // jest już ostatnią pozycją historii powyżej. Doklejanie go tu po raz drugi wysyłało
+  // model dwa razy to samo — i podwójnie naliczało koszt oraz obraz.
 
   void (async () => {
     try {
       const wynik = await generateText({
-        model: model(),
+        model: model(u.id),
         system: `${SYSTEM}\n\nUżytkownik: ${u.imie} ${u.nazwisko}, dział ${u.dzial}. Teczka bieżącej sprawy: ${biurko.katalogSprawy(u.id, sprawaId)}.`,
         messages: wiadomosci,
         tools: narzedzia,
@@ -243,6 +328,35 @@ export async function uruchomTure(u: Uzytkownik, p: Polityka, sprawaId: string, 
       await dziennik.zapisz(u.id, 'tura.blad', { sprawaId, powod })
     }
   })()
+}
+
+/** Zwraca wyjaśnienie po polsku, jeśli pliku po prostu nie da się przeczytać jako tekst. */
+function nieDoOdczytu(sciezka: string): string | null {
+  const ext = sciezka.split('.').pop()?.toLowerCase() ?? ''
+  if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'heic'].includes(ext)) {
+    return 'To jest obraz, nie plik tekstowy. Poproś użytkownika, żeby dołączył go do wiadomości — wtedy go zobaczysz.'
+  }
+  if (['xlsx', 'xls'].includes(ext)) {
+    return 'Nie umiem otworzyć pliku Excela. Poproś użytkownika, żeby zapisał go jako CSV (w Excelu: Plik → Zapisz jako → CSV) i wgrał ponownie.'
+  }
+  if (ext === 'docx' || ext === 'doc') {
+    return 'Nie umiem otworzyć pliku Worda. Poproś użytkownika o wersję w formacie tekstowym albo o wklejenie treści.'
+  }
+  if (ext === 'pdf') {
+    return 'Nie umiem odczytać PDF-a. Poproś użytkownika o wersję tekstową albo o wklejenie potrzebnego fragmentu.'
+  }
+  if (['zip', 'rar', '7z', 'exe', 'dmg'].includes(ext)) {
+    return 'To jest archiwum albo program, nie dokument. Nie umiem tego otworzyć.'
+  }
+  return null
+}
+
+function typObrazu(nazwa: string) {
+  const ext = nazwa.split('.').pop()?.toLowerCase()
+  return ext === 'png' ? 'image/png'
+    : ext === 'gif' ? 'image/gif'
+    : ext === 'webp' ? 'image/webp'
+    : 'image/jpeg'
 }
 
 function szacujKoszt(wynik: any): number {

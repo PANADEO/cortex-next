@@ -209,7 +209,7 @@ export function Eksplorator() {
                 ))}
               </ul>
             )}
-            <p className="pt-2 t-micro">Kosz czyści się sam po 30 dniach.</p>
+            <p className="pt-2 t-micro">Skasowane pliki zostają tutaj, dopóki ich stąd nie zabierzesz.</p>
           </div>
         )}
       </div>

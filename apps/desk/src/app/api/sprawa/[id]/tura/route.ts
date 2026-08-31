@@ -20,13 +20,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (wydano >= p.limitUsdNaDzien) {
     return NextResponse.json({ blad: 'Wyczerpany dzienny limit kosztów. Poproś przełożonego o podniesienie.' }, { status: 429 })
   }
-  const { tresc } = await req.json()
-  if (!tresc?.trim()) return NextResponse.json({ blad: 'Puste zlecenie.' }, { status: 400 })
+  const { tresc, zalaczniki } = await req.json()
+  const pliki: string[] = Array.isArray(zalaczniki) ? zalaczniki.filter((z) => typeof z === 'string').slice(0, 10) : []
+  if (!tresc?.trim() && !pliki.length) return NextResponse.json({ blad: 'Puste zlecenie.' }, { status: 400 })
 
-  await dopiszZdarzenie(id, { typ: 'mysl', tekst: tresc.trim() })
-  if (s.rows[0].tytul === 'Nowa sprawa') {
+  await dopiszZdarzenie(id, {
+    typ: 'mysl',
+    tekst: tresc?.trim() ?? '',
+    ...(pliki.length ? { zalaczniki: pliki } : {}),
+  })
+  if (s.rows[0].tytul === 'Nowa sprawa' && tresc?.trim()) {
     await pool.query(`update desk.sprawa set tytul=$2 where id=$1`, [id, tresc.trim().slice(0, 60)])
   }
-  await uruchomTure(u, p, id, tresc.trim())
+  await uruchomTure(u, p, id, tresc?.trim() ?? '', pliki)
   return NextResponse.json({ ok: true })
 }

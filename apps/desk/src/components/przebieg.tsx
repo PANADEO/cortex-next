@@ -134,44 +134,43 @@ export function Przebieg({ wpisy, pracuje, teraz }: { wpisy: Wpis[]; pracuje: bo
       </h3>
 
       {!zwiniety && (
-        <>
-          <ul aria-label="Kroki pracy" className="relative space-y-0.5 border-t py-1.5">
-            {/* oś: kreska biegnie pod kolumną ikon, nie przez nie */}
-            <span aria-hidden className="pointer-events-none absolute bottom-3 left-[22px] top-3 w-px bg-line" />
-            {kroki.map((k) => (
-              <Wiersz key={k.i} k={k} at={wpisy[k.i]?.at ?? new Date().toISOString()} teraz={teraz} />
-            ))}
-          </ul>
+        <ul aria-label="Kroki pracy" className="relative space-y-0.5 border-t py-1.5">
+          {/* oś: kreska biegnie pod kolumną ikon, nie przez nie */}
+          <span aria-hidden className="pointer-events-none absolute bottom-3 left-[22px] top-3 w-px bg-line" />
+          {kroki.map((k) => (
+            <Wiersz key={k.i} k={k} at={wpisy[k.i]?.at ?? new Date().toISOString()} teraz={teraz} />
+          ))}
+        </ul>
+      )}
 
-          {(dowod.weszlo.length > 0 || dowod.zrobione.length > 0 || niepewne) && (
-            <div className="space-y-1 border-t bg-raised/40 px-3 py-2.5">
-              {(dowod.weszlo.length > 0 || dowod.zrobione.length > 0) && (
-                <div className="flex gap-2 text-[13px] leading-5">
-                  <Ikona jako={ShieldCheck} px={14} klasa="mt-0.5 shrink-0 text-ok" />
-                  <div>
-                    <span className="text-ink">Sprawdzone:</span>{' '}
-                    <span className="text-muted">
-                      {[...dowod.weszlo, ...dowod.zrobione].join(' · ')}
-                    </span>
-                  </div>
-                </div>
-              )}
-              {niepewne && (
-                <div className="flex gap-2 text-[13px] leading-5">
-                  <Ikona jako={TriangleAlert} px={14} klasa="mt-0.5 shrink-0 text-warn" />
-                  <div>
-                    <span className="text-ink">Nie sprawdziłem:</span>{' '}
-                    <span className="text-muted">{dowod.nieSprawdzone.join(' · ')}</span>
-                  </div>
-                </div>
-              )}
-              <p className="t-micro pt-0.5">
-                To jest lista tego, co faktycznie się wydarzyło — nie tego, co napisałem powyżej.
-              </p>
+      {/* Stopka dowodu zostaje widoczna także po zwinięciu — bez niej zwinięcie chowa
+          jedyną rzecz, która odróżnia to narzędzie od zwykłego czatu. */}
+      {(dowod.weszlo.length > 0 || dowod.zrobione.length > 0 || niepewne) && (
+        <div className="space-y-1 border-t bg-raised/40 px-3 py-2.5">
+          {(dowod.weszlo.length > 0 || dowod.zrobione.length > 0) && (
+            <div className="flex gap-2 text-[13px] leading-5">
+              <Ikona jako={ShieldCheck} px={14} klasa="mt-0.5 shrink-0 text-ok" />
+              <div>
+                <span className="text-ink">Sprawdzone:</span>{' '}
+                <span className="text-muted">{[...dowod.weszlo, ...dowod.zrobione].join(' · ')}</span>
+              </div>
             </div>
           )}
-        </>
+          {niepewne && (
+            <div className="flex gap-2 text-[13px] leading-5">
+              <Ikona jako={TriangleAlert} px={14} klasa="mt-0.5 shrink-0 text-warn" />
+              <div>
+                <span className="text-ink">Nie sprawdziłem:</span>{' '}
+                <span className="text-muted">{dowod.nieSprawdzone.join(' · ')}</span>
+              </div>
+            </div>
+          )}
+          <p className="t-micro pt-0.5">
+            To jest lista tego, co faktycznie się wydarzyło — nie tego, co napisałem powyżej.
+          </p>
+        </div>
       )}
+
     </section>
   )
 }

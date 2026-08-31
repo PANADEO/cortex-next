@@ -52,6 +52,11 @@ export async function czytaj(uzytkownik: string, wzgledna: string): Promise<stri
   return fs.readFile(cel, 'utf8')
 }
 
+export async function czytajBinarnie(uzytkownik: string, wzgledna: string): Promise<Buffer> {
+  const { cel } = bezpiecznaSciezka(uzytkownik, wzgledna)
+  return fs.readFile(cel)
+}
+
 export async function zapisz(uzytkownik: string, wzgledna: string, tresc: string | Buffer) {
   const { cel } = bezpiecznaSciezka(uzytkownik, wzgledna)
   await fs.mkdir(path.dirname(cel), { recursive: true })

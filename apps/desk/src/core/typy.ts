@@ -1,7 +1,7 @@
 /** Słownik zdarzeń jest NASZ. Żaden typ biblioteki agentowej nie przekracza tej granicy. */
 export type DeskEvent =
   | { typ: 'lifecycle'; stan: 'start' | 'koniec' | 'przerwane' | 'blad'; powod?: string }
-  | { typ: 'mysl'; tekst: string }
+  | { typ: 'mysl'; tekst: string; zalaczniki?: string[] }
   | { typ: 'assistant'; tekst: string }
   | { typ: 'narzedzie_start'; id?: string; nazwa: string; etykieta: string; argumenty: Record<string, unknown> }
   | { typ: 'narzedzie_koniec'; id?: string; nazwa: string; ok: boolean; podsumowanie: string; ms: number }

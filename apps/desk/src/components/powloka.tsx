@@ -97,7 +97,7 @@ export async function Powloka({ children, aktywna, bezPaskaDolnego }: {
               Umiem {p.przyznane.length} z {ile(p.przyznane.length + p.zablokowane.length, 'rzeczy', 'rzeczy', 'rzeczy')}
               <Ikona jako={ChevronRight} px={12} />
             </Link>
-            <p className="pt-1.5 t-micro">Twoje pliki nie opuszczają serwera firmy.</p>
+            <p className="pt-1.5 t-micro">{'Pliki zostają na serwerze firmy. Do modelu trafia tylko ta treść, którą asystent musi przeczytać, żeby wykonać zlecenie.'}</p>
           </div>
         </aside>
 

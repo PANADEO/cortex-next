@@ -1,11 +1,11 @@
 'use client'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as Menu from '@radix-ui/react-dropdown-menu'
 import {
   ChevronLeft, ChevronDown, ArrowDown, ArrowUp, Paperclip, MoreHorizontal,
-  Square, Info, RotateCcw, LoaderCircle, X,
+  Square, Info, RotateCcw, LoaderCircle, X, PanelRight, PanelRightClose,
 } from 'lucide-react'
 import { Ikona } from './ikona'
 import { Md } from './md'
@@ -13,8 +13,10 @@ import { Przebieg } from './przebieg'
 import { Wynik } from './wynik'
 import { PrzyciskCoPotrafie } from './co-potrafie'
 import { ikonaPliku } from './wiersz-pliku'
+import { ListaZalacznikow, type Zalacznik } from './zalaczniki'
 import { useToast } from './toast'
 import { dowodZeZdarzen } from '@/core/dowod'
+import { podzielTeczke } from '@/core/teczka'
 import type { PlikMeta, Polityka, Wpis } from '@/core/typy'
 import { zl } from '@/lib'
 
@@ -50,16 +52,20 @@ function naTury(wpisy: Wpis[]): Tura[] {
   return tury
 }
 
+const adres = (sciezka: string) => `/api/plik?sciezka=${encodeURIComponent(sciezka)}`
+
 export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityka }) {
   const [wpisy, setWpisy] = useState<Wpis[]>([])
   const [sprawa, setSprawa] = useState<Sprawa | null>(null)
   const [teczka, setTeczka] = useState<PlikMeta[]>([])
   const [tresc, setTresc] = useState('')
+  const [zal, setZal] = useState<Zalacznik[]>([])
+  const [wysylane, setWysylane] = useState<{ tekst: string; pliki: string[] } | null>(null)
   const [teraz, setTeraz] = useState(() => Date.now())
   const [odkad, setOdkad] = useState<number | null>(null)
   const [przyDole, setPrzyDole] = useState(true)
-  const [wgrywa, setWgrywa] = useState(false)
   const [arkusz, setArkusz] = useState(false)
+  const [panel, setPanel] = useState(true)
   const od = useRef(0)
   const strumien = useRef<HTMLDivElement>(null)
   const dol = useRef<HTMLDivElement>(null)
@@ -69,26 +75,67 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
   const { pokaz } = useToast()
 
   useEffect(() => {
+    try {
+      const z = localStorage.getItem('desk_panel_wyniku')
+      if (z !== null) setPanel(z === '1')
+    } catch { /* prywatne okno albo zablokowane dane witryny */ }
+  }, [])
+  const przelaczPanel = () => setPanel((x) => {
+    try { localStorage.setItem('desk_panel_wyniku', x ? '0' : '1') } catch { /* nieistotne */ }
+    return !x
+  })
+
+  const pracuje = sprawa?.stan === 'pracuje'
+
+  /**
+   * Odpytujemy z wykrywaniem zmiany. Wcześniej `setSprawa` i `setTeczka` odpalały się co 700 ms
+   * z nową tożsamością obiektu, więc React przerysowywał całe drzewo — i gubił zaznaczenie
+   * tekstu, którego człowiek właśnie próbował skopiować.
+   */
+  useEffect(() => {
     let zyje = true
+    let uchwyt: ReturnType<typeof setTimeout>
+    let odstep = 700
+
     async function tick() {
-      const r = await fetch(`/api/sprawa/${id}/zdarzenia?od=${od.current}`, { cache: 'no-store' })
-      if (!r.ok || !zyje) return
-      const d = await r.json()
-      setSprawa(d.sprawa); setTeczka(d.teczka ?? [])
-      if (d.zdarzenia?.length) {
-        od.current = d.zdarzenia[d.zdarzenia.length - 1].seq
-        setWpisy((w) => [...w, ...d.zdarzenia])
-        const start = d.zdarzenia.find((z: Wpis) => z.event.typ === 'lifecycle' && (z.event as { stan?: string }).stan === 'start')
-        if (start) setOdkad(new Date(start.at).getTime())
+      try {
+        const r = await fetch(`/api/sprawa/${id}/zdarzenia?od=${od.current}`, { cache: 'no-store' })
+        if (!r.ok || !zyje) return
+        const d = await r.json()
+
+        setSprawa((s) => (s && s.stan === d.sprawa.stan && s.tytul === d.sprawa.tytul
+          && s.koszt === d.sprawa.koszt && s.powod === d.sprawa.powod ? s : d.sprawa))
+        setTeczka((t) => {
+          const nowa: PlikMeta[] = d.teczka ?? []
+          const takieSame = t.length === nowa.length
+            && t.every((x, i) => x.sciezka === nowa[i].sciezka && x.rozmiar === nowa[i].rozmiar && x.zmieniony === nowa[i].zmieniony)
+          return takieSame ? t : nowa
+        })
+
+        if (d.zdarzenia?.length) {
+          od.current = d.zdarzenia[d.zdarzenia.length - 1].seq
+          setWpisy((w) => [...w, ...d.zdarzenia])
+          const start = d.zdarzenia.find((z: Wpis) => z.event.typ === 'lifecycle' && (z.event as { stan?: string }).stan === 'start')
+          if (start) setOdkad(new Date(start.at).getTime())
+        }
+        // zakończona sprawa nie potrzebuje odpytywania co 700 ms — zwalniamy, dopóki nie ruszy nowa tura
+        odstep = d.sprawa?.stan === 'pracuje' ? 700 : 4000
+      } finally {
+        if (zyje) uchwyt = setTimeout(tick, odstep)
       }
     }
+
     tick()
-    const t = setInterval(tick, 700)
-    const z = setInterval(() => setTeraz(Date.now()), 1000)
-    return () => { zyje = false; clearInterval(t); clearInterval(z) }
+    return () => { zyje = false; clearTimeout(uchwyt) }
   }, [id])
 
-  // przewijamy tylko wtedy, gdy człowiek stoi przy dole — inaczej wyrywamy mu ekran z rąk
+  // zegar chodzi wyłącznie wtedy, gdy jest co odliczać
+  useEffect(() => {
+    if (!pracuje && !wysylane) return
+    const z = setInterval(() => setTeraz(Date.now()), 1000)
+    return () => clearInterval(z)
+  }, [pracuje, wysylane])
+
   useEffect(() => {
     if (przyDole) dol.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [wpisy.length, przyDole])
@@ -99,41 +146,75 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
     setPrzyDole(el.scrollHeight - el.scrollTop - el.clientHeight < 80)
   }, [])
 
-  const pracuje = sprawa?.stan === 'pracuje'
-  const dowod = dowodZeZdarzen(wpisy.map((w) => w.event))
+  const tury = useMemo(() => naTury(wpisy), [wpisy])
+  const dowod = useMemo(() => dowodZeZdarzen(wpisy.map((w) => w.event)), [wpisy])
   const sekundy = odkad && pracuje ? Math.max(0, Math.round((teraz - odkad) / 1000)) : 0
-  const tury = naTury(wpisy)
-  const dokumenty = teczka.filter((x) => !x.katalog)
-  const ostatni = dokumenty[dokumenty.length - 1]
+  const { wyniki, zalaczniki } = useMemo(
+    () => podzielTeczke(teczka, wpisy.map((w) => w.event)), [teczka, wpisy])
+  // „ostatni" ma znaczyć NAJNOWSZY, nie alfabetycznie ostatni — biurko.lista sortuje po nazwie
+  const ostatni = useMemo(
+    () => [...wyniki].sort((a, b) => a.zmieniony.localeCompare(b.zmieniony)).at(-1), [wyniki])
+
+  // optymistyczna wiadomość znika, gdy dojdzie prawdziwe zdarzenie polecenia
+  const liczbaPolecen = tury.filter((t) => t.polecenie).length
+  const poleceniaPrzedWyslaniem = useRef(0)
+  useEffect(() => {
+    if (wysylane && liczbaPolecen > poleceniaPrzedWyslaniem.current) setWysylane(null)
+  }, [liczbaPolecen, wysylane])
 
   async function wyslij() {
-    if (!tresc.trim() || pracuje) return
+    const gotowe = zal.filter((z) => !z.wgrywa).map((z) => z.nazwa)
+    if ((!tresc.trim() && !gotowe.length) || pracuje || zal.some((z) => z.wgrywa)) return
     const t = tresc
-    setTresc(''); setPrzyDole(true)
-    await fetch(`/api/sprawa/${id}/tura`, { method: 'POST', body: JSON.stringify({ tresc: t }) })
+    poleceniaPrzedWyslaniem.current = liczbaPolecen
+    setWysylane({ tekst: t, pliki: gotowe })
+    setTresc(''); setZal([]); setPrzyDole(true)
+    const r = await fetch(`/api/sprawa/${id}/tura`, {
+      method: 'POST',
+      body: JSON.stringify({ tresc: t, zalaczniki: gotowe }),
+    })
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}))
+      setWysylane(null); setTresc(t)
+      pokaz({ tekst: d.blad ?? 'Nie udało się wysłać zlecenia.', ton: 'blad' })
+    }
   }
 
+  /** Załącznik ląduje w teczce TEJ sprawy — „Moje pliki" zostają nietknięte. */
   async function dolacz(files: FileList | null) {
     if (!files?.length) return
-    setWgrywa(true)
+    const nowe: Zalacznik[] = Array.from(files).map((f) => ({
+      nazwa: f.name,
+      podglad: f.type.startsWith('image/') ? URL.createObjectURL(f) : undefined,
+      wgrywa: true,
+    }))
+    setZal((z) => [...z, ...nowe])
+
     const fd = new FormData()
-    fd.append('katalog', 'Moje pliki')
+    fd.append('sprawaId', id)
     Array.from(files).forEach((f) => fd.append('plik', f))
     const r = await fetch('/api/pliki/wgraj', { method: 'POST', body: fd })
-    setWgrywa(false)
-    if (!r.ok) { pokaz({ tekst: 'Nie udało się dodać pliku.', ton: 'blad' }); return }
-    const nazwy = Array.from(files).map((f) => f.name)
-    pokaz({ tekst: `Dodane do Moich plików: ${nazwy.join(', ')}` })
-    setTresc((t) => (t ? `${t.trimEnd()}\n\nPracuj na pliku: ${nazwy.join(', ')}` : `Pracuj na pliku: ${nazwy.join(', ')}`))
+    const d = await r.json().catch(() => ({}))
+
+    if (!r.ok) {
+      setZal((z) => z.filter((x) => !nowe.some((n) => n.nazwa === x.nazwa)))
+      pokaz({ tekst: d.blad ?? 'Nie udało się dołączyć pliku.', ton: 'blad' })
+      return
+    }
+    // serwer mógł nadać inną nazwę, gdy taka już była w teczce
+    setZal((z) => z.map((x) => {
+      const i = nowe.findIndex((n) => n.nazwa === x.nazwa)
+      return i >= 0 ? { ...x, nazwa: d.nazwy?.[i] ?? x.nazwa, wgrywa: false } : x
+    }))
     pole.current?.focus()
   }
 
   const doDowodu = () => stopkaDowodu.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  const zajete = pracuje || Boolean(wysylane)
 
   return (
     <div className="flex h-full">
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* ── nagłówek ─────────────────────────────────────────── */}
         <header className="flex h-pasek shrink-0 items-center gap-2 border-b bg-surface px-3">
           <Link href="/" aria-label="Wróć do biurka" className="grid h-8 w-8 place-items-center rounded-sm text-muted hover:bg-raised md:hidden">
             <Ikona jako={ChevronLeft} px={20} />
@@ -153,35 +234,49 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
               className="flex h-8 items-center gap-1.5 rounded-md border px-2.5 t-btn hover:bg-raised"
             ><Ikona jako={Square} px={14} /> Stop</button>
           )}
+          <button
+            onClick={przelaczPanel} aria-pressed={panel}
+            aria-label={panel ? 'Ukryj panel wyniku' : 'Pokaż panel wyniku'}
+            title={panel ? 'Ukryj wynik' : 'Pokaż wynik'}
+            className="hidden h-8 w-8 place-items-center rounded-sm text-muted hover:bg-raised lg:grid"
+          >
+            <Ikona jako={panel ? PanelRightClose : PanelRight} px={16} />
+          </button>
           <Menu.Root>
             <Menu.Trigger aria-label="Więcej o sprawie" className="grid h-8 w-8 place-items-center rounded-sm text-muted hover:bg-raised">
               <Ikona jako={MoreHorizontal} px={16} />
             </Menu.Trigger>
             <Menu.Portal>
-              <Menu.Content align="end" sideOffset={4} className="z-50 min-w-[240px] rounded-md border bg-surface p-3 shadow-pop">
+              <Menu.Content align="end" sideOffset={4} collisionPadding={12} className="z-50 min-w-[240px] rounded-md border bg-surface p-3 shadow-pop">
                 <div className="flex items-center gap-2 pb-2 t-sekcja"><Ikona jako={Info} px={14} /> Szczegóły sprawy</div>
                 <dl className="space-y-1 t-meta">
                   <div className="flex justify-between gap-4"><dt>Czynności</dt><dd className="text-ink">{wpisy.filter((w) => w.event.typ === 'narzedzie_start').length}</dd></div>
-                  <div className="flex justify-between gap-4"><dt>Dokumenty</dt><dd className="text-ink">{dokumenty.length}</dd></div>
+                  <div className="flex justify-between gap-4"><dt>Dokumenty</dt><dd className="text-ink">{wyniki.length}</dd></div>
                   <div className="flex justify-between gap-4"><dt>Koszt</dt><dd className="text-ink">{zl(sprawa?.koszt ?? 0)}</dd></div>
-                  <div className="flex justify-between gap-4"><dt>Zakres uprawnień</dt><dd className="font-mono text-ink">{p.odcisk}</dd></div>
+                  <div className="flex justify-between gap-4"><dt>Uprawnienia</dt><dd className="text-ink">jak w dziale {p.rola === 'zarzad' ? 'Zarząd' : 'Księgowość'} ({p.przyznane.length} z {p.przyznane.length + p.zablokowane.length})</dd></div>
                 </dl>
               </Menu.Content>
             </Menu.Portal>
           </Menu.Root>
         </header>
 
-        {/* ── strumień ─────────────────────────────────────────── */}
         <div ref={strumien} onScroll={naSkroll} className="relative min-h-0 flex-1 overflow-y-auto px-4 py-5">
           <div className="mx-auto flex max-w-strumien flex-col gap-4">
             {tury.map((tura, i) => {
-              const ostatniaTura = i === tury.length - 1
+              const ostatniaTura = i === tury.length - 1 && !wysylane
+              const e = tura.polecenie?.event
+              const zalaczone = e?.typ === 'mysl' ? e.zalaczniki ?? [] : []
               return (
                 <div key={tura.klucz} className="flex flex-col gap-4">
-                  {tura.polecenie?.event.typ === 'mysl' && (
-                    <div className="max-w-miara rounded-md border-l-2 border-accent bg-accent-soft px-3.5 py-2.5 t-tresc text-accent-soft-ink whitespace-pre-wrap">
-                      {tura.polecenie.event.tekst}
-                    </div>
+                  {e?.typ === 'mysl' && (
+                    <Polecenie
+                      tekst={e.tekst}
+                      zalaczniki={zalaczone.map((n) => ({
+                        nazwa: n,
+                        podglad: /\.(png|jpe?g|gif|webp)$/i.test(n) ? adres(`Sprawy/${id}/${n}`) : undefined,
+                      }))}
+                      otworz={(n) => window.open(adres(`Sprawy/${id}/${n}`), '_blank')}
+                    />
                   )}
 
                   {tura.praca.length > 0 && (
@@ -190,21 +285,23 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
                     </div>
                   )}
 
+                  {pracuje && ostatniaTura && tura.praca.length === 0 && <Zabieram />}
+
                   {tura.po.map((w) => {
-                    const e = w.event
-                    if (e.typ === 'assistant')
-                      return <div key={w.seq} className="max-w-miara"><Md tekst={e.tekst} /></div>
-                    if (e.typ === 'lifecycle' && (e.stan === 'blad' || e.stan === 'przerwane'))
+                    const ev = w.event
+                    if (ev.typ === 'assistant')
+                      return <div key={w.seq} className="max-w-miara"><Md tekst={ev.tekst} /></div>
+                    if (ev.typ === 'lifecycle' && (ev.stan === 'blad' || ev.stan === 'przerwane'))
                       return (
                         <div
                           key={w.seq}
-                          className={`rounded-lg border bg-surface px-4 py-3 ${e.stan === 'blad' ? 'border-bad' : 'border-warn'}`}
+                          className={`rounded-lg border bg-surface px-4 py-3 ${ev.stan === 'blad' ? 'border-bad' : 'border-warn'}`}
                         >
                           <div className="t-tresc-m">
-                            {e.stan === 'blad' ? 'Nie dokończyłem tego zlecenia.' : 'Praca przerwana.'}
+                            {ev.stan === 'blad' ? 'Nie dokończyłem tego zlecenia.' : 'Praca przerwana.'}
                           </div>
-                          {e.powod && <p className="mt-0.5 t-meta">{e.powod}</p>}
-                          {e.stan === 'blad' && (
+                          {ev.powod && <p className="mt-0.5 t-meta">{ev.powod}</p>}
+                          {ev.stan === 'blad' && (
                             <button
                               onClick={() => pole.current?.focus()}
                               className="mt-2 flex h-8 items-center gap-1.5 rounded-md border px-2.5 t-btn hover:bg-raised"
@@ -217,6 +314,21 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
                 </div>
               )
             })}
+
+            {/* zlecenie widać od razu po kliknięciu, zanim serwer zdąży zapisać zdarzenie */}
+            {wysylane && (
+              <div className="flex flex-col gap-4">
+                <Polecenie
+                  tekst={wysylane.tekst}
+                  zalaczniki={wysylane.pliki.map((n) => ({
+                    nazwa: n,
+                    podglad: /\.(png|jpe?g|gif|webp)$/i.test(n) ? adres(`Sprawy/${id}/${n}`) : undefined,
+                  }))}
+                />
+                <Zabieram />
+              </div>
+            )}
+
             <div ref={dol} />
           </div>
 
@@ -228,7 +340,6 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
           )}
         </div>
 
-        {/* ── wynik na telefonie: pasek nad polem pisania ───────── */}
         {ostatni && (
           <button
             onClick={() => setArkusz(true)}
@@ -241,45 +352,57 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
           </button>
         )}
 
-        {/* ── kompozytor ───────────────────────────────────────── */}
         <div className="shrink-0 border-t bg-surface p-3">
           <div className="mx-auto max-w-strumien rounded-xl border bg-bg">
+            <ListaZalacznikow
+              pliki={zal}
+              usun={(n) => setZal((z) => z.filter((x) => x.nazwa !== n))}
+              klasa="px-3 pt-3"
+            />
             <textarea
               ref={pole} value={tresc} onChange={(e) => setTresc(e.target.value)} rows={2}
               onKeyDown={(e) => {
                 if (e.key !== 'Enter') return
                 if (window.matchMedia('(hover: hover)').matches && !e.shiftKey) { e.preventDefault(); wyslij() }
               }}
-              placeholder={pracuje ? 'Pracuję — poczekaj albo naciśnij Stop' : 'Napisz, co mam zrobić…'}
+              onPaste={(e) => {
+                const pliki = Array.from(e.clipboardData.files)
+                if (!pliki.length) return
+                e.preventDefault()
+                const dt = new DataTransfer()
+                pliki.forEach((f) => dt.items.add(f))
+                dolacz(dt.files)
+              }}
+              placeholder={zajete ? 'Pracuję — poczekaj albo naciśnij Stop' : 'Napisz, co mam zrobić…'}
               className="w-full resize-none bg-transparent px-3.5 pt-3 t-tresc outline-none placeholder:text-muted-cichy"
             />
             <div className="flex items-center gap-1 px-2 pb-2">
-              <input ref={wybor} type="file" multiple hidden onChange={(e) => dolacz(e.target.files)} />
+              <input ref={wybor} type="file" multiple hidden onChange={(e) => { dolacz(e.target.files); e.target.value = '' }} />
               <button
-                type="button" onClick={() => wybor.current?.click()} disabled={wgrywa}
+                type="button" onClick={() => wybor.current?.click()}
                 className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-muted hover:bg-raised hover:text-ink"
               >
-                <Ikona jako={wgrywa ? LoaderCircle : Paperclip} px={14} klasa={wgrywa ? 'obrot' : undefined} />
-                {wgrywa ? 'Dodaję…' : 'Dodaj plik'}
+                <Ikona jako={Paperclip} px={14} /> Dodaj plik
               </button>
               <PrzyciskCoPotrafie p={p} />
               <div className="flex-1" />
               <button
-                onClick={wyslij} disabled={!tresc.trim() || pracuje}
+                onClick={wyslij}
+                disabled={(!tresc.trim() && !zal.length) || zajete || zal.some((z) => z.wgrywa)}
                 aria-label="Wyślij zlecenie"
                 className="grid h-9 w-9 place-items-center rounded-md bg-accent text-accent-ink hover:bg-accent-hover disabled:opacity-35"
-              ><Ikona jako={ArrowUp} px={16} /></button>
+              ><Ikona jako={zajete ? LoaderCircle : ArrowUp} px={16} klasa={zajete ? 'obrot' : undefined} /></button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── panel wyniku (desktop) ──────────────────────────────── */}
-      <aside className="hidden w-wynik shrink-0 border-l bg-surface lg:block">
-        <Wynik pliki={teczka} dowod={dowod} doDowodu={doDowodu} />
-      </aside>
+      {panel && (
+        <aside className="hidden w-wynik shrink-0 border-l bg-surface lg:block">
+          <Wynik pliki={wyniki} zalaczniki={zalaczniki} dowod={dowod} doDowodu={doDowodu} />
+        </aside>
+      )}
 
-      {/* ── panel wyniku (telefon) — arkusz od dołu ─────────────── */}
       <Dialog.Root open={arkusz} onOpenChange={setArkusz}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-40 bg-ink/25 lg:hidden" />
@@ -291,11 +414,39 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
               </Dialog.Close>
             </div>
             <div className="h-[calc(88vh-44px)]">
-              <Wynik pliki={teczka} dowod={dowod} />
+              <Wynik pliki={wyniki} zalaczniki={zalaczniki} dowod={dowod} />
             </div>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+    </div>
+  )
+}
+
+/** Polecenie człowieka: bąbel po prawej, o szerokości treści, z zaznaczalnym tekstem. */
+function Polecenie({ tekst, zalaczniki, otworz }: {
+  tekst: string
+  zalaczniki: Zalacznik[]
+  otworz?: (n: string) => void
+}) {
+  return (
+    <div className="flex flex-col items-end gap-2 self-end">
+      <ListaZalacznikow pliki={zalaczniki} otworz={otworz} klasa="justify-end" />
+      {tekst && (
+        <div className="max-w-[min(560px,85%)] select-text whitespace-pre-wrap rounded-xl rounded-br-sm bg-accent-soft px-3.5 py-2.5 t-tresc text-accent-soft-ink">
+          {tekst}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Luka między kliknięciem a pierwszym krokiem to 1–2 sekundy ciszy — tu jest jej wypełnienie. */
+function Zabieram() {
+  return (
+    <div className="flex items-center gap-2 t-meta">
+      <Ikona jako={LoaderCircle} px={14} klasa="obrot text-accent" />
+      <span className="puls">Zabieram się do pracy…</span>
     </div>
   )
 }

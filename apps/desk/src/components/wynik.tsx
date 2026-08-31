@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Download, FolderInput, Copy, Check, TriangleAlert, ShieldCheck, Inbox } from 'lucide-react'
+import { Download, FolderInput, Copy, Check, TriangleAlert, ShieldCheck, Inbox, ChevronDown } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Ikona } from './ikona'
 import { Podglad, adresPliku } from './podglad'
@@ -14,8 +14,9 @@ import { rozmiar, kiedy } from '@/lib'
  * Wynik pracy to najważniejszy obiekt w całej aplikacji — dostaje własne miejsce,
  * z którego nie ucieka razem z przewijaniem historii.
  */
-export function Wynik({ pliki, dowod, doDowodu }: {
+export function Wynik({ pliki, zalaczniki = [], dowod, doDowodu }: {
   pliki: PlikMeta[]
+  zalaczniki?: PlikMeta[]
   dowod: Dowod
   doDowodu?: () => void
 }) {
@@ -23,7 +24,8 @@ export function Wynik({ pliki, dowod, doDowodu }: {
   const { pokaz } = useToast()
   const [skopiowane, setSkopiowane] = useState(false)
 
-  const dokumenty = pliki.filter((p) => !p.katalog)
+  // najnowszy, nie alfabetycznie ostatni
+  const dokumenty = [...pliki].sort((a, b) => a.zmieniony.localeCompare(b.zmieniony))
   const aktywny = dokumenty.find((p) => p.sciezka === wybrany) ?? dokumenty[dokumenty.length - 1]
 
   useEffect(() => {
@@ -32,11 +34,14 @@ export function Wynik({ pliki, dowod, doDowodu }: {
 
   if (!dokumenty.length) {
     return (
-      <div className="grid h-full place-items-center p-6 text-center">
-        <div>
-          <Ikona jako={Inbox} px={24} klasa="mx-auto text-muted-cichy" />
-          <p className="mt-2 t-tresc text-muted">Tu pojawi się gotowy dokument.</p>
+      <div className="flex h-full flex-col">
+        <div className="grid flex-1 place-items-center p-6 text-center">
+          <div>
+            <Ikona jako={Inbox} px={24} klasa="mx-auto text-muted-cichy" />
+            <p className="mt-2 t-tresc text-muted">Tu pojawi się gotowy dokument.</p>
+          </div>
         </div>
+        <OdCiebie pliki={zalaczniki} />
       </div>
     )
   }
@@ -116,6 +121,41 @@ export function Wynik({ pliki, dowod, doDowodu }: {
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <Podglad plik={aktywny} />
       </div>
+
+      <OdCiebie pliki={zalaczniki} />
+    </div>
+  )
+}
+
+/** To, co wniósł człowiek, nie jest wynikiem pracy agenta i nie może się nim podszywać. */
+function OdCiebie({ pliki }: { pliki: PlikMeta[] }) {
+  const [otwarte, setOtwarte] = useState(false)
+  if (!pliki.length) return null
+  return (
+    <div className="shrink-0 border-t">
+      <button
+        onClick={() => setOtwarte((o) => !o)}
+        className="flex h-9 w-full items-center gap-1.5 px-4 t-meta hover:text-ink"
+      >
+        Od Ciebie ({pliki.length})
+        <Ikona jako={ChevronDown} px={12} klasa={otwarte ? 'rotate-180' : ''} />
+      </button>
+      {otwarte && (
+        <ul className="max-h-40 overflow-y-auto px-2 pb-2">
+          {pliki.map((p) => (
+            <li key={p.sciezka}>
+              <a
+                href={adresPliku(p)} target="_blank" rel="noreferrer"
+                className="flex h-8 items-center gap-2 rounded-sm px-2 text-[13px] hover:bg-raised"
+              >
+                <Ikona jako={ikonaPliku(p)} px={14} klasa="shrink-0 text-muted" />
+                <span className="min-w-0 flex-1 truncate">{p.nazwa}</span>
+                <span className="shrink-0 t-micro">{rozmiar(p.rozmiar)}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

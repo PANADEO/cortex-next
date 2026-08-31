@@ -1,5 +1,6 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
+import * as Menu from '@radix-ui/react-dropdown-menu'
 import { Check, Lock, ChevronDown, ShieldCheck } from 'lucide-react'
 import { Ikona } from './ikona'
 import { useToast } from './toast'
@@ -74,34 +75,24 @@ function ile(n: number, j: string, k: string, w: string) {
 /** Przy polu zlecenia — jeden klik odpowiada na pytanie „czy on to w ogóle umie?". */
 export function PrzyciskCoPotrafie({ p }: { p: Polityka }) {
   const [otwarty, setOtwarty] = useState(false)
-  const box = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!otwarty) return
-    function pozaBoxem(e: MouseEvent) {
-      if (!box.current?.contains(e.target as Node)) setOtwarty(false)
-    }
-    function esc(e: KeyboardEvent) { if (e.key === 'Escape') setOtwarty(false) }
-    document.addEventListener('mousedown', pozaBoxem)
-    document.addEventListener('keydown', esc)
-    return () => { document.removeEventListener('mousedown', pozaBoxem); document.removeEventListener('keydown', esc) }
-  }, [otwarty])
-
   return (
-    <div ref={box} className="relative">
-      <button
-        type="button" onClick={() => setOtwarty((o) => !o)} aria-expanded={otwarty}
-        className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-muted hover:bg-raised hover:text-ink"
-      >
+    <Menu.Root open={otwarty} onOpenChange={setOtwarty}>
+      <Menu.Trigger className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-muted hover:bg-raised hover:text-ink">
         <Ikona jako={Check} px={14} klasa="text-ok" />
         Umiem tu {ile(p.przyznane.length, 'rzecz', 'rzeczy', 'rzeczy')}
         <Ikona jako={ChevronDown} px={14} klasa={`transition-transform ${otwarty ? 'rotate-180' : ''}`} />
-      </button>
-      {otwarty && (
-        <div className="wjazd absolute bottom-full left-0 z-40 mb-2 w-[320px] rounded-lg border bg-surface p-3 shadow-pop">
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Content
+          side="top" align="start" sideOffset={8} collisionPadding={12}
+          // Radix sam odbija zawartość od krawędzi okna i podaje wysokość, która realnie została;
+          // wcześniej własny popover po prostu wychodził poza ekran i tracił górne pozycje.
+          style={{ maxHeight: 'var(--radix-dropdown-menu-content-available-height)' }}
+          className="z-50 w-[320px] overflow-y-auto rounded-lg border bg-surface p-3 shadow-pop"
+        >
           <ListaZdolnosci p={p} gesta />
-        </div>
-      )}
-    </div>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
   )
 }

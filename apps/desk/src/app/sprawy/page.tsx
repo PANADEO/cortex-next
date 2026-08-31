@@ -2,7 +2,7 @@ import { Powloka } from '@/components/powloka'
 import { ListaSpraw, type WierszSprawy } from '@/components/lista-spraw'
 import { ktoTo } from '@/core/tozsamosc'
 import { pool, migracja } from '@/core/db'
-import * as biurko from '@/core/biurko'
+import { policzWyniki } from '@/core/teczka-serwer'
 
 export default async function Strona() {
   await migracja()
@@ -11,14 +11,12 @@ export default async function Strona() {
     `select id, tytul, stan, powod, zmieniona from desk.sprawa where wlasciciel=$1 order by zmieniona desc limit 200`,
     [u.id],
   )
-  const sprawy: WierszSprawy[] = await Promise.all(
-    s.rows.map(async (r) => ({
-      id: r.id, tytul: r.tytul, stan: r.stan, powod: r.powod,
-      zmieniona: r.zmieniona.toISOString(),
-      dokumenty: (await biurko.lista(u.id, biurko.katalogSprawy(u.id, r.id)).catch(() => []))
-        .filter((x) => !x.katalog).length,
-    })),
-  )
+  const wyniki = await policzWyniki(u.id, s.rows.map((r) => r.id))
+  const sprawy: WierszSprawy[] = s.rows.map((r) => ({
+    id: r.id, tytul: r.tytul, stan: r.stan, powod: r.powod,
+    zmieniona: r.zmieniona.toISOString(),
+    dokumenty: wyniki.get(r.id) ?? 0,
+  }))
   return (
     <Powloka>
       <div className="h-full overflow-y-auto pb-pasek md:pb-0">

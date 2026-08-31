@@ -35,7 +35,7 @@ export default async function Strona() {
             <Persona ja={u} wszyscy={UZYTKOWNICY} />
           </div>
 
-          <p className="mt-6 t-micro">Twoje pliki nie opuszczają serwera firmy.</p>
+          <p className="mt-6 t-micro">{'Pliki zostają na serwerze firmy. Do modelu trafia tylko ta treść, którą asystent musi przeczytać, żeby wykonać zlecenie.'}</p>
         </div>
       </div>
     </Powloka>

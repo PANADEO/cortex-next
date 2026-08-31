@@ -6,7 +6,7 @@ import { ListaSpraw, type WierszSprawy } from '@/components/lista-spraw'
 import { ktoTo } from '@/core/tozsamosc'
 import { polityka } from '@/core/brama-zdolnosci'
 import { pool, migracja } from '@/core/db'
-import * as biurko from '@/core/biurko'
+import { policzWyniki } from '@/core/teczka-serwer'
 
 const NA_BIURKU = 12
 
@@ -19,14 +19,12 @@ export default async function Biurko() {
     [u.id, NA_BIURKU],
   )
 
-  const sprawy: WierszSprawy[] = await Promise.all(
-    s.rows.map(async (r) => ({
-      id: r.id, tytul: r.tytul, stan: r.stan, powod: r.powod,
-      zmieniona: r.zmieniona.toISOString(),
-      dokumenty: (await biurko.lista(u.id, biurko.katalogSprawy(u.id, r.id)).catch(() => []))
-        .filter((x) => !x.katalog).length,
-    })),
-  )
+  const wyniki = await policzWyniki(u.id, s.rows.map((r) => r.id))
+  const sprawy: WierszSprawy[] = s.rows.map((r) => ({
+    id: r.id, tytul: r.tytul, stan: r.stan, powod: r.powod,
+    zmieniona: r.zmieniona.toISOString(),
+    dokumenty: wyniki.get(r.id) ?? 0,
+  }))
 
   return (
     <Powloka>

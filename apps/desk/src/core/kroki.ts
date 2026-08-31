@@ -81,6 +81,8 @@ export function opisKroku(k: Krok): Opis {
       return { tytul: trwa ? 'Liczę' : 'Policzyłem', detal: k.podsumowanie ?? String(a.opis ?? '') }
     case 'generuj_obraz':
       return { tytul: trwa ? 'Rysuję obraz' : 'Narysowałem', plik, sciezka, detal }
+    case 'zapisz_do_moich_plikow':
+      return { tytul: trwa ? 'Odkładam do Moich plików' : 'Odłożyłem do Moich plików', plik, sciezka: String(a.cel ?? ''), detal }
     default:
       return { tytul: k.etykieta, detal }
   }
@@ -117,6 +119,8 @@ export function podsumujGrupe(kroki: Krok[]): string {
   if (dok) czlony.push({ tekst: `zapisałem ${ile(dok, 'dokument', 'dokumenty', 'dokumentów')}`, waga: 5 })
   const obrazy = licz('generuj_obraz')
   if (obrazy) czlony.push({ tekst: `narysowałem ${ile(obrazy, 'obraz', 'obrazy', 'obrazów')}`, waga: 5 })
+  const odlozone = licz('zapisz_do_moich_plikow')
+  if (odlozone) czlony.push({ tekst: `odłożyłem ${ile(odlozone, 'plik', 'pliki', 'plików')} do Moich plików`, waga: 5 })
   // „sprawdziłem po zapisie" nie jest członem zdania — niesie je stopka dowodu i plakietka przy pliku
 
   if (!czlony.length) {
