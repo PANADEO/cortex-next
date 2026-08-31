@@ -7,6 +7,7 @@ import * as biurko from './biurko'
 import * as sandbox from './sandbox'
 import * as dziennik from './dziennik'
 import { maZdolnosc } from './brama-zdolnosci'
+import { narzedziaMcp } from './mcp/klient'
 import { czytelnyBlad } from './awaria'
 import type { DeskEvent, Polityka, Uzytkownik } from './typy'
 
@@ -277,7 +278,13 @@ export async function uruchomTure(u: Uzytkownik, p: Polityka, sprawaId: string, 
   await dopiszZdarzenie(sprawaId, { typ: 'lifecycle', stan: 'start' })
   await dziennik.zapisz(u.id, 'tura.start', { sprawaId, odcisk: p.odcisk, zdolnosci: p.przyznane.map((z) => z.id) })
 
-  const narzedzia = narzedziaDlaPolityki(u, p, sprawaId)
+  // Szew MCP jest prawdziwy od tego commita, choć katalog serwerów jest pusty.
+  // Narzędzia z zatwierdzonych serwerów przechodzą przez TĘ SAMĄ bramę zdolności
+  // i ten sam filtr na odkryciu, co wbudowane — inaczej byłaby to druga furtka.
+  const narzedzia = {
+    ...narzedziaDlaPolityki(u, p, sprawaId),
+    ...(await narzedziaMcp(p, (e) => dopiszZdarzenie(sprawaId, e))),
+  }
 
   const historia = await pool.query<{ payload: DeskEvent }>(
     `select payload from desk.zdarzenie where sprawa_id=$1 order by seq`, [sprawaId],

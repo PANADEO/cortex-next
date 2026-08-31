@@ -9,6 +9,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@ai-sdk/mcp": "0.0.31",
     "@ai-sdk/openai-compatible": "^1.0.9",
     "@cortex/styles": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.23",
