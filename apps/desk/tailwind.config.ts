@@ -3,7 +3,7 @@ export default {
   darkMode: 'class',
   // Komponenty Biurka mieszkają w pakiecie workspace, a skaner Tailwinda czyta pliki, nie importy —
   // bez drugiego wzorca klasy z pakietu wypadają z arkusza i ekran przychodzi bez stylów.
-  content: ['./src/**/*.{ts,tsx}', '../../packages/@cortex/desk-ui/src/**/*.{ts,tsx}'],
+  content: ['./src/**/*.{ts,tsx}', '../../packages/@cortex/desk-{ui,app}/src/**/*.{ts,tsx}'],
   // Skiny powłoki to zwykłe klasy w `@layer base`, więc skaner Tailwinda wycina je
   // razem z całym blokiem, gdy nie znajdzie ich w treści. Forma NAPISOWA, nigdy wzorzec:
   // wzorce rozwijają się wobec nazw narzędzi i `.skin-*` i tak wypada.

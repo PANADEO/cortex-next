@@ -1,13 +1,4 @@
-import { Suspense } from 'react'
-import { Powloka } from '@cortex/desk-ui/components/powloka'
-import { Eksplorator } from '@cortex/desk-ui/components/eksplorator'
-
-export default async function Strona() {
-  return (
-    <Powloka>
-      <div className="h-full overflow-y-auto">
-        <Suspense><Eksplorator /></Suspense>
-      </div>
-    </Powloka>
-  )
-}
+// Punkt montowania. Treść mieszka w `@cortex/desk-app`, bo ten sam kod obsługuje
+// dwa wejścia: tę aplikację i kafelek `desk` w powłoce cortex-next. Kopia zamiast
+// re-eksportu znaczyłaby dwie ścieżki, które rozjeżdżają się przy pierwszej poprawce.
+export { default } from "@cortex/desk-app/strony/pliki"

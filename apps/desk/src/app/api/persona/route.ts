@@ -1,7 +1,3 @@
-import { NextResponse } from 'next/server'
-export async function POST(req: Request) {
-  const { id } = await req.json()
-  const res = NextResponse.json({ ok: true })
-  res.cookies.set('desk_persona', id, { path: '/', httpOnly: false, sameSite: 'lax' })
-  return res
-}
+// Punkt montowania. Treść mieszka w `@cortex/desk-app`, bo ten sam kod obsługuje
+// dwa wejścia: tę aplikację i kafelek `desk` w powłoce cortex-next.
+export { POST } from "@cortex/desk-app/api/persona"
