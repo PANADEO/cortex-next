@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { pool, migracja } from '@cortex/desk-core/db'
+import * as dziennik from '@cortex/desk-core/dziennik'
 
 /**
  * Wyłącznie dla testów i pokazu: przywraca stan początkowy, żeby scenariusz zaczynał się
@@ -17,6 +18,15 @@ export async function POST() {
   await migracja()
   await pool.query(`delete from desk.grant`)
   await pool.query(`delete from desk.prosba`)
+  // Zerowanie kasuje prawdziwą liczbę — a to jedyna liczba, z której da się oszacować
+  // dzienny koszt Biurka. Zapisujemy ją więc do dziennika, ZANIM zniknie.
+  const przed = await pool.query<{ usd: string; n: string }>(
+    `select coalesce(sum(koszt_usd),0)::text as usd, count(*)::text as n
+     from desk.sprawa where utworzona >= current_date`,
+  )
   const k = await pool.query(`update desk.sprawa set koszt_usd=0 where utworzona >= current_date`)
-  return NextResponse.json({ ok: true, wyzerowanychSpraw: k.rowCount })
+  await dziennik.zapisz('system', 'koszt.wyzerowany', {
+    usd: Number(przed.rows[0].usd), spraw: Number(przed.rows[0].n),
+  })
+  return NextResponse.json({ ok: true, wyzerowanychSpraw: k.rowCount, wyzerowaneUsd: Number(przed.rows[0].usd) })
 }
