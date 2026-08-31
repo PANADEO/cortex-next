@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import { ChevronRight, ListChecks } from 'lucide-react'
-import { Powloka } from '@/components/powloka'
-import { Persona, Awatar } from '@/components/persona'
-import { Ikona } from '@/components/ikona'
+import { Powloka } from '@cortex/desk-ui/components/powloka'
+import { Persona, Awatar } from '@cortex/desk-ui/components/persona'
+import { Ikona } from '@cortex/desk-ui/components/ikona'
 import { ktoTo, UZYTKOWNICY } from '@cortex/desk-core/tozsamosc'
 import { polityka } from '@cortex/desk-core/brama-zdolnosci'
 

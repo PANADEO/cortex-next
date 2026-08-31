@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
-import { Powloka } from '@/components/powloka'
-import { Eksplorator } from '@/components/eksplorator'
+import { Powloka } from '@cortex/desk-ui/components/powloka'
+import { Eksplorator } from '@cortex/desk-ui/components/eksplorator'
 
 export default async function Strona() {
   return (

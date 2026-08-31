@@ -21,6 +21,11 @@ export function czytelnyBlad(e: unknown): string {
   if (/timeout|ETIMEDOUT|aborted/i.test(s)) return 'Model nie odpowiedział na czas. Spróbuj ponownie za chwilę.'
   if (/ECONNREFUSED|fetch failed/i.test(s)) return 'Nie udało się połączyć z usługą modelu. Sprawdź, czy cortex-proxy działa.'
   if (/rate limit|429/i.test(s)) return 'Przekroczony limit zapytań u dostawcy modelu. Spróbuj za minutę.'
+  // Pułap na kluczu to nie brak środków, tylko za ciasna rezerwacja — dostawca liczy
+  // ją z `max_tokens`, nie z tego, ile model naprawdę wypisze. Komunikat musi kierować
+  // administratora tam, gdzie leży przyczyna, bo „doładuj konto" jej nie usuwa.
+  if (/fewer max_tokens|can only afford/i.test(s))
+    return 'Pułap na kluczu do modelu jest za niski dla jednej tury — zgłoś to administratorowi. To nie jest Twój dzienny limit.'
   // Rozróżnienie jest istotne: „skończył się budżet" brzmi jak dzienny limit z „Co potrafię",
   // a to zupełnie inna rzecz i inna osoba ją odblokowuje.
   if (/credit|quota|insufficient|billing|payment|afford/i.test(s))

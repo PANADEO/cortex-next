@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { ChevronRight, FileText } from 'lucide-react'
 import { Ikona } from './ikona'
-import { kiedy, ile } from '@/lib'
+import { kiedy, ile } from '../lib'
+import { BAZA } from '../trasy'
 
 export type WierszSprawy = {
   id: string; tytul: string; stan: string; powod: string | null
@@ -20,7 +21,7 @@ export function ListaSpraw({ sprawy }: { sprawy: WierszSprawy[] }) {
     <ul className="divide-y overflow-hidden rounded-lg border bg-surface">
       {sprawy.map((r) => (
         <li key={r.id}>
-          <Link href={`/sprawa/${r.id}`} className="flex min-h-[60px] items-center gap-3 px-4 py-2.5 hover:bg-raised/50">
+          <Link href={`${BAZA}/sprawa/${r.id}`} className="flex min-h-[60px] items-center gap-3 px-4 py-2.5 hover:bg-raised/50">
             <span className={`h-2 w-2 shrink-0 rounded-pill ${KROPKA[r.stan] ?? 'bg-muted-cichy'}`} />
             <span className="min-w-0 flex-1">
               <span className="block truncate t-tresc-m">{r.tytul}</span>

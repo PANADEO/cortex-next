@@ -9,7 +9,8 @@ import { DialogPrzenies } from './dialog-przenies'
 import { Podglad, adresPliku } from './podglad'
 import { useToast } from './toast'
 import type { PlikMeta } from '@cortex/desk-core/typy'
-import { kiedy, ile } from '@/lib'
+import { kiedy, ile } from '../lib'
+import { api } from '../trasy'
 
 type Kosz = { id: string; nazwa: string; skad: string; kiedy: string }
 const KORZEN = 'Moje pliki'
@@ -32,7 +33,7 @@ export function Eksplorator() {
   const wybor = useRef<HTMLInputElement>(null)
 
   const odswiez = useCallback(async () => {
-    const r = await fetch(`/api/pliki?katalog=${encodeURIComponent(katalog)}`, { cache: 'no-store' })
+    const r = await fetch(`${api('')}/pliki?katalog=${encodeURIComponent(katalog)}`, { cache: 'no-store' })
     const d = await r.json()
     setPliki(d.pliki ?? []); setKosz(d.kosz ?? [])
   }, [katalog])
@@ -42,7 +43,7 @@ export function Eksplorator() {
   const idzDo = (k: string) => router.push(k === KORZEN ? '/pliki' : `/pliki?k=${encodeURIComponent(k)}`)
 
   async function akcja(body: Record<string, unknown>) {
-    const r = await fetch('/api/pliki', { method: 'POST', body: JSON.stringify(body) })
+    const r = await fetch(api('/pliki'), { method: 'POST', body: JSON.stringify(body) })
     const d = await r.json().catch(() => ({}))
     await odswiez()
     return { ok: r.ok, status: r.status, ...d }
@@ -59,7 +60,7 @@ export function Eksplorator() {
     const fd = new FormData()
     fd.append('katalog', katalog)
     Array.from(files).forEach((f) => fd.append('plik', f))
-    const r = await fetch('/api/pliki/wgraj', { method: 'POST', body: fd })
+    const r = await fetch(api('/pliki/wgraj'), { method: 'POST', body: fd })
     setZajete(false)
     await odswiez()
     pokaz(r.ok

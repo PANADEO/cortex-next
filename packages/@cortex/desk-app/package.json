@@ -1,0 +1,19 @@
+{
+  "name": "@cortex/desk-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./api/*": "./src/api/*.ts",
+    "./strony/*": "./src/strony/*.tsx",
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@cortex/desk-core": "workspace:*",
+    "@cortex/desk-ui": "workspace:*",
+    "lucide-react": "^0.454.0",
+    "zod": "^3.25.76"
+  },
+  "peerDependencies": { "next": ">=15", "react": ">=18" },
+  "devDependencies": { "@types/react": "^18.3.17", "typescript": "^5.7.2" }
+}

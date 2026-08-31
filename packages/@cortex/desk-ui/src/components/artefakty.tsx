@@ -4,7 +4,7 @@ import { Ikona } from './ikona'
 import { ikonaPliku } from './wiersz-pliku'
 import { adresPliku } from './podglad'
 import type { PlikMeta } from '@cortex/desk-core/typy'
-import { rozmiar } from '@/lib'
+import { rozmiar } from '../lib'
 
 const jestObrazem = (n: string) => /\.(png|jpe?g|gif|webp|svg)$/i.test(n)
 const rodzaj = (n: string) => (n.split('.').pop() ?? '').toUpperCase()

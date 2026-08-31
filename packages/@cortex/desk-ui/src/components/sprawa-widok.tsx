@@ -23,7 +23,8 @@ import { dowodZeZdarzen } from '@cortex/desk-core/dowod'
 import { podzielTeczke } from '@cortex/desk-core/teczka'
 import { obietniceBezPokrycia, wytworzone } from '@cortex/desk-core/obietnice'
 import type { PlikMeta, Polityka, Wpis } from '@cortex/desk-core/typy'
-import { zl } from '@/lib'
+import { zl } from '../lib'
+import { api, t } from '../trasy'
 
 type Sprawa = { id: string; tytul: string; stan: string; powod: string | null; koszt: number; zmieniona: string }
 
@@ -57,7 +58,7 @@ function naTury(wpisy: Wpis[]): Tura[] {
   return tury
 }
 
-const adres = (sciezka: string) => `/api/plik?sciezka=${encodeURIComponent(sciezka)}`
+const adres = (sciezka: string) => `${api('/plik')}?sciezka=${encodeURIComponent(sciezka)}`
 const obraz = (n: string) => /\.(png|jpe?g|gif|webp)$/i.test(n)
 
 export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityka }) {
@@ -122,7 +123,7 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
 
     async function tick() {
       try {
-        const r = await fetch(`/api/sprawa/${id}/zdarzenia?od=${od.current}`, { cache: 'no-store' })
+        const r = await fetch(`${api('')}/sprawa/${id}/zdarzenia?od=${od.current}`, { cache: 'no-store' })
         if (!r.ok || !zyje) return
         const d = await r.json()
 
@@ -213,7 +214,7 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
     poleceniaPrzedWyslaniem.current = liczbaPolecen
     setWysylane({ tekst: t, pliki: gotowe })
     setTresc(''); setZal([]); setPrzyDole(true)
-    const r = await fetch(`/api/sprawa/${id}/tura`, {
+    const r = await fetch(`${api('')}/sprawa/${id}/tura`, {
       method: 'POST',
       body: JSON.stringify({ tresc: t, zalaczniki: gotowe }),
     })
@@ -237,7 +238,7 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
     const fd = new FormData()
     fd.append('sprawaId', id)
     Array.from(files).forEach((f) => fd.append('plik', f))
-    const r = await fetch('/api/pliki/wgraj', { method: 'POST', body: fd })
+    const r = await fetch(api('/pliki/wgraj'), { method: 'POST', body: fd })
     const d = await r.json().catch(() => ({}))
 
     if (!r.ok) {
@@ -272,7 +273,7 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
     <div className="flex h-full">
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-pasek shrink-0 items-center gap-2 border-b bg-surface px-3">
-          <Link href="/" aria-label="Wróć do biurka" className="grid h-8 w-8 place-items-center rounded-sm text-muted hover:bg-raised md:hidden">
+          <Link href={t("/")} aria-label="Wróć do biurka" className="grid h-8 w-8 place-items-center rounded-sm text-muted hover:bg-raised md:hidden">
             <Ikona jako={ChevronLeft} px={20} />
           </Link>
           <div className="min-w-0 flex-1">
@@ -286,7 +287,7 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
           </div>
           {pracuje && (
             <button
-              onClick={() => fetch(`/api/sprawa/${id}/stop`, { method: 'POST' })}
+              onClick={() => fetch(`${api('')}/sprawa/${id}/stop`, { method: 'POST' })}
               className="flex h-8 items-center gap-1.5 rounded-md border px-2.5 t-btn hover:bg-raised"
             ><Ikona jako={Square} px={14} /> Stop</button>
           )}

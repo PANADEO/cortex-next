@@ -1,14 +1,14 @@
 import { notFound } from 'next/navigation'
 import { ShieldCheck } from 'lucide-react'
-import { Powloka } from '@/components/powloka'
-import { NadzorProsby } from '@/components/nadzor-prosby'
-import { NadzorMcp } from '@/components/nadzor-mcp'
-import { Ikona } from '@/components/ikona'
+import { Powloka } from '@cortex/desk-ui/components/powloka'
+import { NadzorProsby } from '@cortex/desk-ui/components/nadzor-prosby'
+import { NadzorMcp } from '@cortex/desk-ui/components/nadzor-mcp'
+import { Ikona } from '@cortex/desk-ui/components/ikona'
 import { ktoTo, UZYTKOWNICY } from '@cortex/desk-core/tozsamosc'
 import { polityka, wydanoDzisiaj } from '@cortex/desk-core/brama-zdolnosci'
 import { opiszWpis } from '@cortex/desk-core/dziennik-opis'
 import * as dziennik from '@cortex/desk-core/dziennik'
-import { zl } from '@/lib'
+import { zl } from '@cortex/desk-ui/lib'
 
 /** Ekran przełożonego: kto o co prosi, co się dzisiaj działo i ile to kosztowało. */
 export default async function Strona() {

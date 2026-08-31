@@ -4,6 +4,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { Folder, FolderPlus, Check } from 'lucide-react'
 import { Ikona } from './ikona'
 import type { PlikMeta } from '@cortex/desk-core/typy'
+import { api } from '../trasy'
 
 /** Wybór miejsca z listy — nikt nie ma wpisywać ścieżki „Moje pliki/Wnioski 2026" z pamięci. */
 export function DialogPrzenies({ plik, zamknij, przenies }: {
@@ -22,7 +23,7 @@ export function DialogPrzenies({ plik, zamknij, przenies }: {
   useEffect(() => {
     if (!plik) return
     setWybrany(null); setNowy(''); setTworzy(false)
-    fetch('/api/pliki?drzewo=1', { cache: 'no-store' })
+    fetch(`${api('/pliki')}?drzewo=1`, { cache: 'no-store' })
       .then((r) => r.json())
       .then((d) => setKatalogi(d.katalogi ?? []))
   }, [plik])
@@ -31,8 +32,8 @@ export function DialogPrzenies({ plik, zamknij, przenies }: {
     const n = nowy.trim()
     if (!n) return
     const sciezka = `${wybrany ?? 'Moje pliki'}/${n}`
-    await fetch('/api/pliki', { method: 'POST', body: JSON.stringify({ akcja: 'katalog', sciezka }) })
-    const d = await (await fetch('/api/pliki?drzewo=1', { cache: 'no-store' })).json()
+    await fetch(api('/pliki'), { method: 'POST', body: JSON.stringify({ akcja: 'katalog', sciezka }) })
+    const d = await (await fetch(`${api('/pliki')}?drzewo=1`, { cache: 'no-store' })).json()
     setKatalogi(d.katalogi ?? [])
     setWybrany(sciezka); setNowy(''); setTworzy(false)
   }

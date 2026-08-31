@@ -3,7 +3,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { Check, X, ShieldCheck, Inbox } from 'lucide-react'
 import { Ikona } from './ikona'
 import { useToast } from './toast'
-import { kiedy } from '@/lib'
+import { kiedy } from '../lib'
+import { api } from '../trasy'
 
 type Prosba = {
   id: number; kto: string; ktoImie: string; zdolnosc: string
@@ -17,7 +18,7 @@ export function NadzorProsby() {
   const { pokaz } = useToast()
 
   const odswiez = useCallback(async () => {
-    const r = await fetch('/api/prosba', { cache: 'no-store' })
+    const r = await fetch(api('/prosba'), { cache: 'no-store' })
     const d = await r.json()
     setProsby(d.prosby ?? [])
   }, [])
@@ -25,7 +26,7 @@ export function NadzorProsby() {
 
   async function cofnij(p: Prosba) {
     setZajete(p.id)
-    const r = await fetch('/api/prosba', { method: 'PATCH', body: JSON.stringify({ id: p.id, cofnij: true }) })
+    const r = await fetch(api('/prosba'), { method: 'PATCH', body: JSON.stringify({ id: p.id, cofnij: true }) })
     setZajete(null)
     await odswiez()
     pokaz(r.ok
@@ -35,7 +36,7 @@ export function NadzorProsby() {
 
   async function rozpatrz(p: Prosba, decyzja: 'przyznana' | 'odrzucona') {
     setZajete(p.id)
-    const r = await fetch('/api/prosba', {
+    const r = await fetch(api('/prosba'), {
       method: 'PATCH', body: JSON.stringify({ id: p.id, decyzja }),
     })
     setZajete(null)

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
-import { Powloka } from '@/components/powloka'
-import { SprawaWidok } from '@/components/sprawa-widok'
+import { Powloka } from '@cortex/desk-ui/components/powloka'
+import { SprawaWidok } from '@cortex/desk-ui/components/sprawa-widok'
 import { ktoTo } from '@cortex/desk-core/tozsamosc'
 import { polityka } from '@cortex/desk-core/brama-zdolnosci'
 import { pool, migracja } from '@cortex/desk-core/db'

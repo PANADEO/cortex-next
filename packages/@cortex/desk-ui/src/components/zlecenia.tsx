@@ -7,6 +7,7 @@ import { PrzyciskCoPotrafie } from './co-potrafie'
 import { ListaZalacznikow, type Zalacznik } from './zalaczniki'
 import { useToast } from './toast'
 import type { Polityka } from '@cortex/desk-core/typy'
+import { api } from '../trasy'
 
 type Z = { tytul: string; podpowiedz: string; tresc: string }
 
@@ -43,7 +44,7 @@ export function Zlecenia({ zlecenia, polityka: p, maSprawy }: {
     setZajete(true)
     try {
       const tytul = t.trim() ? t.slice(0, 60) : zal[0].nazwa
-      const r = await fetch('/api/sprawa/nowa', { method: 'POST', body: JSON.stringify({ tytul }) })
+      const r = await fetch(api('/sprawa/nowa'), { method: 'POST', body: JSON.stringify({ tytul }) })
       const { id } = await r.json()
 
       let nazwy: string[] = []
@@ -51,13 +52,13 @@ export function Zlecenia({ zlecenia, polityka: p, maSprawy }: {
         const fd = new FormData()
         fd.append('sprawaId', id)
         zal.forEach((z) => fd.append('plik', z.plik))
-        const w = await fetch('/api/pliki/wgraj', { method: 'POST', body: fd })
+        const w = await fetch(api('/pliki/wgraj'), { method: 'POST', body: fd })
         const d = await w.json().catch(() => ({}))
         if (!w.ok) throw new Error(d.blad ?? 'nie udało się dołączyć plików')
         nazwy = d.nazwy ?? []
       }
 
-      const tura = await fetch(`/api/sprawa/${id}/tura`, {
+      const tura = await fetch(`${api('')}/sprawa/${id}/tura`, {
         method: 'POST',
         body: JSON.stringify({ tresc: t, zalaczniki: nazwy }),
       })

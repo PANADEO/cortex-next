@@ -4,6 +4,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { MessageSquarePlus, X } from 'lucide-react'
 import { Ikona } from './ikona'
 import { useToast } from './toast'
+import { api } from '../trasy'
 
 /**
  * Katalog zdolności jest z założenia krótki i kurowany — a praca ma długi ogon.
@@ -19,7 +20,7 @@ export function ProsbaInna() {
   async function wyslij() {
     if (!tresc.trim() || zajete) return
     setZajete(true)
-    const r = await fetch('/api/prosba', {
+    const r = await fetch(api('/prosba'), {
       method: 'POST', body: JSON.stringify({ zdolnosc: 'inne', uzasadnienie: tresc }),
     })
     setZajete(false)

@@ -4,6 +4,7 @@ import { Globe, Plus, RefreshCw, TriangleAlert, X, ShieldAlert } from 'lucide-re
 import { Ikona } from './ikona'
 import { useToast } from './toast'
 import type { Zdolnosc } from '@cortex/desk-core/typy'
+import { api } from '../trasy'
 
 type Narzedzie = {
   serwer: string; nazwaZdalna: string; opis: string; krotko: string
@@ -31,7 +32,7 @@ export function NadzorMcp() {
   const { pokaz } = useToast()
 
   const wczytaj = useCallback(async () => {
-    const r = await fetch('/api/mcp', { cache: 'no-store' })
+    const r = await fetch(api('/mcp'), { cache: 'no-store' })
     if (!r.ok) return
     const d = await r.json()
     setSerwery(d.serwery ?? [])
@@ -41,7 +42,7 @@ export function NadzorMcp() {
 
   async function wyslij(dane: Record<string, unknown>, klucz: string) {
     setZajety(klucz)
-    const r = await fetch('/api/mcp', { method: 'POST', body: JSON.stringify(dane) })
+    const r = await fetch(api('/mcp'), { method: 'POST', body: JSON.stringify(dane) })
     const d = await r.json().catch(() => ({}))
     setZajety(null)
     if (!r.ok) { pokaz({ tekst: d.blad ?? 'Nie udało się.', ton: 'blad' }); return null }

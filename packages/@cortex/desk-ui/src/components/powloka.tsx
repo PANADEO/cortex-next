@@ -7,7 +7,8 @@ import { Persona } from './persona'
 import { PasekDolny } from './pasek-dolny'
 import { DostawcaTostow } from './toast'
 import { Ikona } from './ikona'
-import { kiedy, ile } from '@/lib'
+import { kiedy, ile } from '../lib'
+import { BAZA, t } from '../trasy'
 
 const KROPKA: Record<string, string> = {
   nowa: 'bg-muted-cichy',
@@ -45,7 +46,7 @@ export async function Powloka({ children, aktywna, bezPaskaDolnego }: {
 
           <div className="p-3">
             <Link
-              href="/?nowa=1"
+              href={`${t("/")}?nowa=1`}
               className="flex h-9 items-center justify-center gap-1.5 rounded-md bg-accent t-btn text-accent-ink hover:bg-accent-hover"
             >
               <Ikona jako={Plus} px={16} /> Nowa sprawa
@@ -61,7 +62,7 @@ export async function Powloka({ children, aktywna, bezPaskaDolnego }: {
               {widoczne.map((r) => (
                 <li key={r.id}>
                   <Link
-                    href={`/sprawa/${r.id}`}
+                    href={`${BAZA}/sprawa/${r.id}`}
                     aria-current={aktywna === r.id ? 'page' : undefined}
                     className={`relative flex h-9 items-center gap-2 rounded-sm pl-2.5 pr-2 t-tresc hover:bg-raised/70 ${
                       aktywna === r.id ? 'bg-raised font-medium' : ''}`}
@@ -77,7 +78,7 @@ export async function Powloka({ children, aktywna, bezPaskaDolnego }: {
               ))}
               {razem > W_PASKU && (
                 <li>
-                  <Link href="/sprawy" className="flex h-8 items-center gap-1 rounded-sm px-2.5 t-meta hover:bg-raised/70">
+                  <Link href={t("/sprawy")} className="flex h-8 items-center gap-1 rounded-sm px-2.5 t-meta hover:bg-raised/70">
                     Wszystkie sprawy ({razem}) <Ikona jako={ChevronRight} px={12} />
                   </Link>
                 </li>
@@ -85,11 +86,11 @@ export async function Powloka({ children, aktywna, bezPaskaDolnego }: {
             </ul>
 
             <div className="mt-4 px-2">
-              <Link href="/pliki" className="flex h-9 items-center gap-2 rounded-sm px-2.5 t-tresc hover:bg-raised/70">
+              <Link href={t("/pliki")} className="flex h-9 items-center gap-2 rounded-sm px-2.5 t-tresc hover:bg-raised/70">
                 <Ikona jako={FolderOpen} px={16} klasa="text-muted" /> Moje pliki
               </Link>
               {u.rola === 'zarzad' && (
-                <Link href="/nadzor" className="flex h-9 items-center gap-2 rounded-sm px-2.5 t-tresc hover:bg-raised/70">
+                <Link href={t("/nadzor")} className="flex h-9 items-center gap-2 rounded-sm px-2.5 t-tresc hover:bg-raised/70">
                   <Ikona jako={ShieldCheck} px={16} klasa="text-muted" /> Nadzór
                 </Link>
               )}
@@ -97,7 +98,7 @@ export async function Powloka({ children, aktywna, bezPaskaDolnego }: {
           </nav>
 
           <div className="border-t p-3">
-            <Link href="/co-potrafie" className="flex items-center gap-1.5 t-meta hover:text-ink">
+            <Link href={t("/co-potrafie")} className="flex items-center gap-1.5 t-meta hover:text-ink">
               <Ikona jako={ListChecks} px={14} />
               Umiem {p.przyznane.length} z {ile(p.przyznane.length + p.zablokowane.length, 'rzeczy', 'rzeczy', 'rzeczy')}
               <Ikona jako={ChevronRight} px={12} />

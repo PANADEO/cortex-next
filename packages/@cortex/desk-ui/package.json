@@ -1,0 +1,20 @@
+{
+  "name": "@cortex/desk-ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts",
+    "./components/*": "./src/components/*.tsx"
+  },
+  "dependencies": {
+    "@cortex/desk-core": "workspace:*",
+    "@radix-ui/react-dialog": "^1.1.23",
+    "@radix-ui/react-dropdown-menu": "^2.1.24",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.454.0",
+    "tailwind-merge": "^2.5.5"
+  },
+  "peerDependencies": { "next": ">=15", "react": ">=18" },
+  "devDependencies": { "@types/react": "^18.3.17", "typescript": "^5.7.2" }
+}

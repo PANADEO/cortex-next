@@ -8,7 +8,8 @@ import { ikonaPliku } from './wiersz-pliku'
 import { useToast } from './toast'
 import type { PlikMeta } from '@cortex/desk-core/typy'
 import type { Dowod } from '@cortex/desk-core/dowod'
-import { rozmiar, kiedy } from '@/lib'
+import { rozmiar, kiedy } from '../lib'
+import { api } from '../trasy'
 
 /**
  * Wynik pracy to najważniejszy obiekt w całej aplikacji — dostaje własne miejsce,
@@ -68,7 +69,7 @@ export function Wynik({ wyniki, zalaczniki, aktywny, naWybor, dowod, doDowodu }:
 
   async function doMoichPlikow() {
     if (!aktywny) return
-    const r = await fetch('/api/pliki', {
+    const r = await fetch(api('/pliki'), {
       method: 'POST',
       body: JSON.stringify({ akcja: 'kopiuj', z: aktywny.sciezka, do: `Moje pliki/${aktywny.nazwa}` }),
     })

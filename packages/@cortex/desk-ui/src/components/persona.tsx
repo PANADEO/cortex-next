@@ -4,6 +4,7 @@ import * as Menu from '@radix-ui/react-dropdown-menu'
 import { ChevronDown, Check } from 'lucide-react'
 import { Ikona } from './ikona'
 import type { Uzytkownik } from '@cortex/desk-core/typy'
+import { api, t } from '../trasy'
 
 export function Awatar({ u, px = 36 }: { u: Uzytkownik; px?: number }) {
   return (
@@ -19,8 +20,8 @@ export function Awatar({ u, px = 36 }: { u: Uzytkownik; px?: number }) {
 export function Persona({ ja, wszyscy }: { ja: Uzytkownik; wszyscy: Uzytkownik[] }) {
   const router = useRouter()
   async function przelacz(id: string) {
-    await fetch('/api/persona', { method: 'POST', body: JSON.stringify({ id }) })
-    router.push('/'); router.refresh()
+    await fetch(api('/persona'), { method: 'POST', body: JSON.stringify({ id }) })
+    router.push(t('/')); router.refresh()
   }
   return (
     <Menu.Root>

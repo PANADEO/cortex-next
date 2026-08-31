@@ -16,6 +16,24 @@ import type { DeskEvent, Polityka, Uzytkownik } from './typy'
  * Na zewnątrz wychodzi wyłącznie nasz `DeskEvent`.
  */
 
+/**
+ * Sufit długości JEDNEJ odpowiedzi modelu.
+ *
+ * Bez niego dostawca podstawia maksimum modelu (dla Sonneta 4.5 — 64 000 tokenów)
+ * i REZERWUJE tyle na poczet limitu klucza. Klucz z ustawionym pułapem odbijał
+ * przez to każdą turę zdaniem „requires more credits, or fewer max_tokens",
+ * które nasza mapa błędów tłumaczyła na „skończyły się środki" — komunikat
+ * prawdziwy w słowach i mylący co do przyczyny: środki były, brakowało miejsca
+ * na rezerwację.
+ *
+ * Osobno od diagnostyki to po prostu brakująca krawędź: biurko rozlicza pracę
+ * dziennym limitem na osobę, a tura bez sufitu mogła wypisać jednym ciągiem
+ * kilkanaście razy więcej, niż ten limit przewiduje. 8000 tokenów to około
+ * dwudziestu stron tekstu — więcej, niż potrzebuje którykolwiek dokument,
+ * jaki biurko dziś wytwarza.
+ */
+const SUFIT_ODPOWIEDZI = Number(process.env.DESK_SUFIT_ODPOWIEDZI ?? 8000)
+
 export async function dopiszZdarzenie(sprawaId: string, e: DeskEvent) {
   await pool.query(`insert into desk.zdarzenie (sprawa_id, payload) values ($1,$2)`, [
     sprawaId,
@@ -345,6 +363,7 @@ export async function uruchomTure(u: Uzytkownik, p: Polityka, sprawaId: string, 
         messages: wiadomosci,
         tools: narzedzia,
         stopWhen: stepCountIs(12),
+        maxOutputTokens: SUFIT_ODPOWIEDZI,
       })
 
       const koszt = szacujKoszt(wynik)
@@ -360,7 +379,10 @@ export async function uruchomTure(u: Uzytkownik, p: Polityka, sprawaId: string, 
       const powod = czytelnyBlad(e)
       await dopiszZdarzenie(sprawaId, { typ: 'lifecycle', stan: 'blad', powod })
       await pool.query(`update desk.sprawa set stan='blad', powod=$2, zmieniona=now() where id=$1`, [sprawaId, powod])
-      await dziennik.zapisz(u.id, 'tura.blad', { sprawaId, powod })
+      // Zdanie po polsku trafia na ekran pracownika, surowa treść wyłącznie do dziennika.
+      // Bez niej diagnoza sprowadza się do zgadywania, KTÓRA gałąź `czytelnyBlad` zadziałała,
+      // a to już raz kosztowało pół dnia szukania nieistniejącego braku środków.
+      await dziennik.zapisz(u.id, 'tura.blad', { sprawaId, powod, surowy: String(e?.message ?? e).slice(0, 400) })
     } finally {
       // Połączenia do serwerów MCP żyją dokładnie tyle, co tura — ani krócej
       // (model sięga po narzędzie w środku `generateText`), ani dłużej.

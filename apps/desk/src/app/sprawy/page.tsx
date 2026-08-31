@@ -1,5 +1,5 @@
-import { Powloka } from '@/components/powloka'
-import { ListaSpraw, type WierszSprawy } from '@/components/lista-spraw'
+import { Powloka } from '@cortex/desk-ui/components/powloka'
+import { ListaSpraw, type WierszSprawy } from '@cortex/desk-ui/components/lista-spraw'
 import { ktoTo } from '@cortex/desk-core/tozsamosc'
 import { pool, migracja } from '@cortex/desk-core/db'
 import { policzWyniki } from '@cortex/desk-core/teczka-serwer'

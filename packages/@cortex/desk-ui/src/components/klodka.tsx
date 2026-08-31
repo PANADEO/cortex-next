@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Lock, ShieldCheck } from 'lucide-react'
 import { Ikona } from './ikona'
 import { useToast } from './toast'
+import { api } from '../trasy'
 
 /**
  * Moment, w którym governance przestaje być slajdem i staje się rzeczą na ekranie.
@@ -22,7 +23,7 @@ export function Klodka({ opis, nazwa, dzial, zdolnoscId, juzPoproszono }: {
   async function popros() {
     if (!zdolnoscId) return
     setZajete(true)
-    const r = await fetch('/api/prosba', { method: 'POST', body: JSON.stringify({ zdolnosc: zdolnoscId }) })
+    const r = await fetch(api('/prosba'), { method: 'POST', body: JSON.stringify({ zdolnosc: zdolnoscId }) })
     setZajete(false)
     if (!r.ok) { pokaz({ tekst: 'Nie udało się wysłać prośby.', ton: 'blad' }); return }
     setWyslane(true)

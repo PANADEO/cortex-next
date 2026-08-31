@@ -4,11 +4,12 @@ import { FileQuestion } from 'lucide-react'
 import { Ikona } from './ikona'
 import { Md } from './md'
 import type { PlikMeta } from '@cortex/desk-core/typy'
+import { api } from '../trasy'
 
 const MAX_WIERSZY = 50
 
 function url(p: PlikMeta, pobierz = false) {
-  return `/api/plik?sciezka=${encodeURIComponent(p.sciezka)}${pobierz ? '&pobierz=1' : ''}`
+  return `${api('/plik')}?sciezka=${encodeURIComponent(p.sciezka)}${pobierz ? '&pobierz=1' : ''}`
 }
 export const adresPliku = url
 

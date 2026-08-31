@@ -5,6 +5,7 @@ import { Check, Lock, ChevronDown, ShieldCheck } from 'lucide-react'
 import { Ikona } from './ikona'
 import { useToast } from './toast'
 import type { Polityka, Zdolnosc } from '@cortex/desk-core/typy'
+import { api } from '../trasy'
 
 /**
  * „Co potrafię" mieszka tam, gdzie jest potrzebne: przy polu zlecenia.
@@ -29,7 +30,7 @@ export function ListaZdolnosci({ p, gesta, szukanie }: { p: Polityka; gesta?: bo
   // stan prośby żyje w bazie, nie w komponencie — inaczej znika przy pierwszym F5
   useEffect(() => {
     let zyje = true
-    fetch('/api/prosba', { cache: 'no-store' })
+    fetch(api('/prosba'), { cache: 'no-store' })
       .then((r) => r.json())
       .then((d: { prosby?: { zdolnosc: string; stan: string }[] }) => {
         if (!zyje) return
@@ -41,7 +42,7 @@ export function ListaZdolnosci({ p, gesta, szukanie }: { p: Polityka; gesta?: bo
   }, [])
 
   async function popros(id: string, nazwa: string) {
-    await fetch('/api/prosba', { method: 'POST', body: JSON.stringify({ zdolnosc: id }) })
+    await fetch(api('/prosba'), { method: 'POST', body: JSON.stringify({ zdolnosc: id }) })
     setWyslane((w) => [...w, id])
     pokaz({ tekst: `Prośba o „${nazwa}" poszła do działu. Dostaniesz znać, gdy ktoś ją rozpatrzy.` })
   }
