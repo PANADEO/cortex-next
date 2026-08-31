@@ -12,7 +12,7 @@ export default async function Strona() {
       <div className="h-full overflow-y-auto">
         <div className="mx-auto max-w-2xl px-5 py-8">
           <h1 className="t-display">Co potrafię</h1>
-          <p className="mt-1 t-tresc text-muted">
+          <p className="mt-1 t-tresc text-cichy">
             To jest wszystko, co mogę dla Ciebie zrobić w dziale {u.dzial}. Reszta wymaga zgody
             działu, który za nią odpowiada.
           </p>

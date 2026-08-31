@@ -13,7 +13,7 @@ const ETYKIETA: Record<string, string> = {
   nowa: 'nowa', pracuje: 'pracuje', gotowe: 'gotowe', przerwane: 'przerwane', blad: 'nie udało się',
 }
 const KROPKA: Record<string, string> = {
-  nowa: 'bg-muted-cichy', pracuje: 'bg-accent puls', gotowe: 'bg-ok', przerwane: 'bg-warn', blad: 'bg-bad',
+  nowa: 'bg-cichy-2', pracuje: 'bg-akcent puls', gotowe: 'bg-ok', przerwane: 'bg-warn', blad: 'bg-bad',
 }
 
 export function ListaSpraw({ sprawy }: { sprawy: WierszSprawy[] }) {
@@ -22,7 +22,7 @@ export function ListaSpraw({ sprawy }: { sprawy: WierszSprawy[] }) {
       {sprawy.map((r) => (
         <li key={r.id}>
           <Link href={`${BAZA}/sprawa/${r.id}`} className="flex min-h-[60px] items-center gap-3 px-4 py-2.5 hover:bg-raised/50">
-            <span className={`h-2 w-2 shrink-0 rounded-pill ${KROPKA[r.stan] ?? 'bg-muted-cichy'}`} />
+            <span className={`h-2 w-2 shrink-0 rounded-pill ${KROPKA[r.stan] ?? 'bg-cichy-2'}`} />
             <span className="min-w-0 flex-1">
               <span className="block truncate t-tresc-m">{r.tytul}</span>
               <span className="mt-0.5 flex items-center gap-1.5 t-meta">
@@ -41,7 +41,7 @@ export function ListaSpraw({ sprawy }: { sprawy: WierszSprawy[] }) {
                 {r.powod && <span className="truncate">· {r.powod}</span>}
               </span>
             </span>
-            <Ikona jako={ChevronRight} px={16} klasa="shrink-0 text-muted-cichy" />
+            <Ikona jako={ChevronRight} px={16} klasa="shrink-0 text-cichy-2" />
           </Link>
         </li>
       ))}

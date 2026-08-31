@@ -73,7 +73,7 @@ export function WierszPliku({ p, akcje, aktywny }: { p: PlikMeta; akcje: AkcjePl
   return (
     <li className={aktywny ? 'bg-raised' : undefined}>
       <div onKeyDown={skroty} className="group flex h-wiersz items-center gap-2 px-3 hover:bg-raised/60">
-        <span className="grid w-7 shrink-0 place-items-center text-muted">
+        <span className="grid w-7 shrink-0 place-items-center text-cichy">
           <Ikona jako={ikonaPliku(p)} px={16} />
         </span>
 
@@ -95,7 +95,7 @@ export function WierszPliku({ p, akcje, aktywny }: { p: PlikMeta; akcje: AkcjePl
         ) : (
           <button onClick={glowna} className="flex min-w-0 flex-1 items-center text-left t-tresc-m">
             <span className="truncate">{rdzen}</span>
-            <span className="shrink-0 text-muted">{ext}</span>
+            <span className="shrink-0 text-cichy">{ext}</span>
           </button>
         )}
 
@@ -105,7 +105,7 @@ export function WierszPliku({ p, akcje, aktywny }: { p: PlikMeta; akcje: AkcjePl
         <Menu.Root>
           <Menu.Trigger
             aria-label={`Więcej opcji dla ${p.nazwa}`}
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-sm text-muted opacity-0 hover:bg-raised focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-sm text-cichy opacity-0 hover:bg-raised focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
           >
             <Ikona jako={MoreHorizontal} px={16} />
           </Menu.Trigger>
@@ -147,7 +147,7 @@ function Pozycja({ ikona, etykieta, skrot, na, grozny }: {
       onSelect={na}
       className={`flex cursor-pointer items-center gap-2.5 px-3 py-1.5 t-tresc outline-none data-[highlighted]:bg-raised ${grozny ? 'text-bad' : ''}`}
     >
-      <Ikona jako={ikona} px={16} klasa={grozny ? undefined : 'text-muted'} />
+      <Ikona jako={ikona} px={16} klasa={grozny ? undefined : 'text-cichy'} />
       <span className="flex-1">{etykieta}</span>
       {skrot && <span className="t-micro">{skrot}</span>}
     </Menu.Item>

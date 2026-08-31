@@ -29,7 +29,7 @@ export default async function Strona() {
       <div className="h-full overflow-y-auto pb-pasek md:pb-0">
         <div className="mx-auto max-w-strumien px-5 py-8">
           <h1 className="t-display">Nadzór</h1>
-          <p className="mt-1 t-tresc text-muted">
+          <p className="mt-1 t-tresc text-cichy">
             Kto o co prosi, co się działo na biurkach i ile to dziś kosztowało.
           </p>
 

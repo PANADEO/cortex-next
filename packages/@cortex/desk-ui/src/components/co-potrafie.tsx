@@ -63,7 +63,7 @@ export function ListaZdolnosci({ p, gesta, szukanie }: { p: Polityka; gesta?: bo
         <input
           value={fraza} onChange={(e) => setFraza(e.target.value)}
           placeholder="Szukaj wśród umiejętności" aria-label="Szukaj wśród umiejętności"
-          className="mb-3 h-9 w-full rounded-md border bg-bg px-3 t-tresc outline-none placeholder:text-muted-cichy"
+          className="mb-3 h-9 w-full rounded-md border bg-bg px-3 t-tresc outline-none placeholder:text-cichy-2"
         />
       )}
 
@@ -84,9 +84,9 @@ export function ListaZdolnosci({ p, gesta, szukanie }: { p: Polityka; gesta?: bo
           <ul className="mt-1 space-y-1.5">
             {nieMam.map((z) => (
               <li key={z.id} className="flex items-start gap-2 rounded-sm px-1 py-0.5">
-                <Ikona jako={Lock} px={16} klasa="mt-0.5 shrink-0 text-muted-cichy" />
+                <Ikona jako={Lock} px={16} klasa="mt-0.5 shrink-0 text-cichy-2" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-muted">{z.nazwa}</div>
+                  <div className="text-cichy">{z.nazwa}</div>
                   <div className="t-micro">zgoda należy do działu: {z.dzial}</div>
                   {wyslane.includes(z.id) ? (
                     <div className="mt-1 flex items-center gap-1 text-[12px] text-ok">
@@ -95,7 +95,7 @@ export function ListaZdolnosci({ p, gesta, szukanie }: { p: Polityka; gesta?: bo
                   ) : (
                     <>
                       {odrzucone.includes(z.id) && (
-                        <div className="mt-1 text-[12px] text-muted">Poprzednia prośba została odrzucona.</div>
+                        <div className="mt-1 text-[12px] text-cichy">Poprzednia prośba została odrzucona.</div>
                       )}
                       <button
                         onClick={() => popros(z.id, z.nazwa)}
@@ -145,7 +145,7 @@ export function PrzyciskCoPotrafie({ p }: { p: Polityka }) {
   const [otwarty, setOtwarty] = useState(false)
   return (
     <Menu.Root open={otwarty} onOpenChange={setOtwarty}>
-      <Menu.Trigger className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-muted hover:bg-raised hover:text-ink">
+      <Menu.Trigger className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-cichy hover:bg-raised hover:text-ink">
         <Ikona jako={Check} px={14} klasa="text-ok" />
         Umiem tu {ile(p.przyznane.length, 'rzecz', 'rzeczy', 'rzeczy')}
         <Ikona jako={ChevronDown} px={14} klasa={`transition-transform ${otwarty ? 'rotate-180' : ''}`} />

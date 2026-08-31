@@ -11,8 +11,8 @@ import { kiedy, ile } from '../lib'
 import { BAZA, t } from '../trasy'
 
 const KROPKA: Record<string, string> = {
-  nowa: 'bg-muted-cichy',
-  pracuje: 'bg-accent puls',
+  nowa: 'bg-cichy-2',
+  pracuje: 'bg-akcent puls',
   gotowe: 'bg-ok',
   przerwane: 'bg-warn',
   blad: 'bg-bad',
@@ -40,14 +40,17 @@ export async function Powloka({ children, aktywna, bezPaskaDolnego }: {
 
   return (
     <DostawcaTostow>
-      <div className="flex h-screen overflow-hidden">
+      {/* `biurko` nie jest klasą narzędziową — to zakres arkusza Biurka. Reguły bazowe
+          (krawędzie, tło, paski przewijania, redukcja ruchu) wiszą pod nią, żeby pod
+          powłoką nie przemalowały pozostałych kafelków. */}
+      <div className="biurko flex h-screen overflow-hidden">
         <aside className="hidden w-boczny shrink-0 flex-col border-r bg-surface md:flex">
           <div className="border-b p-3"><Persona ja={u} wszyscy={UZYTKOWNICY} /></div>
 
           <div className="p-3">
             <Link
               href={`${t("/")}?nowa=1`}
-              className="flex h-9 items-center justify-center gap-1.5 rounded-md bg-accent t-btn text-accent-ink hover:bg-accent-hover"
+              className="flex h-9 items-center justify-center gap-1.5 rounded-md bg-akcent t-btn text-akcent-ink hover:bg-akcent-hover"
             >
               <Ikona jako={Plus} px={16} /> Nowa sprawa
             </Link>
@@ -68,9 +71,9 @@ export async function Powloka({ children, aktywna, bezPaskaDolnego }: {
                       aktywna === r.id ? 'bg-raised font-medium' : ''}`}
                   >
                     {aktywna === r.id && (
-                      <span aria-hidden className="absolute inset-y-1.5 left-0 w-0.5 rounded-pill bg-accent" />
+                      <span aria-hidden className="absolute inset-y-1.5 left-0 w-0.5 rounded-pill bg-akcent" />
                     )}
-                    <span className={`h-2 w-2 shrink-0 rounded-pill ${KROPKA[r.stan] ?? 'bg-muted-cichy'}`} />
+                    <span className={`h-2 w-2 shrink-0 rounded-pill ${KROPKA[r.stan] ?? 'bg-cichy-2'}`} />
                     <span className="min-w-0 flex-1 truncate">{r.tytul}</span>
                     <span className="shrink-0 t-micro">{kiedy(r.zmieniona.toISOString())}</span>
                   </Link>
@@ -87,11 +90,11 @@ export async function Powloka({ children, aktywna, bezPaskaDolnego }: {
 
             <div className="mt-4 px-2">
               <Link href={t("/pliki")} className="flex h-9 items-center gap-2 rounded-sm px-2.5 t-tresc hover:bg-raised/70">
-                <Ikona jako={FolderOpen} px={16} klasa="text-muted" /> Moje pliki
+                <Ikona jako={FolderOpen} px={16} klasa="text-cichy" /> Moje pliki
               </Link>
               {u.rola === 'zarzad' && (
                 <Link href={t("/nadzor")} className="flex h-9 items-center gap-2 rounded-sm px-2.5 t-tresc hover:bg-raised/70">
-                  <Ikona jako={ShieldCheck} px={16} klasa="text-muted" /> Nadzór
+                  <Ikona jako={ShieldCheck} px={16} klasa="text-cichy" /> Nadzór
                 </Link>
               )}
             </div>

@@ -76,15 +76,15 @@ function Tost({ t, zamknij }: { t: Toast; zamknij: () => void }) {
         {t.cofnij && (
           <button
             onClick={() => { void t.cofnij?.(); zamknij() }}
-            className="shrink-0 rounded-sm px-2 py-1 text-[13px] font-medium text-accent hover:bg-raised"
+            className="shrink-0 rounded-sm px-2 py-1 text-[13px] font-medium text-akcent hover:bg-raised"
           >Cofnij</button>
         )}
-        <button onClick={zamknij} aria-label="Zamknij powiadomienie" className="shrink-0 rounded-sm p-1 text-muted hover:bg-raised">
+        <button onClick={zamknij} aria-label="Zamknij powiadomienie" className="shrink-0 rounded-sm p-1 text-cichy hover:bg-raised">
           <Ikona jako={X} px={14} />
         </button>
       </div>
       <div className="h-0.5 bg-line">
-        <div className="h-full bg-accent/60 transition-[width] duration-75 ease-linear" style={{ width: `${postep}%` }} />
+        <div className="h-full bg-akcent/60 transition-[width] duration-75 ease-linear" style={{ width: `${postep}%` }} />
       </div>
     </div>
   )

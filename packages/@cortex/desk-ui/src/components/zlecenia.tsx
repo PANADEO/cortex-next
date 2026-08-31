@@ -114,13 +114,13 @@ export function Zlecenia({ zlecenia, polityka: p, maSprawy }: {
             dodajPlik(dt.files)
           }}
           placeholder="Co mam dla Ciebie zrobić?" rows={3}
-          className="w-full resize-none bg-transparent px-4 pt-3.5 t-tresc outline-none placeholder:text-muted-cichy"
+          className="w-full resize-none bg-transparent px-4 pt-3.5 t-tresc outline-none placeholder:text-cichy-2"
         />
         <div className="flex items-center gap-1 px-2.5 pb-2.5">
           <input ref={wybor} type="file" multiple hidden onChange={(e) => { dodajPlik(e.target.files); e.target.value = '' }} />
           <button
             type="button" onClick={() => wybor.current?.click()}
-            className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-muted hover:bg-raised hover:text-ink"
+            className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-cichy hover:bg-raised hover:text-ink"
           >
             <Ikona jako={Paperclip} px={14} /> Dodaj plik
           </button>
@@ -129,7 +129,7 @@ export function Zlecenia({ zlecenia, polityka: p, maSprawy }: {
           <button
             onClick={() => start(tresc)} disabled={(!tresc.trim() && !zal.length) || zajete}
             aria-label="Zleć zadanie"
-            className="grid h-9 w-9 place-items-center rounded-md bg-accent text-accent-ink hover:bg-accent-hover disabled:opacity-35"
+            className="grid h-9 w-9 place-items-center rounded-md bg-akcent text-akcent-ink hover:bg-akcent-hover disabled:opacity-35"
           >
             <Ikona jako={zajete ? LoaderCircle : ArrowUp} px={16} klasa={zajete ? 'obrot' : undefined} />
           </button>
@@ -158,7 +158,7 @@ export function Zlecenia({ zlecenia, polityka: p, maSprawy }: {
           {zlecenia.map((z) => (
             <button
               key={z.tytul} onClick={() => { setTresc(z.tresc); pole.current?.focus() }}
-              className="h-8 rounded-pill border bg-surface px-3 text-[13px] text-muted hover:border-line-mocna hover:text-ink"
+              className="h-8 rounded-pill border bg-surface px-3 text-[13px] text-cichy hover:border-line-mocna hover:text-ink"
             >{z.tytul}</button>
           ))}
         </div>
@@ -178,7 +178,7 @@ export function Zlecenia({ zlecenia, polityka: p, maSprawy }: {
               {zlecenia.map((z) => (
                 <button
                   key={z.tytul} onClick={() => { setTresc(z.tresc); pole.current?.focus() }}
-                  className="h-8 rounded-pill border bg-surface px-3 text-[13px] text-muted hover:border-line-mocna hover:text-ink"
+                  className="h-8 rounded-pill border bg-surface px-3 text-[13px] text-cichy hover:border-line-mocna hover:text-ink"
                 >{z.tytul}</button>
               ))}
             </div>

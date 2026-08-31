@@ -66,7 +66,7 @@ export function NadzorMcp() {
         {serwery.map((s) => (
           <div key={s.nazwa} className="overflow-hidden rounded-lg border bg-surface">
             <div className="flex items-center gap-2 border-b px-4 py-2.5">
-              <Ikona jako={Globe} px={16} klasa="shrink-0 text-muted" />
+              <Ikona jako={Globe} px={16} klasa="shrink-0 text-cichy" />
               <div className="min-w-0 flex-1">
                 <div className="t-tresc-m">{s.etykieta}</div>
                 <div className="truncate t-micro">{s.url}</div>
@@ -110,7 +110,7 @@ export function NadzorMcp() {
                           pokaz({ tekst: `Wycofane: ${n.krotko}` }); wczytaj()
                         }
                       }}
-                      className="grid h-8 w-8 shrink-0 place-items-center rounded-sm text-muted hover:bg-raised hover:text-ink"
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-sm text-cichy hover:bg-raised hover:text-ink"
                       aria-label={`Wycofaj ${n.krotko}`}
                     ><Ikona jako={X} px={16} /></button>
                   </div>
@@ -211,12 +211,12 @@ function Kandydat({ k, zdolnosci, zajety, przyjmij }: {
           <input
             value={krotko} onChange={(e) => setKrotko(e.target.value)}
             placeholder="Krótko, co to robi — np. „sprawdzenie statusu VAT”"
-            className="h-9 w-full rounded-md border bg-bg px-2.5 t-tresc outline-none placeholder:text-muted-cichy"
+            className="h-9 w-full rounded-md border bg-bg px-2.5 t-tresc outline-none placeholder:text-cichy-2"
           />
           <textarea
             value={opis} onChange={(e) => setOpis(e.target.value)} rows={2}
             placeholder="Opis dla asystenta, własnymi słowami — to zdanie zobaczy model"
-            className="w-full resize-none rounded-md border bg-bg px-2.5 py-2 t-tresc outline-none placeholder:text-muted-cichy"
+            className="w-full resize-none rounded-md border bg-bg px-2.5 py-2 t-tresc outline-none placeholder:text-cichy-2"
           />
           <div className="flex items-center gap-2">
             <select
@@ -228,7 +228,7 @@ function Kandydat({ k, zdolnosci, zajety, przyjmij }: {
             <button
               onClick={() => przyjmij(opis, krotko, zdolnosc)}
               disabled={zajety || !opis.trim() || !krotko.trim()}
-              className="h-9 shrink-0 rounded-md bg-accent px-3 t-btn text-accent-ink hover:bg-accent-hover disabled:opacity-40"
+              className="h-9 shrink-0 rounded-md bg-akcent px-3 t-btn text-akcent-ink hover:bg-akcent-hover disabled:opacity-40"
             >{ponownie ? 'Przyjmij ponownie' : 'Przyjmij'}</button>
           </div>
         </div>
@@ -248,16 +248,16 @@ function NowySerwer({ dodaj, anuluj }: {
     <div className="mt-3 space-y-2 rounded-lg border bg-surface p-4">
       <input value={etykieta} onChange={(e) => setEtykieta(e.target.value)}
         placeholder="Nazwa dla ludzi — np. „wykaz podatników VAT”"
-        className="h-9 w-full rounded-md border bg-bg px-2.5 t-tresc outline-none placeholder:text-muted-cichy" />
+        className="h-9 w-full rounded-md border bg-bg px-2.5 t-tresc outline-none placeholder:text-cichy-2" />
       <input value={nazwa} onChange={(e) => setNazwa(e.target.value)}
         placeholder="Nazwa techniczna — małe litery i myślnik, np. biala-lista"
-        className="h-9 w-full rounded-md border bg-bg px-2.5 font-mono text-[13px] outline-none placeholder:text-muted-cichy" />
+        className="h-9 w-full rounded-md border bg-bg px-2.5 font-mono text-[13px] outline-none placeholder:text-cichy-2" />
       <input value={url} onChange={(e) => setUrl(e.target.value)}
         placeholder="Adres serwera MCP (Streamable HTTP)"
-        className="h-9 w-full rounded-md border bg-bg px-2.5 font-mono text-[13px] outline-none placeholder:text-muted-cichy" />
+        className="h-9 w-full rounded-md border bg-bg px-2.5 font-mono text-[13px] outline-none placeholder:text-cichy-2" />
       <div className="flex gap-2 pt-1">
         <button onClick={() => dodaj(nazwa, etykieta, url)} disabled={!nazwa || !url}
-          className="h-9 rounded-md bg-accent px-3 t-btn text-accent-ink hover:bg-accent-hover disabled:opacity-40">Dodaj</button>
+          className="h-9 rounded-md bg-akcent px-3 t-btn text-akcent-ink hover:bg-akcent-hover disabled:opacity-40">Dodaj</button>
         <button onClick={anuluj} className="h-9 rounded-md border px-3 t-btn hover:bg-raised">Anuluj</button>
       </div>
     </div>

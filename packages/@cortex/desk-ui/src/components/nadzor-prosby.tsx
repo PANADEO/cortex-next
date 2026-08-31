@@ -58,7 +58,7 @@ export function NadzorProsby() {
         <h2 className="mb-2 t-sekcja">Czekają na Twoją decyzję</h2>
         {oczekujace.length === 0 ? (
           <div className="rounded-lg border border-dashed p-6 text-center">
-            <Ikona jako={Inbox} px={20} klasa="mx-auto text-muted-cichy" />
+            <Ikona jako={Inbox} px={20} klasa="mx-auto text-cichy-2" />
             <p className="mt-1.5 t-meta">Nic nie czeka.</p>
           </div>
         ) : (
@@ -93,7 +93,7 @@ export function NadzorProsby() {
                   {p.zdolnosc !== 'inne' && (
                     <button
                       onClick={() => rozpatrz(p, 'przyznana')} disabled={zajete === p.id}
-                      className="flex h-8 items-center gap-1.5 rounded-md bg-accent px-2.5 t-btn text-accent-ink hover:bg-accent-hover disabled:opacity-50"
+                      className="flex h-8 items-center gap-1.5 rounded-md bg-akcent px-2.5 t-btn text-akcent-ink hover:bg-akcent-hover disabled:opacity-50"
                     ><Ikona jako={Check} px={14} /> Przyznaj</button>
                   )}
                 </span>
@@ -111,7 +111,7 @@ export function NadzorProsby() {
               <li key={p.id} className="flex items-center gap-3 px-4 py-2.5 t-tresc">
                 <Ikona
                   jako={p.stan === 'przyznana' ? ShieldCheck : X} px={16}
-                  klasa={p.stan === 'przyznana' ? 'shrink-0 text-ok' : 'shrink-0 text-muted'}
+                  klasa={p.stan === 'przyznana' ? 'shrink-0 text-ok' : 'shrink-0 text-cichy'}
                 />
                 <span className="min-w-0 flex-1 truncate">
                   {p.ktoImie} · {p.nazwa}

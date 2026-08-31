@@ -61,10 +61,10 @@ export function DialogPrzenies({ plik, zamknij, przenies }: {
                     style={{ paddingLeft: 8 + poziom * 16 }}
                     className={`flex h-9 w-full items-center gap-2 rounded-sm pr-2 text-left t-tresc disabled:opacity-45 ${zaznaczony ? 'bg-raised' : 'hover:bg-raised/60'}`}
                   >
-                    <Ikona jako={Folder} px={16} klasa="shrink-0 text-muted" />
+                    <Ikona jako={Folder} px={16} klasa="shrink-0 text-cichy" />
                     <span className="min-w-0 flex-1 truncate">{k.split('/').pop()}</span>
                     {tutaj && <span className="shrink-0 t-micro">plik już tu jest</span>}
-                    {zaznaczony && <Ikona jako={Check} px={16} klasa="shrink-0 text-accent" />}
+                    {zaznaczony && <Ikona jako={Check} px={16} klasa="shrink-0 text-akcent" />}
                   </button>
                 </li>
               )
@@ -72,17 +72,17 @@ export function DialogPrzenies({ plik, zamknij, przenies }: {
             <li>
               {tworzy ? (
                 <div className="flex items-center gap-2 px-2 py-1">
-                  <Ikona jako={Folder} px={16} klasa="shrink-0 text-muted" />
+                  <Ikona jako={Folder} px={16} klasa="shrink-0 text-cichy" />
                   <input
                     autoFocus value={nowy} onChange={(e) => setNowy(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') void utworz(); if (e.key === 'Escape') setTworzy(false) }}
                     placeholder="Nazwa folderu" aria-label="Nazwa nowego folderu"
                     className="min-w-0 flex-1 rounded-sm border bg-bg px-1.5 py-1 t-tresc outline-none"
                   />
-                  <button onClick={() => void utworz()} className="rounded-sm px-2 py-1 t-btn text-accent hover:bg-raised">Utwórz</button>
+                  <button onClick={() => void utworz()} className="rounded-sm px-2 py-1 t-btn text-akcent hover:bg-raised">Utwórz</button>
                 </div>
               ) : (
-                <button onClick={() => setTworzy(true)} className="flex h-9 w-full items-center gap-2 rounded-sm px-2 text-left t-tresc text-muted hover:bg-raised/60">
+                <button onClick={() => setTworzy(true)} className="flex h-9 w-full items-center gap-2 rounded-sm px-2 text-left t-tresc text-cichy hover:bg-raised/60">
                   <Ikona jako={FolderPlus} px={16} klasa="shrink-0" />
                   Nowy folder tutaj
                 </button>
@@ -95,7 +95,7 @@ export function DialogPrzenies({ plik, zamknij, przenies }: {
             <button
               disabled={!wybrany || zajete}
               onClick={async () => { if (!wybrany) return; setZajete(true); await przenies(wybrany); setZajete(false) }}
-              className="rounded-md bg-accent px-3 py-1.5 t-btn text-accent-ink hover:bg-accent-hover disabled:opacity-40"
+              className="rounded-md bg-akcent px-3 py-1.5 t-btn text-akcent-ink hover:bg-akcent-hover disabled:opacity-40"
             >Przenieś</button>
           </div>
         </Dialog.Content>

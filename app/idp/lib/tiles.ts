@@ -130,6 +130,10 @@ export const DEPARTMENT_CATEGORIES: ReadonlyArray<{
  */
 export const COWORK_APP_CODE = "cortex-cowork"
 
+/** Kod kafelka Biurka. Ta sama stała bramkuje trasę i manifest — rozjazd między
+ *  nimi znaczyłby kafelek widoczny na hubie, który odmawia po kliknięciu. */
+export const DESK_APP_CODE = "desk"
+
 /**
  * Kod panelu governance (kafelek "Cortex Config") w rejestrze `applications`.
  * Wpis w TILES niżej używa tego samego łańcucha jako `id` — stała istnieje, bo

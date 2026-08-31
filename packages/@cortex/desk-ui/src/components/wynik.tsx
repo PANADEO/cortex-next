@@ -35,8 +35,8 @@ export function Wynik({ wyniki, zalaczniki, aktywny, naWybor, dowod, doDowodu }:
       <div className="flex h-full flex-col">
         <div className="grid flex-1 place-items-center p-6 text-center">
           <div>
-            <Ikona jako={Inbox} px={24} klasa="mx-auto text-muted-cichy" />
-            <p className="mt-2 t-tresc text-muted">Tu pojawi się gotowy dokument.</p>
+            <Ikona jako={Inbox} px={24} klasa="mx-auto text-cichy-2" />
+            <p className="mt-2 t-tresc text-cichy">Tu pojawi się gotowy dokument.</p>
           </div>
         </div>
         <OdCiebie pliki={zalaczniki} aktywny={null} naWybor={naWybor} />
@@ -83,7 +83,7 @@ export function Wynik({ wyniki, zalaczniki, aktywny, naWybor, dowod, doDowodu }:
     <div className="flex h-full flex-col">
       <div className="shrink-0 border-b px-4 py-3">
         <div className="flex items-start gap-2">
-          <Ikona jako={ikonaPliku(aktywny)} px={20} klasa="mt-0.5 shrink-0 text-muted" />
+          <Ikona jako={ikonaPliku(aktywny)} px={20} klasa="mt-0.5 shrink-0 text-cichy" />
           <div className="min-w-0 flex-1">
             <div className="t-h3 break-words">{aktywny.nazwa}</div>
             <div className="t-meta">
@@ -95,7 +95,7 @@ export function Wynik({ wyniki, zalaczniki, aktywny, naWybor, dowod, doDowodu }:
           <button
             onClick={doDowodu}
             className={`mt-2 inline-flex items-center gap-1.5 rounded-pill px-2 py-0.5 text-[12px] ${
-              stanPliku === 'niesprawdzony' ? 'bg-warn-soft text-warn' : 'bg-raised text-muted'}`}
+              stanPliku === 'niesprawdzony' ? 'bg-warn-soft text-warn' : 'bg-raised text-cichy'}`}
           >
             <Ikona jako={stanPliku === 'niesprawdzony' ? TriangleAlert : ShieldCheck} px={12} />
             {stanPliku === 'niesprawdzony' ? 'niesprawdzony' : 'sprawdzony po zapisie'}
@@ -115,7 +115,7 @@ export function Wynik({ wyniki, zalaczniki, aktywny, naWybor, dowod, doDowodu }:
             <button
               key={p.sciezka} onClick={() => naWybor(p)}
               className={`shrink-0 rounded-sm px-2 py-1 text-[13px] ${
-                p.sciezka === aktywny.sciezka ? 'bg-raised font-medium' : 'text-muted hover:bg-raised/60'}`}
+                p.sciezka === aktywny.sciezka ? 'bg-raised font-medium' : 'text-cichy hover:bg-raised/60'}`}
             >{p.nazwa}</button>
           ))}
         </div>
@@ -157,7 +157,7 @@ function OdCiebie({ pliki, aktywny, naWybor }: {
                 className={`flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[13px] hover:bg-raised ${
                   p.sciezka === aktywny?.sciezka ? 'bg-raised font-medium' : ''}`}
               >
-                <Ikona jako={ikonaPliku(p)} px={14} klasa="shrink-0 text-muted" />
+                <Ikona jako={ikonaPliku(p)} px={14} klasa="shrink-0 text-cichy" />
                 <span className="min-w-0 flex-1 truncate">{p.nazwa}</span>
                 <span className="shrink-0 t-micro">{rozmiar(p.rozmiar)}</span>
               </button>
@@ -173,7 +173,7 @@ function Akcja({ ikona, tytul, na }: { ikona: LucideIcon; tytul: string; na: () 
   return (
     <button
       onClick={na} title={tytul} aria-label={tytul}
-      className="grid h-8 w-8 place-items-center rounded-sm text-muted hover:bg-raised hover:text-ink"
+      className="grid h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised hover:text-ink"
     >
       <Ikona jako={ikona} px={16} />
     </button>

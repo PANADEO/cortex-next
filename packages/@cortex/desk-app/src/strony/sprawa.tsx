@@ -17,7 +17,7 @@ export default async function Strona({ params }: { params: Promise<{ id: string 
         <div className="grid h-full place-items-center p-8 text-center">
           <div>
             <div className="t-h2">To nie jest Twoja sprawa</div>
-            <p className="mt-1 t-tresc text-muted">Każdy pracownik widzi wyłącznie własne biurko.</p>
+            <p className="mt-1 t-tresc text-cichy">Każdy pracownik widzi wyłącznie własne biurko.</p>
           </div>
         </div>
       </Powloka>

@@ -136,6 +136,31 @@ const NOT_UI_TEXT: Record<string, string[]> = {
 
 const SKIP = ["node_modules", ".next", "mocks"]
 
+/**
+ * MODUŁY JEDNOJĘZYCZNE — jedyny wyjątek katalogowy w tym teście, i celowo
+ * niepodobny do skasowanej listy wyjątków opisanej wyżej.
+ *
+ * Biurko (kafelek `desk`) nie ma warstwy tłumaczeń w ogóle: nie ma w nim ani
+ * jednego `useTranslation`, ani jednego klucza, ani jednego pliku `locales`.
+ * Jego treść to nie etykiety, tylko proza pisana pod jedną osobę — „Nie masz
+ * jeszcze żadnej sprawy", „Pytałem poza firmą", „To nie jest Twój dzienny
+ * limit". Wpisanie tych ~600 zdań do `NOT_UI_TEXT` udawałoby, że każde z nich
+ * rozważono z osobna i uznano za nie-etykietę; żadne nie jest.
+ *
+ * Różnica wobec tamtej furtki jest w tym, CZEGO ten wyjątek dowodzi. Tamta
+ * przepuszczała katalogi, które tłumaczenia MIAŁY i po prostu ich nie
+ * zastosowały — więc znikał sygnał o niedokończonej robocie. Ten mówi:
+ * „tego modułu nie ma jeszcze w zasięgu tłumaczeń". Jest to dług i tak jest
+ * zapisany; wchodzi razem z decyzją o wielojęzyczności Biurka, nie wcześniej.
+ *
+ * Asercja niżej pilnuje, żeby lista nie urosła po cichu: dopisanie tu czegokolwiek
+ * wymaga zmiany także tamtego oczekiwania, czyli świadomej decyzji, a nie jednej
+ * linijki dopisanej w drodze do zielonego testu.
+ */
+const JEDNOJEZYCZNE = ["packages/@cortex/desk-ui/", "packages/@cortex/desk-app/"]
+
+const jednojezyczny = (file: string) => JEDNOJEZYCZNE.some((prefix) => file.startsWith(prefix))
+
 /** Atrybuty, których wartość czyta użytkownik albo czytnik ekranu. */
 const LABEL_ATTRS = new Set([
   "placeholder",
@@ -272,6 +297,7 @@ function listTsx(root: string): string[] {
     .filter((file) => file.endsWith(".tsx"))
     .filter((file) => !file.endsWith(".test.tsx") && !file.endsWith(".stories.tsx"))
     .filter((file) => !SKIP.some((part) => file.includes(`/${part}/`)))
+    .filter((file) => !jednojezyczny(file))
 }
 
 const files = [...listTsx("app"), ...listTsx("packages")]
@@ -322,6 +348,10 @@ const DATA_NOT_UI = [
   "app/idp/lib/cortex-governance/store.ts",
   // Przykładowe tematy WEWNĄTRZ promptu do modelu.
   "app/idp/lib/ilustromat/prompt-builder.ts",
+  // Pola `description` narzędzi agenta (Vercel AI SDK) — to jest PROMPT, czytany
+  // przez model, nie etykieta czytana przez człowieka. Na ekran idą osobne
+  // czasowniki z kart narzędzi (`narzedzia.ts`), i to one są napisem.
+  "packages/@cortex/desk-core/src/runtime.ts",
 ]
 
 function listTs(root: string): string[] {
@@ -330,6 +360,7 @@ function listTs(root: string): string[] {
     .filter((file) => file.endsWith(".ts"))
     .filter((file) => !file.endsWith(".test.ts") && !file.endsWith(".stories.ts"))
     .filter((file) => !SKIP.some((part) => file.includes(`/${part}/`)))
+    .filter((file) => !jednojezyczny(file))
     .filter(
       (file) =>
         !DATA_NOT_UI.some((rule) => (typeof rule === "string" ? file === rule : rule.test(file))),
@@ -386,6 +417,10 @@ describe("zakaz tekstu w kodzie", () => {
     // Bez tej asercji zaostrzenie filtra albo literówka w `SKIP` dałaby
     // triumfalnie zielony test, który nie sprawdza niczego.
     expect(files.length).toBeGreaterThan(5)
+  })
+
+  it("wyjątek jednojęzyczny obejmuje wyłącznie Biurko", () => {
+    expect(JEDNOJEZYCZNE).toEqual(["packages/@cortex/desk-ui/", "packages/@cortex/desk-app/"])
   })
 
   it.each(files)("%s nie zawiera napisu po polsku", (relative) => {

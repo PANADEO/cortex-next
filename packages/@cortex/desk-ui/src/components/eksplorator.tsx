@@ -98,7 +98,7 @@ export function Eksplorator() {
       className="mx-auto max-w-strumien px-5 py-8 pb-24 md:pb-8"
     >
       <h1 className="t-display">Moje pliki</h1>
-      <p className="mt-1 t-tresc text-muted">
+      <p className="mt-1 t-tresc text-cichy">
         Tu trzymasz to, na czym pracujesz. Pliki zostają na biurku — nie znikają razem ze sprawą.
       </p>
 
@@ -106,7 +106,7 @@ export function Eksplorator() {
         <input ref={wybor} type="file" multiple hidden onChange={(e) => wgraj(e.target.files)} />
         <button
           onClick={() => wybor.current?.click()} disabled={zajete}
-          className="flex h-9 items-center gap-1.5 rounded-md bg-accent px-3.5 t-btn text-accent-ink hover:bg-accent-hover disabled:opacity-50"
+          className="flex h-9 items-center gap-1.5 rounded-md bg-akcent px-3.5 t-btn text-akcent-ink hover:bg-akcent-hover disabled:opacity-50"
         >
           <Ikona jako={Upload} px={16} /> {zajete ? 'Wgrywam…' : 'Dodaj pliki'}
         </button>
@@ -119,9 +119,9 @@ export function Eksplorator() {
       <nav aria-label="Ścieżka" className="mt-4 flex flex-wrap items-center gap-0.5 t-meta">
         {okruchy.map((o, i) => (
           <span key={i} className="flex items-center gap-0.5">
-            {i > 0 && <Ikona jako={ChevronRight} px={12} klasa="text-muted-cichy" />}
+            {i > 0 && <Ikona jako={ChevronRight} px={12} klasa="text-cichy-2" />}
             {i === 0 ? (
-              <span className="text-muted-cichy">{o}</span>
+              <span className="text-cichy-2">{o}</span>
             ) : i === okruchy.length - 1 ? (
               <span className="font-medium text-ink">{o}</span>
             ) : (
@@ -131,14 +131,14 @@ export function Eksplorator() {
         ))}
       </nav>
 
-      <div className={`mt-2 overflow-hidden rounded-lg border bg-surface ${nadNami ? 'border-2 border-dashed border-accent bg-accent-soft' : ''}`}>
+      <div className={`mt-2 overflow-hidden rounded-lg border bg-surface ${nadNami ? 'border-2 border-dashed border-akcent bg-akcent-soft' : ''}`}>
         {nadNami ? (
-          <div className="p-10 text-center t-tresc text-accent-soft-ink">
+          <div className="p-10 text-center t-tresc text-akcent-soft-ink">
             Upuść pliki tutaj — trafią do: {katalog.split('/').pop()}
           </div>
         ) : pliki.length === 0 && !nowyFolder ? (
           <div className="p-10 text-center">
-            <Ikona jako={Inbox} px={24} klasa="mx-auto text-muted-cichy" />
+            <Ikona jako={Inbox} px={24} klasa="mx-auto text-cichy-2" />
             <p className="mt-2 t-tresc">Tu jeszcze nic nie ma</p>
             <p className="t-meta">Przeciągnij pliki albo kliknij „Dodaj pliki".</p>
           </div>
@@ -146,7 +146,7 @@ export function Eksplorator() {
           <ul aria-label="Pliki w tym folderze" className="divide-y">
             {nowyFolder && (
               <li className="flex h-wiersz items-center gap-2 px-3">
-                <span className="grid w-7 shrink-0 place-items-center text-muted"><Ikona jako={FolderPlus} px={16} /></span>
+                <span className="grid w-7 shrink-0 place-items-center text-cichy"><Ikona jako={FolderPlus} px={16} /></span>
                 <input
                   autoFocus placeholder="Nazwa folderu" aria-label="Nazwa nowego folderu"
                   onKeyDown={async (e) => {
@@ -238,10 +238,10 @@ export function Eksplorator() {
               {podglad && (
                 <a
                   href={adresPliku(podglad, true)}
-                  className="rounded-sm px-2 py-1 t-btn text-muted hover:bg-raised hover:text-ink"
+                  className="rounded-sm px-2 py-1 t-btn text-cichy hover:bg-raised hover:text-ink"
                 >Pobierz</a>
               )}
-              <Dialog.Close aria-label="Zamknij podgląd" className="grid h-8 w-8 place-items-center rounded-sm text-muted hover:bg-raised">
+              <Dialog.Close aria-label="Zamknij podgląd" className="grid h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised">
                 <Ikona jako={X} px={16} />
               </Dialog.Close>
             </div>

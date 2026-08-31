@@ -31,13 +31,13 @@ export function ChipZalacznika({ z, usun, otworz }: {
       {obraz ? (
         <img src={z.podglad} alt="" className="h-11 w-11 shrink-0 rounded-sm object-cover" />
       ) : (
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-sm bg-raised text-muted">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-sm bg-raised text-cichy">
           <Ikona jako={ikonaPliku({ nazwa: z.nazwa, katalog: false })} px={20} />
         </span>
       )}
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="line-clamp-2 break-all text-left text-[12px] leading-4">{z.nazwa}</span>
-        <span className="w-fit rounded-xs bg-raised px-1 text-[10px] uppercase leading-4 text-muted">{rodzaj(z.nazwa)}</span>
+        <span className="w-fit rounded-xs bg-raised px-1 text-[10px] uppercase leading-4 text-cichy">{rodzaj(z.nazwa)}</span>
       </span>
     </>
   )
@@ -52,14 +52,14 @@ export function ChipZalacznika({ z, usun, otworz }: {
 
       {z.wgrywa && (
         <span className="absolute inset-0 grid place-items-center rounded-md bg-surface/75">
-          <Ikona jako={LoaderCircle} px={16} klasa="obrot text-muted" />
+          <Ikona jako={LoaderCircle} px={16} klasa="obrot text-cichy" />
         </span>
       )}
 
       {usun && !z.wgrywa && (
         <button
           onClick={usun} aria-label={`Usuń załącznik ${z.nazwa}`}
-          className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-pill border bg-surface text-muted opacity-0 shadow-pop transition hover:text-ink focus-visible:opacity-100 group-hover/chip:opacity-100 [@media(hover:none)]:opacity-100"
+          className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-pill border bg-surface text-cichy opacity-0 shadow-pop transition hover:text-ink focus-visible:opacity-100 group-hover/chip:opacity-100 [@media(hover:none)]:opacity-100"
         >
           <Ikona jako={X} px={12} />
         </button>

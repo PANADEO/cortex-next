@@ -56,7 +56,7 @@ export function UchwytPanelu({ szerokosc, ustaw, zwin }: {
       }}
       className="group/uchwyt relative hidden w-2 shrink-0 cursor-col-resize touch-none select-none lg:block focus-visible:outline-none"
     >
-      <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-line transition-colors group-hover/uchwyt:bg-accent group-focus-visible/uchwyt:bg-accent" />
+      <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-line transition-colors group-hover/uchwyt:bg-akcent group-focus-visible/uchwyt:bg-akcent" />
     </div>
   )
 }

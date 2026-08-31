@@ -20,15 +20,15 @@ function ikonaPliku(nazwa: string): LucideIcon {
 function Pigulka({ nazwa }: { nazwa: string }) {
   return (
     <span className="inline-flex h-5 max-w-[220px] shrink-0 items-center gap-1 rounded-sm bg-raised px-1.5 align-middle">
-      <Ikona jako={ikonaPliku(nazwa)} px={12} klasa="shrink-0 text-muted" />
+      <Ikona jako={ikonaPliku(nazwa)} px={12} klasa="shrink-0 text-cichy" />
       <span className="truncate text-[13px]">{nazwa}</span>
     </span>
   )
 }
 
 const STAN_KROKU: Record<Krok['stan'], { ikona: LucideIcon; klasa: string; obrot?: boolean }> = {
-  trwa: { ikona: LoaderCircle, klasa: 'text-accent', obrot: true },
-  ok: { ikona: Check, klasa: 'text-muted' },
+  trwa: { ikona: LoaderCircle, klasa: 'text-akcent', obrot: true },
+  ok: { ikona: Check, klasa: 'text-cichy' },
   blad: { ikona: TriangleAlert, klasa: 'text-warn' },
 }
 
@@ -60,12 +60,12 @@ function Wiersz({ k, at, teraz }: { k: Krok; at: string; teraz: number }) {
         {maSzczegol && (
           <Ikona
             jako={ChevronDown} px={14}
-            klasa={`shrink-0 text-muted-cichy transition-transform ${otwarty ? 'rotate-180' : ''}`}
+            klasa={`shrink-0 text-cichy-2 transition-transform ${otwarty ? 'rotate-180' : ''}`}
           />
         )}
       </button>
       {otwarty && maSzczegol && (
-        <div className="pb-2 pl-10 pr-3 pt-0.5 text-[13px] leading-5 text-muted">
+        <div className="pb-2 pl-10 pr-3 pt-0.5 text-[13px] leading-5 text-cichy">
           {o.sciezka && <div>Na pliku: {o.sciezka}</div>}
           {o.detal && <div>Zobaczyłem: {o.detal}</div>}
           <div className="t-micro pt-0.5">{new Date(at).toLocaleTimeString('pl-PL')}</div>
@@ -100,7 +100,7 @@ export function Przebieg({ wpisy, pracuje, teraz }: { wpisy: Wpis[]; pracuje: bo
   const czasCalosc = czasKroku(msCalosc)
 
   const naglowek = pracuje
-    ? { ikona: LoaderCircle, klasa: 'text-accent', obrot: true, tekst: 'Pracuję nad tym…' }
+    ? { ikona: LoaderCircle, klasa: 'text-akcent', obrot: true, tekst: 'Pracuję nad tym…' }
     : potkniecie
       ? { ikona: TriangleAlert, klasa: 'text-warn', tekst: `Zrobione z potknięciem: ${podsumujGrupe(kroki).toLowerCase()}` }
       : { ikona: Check, klasa: 'text-ok', tekst: podsumujGrupe(kroki) }
@@ -130,7 +130,7 @@ export function Przebieg({ wpisy, pracuje, teraz }: { wpisy: Wpis[]; pracuje: bo
           )}
           <Ikona
             jako={ChevronDown} px={16}
-            klasa={`shrink-0 text-muted-cichy transition-transform ${zwiniety ? '' : 'rotate-180'}`}
+            klasa={`shrink-0 text-cichy-2 transition-transform ${zwiniety ? '' : 'rotate-180'}`}
           />
         </button>
       </h3>
@@ -154,18 +154,18 @@ export function Przebieg({ wpisy, pracuje, teraz }: { wpisy: Wpis[]; pracuje: bo
               <Ikona jako={ShieldCheck} px={14} klasa="mt-0.5 shrink-0 text-ok" />
               <div>
                 <span className="text-ink">Sprawdzone:</span>{' '}
-                <span className="text-muted">{[...dowod.weszlo, ...dowod.zrobione].join(' · ')}</span>
+                <span className="text-cichy">{[...dowod.weszlo, ...dowod.zrobione].join(' · ')}</span>
               </div>
             </div>
           )}
           {zewnetrzne && (
             <div className="flex gap-2 text-[13px] leading-5">
-              <Ikona jako={Globe} px={14} klasa="mt-0.5 shrink-0 text-muted" />
+              <Ikona jako={Globe} px={14} klasa="mt-0.5 shrink-0 text-cichy" />
               <div>
                 {/* „Zapytałem", nie „sprawdziłem": z tego, że obcy serwer odpowiedział,
                     nie wynika, że odpowiedział prawdę ani że rzecz się wydarzyła. */}
                 <span className="text-ink">Pytałem poza firmą:</span>{' '}
-                <span className="text-muted">{dowod.zewnetrzne.join(' · ')}</span>
+                <span className="text-cichy">{dowod.zewnetrzne.join(' · ')}</span>
               </div>
             </div>
           )}
@@ -174,16 +174,16 @@ export function Przebieg({ wpisy, pracuje, teraz }: { wpisy: Wpis[]; pracuje: bo
               <Ikona jako={TriangleAlert} px={14} klasa="mt-0.5 shrink-0 text-warn" />
               <div>
                 <span className="text-ink">Nie sprawdziłem:</span>{' '}
-                <span className="text-muted">{dowod.nieSprawdzone.join(' · ')}</span>
+                <span className="text-cichy">{dowod.nieSprawdzone.join(' · ')}</span>
               </div>
             </div>
           )}
           {zablokowane && (
             <div className="flex gap-2 text-[13px] leading-5">
-              <Ikona jako={Lock} px={14} klasa="mt-0.5 shrink-0 text-muted" />
+              <Ikona jako={Lock} px={14} klasa="mt-0.5 shrink-0 text-cichy" />
               <div>
                 <span className="text-ink">Na to nie masz zgody:</span>{' '}
-                <span className="text-muted">{dowod.niewolno.join(' · ')}</span>
+                <span className="text-cichy">{dowod.niewolno.join(' · ')}</span>
               </div>
             </div>
           )}

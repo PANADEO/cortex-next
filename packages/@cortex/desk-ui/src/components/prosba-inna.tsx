@@ -32,7 +32,7 @@ export function ProsbaInna() {
   return (
     <Dialog.Root open={otwarte} onOpenChange={setOtwarte}>
       <Dialog.Trigger className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 t-btn hover:bg-raised">
-        <Ikona jako={MessageSquarePlus} px={16} klasa="text-muted" />
+        <Ikona jako={MessageSquarePlus} px={16} klasa="text-cichy" />
         Potrzebuję czegoś innego
       </Dialog.Trigger>
       <Dialog.Portal>
@@ -46,7 +46,7 @@ export function ProsbaInna() {
                 stanie się nową umiejętnością.
               </Dialog.Description>
             </div>
-            <Dialog.Close aria-label="Zamknij" className="grid h-8 w-8 shrink-0 place-items-center rounded-sm text-muted hover:bg-raised">
+            <Dialog.Close aria-label="Zamknij" className="grid h-8 w-8 shrink-0 place-items-center rounded-sm text-cichy hover:bg-raised">
               <Ikona jako={X} px={16} />
             </Dialog.Close>
           </div>
@@ -55,14 +55,14 @@ export function ProsbaInna() {
               autoFocus value={tresc} onChange={(e) => setTresc(e.target.value)} rows={4}
               aria-label="Czego potrzebujesz"
               placeholder={'np. „Żeby asystent umiał wystawić fakturę w naszym systemie” albo „Żeby czytał pliki z dysku sieciowego działu”'}
-              className="w-full resize-none rounded-md border bg-bg px-3 py-2 t-tresc outline-none placeholder:text-muted-cichy"
+              className="w-full resize-none rounded-md border bg-bg px-3 py-2 t-tresc outline-none placeholder:text-cichy-2"
             />
           </div>
           <div className="flex justify-end gap-2 border-t px-4 py-3">
             <Dialog.Close className="rounded-md border px-3 py-1.5 t-btn hover:bg-raised">Anuluj</Dialog.Close>
             <button
               onClick={wyslij} disabled={!tresc.trim() || zajete}
-              className="rounded-md bg-accent px-3 py-1.5 t-btn text-accent-ink hover:bg-accent-hover disabled:opacity-40"
+              className="rounded-md bg-akcent px-3 py-1.5 t-btn text-akcent-ink hover:bg-akcent-hover disabled:opacity-40"
             >Wyślij prośbę</button>
           </div>
         </Dialog.Content>

@@ -40,7 +40,7 @@ export function Podglad({ plik }: { plik: PlikMeta }) {
   if (!tekstowy)
     return (
       <div className="rounded-lg border border-dashed p-6 text-center">
-        <Ikona jako={FileQuestion} px={24} klasa="mx-auto text-muted-cichy" />
+        <Ikona jako={FileQuestion} px={24} klasa="mx-auto text-cichy-2" />
         <p className="mt-2 t-tresc">Tego pliku nie umiem pokazać na ekranie.</p>
         <p className="t-meta">Pobierz go, żeby otworzyć w swoim programie.</p>
       </div>
@@ -62,7 +62,7 @@ export function Podglad({ plik }: { plik: PlikMeta }) {
           <table className="w-full border-collapse text-[13px] tabular-nums">
             <thead>
               <tr>{glowa?.split(sep).map((c, i) => (
-                <th key={i} className="border-b bg-raised/60 px-2.5 py-1.5 text-left text-[12px] font-semibold text-muted">{c}</th>
+                <th key={i} className="border-b bg-raised/60 px-2.5 py-1.5 text-left text-[12px] font-semibold text-cichy">{c}</th>
               ))}</tr>
             </thead>
             <tbody>

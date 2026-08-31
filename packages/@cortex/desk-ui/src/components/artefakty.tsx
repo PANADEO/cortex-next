@@ -48,7 +48,7 @@ function Obrazek({ plik, otworz }: { plik: PlikMeta; otworz: () => void }) {
         <span className="min-w-0 flex-1 truncate t-meta">{plik.nazwa}</span>
         <a
           href={adresPliku(plik, true)} download title="Pobierz" aria-label={`Pobierz ${plik.nazwa}`}
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-sm text-muted hover:bg-raised hover:text-ink"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-sm text-cichy hover:bg-raised hover:text-ink"
         ><Ikona jako={Download} px={14} /></a>
       </figcaption>
     </figure>
@@ -61,14 +61,14 @@ function Karta({ plik, otworz }: { plik: PlikMeta; otworz: () => void }) {
       onClick={otworz} aria-label={`Otwórz ${plik.nazwa}`}
       className="group/karta flex w-full max-w-[420px] items-center gap-3 rounded-lg border bg-surface p-2.5 text-left transition hover:border-line-mocna hover:bg-raised/40"
     >
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-raised text-muted">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-raised text-cichy">
         <Ikona jako={ikonaPliku(plik)} px={20} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate t-tresc-m">{plik.nazwa}</span>
         <span className="block t-meta">Dokument · {rodzaj(plik.nazwa)} · {rozmiar(plik.rozmiar)}</span>
       </span>
-      <Ikona jako={Maximize2} px={16} klasa="shrink-0 text-muted-cichy group-hover/karta:text-ink" />
+      <Ikona jako={Maximize2} px={16} klasa="shrink-0 text-cichy-2 group-hover/karta:text-ink" />
     </button>
   )
 }

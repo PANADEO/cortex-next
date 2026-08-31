@@ -32,7 +32,7 @@ const ETYKIETA: Record<string, string> = {
   nowa: 'nowa', pracuje: 'pracuje', gotowe: 'gotowe', przerwane: 'przerwane', blad: 'nie udało się',
 }
 const KROPKA: Record<string, string> = {
-  nowa: 'bg-muted-cichy', pracuje: 'bg-accent puls', gotowe: 'bg-ok', przerwane: 'bg-warn', blad: 'bg-bad',
+  nowa: 'bg-cichy-2', pracuje: 'bg-akcent puls', gotowe: 'bg-ok', przerwane: 'bg-warn', blad: 'bg-bad',
 }
 
 type Tura = { klucz: number; polecenie: Wpis | null; praca: Wpis[]; po: Wpis[] }
@@ -273,7 +273,7 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
     <div className="flex h-full">
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-pasek shrink-0 items-center gap-2 border-b bg-surface px-3">
-          <Link href={t("/")} aria-label="Wróć do biurka" className="grid h-8 w-8 place-items-center rounded-sm text-muted hover:bg-raised md:hidden">
+          <Link href={t("/")} aria-label="Wróć do biurka" className="grid h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised md:hidden">
             <Ikona jako={ChevronLeft} px={20} />
           </Link>
           <div className="min-w-0 flex-1">
@@ -281,7 +281,7 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
             <div className="flex items-center gap-1.5 t-meta">
               <span className={`h-1.5 w-1.5 rounded-pill ${KROPKA[sprawa?.stan ?? 'nowa']}`} />
               {pracuje
-                ? <span className="text-accent">pracuje · {sekundy < 60 ? `${sekundy} s` : `${Math.round(sekundy / 60)} min`}</span>
+                ? <span className="text-akcent">pracuje · {sekundy < 60 ? `${sekundy} s` : `${Math.round(sekundy / 60)} min`}</span>
                 : <span>{ETYKIETA[sprawa?.stan ?? 'nowa']}</span>}
             </div>
           </div>
@@ -295,12 +295,12 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
             onClick={() => ustawPanel(!panel)} aria-pressed={panel}
             aria-label={panel ? 'Ukryj panel wyniku' : 'Pokaż panel wyniku'}
             title={panel ? 'Ukryj wynik' : 'Pokaż wynik'}
-            className="hidden h-8 w-8 place-items-center rounded-sm text-muted hover:bg-raised lg:grid"
+            className="hidden h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised lg:grid"
           >
             <Ikona jako={panel ? PanelRightClose : PanelRight} px={16} />
           </button>
           <Menu.Root>
-            <Menu.Trigger aria-label="Więcej o sprawie" className="grid h-8 w-8 place-items-center rounded-sm text-muted hover:bg-raised">
+            <Menu.Trigger aria-label="Więcej o sprawie" className="grid h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised">
               <Ikona jako={MoreHorizontal} px={16} />
             </Menu.Trigger>
             <Menu.Portal>
@@ -422,10 +422,10 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
             onClick={() => setArkusz(true)}
             className="flex h-12 shrink-0 items-center gap-2 border-t bg-surface px-4 text-left lg:hidden"
           >
-            <Ikona jako={ikonaPliku(aktywny)} px={16} klasa="shrink-0 text-muted" />
+            <Ikona jako={ikonaPliku(aktywny)} px={16} klasa="shrink-0 text-cichy" />
             <span className="min-w-0 flex-1 truncate t-tresc-m">{aktywny.nazwa}</span>
             <span className="shrink-0 t-meta">Otwórz</span>
-            <Ikona jako={ChevronDown} px={16} klasa="shrink-0 -rotate-90 text-muted" />
+            <Ikona jako={ChevronDown} px={16} klasa="shrink-0 -rotate-90 text-cichy" />
           </button>
         )}
 
@@ -454,13 +454,13 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
                 dolacz(dt.files)
               }}
               placeholder={zajete ? 'Pracuję — poczekaj albo naciśnij Stop' : 'Napisz, co mam zrobić…'}
-              className="w-full resize-none bg-transparent px-3.5 pt-3 t-tresc outline-none placeholder:text-muted-cichy"
+              className="w-full resize-none bg-transparent px-3.5 pt-3 t-tresc outline-none placeholder:text-cichy-2"
             />
             <div className="flex items-center gap-1 px-2 pb-2">
               <input ref={wybor} type="file" multiple hidden onChange={(e) => { dolacz(e.target.files); e.target.value = '' }} />
               <button
                 type="button" onClick={() => wybor.current?.click()}
-                className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-muted hover:bg-raised hover:text-ink"
+                className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-cichy hover:bg-raised hover:text-ink"
               >
                 <Ikona jako={Paperclip} px={14} /> Dodaj plik
               </button>
@@ -470,7 +470,7 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
                 onClick={wyslij}
                 disabled={(!tresc.trim() && !zal.length) || zajete || zal.some((z) => z.wgrywa)}
                 aria-label="Wyślij zlecenie"
-                className="grid h-9 w-9 place-items-center rounded-md bg-accent text-accent-ink hover:bg-accent-hover disabled:opacity-35"
+                className="grid h-9 w-9 place-items-center rounded-md bg-akcent text-akcent-ink hover:bg-akcent-hover disabled:opacity-35"
               ><Ikona jako={zajete ? LoaderCircle : ArrowUp} px={16} klasa={zajete ? 'obrot' : undefined} /></button>
             </div>
           </div>
@@ -496,7 +496,7 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
           <Dialog.Content className="arkusz fixed inset-x-0 bottom-0 z-50 h-[88vh] overflow-hidden rounded-t-xl border-t bg-surface lg:hidden">
             <div className="flex h-11 items-center justify-between border-b px-3">
               <Dialog.Title className="t-h3">Wynik</Dialog.Title>
-              <Dialog.Close aria-label="Zamknij" className="grid h-8 w-8 place-items-center rounded-sm text-muted hover:bg-raised">
+              <Dialog.Close aria-label="Zamknij" className="grid h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised">
                 <Ikona jako={X} px={16} />
               </Dialog.Close>
             </div>
@@ -518,7 +518,7 @@ function Polecenie({ tekst, zalaczniki, otworz }: {
     <div className="flex flex-col items-end gap-2 self-end">
       <ListaZalacznikow pliki={zalaczniki} otworz={otworz} klasa="justify-end" />
       {tekst && (
-        <div className="max-w-[min(560px,85%)] select-text whitespace-pre-wrap rounded-xl rounded-br-sm bg-accent-soft px-3.5 py-2.5 t-tresc text-accent-soft-ink">
+        <div className="max-w-[min(560px,85%)] select-text whitespace-pre-wrap rounded-xl rounded-br-sm bg-akcent-soft px-3.5 py-2.5 t-tresc text-akcent-soft-ink">
           {tekst}
         </div>
       )}
@@ -530,7 +530,7 @@ function Polecenie({ tekst, zalaczniki, otworz }: {
 function Zabieram() {
   return (
     <div className="flex items-center gap-2 t-meta">
-      <Ikona jako={LoaderCircle} px={14} klasa="obrot text-accent" />
+      <Ikona jako={LoaderCircle} px={14} klasa="obrot text-akcent" />
       <span className="puls">Zabieram się do pracy…</span>
     </div>
   )

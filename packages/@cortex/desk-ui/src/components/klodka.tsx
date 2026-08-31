@@ -32,7 +32,7 @@ export function Klodka({ opis, nazwa, dzial, zdolnoscId, juzPoproszono }: {
 
   return (
     <div className="flex max-w-miara gap-2.5 rounded-lg border bg-surface px-3.5 py-3">
-      <Ikona jako={Lock} px={16} klasa="mt-0.5 shrink-0 text-muted" />
+      <Ikona jako={Lock} px={16} klasa="mt-0.5 shrink-0 text-cichy" />
       <div className="min-w-0">
         <div className="t-tresc">
           {nazwa

@@ -22,9 +22,9 @@ export function PasekDolny() {
           <Link
             key={p.href} href={p.href}
             aria-current={aktywna ? 'page' : undefined}
-            className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 ${aktywna ? 'text-ink' : 'text-muted'}`}
+            className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 ${aktywna ? 'text-ink' : 'text-cichy'}`}
           >
-            {aktywna && <span aria-hidden className="absolute inset-x-6 top-0 h-0.5 rounded-pill bg-accent" />}
+            {aktywna && <span aria-hidden className="absolute inset-x-6 top-0 h-0.5 rounded-pill bg-akcent" />}
             <Ikona jako={p.ikona} px={20} />
             <span className="text-[11px] leading-none">{p.etykieta}</span>
           </Link>

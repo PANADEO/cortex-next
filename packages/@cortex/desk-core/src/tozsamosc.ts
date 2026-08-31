@@ -7,6 +7,9 @@ export const UZYTKOWNICY = uzytkownicyJson.uzytkownicy as Uzytkownik[]
 /** Kanoniczna postać adresu — dokładnie jak `normalizeEmail` w `@cortex/service/src/rbac.ts`. */
 const normalizuj = (v: string | null | undefined) => v?.trim().toLowerCase() ?? ''
 
+/** Domena, w której żyją osoby z zasiewu. Zmienia się między wdrożeniami, kod nie. */
+const DOMENA = (process.env.DESK_DOMENA ?? 'itsg.pl').trim().toLowerCase()
+
 /**
  * Przełącznik person jest atrapą DEMO i musi być włączony jawnie.
  *
@@ -32,7 +35,11 @@ export async function ktoTo(): Promise<Uzytkownik> {
   const h = await headers()
   const email = normalizuj(h.get('x-auth-request-email') ?? process.env.DEV_USER_EMAIL)
   if (email) {
-    const u = UZYTKOWNICY.find((x) => `${x.id}@itsg.pl` === email)
+    // Zasiew person nosi same identyfikatory, więc adres trzeba złożyć — a domena
+    // jest własnością WDROŻENIA, nie kodu. Wpisana na sztywno („itsg.pl") znaczyła,
+    // że pod powłoką u klienta nie zalogowałby się nikt: bramka podaje prawdziwy
+    // adres, a tu czekało dopasowanie do cudzej domeny.
+    const u = UZYTKOWNICY.find((x) => `${x.id}@${DOMENA}` === email)
     if (u) return u
     throw new Error(`Nie znam użytkownika ${email}.`)
   }

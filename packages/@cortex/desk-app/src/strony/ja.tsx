@@ -25,10 +25,10 @@ export default async function Strona() {
 
           <div className="mt-6 overflow-hidden rounded-lg border bg-surface">
             <Link href={t("/co-potrafie")} className="flex h-wiersz items-center gap-2.5 px-4 hover:bg-raised/60">
-              <Ikona jako={ListChecks} px={16} klasa="text-muted" />
+              <Ikona jako={ListChecks} px={16} klasa="text-cichy" />
               <span className="flex-1 t-tresc">Co potrafię</span>
               <span className="t-meta">{p.przyznane.length} z {p.przyznane.length + p.zablokowane.length}</span>
-              <Ikona jako={ChevronRight} px={16} klasa="text-muted" />
+              <Ikona jako={ChevronRight} px={16} klasa="text-cichy" />
             </Link>
           </div>
 
