@@ -1,5 +1,5 @@
 import { cookies, headers } from 'next/headers'
-import uzytkownicyJson from '../../seed/uzytkownicy.json'
+import uzytkownicyJson from '../seed/uzytkownicy.json'
 import type { Uzytkownik } from './typy'
 
 export const UZYTKOWNICY = uzytkownicyJson.uzytkownicy as Uzytkownik[]

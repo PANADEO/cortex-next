@@ -1,8 +1,8 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { NextResponse } from 'next/server'
-import { ktoTo } from '@/core/tozsamosc'
-import * as biurko from '@/core/biurko'
+import { ktoTo } from '@cortex/desk-core/tozsamosc'
+import * as biurko from '@cortex/desk-core/biurko'
 
 const TYPY: Record<string, string> = {
   png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',

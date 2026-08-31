@@ -6,8 +6,8 @@ import { Ikona } from './ikona'
 import { Podglad, adresPliku } from './podglad'
 import { ikonaPliku } from './wiersz-pliku'
 import { useToast } from './toast'
-import type { PlikMeta } from '@/core/typy'
-import type { Dowod } from '@/core/dowod'
+import type { PlikMeta } from '@cortex/desk-core/typy'
+import type { Dowod } from '@cortex/desk-core/dowod'
 import { rozmiar, kiedy } from '@/lib'
 
 /**

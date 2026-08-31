@@ -1,8 +1,8 @@
 import { test, expect, jako } from './osoby'
-import { obietniceBezPokrycia, wytworzone } from '../src/core/obietnice'
-import { podzielTeczke } from '../src/core/teczka'
-import { czytelnyBlad } from '../src/core/awaria'
-import type { DeskEvent, PlikMeta } from '../src/core/typy'
+import { obietniceBezPokrycia, wytworzone } from '@cortex/desk-core/obietnice'
+import { podzielTeczke } from '@cortex/desk-core/teczka'
+import { czytelnyBlad } from '@cortex/desk-core/awaria'
+import type { DeskEvent, PlikMeta } from '@cortex/desk-core/typy'
 
 const CIASTKO = (kto: string) => ({ Cookie: `desk_persona=${kto}` })
 

@@ -1,0 +1,26 @@
+{
+  "name": "@cortex/desk-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/mcp": "0.0.31",
+    "@ai-sdk/openai-compatible": "^1.0.9",
+    "ai": "5.0.249",
+    "pg": "^8.13.1",
+    "server-only": "^0.0.1",
+    "zod": "^3.25.76"
+  },
+  "peerDependencies": {
+    "next": ">=15",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "typescript": "^5.7.2"
+  }
+}

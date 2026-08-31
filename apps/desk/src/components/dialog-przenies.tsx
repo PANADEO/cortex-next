@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { Folder, FolderPlus, Check } from 'lucide-react'
 import { Ikona } from './ikona'
-import type { PlikMeta } from '@/core/typy'
+import type { PlikMeta } from '@cortex/desk-core/typy'
 
 /** Wybór miejsca z listy — nikt nie ma wpisywać ścieżki „Moje pliki/Wnioski 2026" z pamięci. */
 export function DialogPrzenies({ plik, zamknij, przenies }: {

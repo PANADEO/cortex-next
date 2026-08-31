@@ -3,10 +3,10 @@ import { Suspense } from 'react'
 import { Powloka } from '@/components/powloka'
 import { Zlecenia } from '@/components/zlecenia'
 import { ListaSpraw, type WierszSprawy } from '@/components/lista-spraw'
-import { ktoTo } from '@/core/tozsamosc'
-import { polityka } from '@/core/brama-zdolnosci'
-import { pool, migracja } from '@/core/db'
-import { policzWyniki } from '@/core/teczka-serwer'
+import { ktoTo } from '@cortex/desk-core/tozsamosc'
+import { polityka } from '@cortex/desk-core/brama-zdolnosci'
+import { pool, migracja } from '@cortex/desk-core/db'
+import { policzWyniki } from '@cortex/desk-core/teczka-serwer'
 
 const NA_BIURKU = 12
 

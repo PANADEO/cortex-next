@@ -8,7 +8,7 @@ import { WierszPliku } from './wiersz-pliku'
 import { DialogPrzenies } from './dialog-przenies'
 import { Podglad, adresPliku } from './podglad'
 import { useToast } from './toast'
-import type { PlikMeta } from '@/core/typy'
+import type { PlikMeta } from '@cortex/desk-core/typy'
 import { kiedy, ile } from '@/lib'
 
 type Kosz = { id: string; nazwa: string; skad: string; kiedy: string }

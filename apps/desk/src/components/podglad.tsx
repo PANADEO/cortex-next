@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { FileQuestion } from 'lucide-react'
 import { Ikona } from './ikona'
 import { Md } from './md'
-import type { PlikMeta } from '@/core/typy'
+import type { PlikMeta } from '@cortex/desk-core/typy'
 
 const MAX_WIERSZY = 50
 

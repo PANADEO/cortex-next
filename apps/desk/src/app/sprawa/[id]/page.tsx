@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation'
 import { Powloka } from '@/components/powloka'
 import { SprawaWidok } from '@/components/sprawa-widok'
-import { ktoTo } from '@/core/tozsamosc'
-import { polityka } from '@/core/brama-zdolnosci'
-import { pool, migracja } from '@/core/db'
+import { ktoTo } from '@cortex/desk-core/tozsamosc'
+import { polityka } from '@cortex/desk-core/brama-zdolnosci'
+import { pool, migracja } from '@cortex/desk-core/db'
 
 export default async function Strona({ params }: { params: Promise<{ id: string }> }) {
   await migracja()

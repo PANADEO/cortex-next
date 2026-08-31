@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { pool, migracja } from '@/core/db'
+import { pool, migracja } from '@cortex/desk-core/db'
 
 /**
  * Wyłącznie dla testów i pokazu: przywraca stan początkowy, żeby scenariusz zaczynał się

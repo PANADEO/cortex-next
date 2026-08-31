@@ -3,8 +3,8 @@ import { ChevronRight, ListChecks } from 'lucide-react'
 import { Powloka } from '@/components/powloka'
 import { Persona, Awatar } from '@/components/persona'
 import { Ikona } from '@/components/ikona'
-import { ktoTo, UZYTKOWNICY } from '@/core/tozsamosc'
-import { polityka } from '@/core/brama-zdolnosci'
+import { ktoTo, UZYTKOWNICY } from '@cortex/desk-core/tozsamosc'
+import { polityka } from '@cortex/desk-core/brama-zdolnosci'
 
 /** Zakładka „Ja" istnieje po to, żeby na telefonie było gdzie trzymać rzeczy sprzed sprawy. */
 export default async function Strona() {

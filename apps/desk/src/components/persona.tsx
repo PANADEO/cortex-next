@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation'
 import * as Menu from '@radix-ui/react-dropdown-menu'
 import { ChevronDown, Check } from 'lucide-react'
 import { Ikona } from './ikona'
-import type { Uzytkownik } from '@/core/typy'
+import type { Uzytkownik } from '@cortex/desk-core/typy'
 
 export function Awatar({ u, px = 36 }: { u: Uzytkownik; px?: number }) {
   return (

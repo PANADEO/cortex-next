@@ -1,8 +1,8 @@
 import { Powloka } from '@/components/powloka'
 import { ListaSpraw, type WierszSprawy } from '@/components/lista-spraw'
-import { ktoTo } from '@/core/tozsamosc'
-import { pool, migracja } from '@/core/db'
-import { policzWyniki } from '@/core/teczka-serwer'
+import { ktoTo } from '@cortex/desk-core/tozsamosc'
+import { pool, migracja } from '@cortex/desk-core/db'
+import { policzWyniki } from '@cortex/desk-core/teczka-serwer'
 
 export default async function Strona() {
   await migracja()

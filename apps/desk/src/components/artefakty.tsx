@@ -3,7 +3,7 @@ import { Download, Maximize2 } from 'lucide-react'
 import { Ikona } from './ikona'
 import { ikonaPliku } from './wiersz-pliku'
 import { adresPliku } from './podglad'
-import type { PlikMeta } from '@/core/typy'
+import type { PlikMeta } from '@cortex/desk-core/typy'
 import { rozmiar } from '@/lib'
 
 const jestObrazem = (n: string) => /\.(png|jpe?g|gif|webp|svg)$/i.test(n)

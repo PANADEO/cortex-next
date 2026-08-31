@@ -1,6 +1,6 @@
 import { test, expect } from './osoby'
-import { SchematOdrzucony, kanoniczny, kluczNarzedzia, oczyscSchemat, odcisk } from '../src/core/mcp/higiena'
-import { karta } from '../src/core/narzedzia'
+import { SchematOdrzucony, kanoniczny, kluczNarzedzia, oczyscSchemat, odcisk } from '@cortex/desk-core/mcp/higiena'
+import { karta } from '@cortex/desk-core/narzedzia'
 
 test.describe('Obszar 21 · Tekst obcego serwera nie dociera do modelu', () => {
   const wrogi = {

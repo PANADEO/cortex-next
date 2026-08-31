@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { pool, migracja } from '@/core/db'
-import { ktoTo } from '@/core/tozsamosc'
-import * as biurko from '@/core/biurko'
+import { pool, migracja } from '@cortex/desk-core/db'
+import { ktoTo } from '@cortex/desk-core/tozsamosc'
+import * as biurko from '@cortex/desk-core/biurko'
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   await migracja()

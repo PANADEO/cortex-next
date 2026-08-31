@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
-import { pool, migracja } from '@/core/db'
-import { ktoTo } from '@/core/tozsamosc'
-import { polityka } from '@/core/brama-zdolnosci'
-import * as dziennik from '@/core/dziennik'
-import * as biurko from '@/core/biurko'
+import { pool, migracja } from '@cortex/desk-core/db'
+import { ktoTo } from '@cortex/desk-core/tozsamosc'
+import { polityka } from '@cortex/desk-core/brama-zdolnosci'
+import * as dziennik from '@cortex/desk-core/dziennik'
+import * as biurko from '@cortex/desk-core/biurko'
 
 export async function POST(req: Request) {
   await migracja()

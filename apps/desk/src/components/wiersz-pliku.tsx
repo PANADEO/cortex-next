@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Ikona } from './ikona'
-import type { PlikMeta } from '@/core/typy'
+import type { PlikMeta } from '@cortex/desk-core/typy'
 import { rozmiar, kiedy } from '@/lib'
 
 export function ikonaPliku(p: { nazwa: string; katalog: boolean }): LucideIcon {

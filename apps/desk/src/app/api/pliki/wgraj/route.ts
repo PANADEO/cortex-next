@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { pool } from '@/core/db'
-import { ktoTo } from '@/core/tozsamosc'
-import * as biurko from '@/core/biurko'
-import * as dziennik from '@/core/dziennik'
-import { dopiszZdarzenie } from '@/core/runtime'
+import { pool } from '@cortex/desk-core/db'
+import { ktoTo } from '@cortex/desk-core/tozsamosc'
+import * as biurko from '@cortex/desk-core/biurko'
+import * as dziennik from '@cortex/desk-core/dziennik'
+import { dopiszZdarzenie } from '@cortex/desk-core/runtime'
 
 const MAX = 25 * 1024 * 1024
 

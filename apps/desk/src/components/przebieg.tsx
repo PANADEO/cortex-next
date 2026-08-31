@@ -6,9 +6,9 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Ikona } from './ikona'
-import { paruj, opisKroku, czasKroku, podsumujGrupe, type Krok } from '@/core/kroki'
-import { dowodZeZdarzen } from '@/core/dowod'
-import type { Wpis } from '@/core/typy'
+import { paruj, opisKroku, czasKroku, podsumujGrupe, type Krok } from '@cortex/desk-core/kroki'
+import { dowodZeZdarzen } from '@cortex/desk-core/dowod'
+import type { Wpis } from '@cortex/desk-core/typy'
 
 function ikonaPliku(nazwa: string): LucideIcon {
   if (/\.(csv|xlsx?|tsv)$/i.test(nazwa)) return FileSpreadsheet

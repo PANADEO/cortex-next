@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import zdolnosciJson from '../../seed/zdolnosci.json'
+import zdolnosciJson from '../seed/zdolnosci.json'
 import type { Polityka, Rola, Uzytkownik, Zdolnosc } from './typy'
 import { pool, migracja } from './db'
 

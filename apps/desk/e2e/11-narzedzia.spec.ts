@@ -1,9 +1,9 @@
 import { test, expect } from './osoby'
-import { dowodZeZdarzen } from '../src/core/dowod'
-import { paruj, opisKroku, podsumujGrupe } from '../src/core/kroki'
-import { karta } from '../src/core/narzedzia'
-import { wytworzone } from '../src/core/obietnice'
-import type { DeskEvent } from '../src/core/typy'
+import { dowodZeZdarzen } from '@cortex/desk-core/dowod'
+import { paruj, opisKroku, podsumujGrupe } from '@cortex/desk-core/kroki'
+import { karta } from '@cortex/desk-core/narzedzia'
+import { wytworzone } from '@cortex/desk-core/obietnice'
+import type { DeskEvent } from '@cortex/desk-core/typy'
 
 /** Para start/koniec jednego narzędzia — tak, jak zapisuje ją runtime. */
 const para = (id: string, nazwa: string, argumenty: Record<string, unknown>, podsumowanie: string, ok = true): DeskEvent[] => [

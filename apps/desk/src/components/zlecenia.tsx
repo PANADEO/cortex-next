@@ -6,7 +6,7 @@ import { Ikona } from './ikona'
 import { PrzyciskCoPotrafie } from './co-potrafie'
 import { ListaZalacznikow, type Zalacznik } from './zalaczniki'
 import { useToast } from './toast'
-import type { Polityka } from '@/core/typy'
+import type { Polityka } from '@cortex/desk-core/typy'
 
 type Z = { tytul: string; podpowiedz: string; tresc: string }
 

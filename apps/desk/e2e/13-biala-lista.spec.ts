@@ -1,7 +1,7 @@
 import { test, expect } from './osoby'
-import { dowodZeZdarzen } from '../src/core/dowod'
-import { KATALOG_SERWEROW, NARZEDZIA_BIALEJ_LISTY } from '../src/core/mcp/katalog'
-import type { DeskEvent } from '../src/core/typy'
+import { dowodZeZdarzen } from '@cortex/desk-core/dowod'
+import { KATALOG_SERWEROW, NARZEDZIA_BIALEJ_LISTY } from '@cortex/desk-core/mcp/katalog'
+import type { DeskEvent } from '@cortex/desk-core/typy'
 
 const ANNA = { Cookie: 'desk_persona=anna' }
 const ROBERT = { Cookie: 'desk_persona=robert' }

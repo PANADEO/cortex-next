@@ -4,7 +4,7 @@ import * as Menu from '@radix-ui/react-dropdown-menu'
 import { Check, Lock, ChevronDown, ShieldCheck } from 'lucide-react'
 import { Ikona } from './ikona'
 import { useToast } from './toast'
-import type { Polityka, Zdolnosc } from '@/core/typy'
+import type { Polityka, Zdolnosc } from '@cortex/desk-core/typy'
 
 /**
  * „Co potrafię" mieszka tam, gdzie jest potrzebne: przy polu zlecenia.

@@ -1,8 +1,8 @@
 import { Powloka } from '@/components/powloka'
 import { ListaZdolnosci } from '@/components/co-potrafie'
 import { ProsbaInna } from '@/components/prosba-inna'
-import { ktoTo } from '@/core/tozsamosc'
-import { polityka } from '@/core/brama-zdolnosci'
+import { ktoTo } from '@cortex/desk-core/tozsamosc'
+import { polityka } from '@cortex/desk-core/brama-zdolnosci'
 
 export default async function Strona() {
   const u = await ktoTo()

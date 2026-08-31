@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { ktoTo } from '@/core/tozsamosc'
-import * as biurko from '@/core/biurko'
-import * as dziennik from '@/core/dziennik'
+import { ktoTo } from '@cortex/desk-core/tozsamosc'
+import * as biurko from '@cortex/desk-core/biurko'
+import * as dziennik from '@cortex/desk-core/dziennik'
 
 export async function GET(req: Request) {
   const u = await ktoTo()

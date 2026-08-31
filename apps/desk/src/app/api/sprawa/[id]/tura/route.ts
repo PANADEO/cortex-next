@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { pool, migracja } from '@/core/db'
-import { ktoTo } from '@/core/tozsamosc'
-import { polityka, wydanoDzisiaj } from '@/core/brama-zdolnosci'
-import { uruchomTure, dopiszZdarzenie } from '@/core/runtime'
-import * as dziennik from '@/core/dziennik'
+import { pool, migracja } from '@cortex/desk-core/db'
+import { ktoTo } from '@cortex/desk-core/tozsamosc'
+import { polityka, wydanoDzisiaj } from '@cortex/desk-core/brama-zdolnosci'
+import { uruchomTure, dopiszZdarzenie } from '@cortex/desk-core/runtime'
+import * as dziennik from '@cortex/desk-core/dziennik'
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   await migracja()

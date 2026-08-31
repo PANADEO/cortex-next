@@ -1,6 +1,6 @@
 import { test, expect, jako } from './osoby'
 import type { Locator } from '@playwright/test'
-import { dowodZeZdarzen } from '../src/core/dowod'
+import { dowodZeZdarzen } from '@cortex/desk-core/dowod'
 
 /** Nagłówek przebiegu przełącza, więc rozwijamy tylko wtedy, gdy naprawdę jest zwinięty. */
 async function rozwin(naglowek: Locator) {

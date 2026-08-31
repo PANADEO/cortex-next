@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { pool, migracja } from '@/core/db'
-import { ktoTo, UZYTKOWNICY } from '@/core/tozsamosc'
-import { katalogZdolnosci } from '@/core/brama-zdolnosci'
-import * as dziennik from '@/core/dziennik'
+import { pool, migracja } from '@cortex/desk-core/db'
+import { ktoTo, UZYTKOWNICY } from '@cortex/desk-core/tozsamosc'
+import { katalogZdolnosci } from '@cortex/desk-core/brama-zdolnosci'
+import * as dziennik from '@cortex/desk-core/dziennik'
 
 export async function GET() {
   await migracja()
