@@ -28,6 +28,18 @@ const nextConfig: NextConfig = {
     "@cortex/desk-ui",
     "@cortex/desk-app",
   ],
+  // Prefiksy kafelka `desk`. Nie w `.env`, tylko tutaj, bo to nie jest ustawienie
+  // wdrożenia — trasa `/desk` wynika z manifestu kafelka i zmienia się razem z nim.
+  // Zmienne muszą być `NEXT_PUBLIC_`, bo linki i `fetch` składają się także
+  // w komponentach klienckich; Next wstawia je w czasie builda.
+  //
+  // Dwa prefiksy, nie jeden: strony kafelka stoją pod `/desk`, a jego trasy pod
+  // `/api/desk`, bo `app/api` jest wspólne dla całej aplikacji i grupa tras go nie
+  // przenosi. Aplikacja `apps/desk` ma własną konfigurację i zostaje przy korzeniu.
+  env: {
+    NEXT_PUBLIC_DESK_BAZA: "/desk",
+    NEXT_PUBLIC_DESK_BAZA_API: "/api/desk",
+  },
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
