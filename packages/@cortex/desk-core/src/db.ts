@@ -62,6 +62,35 @@ export function migracja(): Promise<void> {
 
       -- Nadanie zdolności ponad to, co daje rola. Katalog i role zostają w pliku seed,
       -- ale to, co ktoś dostał indywidualnie, musi przeżyć restart i mieć autora.
+      -- Katalog serwerów MCP i przyjętych z nich narzędzi. Świadomie DWIE tabele:
+      -- serwer dodaje się raz, a zgoda dotyczy POJEDYNCZEGO narzędzia i ma własnego
+      -- autora, własny odcisk i własny stan. Zgoda na serwer jako całość byłaby zgodą
+      -- na wszystko, co ten serwer kiedykolwiek wystawi.
+      create table if not exists desk.serwer_mcp (
+        nazwa text primary key,
+        etykieta text not null,
+        url text not null,
+        dodal text not null,
+        at timestamptz not null default now()
+      );
+
+      create table if not exists desk.narzedzie_mcp (
+        serwer text not null references desk.serwer_mcp(nazwa) on delete cascade,
+        nazwa_zdalna text not null,
+        -- opis po polsku, napisany przez zatwierdzającego; jedyny tekst o tym narzędziu,
+        -- który widzi model, i dlatego wchodzi do odcisku
+        opis text not null,
+        krotko text not null,
+        zdolnosc text not null,
+        odcisk text not null,
+        -- 'zatwierdzone' | 'wstrzymane' (serwer zmienił narzędzie po zgodzie)
+        stan text not null default 'zatwierdzone',
+        powod text,
+        zatwierdzil text not null,
+        at timestamptz not null default now(),
+        primary key (serwer, nazwa_zdalna)
+      );
+
       create table if not exists desk.grant (
         kto text not null,
         zdolnosc text not null,

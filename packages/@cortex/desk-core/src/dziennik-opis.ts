@@ -55,6 +55,19 @@ export function opiszWpis(w: Wpis): { tekst: string; waga: 'zwykly' | 'wazny' } 
       return { tekst: `skopiowała plik ${s.z ?? ''}`, waga: 'zwykly' }
     case 'pliki.katalog':
       return { tekst: `utworzyła folder ${s.sciezka ?? ''}`, waga: 'zwykly' }
+    case 'mcp.serwer.dodany':
+      return { tekst: `dodała serwer narzędzi ${s.nazwa ?? ''}`, waga: 'wazny' }
+    case 'mcp.serwer.przejrzany':
+      return { tekst: `przejrzała, co wystawia serwer ${s.serwer ?? ''}`, waga: 'zwykly' }
+    case 'mcp.narzedzie.zatwierdzone':
+      return { tekst: `przyjęła narzędzie ${s.narzedzie ?? ''} z serwera ${s.serwer ?? ''}`, waga: 'wazny' }
+    case 'mcp.narzedzie.wycofane':
+      return { tekst: `wycofała narzędzie ${s.narzedzie ?? ''} z serwera ${s.serwer ?? ''}`, waga: 'wazny' }
+    case 'mcp.narzedzie.wstrzymane':
+      // to jedyny wpis, który zapisuje sama aplikacja bez udziału człowieka
+      return { tekst: `— narzędzie ${s.narzedzie ?? ''} wstrzymane: ${s.powod ?? ''}`, waga: 'wazny' }
+    case 'koszt.wyzerowany':
+      return { tekst: `— wyzerowano dzisiejszy koszt (${s.usd ?? 0} USD na ${s.spraw ?? 0} sprawach)`, waga: 'zwykly' }
     default:
       return { tekst: `zdarzenie „${w.typ}" (nieopisane)`, waga: 'zwykly' }
   }

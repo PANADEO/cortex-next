@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { ShieldCheck } from 'lucide-react'
 import { Powloka } from '@/components/powloka'
 import { NadzorProsby } from '@/components/nadzor-prosby'
+import { NadzorMcp } from '@/components/nadzor-mcp'
 import { Ikona } from '@/components/ikona'
 import { ktoTo, UZYTKOWNICY } from '@cortex/desk-core/tozsamosc'
 import { polityka, wydanoDzisiaj } from '@cortex/desk-core/brama-zdolnosci'
@@ -33,6 +34,8 @@ export default async function Strona() {
           </p>
 
           <div className="mt-7"><NadzorProsby /></div>
+
+          <NadzorMcp />
 
           {braki.length > 0 && (
             <section className="mt-8">
