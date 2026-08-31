@@ -117,13 +117,25 @@ const http = createServer(async (req, res) => {
   for await (const k of req) kawalki.push(k as Buffer)
   const cialo = kawalki.length ? JSON.parse(Buffer.concat(kawalki).toString('utf8')) : undefined
 
+  // `sessionIdGenerator: undefined` to UDOKUMENTOWANY sposób wyłączenia sesji w SDK MCP:
+  // pole opcjonalne, którego wartością ma być `undefined`. Pod `exactOptionalPropertyTypes`
+  // (włączonym w konfiguracji korzenia) to co innego niż pominięcie klucza — a pominięcie
+  // włączyłoby sesje, czyli zmieniłoby zachowanie serwera. Typy SDK tej flagi nie
+  // przewidują; `@ts-expect-error`, a nie rzutowanie, bo zgaśnie samo, gdy je poprawią.
+  // @ts-expect-error — typy @modelcontextprotocol/sdk nie znoszą exactOptionalPropertyTypes
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
   res.on('close', () => { transport.close(); s.close() })
   const s = serwer()
+  // Ta sama niezgodność co wyżej, po drugiej stronie tego samego obiektu.
+  // @ts-expect-error — typy @modelcontextprotocol/sdk nie znoszą exactOptionalPropertyTypes
   await s.connect(transport)
   await transport.handleRequest(req, res, cialo)
 })
 
 http.listen(PORT, () => {
+  // Zakaz `console` w tym repo pilnuje kodu, który leci do PRZEGLĄDARKI. To jest
+  // proces serwerowy uruchamiany z terminala i jedna linia po starcie jest jedynym
+  // sposobem, żeby człowiek wiedział, że proces stoi i na którym porcie.
+  // eslint-disable-next-line no-console
   console.log(`[biala-lista] serwer MCP słucha na http://localhost:${PORT}/mcp`)
 })

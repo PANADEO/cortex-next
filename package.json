@@ -21,7 +21,7 @@
     "test:e2e": "npm run tile-manifests && playwright test",
     "test:e2e:ui": "npm run tile-manifests && playwright test --ui",
     "test:e2e:install": "playwright install chromium",
-    "lint": "eslint \"{app,packages}/**/*.{ts,tsx}\"",
+    "lint": "eslint \"{app,apps,packages}/**/*.{ts,tsx}\"",
     "okna-czasowe:scan": "node scripts/okna-czasowe-scan.mjs",
     "format": "prettier --write \"{app,packages,docs,scripts}/**/*.{ts,tsx,md,json,css}\"",
     "ladle": "ladle serve",

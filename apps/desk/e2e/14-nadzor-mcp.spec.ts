@@ -1,10 +1,28 @@
 import { test, expect, jako } from './osoby'
+import type { APIRequestContext } from '@playwright/test'
+// Kształt odpowiedzi `/api/mcp` widziany przez scenariusz — tyle, ile sprawdza, nie więcej.
+type NarzedzieWKatalogu = { nazwaZdalna: string; odcisk?: string; stan?: string; zatwierdzil?: string }
+type SerwerWKatalogu = { nazwa: string; narzedzia: NarzedzieWKatalogu[] }
 
 const ROBERT = { Cookie: 'desk_persona=robert' }
 const ANNA = { Cookie: 'desk_persona=anna' }
 const OPIS = 'Sprawdza w wykazie Ministerstwa Finansów, czy firma o podanym NIP jest czynnym podatnikiem VAT, i podaje jej nazwę oraz adres.'
 
-const katalog = async (request: any) =>
+// Szukanie z odmową zamiast `!`: scenariusz, który nie znalazł serwera, ma powiedzieć
+// CZEGO nie znalazł, a nie wywrócić się linijkę dalej na czymś, co wygląda na błąd asercji.
+const bialaLista = async (request: APIRequestContext): Promise<SerwerWKatalogu> => {
+  const s = (await katalog(request)).find((x) => x.nazwa === 'biala-lista')
+  if (!s) throw new Error('W katalogu nie ma serwera „biala-lista".')
+  return s
+}
+
+const narzedzie = (s: SerwerWKatalogu, nazwaZdalna: string): NarzedzieWKatalogu => {
+  const n = s.narzedzia.find((x) => x.nazwaZdalna === nazwaZdalna)
+  if (!n) throw new Error(`Serwer „${s.nazwa}" nie wystawia narzędzia „${nazwaZdalna}".`)
+  return n
+}
+
+const katalog = async (request: APIRequestContext): Promise<SerwerWKatalogu[]> =>
   (await (await request.get('/api/mcp', { headers: ROBERT })).json()).serwery
 
 test.describe('Obszar 26 · Katalog serwerów należy do przełożonego, nie do kodu', () => {
@@ -17,15 +35,14 @@ test.describe('Obszar 26 · Katalog serwerów należy do przełożonego, nie do 
   })
 
   test('Katalog przychodzi z bazy, a każde narzędzie ma autora zgody', async ({ request }) => {
-    const s = (await katalog(request)).find((x: any) => x.nazwa === 'biala-lista')
-    expect(s).toBeTruthy()
+    const s = await bialaLista(request)
     for (const n of s.narzedzia) {
       expect(n.zatwierdzil).toBeTruthy()
       expect(n.stan).toBe('zatwierdzone')
     }
   })
 
-  test('Przeglądanie serwera pokazuje surowy tekst dostawcy — pod etykietą, czyj to tekst', async ({ page, request }) => {
+  test('Przeglądanie serwera pokazuje surowy tekst dostawcy — pod etykietą, czyj to tekst', async ({ page }) => {
     await jako(page, 'robert')
     await page.goto('/nadzor')
     await page.getByRole('button', { name: 'Przejrzyj' }).first().click()
@@ -63,9 +80,7 @@ test.describe('Obszar 26 · Katalog serwerów należy do przełożonego, nie do 
 
 test.describe('Obszar 27 · Odcisk wiąże zgodę ze słowami człowieka, nie tylko ze schematem', () => {
   test('Inny opis zatwierdzającego daje inny odcisk, choć schemat jest ten sam', async ({ request }) => {
-    const przed = (await katalog(request))
-      .find((x: any) => x.nazwa === 'biala-lista').narzedzia
-      .find((n: any) => n.nazwaZdalna === 'sprawdz_nip').odcisk
+    const przed = narzedzie(await bialaLista(request), 'sprawdz_nip').odcisk
 
     const r = await request.post('/api/mcp', {
       headers: ROBERT,
@@ -77,9 +92,7 @@ test.describe('Obszar 27 · Odcisk wiąże zgodę ze słowami człowieka, nie ty
     })
     expect(r.ok()).toBeTruthy()
 
-    const po = (await katalog(request))
-      .find((x: any) => x.nazwa === 'biala-lista').narzedzia
-      .find((n: any) => n.nazwaZdalna === 'sprawdz_nip')
+    const po = narzedzie(await bialaLista(request), 'sprawdz_nip')
     expect(po.odcisk).not.toBe(przed)
     expect(po.zatwierdzil).toBe('robert')
 
@@ -94,8 +107,8 @@ test.describe('Obszar 27 · Odcisk wiąże zgodę ze słowami człowieka, nie ty
     await request.post('/api/mcp', {
       headers: ROBERT, data: { akcja: 'wycofaj', serwer: 'biala-lista', nazwaZdalna: 'sprawdz_rachunek' },
     })
-    const s = (await katalog(request)).find((x: any) => x.nazwa === 'biala-lista')
-    expect(s.narzedzia.some((n: any) => n.nazwaZdalna === 'sprawdz_rachunek')).toBe(false)
+    const s = await bialaLista(request)
+    expect(s.narzedzia.some((n) => n.nazwaZdalna === 'sprawdz_rachunek')).toBe(false)
 
     // wraca przez ten sam ekran, którym się je przyjmuje
     const wraca = await request.post('/api/mcp', {

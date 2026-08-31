@@ -1,8 +1,10 @@
 import { test, expect, jako } from './osoby'
+import type { APIRequestContext } from '@playwright/test'
+type Zdarzenie = { event: { typ: string } }
 
 const DLUGIE = 'Przeczytaj Moje pliki/faktury-08.csv, a potem napisz obszerną analizę kosztów: dla każdej z kategorii osobny akapit z komentarzem, rekomendacje oszczędnościowe i podsumowanie. Na koniec zapisz to jako analiza.md i sprawdź plik po zapisie.'
 
-async function nowaZTura(request: any, tresc: string) {
+async function nowaZTura(request: APIRequestContext, tresc: string) {
   const r = await request.post('/api/sprawa/nowa', {
     headers: { Cookie: 'desk_persona=anna' }, data: { tytul: 'Trwałość' },
   })
@@ -36,8 +38,8 @@ test.describe('Obszar 4 · Praca nie ginie', () => {
     // historia jest kompletna także w źródle prawdy, nie tylko na ekranie
     const h = await request.get(`/api/sprawa/${id}/zdarzenia?od=0`, { headers: { Cookie: 'desk_persona=anna' } })
     const d = await h.json()
-    expect(d.zdarzenia.some((z: any) => z.event.typ === 'mysl')).toBe(true)
-    expect(d.zdarzenia.filter((z: any) => z.event.typ === 'narzedzie_start').length).toBeGreaterThan(0)
+    expect(d.zdarzenia.some((z: Zdarzenie) => z.event.typ === 'mysl')).toBe(true)
+    expect(d.zdarzenia.filter((z: Zdarzenie) => z.event.typ === 'narzedzie_start').length).toBeGreaterThan(0)
   })
 
   test('Stop kończy turę jako przerwaną, nie jako błąd', async ({ page, request }) => {

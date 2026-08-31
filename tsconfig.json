@@ -42,6 +42,12 @@
   "include": [
     "app/**/*.ts",
     "app/**/*.tsx",
+    // `apps/**` doszło razem z Biurkiem. Nie chodzi o sam typecheck — chodzi o lint:
+    // `parserOptions.project` w `.eslintrc.cjs` wskazuje ten plik, więc katalog poza
+    // `include` nie daje ostrzeżeń, tylko błąd parsowania na każdym pliku. Efekt był
+    // taki, że `apps/**` nie był lintowany w ogóle i nikt tego nie widział.
+    "apps/**/*.ts",
+    "apps/**/*.tsx",
     "packages/@cortex/**/*.ts",
     "packages/@cortex/**/*.tsx",
     "e2e/**/*.ts",

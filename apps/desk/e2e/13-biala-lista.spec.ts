@@ -2,13 +2,14 @@ import { test, expect } from './osoby'
 import { dowodZeZdarzen } from '@cortex/desk-core/dowod'
 import { KATALOG_SERWEROW, NARZEDZIA_BIALEJ_LISTY } from '@cortex/desk-core/mcp/katalog'
 import type { DeskEvent } from '@cortex/desk-core/typy'
+import type { APIRequestContext } from '@playwright/test'
 
 const ANNA = { Cookie: 'desk_persona=anna' }
 const ROBERT = { Cookie: 'desk_persona=robert' }
 const NIP_MF = '5260250274'
 
 /** Nadanie przez przełożonego — tą samą drogą, którą klika się w Nadzorze. */
-async function nadaj(request: any, zdolnosc: string) {
+async function nadaj(request: APIRequestContext, zdolnosc: string) {
   await request.post('/api/prosba', { headers: ANNA, data: { zdolnosc } })
   const moje = await (await request.get('/api/prosba', { headers: ANNA })).json()
   const p = moje.prosby.find((x: { zdolnosc: string }) => x.zdolnosc === zdolnosc)
@@ -16,7 +17,7 @@ async function nadaj(request: any, zdolnosc: string) {
   expect(r.ok()).toBeTruthy()
 }
 
-async function tura(request: any, tytul: string, tresc: string) {
+async function tura(request: APIRequestContext, tytul: string, tresc: string) {
   const { id } = await (await request.post('/api/sprawa/nowa', { headers: ANNA, data: { tytul } })).json()
   const start = await request.post(`/api/sprawa/${id}/tura`, { headers: ANNA, data: { tresc } })
   // odmowa (np. wyczerpany dzienny limit) ma zgasić test od razu i po imieniu,
@@ -50,7 +51,7 @@ test.describe('Obszar 24 · Zdolność sięgająca poza firmę przechodzi tą sa
   test('Instancja bez skonfigurowanego adresu nie zna żadnego serwera', () => {
     // zatwierdzenia zostają danymi, ale bez adresu nic się nie rejestruje
     if (!process.env.MCP_BIALA_LISTA_URL) expect(KATALOG_SERWEROW).toHaveLength(0)
-    else expect(KATALOG_SERWEROW[0].narzedzia).toEqual(NARZEDZIA_BIALEJ_LISTY)
+    else expect(KATALOG_SERWEROW[0]?.narzedzia).toEqual(NARZEDZIA_BIALEJ_LISTY)
   })
 
   test('Bez zgody przełożonego agent nie dostaje narzędzia z wykazu, tylko zgłasza brak', async ({ request }) => {

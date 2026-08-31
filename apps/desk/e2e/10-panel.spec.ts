@@ -3,18 +3,19 @@ import { obietniceBezPokrycia, wytworzone } from '@cortex/desk-core/obietnice'
 import { podzielTeczke } from '@cortex/desk-core/teczka'
 import { czytelnyBlad } from '@cortex/desk-core/awaria'
 import type { DeskEvent, PlikMeta } from '@cortex/desk-core/typy'
+import type { APIRequestContext, Page } from '@playwright/test'
 
 const CIASTKO = (kto: string) => ({ Cookie: `desk_persona=${kto}` })
 
-async function nowaSprawa(request: any, kto: string, tytul: string) {
+async function nowaSprawa(request: APIRequestContext, kto: string, tytul: string) {
   const r = await request.post('/api/sprawa/nowa', { headers: CIASTKO(kto), data: { tytul } })
   return (await r.json()).id as string
 }
 
-const panelu = (page: any) => page.getByRole('complementary', { name: 'Panel wyniku' })
-const uchwytu = (page: any) => page.getByRole('separator', { name: 'Szerokość panelu wyniku' })
+const panelu = (page: Page) => page.getByRole('complementary', { name: 'Panel wyniku' })
+const uchwytu = (page: Page) => page.getByRole('separator', { name: 'Szerokość panelu wyniku' })
 
-async function szerokoscPanelu(page: any) {
+async function szerokoscPanelu(page: Page) {
   const b = await panelu(page).boundingBox()
   return b?.width ?? 0
 }

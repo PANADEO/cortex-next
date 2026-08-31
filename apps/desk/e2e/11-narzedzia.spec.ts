@@ -90,7 +90,7 @@ test.describe('Obszar 20 · Narzędzie, którego nikt nie zna, nie znika po cich
 
   test('Przebieg mówi o nim po polsku, nie surowym kluczem narzędzia', () => {
     const [krok] = paruj(obce)
-    const o = opisKroku(krok)
+    const o = opisKroku(krok!)
     expect(o.tytul).toBe('Odpytałem nbp')
     expect(o.tytul).not.toContain('mcp_')
   })

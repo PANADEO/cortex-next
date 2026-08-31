@@ -31,10 +31,34 @@ export function rachunekCyfry(nr: string): string {
   return c
 }
 
-async function pobierz(sciezka: string): Promise<any> {
+/**
+ * Kształt odpowiedzi wykazu — TYLKO te pola, po które sięgamy niżej.
+ *
+ * Pełny schemat MF ma ich kilkadziesiąt i połowa jest opcjonalna zależnie od
+ * statusu podatnika. Opisywanie go w całości znaczyłoby utrzymywanie cudzego
+ * kontraktu; opisany jest więc ten wycinek, którego brak faktycznie psuje
+ * odpowiedź — a każde pole jest `?`, bo przychodzi z zewnątrz.
+ */
+type OdpowiedzWykazu = {
+  result?: {
+    subject?: {
+      name?: string
+      nip?: string
+      statusVat?: string
+      workingAddress?: string
+      residenceAddress?: string
+      accountNumbers?: string[]
+      registrationLegalDate?: string
+    }
+    accountAssigned?: string
+    requestId?: string
+  }
+}
+
+async function pobierz(sciezka: string): Promise<OdpowiedzWykazu | null> {
   const sygnal = AbortSignal.timeout(LIMIT_MS)
   const r = await fetch(`${BAZA}${sciezka}`, { signal: sygnal, headers: { accept: 'application/json' } })
-  const tresc = (await r.json().catch(() => null)) as Record<string, any> | null
+  const tresc = (await r.json().catch(() => null)) as (OdpowiedzWykazu & Record<string, unknown>) | null
   if (!r.ok) {
     const kod = tresc?.message ?? tresc?.code ?? `HTTP ${r.status}`
     throw new BledneWywolanie(`Wykaz odpowiedział błędem: ${kod}`)
