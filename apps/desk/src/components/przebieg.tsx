@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   Check, LoaderCircle, TriangleAlert, ChevronDown, Lock,
-  ShieldCheck, FileText, FileSpreadsheet, FileImage,
+  ShieldCheck, FileText, FileSpreadsheet, FileImage, Globe,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Ikona } from './ikona'
@@ -81,6 +81,7 @@ export function Przebieg({ wpisy, pracuje, teraz }: { wpisy: Wpis[]; pracuje: bo
   const potkniecie = kroki.some((k) => k.stan === 'blad')
   const niepewne = dowod.nieSprawdzone.length > 0
   const zablokowane = dowod.niewolno.length > 0
+  const zewnetrzne = dowod.zewnetrzne.length > 0
   const [zwiniety, setZwiniety] = useState(false)
   const zwijano = useRef(false)
 
@@ -146,7 +147,7 @@ export function Przebieg({ wpisy, pracuje, teraz }: { wpisy: Wpis[]; pracuje: bo
 
       {/* Stopka dowodu zostaje widoczna także po zwinięciu — bez niej zwinięcie chowa
           jedyną rzecz, która odróżnia to narzędzie od zwykłego czatu. */}
-      {(dowod.weszlo.length > 0 || dowod.zrobione.length > 0 || niepewne || zablokowane) && (
+      {(dowod.weszlo.length > 0 || dowod.zrobione.length > 0 || zewnetrzne || niepewne || zablokowane) && (
         <div className="space-y-1 border-t bg-raised/40 px-3 py-2.5">
           {(dowod.weszlo.length > 0 || dowod.zrobione.length > 0) && (
             <div className="flex gap-2 text-[13px] leading-5">
@@ -154,6 +155,17 @@ export function Przebieg({ wpisy, pracuje, teraz }: { wpisy: Wpis[]; pracuje: bo
               <div>
                 <span className="text-ink">Sprawdzone:</span>{' '}
                 <span className="text-muted">{[...dowod.weszlo, ...dowod.zrobione].join(' · ')}</span>
+              </div>
+            </div>
+          )}
+          {zewnetrzne && (
+            <div className="flex gap-2 text-[13px] leading-5">
+              <Ikona jako={Globe} px={14} klasa="mt-0.5 shrink-0 text-muted" />
+              <div>
+                {/* „Zapytałem", nie „sprawdziłem": z tego, że obcy serwer odpowiedział,
+                    nie wynika, że odpowiedział prawdę ani że rzecz się wydarzyła. */}
+                <span className="text-ink">Pytałem poza firmą:</span>{' '}
+                <span className="text-muted">{dowod.zewnetrzne.join(' · ')}</span>
               </div>
             </div>
           )}

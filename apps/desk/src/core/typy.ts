@@ -4,7 +4,7 @@ export type DeskEvent =
   | { typ: 'mysl'; tekst: string; zalaczniki?: string[] }
   | { typ: 'zalacznik'; nazwy: string[] }
   | { typ: 'assistant'; tekst: string }
-  | { typ: 'narzedzie_start'; id?: string; nazwa: string; etykieta: string; argumenty: Record<string, unknown> }
+  | { typ: 'narzedzie_start'; id?: string; nazwa: string; etykieta: string; argumenty: Record<string, unknown>; zrodlo?: string }
   | { typ: 'narzedzie_koniec'; id?: string; nazwa: string; ok: boolean; podsumowanie: string; ms: number }
   | { typ: 'zablokowane'; opis: string; zdolnoscId?: string; nazwa?: string; dzial?: string }
   | { typ: 'koszt'; usd: number }

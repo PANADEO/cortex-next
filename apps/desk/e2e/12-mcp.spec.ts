@@ -1,6 +1,5 @@
 import { test, expect } from './osoby'
 import { SchematOdrzucony, kanoniczny, kluczNarzedzia, oczyscSchemat, odcisk } from '../src/core/mcp/higiena'
-import { KATALOG_SERWEROW } from '../src/core/mcp/katalog'
 import { karta } from '../src/core/narzedzia'
 
 test.describe('Obszar 21 · Tekst obcego serwera nie dociera do modelu', () => {
@@ -72,15 +71,21 @@ test.describe('Obszar 22 · Zatwierdzenie dotyczy konkretnego kształtu narzędz
   })
 })
 
-test.describe('Obszar 23 · Żaden serwer nie jest jeszcze zatwierdzony', () => {
-  test('Katalog serwerów jest pusty, więc do modelu nie trafia nic spoza tego repozytorium', () => {
-    expect(KATALOG_SERWEROW).toHaveLength(0)
-  })
-
-  test('Karta dla klucza MCP rozpoznaje serwer z prefiksu i kieruje dowód do „Co weszło"', () => {
+// Uwaga: asercji „katalog jest pusty" tu NIE MA celowo. Przechodziłaby wyłącznie dlatego,
+// że proces testowy nie ma `MCP_BIALA_LISTA_URL` — czyli mierzyłaby środowisko, nie kod.
+// Uczciwa, warunkowa wersja stoi w `13-biala-lista.spec.ts`.
+test.describe('Obszar 23 · Karta narzędzia MCP', () => {
+  test('Karta dla klucza MCP rozpoznaje serwer i kieruje dowód na osobną listę', () => {
     const k = karta(kluczNarzedzia('nbp', 'kurs_waluty'))
     expect(k.klasa).toBe('zewnetrzna')
     expect(k.zrodlo).toBe('nbp')
-    expect(k.dowod?.lista).toBe('weszlo')
+    expect(k.dowod?.lista).toBe('zewnetrzne')
+  })
+
+  test('Nazwa źródła ze zdarzenia wygrywa z prefiksem klucza', () => {
+    // prefiks nie rozróżni serwera `biala-lista` od `biala`; zdarzenie rozróżni
+    const k = karta('mcp_biala_lista_sprawdz_nip', 'wykaz podatników VAT')
+    expect(k.zrodlo).toBe('wykaz podatników VAT')
+    expect(k.ok).toContain('wykaz podatników VAT')
   })
 })

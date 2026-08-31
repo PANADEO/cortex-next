@@ -281,10 +281,8 @@ export async function uruchomTure(u: Uzytkownik, p: Polityka, sprawaId: string, 
   // Szew MCP jest prawdziwy od tego commita, choć katalog serwerów jest pusty.
   // Narzędzia z zatwierdzonych serwerów przechodzą przez TĘ SAMĄ bramę zdolności
   // i ten sam filtr na odkryciu, co wbudowane — inaczej byłaby to druga furtka.
-  const narzedzia = {
-    ...narzedziaDlaPolityki(u, p, sprawaId),
-    ...(await narzedziaMcp(p, (e) => dopiszZdarzenie(sprawaId, e))),
-  }
+  const mcp = await narzedziaMcp(p, (e) => dopiszZdarzenie(sprawaId, e))
+  const narzedzia = { ...narzedziaDlaPolityki(u, p, sprawaId), ...mcp.narzedzia }
 
   const historia = await pool.query<{ payload: DeskEvent }>(
     `select payload from desk.zdarzenie where sprawa_id=$1 order by seq`, [sprawaId],
@@ -363,6 +361,10 @@ export async function uruchomTure(u: Uzytkownik, p: Polityka, sprawaId: string, 
       await dopiszZdarzenie(sprawaId, { typ: 'lifecycle', stan: 'blad', powod })
       await pool.query(`update desk.sprawa set stan='blad', powod=$2, zmieniona=now() where id=$1`, [sprawaId, powod])
       await dziennik.zapisz(u.id, 'tura.blad', { sprawaId, powod })
+    } finally {
+      // Połączenia do serwerów MCP żyją dokładnie tyle, co tura — ani krócej
+      // (model sięga po narzędzie w środku `generateText`), ani dłużej.
+      await mcp.zamknij()
     }
   })()
 }
@@ -396,6 +398,7 @@ const TROPY: Record<string, RegExp> = {
   'dokument.zapisz': /zapisa.*dokument|utworzy.*plik/i,
   'pliki.czytaj': /przeczyta|odczyta|otworzy.*plik/i,
   'pliki.lista': /lista plik|zajrze.*teczk|zobaczy.*plik/i,
+  'kontrahent.sprawdz': /biał[ae] li[sś]|wykaz podatnik|status vat|czynn.*podatnik|\bnip\b|rachunek.*kontrahent|nale[żz]yt.*starann/i,
 }
 
 /** Model opisuje brak swoimi słowami — nazwę zdolności i dział dokładamy my. */

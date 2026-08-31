@@ -47,6 +47,12 @@
       "nazwa": "Generowanie obrazów",
       "dzial": "Marketing",
       "opis": "Tworzy grafikę do prezentacji i postów."
+    },
+    {
+      "id": "kontrahent.sprawdz",
+      "nazwa": "Sprawdzanie kontrahenta w wykazie VAT",
+      "dzial": "Księgowość",
+      "opis": "Sprawdza w wykazie Ministerstwa Finansów status VAT firmy i to, czy jej rachunek był w danym dniu w wykazie."
     }
   ],
   "role": {
@@ -65,7 +71,8 @@
       "pliki.zapisz",
       "arkusz.zapisz",
       "kod.uruchom",
-      "obraz.generuj"
+      "obraz.generuj",
+      "kontrahent.sprawdz"
     ]
   },
   "limity": {

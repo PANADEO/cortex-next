@@ -8,6 +8,8 @@ export type Krok = {
   nazwa: string
   etykieta: string
   argumenty: Record<string, unknown>
+  /** nazwa źródła dla człowieka, gdy czynność przyszła spoza tego repozytorium */
+  zrodlo?: string
   stan: 'trwa' | 'ok' | 'blad'
   podsumowanie?: string
   ms?: number
@@ -29,7 +31,7 @@ export function paruj(zdarzenia: DeskEvent[]): Krok[] {
     const e = zdarzenia[i]
 
     if (e.typ === 'narzedzie_start') {
-      const k: Krok = { i, nazwa: e.nazwa, etykieta: e.etykieta, argumenty: e.argumenty, stan: 'trwa' }
+      const k: Krok = { i, nazwa: e.nazwa, etykieta: e.etykieta, argumenty: e.argumenty, zrodlo: e.zrodlo, stan: 'trwa' }
       kroki.push(k)
       if (e.id) poId.set(e.id, k)
       else bezId.push(k)
@@ -65,7 +67,7 @@ export type Opis = { tytul: string; plik?: string; sciezka?: string; detal?: str
  */
 export function opisKroku(k: Krok): Opis {
   const a = k.argumenty as Record<string, string>
-  const c = karta(k.nazwa)
+  const c = karta(k.nazwa, k.zrodlo)
   const plik = c.argNazwa && a[c.argNazwa] ? samaNazwa(a[c.argNazwa]) : undefined
   const sciezka = c.argSciezka ? a[c.argSciezka] : undefined
   const detal = k.podsumowanie ?? (c.argDetal ? a[c.argDetal] : undefined)
@@ -104,7 +106,7 @@ export function podsumujGrupe(kroki: Krok[]): string {
 
   const wg = new Map<string, { g: GrupaKarty; n: number }>()
   for (const k of zrobione) {
-    const g = karta(k.nazwa).grupa
+    const g = karta(k.nazwa, k.zrodlo).grupa
     if (!g) continue
     const bylo = wg.get(g.klucz)
     if (bylo) bylo.n += 1

@@ -74,16 +74,18 @@ test.describe('Obszar 20 · Narzędzie, którego nikt nie zna, nie znika po cich
 
   test('Nieznane narzędzie zostawia wiersz dowodu — inaczej sprawa udaje, że nic się nie stało', () => {
     const d = dowodZeZdarzen(obce)
-    expect(d.weszlo.length + d.zrobione.length).toBeGreaterThan(0)
+    expect(d.weszlo.length + d.zrobione.length + d.zewnetrzne.length).toBeGreaterThan(0)
   })
 
-  test('Wiersz idzie do „Co weszło" i nazywa serwer, z którego pochodzi', () => {
+  test('Wiersz idzie na osobną listę i nazywa serwer, z którego pochodzi', () => {
     const d = dowodZeZdarzen(obce)
-    expect(d.weszlo).toHaveLength(1)
-    expect(d.weszlo[0]).toContain('nbp')
-    expect(d.weszlo[0]).toContain('EUR 4,2841')
-    // „odpowiedział 200" to nie to samo co „rzecz się wydarzyła" — do zrobionych nie wchodzi
+    expect(d.zewnetrzne).toHaveLength(1)
+    expect(d.zewnetrzne[0]).toContain('nbp')
+    expect(d.zewnetrzne[0]).toContain('EUR 4,2841')
+    // „odpowiedział 200" to nie to samo co „rzecz się wydarzyła" — ani do zrobionych,
+    // ani do tego, co weszło z biurka
     expect(d.zrobione).toHaveLength(0)
+    expect(d.weszlo).toHaveLength(0)
   })
 
   test('Przebieg mówi o nim po polsku, nie surowym kluczem narzędzia', () => {

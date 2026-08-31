@@ -2,7 +2,14 @@ import type { DeskEvent } from './typy'
 import { paruj } from './kroki'
 import { karta } from './narzedzia'
 
-export type Dowod = { weszlo: string[]; zrobione: string[]; nieSprawdzone: string[]; niewolno: string[] }
+export type Dowod = {
+  weszlo: string[]
+  zrobione: string[]
+  /** piąta lista: co poszło poza to biurko i do kogo — nigdy nie mieszana ze „zrobione" */
+  zewnetrzne: string[]
+  nieSprawdzone: string[]
+  niewolno: string[]
+}
 
 /**
  * Dowód powstaje WYŁĄCZNIE ze zdarzeń narzędzi. Nigdy z tekstu modelu.
@@ -17,6 +24,7 @@ export type Dowod = { weszlo: string[]; zrobione: string[]; nieSprawdzone: strin
 export function dowodZeZdarzen(zdarzenia: DeskEvent[]): Dowod {
   const weszlo: string[] = []
   const zrobione: string[] = []
+  const zewnetrzne: string[] = []
   const nieSprawdzone: string[] = []
   // czwarta lista: rzeczy, których agent nie zrobił nie dlatego, że nie umiał,
   // tylko dlatego, że ta osoba nie ma na nie zgody
@@ -30,7 +38,7 @@ export function dowodZeZdarzen(zdarzenia: DeskEvent[]): Dowod {
 
   for (const k of paruj(zdarzenia)) {
     if (k.stan !== 'ok') continue
-    const c = karta(k.nazwa)
+    const c = karta(k.nazwa, k.zrodlo)
     const a = k.argumenty as Record<string, string>
     const nazwa = c.argNazwa ? a[c.argNazwa] ?? '' : ''
 
@@ -41,8 +49,9 @@ export function dowodZeZdarzen(zdarzenia: DeskEvent[]): Dowod {
     if (c.klasa === 'sprawdza' && nazwa) sprawdzone.add(nazwa)
 
     if (!c.dowod) continue
-    const wiersz = c.dowod.fraza(nazwa, k.podsumowanie ?? '')
+    const wiersz = c.dowod.fraza(nazwa, k.podsumowanie ?? '', { etykieta: k.etykieta, zrodlo: c.zrodlo })
     if (c.dowod.lista === 'weszlo') weszlo.push(wiersz)
+    else if (c.dowod.lista === 'zewnetrzne') zewnetrzne.push(wiersz)
     else zrobione.push(wiersz)
   }
 
@@ -53,5 +62,5 @@ export function dowodZeZdarzen(zdarzenia: DeskEvent[]): Dowod {
   if (zapisane.size > 0 && zBiurka.size === 0) {
     nieSprawdzone.push('dokument powstał bez odczytania choćby jednego pliku z biurka')
   }
-  return { weszlo, zrobione, nieSprawdzone, niewolno }
+  return { weszlo, zrobione, zewnetrzne, nieSprawdzone, niewolno }
 }

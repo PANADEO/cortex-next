@@ -51,7 +51,10 @@ export type KartaNarzedzia = {
    * Do której listy dowodu trafia udana czynność i jakim zdaniem.
    * Brak = czynność nie zostawia wiersza (tak jest z przeglądaniem teczki).
    */
-  dowod?: { lista: 'weszlo' | 'zrobione'; fraza: (nazwa: string, detal: string) => string }
+  dowod?: {
+    lista: 'weszlo' | 'zrobione' | 'zewnetrzne'
+    fraza: (nazwa: string, detal: string, k?: { etykieta: string; zrodlo: string }) => string
+  }
   /**
    * Czy wytworzony plik podlega regule „zapisany, a nieodczytany po zapisie = NIESPRAWDZONY".
    * Obraz jej NIE podlega: nikt go po zapisie nie czyta, więc plakietka byłaby pochwałą bez pokrycia.
@@ -146,11 +149,14 @@ function zrodloZNazwy(nazwa: string): string | null {
  * powiedziały prawdę: że coś się wydarzyło, że pochodziło z zewnątrz i od kogo.
  * Etykieta w zdarzeniu jest nasza — pisze ją nasz kod przy wywołaniu, nie obcy serwer.
  */
-export function karta(nazwa: string): KartaNarzedzia {
+export function karta(nazwa: string, zrodloZeZdarzenia?: string): KartaNarzedzia {
   const znana = dodatkowe.get(nazwa) ?? KATALOG_NARZEDZI[nazwa]
   if (znana) return znana
 
-  const serwer = zrodloZNazwy(nazwa)
+  // Nazwa źródła przychodzi w zdarzeniu, bo rejestr `dopiszKarte` żyje w procesie
+  // serwera, a przebieg i dowód rysuje przeglądarka. Prefiks klucza to ostatnia deska
+  // ratunku — nie rozróżni serwera `biala-lista` od `biala`.
+  const serwer = zrodloZeZdarzenia ?? zrodloZNazwy(nazwa)
   const zrodlo = serwer ?? 'poza katalogiem'
   return {
     nazwa,
@@ -164,10 +170,11 @@ export function karta(nazwa: string): KartaNarzedzia {
       waga: 4,
     },
     dowod: {
-      // Do „Co weszło", nie do „Co zrobione": `ok: true` z obcego serwera znaczy
-      // „odpowiedział", a nie „rzecz się wydarzyła". Materiał wszedł do sprawy — tyle wiemy.
-      lista: 'weszlo',
-      fraza: (n, d) => `${zrodlo}: ${n || nazwa}${d ? ` — ${d}` : ''}`,
+      // Osobna lista, nie „Co zrobione" i nie „Co weszło": `ok: true` z obcego serwera
+      // znaczy „odpowiedział", a nie „rzecz się wydarzyła". Nazwanie tego sprawdzonym
+      // byłoby dokładnie tym, przed czym ten produkt ma bronić.
+      lista: 'zewnetrzne',
+      fraza: (_n, d, k) => `${zrodlo}: ${k?.etykieta || nazwa}${d ? ` — ${d}` : ''}`,
     },
     zrodlo,
   }
