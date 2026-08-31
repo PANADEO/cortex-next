@@ -3,6 +3,7 @@ import { pool } from '@/core/db'
 import { ktoTo } from '@/core/tozsamosc'
 import * as biurko from '@/core/biurko'
 import * as dziennik from '@/core/dziennik'
+import { dopiszZdarzenie } from '@/core/runtime'
 
 const MAX = 25 * 1024 * 1024
 
@@ -40,5 +41,11 @@ export async function POST(req: Request) {
     nazwy.push(gdzie.split('/').pop() ?? f.name)
     await dziennik.zapisz(u.id, 'pliki.wgranie', { nazwa: f.name, rozmiar: buf.length, gdzie })
   }
+
+  // Pochodzenie zapisujemy W CHWILI WGRANIA, nie dopiero przy wysłaniu polecenia.
+  // Inaczej plik leżący w teczce między wgraniem a wysłaniem nie należy do nikogo,
+  // a panel wyniku bierze go za dokument, który agent właśnie wytworzył.
+  if (sprawaId && nazwy.length) await dopiszZdarzenie(sprawaId, { typ: 'zalacznik', nazwy })
+
   return NextResponse.json({ ok: true, nazwy })
 }

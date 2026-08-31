@@ -11,6 +11,9 @@ import { Ikona } from './ikona'
 import { Md } from './md'
 import { Przebieg } from './przebieg'
 import { Wynik } from './wynik'
+import { Artefakty } from './artefakty'
+import { BezPokrycia } from './bez-pokrycia'
+import { UchwytPanelu, SZER_DOM, zacisnij } from './uchwyt'
 import { PrzyciskCoPotrafie } from './co-potrafie'
 import { ikonaPliku } from './wiersz-pliku'
 import { ListaZalacznikow, type Zalacznik } from './zalaczniki'
@@ -18,6 +21,7 @@ import { Klodka } from './klodka'
 import { useToast } from './toast'
 import { dowodZeZdarzen } from '@/core/dowod'
 import { podzielTeczke } from '@/core/teczka'
+import { obietniceBezPokrycia, wytworzone } from '@/core/obietnice'
 import type { PlikMeta, Polityka, Wpis } from '@/core/typy'
 import { zl } from '@/lib'
 
@@ -54,6 +58,7 @@ function naTury(wpisy: Wpis[]): Tura[] {
 }
 
 const adres = (sciezka: string) => `/api/plik?sciezka=${encodeURIComponent(sciezka)}`
+const obraz = (n: string) => /\.(png|jpe?g|gif|webp)$/i.test(n)
 
 export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityka }) {
   const [wpisy, setWpisy] = useState<Wpis[]>([])
@@ -67,6 +72,8 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
   const [przyDole, setPrzyDole] = useState(true)
   const [arkusz, setArkusz] = useState(false)
   const [panel, setPanel] = useState(true)
+  const [szer, setSzer] = useState(SZER_DOM)
+  const [wybrany, setWybrany] = useState<string | null>(null)
   const od = useRef(0)
   const strumien = useRef<HTMLDivElement>(null)
   const dol = useRef<HTMLDivElement>(null)
@@ -79,12 +86,27 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
     try {
       const z = localStorage.getItem('desk_panel_wyniku')
       if (z !== null) setPanel(z === '1')
+      const s = Number(localStorage.getItem('desk_panel_szerokosc'))
+      if (s) setSzer(zacisnij(s))
     } catch { /* prywatne okno albo zablokowane dane witryny */ }
   }, [])
-  const przelaczPanel = () => setPanel((x) => {
-    try { localStorage.setItem('desk_panel_wyniku', x ? '0' : '1') } catch { /* nieistotne */ }
-    return !x
-  })
+
+  const ustawPanel = useCallback((v: boolean) => {
+    setPanel(v)
+    try { localStorage.setItem('desk_panel_wyniku', v ? '1' : '0') } catch { /* nieistotne */ }
+  }, [])
+
+  const ustawSzer = useCallback((px: number) => {
+    setSzer(px)
+    try { localStorage.setItem('desk_panel_szerokosc', String(px)) } catch { /* nieistotne */ }
+  }, [])
+
+  // okno zwężone myszką po ustawieniu szerokości nie może zostawić panelu szerszego niż ekran
+  useEffect(() => {
+    const na = () => setSzer((s) => zacisnij(s))
+    window.addEventListener('resize', na)
+    return () => window.removeEventListener('resize', na)
+  }, [])
 
   const pracuje = sprawa?.stan === 'pracuje'
 
@@ -147,14 +169,35 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
     setPrzyDole(el.scrollHeight - el.scrollTop - el.clientHeight < 80)
   }, [])
 
-  const tury = useMemo(() => naTury(wpisy), [wpisy])
+  // `zalacznik` to zdarzenie o pochodzeniu pliku, nie wypowiedź — w rozmowie nie ma czego pokazać
+  const rozmowa = useMemo(() => wpisy.filter((w) => w.event.typ !== 'zalacznik'), [wpisy])
+  const tury = useMemo(() => naTury(rozmowa), [rozmowa])
   const dowod = useMemo(() => dowodZeZdarzen(wpisy.map((w) => w.event)), [wpisy])
   const sekundy = odkad && pracuje ? Math.max(0, Math.round((teraz - odkad) / 1000)) : 0
+
+  // plik wgrany, ale jeszcze niewysłany, też jest Twój — nie może udawać wyniku pracy
+  const wgrywane = useMemo(() => zal.map((z) => z.nazwa), [zal])
   const { wyniki, zalaczniki } = useMemo(
-    () => podzielTeczke(teczka, wpisy.map((w) => w.event)), [teczka, wpisy])
+    () => podzielTeczke(teczka, wpisy.map((w) => w.event), wgrywane), [teczka, wpisy, wgrywane])
+
   // „ostatni" ma znaczyć NAJNOWSZY, nie alfabetycznie ostatni — biurko.lista sortuje po nazwie
-  const ostatni = useMemo(
-    () => [...wyniki].sort((a, b) => a.zmieniony.localeCompare(b.zmieniony)).at(-1), [wyniki])
+  const wgKolejnosci = useMemo(
+    () => [...wyniki].sort((a, b) => a.zmieniony.localeCompare(b.zmieniony)), [wyniki])
+  const ostatni = wgKolejnosci.at(-1) ?? null
+  const aktywny = useMemo(
+    () => [...wyniki, ...zalaczniki].find((x) => x.sciezka === wybrany) ?? ostatni,
+    [wyniki, zalaczniki, wybrany, ostatni])
+
+  const poNazwie = useCallback(
+    (n: string) => teczka.find((x) => x.nazwa === n) ?? null, [teczka])
+
+  /** Jedno wejście do podglądu — z karty artefaktu, z załącznika w rozmowie i z panelu. */
+  const pokazPlik = useCallback((plik: PlikMeta | null) => {
+    if (!plik) return
+    setWybrany(plik.sciezka)
+    if (window.matchMedia('(min-width: 1024px)').matches) ustawPanel(true)
+    else setArkusz(true)
+  }, [ustawPanel])
 
   // optymistyczna wiadomość znika, gdy dojdzie prawdziwe zdarzenie polecenia
   const liczbaPolecen = tury.filter((t) => t.polecenie).length
@@ -213,6 +256,18 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
   const doDowodu = () => stopkaDowodu.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   const zajete = pracuje || Boolean(wysylane)
 
+  const ponow = (nazwa: string) => {
+    setTresc(`Nie ma pliku ${nazwa} w teczce sprawy. Zrób go proszę naprawdę i zapisz.`)
+    pole.current?.focus()
+  }
+
+  const tablica = (
+    <Wynik
+      wyniki={wgKolejnosci} zalaczniki={zalaczniki} aktywny={aktywny}
+      naWybor={(x) => setWybrany(x.sciezka)} dowod={dowod} doDowodu={doDowodu}
+    />
+  )
+
   return (
     <div className="flex h-full">
       <div className="flex min-w-0 flex-1 flex-col">
@@ -236,7 +291,7 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
             ><Ikona jako={Square} px={14} /> Stop</button>
           )}
           <button
-            onClick={przelaczPanel} aria-pressed={panel}
+            onClick={() => ustawPanel(!panel)} aria-pressed={panel}
             aria-label={panel ? 'Ukryj panel wyniku' : 'Pokaż panel wyniku'}
             title={panel ? 'Ukryj wynik' : 'Pokaż wynik'}
             className="hidden h-8 w-8 place-items-center rounded-sm text-muted hover:bg-raised lg:grid"
@@ -267,6 +322,9 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
               const ostatniaTura = i === tury.length - 1 && !wysylane
               const e = tura.polecenie?.event
               const zalaczone = e?.typ === 'mysl' ? e.zalaczniki ?? [] : []
+              const zdarzeniaTury = tura.praca.map((w) => w.event)
+              const artefakty = wytworzone(zdarzeniaTury)
+                .map(poNazwie).filter((x): x is PlikMeta => Boolean(x))
               return (
                 <div key={tura.klucz} className="flex flex-col gap-4">
                   {e?.typ === 'mysl' && (
@@ -274,9 +332,9 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
                       tekst={e.tekst}
                       zalaczniki={zalaczone.map((n) => ({
                         nazwa: n,
-                        podglad: /\.(png|jpe?g|gif|webp)$/i.test(n) ? adres(`Sprawy/${id}/${n}`) : undefined,
+                        podglad: obraz(n) ? adres(`Sprawy/${id}/${n}`) : undefined,
                       }))}
-                      otworz={(n) => window.open(adres(`Sprawy/${id}/${n}`), '_blank')}
+                      otworz={(n) => pokazPlik(poNazwie(n))}
                     />
                   )}
 
@@ -288,6 +346,8 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
 
                   {pracuje && ostatniaTura && tura.praca.length === 0 && <Zabieram />}
 
+                  <Artefakty pliki={artefakty} otworz={pokazPlik} />
+
                   {tura.po.map((w) => {
                     const ev = w.event
                     if (ev.typ === 'zablokowane')
@@ -298,7 +358,15 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
                         />
                       )
                     if (ev.typ === 'assistant')
-                      return <div key={w.seq} className="max-w-miara"><Md tekst={ev.tekst} /></div>
+                      return (
+                        <div key={w.seq} className="flex flex-col gap-3">
+                          <div className="max-w-miara"><Md tekst={ev.tekst} /></div>
+                          <BezPokrycia
+                            nazwy={obietniceBezPokrycia(ev.tekst, zdarzeniaTury, teczka)}
+                            popros={ponow}
+                          />
+                        </div>
+                      )
                     if (ev.typ === 'lifecycle' && (ev.stan === 'blad' || ev.stan === 'przerwane'))
                       return (
                         <div
@@ -330,7 +398,7 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
                   tekst={wysylane.tekst}
                   zalaczniki={wysylane.pliki.map((n) => ({
                     nazwa: n,
-                    podglad: /\.(png|jpe?g|gif|webp)$/i.test(n) ? adres(`Sprawy/${id}/${n}`) : undefined,
+                    podglad: obraz(n) ? adres(`Sprawy/${id}/${n}`) : undefined,
                   }))}
                 />
                 <Zabieram />
@@ -348,25 +416,28 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
           )}
         </div>
 
-        {ostatni && (
+        {aktywny && (
           <button
             onClick={() => setArkusz(true)}
             className="flex h-12 shrink-0 items-center gap-2 border-t bg-surface px-4 text-left lg:hidden"
           >
-            <Ikona jako={ikonaPliku(ostatni)} px={16} klasa="shrink-0 text-muted" />
-            <span className="min-w-0 flex-1 truncate t-tresc-m">{ostatni.nazwa}</span>
+            <Ikona jako={ikonaPliku(aktywny)} px={16} klasa="shrink-0 text-muted" />
+            <span className="min-w-0 flex-1 truncate t-tresc-m">{aktywny.nazwa}</span>
             <span className="shrink-0 t-meta">Otwórz</span>
             <Ikona jako={ChevronDown} px={16} klasa="shrink-0 -rotate-90 text-muted" />
           </button>
         )}
 
         <div className="shrink-0 border-t bg-surface p-3">
-          <div className="mx-auto max-w-strumien rounded-xl border bg-bg">
-            <ListaZalacznikow
-              pliki={zal}
-              usun={(n) => setZal((z) => z.filter((x) => x.nazwa !== n))}
-              klasa="px-3 pt-3"
-            />
+          <div className="edytor mx-auto max-w-strumien rounded-xl border bg-bg">
+            {zal.length > 0 && (
+              <div className="max-h-[136px] overflow-y-auto border-b px-3 py-2.5">
+                <ListaZalacznikow
+                  pliki={zal}
+                  usun={(n) => setZal((z) => z.filter((x) => x.nazwa !== n))}
+                />
+              </div>
+            )}
             <textarea
               ref={pole} value={tresc} onChange={(e) => setTresc(e.target.value)} rows={2}
               onKeyDown={(e) => {
@@ -406,9 +477,16 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
       </div>
 
       {panel && (
-        <aside className="hidden w-wynik shrink-0 border-l bg-surface lg:block">
-          <Wynik pliki={wyniki} zalaczniki={zalaczniki} dowod={dowod} doDowodu={doDowodu} />
-        </aside>
+        <>
+          <UchwytPanelu szerokosc={szer} ustaw={ustawSzer} zwin={() => ustawPanel(false)} />
+          <aside
+            style={{ width: szer }}
+            className="hidden shrink-0 border-l bg-surface lg:block"
+            aria-label="Panel wyniku"
+          >
+            {tablica}
+          </aside>
+        </>
       )}
 
       <Dialog.Root open={arkusz} onOpenChange={setArkusz}>
@@ -421,9 +499,7 @@ export function SprawaWidok({ id, polityka: p }: { id: string; polityka: Polityk
                 <Ikona jako={X} px={16} />
               </Dialog.Close>
             </div>
-            <div className="h-[calc(88vh-44px)]">
-              <Wynik pliki={wyniki} zalaczniki={zalaczniki} dowod={dowod} />
-            </div>
+            <div className="h-[calc(88vh-44px)]">{tablica}</div>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>

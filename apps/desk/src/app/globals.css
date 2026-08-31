@@ -100,6 +100,18 @@ body {
 }
 :where(input, textarea):focus-visible { outline-offset: 0; }
 
+/* Edytor zlecenia jest wizualnie JEDNYM elementem: ramka, załączniki, pole i pasek narzędzi.
+   Obrys skupienia na samym textarea rysował pudełko w pudełku — o innym promieniu narożnika
+   i węższe od ramki, w której siedzi. Obrys należy więc do całego edytora. */
+.edytor:has(> textarea:focus-visible) {
+  outline: 2px solid hsl(var(--focus)); outline-offset: 0; border-radius: var(--r-xl);
+}
+.edytor > textarea:focus-visible { outline: none; }
+/* Przeglądarka bez :has() zostaje przy obrysie na polu — gorzej wygląda, ale widać, gdzie jest kursor. */
+@supports not selector(:has(*)) {
+  .edytor > textarea:focus-visible { outline: 2px solid hsl(var(--focus)); }
+}
+
 /* ══ 6. RUCH ══════════════════════════════════════════════════ */
 @keyframes wjazd { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
 .wjazd { animation: wjazd var(--t) var(--e-wejscie) both; }

@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { Download, FolderInput, Copy, Check, TriangleAlert, ShieldCheck, Inbox, ChevronDown } from 'lucide-react'
+import { useState } from 'react'
+import { Download, FolderInput, Copy, Check, TriangleAlert, ShieldCheck, Inbox, ChevronDown, Paperclip } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Ikona } from './ikona'
 import { Podglad, adresPliku } from './podglad'
@@ -13,26 +13,23 @@ import { rozmiar, kiedy } from '@/lib'
 /**
  * Wynik pracy to najważniejszy obiekt w całej aplikacji — dostaje własne miejsce,
  * z którego nie ucieka razem z przewijaniem historii.
+ *
+ * Wybór pliku trzyma rodzic, bo do panelu wchodzi się nie tylko stąd: także kliknięciem
+ * w kartę artefaktu albo w załącznik w rozmowie. Dwa niezależne stany rozjeżdżały się
+ * przy pierwszym takim kliknięciu.
  */
-export function Wynik({ pliki, zalaczniki = [], dowod, doDowodu }: {
-  pliki: PlikMeta[]
-  zalaczniki?: PlikMeta[]
+export function Wynik({ wyniki, zalaczniki, aktywny, naWybor, dowod, doDowodu }: {
+  wyniki: PlikMeta[]
+  zalaczniki: PlikMeta[]
+  aktywny: PlikMeta | null
+  naWybor: (p: PlikMeta) => void
   dowod: Dowod
   doDowodu?: () => void
 }) {
-  const [wybrany, setWybrany] = useState<string | null>(null)
   const { pokaz } = useToast()
   const [skopiowane, setSkopiowane] = useState(false)
 
-  // najnowszy, nie alfabetycznie ostatni
-  const dokumenty = [...pliki].sort((a, b) => a.zmieniony.localeCompare(b.zmieniony))
-  const aktywny = dokumenty.find((p) => p.sciezka === wybrany) ?? dokumenty[dokumenty.length - 1]
-
-  useEffect(() => {
-    if (aktywny && wybrany !== aktywny.sciezka) setWybrany(aktywny.sciezka)
-  }, [aktywny?.sciezka])
-
-  if (!dokumenty.length) {
+  if (!aktywny) {
     return (
       <div className="flex h-full flex-col">
         <div className="grid flex-1 place-items-center p-6 text-center">
@@ -41,17 +38,20 @@ export function Wynik({ pliki, zalaczniki = [], dowod, doDowodu }: {
             <p className="mt-2 t-tresc text-muted">Tu pojawi się gotowy dokument.</p>
           </div>
         </div>
-        <OdCiebie pliki={zalaczniki} />
+        <OdCiebie pliki={zalaczniki} aktywny={null} naWybor={naWybor} />
       </div>
     )
   }
 
+  const odCzlowieka = zalaczniki.some((z) => z.sciezka === aktywny.sciezka)
+
   /**
    * Plakietka mówi wyłącznie to, co widać w zdarzeniach. „Sprawdzony" należy się dopiero wtedy,
    * gdy plik faktycznie odczytano po zapisie; brak sprawdzenia to brak plakietki, nie pochwała.
+   * Załącznika człowieka nie oceniamy w ogóle — nikt go tu nie wytworzył.
    */
-  const stanPliku: 'sprawdzony' | 'niesprawdzony' | null =
-    dowod.nieSprawdzone.some((n) => n.includes(aktywny.nazwa)) ? 'niesprawdzony'
+  const stanPliku: 'sprawdzony' | 'niesprawdzony' | null = odCzlowieka ? null
+    : dowod.nieSprawdzone.some((n) => n.includes(aktywny.nazwa)) ? 'niesprawdzony'
     : dowod.zrobione.some((z) => z.startsWith(`odczytano ${aktywny.nazwa} po zapisie`)) ? 'sprawdzony'
     : null
 
@@ -80,12 +80,14 @@ export function Wynik({ pliki, zalaczniki = [], dowod, doDowodu }: {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b px-4 py-3">
+      <div className="shrink-0 border-b px-4 py-3">
         <div className="flex items-start gap-2">
           <Ikona jako={ikonaPliku(aktywny)} px={20} klasa="mt-0.5 shrink-0 text-muted" />
           <div className="min-w-0 flex-1">
             <div className="t-h3 break-words">{aktywny.nazwa}</div>
-            <div className="t-meta">Dokument · {rozmiar(aktywny.rozmiar)} · zapisany {kiedy(aktywny.zmieniony)}</div>
+            <div className="t-meta">
+              {odCzlowieka ? 'Twój załącznik' : 'Dokument'} · {rozmiar(aktywny.rozmiar)} · zapisany {kiedy(aktywny.zmieniony)}
+            </div>
           </div>
         </div>
         {stanPliku && (
@@ -100,17 +102,17 @@ export function Wynik({ pliki, zalaczniki = [], dowod, doDowodu }: {
         )}
       </div>
 
-      <div className="flex items-center gap-1 border-b px-3 py-2">
+      <div className="flex shrink-0 items-center gap-1 border-b px-3 py-2">
         <Akcja ikona={Download} tytul="Pobierz" na={() => window.open(adresPliku(aktywny, true), '_blank')} />
         <Akcja ikona={FolderInput} tytul="Zapisz do Moich plików" na={doMoichPlikow} />
         <Akcja ikona={skopiowane ? Check : Copy} tytul={skopiowane ? 'Skopiowane' : 'Kopiuj treść'} na={kopiuj} />
       </div>
 
-      {dokumenty.length > 1 && (
-        <div className="flex gap-1 overflow-x-auto border-b px-2 py-1.5">
-          {dokumenty.map((p) => (
+      {wyniki.length > 1 && (
+        <div className="flex shrink-0 gap-1 overflow-x-auto border-b px-2 py-1.5">
+          {wyniki.map((p) => (
             <button
-              key={p.sciezka} onClick={() => setWybrany(p.sciezka)}
+              key={p.sciezka} onClick={() => naWybor(p)}
               className={`shrink-0 rounded-sm px-2 py-1 text-[13px] ${
                 p.sciezka === aktywny.sciezka ? 'bg-raised font-medium' : 'text-muted hover:bg-raised/60'}`}
             >{p.nazwa}</button>
@@ -122,13 +124,17 @@ export function Wynik({ pliki, zalaczniki = [], dowod, doDowodu }: {
         <Podglad plik={aktywny} />
       </div>
 
-      <OdCiebie pliki={zalaczniki} />
+      <OdCiebie pliki={zalaczniki} aktywny={aktywny} naWybor={naWybor} />
     </div>
   )
 }
 
 /** To, co wniósł człowiek, nie jest wynikiem pracy agenta i nie może się nim podszywać. */
-function OdCiebie({ pliki }: { pliki: PlikMeta[] }) {
+function OdCiebie({ pliki, aktywny, naWybor }: {
+  pliki: PlikMeta[]
+  aktywny: PlikMeta | null
+  naWybor: (p: PlikMeta) => void
+}) {
   const [otwarte, setOtwarte] = useState(false)
   if (!pliki.length) return null
   return (
@@ -137,6 +143,7 @@ function OdCiebie({ pliki }: { pliki: PlikMeta[] }) {
         onClick={() => setOtwarte((o) => !o)}
         className="flex h-9 w-full items-center gap-1.5 px-4 t-meta hover:text-ink"
       >
+        <Ikona jako={Paperclip} px={12} />
         Od Ciebie ({pliki.length})
         <Ikona jako={ChevronDown} px={12} klasa={otwarte ? 'rotate-180' : ''} />
       </button>
@@ -144,14 +151,15 @@ function OdCiebie({ pliki }: { pliki: PlikMeta[] }) {
         <ul className="max-h-40 overflow-y-auto px-2 pb-2">
           {pliki.map((p) => (
             <li key={p.sciezka}>
-              <a
-                href={adresPliku(p)} target="_blank" rel="noreferrer"
-                className="flex h-8 items-center gap-2 rounded-sm px-2 text-[13px] hover:bg-raised"
+              <button
+                onClick={() => naWybor(p)}
+                className={`flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[13px] hover:bg-raised ${
+                  p.sciezka === aktywny?.sciezka ? 'bg-raised font-medium' : ''}`}
               >
                 <Ikona jako={ikonaPliku(p)} px={14} klasa="shrink-0 text-muted" />
                 <span className="min-w-0 flex-1 truncate">{p.nazwa}</span>
                 <span className="shrink-0 t-micro">{rozmiar(p.rozmiar)}</span>
-              </a>
+              </button>
             </li>
           ))}
         </ul>
