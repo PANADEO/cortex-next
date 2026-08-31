@@ -4,16 +4,26 @@ import * as Menu from '@radix-ui/react-dropdown-menu'
 import { Check, Lock, ChevronDown, ShieldCheck } from 'lucide-react'
 import { Ikona } from './ikona'
 import { useToast } from './toast'
-import type { Polityka } from '@/core/typy'
+import type { Polityka, Zdolnosc } from '@/core/typy'
 
 /**
  * „Co potrafię" mieszka tam, gdzie jest potrzebne: przy polu zlecenia.
  * Zablokowana zdolność jest widoczna dla CZŁOWIEKA (z działem-właścicielem i prośbą o dostęp),
  * ale nigdy nie trafia do modelu — tam po prostu nie ma takiego narzędzia.
  */
-export function ListaZdolnosci({ p, gesta }: { p: Polityka; gesta?: boolean }) {
+const PROG_SZUKANIA = 14
+
+/** Grupujemy po dziale — to jedyny wymiar, który rośnie razem z katalogiem. */
+function poDzialach(zd: Zdolnosc[]) {
+  const m = new Map<string, Zdolnosc[]>()
+  for (const z of zd) m.set(z.dzial, [...(m.get(z.dzial) ?? []), z])
+  return [...m.entries()].sort((a, b) => (a[0] === 'wszyscy' ? -1 : b[0] === 'wszyscy' ? 1 : a[0].localeCompare(b[0], 'pl')))
+}
+
+export function ListaZdolnosci({ p, gesta, szukanie }: { p: Polityka; gesta?: boolean; szukanie?: boolean }) {
   const [wyslane, setWyslane] = useState<string[]>([])
   const [odrzucone, setOdrzucone] = useState<string[]>([])
+  const [fraza, setFraza] = useState('')
   const { pokaz } = useToast()
 
   // stan prośby żyje w bazie, nie w komponencie — inaczej znika przy pierwszym F5
@@ -36,25 +46,42 @@ export function ListaZdolnosci({ p, gesta }: { p: Polityka; gesta?: boolean }) {
     pokaz({ tekst: `Prośba o „${nazwa}" poszła do działu. Dostaniesz znać, gdy ktoś ją rozpatrzy.` })
   }
 
+  const pasuje = (z: Zdolnosc) =>
+    !fraza.trim() || `${z.nazwa} ${z.opis} ${z.dzial}`.toLowerCase().includes(fraza.trim().toLowerCase())
+
+  const mam = p.przyznane.filter(pasuje)
+  const nieMam = p.zablokowane.filter(pasuje)
+  const wszystkich = p.przyznane.length + p.zablokowane.length
+  // grupowanie ma sens dopiero wtedy, gdy jest co grupować — przy jednym dziale
+  // nagłówek „Dla wszystkich" nad całą listą byłby samym szumem
+  const grupuj = new Set(mam.map((z) => z.dzial)).size > 1
+
   return (
     <div className={gesta ? 'text-[13px]' : 'text-[14px]'}>
-      <ul className="space-y-0.5">
-        {p.przyznane.map((z) => (
-          <li key={z.id} className="flex items-start gap-2 rounded-sm px-1 py-1">
-            <Ikona jako={Check} px={16} klasa="mt-0.5 shrink-0 text-ok" />
-            <div className="min-w-0">
-              <div>{z.nazwa}</div>
-              {!gesta && <div className="t-meta">{z.opis}</div>}
-            </div>
-          </li>
-        ))}
-      </ul>
+      {szukanie && wszystkich > PROG_SZUKANIA && (
+        <input
+          value={fraza} onChange={(e) => setFraza(e.target.value)}
+          placeholder="Szukaj wśród umiejętności" aria-label="Szukaj wśród umiejętności"
+          className="mb-3 h-9 w-full rounded-md border bg-bg px-3 t-tresc outline-none placeholder:text-muted-cichy"
+        />
+      )}
 
-      {p.zablokowane.length > 0 && (
+      {mam.length > 0 && (grupuj ? (
+        poDzialach(mam).map(([dzial, zd]) => (
+          <div key={dzial} className="mb-2.5">
+            <div className="px-1 pb-1 t-micro">{dzial === 'wszyscy' ? 'Dla wszystkich' : dzial}</div>
+            <Pozycje zd={zd} gesta={gesta} />
+          </div>
+        ))
+      ) : (
+        <Pozycje zd={mam} gesta={gesta} />
+      ))}
+
+      {nieMam.length > 0 && (
         <>
-          <div className="mt-2.5 border-t pt-2.5 t-micro">Tego u Ciebie nie umiem:</div>
+          <div className="mt-2.5 border-t pt-2.5 t-micro">Na to nie masz jeszcze zgody:</div>
           <ul className="mt-1 space-y-1.5">
-            {p.zablokowane.map((z) => (
+            {nieMam.map((z) => (
               <li key={z.id} className="flex items-start gap-2 rounded-sm px-1 py-0.5">
                 <Ikona jako={Lock} px={16} klasa="mt-0.5 shrink-0 text-muted-cichy" />
                 <div className="min-w-0 flex-1">
@@ -81,7 +108,27 @@ export function ListaZdolnosci({ p, gesta }: { p: Polityka; gesta?: boolean }) {
           </ul>
         </>
       )}
+
+      {fraza.trim() && mam.length === 0 && nieMam.length === 0 && (
+        <p className="py-3 t-meta">Nic takiego nie znalazłem. Napisz o tym w prośbie własnymi słowami.</p>
+      )}
     </div>
+  )
+}
+
+function Pozycje({ zd, gesta }: { zd: Zdolnosc[]; gesta?: boolean }) {
+  return (
+    <ul className="space-y-0.5">
+      {zd.map((z) => (
+        <li key={z.id} className="flex items-start gap-2 rounded-sm px-1 py-1">
+          <Ikona jako={Check} px={16} klasa="mt-0.5 shrink-0 text-ok" />
+          <div className="min-w-0">
+            <div>{z.nazwa}</div>
+            {!gesta && <div className="t-meta">{z.opis}</div>}
+          </div>
+        </li>
+      ))}
+    </ul>
   )
 }
 

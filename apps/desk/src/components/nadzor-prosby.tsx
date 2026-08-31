@@ -8,6 +8,7 @@ import { kiedy } from '@/lib'
 type Prosba = {
   id: number; kto: string; ktoImie: string; zdolnosc: string
   nazwa: string; dzial: string; stan: string; at: string
+  uzasadnienie: string | null
 }
 
 export function NadzorProsby() {
@@ -64,22 +65,36 @@ export function NadzorProsby() {
             {oczekujace.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                 <span className="min-w-0 flex-1">
-                  <span className="block t-tresc">
-                    <span className="font-medium">{p.ktoImie}</span> prosi o zdolność „{p.nazwa}"
-                  </span>
-                  <span className="block t-meta">
-                    {kiedy(p.at)} · zgodę wydaje dział {p.dzial}
-                  </span>
+                  {p.zdolnosc === 'inne' ? (
+                    <>
+                      <span className="block t-tresc">
+                        <span className="font-medium">{p.ktoImie}</span> prosi o coś, czego nie ma w katalogu:
+                      </span>
+                      <span className="mt-0.5 block rounded-md bg-raised/60 px-2.5 py-1.5 t-tresc">
+                        {p.uzasadnienie}
+                      </span>
+                      <span className="mt-1 block t-meta">{kiedy(p.at)} · tego nie da się przyznać kliknięciem</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="block t-tresc">
+                        <span className="font-medium">{p.ktoImie}</span> prosi o zdolność „{p.nazwa}"
+                      </span>
+                      <span className="block t-meta">{kiedy(p.at)} · zgodę wydaje dział {p.dzial}</span>
+                    </>
+                  )}
                 </span>
                 <span className="flex shrink-0 gap-2">
                   <button
                     onClick={() => rozpatrz(p, 'odrzucona')} disabled={zajete === p.id}
                     className="flex h-8 items-center gap-1.5 rounded-md border px-2.5 t-btn hover:bg-raised disabled:opacity-50"
-                  ><Ikona jako={X} px={14} /> Odmów</button>
-                  <button
-                    onClick={() => rozpatrz(p, 'przyznana')} disabled={zajete === p.id}
-                    className="flex h-8 items-center gap-1.5 rounded-md bg-accent px-2.5 t-btn text-accent-ink hover:bg-accent-hover disabled:opacity-50"
-                  ><Ikona jako={Check} px={14} /> Przyznaj</button>
+                  ><Ikona jako={X} px={14} /> {p.zdolnosc === 'inne' ? 'Zamknij' : 'Odmów'}</button>
+                  {p.zdolnosc !== 'inne' && (
+                    <button
+                      onClick={() => rozpatrz(p, 'przyznana')} disabled={zajete === p.id}
+                      className="flex h-8 items-center gap-1.5 rounded-md bg-accent px-2.5 t-btn text-accent-ink hover:bg-accent-hover disabled:opacity-50"
+                    ><Ikona jako={Check} px={14} /> Przyznaj</button>
+                  )}
                 </span>
               </li>
             ))}

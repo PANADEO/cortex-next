@@ -111,7 +111,7 @@ test.describe('Obszar 8 · Rozmowa, którą da się prowadzić', () => {
     await page.setViewportSize({ width: 1280, height: 620 })
     await page.goto('/')
     await page.getByRole('button', { name: /Umiem tu/ }).click()
-    const tresc = page.getByText('Tego u Ciebie nie umiem:')
+    const tresc = page.getByText('Na to nie masz jeszcze zgody:')
     await expect(tresc).toBeVisible()
     const box = await page.locator('[data-radix-popper-content-wrapper]').first().boundingBox()
     expect(box).toBeTruthy()

@@ -19,10 +19,14 @@ const imie = (id: unknown) => {
 export function opiszWpis(w: Wpis): { tekst: string; waga: 'zwykly' | 'wazny' } {
   const s = w.szczegoly ?? {}
   switch (w.typ) {
+    case 'sprawa.utworzona':
+      return { tekst: 'założyła nową sprawę', waga: 'zwykly' }
     case 'tura.start':
       return { tekst: `zleciła pracę · zakres uprawnień ${s.odcisk ?? '?'} (${Array.isArray(s.zdolnosci) ? s.zdolnosci.length : '?'} zdolności)`, waga: 'zwykly' }
     case 'tura.koniec':
       return { tekst: 'praca zakończona', waga: 'zwykly' }
+    case 'tura.stop':
+      return { tekst: 'zatrzymała pracę agenta', waga: 'zwykly' }
     case 'tura.blad':
       return { tekst: `praca nie powiodła się: ${s.powod ?? 'bez powodu'}`, waga: 'wazny' }
     case 'prosba.o.dostep':
@@ -31,6 +35,8 @@ export function opiszWpis(w: Wpis): { tekst: string; waga: 'zwykly' | 'wazny' } 
       return { tekst: `przyznał zdolność „${nazwaZdolnosci(s.zdolnosc)}" osobie ${imie(s.komu)}`, waga: 'wazny' }
     case 'prosba.odrzucona':
       return { tekst: `odmówił zdolności „${nazwaZdolnosci(s.zdolnosc)}" osobie ${imie(s.komu)}`, waga: 'wazny' }
+    case 'prosba.inne':
+      return { tekst: `poprosiła o coś spoza katalogu: „${s.opis ?? ''}"`, waga: 'wazny' }
     case 'zdolnosc.cofnieta':
       return { tekst: `cofnął zdolność „${nazwaZdolnosci(s.zdolnosc)}" osobie ${imie(s.komu)}`, waga: 'wazny' }
     case 'zdolnosc.brak':

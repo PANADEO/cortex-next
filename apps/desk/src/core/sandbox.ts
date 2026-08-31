@@ -14,11 +14,24 @@ export type Uchwyt = {
 }
 
 /**
- * F3 · SANDBOX — w POC zwykły folder i proces potomny, dokładnie jak dziś tryb lokalny.
+ * F3 · SANDBOX — proces potomny z zamkniętym systemem plików.
  *
- * Sygnatura przyjmuje `montaze` i `egress` JUŻ TERAZ, mimo że ich nie egzekwuje:
- * jeśli tych parametrów nie będzie tutaj, nie będą miały gdzie się pojawić,
- * gdy pod spód wejdzie broker z microsandboxem albo Katą.
+ * CO JEST DOMKNIĘTE: model uprawnień Node (--permission) odcina cały system plików poza
+ * katalogiem roboczym. Zweryfikowane: próba odczytu cudzego biurka albo pliku .env.local
+ * kończy się błędem uprawnień, a nie danymi.
+ *
+ * CZEGO NADAL NIE MA — i nie wolno tego przemilczeć:
+ *   · SIEĆ jest otwarta. Model uprawnień Node jej nie obejmuje, więc kod może wyjść na zewnątrz.
+ *   · LIMIT PAMIĘCI jest pozorny. --max-old-space-size ogranicza stertę JS, ale Buffer.alloc
+ *     alokuje poza nią, więc proces potrafi zająć wielokrotność deklarowanego limitu.
+ *   · Proces działa jako ten sam użytkownik systemu co aplikacja.
+ *
+ * Dopóki to nie zostanie zamknięte (E2: microsandbox / Kata / gVisor albo kontener bez sieci),
+ * zdolność `kod.uruchom` NIE POWINNA być domyślnie przyznawana w środowisku klienta.
+ *
+ * Sygnatura przyjmuje `montaze` i `egress` JUŻ TERAZ, mimo że `egress` nie jest egzekwowany:
+ * jeśli tego parametru nie będzie tutaj, nie będzie miał gdzie się pojawić, gdy pod spód
+ * wejdzie prawdziwy broker.
  */
 export async function utworz(opts: {
   uzytkownik: string
@@ -28,7 +41,9 @@ export async function utworz(opts: {
   egress?: string[] // NIEEGZEKWOWANE w POC — patrz E2 w wektorze rozwoju
 }): Promise<Uchwyt> {
   const limity = opts.limity ?? { sekundy: 30, pamiecMb: 512 }
-  const katalog = await fs.mkdtemp(path.join(os.tmpdir(), `desk-${opts.sprawaId}-`))
+  // realpath jest konieczny: na macOS os.tmpdir() zwraca /var/..., a faktyczna ścieżka to
+  // /private/var/... — bez rozwinięcia dowiązania uprawnienia nie objęłyby własnego katalogu
+  const katalog = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), `desk-${opts.sprawaId}-`)))
 
   for (const m of opts.montaze) {
     try {
@@ -49,7 +64,13 @@ export async function utworz(opts: {
         // Jawna lista zmiennych środowiskowych. NIGDY ...process.env —
         // to jest ta sama dziura, której nie chcemy odtworzyć za darmo.
         const env = { PATH: process.env.PATH ?? '', HOME: katalog } as unknown as NodeJS.ProcessEnv
-        const p = spawn(process.execPath, ['-e', kod], {
+        const flagi = [
+          '--permission',
+          `--allow-fs-read=${katalog}/*`,
+          `--allow-fs-write=${katalog}/*`,
+          `--max-old-space-size=${limity.pamiecMb}`,
+        ]
+        const p = spawn(process.execPath, [...flagi, '-e', kod], {
           cwd: katalog,
           env,
           timeout: limity.sekundy * 1000,

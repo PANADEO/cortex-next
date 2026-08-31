@@ -37,7 +37,7 @@ test.describe('Obszar 5 · Zdolności stopniowane wg roli', () => {
     await jako(page, 'anna')
     await page.goto('/')
     await page.getByRole('button', { name: /Umiem tu 5 rzeczy/ }).click()
-    await expect(page.getByText('Tego u Ciebie nie umiem:')).toBeVisible()
+    await expect(page.getByText('Na to nie masz jeszcze zgody:')).toBeVisible()
     await expect(page.getByText('Generowanie obrazów')).toBeVisible()
   })
 

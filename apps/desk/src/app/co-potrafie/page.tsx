@@ -1,5 +1,6 @@
 import { Powloka } from '@/components/powloka'
 import { ListaZdolnosci } from '@/components/co-potrafie'
+import { ProsbaInna } from '@/components/prosba-inna'
 import { ktoTo } from '@/core/tozsamosc'
 import { polityka } from '@/core/brama-zdolnosci'
 
@@ -16,7 +17,10 @@ export default async function Strona() {
             działu, który za nią odpowiada.
           </p>
           <div className="mt-6 rounded-lg border bg-surface p-4">
-            <ListaZdolnosci p={p} />
+            <ListaZdolnosci p={p} szukanie />
+          </div>
+          <div className="mt-4">
+            <ProsbaInna />
           </div>
           <p className="mt-4 t-micro">
             Zdolność, której nie mam, nie jest przede mną schowana — po prostu jej u Ciebie nie ma.

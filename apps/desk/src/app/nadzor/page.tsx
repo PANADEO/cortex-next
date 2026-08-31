@@ -15,6 +15,10 @@ export default async function Strona() {
   if (u.rola !== 'zarzad') notFound()
 
   const wpisy = await dziennik.ostatnie(40)
+  // czego agent szukał, a katalog tego nie obejmuje — sygnał, że lista zdolności ma dziurę
+  const braki = (await dziennik.ostatnie(300))
+    .filter((w) => w.typ === 'zdolnosc.brak' && !w.szczegoly?.zdolnosc)
+    .slice(0, 8)
   const wydatki = await Promise.all(
     UZYTKOWNICY.map(async (x) => ({ osoba: x, usd: await wydanoDzisiaj(x.id), limit: (await polityka(x)).limitUsdNaDzien })),
   )
@@ -29,6 +33,26 @@ export default async function Strona() {
           </p>
 
           <div className="mt-7"><NadzorProsby /></div>
+
+          {braki.length > 0 && (
+            <section className="mt-8">
+              <h2 className="mb-1 t-sekcja">Czego zabrakło w katalogu</h2>
+              <p className="mb-2 t-meta">
+                Agent próbował to zrobić i nie znalazł u siebie odpowiedniej umiejętności —
+                a katalog jej nie zna. To lista rzeczy do rozważenia jako nowe umiejętności.
+              </p>
+              <ul className="divide-y overflow-hidden rounded-lg border bg-surface">
+                {braki.map((w, i) => (
+                  <li key={i} className="flex gap-3 px-4 py-2.5 t-tresc">
+                    <span className="w-20 shrink-0 t-meta">
+                      {UZYTKOWNICY.find((x) => x.id === w.kto)?.imie ?? w.kto}
+                    </span>
+                    <span className="min-w-0 flex-1">{String(w.szczegoly?.opis ?? '')}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <section className="mt-8">
             <h2 className="mb-2 t-sekcja">Dzisiejsze wydatki</h2>

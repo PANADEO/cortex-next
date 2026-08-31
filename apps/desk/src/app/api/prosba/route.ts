@@ -18,8 +18,11 @@ export async function GET() {
       kto: p.kto,
       ktoImie: UZYTKOWNICY.find((x) => x.id === p.kto)?.imie ?? p.kto,
       zdolnosc: p.zdolnosc,
-      nazwa: katalogZdolnosci.find((z) => z.id === p.zdolnosc)?.nazwa ?? p.zdolnosc,
+      nazwa: p.zdolnosc === 'inne'
+        ? 'coś, czego nie ma w katalogu'
+        : katalogZdolnosci.find((z) => z.id === p.zdolnosc)?.nazwa ?? p.zdolnosc,
       dzial: katalogZdolnosci.find((z) => z.id === p.zdolnosc)?.dzial ?? '',
+      uzasadnienie: p.uzasadnienie ?? null,
       stan: p.stan,
       at: p.at,
       rozpatrzona: p.rozpatrzona,
@@ -30,7 +33,21 @@ export async function GET() {
 export async function POST(req: Request) {
   await migracja()
   const u = await ktoTo()
-  const { zdolnosc } = await req.json()
+  const { zdolnosc, uzasadnienie } = await req.json()
+
+  // Prośba własnymi słowami — o coś, czego w katalogu jeszcze nie ma. Nie da się jej
+  // przyznać jednym kliknięciem i nie udajemy, że się da; trafia do przełożonego
+  // jako sygnał, że katalog czegoś nie obejmuje.
+  if (zdolnosc === 'inne') {
+    const tresc = String(uzasadnienie ?? '').trim().slice(0, 500)
+    if (!tresc) return NextResponse.json({ blad: 'Napisz, czego potrzebujesz.' }, { status: 400 })
+    await pool.query(
+      `insert into desk.prosba (kto, zdolnosc, uzasadnienie) values ($1,'inne',$2)`, [u.id, tresc],
+    )
+    await dziennik.zapisz(u.id, 'prosba.inne', { opis: tresc })
+    return NextResponse.json({ ok: true })
+  }
+
   if (!katalogZdolnosci.some((z) => z.id === zdolnosc)) {
     return NextResponse.json({ blad: 'Nie ma takiej zdolności.' }, { status: 400 })
   }
@@ -81,6 +98,13 @@ export async function PATCH(req: Request) {
     `update desk.prosba set stan=$2, rozpatrzona=now(), rozpatrzyl=$3 where id=$1`,
     [id, decyzja, u.id],
   )
+  if (zdolnosc === 'inne' && decyzja === 'przyznana') {
+    // nie ma czego nadać — taką prośbę można wyłącznie odnotować jako przyjętą do rozważenia
+    return NextResponse.json(
+      { blad: 'Tej prośby nie da się przyznać jednym kliknięciem — to zgłoszenie do katalogu.' },
+      { status: 400 },
+    )
+  }
   if (decyzja === 'przyznana') {
     await pool.query(
       `insert into desk.grant (kto, zdolnosc, nadal) values ($1,$2,$3)
