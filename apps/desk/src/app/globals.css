@@ -1,6 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tokeny powłoki wchodzą PRZED naszymi — plik przynosi też dyrektywy Tailwinda,
+   więc nie powtarzamy ich tutaj. Kolejność jest tu regułą, nie stylem:
+   alias niżej ma nadpisać wartość, nie odwrotnie. */
+@import '@cortex/styles/globals.css';
 
 /* ══ 1. TOKENY — MOTYW JASNY ══════════════════════════════════ */
 :root {
@@ -52,6 +53,36 @@
   --desk-t-szybko: 120ms; --desk-t: 180ms; --desk-t-wolno: 260ms;
   --desk-e-wejscie: cubic-bezier(.2,.6,.3,1);
   --desk-e-stan:    cubic-bezier(.4,0,.2,1);
+}
+
+/* ══ 1b. MOSTEK DO POWŁOKI ════════════════════════════════════
+   Biurko przestaje mieć własną paletę i bierze tę, którą ma instancja.
+   Wartości wyżej zostają jako to, co widać, gdy tokenów powłoki nie ma.
+
+   Dwie zasady, które trzeba tu znać, bo obie były źródłem realnych błędów:
+   1. `--desk-accent` bierze `--primary`, NIGDY `--accent`. W shadcn `--accent`
+      jest WYPEŁNIENIEM TŁA elementu pod kursorem, nie kolorem marki — podpięcie
+      go zamieniłoby przycisk wysyłki w jasnoszary prostokąt.
+   2. Role, których powłoka nie zna (przygaszony atrament, miękkie tła statusów),
+      liczymy przez `color-mix` w konfiguracji Tailwinda, a nie tutaj — token musi
+      zostać trójką HSL, żeby `bg-raised/60` dalej działało. */
+:root {
+  --desk-bg:         var(--background);
+  --desk-surface:    var(--card);
+  --desk-raised:     var(--muted);
+  --desk-sunken:     var(--secondary);
+  --desk-line:       var(--border);
+  --desk-line-mocna: var(--ring);
+  --desk-ink:        var(--foreground);
+  --desk-muted:      var(--muted-foreground);
+
+  --desk-accent:     var(--primary);
+  --desk-accent-ink: var(--primary-foreground);
+  --desk-focus:      var(--primary);
+
+  --desk-ok:   var(--success);
+  --desk-warn: var(--warning);
+  --desk-bad:  var(--destructive);
 }
 
 /* ══ 2. MOTYW CIEMNY ══════════════════════════════════════════ */
