@@ -1,5 +1,6 @@
 import * as audit from "@cortex/desk-core/audit-log"
 import { capabilityCatalogue } from "@cortex/desk-core/capability-gate"
+import { capabilityLabel } from "@cortex/desk-core/capability-text"
 import { migrate, pool } from "@cortex/desk-core/db"
 import { USERS, whoAmI } from "@cortex/desk-core/identity"
 import { deskT } from "@cortex/desk-ui/i18n/server"
@@ -29,7 +30,7 @@ export async function GET() {
       name:
         p.capability === "other"
           ? translate("api.somethingOutside")
-          : (capabilityCatalogue.find((z) => z.id === p.capability)?.name ?? p.capability),
+          : capabilityLabel(translate, p.capability, p.capability),
       department: capabilityCatalogue.find((z) => z.id === p.capability)?.department ?? "",
       justification: p.justification ?? null,
       status: p.status,

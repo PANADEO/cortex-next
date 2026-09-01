@@ -1,4 +1,5 @@
 "use client"
+import { departmentLabel } from "@cortex/desk-core/capability-text"
 import type { User } from "@cortex/desk-core/types"
 import * as Menu from "@radix-ui/react-dropdown-menu"
 import { Check, ChevronDown } from "lucide-react"
@@ -54,7 +55,7 @@ export function Persona({ me, everyone }: { me: User; everyone: User[] }) {
           <span className="t-body-m block truncate">
             {me.firstName} {me.lastName}
           </span>
-          <span className="t-meta block truncate">{me.department}</span>
+          <span className="t-meta block truncate">{departmentLabel(translate, me.department)}</span>
         </span>
         <Icon as={ChevronDown} px={16} className="shrink-0 text-desk-muted" />
       </Menu.Trigger>

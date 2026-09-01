@@ -1,4 +1,5 @@
 "use client"
+import { departmentLabel } from "@cortex/desk-core/capability-text"
 import { Check, Inbox, ShieldCheck, X } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useDeskLocale, useDeskT } from "../i18n/client"
@@ -106,7 +107,9 @@ export function RequestSupervision() {
                       </span>
                       <span className="t-meta block">
                         {when(p.at, locale)} ·{" "}
-                        {translate("requests.approvedBy", { department: p.department })}
+                        {translate("requests.approvedBy", {
+                          department: departmentLabel(translate, p.department),
+                        })}
                       </span>
                     </>
                   )}

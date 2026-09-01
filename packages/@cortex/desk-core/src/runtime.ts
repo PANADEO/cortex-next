@@ -133,15 +133,21 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
       await emit({
         type: "blocked",
         description: whatINeeded,
-        ...(hit ? { capabilityId: hit.id, name: hit.name, department: hit.department } : {}),
+        // Bez `name`: zdarzenie niesie TOŻSAMOŚĆ zdolności, a nazwę dobiera ekran
+        // w swoim języku. Nazwa zapisana przy zdarzeniu zamroziłaby polszczyznę
+        // w historii sprawy, której nikt już potem nie przetłumaczy.
+        ...(hit ? { capabilityId: hit.id, department: hit.department } : {}),
       })
       await audit.write(u.id, "capability.missing", {
         caseId,
         description: whatINeeded,
         capability: hit?.id,
       })
+      // Nazwy działu w tym zdaniu NIE MA celowo: `hit.department` to dziś wartość
+      // (`accounting`), a jej nazwę zna słownik ekranu, nie ten kod. Człowiek widzi
+      // dział przy prośbie o dostęp, w swoim języku — model nie musi go powtarzać.
       return hit
-        ? `Odnotowane. Tej czynności nie masz włączonej — zgodę wydaje dział ${hit.department}. Człowiek zobaczył prośbę o dostęp; zrób teraz to, co da się zrobić bez niej.`
+        ? "Odnotowane. Tej czynności nie masz włączonej — zgodę wydaje dział, który za nią odpowiada. Człowiek zobaczył prośbę o dostęp; zrób teraz to, co da się zrobić bez niej."
         : "Odnotowane. Powiedz człowiekowi wprost, czego nie da się zrobić, i zaproponuj drogę naokoło."
     },
   })

@@ -32,7 +32,13 @@ export type DeskEvent =
   // dostawcy a liczbą wyliczoną z wpisanych w kod stawek nie może być niewidoczna.
   | { type: "cost"; usd: number; basis: "provider" | "estimate" }
 
-export type Capability = { id: string; name: string; department: string; description: string }
+/**
+ * Zdolność niesie TOŻSAMOŚĆ i DZIAŁ-właściciela, a nie słowa. Nazwa i opis stoją
+ * w słowniku pod `capability.<id>` — inaczej katalog byłby po polsku także wtedy,
+ * gdy cały ekran jest po angielsku. Dział jest tu wartością (`accounting`), nie
+ * napisem do czytania; napis robi z niego `capability.department.<dział>`.
+ */
+export type Capability = { id: string; department: string }
 export type Role = "member" | "management"
 
 export type User = {
@@ -41,7 +47,8 @@ export type User = {
   lastName: string
   department: string
   role: Role
-  quickTasks: { title: string; hint: string; text: string }[]
+  /** Identyfikatory zleceń startowych; słowa stoją w słowniku pod `quickTask.<id>`. */
+  quickTasks: string[]
 }
 
 /** Wynik materializacji polityki — to, co fizycznie trafia do instancji. */

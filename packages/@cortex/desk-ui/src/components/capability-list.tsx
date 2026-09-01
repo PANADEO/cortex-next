@@ -1,9 +1,14 @@
 "use client"
+import {
+  capabilityDescription,
+  capabilityLabel,
+  departmentLabel,
+} from "@cortex/desk-core/capability-text"
 import type { Capability, Policy } from "@cortex/desk-core/types"
 import * as Menu from "@radix-ui/react-dropdown-menu"
 import { Check, ChevronDown, Lock, ShieldCheck } from "lucide-react"
 import { useEffect, useState } from "react"
-import { useDeskT } from "../i18n/client"
+import { useDeskLocale, useDeskT } from "../i18n/client"
 import { api } from "../routes"
 import { Icon } from "./icon"
 import { useToast } from "./toast"
@@ -15,12 +20,19 @@ import { useToast } from "./toast"
  */
 const SEARCH_THRESHOLD = 14
 
-/** Grupujemy po dziale — to jedyny wymiar, który rośnie razem z katalogiem. */
-function byDepartment(zd: Capability[]) {
+/**
+ * Grupujemy po dziale — to jedyny wymiar, który rośnie razem z katalogiem.
+ * Porządek liczy się z NAZW, nie z wartości: alfabet działów jest inny w każdym języku.
+ */
+function byDepartment(zd: Capability[], label: (d: string) => string, locale: string) {
   const m = new Map<string, Capability[]>()
   for (const z of zd) m.set(z.department, [...(m.get(z.department) ?? []), z])
   return [...m.entries()].sort((a, b) =>
-    a[0] === "wszyscy" ? -1 : b[0] === "wszyscy" ? 1 : a[0].localeCompare(b[0], "pl"),
+    a[0] === "everyone"
+      ? -1
+      : b[0] === "everyone"
+        ? 1
+        : label(a[0]).localeCompare(label(b[0]), locale),
   )
 }
 
@@ -34,6 +46,9 @@ export function CapabilityList({
   search?: boolean
 }) {
   const translate = useDeskT()
+  const locale = useDeskLocale()
+  const name = (z: Capability) => capabilityLabel(translate, z.id, z.id)
+  const department = (d: string) => departmentLabel(translate, d)
   const [sent, setSent] = useState<string[]>([])
   const [rejected, setRejected] = useState<string[]>([])
   const [phrase, setPhrase] = useState("")
@@ -65,9 +80,13 @@ export function CapabilityList({
     })
   }
 
+  // Szukamy po tym, co CZŁOWIEK widzi na ekranie — czyli po nazwach ze słownika,
+  // a nie po wartościach z zasiewu. Wpisane „accounting" nie ma prawa niczego znaleźć.
   const matches = (z: Capability) =>
     !phrase.trim() ||
-    `${z.name} ${z.description} ${z.department}`.toLowerCase().includes(phrase.trim().toLowerCase())
+    `${name(z)} ${capabilityDescription(translate, z.id)} ${department(z.department)}`
+      .toLocaleLowerCase(locale)
+      .includes(phrase.trim().toLocaleLowerCase(locale))
 
   const have = p.granted.filter(matches)
   const missing = p.blocked.filter(matches)
@@ -90,10 +109,10 @@ export function CapabilityList({
 
       {have.length > 0 &&
         (groupBy ? (
-          byDepartment(have).map(([department, zd]) => (
-            <div key={department} className="mb-2.5">
+          byDepartment(have, department, locale).map(([owner, zd]) => (
+            <div key={owner} className="mb-2.5">
               <div className="t-micro px-1 pb-1">
-                {department === "wszyscy" ? translate("capabilities.everyone") : department}
+                {owner === "everyone" ? translate("capabilities.everyone") : department(owner)}
               </div>
               <MenuItems zd={zd} dense={dense} />
             </div>
@@ -110,9 +129,9 @@ export function CapabilityList({
               <li key={z.id} className="flex items-start gap-2 rounded-sm px-1 py-0.5">
                 <Icon as={Lock} px={16} className="mt-0.5 shrink-0 text-desk-muted-2" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-desk-muted">{z.name}</div>
+                  <div className="text-desk-muted">{name(z)}</div>
                   <div className="t-micro">
-                    {translate("capabilities.ownedBy", { department: z.department })}
+                    {translate("capabilities.ownedBy", { department: department(z.department) })}
                   </div>
                   {sent.includes(z.id) ? (
                     <div className="mt-1 flex items-center gap-1 text-[12px] text-desk-ok">
@@ -126,7 +145,7 @@ export function CapabilityList({
                         </div>
                       )}
                       <button
-                        onClick={() => request(z.id, z.name)}
+                        onClick={() => request(z.id, name(z))}
                         className="mt-1 rounded-sm border px-2 py-0.5 text-[12px] hover:bg-desk-raised"
                       >
                         {rejected.includes(z.id)
@@ -150,14 +169,15 @@ export function CapabilityList({
 }
 
 function MenuItems({ zd, dense }: { zd: Capability[]; dense?: boolean | undefined }) {
+  const translate = useDeskT()
   return (
     <ul className="space-y-0.5">
       {zd.map((z) => (
         <li key={z.id} className="flex items-start gap-2 rounded-sm px-1 py-1">
           <Icon as={Check} px={16} className="mt-0.5 shrink-0 text-desk-ok" />
           <div className="min-w-0">
-            <div>{z.name}</div>
-            {!dense && <div className="t-meta">{z.description}</div>}
+            <div>{capabilityLabel(translate, z.id, z.id)}</div>
+            {!dense && <div className="t-meta">{capabilityDescription(translate, z.id)}</div>}
           </div>
         </li>
       ))}

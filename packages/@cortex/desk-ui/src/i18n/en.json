@@ -497,5 +497,95 @@
       "other": "— today’s cost was reset ({{usd}} USD across {{count}} cases)"
     },
     "unknown": "event “{{type}}” (undescribed)"
+  },
+  "capability": {
+    "files": {
+      "list": {
+        "name": "Browsing your desk",
+        "description": "Sees what files you have on your desk."
+      },
+      "read": {
+        "name": "Reading My files",
+        "description": "Opens and reads files from your desk."
+      },
+      "keep": {
+        "name": "Saving to My files",
+        "description": "At your explicit request, moves a finished file from the case to your permanent files."
+      }
+    },
+    "document": {
+      "write": {
+        "name": "Writing documents",
+        "description": "Saves a finished document to the case folder."
+      },
+      "verify": {
+        "name": "Checking after saving",
+        "description": "Reads the saved file back and confirms what is in it."
+      }
+    },
+    "sheet": {
+      "write": {
+        "name": "Writing spreadsheets",
+        "description": "Saves summaries as a spreadsheet (CSV)."
+      }
+    },
+    "code": {
+      "run": {
+        "name": "Running computations",
+        "description": "Computes over data — sums, filters, conversions."
+      }
+    },
+    "image": {
+      "generate": {
+        "name": "Generating images",
+        "description": "Creates artwork for presentations and posts."
+      }
+    },
+    "counterparty": {
+      "verify": {
+        "name": "Checking a counterparty in the VAT register",
+        "description": "Checks a company's VAT status in the Ministry of Finance register, and whether its bank account was listed on a given day."
+      }
+    },
+    "department": {
+      "everyone": "Everyone",
+      "finance": "Finance",
+      "it": "IT",
+      "marketing": "Marketing",
+      "accounting": "Accounting",
+      "management": "Management"
+    }
+  },
+  "quickTask": {
+    "expensesDocument": {
+      "title": "Monthly expense summary",
+      "hint": "add a file with invoices (CSV or XLSX)",
+      "text": "Make an expense summary from faktury-08.csv: group it by category, total it up and save a finished document."
+    },
+    "documentGaps": {
+      "title": "Check what is missing in a document",
+      "hint": "add the document to check",
+      "text": "Go through the document and list which fields are empty or need filling in."
+    },
+    "meetingNotes": {
+      "title": "Notes from a meeting",
+      "hint": "add a transcript or your notes",
+      "text": "Turn this into concise notes: what was decided, who does what, by when."
+    },
+    "expensesSheet": {
+      "title": "Monthly expense summary",
+      "hint": "add a file with invoices (CSV or XLSX)",
+      "text": "Make an expense summary from faktury-08.csv: group it by category, total it up and save it as a spreadsheet."
+    },
+    "analysis": {
+      "title": "Analysis with a chart",
+      "hint": "add the data",
+      "text": "Total it up by category and prepare a short analysis with a recommendation."
+    },
+    "titleImage": {
+      "title": "Artwork for a presentation",
+      "hint": "describe what should be in the image",
+      "text": "Generate a title image for a presentation about the quarter's results."
+    }
   }
 }

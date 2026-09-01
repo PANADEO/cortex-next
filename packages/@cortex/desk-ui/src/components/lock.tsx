@@ -1,4 +1,5 @@
 "use client"
+import { capabilityLabel, departmentLabel } from "@cortex/desk-core/capability-text"
 import { Lock, ShieldCheck } from "lucide-react"
 import { useState } from "react"
 import { useDeskT } from "../i18n/client"
@@ -18,15 +19,22 @@ export function CapabilityLock({
   alreadyRequested,
 }: {
   description: string
+  /** Nazwa zapisana w STARYM zdarzeniu; nowe niosą samo `capabilityId`. */
   name?: string | undefined
+  /** Dział-właściciel: dziś wartość (`finance`), w starych zdarzeniach polski napis. */
   department?: string | undefined
   capabilityId?: string | undefined
   alreadyRequested?: boolean | undefined
 }) {
+  // Nazwa i dział powstają TU, przy renderze, w języku tej osoby — zdarzenie niesie
+  // tożsamość. Napis ze starego zdarzenia zostaje jako zapasowy, bo tamtych spraw
+  // nie przepisujemy.
+  const translate = useDeskT()
+  const label = capabilityLabel(translate, capabilityId, name ?? "")
+  const owner = departmentLabel(translate, department)
   const [sent, setSent] = useState(Boolean(alreadyRequested))
   const [taken, setTaken] = useState(false)
   const { toast } = useToast()
-  const translate = useDeskT()
 
   async function request() {
     if (!capabilityId) return
@@ -41,7 +49,7 @@ export function CapabilityLock({
       return
     }
     setSent(true)
-    toast({ text: translate("lock.requestSent", { name, department }) })
+    toast({ text: translate("lock.requestSent", { name: label, department: owner }) })
   }
 
   return (
@@ -49,11 +57,11 @@ export function CapabilityLock({
       <Icon as={Lock} px={16} className="mt-0.5 shrink-0 text-desk-muted" />
       <div className="min-w-0">
         <div className="t-body">
-          {name ? translate("lock.needs", { name }) : translate("lock.notAllowed")}
+          {label ? translate("lock.needs", { name: label }) : translate("lock.notAllowed")}
         </div>
         <div className="t-meta mt-0.5">
           {translate("lock.about", { description })}
-          {department ? ` · ${translate("requests.approvedBy", { department })}` : ""}
+          {owner ? ` · ${translate("requests.approvedBy", { department: owner })}` : ""}
         </div>
         {capabilityId &&
           (sent ? (

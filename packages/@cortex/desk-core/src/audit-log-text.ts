@@ -1,11 +1,11 @@
 import type { DeskT } from "@cortex/desk-ui/i18n/locale"
-import { capabilityCatalogue } from "./capability-gate"
+import { capabilityLabel } from "./capability-text"
 import { USERS } from "./identity"
 
 type AuditEntry = { at: string; who: string; type: string; details: Record<string, unknown> }
 
-const capabilityName = (id: unknown) =>
-  capabilityCatalogue.find((z) => z.id === id)?.name ?? String(id ?? "")
+const capabilityName = (translate: DeskT, id: unknown) =>
+  capabilityLabel(translate, typeof id === "string" ? id : undefined, String(id ?? ""))
 
 /** W dzienniku dla audytora mają stać imiona, nie identyfikatory z bazy. */
 const firstName = (id: unknown) => {
@@ -59,13 +59,13 @@ export function describeEntry(
       }
     case "request.opened":
       return {
-        text: translate("journal.requestOpened", { name: capabilityName(s.capability) }),
+        text: translate("journal.requestOpened", { name: capabilityName(translate, s.capability) }),
         weight: "important",
       }
     case "request.granted":
       return {
         text: translate("journal.requestGranted", {
-          name: capabilityName(s.capability),
+          name: capabilityName(translate, s.capability),
           who: firstName(s.toWhom),
         }),
         weight: "important",
@@ -73,7 +73,7 @@ export function describeEntry(
     case "request.denied":
       return {
         text: translate("journal.requestDenied", {
-          name: capabilityName(s.capability),
+          name: capabilityName(translate, s.capability),
           who: firstName(s.toWhom),
         }),
         weight: "important",
@@ -86,7 +86,7 @@ export function describeEntry(
     case "capability.revoked":
       return {
         text: translate("journal.capabilityRevoked", {
-          name: capabilityName(s.capability),
+          name: capabilityName(translate, s.capability),
           who: firstName(s.toWhom),
         }),
         weight: "important",

@@ -1,4 +1,5 @@
 import { policyFor } from "@cortex/desk-core/capability-gate"
+import { departmentLabel } from "@cortex/desk-core/capability-text"
 import { USERS, identity } from "@cortex/desk-core/identity"
 import { Icon } from "@cortex/desk-ui/components/icon"
 import { Avatar, Persona } from "@cortex/desk-ui/components/persona-switcher"
@@ -23,7 +24,7 @@ export default async function Page() {
               <div className="t-h2">
                 {u.firstName} {u.lastName}
               </div>
-              <div className="t-meta">{u.department}</div>
+              <div className="t-meta">{departmentLabel(translate, u.department)}</div>
             </div>
           </div>
 

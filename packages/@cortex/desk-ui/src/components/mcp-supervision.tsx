@@ -1,4 +1,5 @@
 "use client"
+import { capabilityLabel } from "@cortex/desk-core/capability-text"
 import type { Capability, McpToolStatus } from "@cortex/desk-core/types"
 import { Globe, Plus, RefreshCw, ShieldAlert, TriangleAlert, X } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
@@ -119,9 +120,7 @@ export function McpSupervision() {
                       <div className="t-meta">{n.description}</div>
                       <div className="t-micro pt-0.5">
                         {translate("mcp.needsCapability", {
-                          capability:
-                            capabilities.find((z) => z.id === n.capabilityId)?.name ??
-                            n.capabilityId,
+                          capability: capabilityLabel(translate, n.capabilityId, n.capabilityId),
                         })}
                         {" · "}
                         {translate("mcp.acceptedBy", { who: n.approvedBy })}
@@ -297,7 +296,7 @@ function Candidate({
             >
               {capabilities.map((z) => (
                 <option key={z.id} value={z.id}>
-                  {z.name}
+                  {capabilityLabel(translate, z.id, z.id)}
                 </option>
               ))}
             </select>

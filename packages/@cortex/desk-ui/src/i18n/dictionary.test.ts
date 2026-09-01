@@ -9,6 +9,8 @@
 // przedrostkiem (`case.status.${x}`) sprawdzamy po przedrostku — musi istnieć
 // przynajmniej jedno rozwinięcie, więc literówka w przedrostku dalej jest czerwona.
 
+import { capabilityCatalogue } from "@cortex/desk-core/capability-gate"
+import { USERS } from "@cortex/desk-core/identity"
 import { cardFor, TOOL_CARDS } from "@cortex/desk-core/tool-cards"
 import { readdirSync, readFileSync } from "node:fs"
 import path from "node:path"
@@ -127,6 +129,29 @@ describe("słownik Biurka", () => {
     )
     expect(fromCards.length).toBeGreaterThan(20)
     expect(fromCards.filter((key) => !plKeys.includes(key))).toEqual([])
+  })
+
+  it("każda zdolność, dział i zlecenie startowe ma swoje słowa", () => {
+    // Zasiew niesie TOŻSAMOŚĆ, słowa stoją tutaj — a klucz buduje `capabilityLabel`,
+    // więc skan wywołań `translate("…")` go nie widzi. Bez tego testu nowa zdolność
+    // w katalogu pokazuje się na ekranie jako `files.list`, po cichu i w obu językach.
+    const wanted = [
+      ...capabilityCatalogue.flatMap((z) => [
+        `capability.${z.id}.name`,
+        `capability.${z.id}.description`,
+        `capability.department.${z.department}`,
+      ]),
+      ...USERS.flatMap((u) =>
+        u.quickTasks.flatMap((id) => [
+          `quickTask.${id}.title`,
+          `quickTask.${id}.hint`,
+          `quickTask.${id}.text`,
+        ]),
+      ),
+      ...USERS.map((u) => `capability.department.${u.department}`),
+    ]
+    expect(wanted.length).toBeGreaterThan(30)
+    expect(wanted.filter((k) => !plKeys.includes(k))).toEqual([])
   })
 
   it("brak klucza oddaje sam klucz, a nie pustkę", () => {

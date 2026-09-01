@@ -10,14 +10,19 @@ import { CapabilityButton } from "./capability-list"
 import { Icon } from "./icon"
 import { useToast } from "./toast"
 
-type QuickTask = { title: string; hint: string; text: string }
+/**
+ * Zlecenie startowe przychodzi IDENTYFIKATOREM, a słowa dobiera słownik. Wstawiany
+ * tekst jest tym, co człowiek wysyła modelowi — więc idzie w języku, w którym ta
+ * osoba pracuje, a nie w tym, w którym napisano zasiew.
+ */
+type QuickTask = { id: string; title: string; hint: string; text: string }
 
 export function Composer({
   quickTasks,
   policyFor: p,
   hasCases,
 }: {
-  quickTasks: QuickTask[]
+  quickTasks: string[]
   policyFor: Policy
   hasCases: number
 }) {
@@ -32,12 +37,22 @@ export function Composer({
   const picker = useRef<HTMLInputElement>(null)
   const translate = useDeskT()
 
+  const tasks: QuickTask[] = quickTasks.map((id) => ({
+    id,
+    title: translate(`quickTask.${id}.title`),
+    hint: translate(`quickTask.${id}.hint`),
+    text: translate(`quickTask.${id}.text`),
+  }))
+
   // ?new=1 z paska bocznego ustawia kursor w polu, zamiast tylko przeładowywać stronę
   useEffect(() => {
     if (!params.get("new")) return
     box.current?.focus()
     box.current?.scrollIntoView({ block: "center", behavior: "smooth" })
-    window.history.replaceState(null, "", "/")
+    // `t("/")`, a nie `"/"`. Pod powłoką korzeń należy do katalogu aplikacji, więc
+    // ten jeden znak przepisywał adres Biurka na cudzy — i wychodziło to dopiero
+    // przy odświeżeniu strony, czyli nigdy w czasie klikania.
+    window.history.replaceState(null, "", href("/"))
   }, [params])
 
   /**
@@ -178,9 +193,9 @@ export function Composer({
         <>
           <p className="t-meta mb-2.5 mt-5">{translate("composer.startFrom")}</p>
           <div className="grid gap-2.5 sm:grid-cols-2">
-            {quickTasks.map((z) => (
+            {tasks.map((z) => (
               <button
-                key={z.title}
+                key={z.id}
                 onClick={() => {
                   setText(z.text)
                   box.current?.focus()
@@ -197,9 +212,9 @@ export function Composer({
 
       {chipMode && (
         <div className="mt-3 flex flex-wrap gap-2">
-          {quickTasks.map((z) => (
+          {tasks.map((z) => (
             <button
-              key={z.title}
+              key={z.id}
               onClick={() => {
                 setText(z.text)
                 box.current?.focus()
@@ -223,9 +238,9 @@ export function Composer({
           </button>
           {showHints && (
             <div className="mt-2 flex flex-wrap gap-2">
-              {quickTasks.map((z) => (
+              {tasks.map((z) => (
                 <button
-                  key={z.title}
+                  key={z.id}
                   onClick={() => {
                     setText(z.text)
                     box.current?.focus()

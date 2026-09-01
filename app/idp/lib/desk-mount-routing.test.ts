@@ -27,9 +27,18 @@ const ROOTS = ["packages/@cortex/desk-ui/src", "packages/@cortex/desk-app/src", 
  * Adresy, które NIE są trasą Next.js tej aplikacji, więc prefiks ich nie dotyczy.
  * Lista jest jawna, bo każdy wpis to zgoda na wyjątek, a nie wzorzec.
  */
-const NOT_A_ROUTE = [
-  "/", // sam korzeń bez prefiksu bywa poprawny w `href` zewnętrznego linku
-]
+/**
+ * Adresy, które NIE są trasą Next.js tej aplikacji, więc prefiks ich nie dotyczy.
+ * Lista jest PUSTA i to jest wynik, nie zaniedbanie.
+ *
+ * Stał tu wcześniej jeden wpis — sam korzeń `"/"`, wpuszczony jako „bywa poprawny
+ * w linku zewnętrznym". Kiedy do strażnika doszło `history.replaceState`, okazało się,
+ * że ten wyjątek osłaniał w całym repozytorium dokładnie jedno miejsce: przepisanie
+ * paska adresu na `"/"` w polu zlecenia, które pod powłoką wyprowadzało z Biurka.
+ * Wyjście do katalogu aplikacji idzie stałą `HUB`, a nie literałem, więc wyjątku
+ * nie potrzebuje nikt.
+ */
+const NOT_A_ROUTE: string[] = []
 
 const listFiles = (root: string): string[] => {
   const abs = path.join(repoRoot, root)
@@ -95,6 +104,18 @@ function offences(relative: string): Offence[] {
     ) {
       check(node.arguments[0], `${node.expression.name.text}()`)
     }
+    // `window.history.replaceState(null, "", "/")` — adres siedzi w TRZECIM argumencie.
+    // Ta postać przepisuje pasek adresu z pominięciem routera, więc pod powłoką
+    // podmieniała adres Biurka na korzeń powłoki. Wychodziło to dopiero przy
+    // odświeżeniu strony, czyli nigdy w czasie klikania.
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      ["pushState", "replaceState"].includes(node.expression.name.text) &&
+      node.arguments[2]
+    ) {
+      check(node.arguments[2], `${node.expression.name.text}()`)
+    }
     // `<Link href="/files">`, `<a href={`/case/${id}`}>`
     if (ts.isJsxAttribute(node) && node.name.getText(source) === "href" && node.initializer) {
       const value = ts.isJsxExpression(node.initializer)
@@ -111,6 +132,10 @@ function offences(relative: string): Offence[] {
 describe("Biurko działa pod oboma montażami", () => {
   it("skan obejmuje realny zbiór plików, a nie pusty", () => {
     expect(files.length).toBeGreaterThan(30)
+  })
+
+  it("lista wyjątków jest pusta — przypięte, żeby nie odrosła po cichu", () => {
+    expect(NOT_A_ROUTE).toEqual([])
   })
 
   it("żaden adres wewnętrzny nie jest wpisany z pominięciem prefiksu", () => {
@@ -130,7 +155,9 @@ describe("Biurko działa pod oboma montażami", () => {
       `const a = <Link href="/files" />
        const b = <Link href={t("/files")} />
        router.push("/case/1")
-       router.push(t("/case/1"))`,
+       router.push(t("/case/1"))
+       window.history.replaceState(null, "", "/files")
+       window.history.replaceState(null, "", t("/files"))`,
       ts.ScriptTarget.Latest,
       true,
       ts.ScriptKind.TSX,
@@ -155,6 +182,16 @@ describe("Biurko działa pod oboma montażami", () => {
       ) {
         found.push(`push(): ${(node.arguments[0] as ts.StringLiteral).text}`)
       }
+      if (
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        node.expression.name.text === "replaceState" &&
+        node.arguments[2] &&
+        ts.isStringLiteral(node.arguments[2]) &&
+        !insidePrefixing(node.arguments[2])
+      ) {
+        found.push(`replaceState(): ${(node.arguments[2] as ts.StringLiteral).text}`)
+      }
       if (ts.isJsxAttribute(node) && node.name.getText(probe) === "href" && node.initializer) {
         const value = ts.isJsxExpression(node.initializer)
           ? node.initializer.expression
@@ -166,6 +203,6 @@ describe("Biurko działa pod oboma montażami", () => {
       ts.forEachChild(node, visit)
     }
     visit(probe)
-    expect(found).toEqual(["href: /files", "push(): /case/1"])
+    expect(found).toEqual(["href: /files", "push(): /case/1", "replaceState(): /files"])
   })
 })

@@ -1,4 +1,5 @@
 import type { DeskT } from "@cortex/desk-ui/i18n/locale"
+import { capabilityLabel, departmentLabel } from "./capability-text"
 import { pairSteps } from "./steps"
 import { cardFor } from "./tool-cards"
 import type { DeskEvent } from "./types"
@@ -40,15 +41,18 @@ export function evidenceFromEvents(events: DeskEvent[], translate: DeskT): Evide
   // tylko dlatego, że ta osoba nie ma na nie zgody
   const notAllowed = events
     .filter((e): e is Extract<DeskEvent, { type: "blocked" }> => e.type === "blocked")
-    .map((e) =>
-      e.name
+    .map((e) => {
+      // Nazwa zdolności powstaje z jej TOŻSAMOŚCI; `e.name` niosą wyłącznie zdarzenia
+      // zapisane, zanim katalog przestał nosić słowa.
+      const name = capabilityLabel(translate, e.capabilityId, e.name ?? "")
+      return name
         ? translate("evidence.blockedNamed", {
             description: e.description,
-            name: e.name,
-            department: e.department ?? "",
+            name,
+            department: departmentLabel(translate, e.department),
           })
-        : e.description,
-    )
+        : e.description
+    })
 
   const fromDesk = new Set<string>()
   const saved = new Set<string>()
