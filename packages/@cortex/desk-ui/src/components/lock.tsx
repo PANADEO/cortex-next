@@ -43,10 +43,10 @@ export function CapabilityLock({
   }
 
   return (
-    <div className="flex max-w-miara gap-2.5 rounded-lg border bg-surface px-3.5 py-3">
-      <Icon as={Lock} px={16} className="mt-0.5 shrink-0 text-cichy" />
+    <div className="flex max-w-desk-measure gap-2.5 rounded-lg border bg-desk-surface px-3.5 py-3">
+      <Icon as={Lock} px={16} className="mt-0.5 shrink-0 text-desk-muted" />
       <div className="min-w-0">
-        <div className="t-tresc">
+        <div className="t-body">
           {name ? (
             <>
               Do tego potrzebuję zdolności <span className="font-medium">„{name}”</span>, której nie
@@ -62,14 +62,14 @@ export function CapabilityLock({
         </div>
         {capabilityId &&
           (sent ? (
-            <div className="mt-2 flex items-center gap-1.5 text-[12px] text-ok">
+            <div className="mt-2 flex items-center gap-1.5 text-[12px] text-desk-ok">
               <Icon as={ShieldCheck} px={12} /> Prośba wysłana — czeka na rozpatrzenie
             </div>
           ) : (
             <button
               onClick={request}
               disabled={taken}
-              className="t-btn mt-2 rounded-md border px-2.5 py-1 hover:bg-raised disabled:opacity-50"
+              className="t-btn mt-2 rounded-md border px-2.5 py-1 hover:bg-desk-raised disabled:opacity-50"
             >
               Poproś o dostęp
             </button>

@@ -132,10 +132,10 @@ export function FileExplorer() {
         setAbove(false)
         upload(e.dataTransfer.files)
       }}
-      className="mx-auto max-w-strumien px-5 py-8 pb-24 md:pb-8"
+      className="mx-auto max-w-desk-stream px-5 py-8 pb-24 md:pb-8"
     >
       <h1 className="t-display">Moje pliki</h1>
-      <p className="t-tresc mt-1 text-cichy">
+      <p className="t-body mt-1 text-desk-muted">
         Tu trzymasz to, na czym pracujesz. Pliki zostają na biurku — nie znikają razem ze sprawą.
       </p>
 
@@ -144,13 +144,13 @@ export function FileExplorer() {
         <button
           onClick={() => picker.current?.click()}
           disabled={taken}
-          className="t-btn flex h-9 items-center gap-1.5 rounded-md bg-akcent px-3.5 text-akcent-ink hover:bg-akcent-hover disabled:opacity-50"
+          className="t-btn flex h-9 items-center gap-1.5 rounded-md bg-desk-accent px-3.5 text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-50"
         >
           <Icon as={Upload} px={16} /> {taken ? "Wgrywam…" : "Dodaj pliki"}
         </button>
         <button
           onClick={() => setNewFolder(true)}
-          className="t-btn flex h-9 items-center gap-1.5 rounded-md border px-3.5 hover:bg-raised"
+          className="t-btn flex h-9 items-center gap-1.5 rounded-md border px-3.5 hover:bg-desk-raised"
         >
           <Icon as={FolderPlus} px={16} /> Nowy folder
         </button>
@@ -159,15 +159,15 @@ export function FileExplorer() {
       <nav aria-label="Ścieżka" className="t-meta mt-4 flex flex-wrap items-center gap-0.5">
         {breadcrumbs.map((o, i) => (
           <span key={i} className="flex items-center gap-0.5">
-            {i > 0 && <Icon as={ChevronRight} px={12} className="text-cichy-2" />}
+            {i > 0 && <Icon as={ChevronRight} px={12} className="text-desk-muted-2" />}
             {i === 0 ? (
-              <span className="text-cichy-2">{o}</span>
+              <span className="text-desk-muted-2">{o}</span>
             ) : i === breadcrumbs.length - 1 ? (
-              <span className="font-medium text-ink">{o}</span>
+              <span className="font-medium text-desk-ink">{o}</span>
             ) : (
               <button
                 onClick={() => goTo(paths[i - 1] ?? "")}
-                className="rounded-sm px-1 hover:bg-raised hover:text-ink"
+                className="rounded-sm px-1 hover:bg-desk-raised hover:text-desk-ink"
               >
                 {o}
               </button>
@@ -177,23 +177,23 @@ export function FileExplorer() {
       </nav>
 
       <div
-        className={`mt-2 overflow-hidden rounded-lg border bg-surface ${above ? "border-2 border-dashed border-akcent bg-akcent-soft" : ""}`}
+        className={`mt-2 overflow-hidden rounded-lg border bg-desk-surface ${above ? "border-2 border-dashed border-desk-accent bg-desk-accent-soft" : ""}`}
       >
         {above ? (
-          <div className="t-tresc p-10 text-center text-akcent-soft-ink">
+          <div className="t-body p-10 text-center text-desk-accent-soft-ink">
             Upuść pliki tutaj — trafią do: {folder.split("/").pop()}
           </div>
         ) : files.length === 0 && !newFolder ? (
           <div className="p-10 text-center">
-            <Icon as={Inbox} px={24} className="mx-auto text-cichy-2" />
-            <p className="t-tresc mt-2">Tu jeszcze nic nie ma</p>
+            <Icon as={Inbox} px={24} className="mx-auto text-desk-muted-2" />
+            <p className="t-body mt-2">Tu jeszcze nic nie ma</p>
             <p className="t-meta">Przeciągnij pliki albo kliknij „Dodaj pliki”.</p>
           </div>
         ) : (
           <ul aria-label="Pliki w tym folderze" className="divide-y">
             {newFolder && (
-              <li className="flex h-wiersz items-center gap-2 px-3">
-                <span className="grid w-7 shrink-0 place-items-center text-cichy">
+              <li className="flex h-desk-row items-center gap-2 px-3">
+                <span className="grid w-7 shrink-0 place-items-center text-desk-muted">
                   <Icon as={FolderPlus} px={16} />
                 </span>
                 <input
@@ -212,7 +212,7 @@ export function FileExplorer() {
                     setNewFolder(false)
                   }}
                   onBlur={() => setNewFolder(false)}
-                  className="t-tresc min-w-0 flex-1 rounded-sm border bg-bg px-1.5 py-0.5 outline-none"
+                  className="t-body min-w-0 flex-1 rounded-sm border bg-desk-bg px-1.5 py-0.5 outline-none"
                 />
               </li>
             )}
@@ -237,14 +237,14 @@ export function FileExplorer() {
       <div className="mt-4">
         <button
           onClick={() => setShowTrash((k) => !k)}
-          className="t-meta flex items-center gap-1.5 hover:text-ink"
+          className="t-meta flex items-center gap-1.5 hover:text-desk-ink"
         >
           <Icon as={Trash2} px={14} />
           Kosz {trash.length > 0 && `(${trash.length})`}
           <Icon as={ChevronDown} px={12} className={showTrash ? "rotate-180" : ""} />
         </button>
         {showTrash && (
-          <div className="mt-2 rounded-lg border bg-surface p-3">
+          <div className="mt-2 rounded-lg border bg-desk-surface p-3">
             {trash.length === 0 ? (
               <p className="t-meta">Kosz jest pusty.</p>
             ) : (
@@ -252,7 +252,7 @@ export function FileExplorer() {
                 {trash.map((k) => (
                   <li key={k.id} className="flex items-center gap-2">
                     <span className="min-w-0 flex-1">
-                      <span className="t-tresc block truncate">{k.name}</span>
+                      <span className="t-body block truncate">{k.name}</span>
                       <span className="t-micro block">
                         z {k.from} · {when(k.when)}
                       </span>
@@ -266,7 +266,7 @@ export function FileExplorer() {
                           })
                         }
                       }}
-                      className="flex h-7 shrink-0 items-center gap-1 rounded-sm border px-2 text-[12px] hover:bg-raised"
+                      className="flex h-7 shrink-0 items-center gap-1 rounded-sm border px-2 text-[12px] hover:bg-desk-raised"
                     >
                       <Icon as={RotateCcw} px={12} /> Przywróć
                     </button>
@@ -298,21 +298,21 @@ export function FileExplorer() {
 
       <Dialog.Root open={Boolean(preview)} onOpenChange={(o) => !o && setPreview(null)}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-40 bg-ink/25" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[85vh] w-[min(820px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border bg-surface shadow-okno">
+          <Dialog.Overlay className="fixed inset-0 z-40 bg-desk-ink/25" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[85vh] w-[min(820px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border bg-desk-surface shadow-desk-window">
             <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
               <Dialog.Title className="t-h3 min-w-0 flex-1 truncate">{preview?.name}</Dialog.Title>
               {preview && (
                 <a
                   href={fileUrl(preview, true)}
-                  className="t-btn rounded-sm px-2 py-1 text-cichy hover:bg-raised hover:text-ink"
+                  className="t-btn rounded-sm px-2 py-1 text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
                 >
                   Pobierz
                 </a>
               )}
               <Dialog.Close
                 aria-label="Zamknij podgląd"
-                className="grid h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised"
+                className="grid h-8 w-8 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised"
               >
                 <Icon as={X} px={16} />
               </Dialog.Close>

@@ -236,7 +236,7 @@
   /* Domino — WYŁĄCZNIE wartości, ani jednej reguły układu (D3/D8), i po E4
      wiadomo, że to nie jest samoograniczenie: cała struktura tego wyglądu
      (`.ch-mast`, `.ch-tile`, `.ch-tab` i ~60 reguł siostrzanych u Cezarego)
-     zmieściła się w wariantach CVA i narzędziach Tailwinda, więc arkusz nie
+     zmieściła się w wariantach CVA i narzędziach Tailwinda, więc sheet nie
      dostał ani jednej ręcznie napisanej reguły. Nadpisywane są tokeny, które
      Domino faktycznie przestawia — reszta dziedziczy z `:root`, bo
      `.skin-domino` siada na tym samym elemencie co `:root` i wygrywa

@@ -45,8 +45,8 @@ export function Preview({ file }: { file: FileMeta }) {
   if (!isText)
     return (
       <div className="rounded-lg border border-dashed p-6 text-center">
-        <Icon as={FileQuestion} px={24} className="mx-auto text-cichy-2" />
-        <p className="t-tresc mt-2">Tego pliku nie umiem pokazać na ekranie.</p>
+        <Icon as={FileQuestion} px={24} className="mx-auto text-desk-muted-2" />
+        <p className="t-body mt-2">Tego pliku nie umiem pokazać na ekranie.</p>
         <p className="t-meta">Pobierz go, żeby otworzyć w swoim programie.</p>
       </div>
     )
@@ -70,7 +70,7 @@ export function Preview({ file }: { file: FileMeta }) {
                 {head?.split(sep).map((c, i) => (
                   <th
                     key={i}
-                    className="border-b bg-raised/60 px-2.5 py-1.5 text-left text-[12px] font-semibold text-cichy"
+                    className="border-b bg-desk-raised/60 px-2.5 py-1.5 text-left text-[12px] font-semibold text-desk-muted"
                   >
                     {c}
                   </th>
@@ -100,7 +100,7 @@ export function Preview({ file }: { file: FileMeta }) {
   }
 
   return (
-    <pre className="overflow-x-auto whitespace-pre-wrap rounded-md bg-sunken p-3 font-mono text-[13px] leading-5">
+    <pre className="overflow-x-auto whitespace-pre-wrap rounded-md bg-desk-sunken p-3 font-mono text-[13px] leading-5">
       {text}
     </pre>
   )

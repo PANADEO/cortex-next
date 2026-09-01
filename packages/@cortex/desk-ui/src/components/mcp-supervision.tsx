@@ -76,7 +76,7 @@ export function McpSupervision() {
 
   return (
     <section className="mt-8">
-      <h2 className="t-sekcja mb-1">Narzędzia spoza firmy</h2>
+      <h2 className="t-section mb-1">Narzędzia spoza firmy</h2>
       <p className="t-meta mb-3">
         Każde narzędzie przyjmujesz osobno i opisujesz własnymi słowami — asystent zobaczy Twój
         opis, nigdy tekst przysłany przez dostawcę.
@@ -84,22 +84,22 @@ export function McpSupervision() {
 
       <div className="space-y-3">
         {servers.map((s) => (
-          <div key={s.name} className="overflow-hidden rounded-lg border bg-surface">
+          <div key={s.name} className="overflow-hidden rounded-lg border bg-desk-surface">
             <div className="flex items-center gap-2 border-b px-4 py-2.5">
-              <Icon as={Globe} px={16} className="shrink-0 text-cichy" />
+              <Icon as={Globe} px={16} className="shrink-0 text-desk-muted" />
               <div className="min-w-0 flex-1">
-                <div className="t-tresc-m">{s.label}</div>
+                <div className="t-body-m">{s.label}</div>
                 <div className="t-micro truncate">{s.url}</div>
               </div>
               <button
                 onClick={() => inspect(s)}
                 disabled={busy === `p:${s.name}`}
-                className="t-btn flex h-8 items-center gap-1.5 rounded-md border px-2.5 hover:bg-raised disabled:opacity-50"
+                className="t-btn flex h-8 items-center gap-1.5 rounded-md border px-2.5 hover:bg-desk-raised disabled:opacity-50"
               >
                 <Icon
                   as={RefreshCw}
                   px={14}
-                  className={busy === `p:${s.name}` ? "obrot" : undefined}
+                  className={busy === `p:${s.name}` ? "spin" : undefined}
                 />
                 Przejrzyj
               </button>
@@ -113,10 +113,10 @@ export function McpSupervision() {
                 <li key={n.remoteName} className="px-4 py-3">
                   <div className="flex items-start gap-2">
                     {n.status === "wstrzymane" && (
-                      <Icon as={ShieldAlert} px={16} className="mt-0.5 shrink-0 text-warn" />
+                      <Icon as={ShieldAlert} px={16} className="mt-0.5 shrink-0 text-desk-warn" />
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="t-tresc-m">{n.shortLabel}</div>
+                      <div className="t-body-m">{n.shortLabel}</div>
                       <div className="t-meta">{n.description}</div>
                       <div className="t-micro pt-0.5">
                         wymaga zdolności „
@@ -124,9 +124,9 @@ export function McpSupervision() {
                         {" · "}przyjął {n.approvedBy}
                       </div>
                       {n.status === "wstrzymane" && (
-                        <p className="t-meta mt-1.5 rounded-md bg-warn-soft px-2.5 py-1.5">
-                          <span className="font-medium text-ink">Wstrzymane.</span> {n.reason} Do
-                          czasu ponownego przyjęcia asystent tego nie dostaje.
+                        <p className="t-meta mt-1.5 rounded-md bg-desk-warn-soft px-2.5 py-1.5">
+                          <span className="font-medium text-desk-ink">Wstrzymane.</span> {n.reason}{" "}
+                          Do czasu ponownego przyjęcia asystent tego nie dostaje.
                         </p>
                       )}
                     </div>
@@ -142,7 +142,7 @@ export function McpSupervision() {
                           load()
                         }
                       }}
-                      className="grid h-8 w-8 shrink-0 place-items-center rounded-sm text-cichy hover:bg-raised hover:text-ink"
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
                       aria-label={`Wycofaj ${n.shortLabel}`}
                     >
                       <Icon as={X} px={16} />
@@ -153,8 +153,8 @@ export function McpSupervision() {
             </ul>
 
             {candidates[s.name] && (
-              <div className="border-t bg-raised/30 px-4 py-3">
-                <div className="t-sekcja mb-2">Co ten serwer wystawia</div>
+              <div className="border-t bg-desk-raised/30 px-4 py-3">
+                <div className="t-section mb-2">Co ten serwer wystawia</div>
                 <div className="space-y-3">
                   {(candidates[s.name] ?? []).map((k) => (
                     <Candidate
@@ -204,7 +204,7 @@ export function McpSupervision() {
       ) : (
         <button
           onClick={() => setNewForm(true)}
-          className="t-btn mt-3 flex h-9 items-center gap-1.5 rounded-md border px-3 hover:bg-raised"
+          className="t-btn mt-3 flex h-9 items-center gap-1.5 rounded-md border px-3 hover:bg-desk-raised"
         >
           <Icon as={Plus} px={14} /> Dodaj serwer
         </button>
@@ -236,11 +236,11 @@ function Candidate({
 
   if (k.rejected) {
     return (
-      <div className="rounded-md border border-warn/40 bg-warn-soft px-3 py-2.5">
+      <div className="rounded-md border border-desk-warn/40 bg-desk-warn-soft px-3 py-2.5">
         <div className="flex items-start gap-2">
-          <Icon as={TriangleAlert} px={14} className="mt-0.5 shrink-0 text-warn" />
+          <Icon as={TriangleAlert} px={14} className="mt-0.5 shrink-0 text-desk-warn" />
           <div>
-            <div className="t-tresc-m">{k.remoteName}</div>
+            <div className="t-body-m">{k.remoteName}</div>
             <p className="t-meta">{k.rejected}</p>
           </div>
         </div>
@@ -249,11 +249,13 @@ function Candidate({
   }
 
   return (
-    <div className="rounded-md border bg-surface px-3 py-2.5">
+    <div className="rounded-md border bg-desk-surface px-3 py-2.5">
       <div className="flex items-baseline gap-2">
         <span className="font-mono text-[13px]">{k.remoteName}</span>
         {k.alreadyAccepted && <span className="t-micro">już przyjęte</span>}
-        {again && <span className="t-micro text-warn">wstrzymane — wymaga ponownej zgody</span>}
+        {again && (
+          <span className="t-micro text-desk-warn">wstrzymane — wymaga ponownej zgody</span>
+        )}
       </div>
 
       {k.foreignDescription && (
@@ -261,8 +263,8 @@ function Candidate({
           <summary className="t-micro cursor-pointer">Co dostawca pisze o tym narzędziu</summary>
           {/* Jedyne miejsce w aplikacji, gdzie ten tekst wolno pokazać — i zawsze z etykietą,
               czyj jest. Do modelu nie trafia nigdy. */}
-          <p className="t-meta mt-1 rounded-sm bg-sunken px-2.5 py-1.5">
-            <span className="font-medium text-ink">Tekst dostawcy serwera, nie nasz:</span>{" "}
+          <p className="t-meta mt-1 rounded-sm bg-desk-sunken px-2.5 py-1.5">
+            <span className="font-medium text-desk-ink">Tekst dostawcy serwera, nie nasz:</span>{" "}
             {k.foreignDescription}
           </p>
         </details>
@@ -274,20 +276,20 @@ function Candidate({
             value={shortLabel}
             onChange={(e) => setShortLabel(e.target.value)}
             placeholder="Krótko, co to robi — np. „sprawdzenie statusu VAT”"
-            className="t-tresc h-9 w-full rounded-md border bg-bg px-2.5 outline-none placeholder:text-cichy-2"
+            className="t-body h-9 w-full rounded-md border bg-desk-bg px-2.5 outline-none placeholder:text-desk-muted-2"
           />
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
             placeholder="Opis dla asystenta, własnymi słowami — to zdanie zobaczy model"
-            className="t-tresc w-full resize-none rounded-md border bg-bg px-2.5 py-2 outline-none placeholder:text-cichy-2"
+            className="t-body w-full resize-none rounded-md border bg-desk-bg px-2.5 py-2 outline-none placeholder:text-desk-muted-2"
           />
           <div className="flex items-center gap-2">
             <select
               value={capability}
               onChange={(e) => setCapability(e.target.value)}
-              className="t-tresc h-9 flex-1 rounded-md border bg-bg px-2"
+              className="t-body h-9 flex-1 rounded-md border bg-desk-bg px-2"
             >
               {capabilities.map((z) => (
                 <option key={z.id} value={z.id}>
@@ -298,7 +300,7 @@ function Candidate({
             <button
               onClick={() => accept(description, shortLabel, capability)}
               disabled={busy || !description.trim() || !shortLabel.trim()}
-              className="t-btn h-9 shrink-0 rounded-md bg-akcent px-3 text-akcent-ink hover:bg-akcent-hover disabled:opacity-40"
+              className="t-btn h-9 shrink-0 rounded-md bg-desk-accent px-3 text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-40"
             >
               {again ? "Przyjmij ponownie" : "Przyjmij"}
             </button>
@@ -320,34 +322,34 @@ function NewServer({
   const [label, setLabel] = useState("")
   const [url, setUrl] = useState("")
   return (
-    <div className="mt-3 space-y-2 rounded-lg border bg-surface p-4">
+    <div className="mt-3 space-y-2 rounded-lg border bg-desk-surface p-4">
       <input
         value={label}
         onChange={(e) => setLabel(e.target.value)}
         placeholder="Nazwa dla ludzi — np. „wykaz podatników VAT”"
-        className="t-tresc h-9 w-full rounded-md border bg-bg px-2.5 outline-none placeholder:text-cichy-2"
+        className="t-body h-9 w-full rounded-md border bg-desk-bg px-2.5 outline-none placeholder:text-desk-muted-2"
       />
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Nazwa techniczna — małe litery i myślnik, np. vat-registry"
-        className="h-9 w-full rounded-md border bg-bg px-2.5 font-mono text-[13px] outline-none placeholder:text-cichy-2"
+        className="h-9 w-full rounded-md border bg-desk-bg px-2.5 font-mono text-[13px] outline-none placeholder:text-desk-muted-2"
       />
       <input
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="Adres serwera MCP (Streamable HTTP)"
-        className="h-9 w-full rounded-md border bg-bg px-2.5 font-mono text-[13px] outline-none placeholder:text-cichy-2"
+        className="h-9 w-full rounded-md border bg-desk-bg px-2.5 font-mono text-[13px] outline-none placeholder:text-desk-muted-2"
       />
       <div className="flex gap-2 pt-1">
         <button
           onClick={() => add(name, label, url)}
           disabled={!name || !url}
-          className="t-btn h-9 rounded-md bg-akcent px-3 text-akcent-ink hover:bg-akcent-hover disabled:opacity-40"
+          className="t-btn h-9 rounded-md bg-desk-accent px-3 text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-40"
         >
           Dodaj
         </button>
-        <button onClick={cancel} className="t-btn h-9 rounded-md border px-3 hover:bg-raised">
+        <button onClick={cancel} className="t-btn h-9 rounded-md border px-3 hover:bg-desk-raised">
           Anuluj
         </button>
       </div>

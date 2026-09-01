@@ -25,10 +25,10 @@ export default async function Page() {
   }))
   return (
     <Shell>
-      <div className="pb-pasek h-full overflow-y-auto md:pb-0">
-        <div className="mx-auto max-w-strumien px-5 py-8">
+      <div className="h-full overflow-y-auto pb-desk-bar md:pb-0">
+        <div className="mx-auto max-w-desk-stream px-5 py-8">
           <h1 className="t-display">Wszystkie sprawy</h1>
-          <p className="t-tresc mt-1 text-cichy">
+          <p className="t-body mt-1 text-desk-muted">
             Sprawy zostają na biurku — możesz wrócić do każdej.
           </p>
           <div className="mt-6">

@@ -52,8 +52,8 @@ export function ResultPanel({
       <div className="flex h-full flex-col">
         <div className="grid flex-1 place-items-center p-6 text-center">
           <div>
-            <Icon as={Inbox} px={24} className="mx-auto text-cichy-2" />
-            <p className="t-tresc mt-2 text-cichy">Tu pojawi się gotowy dokument.</p>
+            <Icon as={Inbox} px={24} className="mx-auto text-desk-muted-2" />
+            <p className="t-body mt-2 text-desk-muted">Tu pojawi się gotowy dokument.</p>
           </div>
         </div>
         <FromYou files={attachments} active={null} onPick={onPick} />
@@ -110,7 +110,7 @@ export function ResultPanel({
     <div className="flex h-full flex-col">
       <div className="shrink-0 border-b px-4 py-3">
         <div className="flex items-start gap-2">
-          <Icon as={fileIcon(active)} px={20} className="mt-0.5 shrink-0 text-cichy" />
+          <Icon as={fileIcon(active)} px={20} className="mt-0.5 shrink-0 text-desk-muted" />
           <div className="min-w-0 flex-1">
             <div className="t-h3 break-words">{active.name}</div>
             <div className="t-meta">
@@ -122,8 +122,10 @@ export function ResultPanel({
         {fileStatus && (
           <button
             onClick={toEvidence}
-            className={`mt-2 inline-flex items-center gap-1.5 rounded-pill px-2 py-0.5 text-[12px] ${
-              fileStatus === "niesprawdzony" ? "bg-warn-soft text-warn" : "bg-raised text-cichy"
+            className={`mt-2 inline-flex items-center gap-1.5 rounded-desk-pill px-2 py-0.5 text-[12px] ${
+              fileStatus === "niesprawdzony"
+                ? "bg-desk-warn-soft text-desk-warn"
+                : "bg-desk-raised text-desk-muted"
             }`}
           >
             <Icon as={fileStatus === "niesprawdzony" ? TriangleAlert : ShieldCheck} px={12} />
@@ -153,7 +155,9 @@ export function ResultPanel({
               key={p.path}
               onClick={() => onPick(p)}
               className={`shrink-0 rounded-sm px-2 py-1 text-[13px] ${
-                p.path === active.path ? "bg-raised font-medium" : "text-cichy hover:bg-raised/60"
+                p.path === active.path
+                  ? "bg-desk-raised font-medium"
+                  : "text-desk-muted hover:bg-desk-raised/60"
               }`}
             >
               {p.name}
@@ -187,7 +191,7 @@ function FromYou({
     <div className="shrink-0 border-t">
       <button
         onClick={() => setOpenItems((o) => !o)}
-        className="t-meta flex h-9 w-full items-center gap-1.5 px-4 hover:text-ink"
+        className="t-meta flex h-9 w-full items-center gap-1.5 px-4 hover:text-desk-ink"
       >
         <Icon as={Paperclip} px={12} />
         Od Ciebie ({files.length})
@@ -199,11 +203,11 @@ function FromYou({
             <li key={p.path}>
               <button
                 onClick={() => onPick(p)}
-                className={`flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[13px] hover:bg-raised ${
-                  p.path === active?.path ? "bg-raised font-medium" : ""
+                className={`flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[13px] hover:bg-desk-raised ${
+                  p.path === active?.path ? "bg-desk-raised font-medium" : ""
                 }`}
               >
-                <Icon as={fileIcon(p)} px={14} className="shrink-0 text-cichy" />
+                <Icon as={fileIcon(p)} px={14} className="shrink-0 text-desk-muted" />
                 <span className="min-w-0 flex-1 truncate">{p.name}</span>
                 <span className="t-micro shrink-0">{size(p.size)}</span>
               </button>
@@ -221,7 +225,7 @@ function Action({ icon, title, na }: { icon: LucideIcon; title: string; na: () =
       onClick={na}
       title={title}
       aria-label={title}
-      className="grid h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised hover:text-ink"
+      className="grid h-8 w-8 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
     >
       <Icon as={icon} px={16} />
     </button>

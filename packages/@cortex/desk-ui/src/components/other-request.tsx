@@ -36,13 +36,13 @@ export function OtherRequest() {
 
   return (
     <Dialog.Root open={openItems} onOpenChange={setOpenItems}>
-      <Dialog.Trigger className="t-btn flex items-center gap-1.5 rounded-md border px-3 py-1.5 hover:bg-raised">
-        <Icon as={MessageSquarePlus} px={16} className="text-cichy" />
+      <Dialog.Trigger className="t-btn flex items-center gap-1.5 rounded-md border px-3 py-1.5 hover:bg-desk-raised">
+        <Icon as={MessageSquarePlus} px={16} className="text-desk-muted" />
         Potrzebuję czegoś innego
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-ink/25" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(520px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border bg-surface shadow-okno">
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-desk-ink/25" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(520px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border bg-desk-surface shadow-desk-window">
           <div className="flex items-start gap-3 border-b px-4 py-3">
             <div className="min-w-0 flex-1">
               <Dialog.Title className="t-h3">Napisz, czego potrzebujesz</Dialog.Title>
@@ -53,7 +53,7 @@ export function OtherRequest() {
             </div>
             <Dialog.Close
               aria-label="Zamknij"
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-sm text-cichy hover:bg-raised"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised"
             >
               <Icon as={X} px={16} />
             </Dialog.Close>
@@ -68,17 +68,17 @@ export function OtherRequest() {
               placeholder={
                 "np. „Żeby asystent umiał wystawić fakturę w naszym systemie” albo „Żeby czytał pliki z dysku sieciowego działu”"
               }
-              className="t-tresc w-full resize-none rounded-md border bg-bg px-3 py-2 outline-none placeholder:text-cichy-2"
+              className="t-body w-full resize-none rounded-md border bg-desk-bg px-3 py-2 outline-none placeholder:text-desk-muted-2"
             />
           </div>
           <div className="flex justify-end gap-2 border-t px-4 py-3">
-            <Dialog.Close className="t-btn rounded-md border px-3 py-1.5 hover:bg-raised">
+            <Dialog.Close className="t-btn rounded-md border px-3 py-1.5 hover:bg-desk-raised">
               Anuluj
             </Dialog.Close>
             <button
               onClick={send}
               disabled={!text.trim() || taken}
-              className="t-btn rounded-md bg-akcent px-3 py-1.5 text-akcent-ink hover:bg-akcent-hover disabled:opacity-40"
+              className="t-btn rounded-md bg-desk-accent px-3 py-1.5 text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-40"
             >
               Wyślij prośbę
             </button>

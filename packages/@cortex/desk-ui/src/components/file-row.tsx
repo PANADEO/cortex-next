@@ -102,12 +102,12 @@ export function FileRow({
   }
 
   return (
-    <li className={active ? "bg-raised" : undefined}>
+    <li className={active ? "bg-desk-raised" : undefined}>
       <div
         onKeyDown={shortcuts}
-        className="group flex h-wiersz items-center gap-2 px-3 hover:bg-raised/60"
+        className="group flex h-desk-row items-center gap-2 px-3 hover:bg-desk-raised/60"
       >
-        <span className="grid w-7 shrink-0 place-items-center text-cichy">
+        <span className="grid w-7 shrink-0 place-items-center text-desk-muted">
           <Icon as={fileIcon(p)} px={16} />
         </span>
 
@@ -131,12 +131,12 @@ export function FileRow({
             }}
             onBlur={() => void saveName()}
             aria-label="Nowa nazwa pliku"
-            className="t-tresc min-w-0 flex-1 rounded-sm border bg-bg px-1.5 py-0.5 outline-none"
+            className="t-body min-w-0 flex-1 rounded-sm border bg-desk-bg px-1.5 py-0.5 outline-none"
           />
         ) : (
-          <button onClick={main} className="t-tresc-m flex min-w-0 flex-1 items-center text-left">
+          <button onClick={main} className="t-body-m flex min-w-0 flex-1 items-center text-left">
             <span className="truncate">{core}</span>
-            <span className="shrink-0 text-cichy">{ext}</span>
+            <span className="shrink-0 text-desk-muted">{ext}</span>
           </button>
         )}
 
@@ -148,7 +148,7 @@ export function FileRow({
         <Menu.Root>
           <Menu.Trigger
             aria-label={`Więcej opcji dla ${p.name}`}
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-sm text-cichy opacity-0 hover:bg-raised focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-sm text-desk-muted opacity-0 hover:bg-desk-raised focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
           >
             <Icon as={MoreHorizontal} px={16} />
           </Menu.Trigger>
@@ -159,7 +159,7 @@ export function FileRow({
               // po zamknięciu Radix domyślnie oddaje fokus wyzwalaczowi — a my przy „Zmień nazwę"
               // chcemy go w polu edycji, więc przejmujemy to na siebie
               onCloseAutoFocus={(e) => e.preventDefault()}
-              className="z-50 min-w-[220px] overflow-hidden rounded-md border bg-surface py-1 shadow-pop"
+              className="z-50 min-w-[220px] overflow-hidden rounded-md border bg-desk-surface py-1 shadow-desk-pop"
             >
               {!p.folder && actions.preview && (
                 <MenuItem
@@ -212,13 +212,13 @@ export function FileRow({
           </Menu.Portal>
         </Menu.Root>
       </div>
-      {error && <div className="px-3 pb-2 pl-12 text-[12px] text-bad">{error}</div>}
+      {error && <div className="px-3 pb-2 pl-12 text-[12px] text-desk-bad">{error}</div>}
     </li>
   )
 }
 
 function Divider() {
-  return <Menu.Separator className="my-1 h-px bg-line" />
+  return <Menu.Separator className="my-1 h-px bg-desk-line" />
 }
 
 function MenuItem({
@@ -237,9 +237,9 @@ function MenuItem({
   return (
     <Menu.Item
       onSelect={na}
-      className={`t-tresc flex cursor-pointer items-center gap-2.5 px-3 py-1.5 outline-none data-[highlighted]:bg-raised ${dangerous ? "text-bad" : ""}`}
+      className={`t-body flex cursor-pointer items-center gap-2.5 px-3 py-1.5 outline-none data-[highlighted]:bg-desk-raised ${dangerous ? "text-desk-bad" : ""}`}
     >
-      <Icon as={icon} px={16} className={dangerous ? undefined : "text-cichy"} />
+      <Icon as={icon} px={16} className={dangerous ? undefined : "text-desk-muted"} />
       <span className="flex-1">{label}</span>
       {shortcut && <span className="t-micro">{shortcut}</span>}
     </Menu.Item>

@@ -47,18 +47,18 @@ type Case = {
 }
 
 const LABEL: Record<string, string> = {
-  new: "new",
-  working: "working",
-  done: "done",
-  stopped: "stopped",
+  new: "nowa",
+  working: "pracuje",
+  done: "gotowe",
+  stopped: "przerwane",
   failed: "nie udało się",
 }
 const DOT: Record<string, string> = {
-  new: "bg-cichy-2",
-  working: "bg-akcent puls",
-  done: "bg-ok",
-  stopped: "bg-warn",
-  failed: "bg-bad",
+  new: "bg-desk-muted-2",
+  working: "bg-desk-accent pulse",
+  done: "bg-desk-ok",
+  stopped: "bg-desk-warn",
+  failed: "bg-desk-bad",
 }
 
 type Turn = { key: number; command: AuditEntry | null; work: AuditEntry[]; po: AuditEntry[] }
@@ -354,20 +354,20 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
   return (
     <div className="flex h-full">
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-pasek shrink-0 items-center gap-2 border-b bg-surface px-3">
+        <header className="flex h-desk-bar shrink-0 items-center gap-2 border-b bg-desk-surface px-3">
           <Link
             href={t("/")}
             aria-label="Wróć do biurka"
-            className="grid h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised md:hidden"
+            className="grid h-8 w-8 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised md:hidden"
           >
             <Icon as={ChevronLeft} px={20} />
           </Link>
           <div className="min-w-0 flex-1">
             <div className="t-h3 truncate">{caseFile?.title ?? "Case"}</div>
             <div className="t-meta flex items-center gap-1.5">
-              <span className={`h-1.5 w-1.5 rounded-pill ${DOT[caseFile?.status ?? "new"]}`} />
+              <span className={`h-1.5 w-1.5 rounded-desk-pill ${DOT[caseFile?.status ?? "new"]}`} />
               {isWorking ? (
-                <span className="text-akcent">
+                <span className="text-desk-accent">
                   pracuje · {seconds < 60 ? `${seconds} s` : `${Math.round(seconds / 60)} min`}
                 </span>
               ) : (
@@ -378,7 +378,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
           {isWorking && (
             <button
               onClick={() => fetch(`${api("")}/case/${id}/stop`, { method: "POST" })}
-              className="t-btn flex h-8 items-center gap-1.5 rounded-md border px-2.5 hover:bg-raised"
+              className="t-btn flex h-8 items-center gap-1.5 rounded-md border px-2.5 hover:bg-desk-raised"
             >
               <Icon as={Square} px={14} /> Stop
             </button>
@@ -388,14 +388,14 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
             aria-pressed={panel}
             aria-label={panel ? "Ukryj panel wyniku" : "Pokaż panel wyniku"}
             title={panel ? "Ukryj wynik" : "Pokaż wynik"}
-            className="hidden h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised lg:grid"
+            className="hidden h-8 w-8 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised lg:grid"
           >
             <Icon as={panel ? PanelRightClose : PanelRight} px={16} />
           </button>
           <Menu.Root>
             <Menu.Trigger
               aria-label="Więcej o sprawie"
-              className="grid h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised"
+              className="grid h-8 w-8 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised"
             >
               <Icon as={MoreHorizontal} px={16} />
             </Menu.Trigger>
@@ -404,29 +404,29 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
                 align="end"
                 sideOffset={4}
                 collisionPadding={12}
-                className="z-50 min-w-[240px] rounded-md border bg-surface p-3 shadow-pop"
+                className="z-50 min-w-[240px] rounded-md border bg-desk-surface p-3 shadow-desk-pop"
               >
-                <div className="t-sekcja flex items-center gap-2 pb-2">
+                <div className="t-section flex items-center gap-2 pb-2">
                   <Icon as={Info} px={14} /> Szczegóły sprawy
                 </div>
                 <dl className="t-meta space-y-1">
                   <div className="flex justify-between gap-4">
                     <dt>Czynności</dt>
-                    <dd className="text-ink">
+                    <dd className="text-desk-ink">
                       {entries.filter((w) => w.event.type === "tool_start").length}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-4">
                     <dt>Dokumenty</dt>
-                    <dd className="text-ink">{results.length}</dd>
+                    <dd className="text-desk-ink">{results.length}</dd>
                   </div>
                   <div className="flex justify-between gap-4">
                     <dt>TurnCost</dt>
-                    <dd className="text-ink">{zl(caseFile?.cost ?? 0)}</dd>
+                    <dd className="text-desk-ink">{zl(caseFile?.cost ?? 0)}</dd>
                   </div>
                   <div className="flex justify-between gap-4">
                     <dt>Uprawnienia</dt>
-                    <dd className="text-ink">
+                    <dd className="text-desk-ink">
                       jak w dziale {p.role === "management" ? "Zarząd" : "Księgowość"} (
                       {p.granted.length} z {p.granted.length + p.blocked.length})
                     </dd>
@@ -442,7 +442,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
           onScroll={onScroll}
           className="relative min-h-0 flex-1 overflow-y-auto px-4 py-5"
         >
-          <div className="mx-auto flex max-w-strumien flex-col gap-4">
+          <div className="mx-auto flex max-w-desk-stream flex-col gap-4">
             {turns.map((turn, i) => {
               const lastTurn = i === turns.length - 1 && !sending
               const e = turn.command?.event
@@ -493,7 +493,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
                     if (ev.type === "assistant")
                       return (
                         <div key={w.seq} className="flex flex-col gap-3">
-                          <div className="max-w-miara">
+                          <div className="max-w-desk-measure">
                             <Markdown text={ev.text} />
                           </div>
                           <UnbackedPromises
@@ -509,9 +509,9 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
                       return (
                         <div
                           key={w.seq}
-                          className={`rounded-lg border bg-surface px-4 py-3 ${ev.status === "failed" ? "border-bad" : "border-warn"}`}
+                          className={`rounded-lg border bg-desk-surface px-4 py-3 ${ev.status === "failed" ? "border-desk-bad" : "border-desk-warn"}`}
                         >
-                          <div className="t-tresc-m">
+                          <div className="t-body-m">
                             {ev.status === "failed"
                               ? "Nie dokończyłem tego zlecenia."
                               : "Praca przerwana."}
@@ -520,7 +520,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
                           {ev.status === "failed" && (
                             <button
                               onClick={() => field.current?.focus()}
-                              className="t-btn mt-2 flex h-8 items-center gap-1.5 rounded-md border px-2.5 hover:bg-raised"
+                              className="t-btn mt-2 flex h-8 items-center gap-1.5 rounded-md border px-2.5 hover:bg-desk-raised"
                             >
                               <Icon as={RotateCcw} px={14} /> Napisz inaczej
                             </button>
@@ -556,7 +556,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
                 setAtBottom(true)
                 bottom.current?.scrollIntoView({ behavior: "smooth" })
               }}
-              className="t-meta sticky bottom-2 left-1/2 flex h-8 -translate-x-1/2 items-center gap-1.5 rounded-pill border bg-surface px-3 shadow-pop hover:text-ink"
+              className="t-meta sticky bottom-2 left-1/2 flex h-8 -translate-x-1/2 items-center gap-1.5 rounded-desk-pill border bg-desk-surface px-3 shadow-desk-pop hover:text-desk-ink"
             >
               <Icon as={ArrowDown} px={14} /> Nowe kroki
             </button>
@@ -566,17 +566,17 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
         {active && (
           <button
             onClick={() => setSheet(true)}
-            className="flex h-12 shrink-0 items-center gap-2 border-t bg-surface px-4 text-left lg:hidden"
+            className="flex h-12 shrink-0 items-center gap-2 border-t bg-desk-surface px-4 text-left lg:hidden"
           >
-            <Icon as={fileIcon(active)} px={16} className="shrink-0 text-cichy" />
-            <span className="t-tresc-m min-w-0 flex-1 truncate">{active.name}</span>
+            <Icon as={fileIcon(active)} px={16} className="shrink-0 text-desk-muted" />
+            <span className="t-body-m min-w-0 flex-1 truncate">{active.name}</span>
             <span className="t-meta shrink-0">Otwórz</span>
-            <Icon as={ChevronDown} px={16} className="shrink-0 -rotate-90 text-cichy" />
+            <Icon as={ChevronDown} px={16} className="shrink-0 -rotate-90 text-desk-muted" />
           </button>
         )}
 
-        <div className="shrink-0 border-t bg-surface p-3">
-          <div className="edytor mx-auto max-w-strumien rounded-xl border bg-bg">
+        <div className="shrink-0 border-t bg-desk-surface p-3">
+          <div className="editor mx-auto max-w-desk-stream rounded-xl border bg-desk-bg">
             {pending.length > 0 && (
               <div className="max-h-[136px] overflow-y-auto border-b px-3 py-2.5">
                 <AttachmentList
@@ -608,7 +608,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
               placeholder={
                 taken ? "Pracuję — poczekaj albo naciśnij Stop" : "Napisz, co mam zrobić…"
               }
-              className="t-tresc w-full resize-none bg-transparent px-3.5 pt-3 outline-none placeholder:text-cichy-2"
+              className="t-body w-full resize-none bg-transparent px-3.5 pt-3 outline-none placeholder:text-desk-muted-2"
             />
             <div className="flex items-center gap-1 px-2 pb-2">
               <input
@@ -624,7 +624,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
               <button
                 type="button"
                 onClick={() => picker.current?.click()}
-                className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-cichy hover:bg-raised hover:text-ink"
+                className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
               >
                 <Icon as={Paperclip} px={14} /> Dodaj plik
               </button>
@@ -636,12 +636,12 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
                   (!text.trim() && !pending.length) || taken || pending.some((z) => z.uploading)
                 }
                 aria-label="Wyślij zlecenie"
-                className="grid h-9 w-9 place-items-center rounded-md bg-akcent text-akcent-ink hover:bg-akcent-hover disabled:opacity-35"
+                className="grid h-9 w-9 place-items-center rounded-md bg-desk-accent text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-35"
               >
                 <Icon
                   as={taken ? LoaderCircle : ArrowUp}
                   px={16}
-                  className={taken ? "obrot" : undefined}
+                  className={taken ? "spin" : undefined}
                 />
               </button>
             </div>
@@ -654,7 +654,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
           <PanelHandle width={width} set={setWidth} collapse={() => setPanel(false)} />
           <aside
             style={{ width: width }}
-            className="hidden shrink-0 border-l bg-surface lg:block"
+            className="hidden shrink-0 border-l bg-desk-surface lg:block"
             aria-label="Panel wyniku"
           >
             {table}
@@ -664,13 +664,13 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
 
       <Dialog.Root open={sheet} onOpenChange={setSheet}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-40 bg-ink/25 lg:hidden" />
-          <Dialog.Content className="arkusz fixed inset-x-0 bottom-0 z-50 h-[88vh] overflow-hidden rounded-t-xl border-t bg-surface lg:hidden">
+          <Dialog.Overlay className="fixed inset-0 z-40 bg-desk-ink/25 lg:hidden" />
+          <Dialog.Content className="sheet fixed inset-x-0 bottom-0 z-50 h-[88vh] overflow-hidden rounded-t-xl border-t bg-desk-surface lg:hidden">
             <div className="flex h-11 items-center justify-between border-b px-3">
               <Dialog.Title className="t-h3">Wynik</Dialog.Title>
               <Dialog.Close
                 aria-label="Zamknij"
-                className="grid h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised"
+                className="grid h-8 w-8 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised"
               >
                 <Icon as={X} px={16} />
               </Dialog.Close>
@@ -697,7 +697,7 @@ function Command({
     <div className="flex flex-col items-end gap-2 self-end">
       <AttachmentList files={attachments} open={open} className="justify-end" />
       {text && (
-        <div className="t-tresc max-w-[min(560px,85%)] select-text whitespace-pre-wrap rounded-xl rounded-br-sm bg-akcent-soft px-3.5 py-2.5 text-akcent-soft-ink">
+        <div className="t-body max-w-[min(560px,85%)] select-text whitespace-pre-wrap rounded-xl rounded-br-sm bg-desk-accent-soft px-3.5 py-2.5 text-desk-accent-soft-ink">
           {text}
         </div>
       )}
@@ -709,8 +709,8 @@ function Command({
 function Removing() {
   return (
     <div className="t-meta flex items-center gap-2">
-      <Icon as={LoaderCircle} px={14} className="obrot text-akcent" />
-      <span className="puls">Zabieram się do pracy…</span>
+      <Icon as={LoaderCircle} px={14} className="spin text-desk-accent" />
+      <span className="pulse">Zabieram się do pracy…</span>
     </div>
   )
 }

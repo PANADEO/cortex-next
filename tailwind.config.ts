@@ -114,29 +114,29 @@ const config: Config = {
         // Same WARTOŚCI idą przez `--desk-*` z `@cortex/styles/desk.css`, gdzie mostek
         // podpina je pod tokeny presetu; promienie i kroje pisma Biurko bierze wprost
         // z powłoki i nie ma tu dla nich ani jednego wpisu.
-        bg: "hsl(var(--desk-bg))",
-        surface: "hsl(var(--desk-surface))",
-        raised: "hsl(var(--desk-raised))",
-        sunken: "hsl(var(--desk-sunken))",
-        line: "hsl(var(--desk-line))",
-        "line-mocna": "hsl(var(--desk-line-mocna))",
-        ink: "hsl(var(--desk-ink))",
-        "ink-2": "color-mix(in oklab, hsl(var(--desk-ink)) 78%, hsl(var(--desk-bg)))",
-        cichy: "hsl(var(--desk-cichy))",
-        "cichy-2": "color-mix(in oklab, hsl(var(--desk-cichy)) 68%, hsl(var(--desk-bg)))",
-        akcent: "hsl(var(--desk-akcent))",
-        "akcent-hover": "color-mix(in oklab, hsl(var(--desk-akcent)) 85%, hsl(var(--desk-ink)))",
-        "akcent-ink": "hsl(var(--desk-akcent-ink))",
-        "akcent-soft": "color-mix(in oklab, hsl(var(--desk-akcent)) 12%, hsl(var(--desk-surface)))",
-        "akcent-soft-line": "color-mix(in oklab, hsl(var(--desk-akcent)) 30%, hsl(var(--desk-line)))",
-        "akcent-soft-ink": "color-mix(in oklab, hsl(var(--desk-akcent)) 80%, hsl(var(--desk-ink)))",
-        focus: "hsl(var(--desk-focus))",
-        ok: "hsl(var(--desk-ok))",
-        warn: "hsl(var(--desk-warn))",
-        bad: "hsl(var(--desk-bad))",
-        "ok-soft": "color-mix(in oklab, hsl(var(--desk-ok)) 14%, hsl(var(--desk-surface)))",
-        "warn-soft": "color-mix(in oklab, hsl(var(--desk-warn)) 16%, hsl(var(--desk-surface)))",
-        "bad-soft": "color-mix(in oklab, hsl(var(--desk-bad)) 12%, hsl(var(--desk-surface)))",
+        "desk-bg": "hsl(var(--desk-bg))",
+        "desk-surface": "hsl(var(--desk-surface))",
+        "desk-raised": "hsl(var(--desk-raised))",
+        "desk-sunken": "hsl(var(--desk-sunken))",
+        "desk-line": "hsl(var(--desk-line))",
+        "desk-line-strong": "hsl(var(--desk-line-strong))",
+        "desk-ink": "hsl(var(--desk-ink))",
+        "desk-ink-2": "color-mix(in oklab, hsl(var(--desk-ink)) 78%, hsl(var(--desk-bg)))",
+        "desk-muted": "hsl(var(--desk-muted))",
+        "desk-muted-2": "color-mix(in oklab, hsl(var(--desk-muted)) 68%, hsl(var(--desk-bg)))",
+        "desk-accent": "hsl(var(--desk-accent))",
+        "desk-accent-hover": "color-mix(in oklab, hsl(var(--desk-accent)) 85%, hsl(var(--desk-ink)))",
+        "desk-accent-ink": "hsl(var(--desk-accent-ink))",
+        "desk-accent-soft": "color-mix(in oklab, hsl(var(--desk-accent)) 12%, hsl(var(--desk-surface)))",
+        "desk-accent-soft-line": "color-mix(in oklab, hsl(var(--desk-accent)) 30%, hsl(var(--desk-line)))",
+        "desk-accent-soft-ink": "color-mix(in oklab, hsl(var(--desk-accent)) 80%, hsl(var(--desk-ink)))",
+        "desk-focus": "hsl(var(--desk-focus))",
+        "desk-ok": "hsl(var(--desk-ok))",
+        "desk-warn": "hsl(var(--desk-warn))",
+        "desk-bad": "hsl(var(--desk-bad))",
+        "desk-ok-soft": "color-mix(in oklab, hsl(var(--desk-ok)) 14%, hsl(var(--desk-surface)))",
+        "desk-warn-soft": "color-mix(in oklab, hsl(var(--desk-warn)) 16%, hsl(var(--desk-surface)))",
+        "desk-bad-soft": "color-mix(in oklab, hsl(var(--desk-bad)) 12%, hsl(var(--desk-surface)))",
 
         cortex: {
           DEFAULT: "#4A90E2",
@@ -154,7 +154,7 @@ const config: Config = {
         "2xl": "var(--radius-2xl)",
         // Pigułka nie jest stopniem skali — nie zmienia jej żaden skin i nie ma
         // sensu przypinać jej do tokenu, który preset mógłby wyprostować.
-        pill: "9999px",
+        "desk-pill": "9999px",
       },
       // Tokenem jest wyłącznie PIERWSZA pozycja stosu, fallbacki zostają
       // literałami — inaczej skin, który podmienia krój, kasowałby też stos
@@ -171,7 +171,7 @@ const config: Config = {
         // Dziś celowo ten sam token co tekst — rozdzielenie ma być decyzją skinu,
         // a nie skutkiem ubocznym braku definicji (`font-naglowek` bez wpisu nie
         // daje błędu, tylko cicho spada na dziedziczony krój).
-        naglowek: ["var(--font-sans)", ...fontFamily.sans],
+        "desk-heading": ["var(--font-sans)", ...fontFamily.sans],
       },
       fontSize: {
         sm: ["0.813rem", { lineHeight: "1.143" }],
@@ -185,12 +185,12 @@ const config: Config = {
       },
       boxShadow: {
         card: "var(--shadow-card)",
-        pop: "var(--desk-cien-pop)",
-        okno: "var(--desk-cien-okno)",
+        "desk-pop": "var(--desk-shadow-pop)",
+        "desk-window": "var(--desk-shadow-window)",
       },
       maxWidth: {
-        miara: "var(--desk-miara)",
-        strumien: "var(--desk-w-strumien)",
+        "desk-measure": "var(--desk-measure)",
+        "desk-stream": "var(--desk-w-stream)",
       },
       letterSpacing: {
         tighter: "-0.05em",
@@ -201,13 +201,12 @@ const config: Config = {
       },
       minHeight: {
         tile: "var(--tile-min-height)",
-        dotyk: "var(--desk-h-dotyk)",
       },
       transitionTimingFunction: {
         "in-out": "cubic-bezier(0.4, 0, 0.2, 1)",
         out: "cubic-bezier(0, 0, 0.2, 1)",
-        wejscie: "var(--desk-e-wejscie)",
-        stan: "var(--desk-e-stan)",
+        "desk-enter": "var(--desk-ease-enter)",
+        "desk-state": "var(--desk-ease-state)",
       },
       keyframes: {
         // Gradient sweep for "working" status text (agent activity).
@@ -260,14 +259,21 @@ const config: Config = {
       width: {
         sidebar: "var(--sidebar-width)",
         "sidebar-icon": "var(--sidebar-width-icon)",
-        boczny: "var(--desk-w-boczny)",
-        wynik: "var(--desk-w-wynik)",
       },
       height: {
         header: "var(--header-height)",
-        krok: "var(--desk-h-krok)",
-        wiersz: "var(--desk-h-wiersz)",
-        pasek: "var(--desk-h-pasek)",
+      },
+      // Miary Biurka idą przez `spacing`, a nie przez `height`/`width`/`minHeight`:
+      // z jednego wpisu Tailwind wyprowadza `h-*`, `w-*`, `min-h-*` ORAZ `p-*`/`m-*`.
+      // Przy trzech osobnych sekcjach `pb-pasek` nie generował ani jednej reguły —
+      // i nie zgłaszał tego, bo nieznana klasa Tailwinda jest po prostu pomijana.
+      spacing: {
+        "desk-step": "var(--desk-h-step)",
+        "desk-row": "var(--desk-h-row)",
+        "desk-bar": "var(--desk-h-bar)",
+        "desk-touch": "var(--desk-h-touch)",
+        "desk-side": "var(--desk-w-side)",
+        "desk-result": "var(--desk-w-result)",
       },
     },
   },

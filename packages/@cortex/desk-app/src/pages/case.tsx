@@ -17,7 +17,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         <div className="grid h-full place-items-center p-8 text-center">
           <div>
             <div className="t-h2">To nie jest Twoja sprawa</div>
-            <p className="t-tresc mt-1 text-cichy">
+            <p className="t-body mt-1 text-desk-muted">
               Każdy pracownik widzi wyłącznie własne biurko.
             </p>
           </div>

@@ -126,7 +126,7 @@ test.describe("Obszar 14 · To, co powstało, widać w rozmowie", () => {
       })
       await page.goto(`/case/${id}`)
 
-      const stream = page.locator(".max-w-strumien").first()
+      const stream = page.locator(".max-w-desk-stream").first()
       const isImage = stream.locator('img[alt="ikona.png"]')
       await expect(isImage).toBeVisible({ timeout: 150_000 })
       const b = await isImage.boundingBox()

@@ -35,13 +35,13 @@ export function AttachmentChip({
       {isImage ? (
         <img src={z.preview} alt="" className="h-11 w-11 shrink-0 rounded-sm object-cover" />
       ) : (
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-sm bg-raised text-cichy">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-sm bg-desk-raised text-desk-muted">
           <Icon as={fileIcon({ name: z.name, folder: false })} px={20} />
         </span>
       )}
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="line-clamp-2 break-all text-left text-[12px] leading-4">{z.name}</span>
-        <span className="w-fit rounded-xs bg-raised px-1 text-[10px] uppercase leading-4 text-cichy">
+        <span className="w-fit rounded-xs bg-desk-raised px-1 text-[10px] uppercase leading-4 text-desk-muted">
           {kind(z.name)}
         </span>
       </span>
@@ -49,7 +49,7 @@ export function AttachmentChip({
   )
 
   return (
-    <span className="group/chip relative inline-flex max-w-[210px] items-center gap-2 rounded-md border bg-surface p-1.5">
+    <span className="group/chip relative inline-flex max-w-[210px] items-center gap-2 rounded-md border bg-desk-surface p-1.5">
       {open ? (
         <button onClick={open} className="flex min-w-0 items-center gap-2 text-left">
           {Body}
@@ -59,8 +59,8 @@ export function AttachmentChip({
       )}
 
       {z.uploading && (
-        <span className="absolute inset-0 grid place-items-center rounded-md bg-surface/75">
-          <Icon as={LoaderCircle} px={16} className="obrot text-cichy" />
+        <span className="absolute inset-0 grid place-items-center rounded-md bg-desk-surface/75">
+          <Icon as={LoaderCircle} px={16} className="spin text-desk-muted" />
         </span>
       )}
 
@@ -68,7 +68,7 @@ export function AttachmentChip({
         <button
           onClick={remove}
           aria-label={`Usuń załącznik ${z.name}`}
-          className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-pill border bg-surface text-cichy opacity-0 shadow-pop transition hover:text-ink focus-visible:opacity-100 group-hover/chip:opacity-100 [@media(hover:none)]:opacity-100"
+          className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-desk-pill border bg-desk-surface text-desk-muted opacity-0 shadow-desk-pop transition hover:text-desk-ink focus-visible:opacity-100 group-hover/chip:opacity-100 [@media(hover:none)]:opacity-100"
         >
           <Icon as={X} px={12} />
         </button>

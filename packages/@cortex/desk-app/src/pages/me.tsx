@@ -13,7 +13,7 @@ export default async function Page() {
   const p = await policyFor(u)
   return (
     <Shell>
-      <div className="pb-pasek h-full overflow-y-auto">
+      <div className="h-full overflow-y-auto pb-desk-bar">
         <div className="mx-auto max-w-2xl px-5 py-8">
           <div className="flex items-center gap-3">
             <Avatar u={u} px={48} />
@@ -25,21 +25,21 @@ export default async function Page() {
             </div>
           </div>
 
-          <div className="mt-6 overflow-hidden rounded-lg border bg-surface">
+          <div className="mt-6 overflow-hidden rounded-lg border bg-desk-surface">
             <Link
               href={t("/capabilities")}
-              className="flex h-wiersz items-center gap-2.5 px-4 hover:bg-raised/60"
+              className="flex h-desk-row items-center gap-2.5 px-4 hover:bg-desk-raised/60"
             >
-              <Icon as={ListChecks} px={16} className="text-cichy" />
-              <span className="t-tresc flex-1">Co potrafię</span>
+              <Icon as={ListChecks} px={16} className="text-desk-muted" />
+              <span className="t-body flex-1">Co potrafię</span>
               <span className="t-meta">
                 {p.granted.length} z {p.granted.length + p.blocked.length}
               </span>
-              <Icon as={ChevronRight} px={16} className="text-cichy" />
+              <Icon as={ChevronRight} px={16} className="text-desk-muted" />
             </Link>
           </div>
 
-          <div className="mt-6 rounded-lg border bg-surface p-3">
+          <div className="mt-6 rounded-lg border bg-desk-surface p-3">
             <Persona ja={u} everyone={USERS} />
           </div>
 

@@ -33,8 +33,8 @@ function fileIcon(name: string): LucideIcon {
 /** Nazwa pliku jako osobny, rozpoznawalny obiekt — nie fragment zdania. */
 function Pill({ name }: { name: string }) {
   return (
-    <span className="inline-flex h-5 max-w-[220px] shrink-0 items-center gap-1 rounded-sm bg-raised px-1.5 align-middle">
-      <Icon as={fileIcon(name)} px={12} className="shrink-0 text-cichy" />
+    <span className="inline-flex h-5 max-w-[220px] shrink-0 items-center gap-1 rounded-sm bg-desk-raised px-1.5 align-middle">
+      <Icon as={fileIcon(name)} px={12} className="shrink-0 text-desk-muted" />
       <span className="truncate text-[13px]">{name}</span>
     </span>
   )
@@ -42,9 +42,9 @@ function Pill({ name }: { name: string }) {
 
 const STEP_STATUS: Record<Step["status"], { icon: LucideIcon; className: string; spin?: boolean }> =
   {
-    running: { icon: LoaderCircle, className: "text-akcent", spin: true },
-    ok: { icon: Check, className: "text-cichy" },
-    failed: { icon: TriangleAlert, className: "text-warn" },
+    running: { icon: LoaderCircle, className: "text-desk-accent", spin: true },
+    ok: { icon: Check, className: "text-desk-muted" },
+    failed: { icon: TriangleAlert, className: "text-desk-warn" },
   }
 
 function Row({ k, at, now }: { k: Step; at: string; now: number }) {
@@ -62,12 +62,12 @@ function Row({ k, at, now }: { k: Step; at: string; now: number }) {
         onClick={() => hasDetail && setOpen((x) => !x)}
         aria-expanded={hasDetail ? open : undefined}
         disabled={!hasDetail}
-        className="group flex h-9 w-full items-center gap-2 rounded-sm px-3 text-left enabled:hover:bg-raised/60 md:h-krok"
+        className="group flex h-9 w-full items-center gap-2 rounded-sm px-3 text-left enabled:hover:bg-desk-raised/60 md:h-desk-step"
       >
         <span className={`grid w-5 shrink-0 place-items-center ${s.className}`}>
-          <Icon as={s.icon} px={16} className={s.spin ? "obrot" : undefined} />
+          <Icon as={s.icon} px={16} className={s.spin ? "spin" : undefined} />
         </span>
-        <span className="t-tresc flex min-w-0 flex-1 items-center gap-1.5">
+        <span className="t-body flex min-w-0 flex-1 items-center gap-1.5">
           <span className="shrink-0">{o.title}</span>
           {o.file && <Pill name={o.file} />}
         </span>
@@ -76,12 +76,12 @@ function Row({ k, at, now }: { k: Step; at: string; now: number }) {
           <Icon
             as={ChevronDown}
             px={14}
-            className={`shrink-0 text-cichy-2 transition-transform ${open ? "rotate-180" : ""}`}
+            className={`shrink-0 text-desk-muted-2 transition-transform ${open ? "rotate-180" : ""}`}
           />
         )}
       </button>
       {open && hasDetail && (
-        <div className="pb-2 pl-10 pr-3 pt-0.5 text-[13px] leading-5 text-cichy">
+        <div className="pb-2 pl-10 pr-3 pt-0.5 text-[13px] leading-5 text-desk-muted">
           {o.path && <div>Na pliku: {o.path}</div>}
           {o.detail && <div>Zobaczyłem: {o.detail}</div>}
           <div className="t-micro pt-0.5">{new Date(at).toLocaleTimeString("pl-PL")}</div>
@@ -130,18 +130,18 @@ export function ActivityTrail({
   const totalDuration = stepDuration(totalMs)
 
   const header = isWorking
-    ? { icon: LoaderCircle, className: "text-akcent", spin: true, text: "Pracuję nad tym…" }
+    ? { icon: LoaderCircle, className: "text-desk-accent", spin: true, text: "Pracuję nad tym…" }
     : stumble
       ? {
           icon: TriangleAlert,
-          className: "text-warn",
+          className: "text-desk-warn",
           text: `Zrobione z potknięciem: ${summariseGroup(steps).toLowerCase()}`,
         }
-      : { icon: Check, className: "text-ok", text: summariseGroup(steps) }
+      : { icon: Check, className: "text-desk-ok", text: summariseGroup(steps) }
 
   return (
     <section
-      className="wjazd overflow-hidden rounded-lg border bg-surface"
+      className="slide-in overflow-hidden rounded-lg border bg-desk-surface"
       aria-label="Przebieg pracy"
     >
       <h3>
@@ -149,12 +149,12 @@ export function ActivityTrail({
           type="button"
           onClick={() => setCollapsed((z) => !z)}
           aria-expanded={!collapsed}
-          className="flex h-10 w-full items-center gap-2 px-3 text-left hover:bg-raised/50"
+          className="flex h-10 w-full items-center gap-2 px-3 text-left hover:bg-desk-raised/50"
         >
           <span className={`grid w-5 shrink-0 place-items-center ${header.className}`}>
-            <Icon as={header.icon} px={16} className={header.spin ? "obrot" : undefined} />
+            <Icon as={header.icon} px={16} className={header.spin ? "spin" : undefined} />
           </span>
-          <span className="t-tresc-m min-w-0 flex-1 truncate">{header.text}</span>
+          <span className="t-body-m min-w-0 flex-1 truncate">{header.text}</span>
           {isWorking && running && (
             <span className="t-meta shrink-0">krok {steps.indexOf(running) + 1}</span>
           )}
@@ -162,7 +162,7 @@ export function ActivityTrail({
             <span className="t-meta shrink-0 tabular-nums">{totalDuration}</span>
           )}
           {!isWorking && uncertain && (
-            <span className="t-meta flex shrink-0 items-center gap-1 text-warn">
+            <span className="t-meta flex shrink-0 items-center gap-1 text-desk-warn">
               <Icon as={TriangleAlert} px={12} />
               {evidence.unverified.length === 1
                 ? "1 rzecz niesprawdzona"
@@ -172,7 +172,7 @@ export function ActivityTrail({
           <Icon
             as={ChevronDown}
             px={16}
-            className={`shrink-0 text-cichy-2 transition-transform ${collapsed ? "" : "rotate-180"}`}
+            className={`shrink-0 text-desk-muted-2 transition-transform ${collapsed ? "" : "rotate-180"}`}
           />
         </button>
       </h3>
@@ -182,7 +182,7 @@ export function ActivityTrail({
           {/* oś: kreska biegnie pod kolumną ikon, nie przez nie */}
           <span
             aria-hidden
-            className="pointer-events-none absolute bottom-3 left-[22px] top-3 w-px bg-line"
+            className="pointer-events-none absolute bottom-3 left-[22px] top-3 w-px bg-desk-line"
           />
           {steps.map((k) => (
             <Row key={k.i} k={k} at={entries[k.i]?.at ?? new Date().toISOString()} now={now} />
@@ -197,13 +197,13 @@ export function ActivityTrail({
         external ||
         uncertain ||
         blocked) && (
-        <div className="space-y-1 border-t bg-raised/40 px-3 py-2.5">
+        <div className="space-y-1 border-t bg-desk-raised/40 px-3 py-2.5">
           {(evidence.intake.length > 0 || evidence.produced.length > 0) && (
             <div className="flex gap-2 text-[13px] leading-5">
-              <Icon as={ShieldCheck} px={14} className="mt-0.5 shrink-0 text-ok" />
+              <Icon as={ShieldCheck} px={14} className="mt-0.5 shrink-0 text-desk-ok" />
               <div>
-                <span className="text-ink">Sprawdzone:</span>{" "}
-                <span className="text-cichy">
+                <span className="text-desk-ink">Sprawdzone:</span>{" "}
+                <span className="text-desk-muted">
                   {[...evidence.intake, ...evidence.produced].join(" · ")}
                 </span>
               </div>
@@ -211,30 +211,30 @@ export function ActivityTrail({
           )}
           {external && (
             <div className="flex gap-2 text-[13px] leading-5">
-              <Icon as={Globe} px={14} className="mt-0.5 shrink-0 text-cichy" />
+              <Icon as={Globe} px={14} className="mt-0.5 shrink-0 text-desk-muted" />
               <div>
                 {/* „Zapytałem", nie „sprawdziłem": z tego, że obcy serwer odpowiedział,
                     nie wynika, że odpowiedział prawdę ani że rzecz się wydarzyła. */}
-                <span className="text-ink">Pytałem poza firmą:</span>{" "}
-                <span className="text-cichy">{evidence.external.join(" · ")}</span>
+                <span className="text-desk-ink">Pytałem poza firmą:</span>{" "}
+                <span className="text-desk-muted">{evidence.external.join(" · ")}</span>
               </div>
             </div>
           )}
           {uncertain && (
             <div className="flex gap-2 text-[13px] leading-5">
-              <Icon as={TriangleAlert} px={14} className="mt-0.5 shrink-0 text-warn" />
+              <Icon as={TriangleAlert} px={14} className="mt-0.5 shrink-0 text-desk-warn" />
               <div>
-                <span className="text-ink">Nie sprawdziłem:</span>{" "}
-                <span className="text-cichy">{evidence.unverified.join(" · ")}</span>
+                <span className="text-desk-ink">Nie sprawdziłem:</span>{" "}
+                <span className="text-desk-muted">{evidence.unverified.join(" · ")}</span>
               </div>
             </div>
           )}
           {blocked && (
             <div className="flex gap-2 text-[13px] leading-5">
-              <Icon as={Lock} px={14} className="mt-0.5 shrink-0 text-cichy" />
+              <Icon as={Lock} px={14} className="mt-0.5 shrink-0 text-desk-muted" />
               <div>
-                <span className="text-ink">Na to nie masz zgody:</span>{" "}
-                <span className="text-cichy">{evidence.notAllowed.join(" · ")}</span>
+                <span className="text-desk-ink">Na to nie masz zgody:</span>{" "}
+                <span className="text-desk-muted">{evidence.notAllowed.join(" · ")}</span>
               </div>
             </div>
           )}

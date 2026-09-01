@@ -82,7 +82,7 @@ export function CapabilityList({
           onChange={(e) => setPhrase(e.target.value)}
           placeholder="Szukaj wśród umiejętności"
           aria-label="Szukaj wśród umiejętności"
-          className="t-tresc mb-3 h-9 w-full rounded-md border bg-bg px-3 outline-none placeholder:text-cichy-2"
+          className="t-body mb-3 h-9 w-full rounded-md border bg-desk-bg px-3 outline-none placeholder:text-desk-muted-2"
         />
       )}
 
@@ -106,24 +106,24 @@ export function CapabilityList({
           <ul className="mt-1 space-y-1.5">
             {missing.map((z) => (
               <li key={z.id} className="flex items-start gap-2 rounded-sm px-1 py-0.5">
-                <Icon as={Lock} px={16} className="mt-0.5 shrink-0 text-cichy-2" />
+                <Icon as={Lock} px={16} className="mt-0.5 shrink-0 text-desk-muted-2" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-cichy">{z.name}</div>
+                  <div className="text-desk-muted">{z.name}</div>
                   <div className="t-micro">zgoda należy do działu: {z.department}</div>
                   {sent.includes(z.id) ? (
-                    <div className="mt-1 flex items-center gap-1 text-[12px] text-ok">
+                    <div className="mt-1 flex items-center gap-1 text-[12px] text-desk-ok">
                       <Icon as={ShieldCheck} px={12} /> Prośba wysłana — czeka na rozpatrzenie
                     </div>
                   ) : (
                     <>
                       {rejected.includes(z.id) && (
-                        <div className="mt-1 text-[12px] text-cichy">
+                        <div className="mt-1 text-[12px] text-desk-muted">
                           Poprzednia prośba została odrzucona.
                         </div>
                       )}
                       <button
                         onClick={() => request(z.id, z.name)}
-                        className="mt-1 rounded-sm border px-2 py-0.5 text-[12px] hover:bg-raised"
+                        className="mt-1 rounded-sm border px-2 py-0.5 text-[12px] hover:bg-desk-raised"
                       >
                         {rejected.includes(z.id) ? "Poproś ponownie" : "Poproś o dostęp"}
                       </button>
@@ -150,7 +150,7 @@ function MenuItems({ zd, dense }: { zd: Capability[]; dense?: boolean | undefine
     <ul className="space-y-0.5">
       {zd.map((z) => (
         <li key={z.id} className="flex items-start gap-2 rounded-sm px-1 py-1">
-          <Icon as={Check} px={16} className="mt-0.5 shrink-0 text-ok" />
+          <Icon as={Check} px={16} className="mt-0.5 shrink-0 text-desk-ok" />
           <div className="min-w-0">
             <div>{z.name}</div>
             {!dense && <div className="t-meta">{z.description}</div>}
@@ -174,8 +174,8 @@ export function CapabilityButton({ p }: { p: Policy }) {
   const [open, setOtwarty] = useState(false)
   return (
     <Menu.Root open={open} onOpenChange={setOtwarty}>
-      <Menu.Trigger className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-cichy hover:bg-raised hover:text-ink">
-        <Icon as={Check} px={14} className="text-ok" />
+      <Menu.Trigger className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-desk-muted hover:bg-desk-raised hover:text-desk-ink">
+        <Icon as={Check} px={14} className="text-desk-ok" />
         Umiem tu {count(p.granted.length, "rzecz", "rzeczy", "rzeczy")}
         <Icon
           as={ChevronDown}
@@ -192,7 +192,7 @@ export function CapabilityButton({ p }: { p: Policy }) {
           // Radix sam odbija zawartość od krawędzi okna i podaje wysokość, która realnie została;
           // wcześniej własny popover po prostu wychodził poza ekran i tracił górne pozycje.
           style={{ maxHeight: "var(--radix-dropdown-menu-content-available-height)" }}
-          className="z-50 w-[320px] overflow-y-auto rounded-lg border bg-surface p-3 shadow-pop"
+          className="z-50 w-[320px] overflow-y-auto rounded-lg border bg-desk-surface p-3 shadow-desk-pop"
         >
           <CapabilityList p={p} dense />
         </Menu.Content>

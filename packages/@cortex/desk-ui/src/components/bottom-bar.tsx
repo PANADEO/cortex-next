@@ -15,7 +15,7 @@ const MENU_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
 export function BottomBar() {
   const path = usePathname()
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 flex h-pasek border-t bg-surface md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-30 flex h-desk-bar border-t bg-desk-surface md:hidden">
       {MENU_ITEMS.map((p) => {
         const active = p.href === "/" ? path === "/" : path.startsWith(p.href)
         return (
@@ -23,10 +23,13 @@ export function BottomBar() {
             key={p.href}
             href={p.href}
             aria-current={active ? "page" : undefined}
-            className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 ${active ? "text-ink" : "text-cichy"}`}
+            className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 ${active ? "text-desk-ink" : "text-desk-muted"}`}
           >
             {active && (
-              <span aria-hidden className="absolute inset-x-6 top-0 h-0.5 rounded-pill bg-akcent" />
+              <span
+                aria-hidden
+                className="absolute inset-x-6 top-0 h-0.5 rounded-desk-pill bg-desk-accent"
+              />
             )}
             <Icon as={p.icon} px={20} />
             <span className="text-[11px] leading-none">{p.label}</span>

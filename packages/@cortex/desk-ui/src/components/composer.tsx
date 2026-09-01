@@ -106,7 +106,7 @@ export function Composer({
 
   return (
     <div>
-      <div className="rounded-xl border bg-surface shadow-pop">
+      <div className="rounded-xl border bg-desk-surface shadow-desk-pop">
         <AttachmentList
           files={attachments}
           remove={(n) => setAttachments((z) => z.filter((x) => x.name !== n))}
@@ -133,7 +133,7 @@ export function Composer({
           }}
           placeholder="Co mam dla Ciebie zrobić?"
           rows={3}
-          className="t-tresc w-full resize-none bg-transparent px-4 pt-3.5 outline-none placeholder:text-cichy-2"
+          className="t-body w-full resize-none bg-transparent px-4 pt-3.5 outline-none placeholder:text-desk-muted-2"
         />
         <div className="flex items-center gap-1 px-2.5 pb-2.5">
           <input
@@ -149,7 +149,7 @@ export function Composer({
           <button
             type="button"
             onClick={() => picker.current?.click()}
-            className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-cichy hover:bg-raised hover:text-ink"
+            className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
           >
             <Icon as={Paperclip} px={14} /> Dodaj plik
           </button>
@@ -159,12 +159,12 @@ export function Composer({
             onClick={() => start(text)}
             disabled={(!text.trim() && !attachments.length) || taken}
             aria-label="Zleć zadanie"
-            className="grid h-9 w-9 place-items-center rounded-md bg-akcent text-akcent-ink hover:bg-akcent-hover disabled:opacity-35"
+            className="grid h-9 w-9 place-items-center rounded-md bg-desk-accent text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-35"
           >
             <Icon
               as={taken ? LoaderCircle : ArrowUp}
               px={16}
-              className={taken ? "obrot" : undefined}
+              className={taken ? "spin" : undefined}
             />
           </button>
         </div>
@@ -183,9 +183,9 @@ export function Composer({
                   setText(z.text)
                   box.current?.focus()
                 }}
-                className="rounded-lg border bg-surface p-3.5 text-left transition hover:border-line-mocna hover:bg-raised/40"
+                className="rounded-lg border bg-desk-surface p-3.5 text-left transition hover:border-desk-line-strong hover:bg-desk-raised/40"
               >
-                <div className="t-tresc-m">{z.title}</div>
+                <div className="t-body-m">{z.title}</div>
                 <div className="t-meta mt-0.5">{z.hint}</div>
               </button>
             ))}
@@ -202,7 +202,7 @@ export function Composer({
                 setText(z.text)
                 box.current?.focus()
               }}
-              className="h-8 rounded-pill border bg-surface px-3 text-[13px] text-cichy hover:border-line-mocna hover:text-ink"
+              className="h-8 rounded-desk-pill border bg-desk-surface px-3 text-[13px] text-desk-muted hover:border-desk-line-strong hover:text-desk-ink"
             >
               {z.title}
             </button>
@@ -214,7 +214,7 @@ export function Composer({
         <div className="mt-3">
           <button
             onClick={() => setShowHints((x) => !x)}
-            className="t-meta flex items-center gap-1 hover:text-ink"
+            className="t-meta flex items-center gap-1 hover:text-desk-ink"
           >
             Podpowiedzi
             <Icon as={ChevronDown} px={12} className={showHints ? "rotate-180" : ""} />
@@ -228,7 +228,7 @@ export function Composer({
                     setText(z.text)
                     box.current?.focus()
                   }}
-                  className="h-8 rounded-pill border bg-surface px-3 text-[13px] text-cichy hover:border-line-mocna hover:text-ink"
+                  className="h-8 rounded-desk-pill border bg-desk-surface px-3 text-[13px] text-desk-muted hover:border-desk-line-strong hover:text-desk-ink"
                 >
                   {z.title}
                 </button>

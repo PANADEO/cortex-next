@@ -17,17 +17,17 @@ export function UnbackedPromises({
   if (!names.length) return null
   const one = names.length === 1
   return (
-    <div className="max-w-miara rounded-lg border border-warn/40 bg-warn-soft px-3.5 py-3">
+    <div className="max-w-desk-measure rounded-lg border border-desk-warn/40 bg-desk-warn-soft px-3.5 py-3">
       <div className="flex items-start gap-2">
-        <Icon as={TriangleAlert} px={16} className="mt-0.5 shrink-0 text-warn" />
+        <Icon as={TriangleAlert} px={16} className="mt-0.5 shrink-0 text-desk-warn" />
         <div className="min-w-0">
-          <p className="t-tresc-m">{one ? "Ten plik nie powstał." : "Te pliki nie powstały."}</p>
+          <p className="t-body-m">{one ? "Ten plik nie powstał." : "Te pliki nie powstały."}</p>
           <p className="t-meta mt-0.5">
             W odpowiedzi {one ? "pada nazwa" : "padają nazwy"}{" "}
             {names.map((n, i) => (
               <span key={n}>
                 {i > 0 && ", "}
-                <span className="font-medium text-ink">{n}</span>
+                <span className="font-medium text-desk-ink">{n}</span>
               </span>
             ))}
             {one
@@ -38,7 +38,7 @@ export function UnbackedPromises({
           </p>
           <button
             onClick={() => names[0] && request(names[0])}
-            className="t-btn mt-2 flex h-8 items-center rounded-md border border-warn/40 bg-surface px-2.5 hover:bg-raised"
+            className="t-btn mt-2 flex h-8 items-center rounded-md border border-desk-warn/40 bg-desk-surface px-2.5 hover:bg-desk-raised"
           >
             Poproś jeszcze raz
           </button>

@@ -11,11 +11,11 @@ import { Persona } from "./persona-switcher"
 import { ToastProvider } from "./toast"
 
 const DOT: Record<string, string> = {
-  new: "bg-cichy-2",
-  working: "bg-akcent puls",
-  done: "bg-ok",
-  stopped: "bg-warn",
-  failed: "bg-bad",
+  new: "bg-desk-muted-2",
+  working: "bg-desk-accent pulse",
+  done: "bg-desk-ok",
+  stopped: "bg-desk-warn",
+  failed: "bg-desk-bad",
 }
 
 const IN_BAR = 8
@@ -45,11 +45,11 @@ export async function Shell({
 
   return (
     <ToastProvider>
-      {/* `biurko` nie jest klasą narzędziową — to zakres arkusza Biurka. Reguły bazowe
+      {/* `desk` nie jest klasą narzędziową — to zakres arkusza Biurka. Reguły bazowe
           (krawędzie, tło, paski przewijania, redukcja ruchu) wiszą pod nią, żeby pod
           powłoką nie przemalowały pozostałych kafelków. */}
-      <div className="biurko flex h-screen overflow-hidden">
-        <aside className="hidden w-boczny shrink-0 flex-col border-r bg-surface md:flex">
+      <div className="desk flex h-screen overflow-hidden">
+        <aside className="hidden w-desk-side shrink-0 flex-col border-r bg-desk-surface md:flex">
           <div className="border-b p-3">
             <Persona ja={u} everyone={USERS} />
           </div>
@@ -57,14 +57,14 @@ export async function Shell({
           <div className="p-3">
             <Link
               href={`${t("/")}?new=1`}
-              className="t-btn flex h-9 items-center justify-center gap-1.5 rounded-md bg-akcent text-akcent-ink hover:bg-akcent-hover"
+              className="t-btn flex h-9 items-center justify-center gap-1.5 rounded-md bg-desk-accent text-desk-accent-ink hover:bg-desk-accent-hover"
             >
               <Icon as={Plus} px={16} /> Nowa sprawa
             </Link>
           </div>
 
           <nav className="min-h-0 flex-1 overflow-y-auto pb-2">
-            <div className="t-sekcja px-3 pb-1.5">Sprawy</div>
+            <div className="t-section px-3 pb-1.5">Sprawy</div>
             <ul className="px-2">
               {visible.length === 0 && (
                 <li className="t-meta px-1.5 py-1.5">Twoje sprawy pojawią się tutaj.</li>
@@ -74,18 +74,18 @@ export async function Shell({
                   <Link
                     href={`${BASE}/case/${r.id}`}
                     aria-current={active === r.id ? "page" : undefined}
-                    className={`t-tresc relative flex h-9 items-center gap-2 rounded-sm pl-2.5 pr-2 hover:bg-raised/70 ${
-                      active === r.id ? "bg-raised font-medium" : ""
+                    className={`t-body relative flex h-9 items-center gap-2 rounded-sm pl-2.5 pr-2 hover:bg-desk-raised/70 ${
+                      active === r.id ? "bg-desk-raised font-medium" : ""
                     }`}
                   >
                     {active === r.id && (
                       <span
                         aria-hidden
-                        className="absolute inset-y-1.5 left-0 w-0.5 rounded-pill bg-akcent"
+                        className="absolute inset-y-1.5 left-0 w-0.5 rounded-desk-pill bg-desk-accent"
                       />
                     )}
                     <span
-                      className={`h-2 w-2 shrink-0 rounded-pill ${DOT[r.status] ?? "bg-cichy-2"}`}
+                      className={`h-2 w-2 shrink-0 rounded-desk-pill ${DOT[r.status] ?? "bg-desk-muted-2"}`}
                     />
                     <span className="min-w-0 flex-1 truncate">{r.title}</span>
                     <span className="t-micro shrink-0">{when(r.updatedAt.toISOString())}</span>
@@ -96,7 +96,7 @@ export async function Shell({
                 <li>
                   <Link
                     href={t("/cases")}
-                    className="t-meta flex h-8 items-center gap-1 rounded-sm px-2.5 hover:bg-raised/70"
+                    className="t-meta flex h-8 items-center gap-1 rounded-sm px-2.5 hover:bg-desk-raised/70"
                   >
                     Wszystkie sprawy ({total}) <Icon as={ChevronRight} px={12} />
                   </Link>
@@ -107,16 +107,16 @@ export async function Shell({
             <div className="mt-4 px-2">
               <Link
                 href={t("/files")}
-                className="t-tresc flex h-9 items-center gap-2 rounded-sm px-2.5 hover:bg-raised/70"
+                className="t-body flex h-9 items-center gap-2 rounded-sm px-2.5 hover:bg-desk-raised/70"
               >
-                <Icon as={FolderOpen} px={16} className="text-cichy" /> Moje pliki
+                <Icon as={FolderOpen} px={16} className="text-desk-muted" /> Moje pliki
               </Link>
               {u.role === "management" && (
                 <Link
                   href={t("/supervision")}
-                  className="t-tresc flex h-9 items-center gap-2 rounded-sm px-2.5 hover:bg-raised/70"
+                  className="t-body flex h-9 items-center gap-2 rounded-sm px-2.5 hover:bg-desk-raised/70"
                 >
-                  <Icon as={ShieldCheck} px={16} className="text-cichy" /> Nadzór
+                  <Icon as={ShieldCheck} px={16} className="text-desk-muted" /> Nadzór
                 </Link>
               )}
             </div>
@@ -125,7 +125,7 @@ export async function Shell({
           <div className="border-t p-3">
             <Link
               href={t("/capabilities")}
-              className="t-meta flex items-center gap-1.5 hover:text-ink"
+              className="t-meta flex items-center gap-1.5 hover:text-desk-ink"
             >
               <Icon as={ListChecks} px={14} />
               Umiem {p.granted.length} z{" "}

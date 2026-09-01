@@ -35,8 +35,8 @@ export default async function Desk() {
 
   return (
     <Shell>
-      <div className="pb-pasek h-full overflow-y-auto md:pb-0">
-        <div className="mx-auto max-w-strumien px-5 py-8 md:py-10">
+      <div className="h-full overflow-y-auto pb-desk-bar md:pb-0">
+        <div className="mx-auto max-w-desk-stream px-5 py-8 md:py-10">
           {/* Powitanie zostaje na stałe — „nikt inny go nie widzi" to obietnica produktu,
               a obietnica wypowiedziana raz i nigdy więcej przestaje działać. Przy pełnym
               biurku schodzi o stopień, żeby nie zabierać miejsca polu zlecenia. */}
@@ -53,9 +53,9 @@ export default async function Desk() {
 
           <div className="mt-9">
             <div className="mb-2 flex items-baseline justify-between">
-              <h2 className="t-sekcja">Sprawy</h2>
+              <h2 className="t-section">Sprawy</h2>
               {cases.length >= ON_DESK && (
-                <Link href={t("/cases")} className="t-meta hover:text-ink">
+                <Link href={t("/cases")} className="t-meta hover:text-desk-ink">
                   Wszystkie →
                 </Link>
               )}

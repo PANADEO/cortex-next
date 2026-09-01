@@ -1,3 +1,5 @@
+const path = require("node:path")
+
 module.exports = {
   root: true,
   parser: "@typescript-eslint/parser",
@@ -37,6 +39,56 @@ module.exports = {
     ],
   },
   overrides: [
+    {
+      // BIURKO — `no-custom-classname` włączone TYLKO tutaj i to jest sedno.
+      //
+      // Tailwind na nieznaną klasę nie zgłasza błędu, tylko nie generuje reguły.
+      // Nie widzi tego `tsc`, nie widzi build, nie widzi żaden test — a objawem
+      // jest element bez tła albo bez wysokości, którego nikt nie kojarzy ze
+      // zmianą nazwy w configu. Tak właśnie `pb-pasek` nie działał od początku:
+      // `pasek` stał w `height`, a `pb-*` czyta `spacing`.
+      //
+      // Wąsko, bo reszta repozytorium ma 830 użyć klas powłoki i własne klasy
+      // spoza Tailwinda (`.skin-*`); włączenie tego globalnie byłoby regułą
+      // nie do włączenia, a nie strażnikiem.
+      files: [
+        "packages/@cortex/desk-ui/src/**/*.{ts,tsx}",
+        "packages/@cortex/desk-app/src/**/*.{ts,tsx}",
+        "apps/desk/src/**/*.{ts,tsx}",
+      ],
+      extends: ["plugin:tailwindcss/recommended"],
+      // Ścieżka MUSI być bezwzględna: plugin resolwuje moduł `tailwindcss`
+      // względem katalogu configu, a przy ścieżce względnej trafia w katalog
+      // linterowanego pakietu i przewraca się na „Could not resolve tailwindcss".
+      settings: {
+        tailwindcss: {
+          config: path.join(__dirname, "tailwind.config.ts"),
+          callees: ["cn", "clsx"],
+        },
+      },
+      rules: {
+        "tailwindcss/no-custom-classname": [
+          "error",
+          {
+            // Klasy z `@cortex/styles/desk.css` — nie są narzędziami Tailwinda,
+            // więc plugin ich nie zna i musi je tu zobaczyć wypisane.
+            whitelist: [
+              "desk", "sheet", "editor", "pulse", "spin", "slide-in", "step-running",
+              "prose-desk", "t-display", "t-h2", "t-h3", "t-section", "t-body",
+              "t-body-m", "t-meta", "t-micro", "t-btn",
+            ],
+          },
+        ],
+        // Kolejność klas pilnuje `prettier-plugin-tailwindcss` przy formatowaniu;
+        // druga reguła o tym samym tylko dublowałaby komunikat.
+        "tailwindcss/classnames-order": "off",
+        "tailwindcss/no-unnecessary-arbitrary-value": "off",
+        // `size-8` zamiast `h-8 w-8` to styl, nie poprawność — a ta reguła
+        // dokłada tu 22 ostrzeżenia i topi w nich jedyny komunikat, dla
+        // którego plugin został włączony.
+        "tailwindcss/enforces-shorthand": "off",
+      },
+    },
     {
       // Warstwa 3 huba (D4): layout dostaje gotowy `HubModel` propsem i nie
       // ma prawa sam sięgać po dane ani po regułę dostępu. Bez tej reguły

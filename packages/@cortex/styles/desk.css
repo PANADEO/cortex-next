@@ -1,6 +1,6 @@
 /* Arkusz Biurka — WSPÓLNY dla obu wejść: aplikacji `apps/desk` i kafelka `desk`
    w powłoce. Nie ma tu dyrektyw Tailwinda ani `@import` powłoki: ten plik ma
-   wejść PO `@tailwind utilities`, bo `.t-meta { color }` i `.text-cichy` mają
+   wejść PO `@tailwind utilities`, bo `.t-meta { color }` i `.text-desk-muted` mają
    równą swoistość i rozstrzyga je kolejność. Przeniesienie tego do `@layer`
    odwróciłoby tę relację w około dziewięćdziesięciu miejscach naraz. */
 
@@ -12,19 +12,19 @@
   --desk-raised: 35 14% 94%;
   --desk-sunken: 35 13% 92%;
   --desk-line: 35 11% 86%;
-  --desk-line-mocna: 35 12% 78%;
+  --desk-line-strong: 35 12% 78%;
   --desk-ink: 30 10% 12%;
   --desk-ink-2: 32 8% 32%;
-  --desk-cichy: 32 7% 46%;
-  --desk-cichy-2: 33 6% 56%;
+  --desk-muted: 32 7% 46%;
+  --desk-muted-2: 33 6% 56%;
 
   /* akcent — jedyny kolor chromatyczny marki */
-  --desk-akcent: 22 90% 40%;
-  --desk-akcent-hover: 22 92% 34%;
-  --desk-akcent-ink: 0 0% 100%;
-  --desk-akcent-soft: 28 80% 95%;
-  --desk-akcent-soft-line: 26 55% 86%;
-  --desk-akcent-soft-ink: 20 78% 30%;
+  --desk-accent: 22 90% 40%;
+  --desk-accent-hover: 22 92% 34%;
+  --desk-accent-ink: 0 0% 100%;
+  --desk-accent-soft: 28 80% 95%;
+  --desk-accent-soft-line: 26 55% 86%;
+  --desk-accent-soft-ink: 20 78% 30%;
   --desk-focus: 22 90% 45%;
 
   /* semantyczne — nigdy jako wypełnienie tła treści */
@@ -52,24 +52,24 @@
   --desk-s-8: 32px;
   --desk-s-12: 48px;
 
-  --desk-h-krok: 32px;
-  --desk-h-wiersz: 44px;
+  --desk-h-step: 32px;
+  --desk-h-row: 44px;
   --desk-h-nav: 36px;
-  --desk-h-pasek: 56px;
-  --desk-h-dotyk: 44px;
-  --desk-w-boczny: 260px;
-  --desk-w-wynik: 360px;
-  --desk-miara: 66ch;
-  --desk-w-strumien: 720px;
+  --desk-h-bar: 56px;
+  --desk-h-touch: 44px;
+  --desk-w-side: 260px;
+  --desk-w-result: 360px;
+  --desk-measure: 66ch;
+  --desk-w-stream: 720px;
 
-  --desk-cien-pop: 0 1px 2px hsl(30 20% 20% / 0.06), 0 8px 24px -6px hsl(30 20% 20% / 0.12);
-  --desk-cien-okno: 0 2px 4px hsl(30 20% 20% / 0.07), 0 24px 48px -12px hsl(30 20% 20% / 0.22);
+  --desk-shadow-pop: 0 1px 2px hsl(30 20% 20% / 0.06), 0 8px 24px -6px hsl(30 20% 20% / 0.12);
+  --desk-shadow-window: 0 2px 4px hsl(30 20% 20% / 0.07), 0 24px 48px -12px hsl(30 20% 20% / 0.22);
 
-  --desk-t-szybko: 120ms;
+  --desk-t-fast: 120ms;
   --desk-t: 180ms;
-  --desk-t-wolno: 260ms;
-  --desk-e-wejscie: cubic-bezier(0.2, 0.6, 0.3, 1);
-  --desk-e-stan: cubic-bezier(0.4, 0, 0.2, 1);
+  --desk-t-slow: 260ms;
+  --desk-ease-enter: cubic-bezier(0.2, 0.6, 0.3, 1);
+  --desk-ease-state: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ══ 1b. MOSTEK DO POWŁOKI ════════════════════════════════════
@@ -77,12 +77,12 @@
    Wartości wyżej zostają jako to, co widać, gdy tokenów powłoki nie ma.
 
    Dwie zasady, które trzeba tu znać, bo obie były źródłem realnych błędów:
-   1. `--desk-akcent` bierze `--primary`, NIGDY `--accent`. W shadcn `--accent`
+   1. `--desk-accent` bierze `--primary`, NIGDY `--accent`. W shadcn `--accent`
       jest WYPEŁNIENIEM TŁA elementu pod kursorem, nie kolorem marki — podpięcie
       go zamieniłoby przycisk wysyłki w jasnoszary prostokąt.
    2. Role, których powłoka nie zna (przygaszony atrament, miękkie tła statusów),
       liczymy przez `color-mix` w konfiguracji Tailwinda, a nie tutaj — token musi
-      zostać trójką HSL, żeby `bg-raised/60` dalej działało. */
+      zostać trójką HSL, żeby `bg-desk-raised/60` dalej działało. */
 :root {
   --desk-bg: var(--background);
   --desk-surface: var(--card);
@@ -90,10 +90,10 @@
   --desk-sunken: var(--secondary);
   --desk-line: var(--border);
   --desk-ink: var(--foreground);
-  --desk-cichy: var(--muted-foreground);
+  --desk-muted: var(--muted-foreground);
 
-  --desk-akcent: var(--primary);
-  --desk-akcent-ink: var(--primary-foreground);
+  --desk-accent: var(--primary);
+  --desk-accent-ink: var(--primary-foreground);
   --desk-focus: var(--ring);
 
   --desk-ok: var(--success);
@@ -109,35 +109,35 @@
    Biurko do własnych brązów za każdym razem, gdy ktoś włączył ciemny motyw. */
 .dark {
   --desk-ink-2: 35 8% 76%;
-  --desk-cichy-2: 35 6% 48%;
-  --desk-line-mocna: 34 6% 31%;
-  --desk-akcent-hover: 24 90% 66%;
-  --desk-akcent-soft: 24 40% 18%;
-  --desk-akcent-soft-line: 24 35% 28%;
-  --desk-akcent-soft-ink: 26 85% 72%;
+  --desk-muted-2: 35 6% 48%;
+  --desk-line-strong: 34 6% 31%;
+  --desk-accent-hover: 24 90% 66%;
+  --desk-accent-soft: 24 40% 18%;
+  --desk-accent-soft-line: 24 35% 28%;
+  --desk-accent-soft-ink: 26 85% 72%;
   --desk-ok-soft: 150 30% 15%;
   --desk-warn-soft: 44 40% 15%;
   --desk-bad-soft: 358 40% 16%;
-  --desk-cien-pop: 0 1px 2px hsl(0 0% 0% / 0.5), 0 8px 24px -6px hsl(0 0% 0% / 0.6);
-  --desk-cien-okno: 0 2px 4px hsl(0 0% 0% / 0.5), 0 24px 48px -12px hsl(0 0% 0% / 0.7);
+  --desk-shadow-pop: 0 1px 2px hsl(0 0% 0% / 0.5), 0 8px 24px -6px hsl(0 0% 0% / 0.6);
+  --desk-shadow-window: 0 2px 4px hsl(0 0% 0% / 0.5), 0 24px 48px -12px hsl(0 0% 0% / 0.7);
 }
 
 /* ══ 3. BAZA ══════════════════════════════════════════════════ */
-/* Zakres `.biurko`, a nie `*` i `body`. Bez niego ten plik pod powłoką przemalowuje
+/* Zakres `.desk`, a nie `*` i `body`. Bez niego ten plik pod powłoką przemalowuje
    wszystkie kafelki: krawędzie, tło dokumentu, zaznaczenie i paski przewijania.
    Klasy komponentów NIŻEJ zakresu nie dostają celowo — Radix wynosi dialogi
    i menu poza drzewo kafelka, do `document.body`. */
-.biurko,
-.biurko *,
-.biurko *::before,
-.biurko *::after {
+.desk,
+.desk *,
+.desk *::before,
+.desk *::after {
   border-color: hsl(var(--desk-line));
 }
 html,
 body {
   height: 100%;
 }
-.biurko {
+.desk {
   background: hsl(var(--desk-bg));
   color: hsl(var(--desk-ink));
   font-size: 14px;
@@ -146,25 +146,25 @@ body {
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "cv05" 1;
 }
-.biurko ::selection {
-  background: hsl(var(--desk-akcent-soft));
-  color: hsl(var(--desk-akcent-soft-ink));
+.desk ::selection {
+  background: hsl(var(--desk-accent-soft));
+  color: hsl(var(--desk-accent-soft-ink));
 }
-.biurko ::-webkit-scrollbar {
+.desk ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
-.biurko ::-webkit-scrollbar-thumb {
-  background: hsl(var(--desk-line-mocna));
+.desk ::-webkit-scrollbar-thumb {
+  background: hsl(var(--desk-line-strong));
   border-radius: var(--desk-r-md);
 }
-.biurko ::-webkit-scrollbar-track {
+.desk ::-webkit-scrollbar-track {
   background: transparent;
 }
-.biurko .liczby,
-.biurko time,
-.biurko td,
-.biurko th {
+.desk .liczby,
+.desk time,
+.desk td,
+.desk th {
   font-variant-numeric: tabular-nums;
 }
 
@@ -187,18 +187,18 @@ body {
   font-weight: 600;
   letter-spacing: -0.003em;
 }
-.t-sekcja {
+.t-section {
   font-size: 13px;
   line-height: 18px;
   font-weight: 600;
   color: hsl(var(--desk-ink));
 }
-.t-tresc {
+.t-body {
   font-size: 14px;
   line-height: 22px;
   font-weight: 400;
 }
-.t-tresc-m {
+.t-body-m {
   font-size: 14px;
   line-height: 22px;
   font-weight: 500;
@@ -206,13 +206,13 @@ body {
 .t-meta {
   font-size: 12px;
   line-height: 16px;
-  color: hsl(var(--desk-cichy));
+  color: hsl(var(--desk-muted));
   font-variant-numeric: tabular-nums;
 }
 .t-micro {
   font-size: 11px;
   line-height: 15px;
-  color: hsl(var(--desk-cichy));
+  color: hsl(var(--desk-muted));
 }
 .t-btn {
   font-size: 14px;
@@ -234,23 +234,23 @@ body {
 /* Edytor zlecenia jest wizualnie JEDNYM elementem: ramka, załączniki, pole i pasek narzędzi.
    Obrys skupienia na samym textarea rysował pudełko w pudełku — o innym promieniu narożnika
    i węższe od ramki, w której siedzi. Obrys należy więc do całego edytora. */
-.edytor:has(> textarea:focus-visible) {
+.editor:has(> textarea:focus-visible) {
   outline: 2px solid hsl(var(--desk-focus));
   outline-offset: 0;
   border-radius: var(--desk-r-xl);
 }
-.edytor > textarea:focus-visible {
+.editor > textarea:focus-visible {
   outline: none;
 }
 /* Przeglądarka bez :has() zostaje przy obrysie na polu — gorzej wygląda, ale widać, gdzie jest kursor. */
 @supports not selector(:has(*)) {
-  .edytor > textarea:focus-visible {
+  .editor > textarea:focus-visible {
     outline: 2px solid hsl(var(--desk-focus));
   }
 }
 
 /* ══ 6. RUCH ══════════════════════════════════════════════════ */
-@keyframes wjazd {
+@keyframes slide-in {
   from {
     opacity: 0;
     transform: translateY(6px);
@@ -260,24 +260,24 @@ body {
     transform: none;
   }
 }
-.wjazd {
-  animation: wjazd var(--desk-t) var(--desk-e-wejscie) both;
+.slide-in {
+  animation: slide-in var(--desk-t) var(--desk-ease-enter) both;
 }
 
 @keyframes oddech {
   0%,
   100% {
-    box-shadow: 0 0 0 0 hsl(var(--desk-akcent) / 0.45);
+    box-shadow: 0 0 0 0 hsl(var(--desk-accent) / 0.45);
   }
   50% {
-    box-shadow: 0 0 0 5px hsl(var(--desk-akcent) / 0);
+    box-shadow: 0 0 0 5px hsl(var(--desk-accent) / 0);
   }
 }
-.krok-trwa {
-  animation: oddech 1.6s var(--desk-e-stan) infinite;
+.step-running {
+  animation: oddech 1.6s var(--desk-ease-state) infinite;
 }
 
-@keyframes arkusz {
+@keyframes sheet {
   from {
     transform: translateY(100%);
   }
@@ -285,11 +285,11 @@ body {
     transform: none;
   }
 }
-.arkusz {
-  animation: arkusz var(--desk-t-wolno) var(--desk-e-wejscie) both;
+.sheet {
+  animation: sheet var(--desk-t-slow) var(--desk-ease-enter) both;
 }
 
-@keyframes puls {
+@keyframes pulse {
   0%,
   100% {
     opacity: 1;
@@ -298,41 +298,41 @@ body {
     opacity: 0.35;
   }
 }
-.puls {
-  animation: puls 1.4s ease-in-out infinite;
+.pulse {
+  animation: pulse 1.4s ease-in-out infinite;
 }
 
-@keyframes obrot {
+@keyframes spin {
   to {
     transform: rotate(360deg);
   }
 }
-.obrot {
-  animation: obrot 1s linear infinite;
+.spin {
+  animation: spin 1s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .biurko,
-  .biurko *,
-  .biurko *::before,
-  .biurko *::after {
+  .desk,
+  .desk *,
+  .desk *::before,
+  .desk *::after {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
     scroll-behavior: auto !important;
   }
   /* redukcja wyłącza RUCH, nigdy SYGNAŁ STANU */
-  .krok-trwa {
-    box-shadow: 0 0 0 3px hsl(var(--desk-akcent) / 0.35);
+  .step-running {
+    box-shadow: 0 0 0 3px hsl(var(--desk-accent) / 0.35);
   }
-  .puls {
+  .pulse {
     opacity: 1 !important;
   }
 }
 
 /* ══ 7. TREŚĆ DOKUMENTU ═══════════════════════════════════════ */
 .prose-desk {
-  max-width: var(--desk-miara);
+  max-width: var(--desk-measure);
   font-size: 14px;
   line-height: 22px;
   color: hsl(var(--desk-ink));
@@ -399,7 +399,7 @@ body {
 }
 .prose-desk th {
   font-weight: 600;
-  color: hsl(var(--desk-cichy));
+  color: hsl(var(--desk-muted));
   font-size: 12px;
 }
 .prose-desk td:last-child,

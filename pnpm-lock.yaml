@@ -381,6 +381,9 @@ importers:
       '@types/react':
         specifier: ^18.3.17
         version: 18.3.31
+      tailwindcss:
+        specifier: ^3.4.17
+        version: 3.4.19(tsx@4.23.13)
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -452,6 +455,9 @@ importers:
       '@types/react':
         specifier: ^18.3.17
         version: 18.3.31
+      tailwindcss:
+        specifier: ^3.4.17
+        version: 3.4.19(tsx@4.23.13)
       typescript:
         specifier: ^5.7.2
         version: 5.9.3

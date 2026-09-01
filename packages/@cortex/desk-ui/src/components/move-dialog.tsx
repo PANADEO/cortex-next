@@ -52,8 +52,8 @@ export function MoveDialog({
   return (
     <Dialog.Root open={Boolean(file)} onOpenChange={(o) => !o && close()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-ink/25" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[80vh] w-[min(480px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border bg-surface shadow-okno">
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-desk-ink/25" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[80vh] w-[min(480px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border bg-desk-surface shadow-desk-window">
           <div className="border-b px-4 py-3">
             <Dialog.Title className="t-h3">Przenieś do</Dialog.Title>
             <Dialog.Description className="t-meta">Przenoszę: {file?.name}</Dialog.Description>
@@ -70,12 +70,14 @@ export function MoveDialog({
                     disabled={here}
                     onClick={() => setSelected(k)}
                     style={{ paddingLeft: 8 + level * 16 }}
-                    className={`t-tresc flex h-9 w-full items-center gap-2 rounded-sm pr-2 text-left disabled:opacity-45 ${selected ? "bg-raised" : "hover:bg-raised/60"}`}
+                    className={`t-body flex h-9 w-full items-center gap-2 rounded-sm pr-2 text-left disabled:opacity-45 ${selected ? "bg-desk-raised" : "hover:bg-desk-raised/60"}`}
                   >
-                    <Icon as={Folder} px={16} className="shrink-0 text-cichy" />
+                    <Icon as={Folder} px={16} className="shrink-0 text-desk-muted" />
                     <span className="min-w-0 flex-1 truncate">{k.split("/").pop()}</span>
                     {here && <span className="t-micro shrink-0">plik już tu jest</span>}
-                    {isSelected && <Icon as={Check} px={16} className="shrink-0 text-akcent" />}
+                    {isSelected && (
+                      <Icon as={Check} px={16} className="shrink-0 text-desk-accent" />
+                    )}
                   </button>
                 </li>
               )
@@ -83,7 +85,7 @@ export function MoveDialog({
             <li>
               {creating ? (
                 <div className="flex items-center gap-2 px-2 py-1">
-                  <Icon as={Folder} px={16} className="shrink-0 text-cichy" />
+                  <Icon as={Folder} px={16} className="shrink-0 text-desk-muted" />
                   <input
                     autoFocus
                     value={newForm}
@@ -94,11 +96,11 @@ export function MoveDialog({
                     }}
                     placeholder="Nazwa folderu"
                     aria-label="Nazwa nowego folderu"
-                    className="t-tresc min-w-0 flex-1 rounded-sm border bg-bg px-1.5 py-1 outline-none"
+                    className="t-body min-w-0 flex-1 rounded-sm border bg-desk-bg px-1.5 py-1 outline-none"
                   />
                   <button
                     onClick={() => void create()}
-                    className="t-btn rounded-sm px-2 py-1 text-akcent hover:bg-raised"
+                    className="t-btn rounded-sm px-2 py-1 text-desk-accent hover:bg-desk-raised"
                   >
                     Utwórz
                   </button>
@@ -106,7 +108,7 @@ export function MoveDialog({
               ) : (
                 <button
                   onClick={() => setCreating(true)}
-                  className="t-tresc flex h-9 w-full items-center gap-2 rounded-sm px-2 text-left text-cichy hover:bg-raised/60"
+                  className="t-body flex h-9 w-full items-center gap-2 rounded-sm px-2 text-left text-desk-muted hover:bg-desk-raised/60"
                 >
                   <Icon as={FolderPlus} px={16} className="shrink-0" />
                   Nowy folder tutaj
@@ -116,7 +118,7 @@ export function MoveDialog({
           </ul>
 
           <div className="flex justify-end gap-2 border-t px-4 py-3">
-            <Dialog.Close className="t-btn rounded-md border px-3 py-1.5 hover:bg-raised">
+            <Dialog.Close className="t-btn rounded-md border px-3 py-1.5 hover:bg-desk-raised">
               Anuluj
             </Dialog.Close>
             <button
@@ -127,7 +129,7 @@ export function MoveDialog({
                 await move(selected)
                 setTaken(false)
               }}
-              className="t-btn rounded-md bg-akcent px-3 py-1.5 text-akcent-ink hover:bg-akcent-hover disabled:opacity-40"
+              className="t-btn rounded-md bg-desk-accent px-3 py-1.5 text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-40"
             >
               Przenieś
             </button>

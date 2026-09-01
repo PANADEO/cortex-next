@@ -76,11 +76,11 @@ function ToastItem({ t, close }: { t: Toast; close: () => void }) {
       role="status"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      className="wjazd pointer-events-auto w-full max-w-[380px] overflow-hidden rounded-md border bg-surface shadow-pop"
+      className="slide-in pointer-events-auto w-full max-w-[380px] overflow-hidden rounded-md border bg-desk-surface shadow-desk-pop"
     >
       <div className="flex items-center gap-3 px-3 py-2.5">
         <span
-          className={`min-w-0 flex-1 text-[13px] leading-5 ${t.tone === "error" ? "text-bad" : "text-ink"}`}
+          className={`min-w-0 flex-1 text-[13px] leading-5 ${t.tone === "error" ? "text-desk-bad" : "text-desk-ink"}`}
         >
           {t.text}
         </span>
@@ -90,7 +90,7 @@ function ToastItem({ t, close }: { t: Toast; close: () => void }) {
               void t.revoke?.()
               close()
             }}
-            className="shrink-0 rounded-sm px-2 py-1 text-[13px] font-medium text-akcent hover:bg-raised"
+            className="shrink-0 rounded-sm px-2 py-1 text-[13px] font-medium text-desk-accent hover:bg-desk-raised"
           >
             Cofnij
           </button>
@@ -98,14 +98,14 @@ function ToastItem({ t, close }: { t: Toast; close: () => void }) {
         <button
           onClick={close}
           aria-label="Zamknij powiadomienie"
-          className="shrink-0 rounded-sm p-1 text-cichy hover:bg-raised"
+          className="shrink-0 rounded-sm p-1 text-desk-muted hover:bg-desk-raised"
         >
           <Icon as={X} px={14} />
         </button>
       </div>
-      <div className="h-0.5 bg-line">
+      <div className="h-0.5 bg-desk-line">
         <div
-          className="h-full bg-akcent/60 transition-[width] duration-75 ease-linear"
+          className="h-full bg-desk-accent/60 transition-[width] duration-75 ease-linear"
           style={{ width: `${progress}%` }}
         />
       </div>

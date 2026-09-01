@@ -73,24 +73,24 @@ export function RequestSupervision() {
   return (
     <div className="space-y-6">
       <section>
-        <h2 className="t-sekcja mb-2">Czekają na Twoją decyzję</h2>
+        <h2 className="t-section mb-2">Czekają na Twoją decyzję</h2>
         {pending.length === 0 ? (
           <div className="rounded-lg border border-dashed p-6 text-center">
-            <Icon as={Inbox} px={20} className="mx-auto text-cichy-2" />
+            <Icon as={Inbox} px={20} className="mx-auto text-desk-muted-2" />
             <p className="t-meta mt-1.5">Nic nie czeka.</p>
           </div>
         ) : (
-          <ul className="divide-y overflow-hidden rounded-lg border bg-surface">
+          <ul className="divide-y overflow-hidden rounded-lg border bg-desk-surface">
             {pending.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                 <span className="min-w-0 flex-1">
                   {p.capability === "other" ? (
                     <>
-                      <span className="t-tresc block">
+                      <span className="t-body block">
                         <span className="font-medium">{p.whoName}</span> prosi o coś, czego nie ma w
                         katalogu:
                       </span>
-                      <span className="t-tresc mt-0.5 block rounded-md bg-raised/60 px-2.5 py-1.5">
+                      <span className="t-body mt-0.5 block rounded-md bg-desk-raised/60 px-2.5 py-1.5">
                         {p.justification}
                       </span>
                       <span className="t-meta mt-1 block">
@@ -99,7 +99,7 @@ export function RequestSupervision() {
                     </>
                   ) : (
                     <>
-                      <span className="t-tresc block">
+                      <span className="t-body block">
                         <span className="font-medium">{p.whoName}</span> prosi o zdolność „{p.name}”
                       </span>
                       <span className="t-meta block">
@@ -112,7 +112,7 @@ export function RequestSupervision() {
                   <button
                     onClick={() => decide(p, "denied")}
                     disabled={taken === p.id}
-                    className="t-btn flex h-8 items-center gap-1.5 rounded-md border px-2.5 hover:bg-raised disabled:opacity-50"
+                    className="t-btn flex h-8 items-center gap-1.5 rounded-md border px-2.5 hover:bg-desk-raised disabled:opacity-50"
                   >
                     <Icon as={X} px={14} /> {p.capability === "other" ? "Zamknij" : "Odmów"}
                   </button>
@@ -120,7 +120,7 @@ export function RequestSupervision() {
                     <button
                       onClick={() => decide(p, "granted")}
                       disabled={taken === p.id}
-                      className="t-btn flex h-8 items-center gap-1.5 rounded-md bg-akcent px-2.5 text-akcent-ink hover:bg-akcent-hover disabled:opacity-50"
+                      className="t-btn flex h-8 items-center gap-1.5 rounded-md bg-desk-accent px-2.5 text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-50"
                     >
                       <Icon as={Check} px={14} /> Przyznaj
                     </button>
@@ -134,14 +134,16 @@ export function RequestSupervision() {
 
       {decided.length > 0 && (
         <section>
-          <h2 className="t-sekcja mb-2">Rozpatrzone</h2>
-          <ul className="divide-y overflow-hidden rounded-lg border bg-surface">
+          <h2 className="t-section mb-2">Rozpatrzone</h2>
+          <ul className="divide-y overflow-hidden rounded-lg border bg-desk-surface">
             {decided.slice(0, 10).map((p) => (
-              <li key={p.id} className="t-tresc flex items-center gap-3 px-4 py-2.5">
+              <li key={p.id} className="t-body flex items-center gap-3 px-4 py-2.5">
                 <Icon
                   as={p.status === "granted" ? ShieldCheck : X}
                   px={16}
-                  className={p.status === "granted" ? "shrink-0 text-ok" : "shrink-0 text-cichy"}
+                  className={
+                    p.status === "granted" ? "shrink-0 text-desk-ok" : "shrink-0 text-desk-muted"
+                  }
                 />
                 <span className="min-w-0 flex-1 truncate">
                   {p.whoName} · {p.name}
@@ -153,7 +155,7 @@ export function RequestSupervision() {
                   <button
                     onClick={() => revoke(p)}
                     disabled={taken === p.id}
-                    className="shrink-0 rounded-sm border px-2 py-0.5 text-[12px] hover:bg-raised disabled:opacity-50"
+                    className="shrink-0 rounded-sm border px-2 py-0.5 text-[12px] hover:bg-desk-raised disabled:opacity-50"
                   >
                     Cofnij
                   </button>

@@ -90,13 +90,72 @@ describe("theme powłoki jest nietknięty", () => {
     expect(fonts.mono?.length).toBeGreaterThan(1)
   })
 
-  it("nazwy Biurka nie nadpisały żadnej nazwy powłoki", () => {
+  /**
+   * Po przejściu Biurka na prefiks `desk-` zdanie „nazwy Biurka nie nadpisały nazw
+   * powłoki" stało się prawdziwe z definicji, więc przestało być asercją. W to
+   * miejsce wchodzi KOMPLETNOŚĆ: Tailwind na nieznaną klasę nie zgłasza błędu,
+   * tylko nie generuje reguły — a wtedy `bg-desk-surface` jest przezroczyste i
+   * nikt się o tym nie dowiaduje ani z builda, ani z `tsc`, ani z testu.
+   */
+  const DESK_COLORS = [
+    "desk-bg",
+    "desk-surface",
+    "desk-raised",
+    "desk-sunken",
+    "desk-line",
+    "desk-line-strong",
+    "desk-ink",
+    "desk-ink-2",
+    "desk-muted",
+    "desk-muted-2",
+    "desk-accent",
+    "desk-accent-hover",
+    "desk-accent-ink",
+    "desk-accent-soft",
+    "desk-accent-soft-line",
+    "desk-accent-soft-ink",
+    "desk-focus",
+    "desk-ok",
+    "desk-warn",
+    "desk-bad",
+    "desk-ok-soft",
+    "desk-warn-soft",
+    "desk-bad-soft",
+  ]
+
+  /** Pozostałe role Biurka — sekcja motywu, w której każda z nich musi stać. */
+  const DESK_SCALES: Record<string, string[]> = {
+    spacing: ["desk-step", "desk-row", "desk-bar", "desk-touch", "desk-side", "desk-result"],
+    maxWidth: ["desk-measure", "desk-stream"],
+    boxShadow: ["desk-pop", "desk-window"],
+    borderRadius: ["desk-pill"],
+    fontFamily: ["desk-heading"],
+    transitionTimingFunction: ["desk-enter", "desk-state"],
+  }
+
+  it("komplet ról Biurka stoi w motywie i każda wskazuje własny token", () => {
     const colors = theme?.colors as unknown as Record<string, unknown>
-    // Dwie role, które w obu słownikach nazywały się tak samo, a znaczyły co innego.
-    // Gdyby wróciły płaskie, `bg-muted` powłoki (830 użyć) dostałoby KOLOR TEKSTU.
+    // Role powłoki, które w obu słownikach nazywały się tak samo, a znaczyły co
+    // innego — zostają zagnieżdżone. Gdyby wróciły płaskie, `bg-muted` powłoki
+    // (830 użyć) dostałoby KOLOR TEKSTU.
     expect(typeof colors.muted).toBe("object")
     expect(typeof colors.accent).toBe("object")
-    expect(colors.cichy).toBe("hsl(var(--desk-cichy))")
-    expect(colors.akcent).toBe("hsl(var(--desk-akcent))")
+
+    // Trzy zarzuty w JEDNEJ asercji, nie w trzech po kolei: przy trzech pierwszy
+    // czerwony ukrywa dwa pozostałe, a wtedy naprawa idzie w trzech nawrotach
+    // zamiast w jednym — sprawdzone wstrzyknięciem regresji do wszystkich trzech naraz.
+    const found = {
+      brakujace: DESK_COLORS.filter((key) => typeof colors[key] !== "string"),
+      // Wartość każdej roli Biurka musi pochodzić z `--desk-*`, a nie z tokenu powłoki:
+      // to jest ta granica, którą prefiks w nazwie tylko zapowiada.
+      obce: DESK_COLORS.filter(
+        (key) => typeof colors[key] === "string" && !String(colors[key]).includes("--desk-"),
+      ),
+      skale: Object.entries(DESK_SCALES).flatMap(([section, keys]) => {
+        const bucket = (theme as unknown as Record<string, Record<string, unknown>>)[section] ?? {}
+        return keys.filter((key) => bucket[key] === undefined).map((key) => `${section}.${key}`)
+      }),
+    }
+    expect(found).toEqual({ brakujace: [], obce: [], skale: [] })
   })
 })

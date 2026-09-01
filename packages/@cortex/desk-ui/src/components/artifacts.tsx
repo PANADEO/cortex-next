@@ -38,12 +38,12 @@ function ImageBlock({ file, open }: { file: FileMeta; open: () => void }) {
         onClick={open}
         title="Otwórz w panelu"
         aria-label={`Otwórz ${file.name}`}
-        className="block w-full overflow-hidden rounded-lg border bg-surface transition hover:border-line-mocna"
+        className="block w-full overflow-hidden rounded-lg border bg-desk-surface transition hover:border-desk-line-strong"
       >
         <img
           src={fileUrl(file)}
           alt={file.name}
-          className="block max-h-[420px] w-full bg-sunken object-contain"
+          className="block max-h-[420px] w-full bg-desk-sunken object-contain"
         />
       </button>
       <figcaption className="flex items-center gap-2 px-0.5 pt-1.5">
@@ -53,7 +53,7 @@ function ImageBlock({ file, open }: { file: FileMeta; open: () => void }) {
           download
           title="Pobierz"
           aria-label={`Pobierz ${file.name}`}
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-sm text-cichy hover:bg-raised hover:text-ink"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
         >
           <Icon as={Download} px={14} />
         </a>
@@ -67,18 +67,22 @@ function Card({ file, open }: { file: FileMeta; open: () => void }) {
     <button
       onClick={open}
       aria-label={`Otwórz ${file.name}`}
-      className="group/cardFor flex w-full max-w-[420px] items-center gap-3 rounded-lg border bg-surface p-2.5 text-left transition hover:border-line-mocna hover:bg-raised/40"
+      className="group/cardFor flex w-full max-w-[420px] items-center gap-3 rounded-lg border bg-desk-surface p-2.5 text-left transition hover:border-desk-line-strong hover:bg-desk-raised/40"
     >
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-raised text-cichy">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-desk-raised text-desk-muted">
         <Icon as={fileIcon(file)} px={20} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="t-tresc-m block truncate">{file.name}</span>
+        <span className="t-body-m block truncate">{file.name}</span>
         <span className="t-meta block">
           Dokument · {kind(file.name)} · {size(file.size)}
         </span>
       </span>
-      <Icon as={Maximize2} px={16} className="shrink-0 text-cichy-2 group-hover/cardFor:text-ink" />
+      <Icon
+        as={Maximize2}
+        px={16}
+        className="shrink-0 text-desk-muted-2 group-hover/cardFor:text-desk-ink"
+      />
     </button>
   )
 }

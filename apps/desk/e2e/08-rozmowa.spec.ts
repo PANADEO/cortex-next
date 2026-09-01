@@ -59,7 +59,7 @@ test.describe("Obszar 8 · Rozmowa, którą da się prowadzić", () => {
       const command = page.getByText("ile to jest dwa plus dwa", { exact: false })
       await expect(command).toBeVisible({ timeout: 60_000 })
 
-      const stream = page.locator("main .max-w-strumien").first()
+      const stream = page.locator("main .max-w-desk-stream").first()
       const p = await command.boundingBox()
       const s = await stream.boundingBox()
       expect(p && s).toBeTruthy()
