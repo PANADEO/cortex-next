@@ -2,11 +2,13 @@ import * as audit from "@cortex/desk-core/audit-log"
 import { capabilityCatalogue } from "@cortex/desk-core/capability-gate"
 import { migrate, pool } from "@cortex/desk-core/db"
 import { USERS, whoAmI } from "@cortex/desk-core/identity"
+import { deskT } from "@cortex/desk-ui/i18n/server"
 import { NextResponse } from "next/server"
 
 export async function GET() {
   await migrate()
   const u = await whoAmI()
+  const translate = await deskT()
   // pracownik widzi wyłącznie swoje prośby; zarząd — wszystkie oczekujące
   const r =
     u.role === "management"
@@ -26,7 +28,7 @@ export async function GET() {
       capability: p.capability,
       name:
         p.capability === "other"
-          ? "coś, czego nie ma w katalogu"
+          ? translate("api.somethingOutside")
           : (capabilityCatalogue.find((z) => z.id === p.capability)?.name ?? p.capability),
       department: capabilityCatalogue.find((z) => z.id === p.capability)?.department ?? "",
       justification: p.justification ?? null,
@@ -41,6 +43,7 @@ export async function POST(req: Request) {
   await migrate()
   const u = await whoAmI()
   const { capability, justification } = await req.json()
+  const translate = await deskT()
 
   // Prośba własnymi słowami — o coś, czego w katalogu jeszcze nie ma. Nie da się jej
   // przyznać jednym kliknięciem i nie udajemy, że się da; trafia do przełożonego
@@ -49,7 +52,8 @@ export async function POST(req: Request) {
     const text = String(justification ?? "")
       .trim()
       .slice(0, 500)
-    if (!text) return NextResponse.json({ error: "Napisz, czego potrzebujesz." }, { status: 400 })
+    if (!text)
+      return NextResponse.json({ error: translate("api.writeWhatYouNeed") }, { status: 400 })
     await pool.query(
       `insert into desk.access_request (who, capability, justification) values ($1,'other',$2)`,
       [u.id, text],
@@ -59,7 +63,7 @@ export async function POST(req: Request) {
   }
 
   if (!capabilityCatalogue.some((z) => z.id === capability)) {
-    return NextResponse.json({ error: "Nie ma takiej zdolności." }, { status: 400 })
+    return NextResponse.json({ error: translate("api.noSuchCapability") }, { status: 400 })
   }
   // druga prośba o to samo nie tworzy drugiego wiersza — dział ma widzieć jedną sprawę
   const exists = await pool.query(
@@ -80,9 +84,11 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   await migrate()
   const u = await whoAmI()
+  const translate = await deskT()
   if (u.role !== "management") {
+    // `what` idzie do dziennika, nie na ekran — zostaje w języku instancji.
     await audit.write(u.id, "access.denied", { what: "rozpatrywanie próśb" })
-    return NextResponse.json({ error: "Prośby rozpatruje przełożony." }, { status: 403 })
+    return NextResponse.json({ error: translate("api.managerDecides") }, { status: 403 })
   }
   const { id, decision, revoke } = await req.json()
 
@@ -90,7 +96,8 @@ export async function PATCH(req: Request) {
   // która okazała się nadana przez pomyłkę.
   if (revoke) {
     const r = await pool.query(`select who, capability from desk.access_request where id=$1`, [id])
-    if (!r.rowCount) return NextResponse.json({ error: "Nie ma takiej prośby." }, { status: 404 })
+    if (!r.rowCount)
+      return NextResponse.json({ error: translate("api.noSuchRequest") }, { status: 404 })
     const { who, capability } = r.rows[0]
     await pool.query(`delete from desk.grant where who=$1 and capability=$2`, [who, capability])
     await pool.query(
@@ -102,15 +109,16 @@ export async function PATCH(req: Request) {
   }
 
   if (decision !== "granted" && decision !== "denied") {
-    return NextResponse.json({ error: "Nieznana decyzja." }, { status: 400 })
+    return NextResponse.json({ error: translate("api.unknownDecision") }, { status: 400 })
   }
   const r = await pool.query(
     `select who, capability, status from desk.access_request where id=$1`,
     [id],
   )
-  if (!r.rowCount) return NextResponse.json({ error: "Nie ma takiej prośby." }, { status: 404 })
+  if (!r.rowCount)
+    return NextResponse.json({ error: translate("api.noSuchRequest") }, { status: 404 })
   if (r.rows[0].status !== "pending") {
-    return NextResponse.json({ error: "Ta prośba jest już rozpatrzona." }, { status: 409 })
+    return NextResponse.json({ error: translate("api.alreadyDecided") }, { status: 409 })
   }
   const { who, capability } = r.rows[0]
 
@@ -120,10 +128,7 @@ export async function PATCH(req: Request) {
   )
   if (capability === "other" && decision === "granted") {
     // nie ma czego nadać — taką prośbę można wyłącznie odnotować jako przyjętą do rozważenia
-    return NextResponse.json(
-      { error: "Tej prośby nie da się przyznać jednym kliknięciem — to zgłoszenie do katalogu." },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: translate("api.notGrantable") }, { status: 400 })
   }
   if (decision === "granted") {
     await pool.query(

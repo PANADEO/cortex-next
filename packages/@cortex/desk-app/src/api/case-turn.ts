@@ -3,6 +3,7 @@ import { policyFor, spentToday } from "@cortex/desk-core/capability-gate"
 import { migrate, pool } from "@cortex/desk-core/db"
 import { whoAmI } from "@cortex/desk-core/identity"
 import { appendEvent, runTurn } from "@cortex/desk-core/runtime"
+import { deskT } from "@cortex/desk-ui/i18n/server"
 import { NextResponse } from "next/server"
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -17,11 +18,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
   const p = await policyFor(u)
   const spent = await spentToday(u.id)
+  const translate = await deskT()
   if (spent >= p.dailyLimitUsd) {
-    return NextResponse.json(
-      { error: "Wyczerpany dzienny limit kosztów. Poproś przełożonego o podniesienie." },
-      { status: 429 },
-    )
+    return NextResponse.json({ error: translate("api.dailyLimit") }, { status: 429 })
   }
   const { text, attachments } = await req.json()
   const files: string[] = Array.isArray(attachments)

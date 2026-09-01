@@ -1,6 +1,7 @@
 "use client"
 import type { FileMeta } from "@cortex/desk-core/types"
 import { Download, Maximize2 } from "lucide-react"
+import { useDeskT } from "../i18n/client"
 import { size } from "../lib"
 import { fileIcon } from "./file-row"
 import { Icon } from "./icon"
@@ -32,12 +33,13 @@ export function Artifacts({ files, open }: { files: FileMeta[]; open: (p: FileMe
 }
 
 function ImageBlock({ file, open }: { file: FileMeta; open: () => void }) {
+  const translate = useDeskT()
   return (
     <figure className="max-w-[420px]">
       <button
         onClick={open}
-        title="Otwórz w panelu"
-        aria-label={`Otwórz ${file.name}`}
+        title={translate("artifacts.openInPanel")}
+        aria-label={translate("artifacts.open", { name: file.name })}
         className="block w-full overflow-hidden rounded-lg border bg-desk-surface transition hover:border-desk-line-strong"
       >
         <img
@@ -51,8 +53,8 @@ function ImageBlock({ file, open }: { file: FileMeta; open: () => void }) {
         <a
           href={fileUrl(file, true)}
           download
-          title="Pobierz"
-          aria-label={`Pobierz ${file.name}`}
+          title={translate("files.download")}
+          aria-label={translate("artifacts.download", { name: file.name })}
           className="grid h-7 w-7 shrink-0 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
         >
           <Icon as={Download} px={14} />
@@ -63,10 +65,11 @@ function ImageBlock({ file, open }: { file: FileMeta; open: () => void }) {
 }
 
 function Card({ file, open }: { file: FileMeta; open: () => void }) {
+  const translate = useDeskT()
   return (
     <button
       onClick={open}
-      aria-label={`Otwórz ${file.name}`}
+      aria-label={translate("artifacts.open", { name: file.name })}
       className="group/cardFor flex w-full max-w-[420px] items-center gap-3 rounded-lg border bg-desk-surface p-2.5 text-left transition hover:border-desk-line-strong hover:bg-desk-raised/40"
     >
       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-desk-raised text-desk-muted">
@@ -75,7 +78,7 @@ function Card({ file, open }: { file: FileMeta; open: () => void }) {
       <span className="min-w-0 flex-1">
         <span className="t-body-m block truncate">{file.name}</span>
         <span className="t-meta block">
-          Dokument · {kind(file.name)} · {size(file.size)}
+          {translate("artifacts.document")} · {kind(file.name)} · {size(file.size)}
         </span>
       </span>
       <Icon

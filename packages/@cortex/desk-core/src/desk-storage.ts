@@ -1,5 +1,6 @@
 import { promises as fs } from "node:fs"
 import path from "node:path"
+import { MY_FILES } from "./folder"
 import type { FileMeta } from "./types"
 
 const BASE = path.resolve(process.env.DESK_DATA_DIR ?? "./.data")
@@ -20,13 +21,13 @@ function safePath(user: string, wzgledna: string) {
 
 export async function prepareDesk(user: string) {
   const { root } = safePath(user, ".")
-  await fs.mkdir(path.join(root, "Moje pliki"), { recursive: true })
+  await fs.mkdir(path.join(root, MY_FILES), { recursive: true })
   await fs.mkdir(path.join(root, "Sprawy"), { recursive: true })
   await fs.mkdir(path.join(root, ".trash"), { recursive: true })
   return root
 }
 
-export async function list(user: string, wzgledna = "Moje pliki"): Promise<FileMeta[]> {
+export async function list(user: string, wzgledna = MY_FILES): Promise<FileMeta[]> {
   await prepareDesk(user)
   const { root, target } = safePath(user, wzgledna)
   await fs.mkdir(target, { recursive: true })
@@ -162,7 +163,7 @@ function splitId(id: string) {
     basis = encoded
   }
   // wpisy sprzed wprowadzenia pełnej ścieżki trzymały samą nazwę pliku
-  if (!basis.includes("/")) basis = path.join("Moje pliki", basis)
+  if (!basis.includes("/")) basis = path.join(MY_FILES, basis)
   return { basis, when: new Date(Number.isFinite(stamp) ? stamp : Date.now()).toISOString() }
 }
 
@@ -197,7 +198,7 @@ export async function restore(user: string, id: string) {
   try {
     await fs.access(safePath(user, folder).target)
   } catch {
-    targetFolder = "Moje pliki"
+    targetFolder = MY_FILES
     landedElsewhere = true
   }
 
@@ -205,15 +206,11 @@ export async function restore(user: string, id: string) {
   await fs.mkdir(path.dirname(target), { recursive: true })
   const free = await freeName(target)
   await fs.rename(source, free)
-  return { target: path.relative(root, free), landedElsewhere, pierwotny: folder }
+  return { target: path.relative(root, free), landedElsewhere, originalFolder: folder }
 }
 
 /** Wszystkie foldery w „Moich plikach" — do wyboru miejsca przy przenoszeniu. */
-export async function folders(
-  user: string,
-  relativeRoot = "Moje pliki",
-  depth = 4,
-): Promise<string[]> {
+export async function folders(user: string, relativeRoot = MY_FILES, depth = 4): Promise<string[]> {
   const out: string[] = [relativeRoot]
   async function descend(wzgledna: string, level: number) {
     if (level >= depth) return

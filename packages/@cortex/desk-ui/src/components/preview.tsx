@@ -2,6 +2,7 @@
 import type { FileMeta } from "@cortex/desk-core/types"
 import { FileQuestion } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useDeskT } from "../i18n/client"
 import { api } from "../routes"
 import { Icon } from "./icon"
 import { Markdown } from "./markdown"
@@ -19,6 +20,7 @@ export function Preview({ file }: { file: FileMeta }) {
   const isText = ["md", "csv", "txt", "json", "log", "tsv"].includes(ext)
   const [text, setText] = useState<string | null>(null)
   const [error, setError] = useState(false)
+  const translate = useDeskT()
 
   useEffect(() => {
     if (!isText) return
@@ -46,13 +48,13 @@ export function Preview({ file }: { file: FileMeta }) {
     return (
       <div className="rounded-lg border border-dashed p-6 text-center">
         <Icon as={FileQuestion} px={24} className="mx-auto text-desk-muted-2" />
-        <p className="t-body mt-2">Tego pliku nie umiem pokazać na ekranie.</p>
-        <p className="t-meta">Pobierz go, żeby otworzyć w swoim programie.</p>
+        <p className="t-body mt-2">{translate("preview.unsupported")}</p>
+        <p className="t-meta">{translate("preview.downloadInstead")}</p>
       </div>
     )
 
-  if (error) return <p className="t-meta">Nie udało się wczytać treści pliku.</p>
-  if (text === null) return <p className="t-meta">Wczytuję…</p>
+  if (error) return <p className="t-meta">{translate("preview.failed")}</p>
+  if (text === null) return <p className="t-meta">{translate("preview.loading")}</p>
 
   if (ext === "md") return <Markdown text={text} />
 
@@ -92,7 +94,7 @@ export function Preview({ file }: { file: FileMeta }) {
         </div>
         {rows.length > MAX_ROWS + 1 && (
           <p className="t-micro pt-1.5">
-            pokazuję {MAX_ROWS} z {rows.length - 1} wierszy
+            {translate("preview.showingRows", { shown: MAX_ROWS, count: rows.length - 1 })}
           </p>
         )}
       </div>

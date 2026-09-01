@@ -1,0 +1,371 @@
+{
+  "shell": {
+    "product": "Biurko",
+    "hub": "Wszystkie aplikacje Cortex",
+    "newCase": "Nowa sprawa",
+    "cases": "Sprawy",
+    "casesEmpty": "Twoje sprawy pojawią się tutaj.",
+    "allCases": "Wszystkie sprawy ({{count}})",
+    "myFiles": "Moje pliki",
+    "supervision": "Nadzór",
+    "skills": "Umiem {{granted}} z {{count}} rzeczy",
+    "privacy": "Pliki zostają na serwerze firmy. Do modelu trafia tylko ta treść, którą asystent musi przeczytać, żeby wykonać zlecenie."
+  },
+  "bottomBar": {
+    "cases": "Sprawy",
+    "files": "Pliki",
+    "me": "Ja"
+  },
+  "persona": {
+    "switch": "Przełącz osobę (pokaz)",
+    "language": "Język",
+    "appearance": "Wygląd"
+  },
+  "common": {
+    "close": "Zamknij",
+    "cancel": "Anuluj",
+    "undo": "Cofnij",
+    "closeToast": "Zamknij powiadomienie"
+  },
+  "case": {
+    "untitled": "Sprawa",
+    "back": "Wróć do biurka",
+    "status": {
+      "new": "nowa",
+      "working": "pracuje",
+      "done": "gotowe",
+      "stopped": "przerwane",
+      "failed": "nie udało się"
+    },
+    "workingFor": "pracuje · {{time}}",
+    "seconds": {
+      "one": "{{count}} s",
+      "few": "{{count}} s",
+      "many": "{{count}} s",
+      "other": "{{count}} s"
+    },
+    "minutes": {
+      "one": "{{count}} min",
+      "few": "{{count}} min",
+      "many": "{{count}} min",
+      "other": "{{count}} min"
+    },
+    "stop": "Stop",
+    "hideResultPanel": "Ukryj panel wyniku",
+    "showResultPanel": "Pokaż panel wyniku",
+    "hideResult": "Ukryj wynik",
+    "showResult": "Pokaż wynik",
+    "more": "Więcej o sprawie",
+    "details": "Szczegóły sprawy",
+    "actions": "Czynności",
+    "documents": "Dokumenty",
+    "cost": "Koszt",
+    "permissions": "Uprawnienia",
+    "permissionsValue": "jak w dziale {{department}} ({{granted}} z {{total}})",
+    "department": {
+      "management": "Zarząd",
+      "member": "Księgowość"
+    },
+    "unfinished": "Nie dokończyłem tego zlecenia.",
+    "interrupted": "Praca przerwana.",
+    "rephrase": "Napisz inaczej",
+    "newSteps": "Nowe kroki",
+    "open": "Otwórz",
+    "busyPlaceholder": "Pracuję — poczekaj albo naciśnij Stop",
+    "placeholder": "Napisz, co mam zrobić…",
+    "addFile": "Dodaj plik",
+    "send": "Wyślij zlecenie",
+    "resultPanel": "Panel wyniku",
+    "result": "Wynik",
+    "starting": "Zabieram się do pracy…",
+    "sendFailed": "Nie udało się wysłać zlecenia.",
+    "attachFailed": "Nie udało się dołączyć pliku.",
+    "retry": "Nie ma pliku {{name}} w teczce sprawy. Zrób go proszę naprawdę i zapisz.",
+    "notYours": "To nie jest Twoja sprawa",
+    "notYoursLead": "Każdy pracownik widzi wyłącznie własne biurko."
+  },
+  "cases": {
+    "documents": {
+      "one": "{{count}} dokument",
+      "few": "{{count}} dokumenty",
+      "many": "{{count}} dokumentów",
+      "other": "{{count}} dokumentów"
+    },
+    "title": "Wszystkie sprawy",
+    "lead": "Sprawy zostają na biurku — możesz wrócić do każdej."
+  },
+  "files": {
+    "title": "Moje pliki",
+    "myFilesFolder": "Moje pliki",
+    "lead": "Tu trzymasz to, na czym pracujesz. Pliki zostają na biurku — nie znikają razem ze sprawą.",
+    "addFiles": "Dodaj pliki",
+    "uploading": "Wgrywam…",
+    "newFolder": "Nowy folder",
+    "path": "Ścieżka",
+    "dropHere": "Upuść pliki tutaj — trafią do: {{folder}}",
+    "empty": "Tu jeszcze nic nie ma",
+    "emptyHint": "Przeciągnij pliki albo kliknij „Dodaj pliki”.",
+    "inFolder": "Pliki w tym folderze",
+    "folderName": "Nazwa folderu",
+    "newFolderName": "Nazwa nowego folderu",
+    "trash": "Kosz",
+    "trashEmpty": "Kosz jest pusty.",
+    "trashHint": "Skasowane pliki zostają tutaj, dopóki ich stąd nie zabierzesz.",
+    "fromFolder": "z {{folder}}",
+    "restore": "Przywróć",
+    "download": "Pobierz",
+    "closePreview": "Zamknij podgląd",
+    "tooLarge": "{{name}} waży więcej niż 25 MB — tyle nie przyjmę.",
+    "uploaded": {
+      "one": "Dodane: {{count}} plik",
+      "few": "Dodane: {{count}} pliki",
+      "many": "Dodane: {{count}} plików",
+      "other": "Dodane: {{count}} plików"
+    },
+    "uploadFailed": "Nie udało się wgrać plików.",
+    "deleteFailed": "Nie udało się usunąć {{name}}.",
+    "movedToTrash": "Przeniesione do kosza: {{name}}",
+    "undoFailed": "Nie udało się cofnąć.",
+    "nameClash": "Taki plik już tu jest. Wybierz inną nazwę.",
+    "renameFailed": "Nie udało się zmienić nazwy.",
+    "folderGone": "Folder {{folder}} już nie istnieje — plik wrócił do Moich plików.",
+    "moved": "Przeniesione do: {{folder}}",
+    "alreadyHere": "{{name}} już jest w tym folderze.",
+    "moveFailed": "Nie udało się przenieść pliku."
+  },
+  "fileRow": {
+    "newName": "Nowa nazwa pliku",
+    "more": "Więcej opcji dla {{name}}",
+    "preview": "Otwórz podgląd",
+    "rename": "Zmień nazwę",
+    "moveTo": "Przenieś do…",
+    "toCase": "Dołącz do sprawy",
+    "toMyFiles": "Zapisz do Moich plików",
+    "remove": "Usuń"
+  },
+  "move": {
+    "title": "Przenieś do",
+    "moving": "Przenoszę: {{name}}",
+    "alreadyHere": "plik już tu jest",
+    "create": "Utwórz",
+    "newFolderHere": "Nowy folder tutaj",
+    "confirm": "Przenieś"
+  },
+  "preview": {
+    "unsupported": "Tego pliku nie umiem pokazać na ekranie.",
+    "downloadInstead": "Pobierz go, żeby otworzyć w swoim programie.",
+    "failed": "Nie udało się wczytać treści pliku.",
+    "loading": "Wczytuję…",
+    "showingRows": {
+      "one": "pokazuję {{shown}} z {{count}} wiersza",
+      "few": "pokazuję {{shown}} z {{count}} wierszy",
+      "many": "pokazuję {{shown}} z {{count}} wierszy",
+      "other": "pokazuję {{shown}} z {{count}} wierszy"
+    }
+  },
+  "artifacts": {
+    "openInPanel": "Otwórz w panelu",
+    "open": "Otwórz {{name}}",
+    "download": "Pobierz {{name}}",
+    "document": "Dokument"
+  },
+  "attachments": {
+    "remove": "Usuń załącznik {{name}}"
+  },
+  "result": {
+    "empty": "Tu pojawi się gotowy dokument.",
+    "copyFailed": "Nie udało się skopiować treści.",
+    "saved": "Zapisane w Moich plikach: {{name}}",
+    "saveFailed": "Nie udało się zapisać do Moich plików.",
+    "yourAttachment": "Twój załącznik",
+    "savedAt": "zapisany {{when}}",
+    "unverified": "niesprawdzony",
+    "verified": "sprawdzony po zapisie",
+    "copied": "Skopiowane",
+    "copy": "Kopiuj treść",
+    "fromYou": "Od Ciebie ({{count}})"
+  },
+  "requests": {
+    "waiting": "Czekają na Twoją decyzję",
+    "nothing": "Nic nie czeka.",
+    "asksOutside": "{{who}} prosi o coś, czego nie ma w katalogu:",
+    "notClickable": "tego nie da się przyznać kliknięciem",
+    "asksFor": "{{who}} prosi o zdolność „{{name}}”",
+    "approvedBy": "zgodę wydaje dział {{department}}",
+    "deny": "Odmów",
+    "grant": "Przyznaj",
+    "decided": "Rozpatrzone",
+    "stateGranted": "przyznane",
+    "stateDenied": "odmowa",
+    "revoke": "Cofnij",
+    "revoked": "Zdolność „{{name}}” cofnięta osobie {{who}}.",
+    "revokeFailed": "Nie udało się cofnąć.",
+    "decisionFailed": "Nie udało się zapisać decyzji.",
+    "granted": "{{who}} ma teraz zdolność „{{name}}”.",
+    "denied": "Odmowa zapisana. {{who}} zobaczy, że prośba została rozpatrzona."
+  },
+  "supervision": {
+    "title": "Nadzór",
+    "lead": "Kto o co prosi, co się działo na biurkach i ile to dziś kosztowało.",
+    "sections": "Sekcje nadzoru",
+    "tabDecisions": "Do decyzji",
+    "tabTools": "Narzędzia",
+    "tabSpending": "Wydatki",
+    "tabLog": "Dziennik",
+    "managementOnly": "Ten ekran widzi wyłącznie osoba z rolą zarządu.",
+    "gaps": "Czego zabrakło w katalogu",
+    "gapsLead": "Agent próbował to zrobić i nie znalazł u siebie odpowiedniej umiejętności — a katalog jej nie zna. To lista rzeczy do rozważenia jako nowe umiejętności.",
+    "spending": "Dzisiejsze wydatki",
+    "ofLimit": "{{spent}} z {{limit}} · {{share}}%",
+    "limitNote": "Limit jest dzienny i twardy — po jego wyczerpaniu agent tej osoby nie ruszy do pracy.",
+    "log": "Co się działo",
+    "logEmpty": "Dziennik jest pusty.",
+    "logNote": "Dziennik zapisuje sama aplikacja. Agent nie ma do niego dostępu i nie może go zmienić."
+  },
+  "home": {
+    "greeting": "Dzień dobry, {{name}}.",
+    "privacy": "To jest Twoje biurko. Nikt inny go nie widzi.",
+    "all": "Wszystkie →",
+    "noCases": "Nie masz jeszcze żadnej sprawy. Zacznij od kafelka powyżej albo napisz własne zlecenie."
+  },
+  "capabilities": {
+    "title": "Co potrafię",
+    "ratio": "{{granted}} z {{total}}",
+    "lead": "To jest wszystko, co mogę dla Ciebie zrobić w dziale {{department}}. Reszta wymaga zgody działu, który za nią odpowiada.",
+    "note": "Zdolność, której nie mam, nie jest przede mną schowana — po prostu jej u Ciebie nie ma. Nie da się mnie namówić na jej użycie.",
+    "search": "Szukaj wśród umiejętności",
+    "everyone": "Dla wszystkich",
+    "notYet": "Na to nie masz jeszcze zgody:",
+    "ownedBy": "zgoda należy do działu: {{department}}",
+    "requestSent": "Prośba wysłana — czeka na rozpatrzenie",
+    "previouslyDenied": "Poprzednia prośba została odrzucona.",
+    "askAgain": "Poproś ponownie",
+    "ask": "Poproś o dostęp",
+    "nothingFound": "Nic takiego nie znalazłem. Napisz o tym w prośbie własnymi słowami.",
+    "canDoHere": {
+      "one": "Umiem tu {{count}} rzecz",
+      "few": "Umiem tu {{count}} rzeczy",
+      "many": "Umiem tu {{count}} rzeczy",
+      "other": "Umiem tu {{count}} rzeczy"
+    },
+    "requestQueued": "Prośba o „{{name}}” poszła do działu. Dostaniesz znać, gdy ktoś ją rozpatrzy."
+  },
+  "composer": {
+    "untitled": "Bez tytułu",
+    "attachFailed": "nie udało się dołączyć plików",
+    "rejected": "Nie udało się przyjąć zlecenia.",
+    "startFailed": "Nie udało się zacząć sprawy. Spróbuj jeszcze raz.",
+    "placeholder": "Co mam dla Ciebie zrobić?",
+    "send": "Zleć zadanie",
+    "startFrom": "Zacznij od jednej z rzeczy, które umiem w Twoim dziale:",
+    "hints": "Podpowiedzi"
+  },
+  "lock": {
+    "requestFailed": "Nie udało się wysłać prośby.",
+    "requestSent": "Prośba o „{{name}}” poszła do działu {{department}}.",
+    "needs": "Do tego potrzebuję zdolności „{{name}}”, której nie masz włączonej.",
+    "notAllowed": "Tego nie umiem zrobić przy Twoich uprawnieniach.",
+    "about": "Chodziło o: {{description}}"
+  },
+  "otherRequest": {
+    "sent": "Prośba poszła do przełożonego. Odezwie się, gdy ją rozpatrzy.",
+    "trigger": "Potrzebuję czegoś innego",
+    "title": "Napisz, czego potrzebujesz",
+    "lead": "To trafi do przełożonego. Jeśli okaże się przydatne dla większej liczby osób, stanie się nową umiejętnością.",
+    "field": "Czego potrzebujesz",
+    "placeholder": "np. „Żeby asystent umiał wystawić fakturę w naszym systemie” albo „Żeby czytał pliki z dysku sieciowego działu”",
+    "send": "Wyślij prośbę"
+  },
+  "resize": {
+    "label": "Szerokość panelu wyniku",
+    "hint": "Przeciągnij, żeby zmienić szerokość. Dociągnij do prawej, żeby zwinąć."
+  },
+  "promises": {
+    "title": {
+      "one": "Ten plik nie powstał.",
+      "few": "Te pliki nie powstały.",
+      "many": "Te pliki nie powstały.",
+      "other": "Te pliki nie powstały."
+    },
+    "body": {
+      "one": "W odpowiedzi pada nazwa {{names}}, ale takiego pliku nie ma w teczce sprawy i nie powstał w żadnej czynności. To lista tego, co faktycznie się wydarzyło — nie tego, co napisał asystent.",
+      "few": "W odpowiedzi padają nazwy {{names}}, ale takich plików nie ma w teczce sprawy i nie powstały w żadnej czynności. To lista tego, co faktycznie się wydarzyło — nie tego, co napisał asystent.",
+      "many": "W odpowiedzi padają nazwy {{names}}, ale takich plików nie ma w teczce sprawy i nie powstały w żadnej czynności. To lista tego, co faktycznie się wydarzyło — nie tego, co napisał asystent.",
+      "other": "W odpowiedzi padają nazwy {{names}}, ale takich plików nie ma w teczce sprawy i nie powstały w żadnej czynności. To lista tego, co faktycznie się wydarzyło — nie tego, co napisał asystent."
+    },
+    "askAgain": "Poproś jeszcze raz"
+  },
+  "trail": {
+    "onFile": "Na pliku: {{path}}",
+    "saw": "Zobaczyłem: {{detail}}",
+    "working": "Pracuję nad tym…",
+    "stumbled": "Zrobione z potknięciem: {{what}}",
+    "label": "Przebieg pracy",
+    "steps": "Kroki pracy",
+    "step": "krok {{n}}",
+    "unverifiedCount": {
+      "one": "{{count}} rzecz niesprawdzona",
+      "few": "{{count}} rzeczy niesprawdzone",
+      "many": "{{count}} rzeczy niesprawdzonych",
+      "other": "{{count}} rzeczy niesprawdzonych"
+    },
+    "checked": "Sprawdzone:",
+    "asked": "Pytałem poza firmą:",
+    "notChecked": "Nie sprawdziłem:",
+    "notAllowed": "Na to nie masz zgody:",
+    "note": "To jest lista tego, co faktycznie się wydarzyło — nie tego, co napisałem powyżej."
+  },
+  "mcp": {
+    "failed": "Nie udało się.",
+    "title": "Narzędzia spoza firmy",
+    "lead": "Każde narzędzie przyjmujesz osobno i opisujesz własnymi słowami — asystent zobaczy Twój opis, nigdy tekst przysłany przez dostawcę.",
+    "inspect": "Przejrzyj",
+    "nothingAccepted": "Nic jeszcze nie przyjęte z tego serwera.",
+    "needsCapability": "wymaga zdolności „{{capability}}”",
+    "acceptedBy": "przyjął {{who}}",
+    "suspended": "Wstrzymane.",
+    "suspendedNote": "Do czasu ponownego przyjęcia asystent tego nie dostaje.",
+    "withdraw": "Wycofaj {{name}}",
+    "withdrawn": "Wycofane: {{name}}",
+    "exposes": "Co ten serwer wystawia",
+    "accepted": "Przyjęte: {{name}}",
+    "serverAdded": "Dodano serwer {{name}}",
+    "addServer": "Dodaj serwer",
+    "alreadyAccepted": "już przyjęte",
+    "needsReconsent": "wstrzymane — wymaga ponownej zgody",
+    "vendorText": "Co dostawca pisze o tym narzędziu",
+    "vendorLabel": "Tekst dostawcy serwera, nie nasz:",
+    "shortLabelHint": "Krótko, co to robi — np. „sprawdzenie statusu VAT”",
+    "descriptionHint": "Opis dla asystenta, własnymi słowami — to zdanie zobaczy model",
+    "accept": "Przyjmij",
+    "acceptAgain": "Przyjmij ponownie",
+    "humanNameHint": "Nazwa dla ludzi — np. „wykaz podatników VAT”",
+    "technicalNameHint": "Nazwa techniczna — małe litery i myślnik, np. vat-registry",
+    "urlHint": "Adres serwera MCP (Streamable HTTP)",
+    "add": "Dodaj"
+  },
+  "api": {
+    "noPath": "brak ścieżki",
+    "tooLarge": "{{name}} waży więcej niż 25 MB.",
+    "dailyLimit": "Wyczerpany dzienny limit kosztów. Poproś przełożonego o podniesienie.",
+    "costUnreadable": "Nie udało się odczytać dzisiejszego kosztu.",
+    "managerOnly": "To robi przełożony.",
+    "badUrl": "Adres musi zaczynać się od http:// albo https://.",
+    "badName": "Nazwa techniczna: małe litery, cyfry i myślnik.",
+    "descriptionRequired": "Opis i krótka nazwa są wymagane — pisze je człowiek, nie serwer.",
+    "unknownCapability": "Nieznana zdolność.",
+    "toolGone": "Serwer nie wystawia już tego narzędzia.",
+    "noSuchServer": "Nie ma takiego serwera.",
+    "connectFailed": "Nie udało się połączyć: {{reason}}",
+    "unknownAction": "Nieznana akcja.",
+    "somethingOutside": "coś, czego nie ma w katalogu",
+    "writeWhatYouNeed": "Napisz, czego potrzebujesz.",
+    "noSuchCapability": "Nie ma takiej zdolności.",
+    "managerDecides": "Prośby rozpatruje przełożony.",
+    "noSuchRequest": "Nie ma takiej prośby.",
+    "unknownDecision": "Nieznana decyzja.",
+    "alreadyDecided": "Ta prośba jest już rozpatrzona.",
+    "notGrantable": "Tej prośby nie da się przyznać jednym kliknięciem — to zgłoszenie do katalogu.",
+    "newCase": "Nowa sprawa"
+  }
+}

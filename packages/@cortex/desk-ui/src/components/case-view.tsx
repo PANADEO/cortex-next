@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useDeskLocale, useDeskT } from "../i18n/client"
 import { zl } from "../lib"
 import { api, t } from "../routes"
 import { ActivityTrail } from "./activity-trail"
@@ -46,13 +47,6 @@ type Case = {
   updatedAt: string
 }
 
-const LABEL: Record<string, string> = {
-  new: "nowa",
-  working: "pracuje",
-  done: "gotowe",
-  stopped: "przerwane",
-  failed: "nie udało się",
-}
 const DOT: Record<string, string> = {
   new: "bg-desk-muted-2",
   working: "bg-desk-accent pulse",
@@ -107,6 +101,8 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
   const evidenceFooter = useRef<HTMLDivElement>(null)
   const picker = useRef<HTMLInputElement>(null)
   const field = useRef<HTMLTextAreaElement>(null)
+  const translate = useDeskT()
+  const locale = useDeskLocale()
   const { toast } = useToast()
 
   useEffect(() => {
@@ -296,7 +292,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
       const d = await r.json().catch(() => ({}))
       setSending(null)
       setText(t)
-      toast({ text: d.error ?? "Nie udało się wysłać zlecenia.", tone: "error" })
+      toast({ text: d.error ?? translate("case.sendFailed"), tone: "error" })
     }
   }
 
@@ -318,7 +314,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
 
     if (!r.ok) {
       setPending((z) => z.filter((x) => !fresh.some((n) => n.name === x.name)))
-      toast({ text: d.error ?? "Nie udało się dołączyć pliku.", tone: "error" })
+      toast({ text: d.error ?? translate("case.attachFailed"), tone: "error" })
       return
     }
     // serwer mógł nadać inną nazwę, gdy taka już była w teczce
@@ -336,7 +332,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
   const taken = isWorking || Boolean(sending)
 
   const retry = (name: string) => {
-    setText(`Nie ma pliku ${name} w teczce sprawy. Zrób go proszę naprawdę i write.`)
+    setText(translate("case.retry", { name }))
     field.current?.focus()
   }
 
@@ -357,21 +353,26 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
         <header className="flex h-desk-bar shrink-0 items-center gap-2 border-b bg-desk-surface px-3">
           <Link
             href={t("/")}
-            aria-label="Wróć do biurka"
+            aria-label={translate("case.back")}
             className="grid h-8 w-8 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised md:hidden"
           >
             <Icon as={ChevronLeft} px={20} />
           </Link>
           <div className="min-w-0 flex-1">
-            <div className="t-h3 truncate">{caseFile?.title ?? "Case"}</div>
+            <div className="t-h3 truncate">{caseFile?.title ?? translate("case.untitled")}</div>
             <div className="t-meta flex items-center gap-1.5">
               <span className={`h-1.5 w-1.5 rounded-desk-pill ${DOT[caseFile?.status ?? "new"]}`} />
               {isWorking ? (
                 <span className="text-desk-accent">
-                  pracuje · {seconds < 60 ? `${seconds} s` : `${Math.round(seconds / 60)} min`}
+                  {translate("case.workingFor", {
+                    time:
+                      seconds < 60
+                        ? translate("case.seconds", { count: seconds })
+                        : translate("case.minutes", { count: Math.round(seconds / 60) }),
+                  })}
                 </span>
               ) : (
-                <span>{LABEL[caseFile?.status ?? "new"]}</span>
+                <span>{translate(`case.status.${caseFile?.status ?? "new"}`)}</span>
               )}
             </div>
           </div>
@@ -380,21 +381,23 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
               onClick={() => fetch(`${api("")}/case/${id}/stop`, { method: "POST" })}
               className="t-btn flex h-8 items-center gap-1.5 rounded-md border px-2.5 hover:bg-desk-raised"
             >
-              <Icon as={Square} px={14} /> Stop
+              <Icon as={Square} px={14} /> {translate("case.stop")}
             </button>
           )}
           <button
             onClick={() => setPanel(!panel)}
             aria-pressed={panel}
-            aria-label={panel ? "Ukryj panel wyniku" : "Pokaż panel wyniku"}
-            title={panel ? "Ukryj wynik" : "Pokaż wynik"}
+            aria-label={
+              panel ? translate("case.hideResultPanel") : translate("case.showResultPanel")
+            }
+            title={panel ? translate("case.hideResult") : translate("case.showResult")}
             className="hidden h-8 w-8 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised lg:grid"
           >
             <Icon as={panel ? PanelRightClose : PanelRight} px={16} />
           </button>
           <Menu.Root>
             <Menu.Trigger
-              aria-label="Więcej o sprawie"
+              aria-label={translate("case.more")}
               className="grid h-8 w-8 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised"
             >
               <Icon as={MoreHorizontal} px={16} />
@@ -407,28 +410,31 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
                 className="z-50 min-w-[240px] rounded-md border bg-desk-surface p-3 shadow-desk-pop"
               >
                 <div className="t-section flex items-center gap-2 pb-2">
-                  <Icon as={Info} px={14} /> Szczegóły sprawy
+                  <Icon as={Info} px={14} /> {translate("case.details")}
                 </div>
                 <dl className="t-meta space-y-1">
                   <div className="flex justify-between gap-4">
-                    <dt>Czynności</dt>
+                    <dt>{translate("case.actions")}</dt>
                     <dd className="text-desk-ink">
                       {entries.filter((w) => w.event.type === "tool_start").length}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <dt>Dokumenty</dt>
+                    <dt>{translate("case.documents")}</dt>
                     <dd className="text-desk-ink">{results.length}</dd>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <dt>TurnCost</dt>
-                    <dd className="text-desk-ink">{zl(caseFile?.cost ?? 0)}</dd>
+                    <dt>{translate("case.cost")}</dt>
+                    <dd className="text-desk-ink">{zl(caseFile?.cost ?? 0, locale)}</dd>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <dt>Uprawnienia</dt>
+                    <dt>{translate("case.permissions")}</dt>
                     <dd className="text-desk-ink">
-                      jak w dziale {p.role === "management" ? "Zarząd" : "Księgowość"} (
-                      {p.granted.length} z {p.granted.length + p.blocked.length})
+                      {translate("case.permissionsValue", {
+                        department: translate(`case.department.${p.role}`),
+                        granted: p.granted.length,
+                        total: p.granted.length + p.blocked.length,
+                      })}
                     </dd>
                   </div>
                 </dl>
@@ -513,8 +519,8 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
                         >
                           <div className="t-body-m">
                             {ev.status === "failed"
-                              ? "Nie dokończyłem tego zlecenia."
-                              : "Praca przerwana."}
+                              ? translate("case.unfinished")
+                              : translate("case.interrupted")}
                           </div>
                           {ev.reason && <p className="t-meta mt-0.5">{ev.reason}</p>}
                           {ev.status === "failed" && (
@@ -522,7 +528,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
                               onClick={() => field.current?.focus()}
                               className="t-btn mt-2 flex h-8 items-center gap-1.5 rounded-md border px-2.5 hover:bg-desk-raised"
                             >
-                              <Icon as={RotateCcw} px={14} /> Napisz inaczej
+                              <Icon as={RotateCcw} px={14} /> {translate("case.rephrase")}
                             </button>
                           )}
                         </div>
@@ -558,7 +564,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
               }}
               className="t-meta sticky bottom-2 left-1/2 flex h-8 -translate-x-1/2 items-center gap-1.5 rounded-desk-pill border bg-desk-surface px-3 shadow-desk-pop hover:text-desk-ink"
             >
-              <Icon as={ArrowDown} px={14} /> Nowe kroki
+              <Icon as={ArrowDown} px={14} /> {translate("case.newSteps")}
             </button>
           )}
         </div>
@@ -570,7 +576,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
           >
             <Icon as={fileIcon(active)} px={16} className="shrink-0 text-desk-muted" />
             <span className="t-body-m min-w-0 flex-1 truncate">{active.name}</span>
-            <span className="t-meta shrink-0">Otwórz</span>
+            <span className="t-meta shrink-0">{translate("case.open")}</span>
             <Icon as={ChevronDown} px={16} className="shrink-0 -rotate-90 text-desk-muted" />
           </button>
         )}
@@ -606,7 +612,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
                 attach(dt.files)
               }}
               placeholder={
-                taken ? "Pracuję — poczekaj albo naciśnij Stop" : "Napisz, co mam zrobić…"
+                taken ? translate("case.busyPlaceholder") : translate("case.placeholder")
               }
               className="t-body w-full resize-none bg-transparent px-3.5 pt-3 outline-none placeholder:text-desk-muted-2"
             />
@@ -626,7 +632,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
                 onClick={() => picker.current?.click()}
                 className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
               >
-                <Icon as={Paperclip} px={14} /> Dodaj plik
+                <Icon as={Paperclip} px={14} /> {translate("case.addFile")}
               </button>
               <CapabilityButton p={p} />
               <div className="flex-1" />
@@ -635,7 +641,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
                 disabled={
                   (!text.trim() && !pending.length) || taken || pending.some((z) => z.uploading)
                 }
-                aria-label="Wyślij zlecenie"
+                aria-label={translate("case.send")}
                 className="grid h-9 w-9 place-items-center rounded-md bg-desk-accent text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-35"
               >
                 <Icon
@@ -655,7 +661,7 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
           <aside
             style={{ width: width }}
             className="hidden shrink-0 border-l bg-desk-surface lg:block"
-            aria-label="Panel wyniku"
+            aria-label={translate("case.resultPanel")}
           >
             {table}
           </aside>
@@ -667,9 +673,9 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
           <Dialog.Overlay className="fixed inset-0 z-40 bg-desk-ink/25 lg:hidden" />
           <Dialog.Content className="sheet fixed inset-x-0 bottom-0 z-50 h-[88vh] overflow-hidden rounded-t-xl border-t bg-desk-surface lg:hidden">
             <div className="flex h-11 items-center justify-between border-b px-3">
-              <Dialog.Title className="t-h3">Wynik</Dialog.Title>
+              <Dialog.Title className="t-h3">{translate("case.result")}</Dialog.Title>
               <Dialog.Close
-                aria-label="Zamknij"
+                aria-label={translate("common.close")}
                 className="grid h-8 w-8 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised"
               >
                 <Icon as={X} px={16} />
@@ -707,10 +713,11 @@ function Command({
 
 /** Luka między kliknięciem a pierwszym krokiem to 1–2 sekundy ciszy — tu jest jej wypełnienie. */
 function Removing() {
+  const translate = useDeskT()
   return (
     <div className="t-meta flex items-center gap-2">
       <Icon as={LoaderCircle} px={14} className="spin text-desk-accent" />
-      <span className="pulse">Zabieram się do pracy…</span>
+      <span className="pulse">{translate("case.starting")}</span>
     </div>
   )
 }

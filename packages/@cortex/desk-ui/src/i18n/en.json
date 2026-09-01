@@ -1,0 +1,356 @@
+{
+  "shell": {
+    "product": "Desk",
+    "hub": "All Cortex apps",
+    "newCase": "New case",
+    "cases": "Cases",
+    "casesEmpty": "Your cases will show up here.",
+    "allCases": "All cases ({{count}})",
+    "myFiles": "My files",
+    "supervision": "Oversight",
+    "skills": {
+      "one": "I can do {{granted}} of {{count}} thing",
+      "other": "I can do {{granted}} of {{count}} things"
+    },
+    "privacy": "Files stay on the company server. Only the content the assistant has to read in order to do the job reaches the model."
+  },
+  "bottomBar": {
+    "cases": "Cases",
+    "files": "Files",
+    "me": "Me"
+  },
+  "persona": {
+    "switch": "Switch person (demo)",
+    "language": "Language",
+    "appearance": "Appearance"
+  },
+  "common": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "undo": "Undo",
+    "closeToast": "Dismiss the notification"
+  },
+  "case": {
+    "untitled": "Case",
+    "back": "Back to the desk",
+    "status": {
+      "new": "new",
+      "working": "working",
+      "done": "done",
+      "stopped": "stopped",
+      "failed": "failed"
+    },
+    "workingFor": "working · {{time}}",
+    "seconds": {
+      "one": "{{count}} s",
+      "other": "{{count}} s"
+    },
+    "minutes": {
+      "one": "{{count}} min",
+      "other": "{{count}} min"
+    },
+    "stop": "Stop",
+    "hideResultPanel": "Hide the result panel",
+    "showResultPanel": "Show the result panel",
+    "hideResult": "Hide result",
+    "showResult": "Show result",
+    "more": "More about this case",
+    "details": "Case details",
+    "actions": "Actions",
+    "documents": "Documents",
+    "cost": "Cost",
+    "permissions": "Permissions",
+    "permissionsValue": "same as {{department}} ({{granted}} of {{total}})",
+    "department": {
+      "management": "Management",
+      "member": "Accounting"
+    },
+    "unfinished": "I did not finish this job.",
+    "interrupted": "Work interrupted.",
+    "rephrase": "Word it differently",
+    "newSteps": "New steps",
+    "open": "Open",
+    "busyPlaceholder": "Working — wait or press Stop",
+    "placeholder": "Tell me what to do…",
+    "addFile": "Add a file",
+    "send": "Send the job",
+    "resultPanel": "Result panel",
+    "result": "Result",
+    "starting": "Getting to work…",
+    "sendFailed": "Could not send the job.",
+    "attachFailed": "Could not attach the file.",
+    "retry": "There is no file {{name}} in this case folder. Please make it for real and save it.",
+    "notYours": "This is not your case",
+    "notYoursLead": "Each employee sees only their own desk."
+  },
+  "cases": {
+    "documents": {
+      "one": "{{count}} document",
+      "other": "{{count}} documents"
+    },
+    "title": "All cases",
+    "lead": "Cases stay on the desk — you can come back to any of them."
+  },
+  "files": {
+    "title": "My files",
+    "myFilesFolder": "My files",
+    "lead": "This is where you keep what you are working on. Files stay on the desk — they do not disappear with a case.",
+    "addFiles": "Add files",
+    "uploading": "Uploading…",
+    "newFolder": "New folder",
+    "path": "Path",
+    "dropHere": "Drop files here — they will land in: {{folder}}",
+    "empty": "Nothing here yet",
+    "emptyHint": "Drag files in or click “Add files”.",
+    "inFolder": "Files in this folder",
+    "folderName": "Folder name",
+    "newFolderName": "New folder name",
+    "trash": "Trash",
+    "trashEmpty": "The trash is empty.",
+    "trashHint": "Deleted files stay here until you take them out.",
+    "fromFolder": "from {{folder}}",
+    "restore": "Restore",
+    "download": "Download",
+    "closePreview": "Close the preview",
+    "tooLarge": "{{name}} is larger than 25 MB — that is more than I take.",
+    "uploaded": {
+      "one": "Added: {{count}} file",
+      "other": "Added: {{count}} files"
+    },
+    "uploadFailed": "Could not upload the files.",
+    "deleteFailed": "Could not delete {{name}}.",
+    "movedToTrash": "Moved to the trash: {{name}}",
+    "undoFailed": "Could not undo.",
+    "nameClash": "A file with that name is already here. Pick another one.",
+    "renameFailed": "Could not rename the file.",
+    "folderGone": "Folder {{folder}} no longer exists — the file went back to My files.",
+    "moved": "Moved to: {{folder}}",
+    "alreadyHere": "{{name}} is already in that folder.",
+    "moveFailed": "Could not move the file."
+  },
+  "fileRow": {
+    "newName": "New file name",
+    "more": "More options for {{name}}",
+    "preview": "Open the preview",
+    "rename": "Rename",
+    "moveTo": "Move to…",
+    "toCase": "Attach to a case",
+    "toMyFiles": "Save to My files",
+    "remove": "Delete"
+  },
+  "move": {
+    "title": "Move to",
+    "moving": "Moving: {{name}}",
+    "alreadyHere": "the file is already here",
+    "create": "Create",
+    "newFolderHere": "New folder here",
+    "confirm": "Move"
+  },
+  "preview": {
+    "unsupported": "I cannot show this file on screen.",
+    "downloadInstead": "Download it to open it in your own program.",
+    "failed": "Could not load the file contents.",
+    "loading": "Loading…",
+    "showingRows": {
+      "one": "showing {{shown}} of {{count}} row",
+      "other": "showing {{shown}} of {{count}} rows"
+    }
+  },
+  "artifacts": {
+    "openInPanel": "Open in the panel",
+    "open": "Open {{name}}",
+    "download": "Download {{name}}",
+    "document": "Document"
+  },
+  "attachments": {
+    "remove": "Remove attachment {{name}}"
+  },
+  "result": {
+    "empty": "The finished document will show up here.",
+    "copyFailed": "Could not copy the contents.",
+    "saved": "Saved to My files: {{name}}",
+    "saveFailed": "Could not save to My files.",
+    "yourAttachment": "Your attachment",
+    "savedAt": "saved {{when}}",
+    "unverified": "unverified",
+    "verified": "verified after saving",
+    "copied": "Copied",
+    "copy": "Copy the contents",
+    "fromYou": "From you ({{count}})"
+  },
+  "requests": {
+    "waiting": "Waiting for your decision",
+    "nothing": "Nothing is waiting.",
+    "asksOutside": "{{who}} is asking for something the catalogue does not have:",
+    "notClickable": "this cannot be granted with a click",
+    "asksFor": "{{who}} is asking for the “{{name}}” capability",
+    "approvedBy": "{{department}} grants this one",
+    "deny": "Deny",
+    "grant": "Grant",
+    "decided": "Decided",
+    "stateGranted": "granted",
+    "stateDenied": "denied",
+    "revoke": "Revoke",
+    "revoked": "The “{{name}}” capability was revoked from {{who}}.",
+    "revokeFailed": "Could not revoke it.",
+    "decisionFailed": "Could not save the decision.",
+    "granted": "{{who}} now has the “{{name}}” capability.",
+    "denied": "The refusal is recorded. {{who}} will see that the request was decided."
+  },
+  "supervision": {
+    "title": "Oversight",
+    "lead": "Who is asking for what, what happened at the desks and what it cost today.",
+    "sections": "Oversight sections",
+    "tabDecisions": "To decide",
+    "tabTools": "Tools",
+    "tabSpending": "Spending",
+    "tabLog": "Journal",
+    "managementOnly": "Only someone with the management role sees this screen.",
+    "gaps": "What the catalogue was missing",
+    "gapsLead": "The agent tried to do this and found no matching skill of its own — and the catalogue does not know one. This is a list of things worth considering as new skills.",
+    "spending": "Today’s spending",
+    "ofLimit": "{{spent}} of {{limit}} · {{share}}%",
+    "limitNote": "The limit is daily and hard — once it is used up, that person’s agent will not start work.",
+    "log": "What happened",
+    "logEmpty": "The journal is empty.",
+    "logNote": "The application writes this journal itself. The agent has no access to it and cannot change it."
+  },
+  "home": {
+    "greeting": "Good morning, {{name}}.",
+    "privacy": "This is your desk. Nobody else sees it.",
+    "all": "All →",
+    "noCases": "You have no cases yet. Start from a tile above or write your own job."
+  },
+  "capabilities": {
+    "title": "What I can do",
+    "ratio": "{{granted}} of {{total}}",
+    "lead": "This is everything I can do for you in {{department}}. Anything else needs the consent of the department that owns it.",
+    "note": "A capability I do not have is not hidden from me — you simply do not have it. No amount of asking will make me use it.",
+    "search": "Search the skills",
+    "everyone": "For everyone",
+    "notYet": "You do not have consent for these yet:",
+    "ownedBy": "{{department}} owns this consent",
+    "requestSent": "Request sent — waiting for a decision",
+    "previouslyDenied": "The previous request was denied.",
+    "askAgain": "Ask again",
+    "ask": "Ask for access",
+    "nothingFound": "I found nothing like that. Describe it in your own words in a request.",
+    "canDoHere": {
+      "one": "I can do {{count}} thing here",
+      "other": "I can do {{count}} things here"
+    },
+    "requestQueued": "The request for “{{name}}” went to the department. You will hear back once someone decides."
+  },
+  "composer": {
+    "untitled": "Untitled",
+    "attachFailed": "could not attach the files",
+    "rejected": "The job was not accepted.",
+    "startFailed": "Could not start the case. Try again.",
+    "placeholder": "What should I do for you?",
+    "send": "Send the job",
+    "startFrom": "Start with one of the things I can do in your department:",
+    "hints": "Suggestions"
+  },
+  "lock": {
+    "requestFailed": "Could not send the request.",
+    "requestSent": "The request for “{{name}}” went to {{department}}.",
+    "needs": "This needs the “{{name}}” capability, which you do not have switched on.",
+    "notAllowed": "I cannot do this with your permissions.",
+    "about": "It was about: {{description}}"
+  },
+  "otherRequest": {
+    "sent": "The request went to your manager. They will get back to you once they decide.",
+    "trigger": "I need something else",
+    "title": "Write what you need",
+    "lead": "This goes to your manager. If it turns out to be useful for more people, it becomes a new skill.",
+    "field": "What you need",
+    "placeholder": "e.g. “So the assistant can issue an invoice in our system” or “So it can read files from the department network drive”",
+    "send": "Send the request"
+  },
+  "resize": {
+    "label": "Result panel width",
+    "hint": "Drag to change the width. Pull it to the right edge to collapse it."
+  },
+  "promises": {
+    "title": {
+      "one": "This file was never created.",
+      "other": "These files were never created."
+    },
+    "body": {
+      "one": "The answer names {{names}}, but there is no such file in the case folder and no action produced it. This is a list of what actually happened — not of what the assistant wrote.",
+      "other": "The answer names {{names}}, but there are no such files in the case folder and no action produced them. This is a list of what actually happened — not of what the assistant wrote."
+    },
+    "askAgain": "Ask again"
+  },
+  "trail": {
+    "onFile": "On file: {{path}}",
+    "saw": "I saw: {{detail}}",
+    "working": "Working on it…",
+    "stumbled": "Done, with a stumble: {{what}}",
+    "label": "Work trail",
+    "steps": "Work steps",
+    "step": "step {{n}}",
+    "unverifiedCount": {
+      "one": "{{count}} thing unverified",
+      "other": "{{count}} things unverified"
+    },
+    "checked": "Checked:",
+    "asked": "Asked outside the company:",
+    "notChecked": "Not checked:",
+    "notAllowed": "You have no consent for this:",
+    "note": "This is a list of what actually happened — not of what I wrote above."
+  },
+  "mcp": {
+    "failed": "That did not work.",
+    "title": "Tools from outside the company",
+    "lead": "You accept each tool separately and describe it in your own words — the assistant sees your description, never the text the vendor sent.",
+    "inspect": "Inspect",
+    "nothingAccepted": "Nothing accepted from this server yet.",
+    "needsCapability": "needs the “{{capability}}” capability",
+    "acceptedBy": "accepted by {{who}}",
+    "suspended": "Suspended.",
+    "suspendedNote": "Until it is accepted again, the assistant does not get it.",
+    "withdraw": "Withdraw {{name}}",
+    "withdrawn": "Withdrawn: {{name}}",
+    "exposes": "What this server exposes",
+    "accepted": "Accepted: {{name}}",
+    "serverAdded": "Added server {{name}}",
+    "addServer": "Add a server",
+    "alreadyAccepted": "already accepted",
+    "needsReconsent": "suspended — needs consent again",
+    "vendorText": "What the vendor writes about this tool",
+    "vendorLabel": "The server vendor’s text, not ours:",
+    "shortLabelHint": "Briefly, what it does — e.g. “VAT status check”",
+    "descriptionHint": "A description for the assistant, in your own words — the model sees this sentence",
+    "accept": "Accept",
+    "acceptAgain": "Accept again",
+    "humanNameHint": "A name for people — e.g. “VAT taxpayer register”",
+    "technicalNameHint": "Technical name — lowercase and hyphens, e.g. vat-registry",
+    "urlHint": "MCP server address (Streamable HTTP)",
+    "add": "Add"
+  },
+  "api": {
+    "noPath": "no path given",
+    "tooLarge": "{{name}} is larger than 25 MB.",
+    "dailyLimit": "The daily cost limit is used up. Ask your manager to raise it.",
+    "costUnreadable": "Could not read today’s cost.",
+    "managerOnly": "Your manager does this.",
+    "badUrl": "The address has to start with http:// or https://.",
+    "badName": "Technical name: lowercase letters, digits and hyphens.",
+    "descriptionRequired": "The description and the short name are required — a person writes them, not the server.",
+    "unknownCapability": "Unknown capability.",
+    "toolGone": "The server no longer exposes this tool.",
+    "noSuchServer": "There is no such server.",
+    "connectFailed": "Could not connect: {{reason}}",
+    "unknownAction": "Unknown action.",
+    "somethingOutside": "something the catalogue does not have",
+    "writeWhatYouNeed": "Write what you need.",
+    "noSuchCapability": "There is no such capability.",
+    "managerDecides": "Your manager decides on requests.",
+    "noSuchRequest": "There is no such request.",
+    "unknownDecision": "Unknown decision.",
+    "alreadyDecided": "This request has already been decided.",
+    "notGrantable": "This request cannot be granted with one click — it is a submission to the catalogue.",
+    "newCase": "New case"
+  }
+}

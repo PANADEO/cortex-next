@@ -3,6 +3,7 @@ import type { Policy } from "@cortex/desk-core/types"
 import { ArrowUp, ChevronDown, LoaderCircle, Paperclip } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
+import { useDeskT } from "../i18n/client"
 import { api, t as href } from "../routes"
 import { AttachmentList, type Attachment } from "./attachments"
 import { CapabilityButton } from "./capability-list"
@@ -29,6 +30,7 @@ export function Composer({
   const [showHints, setShowHints] = useState(false)
   const box = useRef<HTMLTextAreaElement>(null)
   const picker = useRef<HTMLInputElement>(null)
+  const translate = useDeskT()
 
   // ?new=1 z paska bocznego ustawia kursor w polu, zamiast tylko przeładowywać stronę
   useEffect(() => {
@@ -47,7 +49,9 @@ export function Composer({
     if ((!t.trim() && !attachments.length) || taken) return
     setTaken(true)
     try {
-      const title = t.trim() ? t.slice(0, 60) : (attachments[0]?.name ?? "Bez tytułu")
+      const title = t.trim()
+        ? t.slice(0, 60)
+        : (attachments[0]?.name ?? translate("composer.untitled"))
       const r = await fetch(api("/case/new"), {
         method: "POST",
         body: JSON.stringify({ title }),
@@ -61,7 +65,7 @@ export function Composer({
         attachments.forEach((z) => fd.append("file", z.file))
         const w = await fetch(api("/files/upload"), { method: "POST", body: fd })
         const d = await w.json().catch(() => ({}))
-        if (!w.ok) throw new Error(d.error ?? "nie udało się dołączyć plików")
+        if (!w.ok) throw new Error(d.error ?? translate("composer.attachFailed"))
         names = d.names ?? []
       }
 
@@ -73,7 +77,7 @@ export function Composer({
         // serwer odmawia m.in. przy wyczerpanym limicie dziennym; bez tego tekst przepadał,
         // a człowiek lądował w pustej sprawie i nie wiedział, czy w ogóle kliknął
         const d = await turn.json().catch(() => ({}))
-        throw new Error(d.error ?? "Nie udało się przyjąć zlecenia.")
+        throw new Error(d.error ?? translate("composer.rejected"))
       }
       router.push(href(`/case/${id}`))
     } catch (e) {
@@ -81,7 +85,7 @@ export function Composer({
       setText(t)
       box.current?.focus()
       toast({
-        text: e instanceof Error ? e.message : "Nie udało się zacząć sprawy. Spróbuj jeszcze raz.",
+        text: e instanceof Error ? e.message : translate("composer.startFailed"),
         tone: "error",
       })
     }
@@ -131,7 +135,7 @@ export function Composer({
             files.forEach((f) => dt.items.add(f))
             addFile(dt.files)
           }}
-          placeholder="Co mam dla Ciebie zrobić?"
+          placeholder={translate("composer.placeholder")}
           rows={3}
           className="t-body w-full resize-none bg-transparent px-4 pt-3.5 outline-none placeholder:text-desk-muted-2"
         />
@@ -151,14 +155,14 @@ export function Composer({
             onClick={() => picker.current?.click()}
             className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
           >
-            <Icon as={Paperclip} px={14} /> Dodaj plik
+            <Icon as={Paperclip} px={14} /> {translate("case.addFile")}
           </button>
           <CapabilityButton p={p} />
           <div className="flex-1" />
           <button
             onClick={() => start(text)}
             disabled={(!text.trim() && !attachments.length) || taken}
-            aria-label="Zleć zadanie"
+            aria-label={translate("composer.send")}
             className="grid h-9 w-9 place-items-center rounded-md bg-desk-accent text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-35"
           >
             <Icon
@@ -172,9 +176,7 @@ export function Composer({
 
       {cardMode && (
         <>
-          <p className="t-meta mb-2.5 mt-5">
-            Zacznij od jednej z rzeczy, które umiem w Twoim dziale:
-          </p>
+          <p className="t-meta mb-2.5 mt-5">{translate("composer.startFrom")}</p>
           <div className="grid gap-2.5 sm:grid-cols-2">
             {quickTasks.map((z) => (
               <button
@@ -216,7 +218,7 @@ export function Composer({
             onClick={() => setShowHints((x) => !x)}
             className="t-meta flex items-center gap-1 hover:text-desk-ink"
           >
-            Podpowiedzi
+            {translate("composer.hints")}
             <Icon as={ChevronDown} px={12} className={showHints ? "rotate-180" : ""} />
           </button>
           {showHints && (

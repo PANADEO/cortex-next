@@ -1,5 +1,6 @@
 import * as storage from "@cortex/desk-core/desk-storage"
 import { whoAmI } from "@cortex/desk-core/identity"
+import { deskT } from "@cortex/desk-ui/i18n/server"
 import { NextResponse } from "next/server"
 import { promises as fs } from "node:fs"
 import path from "node:path"
@@ -24,7 +25,8 @@ export async function GET(req: Request) {
   const u = await whoAmI()
   const sp = new URL(req.url).searchParams
   const filePath = sp.get("path")
-  if (!filePath) return NextResponse.json({ error: "brak ścieżki" }, { status: 400 })
+  const translate = await deskT()
+  if (!filePath) return NextResponse.json({ error: translate("api.noPath") }, { status: 400 })
   try {
     const full = await storage.fullPath(u.id, filePath)
     const data = await fs.readFile(full)

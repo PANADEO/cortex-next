@@ -12,6 +12,17 @@ import type { DeskEvent, FileMeta } from "./types"
  * Ten moduł musi zostać CZYSTY — sięga po niego komponent kliencki, więc żaden import
  * `pg` ani `node:fs` nie może tu trafić. Część serwerowa siedzi w `teczka-serwer.ts`.
  */
+/**
+ * Nazwa katalogu na dysku, nie etykieta. Zostaje po polsku w każdym języku interfejsu:
+ * przemianowanie jej przy przełączeniu języka rozjechałoby ścieżki zapisane w sprawach,
+ * w zdarzeniach i w dzienniku. Na ekranie podmienia ją klucz `files.myFilesFolder`.
+ *
+ * Stoi TUTAJ, a nie w `desk-storage`, bo sięgają po nią komponenty klienckie — a tamten
+ * moduł zaczyna się od `node:fs` i wciągnięcie go do bundla przeglądarki wywala budowanie
+ * na `UnhandledSchemeError`. To jest cały powód tej lokalizacji.
+ */
+export const MY_FILES = "Moje pliki"
+
 export function splitFolder(files: FileMeta[], events: DeskEvent[], uploading: string[] = []) {
   const fromHuman = new Set<string>(uploading)
   for (const e of events) {

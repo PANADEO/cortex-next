@@ -22,6 +22,7 @@ import {
   TriangleAlert,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import { useDeskLocale, useDeskT } from "../i18n/client"
 import { Icon } from "./icon"
 
 function fileIcon(name: string): LucideIcon {
@@ -48,6 +49,8 @@ const STEP_STATUS: Record<Step["status"], { icon: LucideIcon; className: string;
   }
 
 function Row({ k, at, now }: { k: Step; at: string; now: number }) {
+  const translate = useDeskT()
+  const locale = useDeskLocale()
   const [open, setOpen] = useState(k.status === "failed")
   const o = describeStep(k)
   const s = STEP_STATUS[k.status]
@@ -82,9 +85,11 @@ function Row({ k, at, now }: { k: Step; at: string; now: number }) {
       </button>
       {open && hasDetail && (
         <div className="pb-2 pl-10 pr-3 pt-0.5 text-[13px] leading-5 text-desk-muted">
-          {o.path && <div>Na pliku: {o.path}</div>}
-          {o.detail && <div>Zobaczyłem: {o.detail}</div>}
-          <div className="t-micro pt-0.5">{new Date(at).toLocaleTimeString("pl-PL")}</div>
+          {o.path && <div>{translate("trail.onFile", { path: o.path })}</div>}
+          {o.detail && <div>{translate("trail.saw", { detail: o.detail })}</div>}
+          <div className="t-micro pt-0.5">
+            {new Intl.DateTimeFormat(locale, { timeStyle: "medium" }).format(new Date(at))}
+          </div>
         </div>
       )}
     </li>
@@ -100,6 +105,7 @@ export function ActivityTrail({
   isWorking: boolean
   now: number
 }) {
+  const translate = useDeskT()
   const steps = pairSteps(entries.map((w) => w.event))
   const evidence = evidenceFromEvents(entries.map((w) => w.event))
   const stumble = steps.some((k) => k.status === "failed")
@@ -130,19 +136,24 @@ export function ActivityTrail({
   const totalDuration = stepDuration(totalMs)
 
   const header = isWorking
-    ? { icon: LoaderCircle, className: "text-desk-accent", spin: true, text: "Pracuję nad tym…" }
+    ? {
+        icon: LoaderCircle,
+        className: "text-desk-accent",
+        spin: true,
+        text: translate("trail.working"),
+      }
     : stumble
       ? {
           icon: TriangleAlert,
           className: "text-desk-warn",
-          text: `Zrobione z potknięciem: ${summariseGroup(steps).toLowerCase()}`,
+          text: translate("trail.stumbled", { what: summariseGroup(steps).toLowerCase() }),
         }
       : { icon: Check, className: "text-desk-ok", text: summariseGroup(steps) }
 
   return (
     <section
       className="slide-in overflow-hidden rounded-lg border bg-desk-surface"
-      aria-label="Przebieg pracy"
+      aria-label={translate("trail.label")}
     >
       <h3>
         <button
@@ -156,7 +167,9 @@ export function ActivityTrail({
           </span>
           <span className="t-body-m min-w-0 flex-1 truncate">{header.text}</span>
           {isWorking && running && (
-            <span className="t-meta shrink-0">krok {steps.indexOf(running) + 1}</span>
+            <span className="t-meta shrink-0">
+              {translate("trail.step", { n: steps.indexOf(running) + 1 })}
+            </span>
           )}
           {!isWorking && totalDuration && (
             <span className="t-meta shrink-0 tabular-nums">{totalDuration}</span>
@@ -164,9 +177,7 @@ export function ActivityTrail({
           {!isWorking && uncertain && (
             <span className="t-meta flex shrink-0 items-center gap-1 text-desk-warn">
               <Icon as={TriangleAlert} px={12} />
-              {evidence.unverified.length === 1
-                ? "1 rzecz niesprawdzona"
-                : `${evidence.unverified.length} rzeczy niesprawdzone`}
+              {translate("trail.unverifiedCount", { count: evidence.unverified.length })}
             </span>
           )}
           <Icon
@@ -178,7 +189,7 @@ export function ActivityTrail({
       </h3>
 
       {!collapsed && (
-        <ul aria-label="Kroki pracy" className="relative space-y-0.5 border-t py-1.5">
+        <ul aria-label={translate("trail.steps")} className="relative space-y-0.5 border-t py-1.5">
           {/* oś: kreska biegnie pod kolumną ikon, nie przez nie */}
           <span
             aria-hidden
@@ -202,7 +213,7 @@ export function ActivityTrail({
             <div className="flex gap-2 text-[13px] leading-5">
               <Icon as={ShieldCheck} px={14} className="mt-0.5 shrink-0 text-desk-ok" />
               <div>
-                <span className="text-desk-ink">Sprawdzone:</span>{" "}
+                <span className="text-desk-ink">{translate("trail.checked")}</span>{" "}
                 <span className="text-desk-muted">
                   {[...evidence.intake, ...evidence.produced].join(" · ")}
                 </span>
@@ -215,7 +226,7 @@ export function ActivityTrail({
               <div>
                 {/* „Zapytałem", nie „sprawdziłem": z tego, że obcy serwer odpowiedział,
                     nie wynika, że odpowiedział prawdę ani że rzecz się wydarzyła. */}
-                <span className="text-desk-ink">Pytałem poza firmą:</span>{" "}
+                <span className="text-desk-ink">{translate("trail.asked")}</span>{" "}
                 <span className="text-desk-muted">{evidence.external.join(" · ")}</span>
               </div>
             </div>
@@ -224,7 +235,7 @@ export function ActivityTrail({
             <div className="flex gap-2 text-[13px] leading-5">
               <Icon as={TriangleAlert} px={14} className="mt-0.5 shrink-0 text-desk-warn" />
               <div>
-                <span className="text-desk-ink">Nie sprawdziłem:</span>{" "}
+                <span className="text-desk-ink">{translate("trail.notChecked")}</span>{" "}
                 <span className="text-desk-muted">{evidence.unverified.join(" · ")}</span>
               </div>
             </div>
@@ -233,14 +244,12 @@ export function ActivityTrail({
             <div className="flex gap-2 text-[13px] leading-5">
               <Icon as={Lock} px={14} className="mt-0.5 shrink-0 text-desk-muted" />
               <div>
-                <span className="text-desk-ink">Na to nie masz zgody:</span>{" "}
+                <span className="text-desk-ink">{translate("trail.notAllowed")}</span>{" "}
                 <span className="text-desk-muted">{evidence.notAllowed.join(" · ")}</span>
               </div>
             </div>
           )}
-          <p className="t-micro pt-0.5">
-            To jest lista tego, co faktycznie się wydarzyło — nie tego, co napisałem powyżej.
-          </p>
+          <p className="t-micro pt-0.5">{translate("trail.note")}</p>
         </div>
       )}
     </section>

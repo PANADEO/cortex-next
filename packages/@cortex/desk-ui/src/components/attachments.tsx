@@ -1,5 +1,6 @@
 "use client"
 import { LoaderCircle, X } from "lucide-react"
+import { useDeskT } from "../i18n/client"
 import { fileIcon } from "./file-row"
 import { Icon } from "./icon"
 
@@ -11,7 +12,7 @@ export type Attachment = {
 
 function kind(name: string) {
   const ext = name.split(".").pop()?.toUpperCase() ?? ""
-  return ext.length <= 4 ? ext : "PLIK"
+  return ext.length <= 4 ? ext : "FILE"
 }
 
 const isImageFile = (n: string) => /\.(png|jpe?g|gif|webp|svg)$/i.test(n)
@@ -29,6 +30,7 @@ export function AttachmentChip({
   remove?: (() => void) | undefined
   open?: (() => void) | undefined
 }) {
+  const translate = useDeskT()
   const isImage = isImageFile(z.name) && z.preview
   const Body = (
     <>
@@ -67,7 +69,7 @@ export function AttachmentChip({
       {remove && !z.uploading && (
         <button
           onClick={remove}
-          aria-label={`Usuń załącznik ${z.name}`}
+          aria-label={translate("attachments.remove", { name: z.name })}
           className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-desk-pill border bg-desk-surface text-desk-muted opacity-0 shadow-desk-pop transition hover:text-desk-ink focus-visible:opacity-100 group-hover/chip:opacity-100 [@media(hover:none)]:opacity-100"
         >
           <Icon as={X} px={12} />

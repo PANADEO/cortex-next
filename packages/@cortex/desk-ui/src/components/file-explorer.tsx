@@ -1,4 +1,5 @@
 "use client"
+import { MY_FILES } from "@cortex/desk-core/folder"
 import type { FileMeta } from "@cortex/desk-core/types"
 import * as Dialog from "@radix-ui/react-dialog"
 import {
@@ -13,7 +14,8 @@ import {
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { count, when } from "../lib"
+import { useDeskLocale, useDeskT } from "../i18n/client"
+import { when } from "../lib"
 import { api, t } from "../routes"
 import { FileRow } from "./file-row"
 import { Icon } from "./icon"
@@ -22,12 +24,14 @@ import { Preview, fileUrl } from "./preview"
 import { useToast } from "./toast"
 
 type TrashEntry = { id: string; name: string; from: string; when: string }
-const ROOT = "Moje pliki"
+const ROOT = MY_FILES
 
 export function FileExplorer() {
   const router = useRouter()
   const params = useSearchParams()
   const folder = params.get("k") ?? ROOT
+  const translate = useDeskT()
+  const locale = useDeskLocale()
   const { toast } = useToast()
 
   const [files, setFiles] = useState<FileMeta[]>([])
@@ -69,7 +73,7 @@ export function FileExplorer() {
     const tooLarge = Array.from(files).filter((f) => f.size > 25 * 1024 * 1024)
     if (tooLarge.length) {
       toast({
-        text: `${tooLarge[0]!.name} waży więcej niż 25 MB — tyle nie przyjmę.`,
+        text: translate("files.tooLarge", { name: tooLarge[0]!.name }),
         tone: "error",
       })
       return
@@ -83,22 +87,22 @@ export function FileExplorer() {
     await refresh()
     toast(
       r.ok
-        ? { text: `Dodane: ${count(files.length, "plik", "pliki", "plików")}` }
-        : { text: "Nie udało się wgrać plików.", tone: "error" },
+        ? { text: translate("files.uploaded", { count: files.length }) }
+        : { text: translate("files.uploadFailed"), tone: "error" },
     )
   }
 
   async function remove(p: FileMeta) {
     const d = await action({ action: "trash", path: p.path })
     if (!d.ok) {
-      toast({ text: `Nie udało się usunąć ${p.name}.`, tone: "error" })
+      toast({ text: translate("files.deleteFailed", { name: p.name }), tone: "error" })
       return
     }
     toast({
-      text: `Przeniesione do kosza: ${p.name}`,
+      text: translate("files.movedToTrash", { name: p.name }),
       revoke: async () => {
         const w = await action({ action: "restore", id: d.id })
-        if (!w.ok) toast({ text: "Nie udało się cofnąć.", tone: "error" })
+        if (!w.ok) toast({ text: translate("files.undoFailed"), tone: "error" })
       },
     })
   }
@@ -106,12 +110,15 @@ export function FileExplorer() {
   async function rename(p: FileMeta, nextName: string): Promise<string | null> {
     const d = await action({ action: "move", from: p.path, to: `${folder}/${nextName}` })
     if (d.ok) return null
-    return d.error === "name-clash"
-      ? "Taki plik już tu jest. Wybierz inną nazwę."
-      : "Nie udało się zmienić nazwy."
+    return d.error === "name-clash" ? translate("files.nameClash") : translate("files.renameFailed")
   }
 
-  const breadcrumbs = ["Biurko", ...folder.split("/")]
+  // Korzeń to nazwa katalogu NA DYSKU, więc na ekranie podmieniamy ją etykietą —
+  // ścieżki zapisane w sprawach zostają nietknięte.
+  const breadcrumbs = [
+    translate("shell.product"),
+    ...folder.split("/").map((x) => (x === MY_FILES ? translate("files.myFilesFolder") : x)),
+  ]
   const paths = folder.split("/").map((_, i, a) => a.slice(0, i + 1).join("/"))
 
   return (
@@ -134,10 +141,8 @@ export function FileExplorer() {
       }}
       className="mx-auto max-w-desk-stream px-5 py-8 pb-24 md:pb-8"
     >
-      <h1 className="t-display">Moje pliki</h1>
-      <p className="t-body mt-1 text-desk-muted">
-        Tu trzymasz to, na czym pracujesz. Pliki zostają na biurku — nie znikają razem ze sprawą.
-      </p>
+      <h1 className="t-display">{translate("files.title")}</h1>
+      <p className="t-body mt-1 text-desk-muted">{translate("files.lead")}</p>
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <input ref={picker} type="file" multiple hidden onChange={(e) => upload(e.target.files)} />
@@ -146,17 +151,21 @@ export function FileExplorer() {
           disabled={taken}
           className="t-btn flex h-9 items-center gap-1.5 rounded-md bg-desk-accent px-3.5 text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-50"
         >
-          <Icon as={Upload} px={16} /> {taken ? "Wgrywam…" : "Dodaj pliki"}
+          <Icon as={Upload} px={16} />{" "}
+          {taken ? translate("files.uploading") : translate("files.addFiles")}
         </button>
         <button
           onClick={() => setNewFolder(true)}
           className="t-btn flex h-9 items-center gap-1.5 rounded-md border px-3.5 hover:bg-desk-raised"
         >
-          <Icon as={FolderPlus} px={16} /> Nowy folder
+          <Icon as={FolderPlus} px={16} /> {translate("files.newFolder")}
         </button>
       </div>
 
-      <nav aria-label="Ścieżka" className="t-meta mt-4 flex flex-wrap items-center gap-0.5">
+      <nav
+        aria-label={translate("files.path")}
+        className="t-meta mt-4 flex flex-wrap items-center gap-0.5"
+      >
         {breadcrumbs.map((o, i) => (
           <span key={i} className="flex items-center gap-0.5">
             {i > 0 && <Icon as={ChevronRight} px={12} className="text-desk-muted-2" />}
@@ -181,16 +190,16 @@ export function FileExplorer() {
       >
         {above ? (
           <div className="t-body p-10 text-center text-desk-accent-soft-ink">
-            Upuść pliki tutaj — trafią do: {folder.split("/").pop()}
+            {translate("files.dropHere", { folder: folder.split("/").pop() ?? "" })}
           </div>
         ) : files.length === 0 && !newFolder ? (
           <div className="p-10 text-center">
             <Icon as={Inbox} px={24} className="mx-auto text-desk-muted-2" />
-            <p className="t-body mt-2">Tu jeszcze nic nie ma</p>
-            <p className="t-meta">Przeciągnij pliki albo kliknij „Dodaj pliki”.</p>
+            <p className="t-body mt-2">{translate("files.empty")}</p>
+            <p className="t-meta">{translate("files.emptyHint")}</p>
           </div>
         ) : (
-          <ul aria-label="Pliki w tym folderze" className="divide-y">
+          <ul aria-label={translate("files.inFolder")} className="divide-y">
             {newFolder && (
               <li className="flex h-desk-row items-center gap-2 px-3">
                 <span className="grid w-7 shrink-0 place-items-center text-desk-muted">
@@ -198,8 +207,8 @@ export function FileExplorer() {
                 </span>
                 <input
                   autoFocus
-                  placeholder="Nazwa folderu"
-                  aria-label="Nazwa nowego folderu"
+                  placeholder={translate("files.folderName")}
+                  aria-label={translate("files.newFolderName")}
                   onKeyDown={async (e) => {
                     if (e.key === "Escape") setNewFolder(false)
                     if (e.key !== "Enter") return
@@ -240,13 +249,13 @@ export function FileExplorer() {
           className="t-meta flex items-center gap-1.5 hover:text-desk-ink"
         >
           <Icon as={Trash2} px={14} />
-          Kosz {trash.length > 0 && `(${trash.length})`}
+          {translate("files.trash")} {trash.length > 0 && `(${trash.length})`}
           <Icon as={ChevronDown} px={12} className={showTrash ? "rotate-180" : ""} />
         </button>
         {showTrash && (
           <div className="mt-2 rounded-lg border bg-desk-surface p-3">
             {trash.length === 0 ? (
-              <p className="t-meta">Kosz jest pusty.</p>
+              <p className="t-meta">{translate("files.trashEmpty")}</p>
             ) : (
               <ul className="space-y-1.5">
                 {trash.map((k) => (
@@ -254,7 +263,7 @@ export function FileExplorer() {
                     <span className="min-w-0 flex-1">
                       <span className="t-body block truncate">{k.name}</span>
                       <span className="t-micro block">
-                        z {k.from} · {when(k.when)}
+                        {translate("files.fromFolder", { folder: k.from })} · {when(k.when, locale)}
                       </span>
                     </span>
                     <button
@@ -262,21 +271,19 @@ export function FileExplorer() {
                         const d = await action({ action: "restore", id: k.id })
                         if (d.landedElsewhere) {
                           toast({
-                            text: `Folder ${d.pierwotny} już nie istnieje — plik wrócił do Moich plików.`,
+                            text: translate("files.folderGone", { folder: d.originalFolder }),
                           })
                         }
                       }}
                       className="flex h-7 shrink-0 items-center gap-1 rounded-sm border px-2 text-[12px] hover:bg-desk-raised"
                     >
-                      <Icon as={RotateCcw} px={12} /> Przywróć
+                      <Icon as={RotateCcw} px={12} /> {translate("files.restore")}
                     </button>
                   </li>
                 ))}
               </ul>
             )}
-            <p className="t-micro pt-2">
-              Skasowane pliki zostają tutaj, dopóki ich stąd nie zabierzesz.
-            </p>
+            <p className="t-micro pt-2">{translate("files.trashHint")}</p>
           </div>
         )}
       </div>
@@ -289,10 +296,11 @@ export function FileExplorer() {
           if (!p) return
           const d = await action({ action: "move", from: p.path, to: `${target}/${p.name}` })
           setToMove(null)
-          if (d.ok) toast({ text: `Przeniesione do: ${target.split("/").pop()}` })
+          if (d.ok)
+            toast({ text: translate("files.moved", { folder: target.split("/").pop() ?? "" }) })
           else if (d.error === "name-clash")
-            toast({ text: `${p.name} już jest w tym folderze.`, tone: "error" })
-          else toast({ text: "Nie udało się przenieść pliku.", tone: "error" })
+            toast({ text: translate("files.alreadyHere", { name: p.name }), tone: "error" })
+          else toast({ text: translate("files.moveFailed"), tone: "error" })
         }}
       />
 
@@ -307,11 +315,11 @@ export function FileExplorer() {
                   href={fileUrl(preview, true)}
                   className="t-btn rounded-sm px-2 py-1 text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
                 >
-                  Pobierz
+                  {translate("files.download")}
                 </a>
               )}
               <Dialog.Close
-                aria-label="Zamknij podgląd"
+                aria-label={translate("files.closePreview")}
                 className="grid h-8 w-8 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised"
               >
                 <Icon as={X} px={16} />

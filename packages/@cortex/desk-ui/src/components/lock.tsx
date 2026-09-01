@@ -1,6 +1,7 @@
 "use client"
 import { Lock, ShieldCheck } from "lucide-react"
 import { useState } from "react"
+import { useDeskT } from "../i18n/client"
 import { api } from "../routes"
 import { Icon } from "./icon"
 import { useToast } from "./toast"
@@ -25,6 +26,7 @@ export function CapabilityLock({
   const [sent, setSent] = useState(Boolean(alreadyRequested))
   const [taken, setTaken] = useState(false)
   const { toast } = useToast()
+  const translate = useDeskT()
 
   async function request() {
     if (!capabilityId) return
@@ -35,11 +37,11 @@ export function CapabilityLock({
     })
     setTaken(false)
     if (!r.ok) {
-      toast({ text: "Nie udało się wysłać prośby.", tone: "error" })
+      toast({ text: translate("lock.requestFailed"), tone: "error" })
       return
     }
     setSent(true)
-    toast({ text: `Prośba o „${name}” poszła do działu ${department}.` })
+    toast({ text: translate("lock.requestSent", { name, department }) })
   }
 
   return (
@@ -47,23 +49,16 @@ export function CapabilityLock({
       <Icon as={Lock} px={16} className="mt-0.5 shrink-0 text-desk-muted" />
       <div className="min-w-0">
         <div className="t-body">
-          {name ? (
-            <>
-              Do tego potrzebuję zdolności <span className="font-medium">„{name}”</span>, której nie
-              masz włączonej.
-            </>
-          ) : (
-            <>Tego nie umiem zrobić przy Twoich uprawnieniach.</>
-          )}
+          {name ? translate("lock.needs", { name }) : translate("lock.notAllowed")}
         </div>
         <div className="t-meta mt-0.5">
-          Chodziło o: {description}
-          {department ? ` · zgodę wydaje dział ${department}` : ""}
+          {translate("lock.about", { description })}
+          {department ? ` · ${translate("requests.approvedBy", { department })}` : ""}
         </div>
         {capabilityId &&
           (sent ? (
             <div className="mt-2 flex items-center gap-1.5 text-[12px] text-desk-ok">
-              <Icon as={ShieldCheck} px={12} /> Prośba wysłana — czeka na rozpatrzenie
+              <Icon as={ShieldCheck} px={12} /> {translate("capabilities.requestSent")}
             </div>
           ) : (
             <button
@@ -71,7 +66,7 @@ export function CapabilityLock({
               disabled={taken}
               className="t-btn mt-2 rounded-md border px-2.5 py-1 hover:bg-desk-raised disabled:opacity-50"
             >
-              Poproś o dostęp
+              {translate("capabilities.ask")}
             </button>
           ))}
       </div>

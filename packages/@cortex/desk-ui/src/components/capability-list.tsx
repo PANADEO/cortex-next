@@ -3,6 +3,7 @@ import type { Capability, Policy } from "@cortex/desk-core/types"
 import * as Menu from "@radix-ui/react-dropdown-menu"
 import { Check, ChevronDown, Lock, ShieldCheck } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useDeskT } from "../i18n/client"
 import { api } from "../routes"
 import { Icon } from "./icon"
 import { useToast } from "./toast"
@@ -32,6 +33,7 @@ export function CapabilityList({
   dense?: boolean | undefined
   search?: boolean
 }) {
+  const translate = useDeskT()
   const [sent, setSent] = useState<string[]>([])
   const [rejected, setRejected] = useState<string[]>([])
   const [phrase, setPhrase] = useState("")
@@ -59,7 +61,7 @@ export function CapabilityList({
     await fetch(api("/request"), { method: "POST", body: JSON.stringify({ capability: id }) })
     setSent((w) => [...w, id])
     toast({
-      text: `Prośba o „${name}” poszła do działu. Dostaniesz znać, gdy ktoś ją rozpatrzy.`,
+      text: translate("capabilities.requestQueued", { name }),
     })
   }
 
@@ -80,8 +82,8 @@ export function CapabilityList({
         <input
           value={phrase}
           onChange={(e) => setPhrase(e.target.value)}
-          placeholder="Szukaj wśród umiejętności"
-          aria-label="Szukaj wśród umiejętności"
+          placeholder={translate("capabilities.search")}
+          aria-label={translate("capabilities.search")}
           className="t-body mb-3 h-9 w-full rounded-md border bg-desk-bg px-3 outline-none placeholder:text-desk-muted-2"
         />
       )}
@@ -91,7 +93,7 @@ export function CapabilityList({
           byDepartment(have).map(([department, zd]) => (
             <div key={department} className="mb-2.5">
               <div className="t-micro px-1 pb-1">
-                {department === "wszyscy" ? "Dla wszystkich" : department}
+                {department === "wszyscy" ? translate("capabilities.everyone") : department}
               </div>
               <MenuItems zd={zd} dense={dense} />
             </div>
@@ -102,30 +104,34 @@ export function CapabilityList({
 
       {missing.length > 0 && (
         <>
-          <div className="t-micro mt-2.5 border-t pt-2.5">Na to nie masz jeszcze zgody:</div>
+          <div className="t-micro mt-2.5 border-t pt-2.5">{translate("capabilities.notYet")}</div>
           <ul className="mt-1 space-y-1.5">
             {missing.map((z) => (
               <li key={z.id} className="flex items-start gap-2 rounded-sm px-1 py-0.5">
                 <Icon as={Lock} px={16} className="mt-0.5 shrink-0 text-desk-muted-2" />
                 <div className="min-w-0 flex-1">
                   <div className="text-desk-muted">{z.name}</div>
-                  <div className="t-micro">zgoda należy do działu: {z.department}</div>
+                  <div className="t-micro">
+                    {translate("capabilities.ownedBy", { department: z.department })}
+                  </div>
                   {sent.includes(z.id) ? (
                     <div className="mt-1 flex items-center gap-1 text-[12px] text-desk-ok">
-                      <Icon as={ShieldCheck} px={12} /> Prośba wysłana — czeka na rozpatrzenie
+                      <Icon as={ShieldCheck} px={12} /> {translate("capabilities.requestSent")}
                     </div>
                   ) : (
                     <>
                       {rejected.includes(z.id) && (
                         <div className="mt-1 text-[12px] text-desk-muted">
-                          Poprzednia prośba została odrzucona.
+                          {translate("capabilities.previouslyDenied")}
                         </div>
                       )}
                       <button
                         onClick={() => request(z.id, z.name)}
                         className="mt-1 rounded-sm border px-2 py-0.5 text-[12px] hover:bg-desk-raised"
                       >
-                        {rejected.includes(z.id) ? "Poproś ponownie" : "Poproś o dostęp"}
+                        {rejected.includes(z.id)
+                          ? translate("capabilities.askAgain")
+                          : translate("capabilities.ask")}
                       </button>
                     </>
                   )}
@@ -137,9 +143,7 @@ export function CapabilityList({
       )}
 
       {phrase.trim() && have.length === 0 && missing.length === 0 && (
-        <p className="t-meta py-3">
-          Nic takiego nie znalazłem. Napisz o tym w prośbie własnymi słowami.
-        </p>
+        <p className="t-meta py-3">{translate("capabilities.nothingFound")}</p>
       )}
     </div>
   )
@@ -172,11 +176,12 @@ function count(n: number, j: string, k: string, w: string) {
 /** Przy polu zlecenia — jeden klik odpowiada na pytanie „czy on to w ogóle umie?". */
 export function CapabilityButton({ p }: { p: Policy }) {
   const [open, setOtwarty] = useState(false)
+  const translate = useDeskT()
   return (
     <Menu.Root open={open} onOpenChange={setOtwarty}>
       <Menu.Trigger className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-desk-muted hover:bg-desk-raised hover:text-desk-ink">
         <Icon as={Check} px={14} className="text-desk-ok" />
-        Umiem tu {count(p.granted.length, "rzecz", "rzeczy", "rzeczy")}
+        {translate("capabilities.canDoHere", { count: p.granted.length })}
         <Icon
           as={ChevronDown}
           px={14}

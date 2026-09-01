@@ -1,6 +1,12 @@
+"use client"
+// Komponent klienta WYŁĄCZNIE po to, żeby sięgnąć po język z kontekstu. Renderuje
+// czystą prezentację nad danymi z serwera, więc granica jest tania — a alternatywa,
+// czyli przeciąganie języka propsem przez każdą stronę, rozjeżdża się przy pierwszym
+// nowym wywołaniu.
 import { ChevronRight, FileText } from "lucide-react"
 import Link from "next/link"
-import { count, when } from "../lib"
+import { useDeskLocale, useDeskT } from "../i18n/client"
+import { when } from "../lib"
 import { BASE } from "../routes"
 import { Icon } from "./icon"
 
@@ -13,13 +19,6 @@ export type CaseRow = {
   documents: number
 }
 
-const LABEL: Record<string, string> = {
-  new: "nowa",
-  working: "pracuje",
-  done: "gotowe",
-  stopped: "przerwane",
-  failed: "nie udało się",
-}
 const DOT: Record<string, string> = {
   new: "bg-desk-muted-2",
   working: "bg-desk-accent pulse",
@@ -29,6 +28,8 @@ const DOT: Record<string, string> = {
 }
 
 export function CaseList({ cases }: { cases: CaseRow[] }) {
+  const translate = useDeskT()
+  const locale = useDeskLocale()
   return (
     <ul className="divide-y overflow-hidden rounded-lg border bg-desk-surface">
       {cases.map((r) => (
@@ -43,15 +44,15 @@ export function CaseList({ cases }: { cases: CaseRow[] }) {
             <span className="min-w-0 flex-1">
               <span className="t-body-m block truncate">{r.title}</span>
               <span className="t-meta mt-0.5 flex items-center gap-1.5">
-                <span>{LABEL[r.status] ?? r.status}</span>
+                <span>{translate(`case.status.${r.status}`)}</span>
                 <span aria-hidden>·</span>
-                <span>{when(r.updatedAt)}</span>
+                <span>{when(r.updatedAt, locale)}</span>
                 {r.documents > 0 && (
                   <>
                     <span aria-hidden>·</span>
                     <span className="flex items-center gap-1">
                       <Icon as={FileText} px={12} />
-                      {count(r.documents, "dokument", "dokumenty", "dokumentów")}
+                      {translate("cases.documents", { count: r.documents })}
                     </span>
                   </>
                 )}

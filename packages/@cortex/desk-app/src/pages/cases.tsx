@@ -3,10 +3,12 @@ import { countResults } from "@cortex/desk-core/folder-server"
 import { whoAmI } from "@cortex/desk-core/identity"
 import { CaseList, type CaseRow } from "@cortex/desk-ui/components/case-list"
 import { Shell } from "@cortex/desk-ui/components/shell"
+import { deskT } from "@cortex/desk-ui/i18n/server"
 
 export default async function Page() {
   await migrate()
   const u = await whoAmI()
+  const translate = await deskT()
   const s = await pool.query(
     `select id, title, status, reason, updated_at as "updatedAt" from desk.case_file where owner=$1 order by updated_at desc limit 200`,
     [u.id],
@@ -27,14 +29,12 @@ export default async function Page() {
     <Shell>
       <div className="h-full overflow-y-auto pb-desk-bar md:pb-0">
         <div className="mx-auto max-w-desk-stream px-5 py-8">
-          <h1 className="t-display">Wszystkie sprawy</h1>
-          <p className="t-body mt-1 text-desk-muted">
-            Sprawy zostają na biurku — możesz wrócić do każdej.
-          </p>
+          <h1 className="t-display">{translate("cases.title")}</h1>
+          <p className="t-body mt-1 text-desk-muted">{translate("cases.lead")}</p>
           <div className="mt-6">
             {cases.length === 0 ? (
               <div className="t-meta rounded-lg border border-dashed p-6 text-center">
-                Twoje sprawy pojawią się tutaj.
+                {translate("shell.casesEmpty")}
               </div>
             ) : (
               <CaseList cases={cases} />

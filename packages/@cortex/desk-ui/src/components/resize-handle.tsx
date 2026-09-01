@@ -1,5 +1,6 @@
 "use client"
 import { useRef } from "react"
+import { useDeskT } from "../i18n/client"
 
 export const WIDTH_MIN = 320
 export const WIDTH_DEFAULT = 360
@@ -25,16 +26,17 @@ export function PanelHandle({
   collapse: () => void
 }) {
   const dragging = useRef(false)
+  const translate = useDeskT()
 
   return (
     <div
       role="separator"
       aria-orientation="vertical"
-      aria-label="Szerokość panelu wyniku"
+      aria-label={translate("resize.label")}
       aria-valuenow={width}
       aria-valuemin={WIDTH_MIN}
       tabIndex={0}
-      title="Przeciągnij, żeby zmienić szerokość. Dociągnij do prawej, żeby zwinąć."
+      title={translate("resize.hint")}
       onPointerDown={(e) => {
         e.preventDefault()
         e.currentTarget.setPointerCapture(e.pointerId)

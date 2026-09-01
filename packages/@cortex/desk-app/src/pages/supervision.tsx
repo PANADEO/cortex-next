@@ -8,6 +8,7 @@ import { McpSupervision } from "@cortex/desk-ui/components/mcp-supervision"
 import { RequestSupervision } from "@cortex/desk-ui/components/request-supervision"
 import { SectionTabs } from "@cortex/desk-ui/components/section-tabs"
 import { Shell } from "@cortex/desk-ui/components/shell"
+import { deskLocale, deskT } from "@cortex/desk-ui/i18n/server"
 import { zl } from "@cortex/desk-ui/lib"
 import { ShieldCheck } from "lucide-react"
 import { notFound } from "next/navigation"
@@ -38,6 +39,7 @@ export default async function Page({
 }) {
   const u = await whoAmI()
   if (u.role !== "management") notFound()
+  const [locale, translate] = await Promise.all([deskLocale(), deskT()])
 
   const asked = (await searchParams)?.section
   const section: Section = isSection(asked) ? asked : "decisions"
@@ -62,29 +64,31 @@ export default async function Page({
     <Shell>
       <div className="h-full overflow-y-auto pb-desk-bar md:pb-0">
         <div className="mx-auto max-w-desk-stream px-5 py-8">
-          <h1 className="t-display">Nadzór</h1>
-          <p className="t-body mt-1 text-desk-muted">
-            Kto o co prosi, co się działo na biurkach i ile to dziś kosztowało.
-          </p>
+          <h1 className="t-display">{translate("supervision.title")}</h1>
+          <p className="t-body mt-1 text-desk-muted">{translate("supervision.lead")}</p>
 
           <SectionTabs
             base="/supervision"
             active={section}
-            label="Sekcje nadzoru"
+            label={translate("supervision.sections")}
             tabs={[
               {
                 key: "decisions",
-                label: "Do decyzji",
+                label: translate("supervision.tabDecisions"),
                 count: Number(waiting.rows[0]?.n ?? 0),
               },
               {
                 key: "tools",
-                label: "Narzędzia",
+                label: translate("supervision.tabTools"),
                 count: Number(suspended.rows[0]?.n ?? 0),
                 tone: "warn",
               },
-              { key: "spending", label: "Wydatki", note: zl(today) },
-              { key: "log", label: "Dziennik" },
+              {
+                key: "spending",
+                label: translate("supervision.tabSpending"),
+                note: zl(today, locale),
+              },
+              { key: "log", label: translate("supervision.tabLog") },
             ]}
           />
 
@@ -96,7 +100,7 @@ export default async function Page({
           </div>
 
           <p className="t-micro mt-8 flex items-center gap-1.5">
-            <Icon as={ShieldCheck} px={12} /> Ten ekran widzi wyłącznie osoba z rolą zarządu.
+            <Icon as={ShieldCheck} px={12} /> {translate("supervision.managementOnly")}
           </p>
         </div>
       </div>
@@ -106,6 +110,7 @@ export default async function Page({
 
 /** Prośby czekające i rozpatrzone, a pod nimi to, czego katalog w ogóle nie zna. */
 async function Decisions() {
+  const translate = await deskT()
   // czego agent szukał, a katalog tego nie obejmuje — sygnał, że lista zdolności ma dziurę
   const gaps = (await audit.latest(300))
     .filter((w) => w.type === "capability.missing" && !w.details?.capability)
@@ -117,11 +122,8 @@ async function Decisions() {
 
       {gaps.length > 0 && (
         <section className="mt-8">
-          <h2 className="t-section mb-1">Czego zabrakło w katalogu</h2>
-          <p className="t-meta mb-2">
-            Agent próbował to zrobić i nie znalazł u siebie odpowiedniej umiejętności — a katalog
-            jej nie zna. To lista rzeczy do rozważenia jako nowe umiejętności.
-          </p>
+          <h2 className="t-section mb-1">{translate("supervision.gaps")}</h2>
+          <p className="t-meta mb-2">{translate("supervision.gapsLead")}</p>
           <ul className="divide-y overflow-hidden rounded-lg border bg-desk-surface">
             {gaps.map((w, i) => (
               <li key={i} className="t-body flex gap-3 px-4 py-2.5">
@@ -139,6 +141,7 @@ async function Decisions() {
 }
 
 async function Spending() {
+  const [locale, translate] = await Promise.all([deskLocale(), deskT()])
   const spending = await Promise.all(
     USERS.map(async (x) => ({
       person: x,
@@ -149,7 +152,7 @@ async function Spending() {
 
   return (
     <section>
-      <h2 className="t-section mb-2">Dzisiejsze wydatki</h2>
+      <h2 className="t-section mb-2">{translate("supervision.spending")}</h2>
       <ul className="divide-y overflow-hidden rounded-lg border bg-desk-surface">
         {spending.map(({ person, usd, limit }) => {
           const share = Math.min(100, Math.round((usd / limit) * 100))
@@ -160,7 +163,11 @@ async function Spending() {
                   {person.firstName} {person.lastName}
                 </span>
                 <span className="t-meta tabular-nums">
-                  {zl(usd)} z {zl(limit)} · {share}%
+                  {translate("supervision.ofLimit", {
+                    spent: zl(usd, locale),
+                    limit: zl(limit, locale),
+                    share,
+                  })}
                 </span>
               </div>
               <div className="mt-1.5 h-1 overflow-hidden rounded-desk-pill bg-desk-raised">
@@ -173,30 +180,31 @@ async function Spending() {
           )
         })}
       </ul>
-      <p className="t-micro pt-2">
-        Limit jest dzienny i twardy — po jego wyczerpaniu agent tej osoby nie ruszy do pracy.
-      </p>
+      <p className="t-micro pt-2">{translate("supervision.limitNote")}</p>
     </section>
   )
 }
 
 async function Log() {
+  const [locale, translate] = await Promise.all([deskLocale(), deskT()])
   const entries = await audit.latest(40)
   return (
     <section>
-      <h2 className="t-section mb-2">Co się działo</h2>
+      <h2 className="t-section mb-2">{translate("supervision.log")}</h2>
       <ul className="divide-y overflow-hidden rounded-lg border bg-desk-surface">
-        {entries.length === 0 && <li className="t-meta px-4 py-3">Dziennik jest pusty.</li>}
+        {entries.length === 0 && (
+          <li className="t-meta px-4 py-3">{translate("supervision.logEmpty")}</li>
+        )}
         {entries.map((w, i) => {
           const o = describeEntry({ ...w, at: w.at.toISOString?.() ?? String(w.at) })
           const who = USERS.find((x) => x.id === w.who)
           return (
             <li key={i} className="flex gap-3 px-4 py-2.5">
               <span className="t-meta w-20 shrink-0 tabular-nums">
-                {new Date(w.at).toLocaleTimeString("pl-PL", {
+                {new Intl.DateTimeFormat(locale, {
                   hour: "2-digit",
                   minute: "2-digit",
-                })}
+                }).format(new Date(w.at))}
               </span>
               <span
                 className={`t-body min-w-0 flex-1 ${o.weight === "important" ? "" : "text-desk-ink-2"}`}
@@ -207,9 +215,7 @@ async function Log() {
           )
         })}
       </ul>
-      <p className="t-micro pt-2">
-        Dziennik zapisuje sama aplikacja. Agent nie ma do niego dostępu i nie może go zmienić.
-      </p>
+      <p className="t-micro pt-2">{translate("supervision.logNote")}</p>
     </section>
   )
 }

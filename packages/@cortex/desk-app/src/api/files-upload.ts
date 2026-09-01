@@ -3,6 +3,7 @@ import { pool } from "@cortex/desk-core/db"
 import * as storage from "@cortex/desk-core/desk-storage"
 import { whoAmI } from "@cortex/desk-core/identity"
 import { appendEvent } from "@cortex/desk-core/runtime"
+import { deskT } from "@cortex/desk-ui/i18n/server"
 import { NextResponse } from "next/server"
 
 const MAX = 25 * 1024 * 1024
@@ -29,12 +30,16 @@ export async function POST(req: Request) {
     folder = (form.get("folder") as string) || "Moje pliki"
   }
 
+  const translate = await deskT()
   const files = form.getAll("file") as File[]
   const names: string[] = []
   for (const f of files) {
     if (!f || typeof f === "string") continue
     if (f.size > MAX) {
-      return NextResponse.json({ error: `${f.name} waży więcej niż 25 MB.` }, { status: 413 })
+      return NextResponse.json(
+        { error: translate("api.tooLarge", { name: f.name }) },
+        { status: 413 },
+      )
     }
     const buf = Buffer.from(await f.arrayBuffer())
     const target = await storage.writeNew(u.id, `${folder}/${f.name}`, buf)

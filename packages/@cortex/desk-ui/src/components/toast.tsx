@@ -1,6 +1,7 @@
 "use client"
 import { X } from "lucide-react"
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react"
+import { useDeskT } from "../i18n/client"
 import { Icon } from "./icon"
 
 type Toast = {
@@ -59,6 +60,7 @@ function ToastItem({ t, close }: { t: Toast; close: () => void }) {
   const [paused, setPaused] = useState(false)
   const left = useRef(DURATION)
   const [progress, setProgress] = useState(100)
+  const translate = useDeskT()
 
   useEffect(() => {
     if (paused) return
@@ -92,12 +94,12 @@ function ToastItem({ t, close }: { t: Toast; close: () => void }) {
             }}
             className="shrink-0 rounded-sm px-2 py-1 text-[13px] font-medium text-desk-accent hover:bg-desk-raised"
           >
-            Cofnij
+            {translate("common.undo")}
           </button>
         )}
         <button
           onClick={close}
-          aria-label="Zamknij powiadomienie"
+          aria-label={translate("common.closeToast")}
           className="shrink-0 rounded-sm p-1 text-desk-muted hover:bg-desk-raised"
         >
           <Icon as={X} px={14} />

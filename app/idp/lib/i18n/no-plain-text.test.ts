@@ -137,29 +137,24 @@ const NOT_UI_TEXT: Record<string, string[]> = {
 const SKIP = ["node_modules", ".next", "mocks"]
 
 /**
- * MODUŁY JEDNOJĘZYCZNE — jedyny wyjątek katalogowy w tym teście, i celowo
- * niepodobny do skasowanej listy wyjątków opisanej wyżej.
+ * MODUŁY JEDNOJĘZYCZNE — lista PUSTA i taka ma zostać.
  *
- * Biurko (kafelek `desk`) nie ma warstwy tłumaczeń w ogóle: nie ma w nim ani
- * jednego `useTranslation`, ani jednego klucza, ani jednego pliku `locales`.
- * Jego treść to nie etykiety, tylko proza pisana pod jedną osobę — „Nie masz
- * jeszcze żadnej sprawy", „Pytałem poza firmą", „To nie jest Twój dzienny
- * limit". Wpisanie tych ~600 zdań do `NOT_UI_TEXT` udawałoby, że każde z nich
- * rozważono z osobna i uznano za nie-etykietę; żadne nie jest.
+ * Stały tu dwa wpisy: `desk-ui` i `desk-app`. Biurko nie miało wtedy warstwy tłumaczeń
+ * w ogóle — ani jednego klucza, ani jednego pliku `locales` — a jego treść to nie etykiety,
+ * tylko proza pisana pod jedną osobę. Wpisanie tych ~300 zdań do `NOT_UI_TEXT` udawałoby,
+ * że każde z nich rozważono z osobna; żadne nie było.
  *
- * Różnica wobec tamtej furtki jest w tym, CZEGO ten wyjątek dowodzi. Tamta
- * przepuszczała katalogi, które tłumaczenia MIAŁY i po prostu ich nie
- * zastosowały — więc znikał sygnał o niedokończonej robocie. Ten mówi:
- * „tego modułu nie ma jeszcze w zasięgu tłumaczeń". Jest to dług i tak jest
- * zapisany; wchodzi razem z decyzją o wielojęzyczności Biurka, nie wcześniej.
+ * Wyjątek był długiem i tak był opisany: „wchodzi razem z decyzją o wielojęzyczności
+ * Biurka, nie wcześniej". Decyzja zapadła, słownik `@cortex/desk-ui/i18n` powstał,
+ * a Biurko przechodzi teraz przez tę bramkę tak samo jak reszta repozytorium.
  *
- * Asercja niżej pilnuje, żeby lista nie urosła po cichu: dopisanie tu czegokolwiek
- * wymaga zmiany także tamtego oczekiwania, czyli świadomej decyzji, a nie jednej
- * linijki dopisanej w drodze do zielonego testu.
+ * Asercja niżej pilnuje, żeby lista nie odrosła: dopisanie tu czegokolwiek wymaga zmiany
+ * także tamtego oczekiwania, czyli świadomej decyzji, a nie jednej linijki w drodze do
+ * zielonego testu.
  */
-const JEDNOJEZYCZNE = ["packages/@cortex/desk-ui/", "packages/@cortex/desk-app/"]
+const MONOLINGUAL: string[] = []
 
-const jednojezyczny = (file: string) => JEDNOJEZYCZNE.some((prefix) => file.startsWith(prefix))
+const monolingual = (file: string) => MONOLINGUAL.some((prefix) => file.startsWith(prefix))
 
 /** Atrybuty, których wartość czyta użytkownik albo czytnik ekranu. */
 const LABEL_ATTRS = new Set([
@@ -297,7 +292,7 @@ function listTsx(root: string): string[] {
     .filter((file) => file.endsWith(".tsx"))
     .filter((file) => !file.endsWith(".test.tsx") && !file.endsWith(".stories.tsx"))
     .filter((file) => !SKIP.some((part) => file.includes(`/${part}/`)))
-    .filter((file) => !jednojezyczny(file))
+    .filter((file) => !monolingual(file))
 }
 
 const files = [...listTsx("app"), ...listTsx("packages")]
@@ -365,7 +360,7 @@ function listTs(root: string): string[] {
     .filter((file) => file.endsWith(".ts"))
     .filter((file) => !file.endsWith(".test.ts") && !file.endsWith(".stories.ts"))
     .filter((file) => !SKIP.some((part) => file.includes(`/${part}/`)))
-    .filter((file) => !jednojezyczny(file))
+    .filter((file) => !monolingual(file))
     .filter(
       (file) =>
         !DATA_NOT_UI.some((rule) => (typeof rule === "string" ? file === rule : rule.test(file))),
@@ -424,8 +419,8 @@ describe("zakaz tekstu w kodzie", () => {
     expect(files.length).toBeGreaterThan(5)
   })
 
-  it("wyjątek jednojęzyczny obejmuje wyłącznie Biurko", () => {
-    expect(JEDNOJEZYCZNE).toEqual(["packages/@cortex/desk-ui/", "packages/@cortex/desk-app/"])
+  it("nie ma już modułu poza zasięgiem tłumaczeń", () => {
+    expect(MONOLINGUAL).toEqual([])
   })
 
   it.each(files)("%s nie zawiera napisu po polsku", (relative) => {

@@ -2,6 +2,7 @@
 import * as Dialog from "@radix-ui/react-dialog"
 import { MessageSquarePlus, X } from "lucide-react"
 import { useState } from "react"
+import { useDeskT } from "../i18n/client"
 import { api } from "../routes"
 import { Icon } from "./icon"
 import { useToast } from "./toast"
@@ -16,6 +17,7 @@ export function OtherRequest() {
   const [text, setText] = useState("")
   const [taken, setTaken] = useState(false)
   const { toast } = useToast()
+  const translate = useDeskT()
 
   async function send() {
     if (!text.trim() || taken) return
@@ -26,33 +28,32 @@ export function OtherRequest() {
     })
     setTaken(false)
     if (!r.ok) {
-      toast({ text: "Nie udało się wysłać prośby.", tone: "error" })
+      toast({ text: translate("lock.requestFailed"), tone: "error" })
       return
     }
     setOpenItems(false)
     setText("")
-    toast({ text: "Prośba poszła do przełożonego. Odezwie się, gdy ją rozpatrzy." })
+    toast({ text: translate("otherRequest.sent") })
   }
 
   return (
     <Dialog.Root open={openItems} onOpenChange={setOpenItems}>
       <Dialog.Trigger className="t-btn flex items-center gap-1.5 rounded-md border px-3 py-1.5 hover:bg-desk-raised">
         <Icon as={MessageSquarePlus} px={16} className="text-desk-muted" />
-        Potrzebuję czegoś innego
+        {translate("otherRequest.trigger")}
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-desk-ink/25" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(520px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border bg-desk-surface shadow-desk-window">
           <div className="flex items-start gap-3 border-b px-4 py-3">
             <div className="min-w-0 flex-1">
-              <Dialog.Title className="t-h3">Napisz, czego potrzebujesz</Dialog.Title>
+              <Dialog.Title className="t-h3">{translate("otherRequest.title")}</Dialog.Title>
               <Dialog.Description className="t-meta">
-                To trafi do przełożonego. Jeśli okaże się przydatne dla większej liczby osób, stanie
-                się nową umiejętnością.
+                {translate("otherRequest.lead")}
               </Dialog.Description>
             </div>
             <Dialog.Close
-              aria-label="Zamknij"
+              aria-label={translate("common.close")}
               className="grid h-8 w-8 shrink-0 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised"
             >
               <Icon as={X} px={16} />
@@ -64,23 +65,21 @@ export function OtherRequest() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={4}
-              aria-label="Czego potrzebujesz"
-              placeholder={
-                "np. „Żeby asystent umiał wystawić fakturę w naszym systemie” albo „Żeby czytał pliki z dysku sieciowego działu”"
-              }
+              aria-label={translate("otherRequest.field")}
+              placeholder={translate("otherRequest.placeholder")}
               className="t-body w-full resize-none rounded-md border bg-desk-bg px-3 py-2 outline-none placeholder:text-desk-muted-2"
             />
           </div>
           <div className="flex justify-end gap-2 border-t px-4 py-3">
             <Dialog.Close className="t-btn rounded-md border px-3 py-1.5 hover:bg-desk-raised">
-              Anuluj
+              {translate("common.cancel")}
             </Dialog.Close>
             <button
               onClick={send}
               disabled={!text.trim() || taken}
               className="t-btn rounded-md bg-desk-accent px-3 py-1.5 text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-40"
             >
-              Wyślij prośbę
+              {translate("otherRequest.send")}
             </button>
           </div>
         </Dialog.Content>

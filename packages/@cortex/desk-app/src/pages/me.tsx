@@ -3,6 +3,7 @@ import { USERS, identity } from "@cortex/desk-core/identity"
 import { Icon } from "@cortex/desk-ui/components/icon"
 import { Avatar, Persona } from "@cortex/desk-ui/components/persona-switcher"
 import { Shell } from "@cortex/desk-ui/components/shell"
+import { deskT } from "@cortex/desk-ui/i18n/server"
 import { HUB, MOUNTED_IN_SHELL, t } from "@cortex/desk-ui/routes"
 import { ChevronRight, LayoutGrid, ListChecks } from "lucide-react"
 import Link from "next/link"
@@ -11,6 +12,7 @@ import Link from "next/link"
 export default async function Page() {
   const { user: u, switchable } = await identity()
   const p = await policyFor(u)
+  const translate = await deskT()
   return (
     <Shell>
       <div className="h-full overflow-y-auto pb-desk-bar">
@@ -31,9 +33,12 @@ export default async function Page() {
               className="flex h-desk-row items-center gap-2.5 px-4 hover:bg-desk-raised/60"
             >
               <Icon as={ListChecks} px={16} className="text-desk-muted" />
-              <span className="t-body flex-1">Co potrafię</span>
-              <span className="t-meta">
-                {p.granted.length} z {p.granted.length + p.blocked.length}
+              <span className="t-body flex-1">{translate("capabilities.title")}</span>
+              <span className="t-meta tabular-nums">
+                {translate("capabilities.ratio", {
+                  granted: p.granted.length,
+                  total: p.granted.length + p.blocked.length,
+                })}
               </span>
               <Icon as={ChevronRight} px={16} className="text-desk-muted" />
             </Link>
@@ -46,7 +51,7 @@ export default async function Page() {
                 className="flex h-desk-row items-center gap-2.5 border-t px-4 hover:bg-desk-raised/60"
               >
                 <Icon as={LayoutGrid} px={16} className="text-desk-muted" />
-                <span className="t-body flex-1">Wszystkie aplikacje Cortex</span>
+                <span className="t-body flex-1">{translate("shell.hub")}</span>
                 <Icon as={ChevronRight} px={16} className="text-desk-muted" />
               </Link>
             )}
@@ -58,11 +63,7 @@ export default async function Page() {
             </div>
           )}
 
-          <p className="t-micro mt-6">
-            {
-              "Pliki zostają na serwerze firmy. Do modelu trafia tylko ta treść, którą asystent musi przeczytać, żeby wykonać zlecenie."
-            }
-          </p>
+          <p className="t-micro mt-6">{translate("shell.privacy")}</p>
         </div>
       </div>
     </Shell>

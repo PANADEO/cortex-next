@@ -1,5 +1,6 @@
 import * as audit from "@cortex/desk-core/audit-log"
 import { migrate, pool } from "@cortex/desk-core/db"
+import { deskT } from "@cortex/desk-ui/i18n/server"
 import { NextResponse } from "next/server"
 
 /**
@@ -27,12 +28,9 @@ export async function POST() {
   // `sum` z `coalesce` zawsze zwraca dokładnie jeden wiersz, ale typ tego nie wie —
   // a zerowanie kosztu bez zapisania, ile go było, jest właśnie tym błędem, przed którym
   // broni ten wpis do dziennika. Lepiej odmówić niż wyzerować po cichu.
+  const translate = await deskT()
   const status = before.rows[0]
-  if (!status)
-    return NextResponse.json(
-      { error: "Nie udało się odczytać dzisiejszego kosztu." },
-      { status: 500 },
-    )
+  if (!status) return NextResponse.json({ error: translate("api.costUnreadable") }, { status: 500 })
   const k = await pool.query(
     `update desk.case_file set cost_usd=0 where created_at >= current_date`,
   )

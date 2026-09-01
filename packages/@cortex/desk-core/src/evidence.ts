@@ -9,6 +9,15 @@ export type Evidence = {
   external: string[]
   unverified: string[]
   notAllowed: string[]
+  /**
+   * To samo, co wyżej, ale JAKO DANE — nazwy plików zapisanych i odczytanych po zapisie.
+   *
+   * Panel wyniku wnioskował plakietkę „sprawdzony" z DOPASOWANIA NAPISU do zdania
+   * `odczytano … po zapisie`. Działało to dopóki zdanie było jedno i po polsku;
+   * pierwsze tłumaczenie zabrałoby plakietkę bez jednego błędu, a plakietka jest tu
+   * całym dowodem. Zdania zostają do czytania, decyzje podejmuje się na tych listach.
+   */
+  files: { saved: string[]; verified: string[] }
 }
 
 /**
@@ -69,5 +78,12 @@ export function evidenceFromEvents(events: DeskEvent[]): Evidence {
   if (saved.size > 0 && fromDesk.size === 0) {
     unverified.push("dokument powstał bez odczytania choćby jednego pliku z biurka")
   }
-  return { intake, produced, external, unverified, notAllowed }
+  return {
+    intake,
+    produced,
+    external,
+    unverified,
+    notAllowed,
+    files: { saved: [...saved], verified: [...verified] },
+  }
 }

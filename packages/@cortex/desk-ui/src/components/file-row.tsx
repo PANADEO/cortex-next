@@ -17,6 +17,7 @@ import {
   Trash2,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import { useDeskLocale, useDeskT } from "../i18n/client"
 import { size, when } from "../lib"
 import { Icon } from "./icon"
 
@@ -57,6 +58,8 @@ export function FileRow({
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const field = useRef<HTMLInputElement>(null)
+  const translate = useDeskT()
+  const locale = useDeskLocale()
   const { core, ext } = splitName(p.name)
 
   useEffect(() => {
@@ -130,7 +133,7 @@ export function FileRow({
               if (d && (d.includes("/") || d.includes("\\"))) e.preventDefault()
             }}
             onBlur={() => void saveName()}
-            aria-label="Nowa nazwa pliku"
+            aria-label={translate("fileRow.newName")}
             className="t-body min-w-0 flex-1 rounded-sm border bg-desk-bg px-1.5 py-0.5 outline-none"
           />
         ) : (
@@ -142,12 +145,12 @@ export function FileRow({
 
         <span className="t-meta hidden shrink-0 sm:block">{p.folder ? "" : size(p.size)}</span>
         <span className="t-meta hidden w-24 shrink-0 text-right sm:block">
-          {when(p.modifiedAt)}
+          {when(p.modifiedAt, locale)}
         </span>
 
         <Menu.Root>
           <Menu.Trigger
-            aria-label={`Więcej opcji dla ${p.name}`}
+            aria-label={translate("fileRow.more", { name: p.name })}
             className="grid h-7 w-7 shrink-0 place-items-center rounded-sm text-desk-muted opacity-0 hover:bg-desk-raised focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
           >
             <Icon as={MoreHorizontal} px={16} />
@@ -164,37 +167,45 @@ export function FileRow({
               {!p.folder && actions.preview && (
                 <MenuItem
                   icon={Eye}
-                  label="Otwórz podgląd"
+                  label={translate("fileRow.preview")}
                   shortcut="Enter"
                   na={() => actions.preview?.(p)}
                 />
               )}
               {!p.folder && actions.download && (
-                <MenuItem icon={Download} label="Pobierz" na={() => actions.download?.(p)} />
+                <MenuItem
+                  icon={Download}
+                  label={translate("files.download")}
+                  na={() => actions.download?.(p)}
+                />
               )}
               {actions.rename && <Divider />}
               {actions.rename && (
                 <MenuItem
                   icon={Pencil}
-                  label="Zmień nazwę"
+                  label={translate("fileRow.rename")}
                   shortcut="F2"
                   na={() => setEditing(true)}
                 />
               )}
               {actions.move && (
-                <MenuItem icon={FolderInput} label="Przenieś do…" na={() => actions.move?.(p)} />
+                <MenuItem
+                  icon={FolderInput}
+                  label={translate("fileRow.moveTo")}
+                  na={() => actions.move?.(p)}
+                />
               )}
               {actions.toCase && (
                 <MenuItem
                   icon={FolderOutput}
-                  label="Dołącz do sprawy"
+                  label={translate("fileRow.toCase")}
                   na={() => actions.toCase?.(p)}
                 />
               )}
               {actions.toMyFiles && (
                 <MenuItem
                   icon={FolderOutput}
-                  label="Zapisz do Moich plików"
+                  label={translate("fileRow.toMyFiles")}
                   na={() => actions.toMyFiles?.(p)}
                 />
               )}
@@ -202,7 +213,7 @@ export function FileRow({
               {actions.remove && (
                 <MenuItem
                   icon={Trash2}
-                  label="Usuń"
+                  label={translate("fileRow.remove")}
                   shortcut="Delete"
                   dangerous
                   na={() => actions.remove?.(p)}

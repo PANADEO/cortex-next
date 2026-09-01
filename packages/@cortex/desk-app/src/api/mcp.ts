@@ -3,6 +3,7 @@ import { capabilityCatalogue } from "@cortex/desk-core/capability-gate"
 import { whoAmI } from "@cortex/desk-core/identity"
 import * as folder from "@cortex/desk-core/mcp/catalogue-store"
 import { inspectServer } from "@cortex/desk-core/mcp/client"
+import { deskT } from "@cortex/desk-ui/i18n/server"
 import { NextResponse } from "next/server"
 
 /**
@@ -13,10 +14,13 @@ import { NextResponse } from "next/server"
 async function managerOnly() {
   const u = await whoAmI()
   if (u.role !== "management") {
+    // Wartość `what` idzie do DZIENNIKA, nie na ekran — zostaje po polsku razem z resztą
+    // zapisu, bo dziennik czyta audytor instancji, a nie użytkownik z wybranym językiem.
     await audit.write(u.id, "access.denied", { what: "katalog serwerów MCP" })
+    const translate = await deskT()
     return {
       u: null,
-      refusal: NextResponse.json({ error: "To robi przełożony." }, { status: 403 }),
+      refusal: NextResponse.json({ error: translate("api.managerOnly") }, { status: 403 }),
     }
   }
   return { u, refusal: null }
@@ -35,21 +39,16 @@ export async function POST(req: Request) {
   const { u, refusal } = await managerOnly()
   if (!u) return refusal
   const d = await req.json()
+  const translate = await deskT()
 
   if (d.action === "add") {
     // Streamable HTTP i nic innego: stdio w aplikacji webowej to nie transport,
     // tylko uruchomienie obcego binarium z uprawnieniami procesu Node.
     if (!/^https?:\/\//.test(d.url ?? "")) {
-      return NextResponse.json(
-        { error: "Adres musi zaczynać się od http:// albo https://." },
-        { status: 400 },
-      )
+      return NextResponse.json({ error: translate("api.badUrl") }, { status: 400 })
     }
     if (!/^[a-z0-9-]{2,32}$/.test(d.name ?? "")) {
-      return NextResponse.json(
-        { error: "Nazwa techniczna: małe litery, cyfry i myślnik." },
-        { status: 400 },
-      )
+      return NextResponse.json({ error: translate("api.badName") }, { status: 400 })
     }
     await folder.addServer(u.id, d.name, d.label || d.name, d.url)
     return NextResponse.json({ ok: true })
@@ -58,7 +57,7 @@ export async function POST(req: Request) {
   if (d.action === "inspect") {
     const servers = await folder.fullCatalogue()
     const s = servers.find((x) => x.name === d.server)
-    if (!s) return NextResponse.json({ error: "Nie ma takiego serwera." }, { status: 404 })
+    if (!s) return NextResponse.json({ error: translate("api.noSuchServer") }, { status: 404 })
     try {
       const candidates = await inspectServer(s.url, s.name)
       await audit.write(u.id, "mcp.server.inspected", {
@@ -82,7 +81,7 @@ export async function POST(req: Request) {
       })
     } catch (e) {
       return NextResponse.json(
-        { error: `Nie udało się połączyć: ${String(e).slice(0, 160)}` },
+        { error: translate("api.connectFailed", { reason: String(e).slice(0, 160) }) },
         { status: 502 },
       )
     }
@@ -91,26 +90,19 @@ export async function POST(req: Request) {
   if (d.action === "approve") {
     const servers = await folder.fullCatalogue()
     const s = servers.find((x) => x.name === d.server)
-    if (!s) return NextResponse.json({ error: "Nie ma takiego serwera." }, { status: 404 })
+    if (!s) return NextResponse.json({ error: translate("api.noSuchServer") }, { status: 404 })
     if (!d.description?.trim() || !d.shortLabel?.trim()) {
-      return NextResponse.json(
-        { error: "Opis i krótka nazwa są wymagane — pisze je człowiek, nie serwer." },
-        { status: 400 },
-      )
+      return NextResponse.json({ error: translate("api.descriptionRequired") }, { status: 400 })
     }
     if (!capabilityCatalogue.some((z) => z.id === d.capability)) {
-      return NextResponse.json({ error: "Nieznana zdolność." }, { status: 400 })
+      return NextResponse.json({ error: translate("api.unknownCapability") }, { status: 400 })
     }
 
     // Odcisk liczymy z ŻYWEGO schematu w chwili zgody, nie z tego, co przysłała przeglądarka.
     // Inaczej zatwierdzający podpisywałby coś, czego serwer już nie wystawia.
     const candidates = await inspectServer(s.url, s.name)
     const k = candidates.find((x) => x.remoteName === d.remoteName)
-    if (!k)
-      return NextResponse.json(
-        { error: "Serwer nie wystawia już tego narzędzia." },
-        { status: 409 },
-      )
+    if (!k) return NextResponse.json({ error: translate("api.toolGone") }, { status: 409 })
     if (k.rejected) return NextResponse.json({ error: k.rejected }, { status: 422 })
 
     await folder.approveTool(u.id, {
@@ -129,5 +121,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true })
   }
 
-  return NextResponse.json({ error: "Nieznana akcja." }, { status: 400 })
+  return NextResponse.json({ error: translate("api.unknownAction") }, { status: 400 })
 }

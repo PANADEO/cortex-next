@@ -2,6 +2,7 @@
 import type { Capability, McpToolStatus } from "@cortex/desk-core/types"
 import { Globe, Plus, RefreshCw, ShieldAlert, TriangleAlert, X } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
+import { useDeskT } from "../i18n/client"
 import { api } from "../routes"
 import { Icon } from "./icon"
 import { useToast } from "./toast"
@@ -44,6 +45,7 @@ export function McpSupervision() {
   const [candidates, setCandidates] = useState<Record<string, Candidate[]>>({})
   const [busy, setBusy] = useState<string | null>(null)
   const [newForm, setNewForm] = useState(false)
+  const translate = useDeskT()
   const { toast } = useToast()
 
   const load = useCallback(async () => {
@@ -63,7 +65,7 @@ export function McpSupervision() {
     const d = await r.json().catch(() => ({}))
     setBusy(null)
     if (!r.ok) {
-      toast({ text: d.error ?? "Nie udało się.", tone: "error" })
+      toast({ text: d.error ?? translate("mcp.failed"), tone: "error" })
       return null
     }
     return d
@@ -76,11 +78,8 @@ export function McpSupervision() {
 
   return (
     <section className="mt-8">
-      <h2 className="t-section mb-1">Narzędzia spoza firmy</h2>
-      <p className="t-meta mb-3">
-        Każde narzędzie przyjmujesz osobno i opisujesz własnymi słowami — asystent zobaczy Twój
-        opis, nigdy tekst przysłany przez dostawcę.
-      </p>
+      <h2 className="t-section mb-1">{translate("mcp.title")}</h2>
+      <p className="t-meta mb-3">{translate("mcp.lead")}</p>
 
       <div className="space-y-3">
         {servers.map((s) => (
@@ -101,13 +100,13 @@ export function McpSupervision() {
                   px={14}
                   className={busy === `p:${s.name}` ? "spin" : undefined}
                 />
-                Przejrzyj
+                {translate("mcp.inspect")}
               </button>
             </div>
 
             <ul className="divide-y">
               {s.tools.length === 0 && (
-                <li className="t-meta px-4 py-3">Nic jeszcze nie przyjęte z tego serwera.</li>
+                <li className="t-meta px-4 py-3">{translate("mcp.nothingAccepted")}</li>
               )}
               {s.tools.map((n) => (
                 <li key={n.remoteName} className="px-4 py-3">
@@ -119,14 +118,20 @@ export function McpSupervision() {
                       <div className="t-body-m">{n.shortLabel}</div>
                       <div className="t-meta">{n.description}</div>
                       <div className="t-micro pt-0.5">
-                        wymaga zdolności „
-                        {capabilities.find((z) => z.id === n.capabilityId)?.name ?? n.capabilityId}”
-                        {" · "}przyjął {n.approvedBy}
+                        {translate("mcp.needsCapability", {
+                          capability:
+                            capabilities.find((z) => z.id === n.capabilityId)?.name ??
+                            n.capabilityId,
+                        })}
+                        {" · "}
+                        {translate("mcp.acceptedBy", { who: n.approvedBy })}
                       </div>
                       {n.status === "suspended" && (
                         <p className="t-meta mt-1.5 rounded-md bg-desk-warn-soft px-2.5 py-1.5">
-                          <span className="font-medium text-desk-ink">Wstrzymane.</span> {n.reason}{" "}
-                          Do czasu ponownego przyjęcia asystent tego nie dostaje.
+                          <span className="font-medium text-desk-ink">
+                            {translate("mcp.suspended")}
+                          </span>{" "}
+                          {n.reason} {translate("mcp.suspendedNote")}
                         </p>
                       )}
                     </div>
@@ -138,12 +143,12 @@ export function McpSupervision() {
                             `w:${n.remoteName}`,
                           )
                         ) {
-                          toast({ text: `Wycofane: ${n.shortLabel}` })
+                          toast({ text: translate("mcp.withdrawn", { name: n.shortLabel }) })
                           load()
                         }
                       }}
                       className="grid h-8 w-8 shrink-0 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
-                      aria-label={`Wycofaj ${n.shortLabel}`}
+                      aria-label={translate("mcp.withdraw", { name: n.shortLabel })}
                     >
                       <Icon as={X} px={16} />
                     </button>
@@ -154,7 +159,7 @@ export function McpSupervision() {
 
             {candidates[s.name] && (
               <div className="border-t bg-desk-raised/30 px-4 py-3">
-                <div className="t-section mb-2">Co ten serwer wystawia</div>
+                <div className="t-section mb-2">{translate("mcp.exposes")}</div>
                 <div className="space-y-3">
                   {(candidates[s.name] ?? []).map((k) => (
                     <Candidate
@@ -176,7 +181,7 @@ export function McpSupervision() {
                           `z:${k.remoteName}`,
                         )
                         if (d) {
-                          toast({ text: `Przyjęte: ${shortLabel}` })
+                          toast({ text: translate("mcp.accepted", { name: shortLabel }) })
                           await load()
                           await inspect(s)
                         }
@@ -196,7 +201,7 @@ export function McpSupervision() {
           add={async (name, label, url) => {
             if (await send({ action: "add", name, label, url }, "new")) {
               setNewForm(false)
-              toast({ text: `Dodano serwer ${label}` })
+              toast({ text: translate("mcp.serverAdded", { name: label }) })
               load()
             }
           }}
@@ -206,7 +211,7 @@ export function McpSupervision() {
           onClick={() => setNewForm(true)}
           className="t-btn mt-3 flex h-9 items-center gap-1.5 rounded-md border px-3 hover:bg-desk-raised"
         >
-          <Icon as={Plus} px={14} /> Dodaj serwer
+          <Icon as={Plus} px={14} /> {translate("mcp.addServer")}
         </button>
       )}
     </section>
@@ -233,6 +238,7 @@ function Candidate({
     k.previous?.capabilityId ?? capabilities[0]?.id ?? "",
   )
   const again = k.previous?.status === "suspended"
+  const translate = useDeskT()
 
   if (k.rejected) {
     return (
@@ -252,19 +258,17 @@ function Candidate({
     <div className="rounded-md border bg-desk-surface px-3 py-2.5">
       <div className="flex items-baseline gap-2">
         <span className="font-mono text-[13px]">{k.remoteName}</span>
-        {k.alreadyAccepted && <span className="t-micro">już przyjęte</span>}
-        {again && (
-          <span className="t-micro text-desk-warn">wstrzymane — wymaga ponownej zgody</span>
-        )}
+        {k.alreadyAccepted && <span className="t-micro">{translate("mcp.alreadyAccepted")}</span>}
+        {again && <span className="t-micro text-desk-warn">{translate("mcp.needsReconsent")}</span>}
       </div>
 
       {k.foreignDescription && (
         <details className="mt-1.5">
-          <summary className="t-micro cursor-pointer">Co dostawca pisze o tym narzędziu</summary>
+          <summary className="t-micro cursor-pointer">{translate("mcp.vendorText")}</summary>
           {/* Jedyne miejsce w aplikacji, gdzie ten tekst wolno pokazać — i zawsze z etykietą,
               czyj jest. Do modelu nie trafia nigdy. */}
           <p className="t-meta mt-1 rounded-sm bg-desk-sunken px-2.5 py-1.5">
-            <span className="font-medium text-desk-ink">Tekst dostawcy serwera, nie nasz:</span>{" "}
+            <span className="font-medium text-desk-ink">{translate("mcp.vendorLabel")}</span>{" "}
             {k.foreignDescription}
           </p>
         </details>
@@ -275,14 +279,14 @@ function Candidate({
           <input
             value={shortLabel}
             onChange={(e) => setShortLabel(e.target.value)}
-            placeholder="Krótko, co to robi — np. „sprawdzenie statusu VAT”"
+            placeholder={translate("mcp.shortLabelHint")}
             className="t-body h-9 w-full rounded-md border bg-desk-bg px-2.5 outline-none placeholder:text-desk-muted-2"
           />
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            placeholder="Opis dla asystenta, własnymi słowami — to zdanie zobaczy model"
+            placeholder={translate("mcp.descriptionHint")}
             className="t-body w-full resize-none rounded-md border bg-desk-bg px-2.5 py-2 outline-none placeholder:text-desk-muted-2"
           />
           <div className="flex items-center gap-2">
@@ -302,7 +306,7 @@ function Candidate({
               disabled={busy || !description.trim() || !shortLabel.trim()}
               className="t-btn h-9 shrink-0 rounded-md bg-desk-accent px-3 text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-40"
             >
-              {again ? "Przyjmij ponownie" : "Przyjmij"}
+              {again ? translate("mcp.acceptAgain") : translate("mcp.accept")}
             </button>
           </div>
         </div>
@@ -321,24 +325,25 @@ function NewServer({
   const [name, setName] = useState("")
   const [label, setLabel] = useState("")
   const [url, setUrl] = useState("")
+  const translate = useDeskT()
   return (
     <div className="mt-3 space-y-2 rounded-lg border bg-desk-surface p-4">
       <input
         value={label}
         onChange={(e) => setLabel(e.target.value)}
-        placeholder="Nazwa dla ludzi — np. „wykaz podatników VAT”"
+        placeholder={translate("mcp.humanNameHint")}
         className="t-body h-9 w-full rounded-md border bg-desk-bg px-2.5 outline-none placeholder:text-desk-muted-2"
       />
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Nazwa techniczna — małe litery i myślnik, np. vat-registry"
+        placeholder={translate("mcp.technicalNameHint")}
         className="h-9 w-full rounded-md border bg-desk-bg px-2.5 font-mono text-[13px] outline-none placeholder:text-desk-muted-2"
       />
       <input
         value={url}
         onChange={(e) => setUrl(e.target.value)}
-        placeholder="Adres serwera MCP (Streamable HTTP)"
+        placeholder={translate("mcp.urlHint")}
         className="h-9 w-full rounded-md border bg-desk-bg px-2.5 font-mono text-[13px] outline-none placeholder:text-desk-muted-2"
       />
       <div className="flex gap-2 pt-1">
@@ -347,10 +352,10 @@ function NewServer({
           disabled={!name || !url}
           className="t-btn h-9 rounded-md bg-desk-accent px-3 text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-40"
         >
-          Dodaj
+          {translate("mcp.add")}
         </button>
         <button onClick={cancel} className="t-btn h-9 rounded-md border px-3 hover:bg-desk-raised">
-          Anuluj
+          {translate("common.cancel")}
         </button>
       </div>
     </div>

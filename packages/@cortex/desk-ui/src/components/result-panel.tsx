@@ -1,5 +1,6 @@
 "use client"
 import type { Evidence } from "@cortex/desk-core/evidence"
+import { MY_FILES } from "@cortex/desk-core/folder"
 import type { FileMeta } from "@cortex/desk-core/types"
 import type { LucideIcon } from "lucide-react"
 import {
@@ -14,6 +15,7 @@ import {
   TriangleAlert,
 } from "lucide-react"
 import { useState } from "react"
+import { useDeskLocale, useDeskT } from "../i18n/client"
 import { size, when } from "../lib"
 import { api } from "../routes"
 import { fileIcon } from "./file-row"
@@ -46,6 +48,8 @@ export function ResultPanel({
 }) {
   const { toast } = useToast()
   const [copied, setCopied] = useState(false)
+  const translate = useDeskT()
+  const locale = useDeskLocale()
 
   if (!active) {
     return (
@@ -53,7 +57,7 @@ export function ResultPanel({
         <div className="grid flex-1 place-items-center p-6 text-center">
           <div>
             <Icon as={Inbox} px={24} className="mx-auto text-desk-muted-2" />
-            <p className="t-body mt-2 text-desk-muted">Tu pojawi się gotowy dokument.</p>
+            <p className="t-body mt-2 text-desk-muted">{translate("result.empty")}</p>
           </div>
         </div>
         <FromYou files={attachments} active={null} onPick={onPick} />
@@ -68,12 +72,12 @@ export function ResultPanel({
    * gdy plik faktycznie odczytano po zapisie; brak sprawdzenia to brak plakietki, nie pochwała.
    * Załącznika człowieka nie oceniamy w ogóle — nikt go tu nie wytworzył.
    */
-  const fileStatus: "sprawdzony" | "niesprawdzony" | null = fromHuman
+  const fileStatus: "verified" | "unverified" | null = fromHuman
     ? null
-    : evidence.unverified.some((n) => n.includes(active.name))
-      ? "niesprawdzony"
-      : evidence.produced.some((z) => z.startsWith(`odczytano ${active.name} po zapisie`))
-        ? "sprawdzony"
+    : evidence.files.verified.includes(active.name)
+      ? "verified"
+      : evidence.files.saved.includes(active.name)
+        ? "unverified"
         : null
 
   async function copy() {
@@ -84,7 +88,7 @@ export function ResultPanel({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      toast({ text: "Nie udało się skopiować treści.", tone: "error" })
+      toast({ text: translate("result.copyFailed"), tone: "error" })
     }
   }
 
@@ -95,14 +99,18 @@ export function ResultPanel({
       body: JSON.stringify({
         action: "copy",
         from: active.path,
-        to: `Moje pliki/${active.name}`,
+        to: `${MY_FILES}/${active.name}`,
       }),
     })
     const d = await r.json()
     toast(
       r.ok
-        ? { text: `Zapisane w Moich plikach: ${d.target?.split("/").pop() ?? active.name}` }
-        : { text: "Nie udało się zapisać do Moich plików.", tone: "error" },
+        ? {
+            text: translate("result.saved", {
+              name: d.target?.split("/").pop() ?? active.name,
+            }),
+          }
+        : { text: translate("result.saveFailed"), tone: "error" },
     )
   }
 
@@ -114,8 +122,9 @@ export function ResultPanel({
           <div className="min-w-0 flex-1">
             <div className="t-h3 break-words">{active.name}</div>
             <div className="t-meta">
-              {fromHuman ? "Twój załącznik" : "Dokument"} · {size(active.size)} · zapisany{" "}
-              {when(active.modifiedAt)}
+              {fromHuman ? translate("result.yourAttachment") : translate("artifacts.document")} ·{" "}
+              {size(active.size)} ·{" "}
+              {translate("result.savedAt", { when: when(active.modifiedAt, locale) })}
             </div>
           </div>
         </div>
@@ -123,13 +132,15 @@ export function ResultPanel({
           <button
             onClick={toEvidence}
             className={`mt-2 inline-flex items-center gap-1.5 rounded-desk-pill px-2 py-0.5 text-[12px] ${
-              fileStatus === "niesprawdzony"
+              fileStatus === "unverified"
                 ? "bg-desk-warn-soft text-desk-warn"
                 : "bg-desk-raised text-desk-muted"
             }`}
           >
-            <Icon as={fileStatus === "niesprawdzony" ? TriangleAlert : ShieldCheck} px={12} />
-            {fileStatus === "niesprawdzony" ? "niesprawdzony" : "sprawdzony po zapisie"}
+            <Icon as={fileStatus === "unverified" ? TriangleAlert : ShieldCheck} px={12} />
+            {fileStatus === "unverified"
+              ? translate("result.unverified")
+              : translate("result.verified")}
           </button>
         )}
       </div>
@@ -137,13 +148,13 @@ export function ResultPanel({
       <div className="flex shrink-0 items-center gap-1 border-b px-3 py-2">
         <Action
           icon={Download}
-          title="Pobierz"
+          title={translate("files.download")}
           na={() => window.open(fileUrl(active, true), "_blank")}
         />
-        <Action icon={FolderInput} title="Zapisz do Moich plików" na={toMyFiles} />
+        <Action icon={FolderInput} title={translate("fileRow.toMyFiles")} na={toMyFiles} />
         <Action
           icon={copied ? Check : Copy}
-          title={copied ? "Skopiowane" : "Kopiuj treść"}
+          title={copied ? translate("result.copied") : translate("result.copy")}
           na={copy}
         />
       </div>
@@ -186,6 +197,7 @@ function FromYou({
   onPick: (p: FileMeta) => void
 }) {
   const [openItems, setOpenItems] = useState(false)
+  const translate = useDeskT()
   if (!files.length) return null
   return (
     <div className="shrink-0 border-t">
@@ -194,7 +206,7 @@ function FromYou({
         className="t-meta flex h-9 w-full items-center gap-1.5 px-4 hover:text-desk-ink"
       >
         <Icon as={Paperclip} px={12} />
-        Od Ciebie ({files.length})
+        {translate("result.fromYou", { count: files.length })}
         <Icon as={ChevronDown} px={12} className={openItems ? "rotate-180" : ""} />
       </button>
       {openItems && (

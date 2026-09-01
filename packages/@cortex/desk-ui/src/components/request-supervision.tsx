@@ -1,6 +1,7 @@
 "use client"
 import { Check, Inbox, ShieldCheck, X } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
+import { useDeskLocale, useDeskT } from "../i18n/client"
 import { when } from "../lib"
 import { api } from "../routes"
 import { Icon } from "./icon"
@@ -21,6 +22,8 @@ type Request = {
 export function RequestSupervision() {
   const [requests, setRequests] = useState<Request[]>([])
   const [taken, setTaken] = useState<number | null>(null)
+  const translate = useDeskT()
+  const locale = useDeskLocale()
   const { toast } = useToast()
 
   const refresh = useCallback(async () => {
@@ -42,8 +45,8 @@ export function RequestSupervision() {
     await refresh()
     toast(
       r.ok
-        ? { text: `Zdolność „${p.name}” cofnięta osobie ${p.whoName}.` }
-        : { text: "Nie udało się cofnąć.", tone: "error" },
+        ? { text: translate("requests.revoked", { name: p.name, who: p.whoName }) }
+        : { text: translate("requests.revokeFailed"), tone: "error" },
     )
   }
 
@@ -56,14 +59,14 @@ export function RequestSupervision() {
     setTaken(null)
     await refresh()
     if (!r.ok) {
-      toast({ text: "Nie udało się zapisać decyzji.", tone: "error" })
+      toast({ text: translate("requests.decisionFailed"), tone: "error" })
       return
     }
     toast({
       text:
         decision === "granted"
-          ? `${p.whoName} ma teraz zdolność „${p.name}”.`
-          : `Odmowa zapisana. ${p.whoName} zobaczy, że prośba została rozpatrzona.`,
+          ? translate("requests.granted", { who: p.whoName, name: p.name })
+          : translate("requests.denied", { who: p.whoName }),
     })
   }
 
@@ -73,11 +76,11 @@ export function RequestSupervision() {
   return (
     <div className="space-y-6">
       <section>
-        <h2 className="t-section mb-2">Czekają na Twoją decyzję</h2>
+        <h2 className="t-section mb-2">{translate("requests.waiting")}</h2>
         {pending.length === 0 ? (
           <div className="rounded-lg border border-dashed p-6 text-center">
             <Icon as={Inbox} px={20} className="mx-auto text-desk-muted-2" />
-            <p className="t-meta mt-1.5">Nic nie czeka.</p>
+            <p className="t-meta mt-1.5">{translate("requests.nothing")}</p>
           </div>
         ) : (
           <ul className="divide-y overflow-hidden rounded-lg border bg-desk-surface">
@@ -87,23 +90,23 @@ export function RequestSupervision() {
                   {p.capability === "other" ? (
                     <>
                       <span className="t-body block">
-                        <span className="font-medium">{p.whoName}</span> prosi o coś, czego nie ma w
-                        katalogu:
+                        {translate("requests.asksOutside", { who: p.whoName })}
                       </span>
                       <span className="t-body mt-0.5 block rounded-md bg-desk-raised/60 px-2.5 py-1.5">
                         {p.justification}
                       </span>
                       <span className="t-meta mt-1 block">
-                        {when(p.at)} · tego nie da się przyznać kliknięciem
+                        {when(p.at, locale)} · {translate("requests.notClickable")}
                       </span>
                     </>
                   ) : (
                     <>
                       <span className="t-body block">
-                        <span className="font-medium">{p.whoName}</span> prosi o zdolność „{p.name}”
+                        {translate("requests.asksFor", { who: p.whoName, name: p.name })}
                       </span>
                       <span className="t-meta block">
-                        {when(p.at)} · zgodę wydaje dział {p.department}
+                        {when(p.at, locale)} ·{" "}
+                        {translate("requests.approvedBy", { department: p.department })}
                       </span>
                     </>
                   )}
@@ -114,7 +117,10 @@ export function RequestSupervision() {
                     disabled={taken === p.id}
                     className="t-btn flex h-8 items-center gap-1.5 rounded-md border px-2.5 hover:bg-desk-raised disabled:opacity-50"
                   >
-                    <Icon as={X} px={14} /> {p.capability === "other" ? "Zamknij" : "Odmów"}
+                    <Icon as={X} px={14} />{" "}
+                    {p.capability === "other"
+                      ? translate("common.close")
+                      : translate("requests.deny")}
                   </button>
                   {p.capability !== "other" && (
                     <button
@@ -122,7 +128,7 @@ export function RequestSupervision() {
                       disabled={taken === p.id}
                       className="t-btn flex h-8 items-center gap-1.5 rounded-md bg-desk-accent px-2.5 text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-50"
                     >
-                      <Icon as={Check} px={14} /> Przyznaj
+                      <Icon as={Check} px={14} /> {translate("requests.grant")}
                     </button>
                   )}
                 </span>
@@ -134,7 +140,7 @@ export function RequestSupervision() {
 
       {decided.length > 0 && (
         <section>
-          <h2 className="t-section mb-2">Rozpatrzone</h2>
+          <h2 className="t-section mb-2">{translate("requests.decided")}</h2>
           <ul className="divide-y overflow-hidden rounded-lg border bg-desk-surface">
             {decided.slice(0, 10).map((p) => (
               <li key={p.id} className="t-body flex items-center gap-3 px-4 py-2.5">
@@ -149,7 +155,9 @@ export function RequestSupervision() {
                   {p.whoName} · {p.name}
                 </span>
                 <span className="t-meta shrink-0">
-                  {p.status === "granted" ? "przyznane" : "odmowa"}
+                  {p.status === "granted"
+                    ? translate("requests.stateGranted")
+                    : translate("requests.stateDenied")}
                 </span>
                 {p.status === "granted" && (
                   <button
@@ -157,7 +165,7 @@ export function RequestSupervision() {
                     disabled={taken === p.id}
                     className="shrink-0 rounded-sm border px-2 py-0.5 text-[12px] hover:bg-desk-raised disabled:opacity-50"
                   >
-                    Cofnij
+                    {translate("requests.revoke")}
                   </button>
                 )}
               </li>
