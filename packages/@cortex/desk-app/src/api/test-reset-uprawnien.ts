@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
-import { pool, migracja } from '@cortex/desk-core/db'
-import * as dziennik from '@cortex/desk-core/dziennik'
+import { migracja, pool } from "@cortex/desk-core/db"
+import * as dziennik from "@cortex/desk-core/dziennik"
+import { NextResponse } from "next/server"
 
 /**
  * Wyłącznie dla testów i pokazu: przywraca stan początkowy, żeby scenariusz zaczynał się
@@ -12,8 +12,8 @@ import * as dziennik from '@cortex/desk-core/dziennik'
  * mierzyć to, ile razy dziś ją uruchomiono.
  */
 export async function POST() {
-  if (process.env.NODE_ENV === 'production' && !process.env.DESK_POZWOL_RESET) {
-    return NextResponse.json({ blad: 'Nie ma takiej trasy.' }, { status: 404 })
+  if (process.env.NODE_ENV === "production" && !process.env.DESK_POZWOL_RESET) {
+    return NextResponse.json({ blad: "Nie ma takiej trasy." }, { status: 404 })
   }
   await migracja()
   await pool.query(`delete from desk.grant`)
@@ -28,8 +28,19 @@ export async function POST() {
   // a zerowanie kosztu bez zapisania, ile go było, jest właśnie tym błędem, przed którym
   // broni ten wpis do dziennika. Lepiej odmówić niż wyzerować po cichu.
   const stan = przed.rows[0]
-  if (!stan) return NextResponse.json({ blad: 'Nie udało się odczytać dzisiejszego kosztu.' }, { status: 500 })
+  if (!stan)
+    return NextResponse.json(
+      { blad: "Nie udało się odczytać dzisiejszego kosztu." },
+      { status: 500 },
+    )
   const k = await pool.query(`update desk.sprawa set koszt_usd=0 where utworzona >= current_date`)
-  await dziennik.zapisz('system', 'koszt.wyzerowany', { usd: Number(stan.usd), spraw: Number(stan.n) })
-  return NextResponse.json({ ok: true, wyzerowanychSpraw: k.rowCount, wyzerowaneUsd: Number(stan.usd) })
+  await dziennik.zapisz("system", "koszt.wyzerowany", {
+    usd: Number(stan.usd),
+    spraw: Number(stan.n),
+  })
+  return NextResponse.json({
+    ok: true,
+    wyzerowanychSpraw: k.rowCount,
+    wyzerowaneUsd: Number(stan.usd),
+  })
 }

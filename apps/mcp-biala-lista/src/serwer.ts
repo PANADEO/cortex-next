@@ -1,8 +1,8 @@
-import { createServer } from 'node:http'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
-import { z } from 'zod'
-import { BledneWywolanie, podmiotPoNip, rachunekPrzypisany } from './mf.js'
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
+import { createServer } from "node:http"
+import { z } from "zod"
+import { BledneWywolanie, podmiotPoNip, rachunekPrzypisany } from "./mf.js"
 
 /**
  * SERWER MCP — wykaz podatników VAT Ministerstwa Finansów („biała lista").
@@ -23,31 +23,35 @@ const PORT = Number(process.env.MCP_BIALA_LISTA_PORT ?? 8310)
 
 function serwer() {
   const s = new McpServer(
-    { name: 'biala-lista', version: '0.1.0' },
+    { name: "biala-lista", version: "0.1.0" },
     { capabilities: { tools: {} } },
   )
 
   s.registerTool(
-    'sprawdz_nip',
+    "sprawdz_nip",
     {
-      title: 'Sprawdź podatnika po NIP',
-      description: 'Zwraca nazwę, status VAT i rachunki podatnika z wykazu Ministerstwa Finansów.',
+      title: "Sprawdź podatnika po NIP",
+      description: "Zwraca nazwę, status VAT i rachunki podatnika z wykazu Ministerstwa Finansów.",
       inputSchema: {
-        nip: z.string().describe('NIP, dziesięć cyfr; myślniki i spacje są dopuszczalne'),
-        data: z.string().optional().describe('dzień w formacie RRRR-MM-DD; domyślnie dziś'),
+        nip: z.string().describe("NIP, dziesięć cyfr; myślniki i spacje są dopuszczalne"),
+        data: z.string().optional().describe("dzień w formacie RRRR-MM-DD; domyślnie dziś"),
       },
     },
     async ({ nip, data }) => {
       try {
         const p = await podmiotPoNip(nip, data)
         if (!p) return tekst(`W wykazie nie ma podatnika o NIP ${nip} na ten dzień.`)
-        return tekst([
-          `${p.nazwa} (NIP ${p.nip})`,
-          `Status VAT: ${p.statusVat}`,
-          p.adres ? `Adres: ${p.adres}` : null,
-          p.dataRejestracji ? `Zarejestrowany od: ${p.dataRejestracji}` : null,
-          `Rachunków w wykazie: ${p.rachunki.length}`,
-        ].filter(Boolean).join('\n'))
+        return tekst(
+          [
+            `${p.nazwa} (NIP ${p.nip})`,
+            `Status VAT: ${p.statusVat}`,
+            p.adres ? `Adres: ${p.adres}` : null,
+            p.dataRejestracji ? `Zarejestrowany od: ${p.dataRejestracji}` : null,
+            `Rachunków w wykazie: ${p.rachunki.length}`,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        )
       } catch (e) {
         return blad(e)
       }
@@ -55,27 +59,33 @@ function serwer() {
   )
 
   s.registerTool(
-    'sprawdz_rachunek',
+    "sprawdz_rachunek",
     {
-      title: 'Sprawdź rachunek kontrahenta',
+      title: "Sprawdź rachunek kontrahenta",
       description:
-        'Odpowiada, czy podany rachunek był w wykazie przypisany do podanego NIP w danym dniu. ' +
-        'Zwraca identyfikator zapytania — to on jest dowodem sprawdzenia.',
+        "Odpowiada, czy podany rachunek był w wykazie przypisany do podanego NIP w danym dniu. " +
+        "Zwraca identyfikator zapytania — to on jest dowodem sprawdzenia.",
       inputSchema: {
-        nip: z.string().describe('NIP kontrahenta'),
-        rachunek: z.string().describe('numer rachunku, 26 cyfr'),
-        data: z.string().optional().describe('dzień w formacie RRRR-MM-DD; domyślnie dziś'),
+        nip: z.string().describe("NIP kontrahenta"),
+        rachunek: z.string().describe("numer rachunku, 26 cyfr"),
+        data: z.string().optional().describe("dzień w formacie RRRR-MM-DD; domyślnie dziś"),
       },
     },
     async ({ nip, rachunek, data }) => {
       try {
         const w = await rachunekPrzypisany(nip, rachunek, data)
-        return tekst([
-          w.przypisany
-            ? `TAK — rachunek był przypisany do NIP ${nip} w dniu ${w.data}.`
-            : `NIE — rachunek NIE był przypisany do NIP ${nip} w dniu ${w.data}.`,
-          w.identyfikatorZapytania ? `Identyfikator zapytania: ${w.identyfikatorZapytania}` : null,
-        ].filter(Boolean).join('\n'))
+        return tekst(
+          [
+            w.przypisany
+              ? `TAK — rachunek był przypisany do NIP ${nip} w dniu ${w.data}.`
+              : `NIE — rachunek NIE był przypisany do NIP ${nip} w dniu ${w.data}.`,
+            w.identyfikatorZapytania
+              ? `Identyfikator zapytania: ${w.identyfikatorZapytania}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        )
       } catch (e) {
         return blad(e)
       }
@@ -85,7 +95,7 @@ function serwer() {
   return s
 }
 
-const tekst = (t: string) => ({ content: [{ type: 'text' as const, text: t }] })
+const tekst = (t: string) => ({ content: [{ type: "text" as const, text: t }] })
 
 /**
  * Błąd wraca jako treść z `isError`, nie jako wyjątek transportu. Rozróżnienie jest
@@ -93,8 +103,8 @@ const tekst = (t: string) => ({ content: [{ type: 'text' as const, text: t }] })
  * „nie udało się połączyć", a tylko to drugie ma zapalać kłódkę.
  */
 function blad(e: unknown) {
-  const m = e instanceof BledneWywolanie ? e.message : 'Nie udało się odpytać wykazu.'
-  return { content: [{ type: 'text' as const, text: m }], isError: true }
+  const m = e instanceof BledneWywolanie ? e.message : "Nie udało się odpytać wykazu."
+  return { content: [{ type: "text" as const, text: m }], isError: true }
 }
 
 /**
@@ -104,18 +114,20 @@ function blad(e: unknown) {
  * między dwoma użytkownikami.
  */
 const http = createServer(async (req, res) => {
-  if (req.url === '/zdrowie') {
-    res.writeHead(200, { 'content-type': 'application/json' })
-    res.end(JSON.stringify({ ok: true, serwer: 'biala-lista' }))
+  if (req.url === "/zdrowie") {
+    res.writeHead(200, { "content-type": "application/json" })
+    res.end(JSON.stringify({ ok: true, serwer: "biala-lista" }))
     return
   }
-  if (!req.url?.startsWith('/mcp')) {
-    res.writeHead(404); res.end(); return
+  if (!req.url?.startsWith("/mcp")) {
+    res.writeHead(404)
+    res.end()
+    return
   }
 
   const kawalki: Buffer[] = []
   for await (const k of req) kawalki.push(k as Buffer)
-  const cialo = kawalki.length ? JSON.parse(Buffer.concat(kawalki).toString('utf8')) : undefined
+  const cialo = kawalki.length ? JSON.parse(Buffer.concat(kawalki).toString("utf8")) : undefined
 
   // `sessionIdGenerator: undefined` to UDOKUMENTOWANY sposób wyłączenia sesji w SDK MCP:
   // pole opcjonalne, którego wartością ma być `undefined`. Pod `exactOptionalPropertyTypes`
@@ -124,7 +136,10 @@ const http = createServer(async (req, res) => {
   // przewidują; `@ts-expect-error`, a nie rzutowanie, bo zgaśnie samo, gdy je poprawią.
   // @ts-expect-error — typy @modelcontextprotocol/sdk nie znoszą exactOptionalPropertyTypes
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
-  res.on('close', () => { transport.close(); s.close() })
+  res.on("close", () => {
+    transport.close()
+    s.close()
+  })
   const s = serwer()
   // Ta sama niezgodność co wyżej, po drugiej stronie tego samego obiektu.
   // @ts-expect-error — typy @modelcontextprotocol/sdk nie znoszą exactOptionalPropertyTypes

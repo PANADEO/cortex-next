@@ -1,7 +1,7 @@
-'use client'
-import { X, LoaderCircle } from 'lucide-react'
-import { Ikona } from './ikona'
-import { ikonaPliku } from './wiersz-pliku'
+"use client"
+import { LoaderCircle, X } from "lucide-react"
+import { Ikona } from "./ikona"
+import { ikonaPliku } from "./wiersz-pliku"
 
 export type Zalacznik = {
   nazwa: string
@@ -10,8 +10,8 @@ export type Zalacznik = {
 }
 
 function rodzaj(nazwa: string) {
-  const ext = nazwa.split('.').pop()?.toUpperCase() ?? ''
-  return ext.length <= 4 ? ext : 'PLIK'
+  const ext = nazwa.split(".").pop()?.toUpperCase() ?? ""
+  return ext.length <= 4 ? ext : "PLIK"
 }
 
 const jestObrazem = (n: string) => /\.(png|jpe?g|gif|webp|svg)$/i.test(n)
@@ -20,7 +20,11 @@ const jestObrazem = (n: string) => /\.(png|jpe?g|gif|webp|svg)$/i.test(n)
  * Kafelek załącznika — obraz pokazuje miniaturę, reszta ikonę i rodzaj.
  * Nazwa pliku sama w sobie nic nie mówi; człowiek rozpoznaje swój plik po tym, jak wygląda.
  */
-export function ChipZalacznika({ z, usun, otworz }: {
+export function ChipZalacznika({
+  z,
+  usun,
+  otworz,
+}: {
   z: Zalacznik
   usun?: (() => void) | undefined
   otworz?: (() => void) | undefined
@@ -37,7 +41,9 @@ export function ChipZalacznika({ z, usun, otworz }: {
       )}
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="line-clamp-2 break-all text-left text-[12px] leading-4">{z.nazwa}</span>
-        <span className="w-fit rounded-xs bg-raised px-1 text-[10px] uppercase leading-4 text-cichy">{rodzaj(z.nazwa)}</span>
+        <span className="w-fit rounded-xs bg-raised px-1 text-[10px] uppercase leading-4 text-cichy">
+          {rodzaj(z.nazwa)}
+        </span>
       </span>
     </>
   )
@@ -45,7 +51,9 @@ export function ChipZalacznika({ z, usun, otworz }: {
   return (
     <span className="group/chip relative inline-flex max-w-[210px] items-center gap-2 rounded-md border bg-surface p-1.5">
       {otworz ? (
-        <button onClick={otworz} className="flex min-w-0 items-center gap-2 text-left">{Tresc}</button>
+        <button onClick={otworz} className="flex min-w-0 items-center gap-2 text-left">
+          {Tresc}
+        </button>
       ) : (
         <span className="flex min-w-0 items-center gap-2">{Tresc}</span>
       )}
@@ -58,7 +66,8 @@ export function ChipZalacznika({ z, usun, otworz }: {
 
       {usun && !z.wgrywa && (
         <button
-          onClick={usun} aria-label={`Usuń załącznik ${z.nazwa}`}
+          onClick={usun}
+          aria-label={`Usuń załącznik ${z.nazwa}`}
           className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-pill border bg-surface text-cichy opacity-0 shadow-pop transition hover:text-ink focus-visible:opacity-100 group-hover/chip:opacity-100 [@media(hover:none)]:opacity-100"
         >
           <Ikona jako={X} px={12} />
@@ -68,7 +77,12 @@ export function ChipZalacznika({ z, usun, otworz }: {
   )
 }
 
-export function ListaZalacznikow({ pliki, usun, otworz, klasa }: {
+export function ListaZalacznikow({
+  pliki,
+  usun,
+  otworz,
+  klasa,
+}: {
   pliki: Zalacznik[]
   usun?: ((n: string) => void) | undefined
   otworz?: ((n: string) => void) | undefined
@@ -76,10 +90,11 @@ export function ListaZalacznikow({ pliki, usun, otworz, klasa }: {
 }) {
   if (!pliki.length) return null
   return (
-    <div className={`flex flex-wrap gap-2 ${klasa ?? ''}`}>
+    <div className={`flex flex-wrap gap-2 ${klasa ?? ""}`}>
       {pliki.map((z) => (
         <ChipZalacznika
-          key={z.nazwa} z={z}
+          key={z.nazwa}
+          z={z}
           usun={usun ? () => usun(z.nazwa) : undefined}
           otworz={otworz ? () => otworz(z.nazwa) : undefined}
         />

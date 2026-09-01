@@ -1,4 +1,4 @@
-import type { DeskEvent, PlikMeta } from './typy'
+import type { DeskEvent, PlikMeta } from "./typy"
 
 /**
  * Pochodzenie pliku w teczce sprawy wyliczamy ze zdarzeń, nie z układu katalogów.
@@ -15,8 +15,8 @@ import type { DeskEvent, PlikMeta } from './typy'
 export function podzielTeczke(pliki: PlikMeta[], zdarzenia: DeskEvent[], wgrywane: string[] = []) {
   const odCzlowieka = new Set<string>(wgrywane)
   for (const e of zdarzenia) {
-    if (e.typ === 'mysl') for (const n of e.zalaczniki ?? []) odCzlowieka.add(n)
-    if (e.typ === 'zalacznik') for (const n of e.nazwy) odCzlowieka.add(n)
+    if (e.typ === "mysl") for (const n of e.zalaczniki ?? []) odCzlowieka.add(n)
+    if (e.typ === "zalacznik") for (const n of e.nazwy) odCzlowieka.add(n)
   }
   const dokumenty = pliki.filter((p) => !p.katalog)
   return {

@@ -3,4 +3,4 @@
 //
 // Trasa testowa (`test-reset-uprawnien`) świadomie NIE jest tu montowana: zeruje
 // uprawnienia i dzienny koszt, a to narzędzie bramki, nie funkcja produktu.
-export { GET, POST, PATCH } from "@cortex/desk-app/api/prosba"
+export { GET, PATCH, POST } from "@cortex/desk-app/api/prosba"

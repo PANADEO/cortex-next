@@ -1,11 +1,18 @@
-import { Pool } from 'pg'
+import { Pool } from "pg"
 
-declare global { var __deskPool: Pool | undefined; var __deskMigracja: Promise<void> | undefined }
+// `var`, nie `let` — w `declare global` deklaracja MUSI trafić na `globalThis`, a `let`
+// tworzy tam binding leksykalny, po którym `global.__deskPool` już nie sięgnie. To jedyne
+// miejsce w tym repozytorium, gdzie `var` jest poprawną odpowiedzią, a nie zaniedbaniem.
+/* eslint-disable no-var */
+declare global {
+  var __deskPool: Pool | undefined
+  var __deskMigracja: Promise<void> | undefined
+}
+/* eslint-enable no-var */
 
 export const pool =
-  global.__deskPool ??
-  new Pool({ connectionString: process.env.DATABASE_URL, max: 8 })
-if (process.env.NODE_ENV !== 'production') global.__deskPool = pool
+  global.__deskPool ?? new Pool({ connectionString: process.env.DATABASE_URL, max: 8 })
+if (process.env.NODE_ENV !== "production") global.__deskPool = pool
 
 /**
  * Migracja idempotentna. Schemat `desk` — konwencja „schemat per moduł".
@@ -111,6 +118,10 @@ export function migracja(): Promise<void> {
              ) < now() - interval '2 minutes'
        returning s.id`,
     )
+    // Zakaz `console` pilnuje kodu lecącego do PRZEGLĄDARKI. To jest proces serwerowy,
+    // a odwieszenie spraw po restarcie musi zostawić ślad — inaczej nikt nie wie, że
+    // czyjaś praca została przerwana nie przez agenta, tylko przez wdrożenie.
+    // eslint-disable-next-line no-console
     if (r.rowCount) console.log(`[desk] reaper: ${r.rowCount} spraw odwieszonych po restarcie`)
   })()
   global.__deskMigracja = gotowe

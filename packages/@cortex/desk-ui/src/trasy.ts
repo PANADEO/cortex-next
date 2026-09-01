@@ -6,7 +6,7 @@
  * `NEXT_PUBLIC_`, bo prefiks musi być znany także w przeglądarce: linki i `fetch`
  * z komponentów klienckich składają się tam, nie na serwerze.
  */
-export const BAZA = process.env.NEXT_PUBLIC_DESK_BAZA ?? ''
+export const BAZA = process.env.NEXT_PUBLIC_DESK_BAZA ?? ""
 
 /**
  * Prefiks tras API jest OSOBNY, a nie sklejany z prefiksu stron, bo w powłoce
@@ -17,7 +17,7 @@ export const BAZA = process.env.NEXT_PUBLIC_DESK_BAZA ?? ''
 export const BAZA_API = process.env.NEXT_PUBLIC_DESK_BAZA_API ?? `${BAZA}/api`
 
 /** Adres strony Biurka. `t('/pliki')` → `/pliki` albo `/desk/pliki`. */
-export const t = (sciezka: string) => `${BAZA}${sciezka}` || '/'
+export const t = (sciezka: string) => `${BAZA}${sciezka}` || "/"
 
 /** Adres trasy API Biurka. `api('/pliki')` → `/api/pliki` albo `/api/desk/pliki`. */
 export const api = (sciezka: string) => `${BAZA_API}${sciezka}`

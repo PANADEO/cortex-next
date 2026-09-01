@@ -1,5 +1,5 @@
-import type { DeskEvent } from './typy'
-import { karta, type GrupaKarty } from './narzedzia'
+import { karta, type GrupaKarty } from "./narzedzia"
+import type { DeskEvent } from "./typy"
 
 /** Jeden krok pracy agenta: wywołanie narzędzia razem z jego wynikiem. */
 export type Krok = {
@@ -10,7 +10,7 @@ export type Krok = {
   argumenty: Record<string, unknown>
   /** nazwa źródła dla człowieka, gdy czynność przyszła spoza tego repozytorium */
   zrodlo?: string
-  stan: 'trwa' | 'ok' | 'blad'
+  stan: "trwa" | "ok" | "blad"
   podsumowanie?: string
   ms?: number
 }
@@ -31,13 +31,13 @@ export function paruj(zdarzenia: DeskEvent[]): Krok[] {
   // `DeskEvent | undefined`, a to gasi rozróżnianie wariantu po `typ` — kompilator przestaje
   // widzieć `e.nazwa` na starcie narzędzia. Iterator oddaje element bez tego `undefined`.
   for (const [i, e] of zdarzenia.entries()) {
-    if (e.typ === 'narzedzie_start') {
+    if (e.typ === "narzedzie_start") {
       const k: Krok = {
         i,
         nazwa: e.nazwa,
         etykieta: e.etykieta,
         argumenty: e.argumenty,
-        stan: 'trwa',
+        stan: "trwa",
         ...(e.zrodlo === undefined ? {} : { zrodlo: e.zrodlo }),
       }
       kroki.push(k)
@@ -46,10 +46,10 @@ export function paruj(zdarzenia: DeskEvent[]): Krok[] {
       continue
     }
 
-    if (e.typ === 'narzedzie_koniec') {
+    if (e.typ === "narzedzie_koniec") {
       const k = e.id ? poId.get(e.id) : bezId.shift()
       if (!k) continue
-      k.stan = e.ok ? 'ok' : 'blad'
+      k.stan = e.ok ? "ok" : "blad"
       // Pola opcjonalne przypisujemy tylko wtedy, gdy naprawdę przyszły: `exactOptionalPropertyTypes`
       // odróżnia „klucza nie ma" od „klucz jest i ma wartość undefined", a drugie nie jest tym,
       // co chcemy wpisać do kroku.
@@ -63,7 +63,7 @@ export function paruj(zdarzenia: DeskEvent[]): Krok[] {
 
 /** Nazwa pliku bez ścieżki — w tytule kroku pokazujemy sam plik, ścieżka schodzi do szczegółu. */
 function samaNazwa(s: string) {
-  return s.split('/').filter(Boolean).pop() ?? s
+  return s.split("/").filter(Boolean).pop() ?? s
 }
 
 /**
@@ -73,7 +73,12 @@ function samaNazwa(s: string) {
  * „klucz jest pusty" nie niesie tu żadnej informacji, a wymusza gimnastykę przy każdym
  * budowaniu obiektu.
  */
-export type Opis = { tytul: string; plik?: string | undefined; sciezka?: string | undefined; detal?: string | undefined }
+export type Opis = {
+  tytul: string
+  plik?: string | undefined
+  sciezka?: string | undefined
+  detal?: string | undefined
+}
 
 /**
  * Zamienia krok na zdanie po polsku. W toku — niedokonany, po zakończeniu — dokonany:
@@ -91,11 +96,11 @@ export function opisKroku(k: Krok): Opis {
   const sciezka = c.argSciezka ? a[c.argSciezka] : undefined
   const detal = k.podsumowanie ?? (c.argDetal ? a[c.argDetal] : undefined)
   return {
-    tytul: k.stan === 'trwa' ? c.trwa : c.ok,
+    tytul: k.stan === "trwa" ? c.trwa : c.ok,
     plik,
     sciezka,
     // etykieta jest NASZA — pisze ją nasz kod przy wywołaniu, nigdy obcy serwer
-    detal: c.klasa === 'zewnetrzna' ? (detal ?? k.etykieta) : detal,
+    detal: c.klasa === "zewnetrzna" ? (detal ?? k.etykieta) : detal,
   }
 }
 
@@ -116,12 +121,13 @@ export function czasKroku(ms?: number): string | null {
  */
 export function podsumujGrupe(kroki: Krok[]): string {
   const ile = (n: number, j: string, k: string, w: string) => {
-    const d = n % 10, s = n % 100
+    const d = n % 10,
+      s = n % 100
     if (n === 1) return `${n} ${j}`
     if (d >= 2 && d <= 4 && (s < 12 || s > 14)) return `${n} ${k}`
     return `${n} ${w}`
   }
-  const zrobione = kroki.filter((k) => k.stan === 'ok')
+  const zrobione = kroki.filter((k) => k.stan === "ok")
 
   const wg = new Map<string, { g: GrupaKarty; n: number }>()
   for (const k of zrobione) {
@@ -136,15 +142,17 @@ export function podsumujGrupe(kroki: Krok[]): string {
   // czyli tak, jak człowiek pracuje: najpierw rozejrzenie, na końcu wynik
   const czlony = [...wg.values()]
     .map(({ g, n }) => ({
-      tekst: [g.czasownik, g.liczone ? ile(n, ...g.liczone) : null, g.sufiks].filter(Boolean).join(' '),
+      tekst: [g.czasownik, g.liczone ? ile(n, ...g.liczone) : null, g.sufiks]
+        .filter(Boolean)
+        .join(" "),
       waga: g.waga,
     }))
     .sort((a, b) => a.waga - b.waga)
 
   if (!czlony.length) {
     return zrobione.length
-      ? `Zrobione: ${ile(zrobione.length, 'czynność', 'czynności', 'czynności')}`
-      : 'Nic nie zostało zrobione'
+      ? `Zrobione: ${ile(zrobione.length, "czynność", "czynności", "czynności")}`
+      : "Nic nie zostało zrobione"
   }
 
   // trzy człony to granica czytelności jednym rzutem oka; przy nadmiarze odpadają
@@ -158,8 +166,8 @@ export function podsumujGrupe(kroki: Krok[]): string {
   const pominieto = czlony.length - wybrane.length
   const t = wybrane.map((c) => c.tekst)
   // jeden pominięty człon i tak był najmniej ważny — dopisek „i 1 inną czynność" to sam szum
-  if (pominieto > 1) t.push(ile(pominieto, 'inną czynność', 'inne czynności', 'innych czynności'))
+  if (pominieto > 1) t.push(ile(pominieto, "inną czynność", "inne czynności", "innych czynności"))
 
-  const zdanie = t.length === 1 ? t[0]! : `${t.slice(0, -1).join(', ')} i ${t[t.length - 1]}`
+  const zdanie = t.length === 1 ? t[0]! : `${t.slice(0, -1).join(", ")} i ${t[t.length - 1]}`
   return zdanie.charAt(0).toUpperCase() + zdanie.slice(1)
 }

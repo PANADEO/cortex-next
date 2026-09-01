@@ -1,7 +1,7 @@
-import 'server-only'
-import { pool, migracja } from '../db'
-import * as dziennik from '../dziennik'
-import { NARZEDZIA_BIALEJ_LISTY, type SerwerMcp, type ZatwierdzoneNarzedzie } from './katalog'
+import "server-only"
+import { migracja, pool } from "../db"
+import * as dziennik from "../dziennik"
+import { NARZEDZIA_BIALEJ_LISTY, type SerwerMcp, type ZatwierdzoneNarzedzie } from "./katalog"
 
 /**
  * KATALOG W BAZIE, nie w kodzie.
@@ -12,21 +12,30 @@ import { NARZEDZIA_BIALEJ_LISTY, type SerwerMcp, type ZatwierdzoneNarzedzie } fr
  */
 
 export type NarzedzieWKatalogu = ZatwierdzoneNarzedzie & {
-  stan: 'zatwierdzone' | 'wstrzymane'
+  stan: "zatwierdzone" | "wstrzymane"
   powod: string | null
   zatwierdzil: string
   at: string
 }
 
-export type SerwerWKatalogu = Omit<SerwerMcp, 'narzedzia'> & {
+export type SerwerWKatalogu = Omit<SerwerMcp, "narzedzia"> & {
   dodal: string
   narzedzia: NarzedzieWKatalogu[]
 }
 
-const naNarzedzie = (r: Record<string, any>): NarzedzieWKatalogu => ({
-  serwer: r.serwer, nazwaZdalna: r.nazwa_zdalna, opis: r.opis, krotko: r.krotko,
-  zdolnoscId: r.zdolnosc, odcisk: r.odcisk,
-  stan: r.stan, powod: r.powod, zatwierdzil: r.zatwierdzil, at: r.at,
+const naNarzedzie = (r: Record<string, unknown>): NarzedzieWKatalogu => ({
+  // Wiersz z `pg` przychodzi bez typu — rzutujemy przy odczycie POLA, nie na całym wierszu,
+  // żeby literówka w nazwie kolumny dalej dawała `undefined`, a nie cichy `any`.
+  serwer: r.serwer as string,
+  nazwaZdalna: r.nazwa_zdalna as string,
+  opis: r.opis as string,
+  krotko: r.krotko as string,
+  zdolnoscId: r.zdolnosc as string,
+  odcisk: r.odcisk as string,
+  stan: r.stan as NarzedzieWKatalogu["stan"],
+  powod: r.powod as string,
+  zatwierdzil: r.zatwierdzil as string,
+  at: r.at as string,
 })
 
 /**
@@ -43,7 +52,7 @@ export async function zasiej() {
   await pool.query(
     `insert into desk.serwer_mcp (nazwa, etykieta, url, dodal) values ($1,$2,$3,$4)
      on conflict (nazwa) do nothing`,
-    ['biala-lista', 'wykaz podatników VAT', url, 'seed'],
+    ["biala-lista", "wykaz podatników VAT", url, "seed"],
   )
   for (const n of NARZEDZIA_BIALEJ_LISTY) {
     await pool.query(
@@ -58,11 +67,17 @@ export async function zasiej() {
 export async function katalogSerwerow(): Promise<SerwerMcp[]> {
   await zasiej()
   const s = await pool.query(`select * from desk.serwer_mcp order by nazwa`)
-  const n = await pool.query(`select * from desk.narzedzie_mcp where stan='zatwierdzone' order by nazwa_zdalna`)
+  const n = await pool.query(
+    `select * from desk.narzedzie_mcp where stan='zatwierdzone' order by nazwa_zdalna`,
+  )
   return s.rows
     .map((x) => ({
-      nazwa: x.nazwa, etykieta: x.etykieta, url: x.url,
-      narzedzia: n.rows.filter((y) => y.serwer === x.nazwa).map(naNarzedzie) as ZatwierdzoneNarzedzie[],
+      nazwa: x.nazwa,
+      etykieta: x.etykieta,
+      url: x.url,
+      narzedzia: n.rows
+        .filter((y) => y.serwer === x.nazwa)
+        .map(naNarzedzie) as ZatwierdzoneNarzedzie[],
     }))
     .filter((x) => x.narzedzia.length > 0)
 }
@@ -73,7 +88,10 @@ export async function pelnyKatalog(): Promise<SerwerWKatalogu[]> {
   const s = await pool.query(`select * from desk.serwer_mcp order by nazwa`)
   const n = await pool.query(`select * from desk.narzedzie_mcp order by nazwa_zdalna`)
   return s.rows.map((x) => ({
-    nazwa: x.nazwa, etykieta: x.etykieta, url: x.url, dodal: x.dodal,
+    nazwa: x.nazwa,
+    etykieta: x.etykieta,
+    url: x.url,
+    dodal: x.dodal,
     narzedzia: n.rows.filter((y) => y.serwer === x.nazwa).map(naNarzedzie),
   }))
 }
@@ -85,7 +103,7 @@ export async function dodajSerwer(kto: string, nazwa: string, etykieta: string, 
      on conflict (nazwa) do update set etykieta=excluded.etykieta, url=excluded.url`,
     [nazwa, etykieta, url, kto],
   )
-  await dziennik.zapisz(kto, 'mcp.serwer.dodany', { nazwa, url })
+  await dziennik.zapisz(kto, "mcp.serwer.dodany", { nazwa, url })
 }
 
 export async function zatwierdzNarzedzie(kto: string, n: ZatwierdzoneNarzedzie) {
@@ -99,15 +117,21 @@ export async function zatwierdzNarzedzie(kto: string, n: ZatwierdzoneNarzedzie) 
        zatwierdzil=excluded.zatwierdzil, at=now()`,
     [n.serwer, n.nazwaZdalna, n.opis, n.krotko, n.zdolnoscId, n.odcisk, kto],
   )
-  await dziennik.zapisz(kto, 'mcp.narzedzie.zatwierdzone', {
-    serwer: n.serwer, narzedzie: n.nazwaZdalna, zdolnosc: n.zdolnoscId, odcisk: n.odcisk,
+  await dziennik.zapisz(kto, "mcp.narzedzie.zatwierdzone", {
+    serwer: n.serwer,
+    narzedzie: n.nazwaZdalna,
+    zdolnosc: n.zdolnoscId,
+    odcisk: n.odcisk,
   })
 }
 
 export async function wycofajNarzedzie(kto: string, serwer: string, nazwaZdalna: string) {
   await migracja()
-  await pool.query(`delete from desk.narzedzie_mcp where serwer=$1 and nazwa_zdalna=$2`, [serwer, nazwaZdalna])
-  await dziennik.zapisz(kto, 'mcp.narzedzie.wycofane', { serwer, narzedzie: nazwaZdalna })
+  await pool.query(`delete from desk.narzedzie_mcp where serwer=$1 and nazwa_zdalna=$2`, [
+    serwer,
+    nazwaZdalna,
+  ])
+  await dziennik.zapisz(kto, "mcp.narzedzie.wycofane", { serwer, narzedzie: nazwaZdalna })
 }
 
 /**
@@ -122,5 +146,10 @@ export async function wstrzymaj(serwer: string, nazwaZdalna: string, powod: stri
      where serwer=$1 and nazwa_zdalna=$2 and stan<>'wstrzymane'`,
     [serwer, nazwaZdalna, powod],
   )
-  if (r.rowCount) await dziennik.zapisz('system', 'mcp.narzedzie.wstrzymane', { serwer, narzedzie: nazwaZdalna, powod })
+  if (r.rowCount)
+    await dziennik.zapisz("system", "mcp.narzedzie.wstrzymane", {
+      serwer,
+      narzedzie: nazwaZdalna,
+      powod,
+    })
 }

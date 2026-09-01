@@ -1,9 +1,9 @@
-import { notFound } from 'next/navigation'
-import { Powloka } from '@cortex/desk-ui/components/powloka'
-import { SprawaWidok } from '@cortex/desk-ui/components/sprawa-widok'
-import { ktoTo } from '@cortex/desk-core/tozsamosc'
-import { polityka } from '@cortex/desk-core/brama-zdolnosci'
-import { pool, migracja } from '@cortex/desk-core/db'
+import { polityka } from "@cortex/desk-core/brama-zdolnosci"
+import { migracja, pool } from "@cortex/desk-core/db"
+import { ktoTo } from "@cortex/desk-core/tozsamosc"
+import { Powloka } from "@cortex/desk-ui/components/powloka"
+import { SprawaWidok } from "@cortex/desk-ui/components/sprawa-widok"
+import { notFound } from "next/navigation"
 
 export default async function Strona({ params }: { params: Promise<{ id: string }> }) {
   await migracja()
@@ -17,7 +17,9 @@ export default async function Strona({ params }: { params: Promise<{ id: string 
         <div className="grid h-full place-items-center p-8 text-center">
           <div>
             <div className="t-h2">To nie jest Twoja sprawa</div>
-            <p className="mt-1 t-tresc text-cichy">Każdy pracownik widzi wyłącznie własne biurko.</p>
+            <p className="t-tresc mt-1 text-cichy">
+              Każdy pracownik widzi wyłącznie własne biurko.
+            </p>
           </div>
         </div>
       </Powloka>

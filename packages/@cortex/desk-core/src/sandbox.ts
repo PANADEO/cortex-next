@@ -1,8 +1,8 @@
-import { promises as fs } from 'node:fs'
-import { spawn } from 'node:child_process'
-import path from 'node:path'
-import os from 'node:os'
-import { pelnaSciezka } from './biurko'
+import { spawn } from "node:child_process"
+import { promises as fs } from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import { pelnaSciezka } from "./biurko"
 
 export type Montaz = { zBiurka: string; jako: string; zapis: boolean }
 export type Limity = { sekundy: number; pamiecMb: number }
@@ -43,7 +43,9 @@ export async function utworz(opts: {
   const limity = opts.limity ?? { sekundy: 30, pamiecMb: 512 }
   // realpath jest konieczny: na macOS os.tmpdir() zwraca /var/..., a faktyczna ścieżka to
   // /private/var/... — bez rozwinięcia dowiązania uprawnienia nie objęłyby własnego katalogu
-  const katalog = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), `desk-${opts.sprawaId}-`)))
+  const katalog = await fs.realpath(
+    await fs.mkdtemp(path.join(os.tmpdir(), `desk-${opts.sprawaId}-`)),
+  )
 
   for (const m of opts.montaze) {
     try {
@@ -63,24 +65,24 @@ export async function utworz(opts: {
       return new Promise((resolve) => {
         // Jawna lista zmiennych środowiskowych. NIGDY ...process.env —
         // to jest ta sama dziura, której nie chcemy odtworzyć za darmo.
-        const env = { PATH: process.env.PATH ?? '', HOME: katalog } as unknown as NodeJS.ProcessEnv
+        const env = { PATH: process.env.PATH ?? "", HOME: katalog } as unknown as NodeJS.ProcessEnv
         const flagi = [
-          '--permission',
+          "--permission",
           `--allow-fs-read=${katalog}/*`,
           `--allow-fs-write=${katalog}/*`,
           `--max-old-space-size=${limity.pamiecMb}`,
         ]
-        const p = spawn(process.execPath, [...flagi, '-e', kod], {
+        const p = spawn(process.execPath, [...flagi, "-e", kod], {
           cwd: katalog,
           env,
           timeout: limity.sekundy * 1000,
-          stdio: ['ignore', 'pipe', 'pipe'],
+          stdio: ["ignore", "pipe", "pipe"],
         })
-        let out = ''
-        p.stdout?.on('data', (d: Buffer) => (out += d.toString()))
-        p.stderr?.on('data', (d: Buffer) => (out += d.toString()))
-        p.on('close', (code) => resolve({ ok: code === 0, wyjscie: out.slice(0, 8000) }))
-        p.on('error', (e) => resolve({ ok: false, wyjscie: String(e) }))
+        let out = ""
+        p.stdout?.on("data", (d: Buffer) => (out += d.toString()))
+        p.stderr?.on("data", (d: Buffer) => (out += d.toString()))
+        p.on("close", (code) => resolve({ ok: code === 0, wyjscie: out.slice(0, 8000) }))
+        p.on("error", (e) => resolve({ ok: false, wyjscie: String(e) }))
       })
     },
     async dispose() {

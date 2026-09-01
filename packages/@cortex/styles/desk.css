@@ -7,50 +7,69 @@
 /* ══ 1. TOKENY — MOTYW JASNY ══════════════════════════════════ */
 :root {
   /* neutralne — jeden odcień 35°, siedem ról */
-  --desk-bg:          35 16% 97%;
-  --desk-surface:     35 40% 99%;
-  --desk-raised:      35 14% 94%;
-  --desk-sunken:      35 13% 92%;
-  --desk-line:        35 11% 86%;
-  --desk-line-mocna:  35 12% 78%;
-  --desk-ink:         30 10% 12%;
-  --desk-ink-2:       32  8% 32%;
-  --desk-cichy:       32  7% 46%;
-  --desk-cichy-2: 33  6% 56%;
+  --desk-bg: 35 16% 97%;
+  --desk-surface: 35 40% 99%;
+  --desk-raised: 35 14% 94%;
+  --desk-sunken: 35 13% 92%;
+  --desk-line: 35 11% 86%;
+  --desk-line-mocna: 35 12% 78%;
+  --desk-ink: 30 10% 12%;
+  --desk-ink-2: 32 8% 32%;
+  --desk-cichy: 32 7% 46%;
+  --desk-cichy-2: 33 6% 56%;
 
   /* akcent — jedyny kolor chromatyczny marki */
-  --desk-akcent:            22 90% 40%;
-  --desk-akcent-hover:      22 92% 34%;
-  --desk-akcent-ink:         0  0% 100%;
-  --desk-akcent-soft:       28 80% 95%;
-  --desk-akcent-soft-line:  26 55% 86%;
-  --desk-akcent-soft-ink:   20 78% 30%;
-  --desk-focus:             22 90% 45%;
+  --desk-akcent: 22 90% 40%;
+  --desk-akcent-hover: 22 92% 34%;
+  --desk-akcent-ink: 0 0% 100%;
+  --desk-akcent-soft: 28 80% 95%;
+  --desk-akcent-soft-line: 26 55% 86%;
+  --desk-akcent-soft-ink: 20 78% 30%;
+  --desk-focus: 22 90% 45%;
 
   /* semantyczne — nigdy jako wypełnienie tła treści */
-  --desk-ok:        150 52% 30%;
-  --desk-warn:       42 92% 32%;
-  --desk-bad:       358 62% 45%;
-  --desk-ok-soft:   150 40% 94%;
-  --desk-warn-soft:  44 80% 93%;
-  --desk-bad-soft:  358 70% 96%;
+  --desk-ok: 150 52% 30%;
+  --desk-warn: 42 92% 32%;
+  --desk-bad: 358 62% 45%;
+  --desk-ok-soft: 150 40% 94%;
+  --desk-warn-soft: 44 80% 93%;
+  --desk-bad-soft: 358 70% 96%;
 
   /* Promienie NIE są już własne: `rounded-*` bierze je z presetu powłoki. Zostają tu wyłącznie
      aliasy dla reguł pisanych ręcznie (obrys skupienia, `code` w treści dokumentu). */
-  --desk-r-xs: var(--radius-xs); --desk-r-sm: var(--radius-sm); --desk-r-md: var(--radius-md);
-  --desk-r-lg: var(--radius-lg); --desk-r-xl: var(--radius-xl); --desk-r-pill: 999px;
+  --desk-r-xs: var(--radius-xs);
+  --desk-r-sm: var(--radius-sm);
+  --desk-r-md: var(--radius-md);
+  --desk-r-lg: var(--radius-lg);
+  --desk-r-xl: var(--radius-xl);
+  --desk-r-pill: 999px;
 
-  --desk-s-1: 4px; --desk-s-2: 8px; --desk-s-3: 12px; --desk-s-4: 16px; --desk-s-6: 24px; --desk-s-8: 32px; --desk-s-12: 48px;
+  --desk-s-1: 4px;
+  --desk-s-2: 8px;
+  --desk-s-3: 12px;
+  --desk-s-4: 16px;
+  --desk-s-6: 24px;
+  --desk-s-8: 32px;
+  --desk-s-12: 48px;
 
-  --desk-h-krok: 32px; --desk-h-wiersz: 44px; --desk-h-nav: 36px; --desk-h-pasek: 56px; --desk-h-dotyk: 44px;
-  --desk-w-boczny: 260px; --desk-w-wynik: 360px; --desk-miara: 66ch; --desk-w-strumien: 720px;
+  --desk-h-krok: 32px;
+  --desk-h-wiersz: 44px;
+  --desk-h-nav: 36px;
+  --desk-h-pasek: 56px;
+  --desk-h-dotyk: 44px;
+  --desk-w-boczny: 260px;
+  --desk-w-wynik: 360px;
+  --desk-miara: 66ch;
+  --desk-w-strumien: 720px;
 
-  --desk-cien-pop:  0 1px 2px hsl(30 20% 20% / .06), 0 8px 24px -6px hsl(30 20% 20% / .12);
-  --desk-cien-okno: 0 2px 4px hsl(30 20% 20% / .07), 0 24px 48px -12px hsl(30 20% 20% / .22);
+  --desk-cien-pop: 0 1px 2px hsl(30 20% 20% / 0.06), 0 8px 24px -6px hsl(30 20% 20% / 0.12);
+  --desk-cien-okno: 0 2px 4px hsl(30 20% 20% / 0.07), 0 24px 48px -12px hsl(30 20% 20% / 0.22);
 
-  --desk-t-szybko: 120ms; --desk-t: 180ms; --desk-t-wolno: 260ms;
-  --desk-e-wejscie: cubic-bezier(.2,.6,.3,1);
-  --desk-e-stan:    cubic-bezier(.4,0,.2,1);
+  --desk-t-szybko: 120ms;
+  --desk-t: 180ms;
+  --desk-t-wolno: 260ms;
+  --desk-e-wejscie: cubic-bezier(0.2, 0.6, 0.3, 1);
+  --desk-e-stan: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ══ 1b. MOSTEK DO POWŁOKI ════════════════════════════════════
@@ -65,21 +84,21 @@
       liczymy przez `color-mix` w konfiguracji Tailwinda, a nie tutaj — token musi
       zostać trójką HSL, żeby `bg-raised/60` dalej działało. */
 :root {
-  --desk-bg:         var(--background);
-  --desk-surface:    var(--card);
-  --desk-raised:     var(--muted);
-  --desk-sunken:     var(--secondary);
-  --desk-line:       var(--border);
-  --desk-ink:        var(--foreground);
-  --desk-cichy:      var(--muted-foreground);
+  --desk-bg: var(--background);
+  --desk-surface: var(--card);
+  --desk-raised: var(--muted);
+  --desk-sunken: var(--secondary);
+  --desk-line: var(--border);
+  --desk-ink: var(--foreground);
+  --desk-cichy: var(--muted-foreground);
 
-  --desk-akcent:     var(--primary);
+  --desk-akcent: var(--primary);
   --desk-akcent-ink: var(--primary-foreground);
-  --desk-focus:      var(--ring);
+  --desk-focus: var(--ring);
 
-  --desk-ok:   var(--success);
+  --desk-ok: var(--success);
   --desk-warn: var(--warning);
-  --desk-bad:  var(--destructive);
+  --desk-bad: var(--destructive);
 }
 
 /* ══ 2. MOTYW CIEMNY ══════════════════════════════════════════
@@ -89,12 +108,18 @@
    wygrywa z mostkiem SAMĄ KOLEJNOŚCIĄ. Pełny blok, jaki tu wcześniej stał, cofał
    Biurko do własnych brązów za każdym razem, gdy ktoś włączył ciemny motyw. */
 .dark {
-  --desk-ink-2: 35 8% 76%;  --desk-cichy-2: 35 6% 48%;  --desk-line-mocna: 34 6% 31%;
+  --desk-ink-2: 35 8% 76%;
+  --desk-cichy-2: 35 6% 48%;
+  --desk-line-mocna: 34 6% 31%;
   --desk-akcent-hover: 24 90% 66%;
-  --desk-akcent-soft: 24 40% 18%;  --desk-akcent-soft-line: 24 35% 28%;  --desk-akcent-soft-ink: 26 85% 72%;
-  --desk-ok-soft: 150 30% 15%;  --desk-warn-soft: 44 40% 15%;  --desk-bad-soft: 358 40% 16%;
-  --desk-cien-pop:  0 1px 2px hsl(0 0% 0% / .50), 0 8px 24px -6px hsl(0 0% 0% / .60);
-  --desk-cien-okno: 0 2px 4px hsl(0 0% 0% / .50), 0 24px 48px -12px hsl(0 0% 0% / .70);
+  --desk-akcent-soft: 24 40% 18%;
+  --desk-akcent-soft-line: 24 35% 28%;
+  --desk-akcent-soft-ink: 26 85% 72%;
+  --desk-ok-soft: 150 30% 15%;
+  --desk-warn-soft: 44 40% 15%;
+  --desk-bad-soft: 358 40% 16%;
+  --desk-cien-pop: 0 1px 2px hsl(0 0% 0% / 0.5), 0 8px 24px -6px hsl(0 0% 0% / 0.6);
+  --desk-cien-okno: 0 2px 4px hsl(0 0% 0% / 0.5), 0 24px 48px -12px hsl(0 0% 0% / 0.7);
 }
 
 /* ══ 3. BAZA ══════════════════════════════════════════════════ */
@@ -102,88 +127,282 @@
    wszystkie kafelki: krawędzie, tło dokumentu, zaznaczenie i paski przewijania.
    Klasy komponentów NIŻEJ zakresu nie dostają celowo — Radix wynosi dialogi
    i menu poza drzewo kafelka, do `document.body`. */
-.biurko, .biurko *, .biurko *::before, .biurko *::after { border-color: hsl(var(--desk-line)); }
-html, body { height: 100%; }
-.biurko {
-  background: hsl(var(--desk-bg)); color: hsl(var(--desk-ink));
-  font-size: 14px; line-height: 22px;
-  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: 'cv05' 1;
+.biurko,
+.biurko *,
+.biurko *::before,
+.biurko *::after {
+  border-color: hsl(var(--desk-line));
 }
-.biurko ::selection { background: hsl(var(--desk-akcent-soft)); color: hsl(var(--desk-akcent-soft-ink)); }
-.biurko ::-webkit-scrollbar { width: 10px; height: 10px; }
-.biurko ::-webkit-scrollbar-thumb { background: hsl(var(--desk-line-mocna)); border-radius: var(--desk-r-md); }
-.biurko ::-webkit-scrollbar-track { background: transparent; }
-.biurko .liczby, .biurko time, .biurko td, .biurko th { font-variant-numeric: tabular-nums; }
+html,
+body {
+  height: 100%;
+}
+.biurko {
+  background: hsl(var(--desk-bg));
+  color: hsl(var(--desk-ink));
+  font-size: 14px;
+  line-height: 22px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv05" 1;
+}
+.biurko ::selection {
+  background: hsl(var(--desk-akcent-soft));
+  color: hsl(var(--desk-akcent-soft-ink));
+}
+.biurko ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.biurko ::-webkit-scrollbar-thumb {
+  background: hsl(var(--desk-line-mocna));
+  border-radius: var(--desk-r-md);
+}
+.biurko ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.biurko .liczby,
+.biurko time,
+.biurko td,
+.biurko th {
+  font-variant-numeric: tabular-nums;
+}
 
 /* ══ 4. SKALA — siedem stopni ═════════════════════════════════ */
-.t-display  { font-size: 28px; line-height: 34px; font-weight: 600; letter-spacing: -.010em; }
-.t-h2       { font-size: 18px; line-height: 24px; font-weight: 600; letter-spacing: -.006em; }
-.t-h3       { font-size: 15px; line-height: 20px; font-weight: 600; letter-spacing: -.003em; }
-.t-sekcja   { font-size: 13px; line-height: 18px; font-weight: 600; color: hsl(var(--desk-ink)); }
-.t-tresc    { font-size: 14px; line-height: 22px; font-weight: 400; }
-.t-tresc-m  { font-size: 14px; line-height: 22px; font-weight: 500; }
-.t-meta     { font-size: 12px; line-height: 16px; color: hsl(var(--desk-cichy)); font-variant-numeric: tabular-nums; }
-.t-micro    { font-size: 11px; line-height: 15px; color: hsl(var(--desk-cichy)); }
-.t-btn      { font-size: 14px; line-height: 20px; font-weight: 500; letter-spacing: -.002em; }
+.t-display {
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.t-h2 {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: -0.006em;
+}
+.t-h3 {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+  letter-spacing: -0.003em;
+}
+.t-sekcja {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: hsl(var(--desk-ink));
+}
+.t-tresc {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 400;
+}
+.t-tresc-m {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 500;
+}
+.t-meta {
+  font-size: 12px;
+  line-height: 16px;
+  color: hsl(var(--desk-cichy));
+  font-variant-numeric: tabular-nums;
+}
+.t-micro {
+  font-size: 11px;
+  line-height: 15px;
+  color: hsl(var(--desk-cichy));
+}
+.t-btn {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: -0.002em;
+}
 
 /* ══ 5. FOKUS ═════════════════════════════════════════════════ */
-:where(a, button, [role='button'], input, textarea, select, [tabindex]):focus-visible {
-  outline: 2px solid hsl(var(--desk-focus)); outline-offset: 2px; border-radius: var(--desk-r-sm);
+:where(a, button, [role="button"], input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid hsl(var(--desk-focus));
+  outline-offset: 2px;
+  border-radius: var(--desk-r-sm);
 }
-:where(input, textarea):focus-visible { outline-offset: 0; }
+:where(input, textarea):focus-visible {
+  outline-offset: 0;
+}
 
 /* Edytor zlecenia jest wizualnie JEDNYM elementem: ramka, załączniki, pole i pasek narzędzi.
    Obrys skupienia na samym textarea rysował pudełko w pudełku — o innym promieniu narożnika
    i węższe od ramki, w której siedzi. Obrys należy więc do całego edytora. */
 .edytor:has(> textarea:focus-visible) {
-  outline: 2px solid hsl(var(--desk-focus)); outline-offset: 0; border-radius: var(--desk-r-xl);
+  outline: 2px solid hsl(var(--desk-focus));
+  outline-offset: 0;
+  border-radius: var(--desk-r-xl);
 }
-.edytor > textarea:focus-visible { outline: none; }
+.edytor > textarea:focus-visible {
+  outline: none;
+}
 /* Przeglądarka bez :has() zostaje przy obrysie na polu — gorzej wygląda, ale widać, gdzie jest kursor. */
 @supports not selector(:has(*)) {
-  .edytor > textarea:focus-visible { outline: 2px solid hsl(var(--desk-focus)); }
+  .edytor > textarea:focus-visible {
+    outline: 2px solid hsl(var(--desk-focus));
+  }
 }
 
 /* ══ 6. RUCH ══════════════════════════════════════════════════ */
-@keyframes wjazd { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
-.wjazd { animation: wjazd var(--desk-t) var(--desk-e-wejscie) both; }
+@keyframes wjazd {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.wjazd {
+  animation: wjazd var(--desk-t) var(--desk-e-wejscie) both;
+}
 
-@keyframes oddech { 0%,100% { box-shadow: 0 0 0 0 hsl(var(--desk-akcent) / .45) } 50% { box-shadow: 0 0 0 5px hsl(var(--desk-akcent) / 0) } }
-.krok-trwa { animation: oddech 1.6s var(--desk-e-stan) infinite; }
+@keyframes oddech {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 hsl(var(--desk-akcent) / 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 5px hsl(var(--desk-akcent) / 0);
+  }
+}
+.krok-trwa {
+  animation: oddech 1.6s var(--desk-e-stan) infinite;
+}
 
-@keyframes arkusz { from { transform: translateY(100%) } to { transform: none } }
-.arkusz { animation: arkusz var(--desk-t-wolno) var(--desk-e-wejscie) both; }
+@keyframes arkusz {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+.arkusz {
+  animation: arkusz var(--desk-t-wolno) var(--desk-e-wejscie) both;
+}
 
-@keyframes puls { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
-.puls { animation: puls 1.4s ease-in-out infinite; }
+@keyframes puls {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.puls {
+  animation: puls 1.4s ease-in-out infinite;
+}
 
-@keyframes obrot { to { transform: rotate(360deg) } }
-.obrot { animation: obrot 1s linear infinite; }
+@keyframes obrot {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.obrot {
+  animation: obrot 1s linear infinite;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .biurko, .biurko *, .biurko *::before, .biurko *::after {
-    animation-duration: 1ms !important; animation-iteration-count: 1 !important;
-    transition-duration: 1ms !important; scroll-behavior: auto !important;
+  .biurko,
+  .biurko *,
+  .biurko *::before,
+  .biurko *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
   }
   /* redukcja wyłącza RUCH, nigdy SYGNAŁ STANU */
-  .krok-trwa { box-shadow: 0 0 0 3px hsl(var(--desk-akcent) / .35); }
-  .puls { opacity: 1 !important; }
+  .krok-trwa {
+    box-shadow: 0 0 0 3px hsl(var(--desk-akcent) / 0.35);
+  }
+  .puls {
+    opacity: 1 !important;
+  }
 }
 
 /* ══ 7. TREŚĆ DOKUMENTU ═══════════════════════════════════════ */
-.prose-desk { max-width: var(--desk-miara); font-size: 14px; line-height: 22px; color: hsl(var(--desk-ink)); }
-.prose-desk h1,.prose-desk h2,.prose-desk h3 { font-weight: 600; letter-spacing: -.004em; margin: 20px 0 6px; }
-.prose-desk h1 { font-size: 18px; line-height: 24px }
-.prose-desk h2 { font-size: 16px; line-height: 22px }
-.prose-desk h3 { font-size: 14px; line-height: 20px }
-.prose-desk p { margin: 8px 0 }
-.prose-desk ul,.prose-desk ol { margin: 8px 0 8px 20px }
-.prose-desk ul { list-style: disc } .prose-desk ol { list-style: decimal }
-.prose-desk li { margin: 2px 0 }
-.prose-desk strong { font-weight: 600 }
-.prose-desk code { font-family: var(--font-mono), ui-monospace, monospace; font-size: 12.5px; background: hsl(var(--desk-sunken)); padding: 1px 5px; border-radius: var(--desk-r-xs) }
-.prose-desk table { width: 100%; min-width: max-content; border-collapse: collapse; margin: 12px 0; font-size: 13px; font-variant-numeric: tabular-nums }
-.prose-desk th,.prose-desk td { border-bottom: 1px solid hsl(var(--desk-line)); padding: 6px 10px; text-align: left; white-space: nowrap }
-.prose-desk th { font-weight: 600; color: hsl(var(--desk-cichy)); font-size: 12px }
-.prose-desk td:last-child,.prose-desk th:last-child { text-align: right }
+.prose-desk {
+  max-width: var(--desk-miara);
+  font-size: 14px;
+  line-height: 22px;
+  color: hsl(var(--desk-ink));
+}
+.prose-desk h1,
+.prose-desk h2,
+.prose-desk h3 {
+  font-weight: 600;
+  letter-spacing: -0.004em;
+  margin: 20px 0 6px;
+}
+.prose-desk h1 {
+  font-size: 18px;
+  line-height: 24px;
+}
+.prose-desk h2 {
+  font-size: 16px;
+  line-height: 22px;
+}
+.prose-desk h3 {
+  font-size: 14px;
+  line-height: 20px;
+}
+.prose-desk p {
+  margin: 8px 0;
+}
+.prose-desk ul,
+.prose-desk ol {
+  margin: 8px 0 8px 20px;
+}
+.prose-desk ul {
+  list-style: disc;
+}
+.prose-desk ol {
+  list-style: decimal;
+}
+.prose-desk li {
+  margin: 2px 0;
+}
+.prose-desk strong {
+  font-weight: 600;
+}
+.prose-desk code {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12.5px;
+  background: hsl(var(--desk-sunken));
+  padding: 1px 5px;
+  border-radius: var(--desk-r-xs);
+}
+.prose-desk table {
+  width: 100%;
+  min-width: max-content;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.prose-desk th,
+.prose-desk td {
+  border-bottom: 1px solid hsl(var(--desk-line));
+  padding: 6px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+.prose-desk th {
+  font-weight: 600;
+  color: hsl(var(--desk-cichy));
+  font-size: 12px;
+}
+.prose-desk td:last-child,
+.prose-desk th:last-child {
+  text-align: right;
+}

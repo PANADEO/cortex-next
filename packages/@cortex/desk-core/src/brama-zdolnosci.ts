@@ -1,7 +1,7 @@
-import { createHash } from 'node:crypto'
-import zdolnosciJson from '../seed/zdolnosci.json'
-import type { Polityka, Rola, Uzytkownik, Zdolnosc } from './typy'
-import { pool, migracja } from './db'
+import { createHash } from "node:crypto"
+import zdolnosciJson from "../seed/zdolnosci.json"
+import { migracja, pool } from "./db"
+import type { Polityka, Rola, Uzytkownik, Zdolnosc } from "./typy"
 
 const KATALOG = zdolnosciJson.zdolnosci as Zdolnosc[]
 const ROLE = zdolnosciJson.role as Record<Rola, string[]>
@@ -18,9 +18,9 @@ export const katalogZdolnosci = KATALOG
  */
 export async function polityka(u: Uzytkownik): Promise<Polityka> {
   await migracja()
-  const g = await pool.query<{ zdolnosc: string }>(
-    `select zdolnosc from desk.grant where kto=$1`, [u.id],
-  )
+  const g = await pool.query<{ zdolnosc: string }>(`select zdolnosc from desk.grant where kto=$1`, [
+    u.id,
+  ])
   const nadane = g.rows.map((r) => r.zdolnosc)
   return zbuduj(u, nadane)
 }
@@ -35,9 +35,9 @@ function zbuduj(u: Uzytkownik, nadane: string[]): Polityka {
   const idsPrzyznane = new Set([...(ROLE[u.rola] ?? []), ...nadane.filter((z) => znane.has(z))])
   const przyznane = KATALOG.filter((z) => idsPrzyznane.has(z.id))
   const zablokowane = KATALOG.filter((z) => !idsPrzyznane.has(z.id))
-  const odcisk = createHash('sha256')
-    .update(`${u.id}|${u.rola}|${[...idsPrzyznane].sort().join(',')}`)
-    .digest('hex')
+  const odcisk = createHash("sha256")
+    .update(`${u.id}|${u.rola}|${[...idsPrzyznane].sort().join(",")}`)
+    .digest("hex")
     .slice(0, 12)
   return {
     uzytkownik: u.id,

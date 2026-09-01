@@ -1,9 +1,9 @@
-import type { DeskEvent, PlikMeta } from './typy'
-import { paruj } from './kroki'
-import { wytwarzaPlik } from './narzedzia'
+import { paruj } from "./kroki"
+import { wytwarzaPlik } from "./narzedzia"
+import type { DeskEvent, PlikMeta } from "./typy"
 
-const ROZSZERZENIA = 'md|csv|tsv|txt|json|xlsx|xls|pdf|docx|png|jpe?g|gif|webp|svg'
-const NAZWA_PLIKU = new RegExp(String.raw`[\p{L}\p{N}_.()\-]+\.(?:${ROZSZERZENIA})\b`, 'giu')
+const ROZSZERZENIA = "md|csv|tsv|txt|json|xlsx|xls|pdf|docx|png|jpe?g|gif|webp|svg"
+const NAZWA_PLIKU = new RegExp(String.raw`[\p{L}\p{N}_.()\-]+\.(?:${ROZSZERZENIA})\b`, "giu")
 
 /** Zdania, w których model przypisuje sobie wytworzenie pliku. */
 const OBIETNICA = /zapis|utworz|stworz|wygenerow|przygotowa|powsta/i
@@ -30,15 +30,15 @@ export function obietniceBezPokrycia(
 
   const pokryte = new Set<string>()
   for (const k of paruj(zdarzeniaTury)) {
-    if (k.stan !== 'ok' || !wytwarzaPlik(k.nazwa)) continue
+    if (k.stan !== "ok" || !wytwarzaPlik(k.nazwa)) continue
     const n = (k.argumenty as Record<string, unknown>).nazwa
-    if (typeof n === 'string') pokryte.add(n.toLowerCase())
+    if (typeof n === "string") pokryte.add(n.toLowerCase())
   }
   for (const p of teczka) pokryte.add(p.nazwa.toLowerCase())
 
   const bez = new Set<string>()
   for (const trafienie of tekst.match(NAZWA_PLIKU) ?? []) {
-    const nazwa = trafienie.replace(/[.,;:]+$/, '')
+    const nazwa = trafienie.replace(/[.,;:]+$/, "")
     if (!pokryte.has(nazwa.toLowerCase())) bez.add(nazwa)
   }
   return [...bez]
@@ -51,9 +51,9 @@ export function obietniceBezPokrycia(
 export function wytworzone(zdarzeniaTury: DeskEvent[]): string[] {
   const nazwy: string[] = []
   for (const k of paruj(zdarzeniaTury)) {
-    if (k.stan !== 'ok' || !wytwarzaPlik(k.nazwa)) continue
+    if (k.stan !== "ok" || !wytwarzaPlik(k.nazwa)) continue
     const n = (k.argumenty as Record<string, unknown>).nazwa
-    if (typeof n === 'string' && !nazwy.includes(n)) nazwy.push(n)
+    if (typeof n === "string" && !nazwy.includes(n)) nazwy.push(n)
   }
   return nazwy
 }

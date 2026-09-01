@@ -1,4 +1,4 @@
-import { pool, migracja } from './db'
+import { migracja, pool } from "./db"
 
 /**
  * Dziennik jest NASZ i leży poza zasięgiem zapisu agenta.

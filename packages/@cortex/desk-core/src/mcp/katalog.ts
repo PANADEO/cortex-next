@@ -46,20 +46,20 @@ export type SerwerMcp = {
  */
 export const NARZEDZIA_BIALEJ_LISTY: ZatwierdzoneNarzedzie[] = [
   {
-    serwer: 'biala-lista',
-    nazwaZdalna: 'sprawdz_nip',
-    opis: 'Sprawdza w wykazie Ministerstwa Finansów, czy firma o podanym NIP jest czynnym podatnikiem VAT, i podaje jej nazwę oraz adres.',
-    krotko: 'sprawdzenie statusu VAT',
-    zdolnoscId: 'kontrahent.sprawdz',
-    odcisk: '954cf2ea6041bf4ab351016cd51ef24633e21b923c845be68d894217a296b896',
+    serwer: "biala-lista",
+    nazwaZdalna: "sprawdz_nip",
+    opis: "Sprawdza w wykazie Ministerstwa Finansów, czy firma o podanym NIP jest czynnym podatnikiem VAT, i podaje jej nazwę oraz adres.",
+    krotko: "sprawdzenie statusu VAT",
+    zdolnoscId: "kontrahent.sprawdz",
+    odcisk: "954cf2ea6041bf4ab351016cd51ef24633e21b923c845be68d894217a296b896",
   },
   {
-    serwer: 'biala-lista',
-    nazwaZdalna: 'sprawdz_rachunek',
-    opis: 'Sprawdza w wykazie Ministerstwa Finansów, czy podany numer rachunku był w danym dniu przypisany do firmy o podanym NIP. Zwraca identyfikator zapytania, który jest dowodem sprawdzenia.',
-    krotko: 'sprawdzenie rachunku w wykazie',
-    zdolnoscId: 'kontrahent.sprawdz',
-    odcisk: 'f206a04b898aca436245fb0ad9faa47a95a47ab16b011c37fe04f8c0074ad8e1',
+    serwer: "biala-lista",
+    nazwaZdalna: "sprawdz_rachunek",
+    opis: "Sprawdza w wykazie Ministerstwa Finansów, czy podany numer rachunku był w danym dniu przypisany do firmy o podanym NIP. Zwraca identyfikator zapytania, który jest dowodem sprawdzenia.",
+    krotko: "sprawdzenie rachunku w wykazie",
+    zdolnoscId: "kontrahent.sprawdz",
+    odcisk: "f206a04b898aca436245fb0ad9faa47a95a47ab16b011c37fe04f8c0074ad8e1",
   },
 ]
 
@@ -68,10 +68,12 @@ export const NARZEDZIA_BIALEJ_LISTY: ZatwierdzoneNarzedzie[] = [
  * więc do modelu nie trafia ani jedno narzędzie spoza tego repozytorium.
  */
 export const KATALOG_SERWEROW: SerwerMcp[] = process.env.MCP_BIALA_LISTA_URL
-  ? [{
-      nazwa: 'biala-lista',
-      etykieta: 'wykaz podatników VAT',
-      url: process.env.MCP_BIALA_LISTA_URL,
-      narzedzia: NARZEDZIA_BIALEJ_LISTY,
-    }]
+  ? [
+      {
+        nazwa: "biala-lista",
+        etykieta: "wykaz podatników VAT",
+        url: process.env.MCP_BIALA_LISTA_URL,
+        narzedzia: NARZEDZIA_BIALEJ_LISTY,
+      },
+    ]
   : []

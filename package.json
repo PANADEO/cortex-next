@@ -23,9 +23,11 @@
     "test:e2e:install": "playwright install chromium",
     "lint": "eslint \"{app,apps,packages}/**/*.{ts,tsx}\"",
     "okna-czasowe:scan": "node scripts/okna-czasowe-scan.mjs",
-    "format": "prettier --write \"{app,packages,docs,scripts}/**/*.{ts,tsx,md,json,css}\"",
+    "format": "prettier --write \"{app,apps,packages,docs,scripts}/**/*.{ts,tsx,md,json,css}\"",
     "ladle": "ladle serve",
-    "ladle:build": "ladle build"
+    "ladle:build": "ladle build",
+    "gate:desk": "pnpm -C apps/desk exec playwright test --grep-invert @model",
+    "gate:desk:full": "pnpm -C apps/desk exec playwright test"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
