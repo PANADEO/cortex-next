@@ -48,9 +48,9 @@ export async function create(opts: {
   for (const m of opts.mounts) {
     try {
       const source = await fullPath(opts.user, m.fromDesk)
-      const cel = path.join(folder, m.as)
-      await fs.mkdir(path.dirname(cel), { recursive: true })
-      await fs.cp(source, cel, { recursive: true })
+      const target = path.join(folder, m.as)
+      await fs.mkdir(path.dirname(target), { recursive: true })
+      await fs.cp(source, target, { recursive: true })
     } catch {
       /* montaż nieistniejącej ścieżki jest cichy — agent zobaczy pusty katalog */
     }

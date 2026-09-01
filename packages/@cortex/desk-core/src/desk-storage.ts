@@ -11,11 +11,11 @@ const BASE = path.resolve(process.env.DESK_DATA_DIR ?? "./.data")
  */
 function safePath(user: string, wzgledna: string) {
   const root = path.join(BASE, "biurka", user)
-  const cel = path.resolve(root, wzgledna.replace(/^\/+/, ""))
-  if (cel !== root && !cel.startsWith(root + path.sep)) {
+  const target = path.resolve(root, wzgledna.replace(/^\/+/, ""))
+  if (target !== root && !target.startsWith(root + path.sep)) {
     throw new Error("Ścieżka poza biurkiem")
   }
-  return { root, cel }
+  return { root, target }
 }
 
 export async function prepareDesk(user: string) {
@@ -28,13 +28,13 @@ export async function prepareDesk(user: string) {
 
 export async function list(user: string, wzgledna = "Moje pliki"): Promise<FileMeta[]> {
   await prepareDesk(user)
-  const { root, cel } = safePath(user, wzgledna)
-  await fs.mkdir(cel, { recursive: true })
-  const entries = await fs.readdir(cel, { withFileTypes: true })
+  const { root, target } = safePath(user, wzgledna)
+  await fs.mkdir(target, { recursive: true })
+  const entries = await fs.readdir(target, { withFileTypes: true })
   const out: FileMeta[] = []
   for (const w of entries) {
     if (w.name.startsWith(".")) continue
-    const full = path.join(cel, w.name)
+    const full = path.join(target, w.name)
     const st = await fs.stat(full)
     out.push({
       path: path.relative(root, full),
@@ -50,34 +50,34 @@ export async function list(user: string, wzgledna = "Moje pliki"): Promise<FileM
 }
 
 export async function read(user: string, wzgledna: string): Promise<string> {
-  const { cel } = safePath(user, wzgledna)
-  return fs.readFile(cel, "utf8")
+  const { target } = safePath(user, wzgledna)
+  return fs.readFile(target, "utf8")
 }
 
 export async function readBinary(user: string, wzgledna: string): Promise<Buffer> {
-  const { cel } = safePath(user, wzgledna)
-  return fs.readFile(cel)
+  const { target } = safePath(user, wzgledna)
+  return fs.readFile(target)
 }
 
 export async function write(user: string, wzgledna: string, text: string | Buffer) {
-  const { cel } = safePath(user, wzgledna)
-  await fs.mkdir(path.dirname(cel), { recursive: true })
-  await fs.writeFile(cel, text)
+  const { target } = safePath(user, wzgledna)
+  await fs.mkdir(path.dirname(target), { recursive: true })
+  await fs.writeFile(target, text)
   return wzgledna
 }
 
 /** Wgranie nigdy nie nadpisuje tego, co już jest — drugi „faktury.csv" ląduje jako „faktury (2).csv". */
 export async function writeNew(user: string, wzgledna: string, text: string | Buffer) {
-  const { root, cel } = safePath(user, wzgledna)
-  await fs.mkdir(path.dirname(cel), { recursive: true })
-  const free = await freeName(cel)
+  const { root, target } = safePath(user, wzgledna)
+  await fs.mkdir(path.dirname(target), { recursive: true })
+  const free = await freeName(target)
   await fs.writeFile(free, text)
   return path.relative(root, free)
 }
 
 export async function createFolder(user: string, wzgledna: string) {
-  const { cel } = safePath(user, wzgledna)
-  await fs.mkdir(cel, { recursive: true })
+  const { target } = safePath(user, wzgledna)
+  await fs.mkdir(target, { recursive: true })
 }
 
 /** Nazwa, która na pewno nikogo nie nadpisze: „raport.md" → „raport (2).md". */
@@ -113,41 +113,41 @@ export async function move(
   user: string,
   fromPath: string,
   toPath: string,
-  onCollision: "failed" | "obie" = "failed",
+  onCollision: "error" | "both" = "error",
 ) {
-  const a = safePath(user, fromPath).cel
-  const b = safePath(user, toPath).cel
+  const a = safePath(user, fromPath).target
+  const b = safePath(user, toPath).target
   if (a === b) return toPath
   await fs.mkdir(path.dirname(b), { recursive: true })
-  let cel = b
+  let target = b
   try {
     await fs.access(b)
-    if (onCollision === "failed") throw new NameClash(path.basename(b))
-    cel = await freeName(b)
+    if (onCollision === "error") throw new NameClash(path.basename(b))
+    target = await freeName(b)
   } catch (e) {
     if (e instanceof NameClash) throw e
   }
-  await fs.rename(a, cel)
+  await fs.rename(a, target)
   const { root } = safePath(user, ".")
-  return path.relative(root, cel)
+  return path.relative(root, target)
 }
 
 /** Ruch między „Moimi plikami" a teczką sprawy to zawsze kopia — oryginał zostaje. */
 export async function copy(user: string, fromPath: string, toPath: string) {
-  const a = safePath(user, fromPath).cel
-  const b = safePath(user, toPath).cel
+  const a = safePath(user, fromPath).target
+  const b = safePath(user, toPath).target
   await fs.mkdir(path.dirname(b), { recursive: true })
-  const cel = await freeName(b)
-  await fs.copyFile(a, cel)
+  const target = await freeName(b)
+  await fs.copyFile(a, target)
   const { root } = safePath(user, ".")
-  return path.relative(root, cel)
+  return path.relative(root, target)
 }
 
 /** Kasowanie jest odwracalne — do kosza, nie w niebyt. W identyfikatorze siedzi CAŁA ścieżka źródłowa. */
 export async function toTrash(user: string, wzgledna: string) {
-  const { root, cel } = safePath(user, wzgledna)
+  const { root, target } = safePath(user, wzgledna)
   const id = `${Date.now()}__${encodeURIComponent(wzgledna)}`
-  await fs.rename(cel, path.join(root, ".trash", id))
+  await fs.rename(target, path.join(root, ".trash", id))
   return id
 }
 
@@ -195,15 +195,15 @@ export async function restore(user: string, id: string) {
   let targetFolder = folder
   let landedElsewhere = false
   try {
-    await fs.access(safePath(user, folder).cel)
+    await fs.access(safePath(user, folder).target)
   } catch {
     targetFolder = "Moje pliki"
     landedElsewhere = true
   }
 
-  const cel = safePath(user, path.join(targetFolder, path.basename(basis))).cel
-  await fs.mkdir(path.dirname(cel), { recursive: true })
-  const free = await freeName(cel)
+  const target = safePath(user, path.join(targetFolder, path.basename(basis))).target
+  await fs.mkdir(path.dirname(target), { recursive: true })
+  const free = await freeName(target)
   await fs.rename(source, free)
   return { target: path.relative(root, free), landedElsewhere, pierwotny: folder }
 }
@@ -219,7 +219,7 @@ export async function folders(
     if (level >= depth) return
     let entries
     try {
-      entries = await fs.readdir(safePath(user, wzgledna).cel, { withFileTypes: true })
+      entries = await fs.readdir(safePath(user, wzgledna).target, { withFileTypes: true })
     } catch {
       return
     }
@@ -240,5 +240,5 @@ export function caseFolder(user: string, caseId: string) {
 }
 
 export async function fullPath(user: string, wzgledna: string) {
-  return safePath(user, wzgledna).cel
+  return safePath(user, wzgledna).target
 }

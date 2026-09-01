@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   if (!u) return refusal
   const d = await req.json()
 
-  if (d.action === "dodaj") {
+  if (d.action === "add") {
     // Streamable HTTP i nic innego: stdio w aplikacji webowej to nie transport,
     // tylko uruchomienie obcego binarium z uprawnieniami procesu Node.
     if (!/^https?:\/\//.test(d.url ?? "")) {
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true })
   }
 
-  if (d.action === "przejrzyj") {
+  if (d.action === "inspect") {
     const servers = await folder.fullCatalogue()
     const s = servers.find((x) => x.name === d.server)
     if (!s) return NextResponse.json({ error: "Nie ma takiego serwera." }, { status: 404 })
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
     }
   }
 
-  if (d.action === "zatwierdz") {
+  if (d.action === "approve") {
     const servers = await folder.fullCatalogue()
     const s = servers.find((x) => x.name === d.server)
     if (!s) return NextResponse.json({ error: "Nie ma takiego serwera." }, { status: 404 })
@@ -124,7 +124,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true })
   }
 
-  if (d.action === "wycofaj") {
+  if (d.action === "withdraw") {
     await folder.withdrawTool(u.id, d.server, d.remoteName)
     return NextResponse.json({ ok: true })
   }

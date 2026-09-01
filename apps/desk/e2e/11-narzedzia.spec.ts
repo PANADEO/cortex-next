@@ -27,7 +27,12 @@ test.describe("Obszar 19 · Opis i dowód pochodzą z kart, nie z listy nazw w k
       ...para("e", "write_sheet", { name: "t.csv" }, "5 wierszy"),
       ...para("f", "generate_image", { name: "i.png", description: "kot" }, "zapisano i.png"),
       ...para("g", "run_computation", { description: "suma" }, "policzone"),
-      ...para("h", "save_to_my_files", { name: "w.md", cel: "Moje pliki/w.md" }, "Moje pliki/w.md"),
+      ...para(
+        "h",
+        "save_to_my_files",
+        { name: "w.md", target: "Moje pliki/w.md" },
+        "Moje pliki/w.md",
+      ),
     ])
     expect(d.intake).toEqual(["Moje pliki/a.csv — 10 wierszy"])
     expect(d.produced).toEqual([

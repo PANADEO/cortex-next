@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     else if (b.action === "move")
       result = {
         ok: true,
-        target: await storage.move(u.id, b.from, b.to, b.onCollision ?? "failed"),
+        target: await storage.move(u.id, b.from, b.to, b.onCollision ?? "error"),
       }
     else if (b.action === "copy")
       result = { ok: true, target: await storage.copy(u.id, b.from, b.to) }
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     return NextResponse.json(result)
   } catch (e) {
     if (e instanceof storage.NameClash) {
-      return NextResponse.json({ error: "kolizja", name: e.name }, { status: 409 })
+      return NextResponse.json({ error: "name-clash", name: e.name }, { status: 409 })
     }
     return NextResponse.json({ error: String(e).slice(0, 200) }, { status: 400 })
   }

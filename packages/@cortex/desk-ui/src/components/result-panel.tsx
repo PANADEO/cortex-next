@@ -94,7 +94,7 @@ export function ResultPanel({
       method: "POST",
       body: JSON.stringify({
         action: "copy",
-        z: active.path,
+        from: active.path,
         to: `Moje pliki/${active.name}`,
       }),
     })

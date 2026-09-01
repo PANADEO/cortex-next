@@ -1,6 +1,7 @@
 import "server-only"
 import * as audit from "../audit-log"
 import { migrate, pool } from "../db"
+import type { McpToolStatus } from "../types"
 import { VAT_REGISTRY_TOOLS, type ApprovedTool, type McpServer } from "./catalogue"
 
 /**
@@ -12,7 +13,7 @@ import { VAT_REGISTRY_TOOLS, type ApprovedTool, type McpServer } from "./catalog
  */
 
 export type CatalogueTool = ApprovedTool & {
-  status: "approved" | "suspended"
+  status: McpToolStatus
   reason: string | null
   approvedBy: string
   at: string

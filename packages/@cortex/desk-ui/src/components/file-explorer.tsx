@@ -106,7 +106,7 @@ export function FileExplorer() {
   async function rename(p: FileMeta, nextName: string): Promise<string | null> {
     const d = await action({ action: "move", from: p.path, to: `${folder}/${nextName}` })
     if (d.ok) return null
-    return d.error === "kolizja"
+    return d.error === "name-clash"
       ? "Taki plik już tu jest. Wybierz inną nazwę."
       : "Nie udało się zmienić nazwy."
   }
@@ -290,7 +290,7 @@ export function FileExplorer() {
           const d = await action({ action: "move", from: p.path, to: `${target}/${p.name}` })
           setToMove(null)
           if (d.ok) toast({ text: `Przeniesione do: ${target.split("/").pop()}` })
-          else if (d.error === "kolizja")
+          else if (d.error === "name-clash")
             toast({ text: `${p.name} już jest w tym folderze.`, tone: "error" })
           else toast({ text: "Nie udało się przenieść pliku.", tone: "error" })
         }}

@@ -61,6 +61,7 @@ const BANNED_WORDS = new Set([
   "biurku",
   "blad",
   "brama",
+  "cel",
   "cofnij",
   "czas",
   "czasownik",
@@ -143,6 +144,7 @@ const BANNED_WORDS = new Set([
   "nazwy",
   "nowa",
   "nowy",
+  "obie",
   "obietnice",
   "obraz",
   "obrazem",
@@ -213,6 +215,7 @@ const BANNED_WORDS = new Set([
   "stanu",
   "strony",
   "sufiks",
+  "surowy",
   "szczegol",
   "szczegoly",
   "szer",
@@ -253,6 +256,8 @@ const BANNED_WORDS = new Set([
   "wpis",
   "wpisy",
   "wstrzymaj",
+  "wstrzymane",
+  "wstrzymany",
   "wybor",
   "wycofaj",
   "wydano",
@@ -370,6 +375,19 @@ const KEYS_OUTSIDE_OUR_CODE: Record<string, string[]> = {
   "app/idp/lib/token-usage/csv.ts": ["uzytkownicy", "podsumowanie", "szczegoly"],
 }
 
+/**
+ * Pliki, których TEMATEM jest słownictwo sprzed przemianowania.
+ *
+ * Zasiew testu migracji musi nazywać kolumny, klucze i wartości dokładnie tak, jak
+ * nazywały się przedtem — inaczej sprawdzałby migrację przeciwko wyobrażeniu o przeszłości
+ * zamiast przeciwko przeszłości, a to jest dokładnie ten błąd, przez który migracja szukała
+ * slugu `biala-list` i nie trafiała w ani jeden wiersz.
+ *
+ * Wyjątek jest CAŁOPLIKOWY, bo polszczyzna jest tu treścią, nie niedopatrzeniem — i dlatego
+ * lista poniżej ma przypiętą asercję: żeby drugi taki plik wymagał świadomej zgody.
+ */
+const HISTORICAL_VOCABULARY = ["packages/@cortex/desk-core/src/db.migration.integration.test.ts"]
+
 /** Właściwości, których wartość jest IDENTYFIKATOREM, choć bywa napisem. */
 const DISCRIMINANT_PROPERTIES = new Set([
   "typ",
@@ -379,6 +397,16 @@ const DISCRIMINANT_PROPERTIES = new Set([
   "zrodlo",
   "skad",
   "kind",
+  // Dopisane po przemianowaniu Biurka. Każde z tych pól przenosi WARTOŚĆ, która jest
+  // identyfikatorem — na drucie między przeglądarką a trasą (`action`) albo w bazie
+  // (`status`). Przemianowanie ominęło je wszystkie, bo bramka patrzyła wyłącznie na
+  // nazwy: trasa MCP przyjmowała `action: "dodaj"`, a ekran przełożonego porównywał
+  // `status === "wstrzymane"` z bazą zapisującą już `suspended`, więc ostrzeżenie
+  // o wstrzymanym narzędziu po cichu przestało się pokazywać.
+  "action",
+  "status",
+  "state",
+  "mode",
 ])
 
 function listSources(root: string): string[] {
@@ -388,6 +416,7 @@ function listSources(root: string): string[] {
     .filter((file) => !SKIPPED_DIRS.some((part) => file.includes(`/${part}/`)))
     .filter((file) => !SCENARIO_FILES.test(file))
     .filter((file) => !DEFERRED_DIRS.some((dir) => file.startsWith(dir)))
+    .filter((file) => !HISTORICAL_VOCABULARY.includes(file))
 }
 
 const scanned = [...listSources("app"), ...listSources("apps"), ...listSources("packages")]
@@ -452,15 +481,48 @@ function declaredNames(source: ts.SourceFile): string[] {
  */
 function identifierLikeStrings(source: ts.SourceFile): string[] {
   const collected: string[] = []
+  const discriminant = (key: string) =>
+    DISCRIMINANT_PROPERTIES.has(key) && !PROSE_PROPERTIES.has(key)
+  const take = (key: string, node: ts.Node, where: string) => {
+    if (ts.isStringLiteralLike(node))
+      collected.push(...offences(node.text).map((o) => `${o} (${where} ${key})`))
+  }
+
   const visit = (node: ts.Node): void => {
+    // `{ action: "dodaj" }` — wartość wpisana w miejscu użycia
     if (ts.isPropertyAssignment(node)) {
       const key = node.name.getText(source).replace(/["']/g, "")
-      if (
-        DISCRIMINANT_PROPERTIES.has(key) &&
-        !PROSE_PROPERTIES.has(key) &&
-        ts.isStringLiteralLike(node.initializer)
-      ) {
-        collected.push(...offences(node.initializer.text).map((o) => `${o} (pole ${key})`))
+      if (discriminant(key)) take(key, node.initializer, "pole")
+    }
+    // `d.action === "dodaj"` — druga strona tego samego drutu. Bez tego bramka
+    // przepuszcza połowę: nadawcę łapie, odbiorcy nie widzi.
+    if (
+      ts.isBinaryExpression(node) &&
+      [ts.SyntaxKind.EqualsEqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsEqualsToken].includes(
+        node.operatorToken.kind,
+      )
+    ) {
+      for (const [side, other] of [
+        [node.left, node.right],
+        [node.right, node.left],
+      ] as const) {
+        const key = ts.isPropertyAccessExpression(side)
+          ? side.name.text
+          : ts.isElementAccessExpression(side) && ts.isStringLiteralLike(side.argumentExpression)
+            ? side.argumentExpression.text
+            : null
+        if (key && discriminant(key)) take(key, other, "porównanie z")
+      }
+    }
+    // `status: "zatwierdzone" | "wstrzymane"` — deklaracja, czyli miejsce, w którym
+    // stara wartość przeżywa najdłużej, bo `tsc` nie ma jej z czym skonfrontować.
+    if (ts.isPropertySignature(node) && node.type) {
+      const key = node.name.getText(source).replace(/["']/g, "")
+      if (discriminant(key)) {
+        const members = ts.isUnionTypeNode(node.type) ? node.type.types : [node.type]
+        for (const m of members) {
+          if (ts.isLiteralTypeNode(m)) take(key, m.literal, "typ pola")
+        }
       }
     }
     ts.forEachChild(node, visit)
@@ -481,6 +543,12 @@ describe("kod pisze się po angielsku", () => {
     // Biurka przeszło przemianowanie razem ze schematem bazy i danymi. Dopisanie
     // czegokolwiek tutaj wymaga zmiany TEJ asercji — i to jest cała jej rola.
     expect(DEFERRED_DIRS).toEqual([])
+  })
+
+  it("tylko jeden plik ma prawo mówić starym słownictwem", () => {
+    expect(HISTORICAL_VOCABULARY).toEqual([
+      "packages/@cortex/desk-core/src/db.migration.integration.test.ts",
+    ])
   })
 
   // JEDEN przypadek na katalog, nie jeden na plik. `it.each` po tysiącu plików wygląda
@@ -539,6 +607,32 @@ describe("strażnik naprawdę odrzuca polszczyznę", () => {
       "polskie słowo „typ” w nazwie: typ",
       "polskie słowo „zdarzenie” w nazwie: zdarzenie (pole typ)",
     ])
+  })
+
+  it("porównanie z polską wartością jest odrzucone po OBU stronach", () => {
+    // Nadawca i odbiorca tej samej wartości mieszkają w dwóch pakietach. Bramka, która
+    // widzi tylko nadawcę, przepuszcza rozjazd — tak przeżyło `status === "wstrzymane"`
+    // przy bazie zapisującej już `suspended`.
+    expect(inspect('if (d.action === "zatwierdz") {}')).toEqual([
+      "polskie słowo „zatwierdz” w nazwie: zatwierdz (porównanie z action)",
+    ])
+    expect(inspect('if ("wstrzymane" !== tool.status) {}')).toEqual([
+      "polskie słowo „wstrzymane” w nazwie: wstrzymane (porównanie z status)",
+    ])
+  })
+
+  it("polska wartość w TYPIE pola dyskryminującego jest odrzucona", () => {
+    expect(inspect('type T = { status: "zatwierdzone" | "wstrzymane" }')).toEqual([
+      "polskie słowo „zatwierdzone” w nazwie: zatwierdzone (typ pola status)",
+      "polskie słowo „wstrzymane” w nazwie: wstrzymane (typ pola status)",
+    ])
+  })
+
+  it("proza pod polem opisowym dalej przechodzi", () => {
+    // Rozszerzenie o `status`/`action` nie ma prawa złapać zdania dla człowieka.
+    expect(inspect('const x = { status: "approved", message: "Nie udało się zapisać." }')).toEqual(
+      [],
+    )
   })
 
   it("polska nazwa katalogu też się liczy", () => {

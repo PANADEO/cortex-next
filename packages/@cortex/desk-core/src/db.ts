@@ -118,6 +118,16 @@ async function renameSchemaObjects() {
         alter table desk.mcp_tool rename constraint narzedzie_mcp_pkey to mcp_tool_pkey;
       end if;
 
+      -- Klucze obce mają własne nazwy i też ich nie niesie przemianowanie tabeli. Nie widzi
+      -- ich żaden ekran, ale widzi je każdy, kto zajrzy do bazy — a wtedy polska nazwa
+      -- ograniczenia mówi, że przemianowanie było niepełne.
+      if exists (select 1 from pg_constraint where conname='narzedzie_mcp_serwer_fkey') then
+        alter table desk.mcp_tool rename constraint narzedzie_mcp_serwer_fkey to mcp_tool_server_fkey;
+      end if;
+      if exists (select 1 from pg_constraint where conname='zdarzenie_sprawa_id_fkey') then
+        alter table desk.event rename constraint zdarzenie_sprawa_id_fkey to event_case_id_fkey;
+      end if;
+
       -- Tabela grant nazywała się tak od początku; przemianowania wymagają tylko kolumny.
       if exists (select 1 from information_schema.columns
                  where table_schema='desk' and table_name='grant' and column_name='kto') then
@@ -238,7 +248,7 @@ async function renameStoredValues() {
   // Nietknięte, opisywałyby czynność nazwą, której katalog już nie zna.
   await pool.query(`
     update desk.audit_log set details = jsonb_set(details, '{serwer}', to_jsonb('vat-registry'::text))
-    where details ->> 'serwer' = 'biala-list';
+    where details ->> 'serwer' = 'biala-lista';
   `)
   await pool.query(`
     update desk.audit_log set details = jsonb_set(details, '{narzedzie}', to_jsonb(
@@ -250,7 +260,7 @@ async function renameStoredValues() {
   `)
   await pool.query(`
     update desk.audit_log set details = jsonb_set(details, '{nazwa}', to_jsonb('vat-registry'::text))
-    where type = 'mcp.server.added' and details ->> 'nazwa' = 'biala-list';
+    where type = 'mcp.server.added' and details ->> 'nazwa' = 'biala-lista';
   `)
 
   // Klucze `details` dziennika — ta sama zasada co w `payload` zdarzeń. Wpis `pliki.<akcja>`
@@ -268,13 +278,28 @@ async function renameStoredValues() {
           when 'rozmiar' then 'size' when 'gdzie' then 'target' when 'co' then 'what'
           when 'spraw' then 'cases' when 'sciezka' then 'path'
           when 'akcja' then 'action' when 'z' then 'from' when 'do' then 'to'
-          when 'kiedy' then 'when' else k end,
+          when 'kiedy' then 'when'
+          -- surowy i gdyKolizja nie były w pierwszej wersji tej mapy, bo obu nie widać
+          -- w żadnym wywołaniu audit.write — pierwszy dopisuje treść wyjątku przy błędzie
+          -- tury, drugi wjeżdża CAŁYM ciałem żądania plików. Klucz, którego nikt nie wpisał
+          -- z ręki, jest dokładnie tym, który wypada z mapy pisanej z czytania kodu.
+          when 'surowy' then 'raw' when 'gdyKolizja' then 'onCollision' else k end,
         v)
       from jsonb_each(details) as pole(k, v)
     )
     where details ?| array['sprawaId','odcisk','zdolnosc','zdolnosci','kosztUsd','skadKoszt',
                            'powod','komu','opis','nazwa','serwer','narzedzie','narzedzi',
-                           'rozmiar','gdzie','co','spraw','sciezka','akcja','z','do','kiedy'];
+                           'rozmiar','gdzie','co','spraw','sciezka','akcja','z','do','kiedy',
+                           'surowy','gdyKolizja'];
+  `)
+
+  // Wartość przy `onCollision` jest decyzją użytkownika, nie tekstem — i też się zmieniła.
+  await pool.query(`
+    update desk.audit_log set details = jsonb_set(details, '{onCollision}',
+      to_jsonb(case details ->> 'onCollision'
+        when 'blad' then 'error' when 'obie' then 'both'
+        else details ->> 'onCollision' end))
+    where details ? 'onCollision';
   `)
 
   // Nazwy narzędzi i nazwy ich argumentów też są kodem, więc też się zmieniły. Stare
@@ -304,25 +329,58 @@ async function renameStoredValues() {
   // Konektor „biała lista" jest NASZ, więc jego slug i nazwy narzędzi zmieniły się razem
   // z resztą kodu. Odcisk obejmuje DOKŁADNIE te dwie nazwy, więc jedzie w tym samym kroku:
   // inaczej straż przed dryfem wstrzymałaby narzędzie za zmianę, której serwer nie zrobił.
+  //
+  // Slug brzmi `biala-lista` i tylko tak. Pierwsze wydanie tej migracji szukało `biala-list`,
+  // bo zbiorcza podmiana `lista`→`list` zjadła ogon w literałach SQL. Skutek: migracja nie
+  // trafiała w ani jeden wiersz, zasiew zakładał `vat-registry` OBOK nietkniętej `biala-listy`,
+  // a klient MCP szedł do starego serwera po `sprawdz_nip` — którego ten serwer już nie
+  // wystawia. Pracownik dostawał komunikat o dryfie zamiast wyniku. Dlatego poniżej jest
+  // SCALENIE, nie samo przemianowanie: każda baza, która to wydanie uruchomiła, stoi dziś
+  // z dwoma serwerami naraz i musi z tego wyjść przy najbliższym starcie.
+  //
+  // Kolejność jest regułą: nazwy narzędzi zmieniamy JESZCZE POD starym serwerem, bo klucz
+  // główny to (server, remote_name) — przeniesienie najpierw wepchnęłoby `sprawdz_nip` obok
+  // `vat_status`, a przemianowanie zaraz potem złamałoby klucz i wywaliło start aplikacji.
+  await pool.query(`
+    update desk.mcp_tool t set remote_name = m.nowa, fingerprint = m.odcisk
+    from (values
+      ('sprawdz_nip', 'vat_status',
+       '5c8b05965afd3c3d2994872d4fb9fc70fa20486b30d5edaebb87d882b0ed51e3'),
+      ('sprawdz_rachunek', 'bank_account_check',
+       '19c8a3199bbd49bac72fdf5db8b254ce1e7e537288971e9f036c893cbcccf693')
+    ) as m(stara, nowa, odcisk)
+    where t.server='biala-lista' and t.remote_name = m.stara;
+  `)
+
+  // Wstrzymanie znaczy „nie, dopóki człowiek nie obejrzy". Scalenie dwóch wierszy w jeden
+  // nie może tej decyzji zgubić, więc jeśli którykolwiek był wstrzymany, wstrzymany zostaje
+  // ten, który przeżyje. Odwrotnie byłoby cichym przywróceniem cofniętej zgody.
+  await pool.query(`
+    update desk.mcp_tool o set status='suspended', reason=coalesce(o.reason, t.reason)
+    from desk.mcp_tool t
+    where o.server='biala-lista' and t.server='vat-registry'
+      and t.remote_name = o.remote_name and t.status='suspended';
+  `)
+
+  // Wiersz pod `vat-registry` mógł powstać wyłącznie z zasiewu po nietrafionej migracji —
+  // prawdziwa zgoda człowieka wisi pod starym slugiem, razem z jego nazwiskiem i datą.
+  // Zasiew ustępuje; podpis zostaje.
+  await pool.query(`
+    delete from desk.mcp_tool t
+    where t.server='vat-registry'
+      and exists (select 1 from desk.mcp_tool o
+                  where o.server='biala-lista' and o.remote_name = t.remote_name);
+  `)
+
   // Klucz obcy nie ma `on update cascade`, więc nowy wiersz serwera powstaje obok starego,
   // narzędzia przechodzą na niego, a stary wiersz znika.
   await pool.query(`
     insert into desk.mcp_server (name, label, url, added_by, at)
-    select 'vat-registry', label, url, added_by, at from desk.mcp_server where name='biala-list'
+    select 'vat-registry', label, url, added_by, at from desk.mcp_server where name='biala-lista'
     on conflict (name) do nothing;
   `)
-  await pool.query(`update desk.mcp_tool set server='vat-registry' where server='biala-list';`)
-  await pool.query(`delete from desk.mcp_server where name='biala-list';`)
-  await pool.query(`
-    update desk.mcp_tool set remote_name='vat_status',
-      fingerprint='5c8b05965afd3c3d2994872d4fb9fc70fa20486b30d5edaebb87d882b0ed51e3'
-    where server='vat-registry' and remote_name='sprawdz_nip';
-  `)
-  await pool.query(`
-    update desk.mcp_tool set remote_name='bank_account_check',
-      fingerprint='19c8a3199bbd49bac72fdf5db8b254ce1e7e537288971e9f036c893cbcccf693'
-    where server='vat-registry' and remote_name='sprawdz_rachunek';
-  `)
+  await pool.query(`update desk.mcp_tool set server='vat-registry' where server='biala-lista';`)
+  await pool.query(`delete from desk.mcp_server where name='biala-lista';`)
   await pool.query(`
     update desk.event set payload = jsonb_set(payload, '{nazwa}', to_jsonb(
       case payload ->> 'nazwa'

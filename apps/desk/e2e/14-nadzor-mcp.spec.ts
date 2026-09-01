@@ -36,7 +36,7 @@ test.describe("Obszar 26 · Katalog serwerów należy do przełożonego, nie do 
     expect((await request.get("/api/mcp", { headers: ANNA })).status()).toBe(403)
     const proba = await request.post("/api/mcp", {
       headers: ANNA,
-      data: { action: "wycofaj", server: "vat-registry", remoteName: "vat_status" },
+      data: { action: "withdraw", server: "vat-registry", remoteName: "vat_status" },
     })
     expect(proba.status()).toBe(403)
   })
@@ -68,7 +68,7 @@ test.describe("Obszar 26 · Katalog serwerów należy do przełożonego, nie do 
     const r = await request.post("/api/mcp", {
       headers: ROBERT,
       data: {
-        action: "zatwierdz",
+        action: "approve",
         server: "vat-registry",
         remoteName: "vat_status",
         description: "  ",
@@ -86,7 +86,7 @@ test.describe("Obszar 26 · Katalog serwerów należy do przełożonego, nie do 
     const r = await request.post("/api/mcp", {
       headers: ROBERT,
       data: {
-        action: "zatwierdz",
+        action: "approve",
         server: "vat-registry",
         remoteName: "vat_status",
         description: OPIS,
@@ -100,7 +100,7 @@ test.describe("Obszar 26 · Katalog serwerów należy do przełożonego, nie do 
   test("Serwer musi mieć adres http — stdio jest zabronione", async ({ request }) => {
     const r = await request.post("/api/mcp", {
       headers: ROBERT,
-      data: { action: "dodaj", name: "lokalny", label: "Lokalny", url: "stdio:///usr/bin/cos" },
+      data: { action: "add", name: "lokalny", label: "Lokalny", url: "stdio:///usr/bin/cos" },
     })
     expect(r.status()).toBe(400)
   })
@@ -115,7 +115,7 @@ test.describe("Obszar 27 · Odcisk wiąże zgodę ze słowami człowieka, nie ty
     const r = await request.post("/api/mcp", {
       headers: ROBERT,
       data: {
-        action: "zatwierdz",
+        action: "approve",
         server: "vat-registry",
         remoteName: "vat_status",
         description: "Zupełnie inny opis tej samej czynności, napisany przez kogoś innego.",
@@ -133,7 +133,7 @@ test.describe("Obszar 27 · Odcisk wiąże zgodę ze słowami człowieka, nie ty
     await request.post("/api/mcp", {
       headers: ROBERT,
       data: {
-        action: "zatwierdz",
+        action: "approve",
         server: "vat-registry",
         remoteName: "vat_status",
         description: OPIS,
@@ -146,7 +146,7 @@ test.describe("Obszar 27 · Odcisk wiąże zgodę ze słowami człowieka, nie ty
   test("Wycofanie usuwa narzędzie z katalogu, a dziennik zapamiętuje kto", async ({ request }) => {
     await request.post("/api/mcp", {
       headers: ROBERT,
-      data: { action: "wycofaj", server: "vat-registry", remoteName: "bank_account_check" },
+      data: { action: "withdraw", server: "vat-registry", remoteName: "bank_account_check" },
     })
     const s = await vatRegistry(request)
     expect(s.tools.some((n) => n.remoteName === "bank_account_check")).toBe(false)
@@ -155,7 +155,7 @@ test.describe("Obszar 27 · Odcisk wiąże zgodę ze słowami człowieka, nie ty
     const wraca = await request.post("/api/mcp", {
       headers: ROBERT,
       data: {
-        action: "zatwierdz",
+        action: "approve",
         server: "vat-registry",
         remoteName: "bank_account_check",
         description:

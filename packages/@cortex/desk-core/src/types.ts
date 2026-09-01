@@ -67,6 +67,15 @@ export type Case = {
   reason: string | null
 }
 
+/**
+ * Stan zgody na narzędzie z serwera MCP. Stoi TUTAJ, a nie osobno w katalogu i osobno
+ * w ekranie przełożonego, bo raz już się rozjechał: po przemianowaniu baza zaczęła
+ * zapisywać `suspended`, a ekran dalej porównywał z `wstrzymane` — czyli ostrzeżenie
+ * o wstrzymanym narzędziu przestało się pokazywać, i to bez jednego błędu kompilacji,
+ * bo odpowiedź z `fetch` jest nietypowana. Wspólny typ zamienia to w błąd `tsc`.
+ */
+export type McpToolStatus = "approved" | "suspended"
+
 export type AuditEntry = { seq: number; at: string; event: DeskEvent }
 
 export type FileMeta = {

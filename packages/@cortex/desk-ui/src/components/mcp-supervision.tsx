@@ -1,5 +1,5 @@
 "use client"
-import type { Capability } from "@cortex/desk-core/types"
+import type { Capability, McpToolStatus } from "@cortex/desk-core/types"
 import { Globe, Plus, RefreshCw, ShieldAlert, TriangleAlert, X } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { api } from "../routes"
@@ -13,7 +13,7 @@ type Tool = {
   shortLabel: string
   capabilityId: string
   fingerprint: string
-  status: "zatwierdzone" | "wstrzymane"
+  status: McpToolStatus
   reason: string | null
   approvedBy: string
 }
@@ -70,7 +70,7 @@ export function McpSupervision() {
   }
 
   async function inspect(s: Server) {
-    const d = await send({ action: "przejrzyj", server: s.name }, `p:${s.name}`)
+    const d = await send({ action: "inspect", server: s.name }, `p:${s.name}`)
     if (d) setCandidates((k) => ({ ...k, [s.name]: d.candidates }))
   }
 
@@ -112,7 +112,7 @@ export function McpSupervision() {
               {s.tools.map((n) => (
                 <li key={n.remoteName} className="px-4 py-3">
                   <div className="flex items-start gap-2">
-                    {n.status === "wstrzymane" && (
+                    {n.status === "suspended" && (
                       <Icon as={ShieldAlert} px={16} className="mt-0.5 shrink-0 text-desk-warn" />
                     )}
                     <div className="min-w-0 flex-1">
@@ -123,7 +123,7 @@ export function McpSupervision() {
                         {capabilities.find((z) => z.id === n.capabilityId)?.name ?? n.capabilityId}”
                         {" · "}przyjął {n.approvedBy}
                       </div>
-                      {n.status === "wstrzymane" && (
+                      {n.status === "suspended" && (
                         <p className="t-meta mt-1.5 rounded-md bg-desk-warn-soft px-2.5 py-1.5">
                           <span className="font-medium text-desk-ink">Wstrzymane.</span> {n.reason}{" "}
                           Do czasu ponownego przyjęcia asystent tego nie dostaje.
@@ -134,7 +134,7 @@ export function McpSupervision() {
                       onClick={async () => {
                         if (
                           await send(
-                            { action: "wycofaj", server: n.server, remoteName: n.remoteName },
+                            { action: "withdraw", server: n.server, remoteName: n.remoteName },
                             `w:${n.remoteName}`,
                           )
                         ) {
@@ -166,7 +166,7 @@ export function McpSupervision() {
                       accept={async (description, shortLabel, capability) => {
                         const d = await send(
                           {
-                            action: "zatwierdz",
+                            action: "approve",
                             server: s.name,
                             remoteName: k.remoteName,
                             description,
@@ -194,7 +194,7 @@ export function McpSupervision() {
         <NewServer
           cancel={() => setNewForm(false)}
           add={async (name, label, url) => {
-            if (await send({ action: "dodaj", name, label, url }, "nowy")) {
+            if (await send({ action: "add", name, label, url }, "new")) {
               setNewForm(false)
               toast({ text: `Dodano serwer ${label}` })
               load()
@@ -232,7 +232,7 @@ function Candidate({
   const [capability, setCapability] = useState(
     k.previous?.capabilityId ?? capabilities[0]?.id ?? "",
   )
-  const again = k.previous?.status === "wstrzymane"
+  const again = k.previous?.status === "suspended"
 
   if (k.rejected) {
     return (
