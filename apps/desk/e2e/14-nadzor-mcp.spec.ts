@@ -53,7 +53,7 @@ test.describe("Obszar 26 · Katalog serwerów należy do przełożonego, nie do 
     page,
   }) => {
     await as(page, "robert")
-    await page.goto("/supervision")
+    await page.goto("/supervision?section=tools")
     await page.getByRole("button", { name: "Przejrzyj" }).first().click()
 
     await expect(page.getByText("Co ten serwer wystawia")).toBeVisible()

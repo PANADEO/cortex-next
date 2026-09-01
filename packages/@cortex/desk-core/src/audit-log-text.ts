@@ -15,15 +15,22 @@ const firstName = (id: unknown) => {
 /**
  * Dziennik czyta audytor, nie programista — więc surowy JSON nigdy nie trafia na ekran.
  * Nieznany typ opisujemy uczciwie jako nieznany, zamiast udawać, że rozumiemy.
+ *
+ * CZAS TERAŹNIEJSZY, i to nie jest kwestia stylu. Zdania stały wcześniej w czasie
+ * przeszłym, czyli w polszczyźnie MIAŁY RODZAJ — i były pisane pod Annę, więc Robertowi
+ * dziennik pokazywał „Robert przyjęła narzędzie". Część wpisów miała przy tym rodzaj
+ * męski (`przyznał`, `cofnął`), więc dla każdej osoby połowa zdań była błędna.
+ * Rodzaju nie ma skąd wziąć: `User` go nie niesie i nie powinien. Czas teraźniejszy
+ * rodzaju nie ma wcale, a w dzienniku z godziną obok czyta się naturalnie.
  */
 export function describeEntry(w: AuditEntry): { text: string; weight: "normal" | "important" } {
   const s = w.details ?? {}
   switch (w.type) {
     case "case.created":
-      return { text: "założyła nową sprawę", weight: "normal" }
+      return { text: "zakłada nową sprawę", weight: "normal" }
     case "turn.start":
       return {
-        text: `zleciła pracę · zakres uprawnień ${s.fingerprint ?? "?"} (${Array.isArray(s.capabilities) ? s.capabilities.length : "?"} zdolności)`,
+        text: `zleca pracę · zakres uprawnień ${s.fingerprint ?? "?"} (${Array.isArray(s.capabilities) ? s.capabilities.length : "?"} zdolności)`,
         weight: "normal",
       }
     case "turn.end":
@@ -37,59 +44,59 @@ export function describeEntry(w: AuditEntry): { text: string; weight: "normal" |
           }
         : { text: "praca zakończona", weight: "normal" }
     case "turn.stopped":
-      return { text: "zatrzymała pracę agenta", weight: "normal" }
+      return { text: "zatrzymuje pracę agenta", weight: "normal" }
     case "turn.failed":
       return { text: `praca nie powiodła się: ${s.reason ?? "bez powodu"}`, weight: "important" }
     case "request.opened":
-      return { text: `poprosiła o zdolność „${capabilityName(s.capability)}”`, weight: "important" }
+      return { text: `prosi o zdolność „${capabilityName(s.capability)}”`, weight: "important" }
     case "request.granted":
       return {
-        text: `przyznał zdolność „${capabilityName(s.capability)}” osobie ${firstName(s.toWhom)}`,
+        text: `przyznaje zdolność „${capabilityName(s.capability)}” osobie ${firstName(s.toWhom)}`,
         weight: "important",
       }
     case "request.denied":
       return {
-        text: `odmówił zdolności „${capabilityName(s.capability)}” osobie ${firstName(s.toWhom)}`,
+        text: `odmawia zdolności „${capabilityName(s.capability)}” osobie ${firstName(s.toWhom)}`,
         weight: "important",
       }
     case "request.other":
       return {
-        text: `poprosiła o coś spoza katalogu: „${s.description ?? ""}”`,
+        text: `prosi o coś spoza katalogu: „${s.description ?? ""}”`,
         weight: "important",
       }
     case "capability.revoked":
       return {
-        text: `cofnął zdolność „${capabilityName(s.capability)}” osobie ${firstName(s.toWhom)}`,
+        text: `cofa zdolność „${capabilityName(s.capability)}” osobie ${firstName(s.toWhom)}`,
         weight: "important",
       }
     case "capability.missing":
-      return { text: `napotkała brak zdolności: ${s.description ?? ""}`, weight: "important" }
+      return { text: `napotyka brak zdolności: ${s.description ?? ""}`, weight: "important" }
     case "access.denied":
       return { text: "próba sięgnięcia po cudze — odrzucona", weight: "important" }
     case "files.upload":
-      return { text: `wgrała plik ${s.name ?? ""}`, weight: "normal" }
+      return { text: `wgrywa plik ${s.name ?? ""}`, weight: "normal" }
     case "files.trash":
-      return { text: `usunęła plik ${s.path ?? ""}`, weight: "normal" }
+      return { text: `usuwa plik ${s.path ?? ""}`, weight: "normal" }
     case "files.restore":
-      return { text: "przywróciła plik z kosza", weight: "normal" }
+      return { text: "przywraca plik z kosza", weight: "normal" }
     case "files.move":
-      return { text: `przeniosła plik ${s.z ?? ""}`, weight: "normal" }
+      return { text: `przenosi plik ${s.from ?? ""}`, weight: "normal" }
     case "files.copy":
-      return { text: `skopiowała plik ${s.z ?? ""}`, weight: "normal" }
+      return { text: `kopiuje plik ${s.from ?? ""}`, weight: "normal" }
     case "files.folder":
-      return { text: `utworzyła folder ${s.path ?? ""}`, weight: "normal" }
+      return { text: `tworzy folder ${s.path ?? ""}`, weight: "normal" }
     case "mcp.server.added":
-      return { text: `dodała serwer narzędzi ${s.name ?? ""}`, weight: "important" }
+      return { text: `dodaje serwer narzędzi ${s.name ?? ""}`, weight: "important" }
     case "mcp.server.inspected":
-      return { text: `przejrzała, co wystawia serwer ${s.server ?? ""}`, weight: "normal" }
+      return { text: `przegląda, co wystawia serwer ${s.server ?? ""}`, weight: "normal" }
     case "mcp.tool.approved":
       return {
-        text: `przyjęła narzędzie ${s.tool ?? ""} z serwera ${s.server ?? ""}`,
+        text: `przyjmuje narzędzie ${s.tool ?? ""} z serwera ${s.server ?? ""}`,
         weight: "important",
       }
     case "mcp.tool.withdrawn":
       return {
-        text: `wycofała narzędzie ${s.tool ?? ""} z serwera ${s.server ?? ""}`,
+        text: `wycofuje narzędzie ${s.tool ?? ""} z serwera ${s.server ?? ""}`,
         weight: "important",
       }
     case "mcp.tool.suspended":

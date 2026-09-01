@@ -3,8 +3,8 @@ import { USERS, identity } from "@cortex/desk-core/identity"
 import { Icon } from "@cortex/desk-ui/components/icon"
 import { Avatar, Persona } from "@cortex/desk-ui/components/persona-switcher"
 import { Shell } from "@cortex/desk-ui/components/shell"
-import { t } from "@cortex/desk-ui/routes"
-import { ChevronRight, ListChecks } from "lucide-react"
+import { HUB, MOUNTED_IN_SHELL, t } from "@cortex/desk-ui/routes"
+import { ChevronRight, LayoutGrid, ListChecks } from "lucide-react"
 import Link from "next/link"
 
 /** Zakładka „Ja" istnieje po to, żeby na telefonie było gdzie trzymać rzeczy sprzed sprawy. */
@@ -37,6 +37,19 @@ export default async function Page() {
               </span>
               <Icon as={ChevronRight} px={16} className="text-desk-muted" />
             </Link>
+
+            {/* Na telefonie kolumna po lewej jest schowana, więc to jedyne miejsce,
+                z którego da się wrócić do katalogu aplikacji. */}
+            {MOUNTED_IN_SHELL && (
+              <Link
+                href={HUB}
+                className="flex h-desk-row items-center gap-2.5 border-t px-4 hover:bg-desk-raised/60"
+              >
+                <Icon as={LayoutGrid} px={16} className="text-desk-muted" />
+                <span className="t-body flex-1">Wszystkie aplikacje Cortex</span>
+                <Icon as={ChevronRight} px={16} className="text-desk-muted" />
+              </Link>
+            )}
           </div>
 
           {switchable && (

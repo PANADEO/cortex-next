@@ -1,10 +1,11 @@
 import { policyFor } from "@cortex/desk-core/capability-gate"
 import { migrate, pool } from "@cortex/desk-core/db"
 import { USERS, identity } from "@cortex/desk-core/identity"
-import { ChevronRight, FolderOpen, ListChecks, Plus, ShieldCheck } from "lucide-react"
+import { ChevronRight, FolderOpen, LayoutGrid, ListChecks, Plus, ShieldCheck } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 import { count, when } from "../lib"
-import { BASE, t } from "../routes"
+import { BASE, HUB, MOUNTED_IN_SHELL, t } from "../routes"
 import { BottomBar } from "./bottom-bar"
 import { Icon } from "./icon"
 import { Persona, PersonaCard } from "./persona-switcher"
@@ -50,9 +51,29 @@ export async function Shell({
           powłoką nie przemalowały pozostałych kafelków. */}
       <div className="desk flex h-screen overflow-hidden">
         <aside className="hidden w-desk-side shrink-0 flex-col border-r bg-desk-surface md:flex">
-          <div className="border-b p-3">
-            {switchable ? <Persona me={u} everyone={USERS} /> : <PersonaCard me={u} />}
-          </div>
+          {/* Wyjście do katalogu aplikacji stoi NA GÓRZE, a osoba na dole — odwrotnie
+              niż dotąd. Powód jest jeden i nie jest estetyczny: z kafelka nie dało się
+              wyjść inaczej niż przez pasek adresu, bo jedyną rzeczą u góry była
+              wizytówka. Logo w lewym górnym rogu wraca do początku w każdym produkcie,
+              który ten użytkownik zna, więc tam go szuka. Tak samo robi Cortex Cowork. */}
+          {MOUNTED_IN_SHELL && (
+            <Link
+              href={HUB}
+              title="Wszystkie aplikacje Cortex"
+              aria-label="Wszystkie aplikacje Cortex"
+              className="flex h-desk-bar shrink-0 items-center gap-2 border-b px-4 hover:bg-desk-raised/70"
+            >
+              <Image
+                src="/cortex-logo.png"
+                alt=""
+                width={20}
+                height={20}
+                className="shrink-0 dark:hue-rotate-180 dark:invert"
+              />
+              <span className="t-body-m min-w-0 flex-1 truncate">Biurko</span>
+              <Icon as={LayoutGrid} px={16} className="shrink-0 text-desk-muted" />
+            </Link>
+          )}
 
           <div className="p-3">
             <Link
@@ -137,6 +158,10 @@ export async function Shell({
                 "Pliki zostają na serwerze firmy. Do modelu trafia tylko ta treść, którą asystent musi przeczytać, żeby wykonać zlecenie."
               }
             </p>
+          </div>
+
+          <div className="border-t p-3">
+            {switchable ? <Persona me={u} everyone={USERS} /> : <PersonaCard me={u} />}
           </div>
         </aside>
 

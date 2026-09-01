@@ -96,10 +96,12 @@ test.describe("Obszar 10 · Governance widać na ekranie", () => {
       data: { capability: "image.generate" },
     })
     await as(page, "robert")
-    await page.goto("/supervision")
+    // Dziennik ma własną sekcję ekranu nadzoru — adres jest jej pełnym stanem.
+    await page.goto("/supervision?section=log")
     const audit = page.getByRole("heading", { name: "Co się działo" })
     await expect(audit).toBeVisible()
-    await expect(page.getByText("poprosiła o zdolność „Generowanie obrazów”").first()).toBeVisible()
+    // Czas teraźniejszy, bo przeszły ma w polszczyźnie rodzaj, a dziennik go nie zna.
+    await expect(page.getByText("prosi o zdolność „Generowanie obrazów”").first()).toBeVisible()
     await expect(page.getByText(/\{"|\}/)).toHaveCount(0)
   })
 })

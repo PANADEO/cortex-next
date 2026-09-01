@@ -260,3 +260,85 @@ describe("przeglądarka i trasa nazywają pola tak samo", () => {
     expect(keys.filter((k) => !fieldsReadByRoute("files.ts").includes(k))).toEqual(["z"])
   })
 })
+
+/**
+ * Druga strona tej samej granicy: dziennik.
+ *
+ * `audit.write(kto, typ, szczegoly)` przyjmuje `Record<string, unknown>`, a `describeEntry`
+ * czyta z niego pola po nazwie. Żadna z tych stron nie wie o drugiej, więc przemianowanie
+ * `z` → `from` zabrało opisom plików nazwę pliku: „przeniosła plik " i puste miejsce, na
+ * ekranie audytora, bez błędu. Dziennik jest w tym produkcie dowodem — wpis, który nie mówi
+ * CZEGO dotyczył, nie jest dowodem.
+ */
+const AUDIT_WRITERS = ["packages/@cortex/desk-app/src/api", "packages/@cortex/desk-core/src"]
+
+/**
+ * `files.ts` loguje CAŁE ciało żądania — trzecim argumentem `audit.write` jest tam samo `b`,
+ * więc jego klucze to klucze tej trasy — jedyne miejsce, gdzie zapisane pola nie stoją
+ * w literale. Świadomie wymienione, a nie zgadywane z gwiazdki.
+ */
+const WHOLE_BODY_WRITERS = ["files.ts"]
+
+function auditKeysWritten(): string[] {
+  const keys = new Set<string>()
+  for (const root of AUDIT_WRITERS) {
+    const files = readdirSync(path.join(repoRoot, root), { recursive: true, encoding: "utf8" })
+      .map((entry) => `${root}/${entry.split(path.sep).join("/")}`)
+      .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
+    for (const relative of files) {
+      const source = parse(relative)
+      const visit = (node: ts.Node): void => {
+        if (
+          ts.isCallExpression(node) &&
+          /^(audit|dziennik)\.write$/.test(node.expression.getText(source)) &&
+          node.arguments[2] &&
+          ts.isObjectLiteralExpression(node.arguments[2])
+        ) {
+          for (const prop of node.arguments[2].properties) {
+            if (prop.name && (ts.isIdentifier(prop.name) || ts.isStringLiteralLike(prop.name)))
+              keys.add(prop.name.text)
+          }
+        }
+        ts.forEachChild(node, visit)
+      }
+      visit(source)
+    }
+  }
+  for (const module of WHOLE_BODY_WRITERS) for (const k of fieldsReadByRoute(module)) keys.add(k)
+  return [...keys].sort()
+}
+
+/** Pola, które opis dziennika odczytuje ze `szczegolow`. */
+function auditKeysRead(): string[] {
+  const relative = "packages/@cortex/desk-core/src/audit-log-text.ts"
+  const source = parse(relative)
+  const keys = new Set<string>()
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isPropertyAccessExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === "s"
+    ) {
+      keys.add(node.name.text)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  return [...keys].sort()
+}
+
+describe("dziennik zapisuje te pola, które opis odczytuje", () => {
+  it("obie strony naprawdę coś zwracają", () => {
+    expect(auditKeysWritten().length).toBeGreaterThan(10)
+    expect(auditKeysRead().length).toBeGreaterThan(8)
+  })
+
+  it("opis nie sięga po pole, którego nikt nie zapisuje", () => {
+    const written = auditKeysWritten()
+    expect(auditKeysRead().filter((k) => !written.includes(k))).toEqual([])
+  })
+
+  it("strażnik naprawdę odrzuca pole spoza zapisu", () => {
+    expect(auditKeysWritten()).not.toContain("z")
+  })
+})
