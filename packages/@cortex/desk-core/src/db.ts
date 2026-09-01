@@ -458,6 +458,12 @@ export function migrate(): Promise<void> {
         payload jsonb not null
       );
       create index if not exists event_case_idx on desk.event (case_id, seq);
+      -- Pochodzenie pliku w „Moich plikach" czyta się ze zdarzeń (patrz file-origin.ts).
+      -- Bez tego indeksu jest to przegląd WSZYSTKICH zdarzeń tej osoby przy każdym
+      -- otwarciu ekranu plików, a zdarzeń przybywa z każdą turą rozmowy.
+      create index if not exists event_stored_file_idx
+        on desk.event ((payload->>'summary'))
+        where payload->>'name' = 'save_to_my_files';
 
       create table if not exists desk.audit_log (
         id bigserial primary key,

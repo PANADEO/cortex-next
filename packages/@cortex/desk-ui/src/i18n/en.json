@@ -126,7 +126,17 @@
     "folderGone": "Folder {{folder}} no longer exists — the file went back to My files.",
     "moved": "Moved to: {{folder}}",
     "alreadyHere": "{{name}} is already in that folder.",
-    "moveFailed": "Could not move the file."
+    "moveFailed": "Could not move the file.",
+    "find": "Find in this folder",
+    "findPlaceholder": "Find a file…",
+    "noMatch": "Nothing matches “{{query}}”.",
+    "clearFilter": "Clear the filter",
+    "order": {
+      "label": "Order",
+      "name": "By name",
+      "newest": "Newest",
+      "size": "Largest"
+    }
   },
   "fileRow": {
     "newName": "New file name",
@@ -136,7 +146,9 @@
     "moveTo": "Move to…",
     "toCase": "Attach to a case",
     "toMyFiles": "Save to My files",
-    "remove": "Delete"
+    "remove": "Delete",
+    "fromCase": "From case: {{title}}",
+    "openCase": "Open the case it came from"
   },
   "move": {
     "title": "Move to",

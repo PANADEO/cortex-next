@@ -12,6 +12,7 @@ import {
   Folder,
   FolderInput,
   FolderOutput,
+  MessageSquareText,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -19,6 +20,7 @@ import {
 import { useEffect, useRef, useState } from "react"
 import { useDeskLocale, useDeskT } from "../i18n/client"
 import { size, when } from "../lib"
+import { t } from "../routes"
 import { Icon } from "./icon"
 
 export function fileIcon(p: { name: string; folder: boolean }): LucideIcon {
@@ -50,10 +52,17 @@ export function FileRow({
   p,
   actions,
   active,
+  origin,
 }: {
   p: FileMeta
   actions: FileActions
   active?: boolean
+  /**
+   * Sprawa, z której ten plik przyszedł — WYŁĄCZNIE gdy istnieje na to zdarzenie.
+   * Plik bez pochodzenia nie dostaje żadnej plakietki, a w szczególności nie dostaje
+   * napisu „wgrany przez Ciebie": brak dowodu nie jest dowodem.
+   */
+  origin?: { caseId: string; title: string }
 }) {
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -143,8 +152,24 @@ export function FileRow({
           </button>
         )}
 
-        <span className="t-meta hidden shrink-0 sm:block">{p.folder ? "" : size(p.size)}</span>
-        <span className="t-meta hidden w-24 shrink-0 text-right sm:block">
+        {origin && (
+          // Link, nie napis — to jedyna droga powrotna od wyniku do jego uzasadnienia.
+          // Na wąskim ekranie zostaje sama ikona, żeby nie zjadać nazwy pliku.
+          <a
+            href={t(`/case/${origin.caseId}`)}
+            aria-label={translate("fileRow.fromCase", { title: origin.title })}
+            title={translate("fileRow.fromCase", { title: origin.title })}
+            className="t-micro flex max-w-[11rem] shrink-0 items-center gap-1 rounded-sm px-1.5 py-0.5 text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
+          >
+            <Icon as={MessageSquareText} px={12} />
+            <span className="hidden truncate sm:inline">{origin.title}</span>
+          </a>
+        )}
+
+        <span className="t-meta hidden shrink-0 tabular-nums sm:block">
+          {p.folder ? "" : size(p.size)}
+        </span>
+        <span className="t-meta hidden w-24 shrink-0 text-right tabular-nums sm:block">
           {when(p.modifiedAt, locale)}
         </span>
 
@@ -164,6 +189,14 @@ export function FileRow({
               onCloseAutoFocus={(e) => e.preventDefault()}
               className="z-50 min-w-[220px] overflow-hidden rounded-md border bg-desk-surface py-1 shadow-desk-pop"
             >
+              {origin && (
+                <MenuItem
+                  icon={MessageSquareText}
+                  label={translate("fileRow.openCase")}
+                  href={t(`/case/${origin.caseId}`)}
+                />
+              )}
+              {origin && <Divider />}
               {!p.folder && actions.preview && (
                 <MenuItem
                   icon={Eye}
@@ -232,27 +265,43 @@ function Divider() {
   return <Menu.Separator className="my-1 h-px bg-desk-line" />
 }
 
+/**
+ * Pozycja menu bywa DZIAŁANIEM na pliku (`na`) albo PRZEJŚCIEM (`href`) — i przejście
+ * musi zostać zwykłym `<a>`, żeby działał środkowy przycisk myszy i „otwórz w nowej karcie".
+ */
 function MenuItem({
   icon,
   label,
   shortcut,
   na,
+  href,
   dangerous,
 }: {
   icon: LucideIcon
   label: string
   shortcut?: string
-  na: () => void
+  na?: () => void
+  href?: string
   dangerous?: boolean
 }) {
-  return (
-    <Menu.Item
-      onSelect={na}
-      className={`t-body flex cursor-pointer items-center gap-2.5 px-3 py-1.5 outline-none data-[highlighted]:bg-desk-raised ${dangerous ? "text-desk-bad" : ""}`}
-    >
+  const inside = (
+    <>
       <Icon as={icon} px={16} className={dangerous ? undefined : "text-desk-muted"} />
       <span className="flex-1">{label}</span>
       {shortcut && <span className="t-micro">{shortcut}</span>}
+    </>
+  )
+  const look = `t-body flex cursor-pointer items-center gap-2.5 px-3 py-1.5 outline-none data-[highlighted]:bg-desk-raised ${dangerous ? "text-desk-bad" : ""}`
+  if (href) {
+    return (
+      <Menu.Item asChild className={look}>
+        <a href={href}>{inside}</a>
+      </Menu.Item>
+    )
+  }
+  return (
+    <Menu.Item onSelect={() => na?.()} className={look}>
+      {inside}
     </Menu.Item>
   )
 }

@@ -2,18 +2,22 @@
 import { MY_FILES } from "@cortex/desk-core/folder"
 import type { FileMeta } from "@cortex/desk-core/types"
 import * as Dialog from "@radix-ui/react-dialog"
+import * as Menu from "@radix-ui/react-dropdown-menu"
 import {
+  ArrowDownUp,
+  Check,
   ChevronDown,
   ChevronRight,
   FolderPlus,
   Inbox,
   RotateCcw,
+  Search,
   Trash2,
   Upload,
   X,
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useDeskLocale, useDeskT } from "../i18n/client"
 import { when } from "../lib"
 import { api, t } from "../routes"
@@ -26,6 +30,20 @@ import { useToast } from "./toast"
 type TrashEntry = { id: string; name: string; from: string; when: string }
 const ROOT = MY_FILES
 
+/**
+ * Porządek listy. Katalogi zostają NAPRZÓD w każdym z nich i zawsze po nazwie —
+ * to jest katalog, nie arkusz danych, a katalog o rozmiarze 4 kB nic nie znaczy.
+ */
+const ORDERS = ["name", "newest", "size"] as const
+type Order = (typeof ORDERS)[number]
+
+/**
+ * Pole zawężania pokazuje się dopiero wtedy, gdy jest co zawężać. Przy trzech plikach
+ * jest szumem, przy pięćdziesięciu jedyną alternatywą jest `Ctrl+F` przeglądarki —
+ * które znajduje też tekst spoza listy.
+ */
+const WORTH_FILTERING = 7
+
 export function FileExplorer() {
   const router = useRouter()
   const params = useSearchParams()
@@ -35,7 +53,10 @@ export function FileExplorer() {
   const { toast } = useToast()
 
   const [files, setFiles] = useState<FileMeta[]>([])
+  const [origins, setOrigins] = useState<Record<string, { caseId: string; title: string }>>({})
   const [trash, setTrash] = useState<TrashEntry[]>([])
+  const [query, setQuery] = useState("")
+  const [order, setOrder] = useState<Order>("name")
   const [showTrash, setShowTrash] = useState(false)
   const [taken, setTaken] = useState(false)
   const [above, setAbove] = useState(false)
@@ -51,6 +72,7 @@ export function FileExplorer() {
     })
     const d = await r.json()
     setFiles(d.files ?? [])
+    setOrigins(d.origins ?? {})
     setTrash(d.trash ?? [])
   }, [folder])
 
@@ -112,6 +134,21 @@ export function FileExplorer() {
     if (d.ok) return null
     return d.error === "name-clash" ? translate("files.nameClash") : translate("files.renameFailed")
   }
+
+  const shown = useMemo(() => {
+    const needle = query.trim().toLocaleLowerCase(locale)
+    const matching = needle
+      ? files.filter((p) => p.name.toLocaleLowerCase(locale).includes(needle))
+      : files
+    const by = (a: FileMeta, b: FileMeta) => {
+      if (a.folder !== b.folder) return Number(b.folder) - Number(a.folder)
+      if (a.folder) return a.name.localeCompare(b.name, locale)
+      if (order === "newest") return b.modifiedAt.localeCompare(a.modifiedAt)
+      if (order === "size") return b.size - a.size
+      return a.name.localeCompare(b.name, locale)
+    }
+    return [...matching].sort(by)
+  }, [files, query, order, locale])
 
   // Korzeń to nazwa katalogu NA DYSKU, więc na ekranie podmieniamy ją etykietą —
   // ścieżki zapisane w sprawach zostają nietknięte.
@@ -185,12 +222,76 @@ export function FileExplorer() {
         ))}
       </nav>
 
+      {(files.length > WORTH_FILTERING || query) && (
+        <div className="mt-3 flex items-center gap-2">
+          <div className="relative min-w-0 flex-1 sm:max-w-xs">
+            <Icon
+              as={Search}
+              px={14}
+              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-desk-muted-2"
+            />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && setQuery("")}
+              autoComplete="off"
+              spellCheck={false}
+              aria-label={translate("files.find")}
+              placeholder={translate("files.findPlaceholder")}
+              className="t-body h-9 w-full rounded-md border bg-desk-surface pl-8 pr-2 outline-none focus-visible:border-desk-accent"
+            />
+          </div>
+          <Menu.Root>
+            <Menu.Trigger className="t-btn flex h-9 shrink-0 items-center gap-1.5 rounded-md border px-3 text-desk-muted hover:bg-desk-raised hover:text-desk-ink">
+              <Icon as={ArrowDownUp} px={14} />
+              <span className="hidden sm:inline">{translate(`files.order.${order}`)}</span>
+              <span className="sr-only sm:hidden">{translate("files.order.label")}</span>
+            </Menu.Trigger>
+            <Menu.Portal>
+              <Menu.Content
+                align="end"
+                sideOffset={4}
+                className="z-50 min-w-[180px] overflow-hidden rounded-md border bg-desk-surface py-1 shadow-desk-pop"
+              >
+                {ORDERS.map((o) => (
+                  <Menu.Item
+                    key={o}
+                    onSelect={() => setOrder(o)}
+                    className="t-body flex cursor-pointer items-center gap-2.5 px-3 py-1.5 outline-none data-[highlighted]:bg-desk-raised"
+                  >
+                    <Icon
+                      as={Check}
+                      px={14}
+                      className={o === order ? "text-desk-ink" : "opacity-0"}
+                    />
+                    <span className="flex-1">{translate(`files.order.${o}`)}</span>
+                  </Menu.Item>
+                ))}
+              </Menu.Content>
+            </Menu.Portal>
+          </Menu.Root>
+        </div>
+      )}
+
       <div
         className={`mt-2 overflow-hidden rounded-lg border bg-desk-surface ${above ? "border-2 border-dashed border-desk-accent bg-desk-accent-soft" : ""}`}
       >
         {above ? (
           <div className="t-body p-10 text-center text-desk-accent-soft-ink">
             {translate("files.dropHere", { folder: folder.split("/").pop() ?? "" })}
+          </div>
+        ) : shown.length === 0 && query ? (
+          // Pusty wynik zawężenia to CO INNEGO niż pusty katalog — podpowiedź „przeciągnij
+          // tu pliki" byłaby wtedy odpowiedzią na pytanie, którego nikt nie zadał.
+          <div className="p-10 text-center">
+            <p className="t-body">{translate("files.noMatch", { query: query.trim() })}</p>
+            <button
+              onClick={() => setQuery("")}
+              className="t-meta mt-1 underline hover:text-desk-ink"
+            >
+              {translate("files.clearFilter")}
+            </button>
           </div>
         ) : files.length === 0 && !newFolder ? (
           <div className="p-10 text-center">
@@ -225,10 +326,11 @@ export function FileExplorer() {
                 />
               </li>
             )}
-            {files.map((p) => (
+            {shown.map((p) => (
               <FileRow
                 key={p.path}
                 p={p}
+                {...(origins[p.path] ? { origin: origins[p.path]! } : {})}
                 actions={{
                   openFolder: (x) => goTo(x.path),
                   preview: setPreview,

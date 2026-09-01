@@ -131,7 +131,17 @@
     "folderGone": "Folder {{folder}} już nie istnieje — plik wrócił do Moich plików.",
     "moved": "Przeniesione do: {{folder}}",
     "alreadyHere": "{{name}} już jest w tym folderze.",
-    "moveFailed": "Nie udało się przenieść pliku."
+    "moveFailed": "Nie udało się przenieść pliku.",
+    "find": "Znajdź w tym katalogu",
+    "findPlaceholder": "Znajdź plik…",
+    "noMatch": "Nic nie pasuje do „{{query}}\".",
+    "clearFilter": "Wyczyść zawężenie",
+    "order": {
+      "label": "Porządek",
+      "name": "Po nazwie",
+      "newest": "Najnowsze",
+      "size": "Największe"
+    }
   },
   "fileRow": {
     "newName": "Nowa nazwa pliku",
@@ -141,7 +151,9 @@
     "moveTo": "Przenieś do…",
     "toCase": "Dołącz do sprawy",
     "toMyFiles": "Zapisz do Moich plików",
-    "remove": "Usuń"
+    "remove": "Usuń",
+    "fromCase": "Ze sprawy: {{title}}",
+    "openCase": "Otwórz sprawę, z której przyszedł"
   },
   "move": {
     "title": "Przenieś do",

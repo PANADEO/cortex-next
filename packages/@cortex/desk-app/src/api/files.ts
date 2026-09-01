@@ -1,5 +1,6 @@
 import * as audit from "@cortex/desk-core/audit-log"
 import * as storage from "@cortex/desk-core/desk-storage"
+import { originsInMyFiles } from "@cortex/desk-core/file-origin"
 import { whoAmI } from "@cortex/desk-core/identity"
 import { NextResponse } from "next/server"
 
@@ -7,9 +8,12 @@ export async function GET(req: Request) {
   const u = await whoAmI()
   const sp = new URL(req.url).searchParams
   const folder = sp.get("folder") ?? "Moje pliki"
+  // Pochodzenie jedzie ŚCIEŻKĄ, nie przy pliku, bo listę plików daje dysk, a pochodzenie
+  // baza — i to są dwa różne źródła prawdy, których nie zszywamy po stronie serwera.
   return NextResponse.json({
     files: await storage.list(u.id, folder),
     trash: await storage.trash(u.id),
+    origins: await originsInMyFiles(u.id),
     folders: sp.get("tree") ? await storage.folders(u.id) : undefined,
   })
 }
