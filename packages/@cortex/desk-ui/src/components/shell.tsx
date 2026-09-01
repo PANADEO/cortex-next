@@ -187,38 +187,42 @@ export async function Shell({
                   </ul>
                 </>
               )}
-
-              <div className="mt-4 px-2">
-                <Link
-                  href={t("/files")}
-                  className="t-body flex h-9 items-center gap-2 rounded-sm px-2.5 hover:bg-desk-raised/70"
-                >
-                  <Icon as={FolderOpen} px={16} className="text-desk-muted" />{" "}
-                  {translate("shell.myFiles")}
-                </Link>
-                <Link
-                  href={t("/memory")}
-                  className="t-body flex h-9 items-center gap-2 rounded-sm px-2.5 hover:bg-desk-raised/70"
-                >
-                  <Icon as={Brain} px={16} className="text-desk-muted" />{" "}
-                  {translate("shell.memory")}
-                  {proposed > 0 && (
-                    <span className="t-micro ml-auto rounded-desk-pill bg-desk-accent-soft px-1.5 text-desk-accent-soft-ink">
-                      {proposed}
-                    </span>
-                  )}
-                </Link>
-                {u.role === "management" && (
-                  <Link
-                    href={t("/supervision")}
-                    className="t-body flex h-9 items-center gap-2 rounded-sm px-2.5 hover:bg-desk-raised/70"
-                  >
-                    <Icon as={ShieldCheck} px={16} className="text-desk-muted" />{" "}
-                    {translate("shell.supervision")}
-                  </Link>
-                )}
-              </div>
             </nav>
+
+            {/* Stałe miejsca NIE przewijają się razem z listą spraw.
+              Wcześniej stały w środku `nav` z `overflow-y-auto`, więc przy dłuższej liście
+              „Nadzór" — jedyne wejście przełożonego — odjeżdżał poza widok i przy pewnych
+              wysokościach okna był przycięty w połowie. Lista spraw jest zmienna, te trzy
+              pozycje nie są; nie mają prawa dzielić z nią przewijania. */}
+            <div className="shrink-0 border-t px-2 py-2">
+              <Link
+                href={t("/files")}
+                className="t-body flex h-9 items-center gap-2 rounded-sm px-2.5 hover:bg-desk-raised/70"
+              >
+                <Icon as={FolderOpen} px={16} className="text-desk-muted" />{" "}
+                {translate("shell.myFiles")}
+              </Link>
+              <Link
+                href={t("/memory")}
+                className="t-body flex h-9 items-center gap-2 rounded-sm px-2.5 hover:bg-desk-raised/70"
+              >
+                <Icon as={Brain} px={16} className="text-desk-muted" /> {translate("shell.memory")}
+                {proposed > 0 && (
+                  <span className="t-micro ml-auto rounded-desk-pill bg-desk-accent-soft px-1.5 text-desk-accent-soft-ink">
+                    {proposed}
+                  </span>
+                )}
+              </Link>
+              {u.role === "management" && (
+                <Link
+                  href={t("/supervision")}
+                  className="t-body flex h-9 items-center gap-2 rounded-sm px-2.5 hover:bg-desk-raised/70"
+                >
+                  <Icon as={ShieldCheck} px={16} className="text-desk-muted" />{" "}
+                  {translate("shell.supervision")}
+                </Link>
+              )}
+            </div>
 
             <div className="border-t p-3">
               <Link

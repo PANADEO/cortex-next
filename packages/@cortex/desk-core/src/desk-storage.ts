@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs"
 import path from "node:path"
 import { MY_FILES } from "./folder"
-import type { FileMeta } from "./types"
+import type { FileMeta, TrashEntry } from "./types"
 
 const BASE = path.resolve(process.env.DESK_DATA_DIR ?? "./.data")
 
@@ -167,7 +167,7 @@ function splitId(id: string) {
   return { basis, when: new Date(Number.isFinite(stamp) ? stamp : Date.now()).toISOString() }
 }
 
-export async function trash(user: string) {
+export async function trash(user: string): Promise<TrashEntry[]> {
   const { root } = safePath(user, ".")
   const dir = path.join(root, ".trash")
   await fs.mkdir(dir, { recursive: true })
@@ -176,7 +176,7 @@ export async function trash(user: string) {
     .filter((n) => n.includes("__"))
     .map((n) => {
       const { basis, when } = splitId(n)
-      return { id: n, name: path.basename(basis), basis: path.dirname(basis), when }
+      return { id: n, name: path.basename(basis), fromFolder: path.dirname(basis), when }
     })
     .sort((a, b) => b.when.localeCompare(a.when))
 }

@@ -5,6 +5,13 @@ export type DeskEvent =
       /** `exhausted` — model nie skończył w limicie kroków; to NIE jest sukces ani awaria. */
       status: "start" | "end" | "stopped" | "failed" | "exhausted"
       reason?: string
+      /**
+       * `infrastructure` — awaria po stronie łącza, klucza albo środków, czyli rzeczy,
+       * na które człowiek przy klawiaturze nie ma wpływu. Steruje JEDNĄ rzeczą: przyciskiem
+       * pod kartą awarii. Bez tego pola ekran proponował „Napisz inaczej" także wtedy,
+       * gdy padł cortex-proxy — czyli winił sformułowanie zlecenia za awarię sieci.
+       */
+      kind?: "infrastructure"
     }
   | { type: "prompt"; text: string; attachments?: string[] }
   | { type: "attachment"; names: string[] }
@@ -100,4 +107,18 @@ export type FileMeta = {
   folder: boolean
   size: number
   modifiedAt: string
+}
+
+/**
+ * Pozycja w koszu. Typ jest TUTAJ, a nie osobno po obu stronach trasy, bo raz już się
+ * rozjechał: serwer oddawał `basis`, ekran czytał `from` i rysował „z undefined" przy
+ * każdym skasowanym pliku. Nic tego nie złapało — JSON z trasy nie ma typu, więc
+ * niezgodność nazw pola jest dla `tsc` niewidzialna. Wspólny typ zamienia ją w błąd budowy.
+ */
+export type TrashEntry = {
+  id: string
+  name: string
+  /** folder, z którego plik zniknął — potrzebny, żeby powiedzieć „z Moje pliki/faktury" */
+  fromFolder: string
+  when: string
 }

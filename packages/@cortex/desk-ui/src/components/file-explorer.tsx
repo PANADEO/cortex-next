@@ -1,6 +1,6 @@
 "use client"
 import { MY_FILES } from "@cortex/desk-core/folder"
-import type { FileMeta } from "@cortex/desk-core/types"
+import type { FileMeta, TrashEntry } from "@cortex/desk-core/types"
 import * as Dialog from "@radix-ui/react-dialog"
 import * as Menu from "@radix-ui/react-dropdown-menu"
 import {
@@ -28,7 +28,6 @@ import { MoveDialog } from "./move-dialog"
 import { Preview, fileUrl } from "./preview"
 import { useToast } from "./toast"
 
-type TrashEntry = { id: string; name: string; from: string; when: string }
 const ROOT = MY_FILES
 
 /**
@@ -449,7 +448,7 @@ export function FileExplorer() {
                     <span className="min-w-0 flex-1">
                       <span className="t-body block truncate">{k.name}</span>
                       <span className="t-micro block">
-                        {translate("files.fromFolder", { folder: k.from })} · {when(k.when, locale)}
+                        {translate("files.fromFolder", { folder: k.fromFolder })} · {when(k.when, locale)}
                       </span>
                     </span>
                     <button

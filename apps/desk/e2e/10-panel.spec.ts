@@ -1,4 +1,4 @@
-import { readableFailure } from "@cortex/desk-core/failure"
+import { isInfrastructure, readableFailure } from "@cortex/desk-core/failure"
 import { splitFolder } from "@cortex/desk-core/folder"
 import { produced, unbackedPromises } from "@cortex/desk-core/promises"
 import type { DeskEvent, FileMeta } from "@cortex/desk-core/types"
@@ -262,17 +262,36 @@ test.describe("Obszar 18 · Awaria mówi prawdę, ale nie cudzymi słowami", () 
     expect(m).not.toContain("Skończyły się środki")
   })
 
-  test("Komunikat dla pracownika nie niesie adresu panelu dostawcy", () => {
+  // Wcześniej gałąź domyślna wklejała treść dostawcy po obcięciu adresów. Zmierzone
+  // na ekranie: „Nie udało się dokończyć: Failed after 3 attempts. Last error: Cannot
+  // connect to API: bad port" — po angielsku, o rzeczy poza jej wpływem. Teraz gałąź
+  // domyślna nie niesie ANI JEDNEGO słowa z oryginału, więc test sprawdza to wprost,
+  // a nie tylko brak adresu (tamten warunek przechodził też dla pustego zdania).
+  test("Nieznana awaria nie wkleja cudzych słów", () => {
     const m = readableFailure(
-      new Error("Coś padło. Szczegóły: https://openrouter.ai/workspaces/default/keys/327df36"),
+      new Error(
+        "Kaboom in the flux capacitor, see https://openrouter.ai/workspaces/default/keys/x",
+      ),
     )
     expect(m).not.toMatch(/https?:\/\//)
-    expect(m).not.toMatch(/openrouter/i)
+    for (const word of ["Kaboom", "flux", "capacitor", "openrouter"]) {
+      expect(m, `zdanie dla pracownika niesie „${word}” z komunikatu dostawcy`).not.toContain(word)
+    }
+    expect(m).toMatch(/administratorow/i)
+  })
+
+  test("Awaria łącza jest odróżniana od awarii treści zlecenia", () => {
+    // Od tego rozróżnienia zależy przycisk pod kartą: przy awarii łącza „Napisz inaczej"
+    // jest złą radą, bo nie ma czego pisać inaczej.
+    expect(isInfrastructure(new Error("Cannot connect to API: bad port"))).toBe(true)
+    expect(isInfrastructure(new Error("402 Insufficient credits"))).toBe(true)
+    expect(isInfrastructure(new Error("model refused: content policy"))).toBe(false)
   })
 
   test("Znane awarie mają własne zdania, nie surowy tekst dostawcy", () => {
     expect(readableFailure(new Error("401 Unauthorized"))).toMatch(/klucza do modelu/)
     expect(readableFailure(new Error("rate limit exceeded"))).toMatch(/limit zapytań/)
     expect(readableFailure(new Error("fetch failed"))).toMatch(/cortex-proxy/)
+    expect(readableFailure(new Error("Cannot connect to API: bad port"))).toMatch(/cortex-proxy/)
   })
 })

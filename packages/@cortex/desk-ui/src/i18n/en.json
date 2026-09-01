@@ -73,6 +73,7 @@
     "interrupted": "Work interrupted.",
     "exhausted": "The work did not fit into a single turn.",
     "rephrase": "Word it differently",
+    "tryAgain": "Try again",
     "newSteps": "New steps",
     "open": "Open",
     "busyPlaceholder": "Working — wait or press Stop",

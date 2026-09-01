@@ -4,9 +4,10 @@ import { randomUUID } from "node:crypto"
 import { z } from "zod"
 import * as audit from "./audit-log"
 import { hasCapability } from "./capability-gate"
+import { safeCsv } from "./csv-safety"
 import { migrate, pool } from "./db"
 import * as storage from "./desk-storage"
-import { readableFailure } from "./failure"
+import { isInfrastructure, readableFailure } from "./failure"
 import { mcpTools } from "./mcp/client"
 import * as memory from "./memory"
 import * as sandbox from "./sandbox"
@@ -363,10 +364,25 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
       inputSchema: z.object({ name: z.string(), csv: z.string() }),
       execute: async ({ name, csv }) =>
         step("write_sheet", `Zapisuję arkusz ${name}`, { name }, async () => {
-          await storage.write(u.id, `${caseFolder}/${name}`, csv)
+          // Komórka zaczynająca się od `=` jest przez Excela WYKONYWANA przy otwarciu.
+          // Taki ciąg potrafi przyjść z pliku źródłowego klienta i zostać przepisany
+          // przez model w dobrej wierze — a wtedy plik z naszą plakietką „sprawdzony
+          // po zapisie" atakuje komputer tej osoby. Patrz `csv-safety.ts`.
+          const safe = safeCsv(csv)
+          await storage.write(u.id, `${caseFolder}/${name}`, safe.csv)
+          const rows = safe.csv.split("\n").length
           return {
-            summary: `${csv.split("\n").length} wierszy`,
-            answer: `Zapisano arkusz ${name}.`,
+            // Neutralizacja jest widoczna w dowodzie, a nie cicha: człowiek ma wiedzieć,
+            // że plik został ruszony, zanim zdziwi się apostrofem w komórce.
+            summary:
+              safe.neutralised > 0
+                ? `${rows} wierszy, unieszkodliwionych formuł: ${safe.neutralised}`
+                : `${rows} wierszy`,
+            answer:
+              safe.neutralised > 0
+                ? `Zapisano arkusz ${name}. ${safe.neutralised} komórek zaczynało się znakiem, ` +
+                  "który Excel wykonuje jako formułę — zapisałem je jako tekst. Powiedz o tym człowiekowi."
+                : `Zapisano arkusz ${name}.`,
           }
         }),
     })
@@ -634,7 +650,12 @@ export async function runTurn(u: User, p: Policy, caseId: string) {
         return
       }
       const reason = readableFailure(e)
-      await appendEvent(caseId, { type: "lifecycle", status: "failed", reason })
+      await appendEvent(caseId, {
+        type: "lifecycle",
+        status: "failed",
+        reason,
+        ...(isInfrastructure(e) ? { kind: "infrastructure" as const } : {}),
+      })
       await pool.query(
         `update desk.case_file set status='failed', reason=$2, updated_at=now() where id=$1 and status='working'`,
         [caseId, reason],

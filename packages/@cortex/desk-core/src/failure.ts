@@ -5,19 +5,6 @@
  * bez stawiania modelu i bazy.
  */
 
-/**
- * Adres z panelu dostawcy nie ma czego szukać na ekranie pracownika.
- * Prawdziwy komunikat, który tu trafił, brzmiał: „To increase, visit
- * https://openrouter.ai/workspaces/default/keys/327df36…" — czyli nazwa dostawcy,
- * którego pani Basia nie zna, i identyfikator klucza, którego nie powinna widzieć.
- */
-const withoutAddresses = (s: string) =>
-  s
-    .replace(/https?:\/\/\S+/g, "")
-    .replace(/\s{2,}/g, " ")
-    .replace(/[\s,.:;]+$/, "")
-    .trim()
-
 export function readableFailure(e: unknown): string {
   const s = String((e as { message?: unknown })?.message ?? e)
 
@@ -25,7 +12,13 @@ export function readableFailure(e: unknown): string {
     return "Brak ważnego klucza do modelu — zgłoś to administratorowi."
   if (/timeout|ETIMEDOUT|aborted/i.test(s))
     return "Model nie odpowiedział na czas. Spróbuj ponownie za chwilę."
-  if (/ECONNREFUSED|fetch failed/i.test(s))
+  // `bad port`, `getaddrinfo`, `ENOTFOUND` — dostawca nazywa to na kilkanaście sposobów,
+  // a dla pracownika to jest jedna rzecz: usługa modelu jest nieosiągalna.
+  if (
+    /ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|fetch failed|bad port|cannot connect|network/i.test(
+      s,
+    )
+  )
     return "Nie udało się połączyć z usługą modelu. Sprawdź, czy cortex-proxy działa."
   if (/rate limit|429/i.test(s))
     return "Przekroczony limit zapytań u dostawcy modelu. Spróbuj za minutę."
@@ -39,5 +32,26 @@ export function readableFailure(e: unknown): string {
   if (/credit|quota|insufficient|billing|payment|afford/i.test(s))
     return "Skończyły się środki na modele po stronie firmy — zgłoś to administratorowi. To nie jest Twój dzienny limit."
 
-  return `Nie udało się dokończyć: ${withoutAddresses(s).slice(0, 160)}`
+  // Domyślne zdanie NIE wkleja cudzego tekstu.
+  //
+  // Zmierzone na ekranie pracownicy: „Nie udało się dokończyć: Failed after 3 attempts.
+  // Last error: Cannot connect to API: bad port". Zdanie po angielsku, o rzeczy, na którą
+  // ona nie ma wpływu, a jedyny przycisk obok proponował przeformułować zlecenie — czyli
+  // awaria łącza podana jako wina jej sformułowania. Surowa treść nie znika: idzie do
+  // dziennika (`turn.failed`, pole `raw`), gdzie czyta ją ten, kto może z nią coś zrobić.
+  return "Coś poszło nie tak po stronie usługi modelu. Spróbuj jeszcze raz — jeśli się powtórzy, zgłoś to administratorowi."
+}
+
+/**
+ * Czy ta awaria dotyczy INFRASTRUKTURY, a nie treści zlecenia.
+ *
+ * Rozróżnienie ma jeden odbiorca i jeden skutek: przycisk pod kartą awarii. Przy awarii
+ * łącza „Napisz inaczej" jest złą radą — nie ma czego pisać inaczej — a przy odmowie
+ * dostawcy z powodu treści jest jedyną sensowną.
+ */
+export function isInfrastructure(e: unknown): boolean {
+  const s = String((e as { message?: unknown })?.message ?? e)
+  return /401|unauthor|api key|timeout|ETIMEDOUT|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|fetch failed|bad port|cannot connect|network|rate limit|429|credit|quota|insufficient|billing|payment|afford|max_tokens/i.test(
+    s,
+  )
 }

@@ -581,10 +581,25 @@ export function CaseView({
                           {ev.reason && <p className="t-meta mt-0.5">{ev.reason}</p>}
                           {ev.status !== "stopped" && (
                             <button
-                              onClick={() => field.current?.focus()}
+                              // Przy awarii ŁĄCZA sensowna jest jedna rzecz: to samo zlecenie
+                              // jeszcze raz. „Napisz inaczej" kazałoby przepisywać zdanie,
+                              // z którym nic nie było nie tak. Wpisujemy je z powrotem w pole
+                              // zamiast wysyłać od razu — wysłanie kosztuje i decyduje o nim człowiek.
+                              onClick={() => {
+                                const again =
+                                  ev.kind === "infrastructure" &&
+                                  turn.command?.event.type === "prompt"
+                                    ? turn.command.event.text
+                                    : null
+                                if (again) setText(again)
+                                field.current?.focus()
+                              }}
                               className="t-btn mt-2 flex h-8 items-center gap-1.5 rounded-md border px-2.5 hover:bg-desk-raised"
                             >
-                              <Icon as={RotateCcw} px={14} /> {translate("case.rephrase")}
+                              <Icon as={RotateCcw} px={14} />{" "}
+                              {translate(
+                                ev.kind === "infrastructure" ? "case.tryAgain" : "case.rephrase",
+                              )}
                             </button>
                           )}
                         </div>
