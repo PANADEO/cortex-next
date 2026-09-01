@@ -233,7 +233,8 @@
     "limitNote": "Limit jest dzienny i twardy — po jego wyczerpaniu agent tej osoby nie ruszy do pracy.",
     "log": "Co się działo",
     "logEmpty": "Dziennik jest pusty.",
-    "logNote": "Dziennik zapisuje sama aplikacja. Agent nie ma do niego dostępu i nie może go zmienić."
+    "logNote": "Dziennik zapisuje sama aplikacja. Agent nie ma do niego dostępu i nie może go zmienić.",
+    "tabTeam": "Zespół"
   },
   "home": {
     "greeting": "Dzień dobry, {{name}}.",
@@ -393,7 +394,9 @@
     "unknownDecision": "Nieznana decyzja.",
     "alreadyDecided": "Ta prośba jest już rozpatrzona.",
     "notGrantable": "Tej prośby nie da się przyznać jednym kliknięciem — to zgłoszenie do katalogu.",
-    "newCase": "Nowa sprawa"
+    "newCase": "Nowa sprawa",
+    "cannotDemoteSelf": "Nie możesz odebrać roli przełożonego samemu sobie.",
+    "unknownDepartment": "Nie ma takiego działu."
   },
   "tools": {
     "list_files": {
@@ -531,7 +534,11 @@
       "many": "— wyzerowano dzisiejszy koszt ({{usd}} USD na {{count}} sprawach)",
       "other": "— wyzerowano dzisiejszy koszt ({{usd}} USD na {{count}} sprawach)"
     },
-    "unknown": "zdarzenie „{{type}}” (nieopisane)"
+    "unknown": "zdarzenie „{{type}}” (nieopisane)",
+    "capabilityGranted": "nadaje zdolność „{{name}}” osobie {{who}}",
+    "personCreated": "wchodzi na Biurko pierwszy raz ({{email}})",
+    "personRole": "zmienia rolę {{who}} na „{{role}}\"",
+    "personDepartment": "przypisuje {{who}} do działu {{department}}"
   },
   "capability": {
     "files": {
@@ -622,5 +629,30 @@
       "hint": "opisz, co ma być na obrazku",
       "text": "Wygeneruj grafikę tytułową do prezentacji o wynikach kwartału."
     }
+  },
+  "team": {
+    "title": "Zespół",
+    "lead": "Kto jest w firmie, co każdy może i ile dziś wydał.",
+    "role": {
+      "member": "Pracownik",
+      "management": "Przełożony"
+    },
+    "roleLabel": "Rola",
+    "departmentLabel": "Dział",
+    "noDepartment": "bez działu",
+    "can": "Umie {{granted}} z {{total}}",
+    "spent": "{{spent}} z {{limit}} na dziś",
+    "waiting": "czeka na decyzję",
+    "grant": "Nadaj",
+    "revoke": "Odbierz",
+    "granted": "{{name}} — nadane {{who}}",
+    "revoked": "{{name}} — odebrane {{who}}",
+    "failed": "Nie udało się zmienić uprawnień.",
+    "byRole": "z roli",
+    "byRoleNote": "Zdolności z roli odbiera się zmianą roli, nie po jednej.",
+    "open": "Pokaż zdolności",
+    "close": "Ukryj zdolności",
+    "empty": "Nie ma tu jeszcze nikogo poza Tobą.",
+    "you": "to Ty"
   }
 }

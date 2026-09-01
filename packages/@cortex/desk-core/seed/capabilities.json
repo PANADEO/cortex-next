@@ -58,5 +58,10 @@
     "management": {
       "usdPerDay": 20
     }
-  }
+  },
+  "quickTasks": {
+    "member": ["expensesDocument", "documentGaps", "meetingNotes"],
+    "management": ["expensesSheet", "analysis", "titleImage"]
+  },
+  "departments": ["accounting", "finance", "it", "marketing", "management"]
 }

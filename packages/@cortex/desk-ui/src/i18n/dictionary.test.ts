@@ -10,7 +10,7 @@
 // przynajmniej jedno rozwinięcie, więc literówka w przedrostku dalej jest czerwona.
 
 import { capabilityCatalogue } from "@cortex/desk-core/capability-gate"
-import { USERS } from "@cortex/desk-core/identity"
+import { demoPeople, DEPARTMENTS, quickTasksByRole } from "@cortex/desk-core/people"
 import { cardFor, TOOL_CARDS } from "@cortex/desk-core/tool-cards"
 import { readdirSync, readFileSync } from "node:fs"
 import path from "node:path"
@@ -141,14 +141,11 @@ describe("słownik Biurka", () => {
         `capability.${z.id}.description`,
         `capability.department.${z.department}`,
       ]),
-      ...USERS.flatMap((u) =>
-        u.quickTasks.flatMap((id) => [
-          `quickTask.${id}.title`,
-          `quickTask.${id}.hint`,
-          `quickTask.${id}.text`,
-        ]),
-      ),
-      ...USERS.map((u) => `capability.department.${u.department}`),
+      ...Object.values(quickTasksByRole)
+        .flat()
+        .flatMap((id) => [`quickTask.${id}.title`, `quickTask.${id}.hint`, `quickTask.${id}.text`]),
+      ...DEPARTMENTS.map((d) => `capability.department.${d}`),
+      ...demoPeople.map((u) => `capability.department.${u.department}`),
     ]
     expect(wanted.length).toBeGreaterThan(30)
     expect(wanted.filter((k) => !plKeys.includes(k))).toEqual([])

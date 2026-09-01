@@ -1,8 +1,6 @@
 import { cookies, headers } from "next/headers"
-import usersJson from "../seed/users.json"
+import { ensurePerson, everyone, person } from "./people"
 import type { User } from "./types"
-
-export const USERS = usersJson.users as User[]
 
 /** Kanoniczna postać adresu — dokładnie jak `normalizeEmail` w `@cortex/service/src/rbac.ts`. */
 const normalise = (v: string | null | undefined) => v?.trim().toLowerCase() ?? ""
@@ -46,7 +44,7 @@ export async function identity(): Promise<{ user: User; switchable: boolean }> {
   // 1. Prawdziwa tożsamość z bramy logowania. Zawsze wygrywa i nigdy nie da się
   //    jej podmienić ciasteczkiem — to jest ta granica, która trzyma produkcję.
   const fromGate = normalise(h.get("x-auth-request-email"))
-  if (fromGate) return { user: bySeedEmail(fromGate), switchable: false }
+  if (fromGate) return { user: await ensurePerson(fromGate), switchable: false }
 
   // 2. Atrapa DEMO. Stoi PRZED `DEV_USER_EMAIL`, bo oba są mechanizmami dewa,
   //    a ten jest bardziej szczegółowy: wybór person jest jawnym kliknięciem
@@ -54,15 +52,15 @@ export async function identity(): Promise<{ user: User; switchable: boolean }> {
   if (DEMO_PERSONAS) {
     const c = await cookies()
     const id = c.get("desk_persona")?.value ?? "anna"
-    const selected = USERS.find((u) => u.id === id) ?? USERS[0]
-    // Pusty zasiew person to błąd wdrożenia, nie stan do obsłużenia po cichu.
-    if (!selected) throw new Error("Zasiew użytkowników jest pusty — nie ma kogo podstawić.")
+    const selected = (await person(id)) ?? (await everyone())[0]
+    // Pusta tabela osób to błąd wdrożenia, nie stan do obsłużenia po cichu.
+    if (!selected) throw new Error("Tabela osób jest pusta — nie ma kogo podstawić.")
     return { user: selected, switchable: true }
   }
 
   // 3. Tożsamość dewa bez atrapy person — tak wstaje powłoka bez bramy logowania.
   const fromEnv = normalise(process.env.DEV_USER_EMAIL)
-  if (fromEnv) return { user: bySeedEmail(fromEnv), switchable: false }
+  if (fromEnv) return { user: await ensurePerson(fromEnv), switchable: false }
 
   // Fail-closed i głośno. Cicha podmiana na pierwszego z listy dawała komuś
   // cudze biurko i cudze zdolności, nie zostawiając po sobie ani jednego wpisu.
@@ -70,15 +68,8 @@ export async function identity(): Promise<{ user: User; switchable: boolean }> {
 }
 
 /**
- * Adres → osoba z zasiewu.
- *
- * Zasiew person nosi same identyfikatory, więc adres trzeba złożyć — a domena
- * jest własnością WDROŻENIA, nie kodu. Wpisana na sztywno („itsg.pl") znaczyła,
- * że pod powłoką u klienta nie zalogowałby się nikt: bramka podaje prawdziwy
- * adres, a tu czekało dopasowanie do cudzej domeny.
+ * Domena wdrożenia jest tu potrzebna do JEDNEJ rzeczy: adresy person z zasiewu składa
+ * z niej migracja, żeby `anna@` z bramy trafiła na wiersz `anna`. Sama tożsamość nie
+ * zależy już od domeny — nieznany adres zakłada konto, zamiast rzucać wyjątkiem.
  */
-function bySeedEmail(email: string): User {
-  const u = USERS.find((x) => `${x.id}@${DOMAIN}` === email)
-  if (u) return u
-  throw new Error(`Nie znam użytkownika ${email}.`)
-}
+export const deployedDomain = () => DOMAIN

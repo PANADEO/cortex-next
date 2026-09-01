@@ -1,6 +1,7 @@
 import { policyFor } from "@cortex/desk-core/capability-gate"
 import { departmentLabel } from "@cortex/desk-core/capability-text"
-import { USERS, identity } from "@cortex/desk-core/identity"
+import { identity } from "@cortex/desk-core/identity"
+import { everyone } from "@cortex/desk-core/people"
 import { Icon } from "@cortex/desk-ui/components/icon"
 import { Avatar, Persona } from "@cortex/desk-ui/components/persona-switcher"
 import { Shell } from "@cortex/desk-ui/components/shell"
@@ -60,7 +61,7 @@ export default async function Page() {
 
           {switchable && (
             <div className="mt-6 rounded-lg border bg-desk-surface p-3">
-              <Persona me={u} everyone={USERS} />
+              <Persona me={u} everyone={await everyone()} />
             </div>
           )}
 

@@ -303,11 +303,23 @@ test.describe("Obszar 17 · Tożsamość wchodzi bramą, nie ciasteczkiem", () =
     expect(robert.status()).toBe(403)
   })
 
-  test("Nieznany adres z nagłówka nie dostaje cudzego biurka", async ({ request }) => {
-    const r = await request.get("/api/files", {
+  test("Nieznany adres z bramy dostaje WŁASNE biurko, nigdy cudze", async ({ request }) => {
+    // Do czasu, gdy osoby były wpisem w pliku, odpowiadaliśmy tu błędem — bo nieznanego
+    // adresu nie dało się obsłużyć inaczej. Dziś pierwsze wejście z bramy zakłada konto,
+    // więc pytanie nie brzmi już „czy wpuszczamy", tylko „czy wpuszczony widzi swoje".
+    // Cicha podmiana na pierwszą osobę z listy dawałaby obcemu pełne biurko Anny.
+    const obcy = await request.get("/api/files", {
       headers: { Cookie: "desk_persona=anna", "x-auth-request-email": "ktos@obcy.pl" },
     })
-    // cicha podmiana na pierwszego z listy dawała obcemu pełne biurko Anny
-    expect(r.status()).toBeGreaterThanOrEqual(400)
+    expect(obcy.status()).toBe(200)
+    const jego = await obcy.json()
+
+    const anna = await (
+      await request.get("/api/files", { headers: { Cookie: "desk_persona=anna" } })
+    ).json()
+    expect(anna.files.length).toBeGreaterThan(0)
+
+    const ma = new Set((jego.files ?? []).map((p: { path: string }) => p.path))
+    expect(anna.files.filter((p: { path: string }) => ma.has(p.path))).toEqual([])
   })
 })

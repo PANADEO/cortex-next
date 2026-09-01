@@ -226,7 +226,8 @@
     "limitNote": "The limit is daily and hard — once it is used up, that person’s agent will not start work.",
     "log": "What happened",
     "logEmpty": "The journal is empty.",
-    "logNote": "The application writes this journal itself. The agent has no access to it and cannot change it."
+    "logNote": "The application writes this journal itself. The agent has no access to it and cannot change it.",
+    "tabTeam": "Team"
   },
   "home": {
     "greeting": "Good morning, {{name}}.",
@@ -374,7 +375,9 @@
     "unknownDecision": "Unknown decision.",
     "alreadyDecided": "This request has already been decided.",
     "notGrantable": "This request cannot be granted with one click — it is a submission to the catalogue.",
-    "newCase": "New case"
+    "newCase": "New case",
+    "cannotDemoteSelf": "You cannot take the manager role away from yourself.",
+    "unknownDepartment": "There is no such department."
   },
   "tools": {
     "list_files": {
@@ -496,7 +499,11 @@
       "one": "— today’s cost was reset ({{usd}} USD across {{count}} case)",
       "other": "— today’s cost was reset ({{usd}} USD across {{count}} cases)"
     },
-    "unknown": "event “{{type}}” (undescribed)"
+    "unknown": "event “{{type}}” (undescribed)",
+    "capabilityGranted": "grants the “{{name}}” capability to {{who}}",
+    "personCreated": "signs in to the Desk for the first time ({{email}})",
+    "personRole": "changes {{who}}’s role to “{{role}}”",
+    "personDepartment": "assigns {{who}} to {{department}}"
   },
   "capability": {
     "files": {
@@ -587,5 +594,30 @@
       "hint": "describe what should be in the image",
       "text": "Generate a title image for a presentation about the quarter's results."
     }
+  },
+  "team": {
+    "title": "Team",
+    "lead": "Who works here, what each person can do and how much they spent today.",
+    "role": {
+      "member": "Employee",
+      "management": "Manager"
+    },
+    "roleLabel": "Role",
+    "departmentLabel": "Department",
+    "noDepartment": "no department",
+    "can": "Can do {{granted}} of {{total}}",
+    "spent": "{{spent}} of {{limit}} today",
+    "waiting": "waiting for a decision",
+    "grant": "Grant",
+    "revoke": "Revoke",
+    "granted": "{{name}} — granted to {{who}}",
+    "revoked": "{{name}} — revoked from {{who}}",
+    "failed": "The permissions could not be changed.",
+    "byRole": "from the role",
+    "byRoleNote": "Capabilities that come with a role are removed by changing the role, not one by one.",
+    "open": "Show capabilities",
+    "close": "Hide capabilities",
+    "empty": "Nobody else is here yet.",
+    "you": "that’s you"
   }
 }

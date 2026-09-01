@@ -1,4 +1,5 @@
 import { Pool } from "pg"
+import seedUsers from "../seed/users.json"
 
 // `var`, nie `let` — w `declare global` deklaracja MUSI trafić na `globalThis`, a `let`
 // tworzy tam binding leksykalny, po którym `global.__deskPool` już nie sięgnie. To jedyne
@@ -432,6 +433,24 @@ async function renameStoredValues() {
   `)
 }
 
+/**
+ * Persony demonstracji wsypane do tabeli osób. `on conflict do nothing`, bo po pierwszym
+ * uruchomieniu właścicielem roli i działu jest przełożony, a nie plik: zasiew, który
+ * nadpisywałby wiersz przy każdym starcie, cofałby jego decyzje przy każdym wdrożeniu.
+ *
+ * Adres składamy z domeny WDROŻENIA — tak samo, jak robi to `identity.ts`.
+ */
+async function seedPeople() {
+  const domain = (process.env.DESK_DOMAIN ?? "itsg.pl").trim().toLowerCase()
+  for (const u of seedUsers.users) {
+    await pool.query(
+      `insert into desk.person (id, email, first_name, last_name, department, role)
+       values ($1,$2,$3,$4,$5,$6) on conflict (id) do nothing`,
+      [u.id, `${u.id}@${domain}`, u.firstName, u.lastName, u.department, u.role],
+    )
+  }
+}
+
 export function migrate(): Promise<void> {
   if (global.__deskMigration) return global.__deskMigration
   const ready = (async () => {
@@ -514,6 +533,20 @@ export function migrate(): Promise<void> {
         primary key (server, remote_name)
       );
 
+      -- OSOBA JEST WIERSZEM, nie wpisem w pliku. Zasiew person zostaje jako stan
+      -- początkowy demonstracji, ale przestaje być jedynym źródłem: przy pierwszym
+      -- wejściu z bramy logowania zakłada się tu konto, bo inaczej u klienta weszłyby
+      -- na Biurko dokładnie dwie osoby, a reszta firmy dostałaby wyjątek.
+      create table if not exists desk.person (
+        id text primary key,
+        email text not null unique,
+        first_name text not null,
+        last_name text not null,
+        department text not null default '',
+        role text not null default 'member',
+        created_at timestamptz not null default now()
+      );
+
       -- Nadanie zdolności ponad to, co daje rola. Katalog i role zostają w pliku seed,
       -- ale to, co ktoś dostał indywidualnie, musi przeżyć restart i mieć autora.
       create table if not exists desk.grant (
@@ -525,6 +558,7 @@ export function migrate(): Promise<void> {
       );
     `)
     await renameStoredValues()
+    await seedPeople()
     // Reaper: tura przerwana restartem procesu nie może zostać „pracuje" na zawsze.
     // Ruszamy WYŁĄCZNIE sprawy bez śladu życia od dwóch minut — inaczej start drugiej
     // instancji zabijałby pracę, którą pierwsza właśnie wykonuje.

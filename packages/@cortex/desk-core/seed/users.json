@@ -5,16 +5,14 @@
       "firstName": "Anna",
       "lastName": "Kowalska",
       "department": "accounting",
-      "role": "member",
-      "quickTasks": ["expensesDocument", "documentGaps", "meetingNotes"]
+      "role": "member"
     },
     {
       "id": "robert",
       "firstName": "Robert",
       "lastName": "Nowak",
       "department": "management",
-      "role": "management",
-      "quickTasks": ["expensesSheet", "analysis", "titleImage"]
+      "role": "management"
     }
   ]
 }

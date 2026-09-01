@@ -2,14 +2,15 @@ import * as audit from "@cortex/desk-core/audit-log"
 import { capabilityCatalogue } from "@cortex/desk-core/capability-gate"
 import { capabilityLabel } from "@cortex/desk-core/capability-text"
 import { migrate, pool } from "@cortex/desk-core/db"
-import { USERS, whoAmI } from "@cortex/desk-core/identity"
+import { whoAmI } from "@cortex/desk-core/identity"
+import { names } from "@cortex/desk-core/people"
 import { deskT } from "@cortex/desk-ui/i18n/server"
 import { NextResponse } from "next/server"
 
 export async function GET() {
   await migrate()
   const u = await whoAmI()
-  const translate = await deskT()
+  const [translate, people] = await Promise.all([deskT(), names()])
   // pracownik widzi wyłącznie swoje prośby; zarząd — wszystkie oczekujące
   const r =
     u.role === "management"
@@ -25,7 +26,7 @@ export async function GET() {
     requests: r.rows.map((p) => ({
       id: Number(p.id),
       who: p.who,
-      whoName: USERS.find((x) => x.id === p.who)?.firstName ?? p.who,
+      whoName: people[p.who] ?? p.who,
       capability: p.capability,
       name:
         p.capability === "other"

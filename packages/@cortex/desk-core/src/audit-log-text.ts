@@ -1,17 +1,22 @@
 import type { DeskT } from "@cortex/desk-ui/i18n/locale"
-import { capabilityLabel } from "./capability-text"
-import { USERS } from "./identity"
+import { capabilityLabel, departmentLabel } from "./capability-text"
 
 type AuditEntry = { at: string; who: string; type: string; details: Record<string, unknown> }
 
 const capabilityName = (translate: DeskT, id: unknown) =>
   capabilityLabel(translate, typeof id === "string" ? id : undefined, String(id ?? ""))
 
-/** W dzienniku dla audytora mają stać imiona, nie identyfikatory z bazy. */
-const firstName = (id: unknown) => {
-  const u = USERS.find((x) => x.id === id)
-  return u ? `${u.firstName} ${u.lastName}` : String(id ?? "")
-}
+/**
+ * W dzienniku dla audytora mają stać imiona, nie identyfikatory z bazy.
+ *
+ * Mapę podaje WOŁAJĄCY, bo ludzie są dziś wierszami: wyszukiwanie w tablicy z pliku
+ * zamieniłoby się w zapytanie do bazy na każdy wiersz dziennika, a tych wierszy jest
+ * czterdzieści na ekran. Jedno zapytanie u góry, tutaj już tylko odczyt.
+ */
+export type People = Record<string, string>
+
+const firstName = (people: People, id: unknown) =>
+  (typeof id === "string" ? people[id] : undefined) ?? String(id ?? "")
 
 /**
  * Dziennik czyta audytor, nie programista — więc surowy JSON nigdy nie trafia na ekran.
@@ -27,6 +32,7 @@ const firstName = (id: unknown) => {
 export function describeEntry(
   w: AuditEntry,
   translate: DeskT,
+  people: People = {},
 ): { text: string; weight: "normal" | "important" } {
   const s = w.details ?? {}
   switch (w.type) {
@@ -66,7 +72,7 @@ export function describeEntry(
       return {
         text: translate("journal.requestGranted", {
           name: capabilityName(translate, s.capability),
-          who: firstName(s.toWhom),
+          who: firstName(people, s.toWhom),
         }),
         weight: "important",
       }
@@ -74,7 +80,7 @@ export function describeEntry(
       return {
         text: translate("journal.requestDenied", {
           name: capabilityName(translate, s.capability),
-          who: firstName(s.toWhom),
+          who: firstName(people, s.toWhom),
         }),
         weight: "important",
       }
@@ -83,11 +89,42 @@ export function describeEntry(
         text: translate("journal.requestOther", { description: String(s.description ?? "") }),
         weight: "important",
       }
+    // Nadanie Z WŁASNEJ WOLI przełożonego, a nie w odpowiedzi na prośbę. To są dwa różne
+    // zdarzenia i dziennik ma je rozróżniać: pierwsze mówi o inicjatywie, drugie o zgodzie.
+    case "capability.granted":
+      return {
+        text: translate("journal.capabilityGranted", {
+          name: capabilityName(translate, s.capability),
+          who: firstName(people, s.toWhom),
+        }),
+        weight: "important",
+      }
+    case "person.created":
+      return {
+        text: translate("journal.personCreated", { email: String(s.email ?? "") }),
+        weight: "important",
+      }
+    case "person.role":
+      return {
+        text: translate("journal.personRole", {
+          who: firstName(people, s.who),
+          role: translate(`team.role.${String(s.role ?? "")}`),
+        }),
+        weight: "important",
+      }
+    case "person.department":
+      return {
+        text: translate("journal.personDepartment", {
+          who: firstName(people, s.who),
+          department: departmentLabel(translate, String(s.department ?? "")),
+        }),
+        weight: "important",
+      }
     case "capability.revoked":
       return {
         text: translate("journal.capabilityRevoked", {
           name: capabilityName(translate, s.capability),
-          who: firstName(s.toWhom),
+          who: firstName(people, s.toWhom),
         }),
         weight: "important",
       }

@@ -1,13 +1,15 @@
 import * as audit from "@cortex/desk-core/audit-log"
 import { describeEntry } from "@cortex/desk-core/audit-log-text"
-import { policyFor, spentToday } from "@cortex/desk-core/capability-gate"
+import { capabilityCatalogue, policyFor, spentToday } from "@cortex/desk-core/capability-gate"
 import { pool } from "@cortex/desk-core/db"
-import { USERS, whoAmI } from "@cortex/desk-core/identity"
+import { whoAmI } from "@cortex/desk-core/identity"
+import { DEPARTMENTS, everyone, names, ROLES } from "@cortex/desk-core/people"
 import { Icon } from "@cortex/desk-ui/components/icon"
 import { McpSupervision } from "@cortex/desk-ui/components/mcp-supervision"
 import { RequestSupervision } from "@cortex/desk-ui/components/request-supervision"
 import { SectionTabs } from "@cortex/desk-ui/components/section-tabs"
 import { Shell } from "@cortex/desk-ui/components/shell"
+import { Team } from "@cortex/desk-ui/components/team"
 import { deskLocale, deskT } from "@cortex/desk-ui/i18n/server"
 import { zl } from "@cortex/desk-ui/lib"
 import { ShieldCheck } from "lucide-react"
@@ -26,7 +28,7 @@ import { notFound } from "next/navigation"
  * Sekcja jest w ADRESIE, nie w stanie komponentu — patrz `SectionTabs`.
  */
 
-const SECTIONS = ["decisions", "tools", "spending", "log"] as const
+const SECTIONS = ["decisions", "team", "tools", "spending", "log"] as const
 type Section = (typeof SECTIONS)[number]
 
 const isSection = (value: unknown): value is Section =>
@@ -46,7 +48,7 @@ export default async function Page({
 
   // Liczby do plakietek lecą ZAWSZE — to one mówią, czy warto tam zajrzeć — ale są
   // trzema tanimi zapytaniami zbiorczymi, a nie pobraniem treści czterech sekcji.
-  const [waiting, suspended, spentAll] = await Promise.all([
+  const [waiting, suspended, spentAll, team] = await Promise.all([
     pool.query<{ n: string }>(
       `select count(*)::text as n from desk.access_request where status='pending'`,
     ),
@@ -57,8 +59,10 @@ export default async function Page({
       `select coalesce(sum(cost_usd),0)::text as total from desk.case_file
        where updated_at::date = now()::date`,
     ),
+    everyone(),
   ])
   const today = Number(spentAll.rows[0]?.total ?? 0)
+  const headcount = team.length
 
   return (
     <Shell>
@@ -77,6 +81,7 @@ export default async function Page({
                 label: translate("supervision.tabDecisions"),
                 count: Number(waiting.rows[0]?.n ?? 0),
               },
+              { key: "team", label: translate("supervision.tabTeam"), note: String(headcount) },
               {
                 key: "tools",
                 label: translate("supervision.tabTools"),
@@ -94,6 +99,18 @@ export default async function Page({
 
           <div className="pt-6">
             {section === "decisions" && <Decisions />}
+            {section === "team" && (
+              <section>
+                <h2 className="t-section mb-1">{translate("team.title")}</h2>
+                <p className="t-meta mb-2">{translate("team.lead")}</p>
+                <Team
+                  catalogue={capabilityCatalogue}
+                  roles={ROLES}
+                  departments={DEPARTMENTS}
+                  me={u.id}
+                />
+              </section>
+            )}
             {section === "tools" && <McpSupervision />}
             {section === "spending" && <Spending />}
             {section === "log" && <Log />}
@@ -110,7 +127,7 @@ export default async function Page({
 
 /** Prośby czekające i rozpatrzone, a pod nimi to, czego katalog w ogóle nie zna. */
 async function Decisions() {
-  const translate = await deskT()
+  const [translate, people] = await Promise.all([deskT(), names()])
   // czego agent szukał, a katalog tego nie obejmuje — sygnał, że lista zdolności ma dziurę
   const gaps = (await audit.latest(300))
     .filter((w) => w.type === "capability.missing" && !w.details?.capability)
@@ -127,9 +144,7 @@ async function Decisions() {
           <ul className="divide-y overflow-hidden rounded-lg border bg-desk-surface">
             {gaps.map((w, i) => (
               <li key={i} className="t-body flex gap-3 px-4 py-2.5">
-                <span className="t-meta w-20 shrink-0">
-                  {USERS.find((x) => x.id === w.who)?.firstName ?? w.who}
-                </span>
+                <span className="t-meta w-20 shrink-0">{people[w.who] ?? w.who}</span>
                 <span className="min-w-0 flex-1">{String(w.details?.description ?? "")}</span>
               </li>
             ))}
@@ -143,7 +158,7 @@ async function Decisions() {
 async function Spending() {
   const [locale, translate] = await Promise.all([deskLocale(), deskT()])
   const spending = await Promise.all(
-    USERS.map(async (x) => ({
+    (await everyone()).map(async (x) => ({
       person: x,
       usd: await spentToday(x.id),
       limit: (await policyFor(x)).dailyLimitUsd,
@@ -187,7 +202,7 @@ async function Spending() {
 
 async function Log() {
   const [locale, translate] = await Promise.all([deskLocale(), deskT()])
-  const entries = await audit.latest(40)
+  const [entries, people] = await Promise.all([audit.latest(40), names()])
   return (
     <section>
       <h2 className="t-section mb-2">{translate("supervision.log")}</h2>
@@ -196,8 +211,12 @@ async function Log() {
           <li className="t-meta px-4 py-3">{translate("supervision.logEmpty")}</li>
         )}
         {entries.map((w, i) => {
-          const o = describeEntry({ ...w, at: w.at.toISOString?.() ?? String(w.at) }, translate)
-          const who = USERS.find((x) => x.id === w.who)
+          const o = describeEntry(
+            { ...w, at: w.at.toISOString?.() ?? String(w.at) },
+            translate,
+            people,
+          )
+          const who = people[w.who]
           return (
             <li key={i} className="flex gap-3 px-4 py-2.5">
               <span className="t-meta w-20 shrink-0 tabular-nums">
@@ -209,7 +228,7 @@ async function Log() {
               <span
                 className={`t-body min-w-0 flex-1 ${o.weight === "important" ? "" : "text-desk-ink-2"}`}
               >
-                <span className="font-medium">{who?.firstName ?? w.who}</span> {o.text}
+                <span className="font-medium">{who ?? w.who}</span> {o.text}
               </span>
             </li>
           )

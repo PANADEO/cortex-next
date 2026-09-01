@@ -1,6 +1,7 @@
 import { policyFor } from "@cortex/desk-core/capability-gate"
 import { migrate, pool } from "@cortex/desk-core/db"
-import { USERS, identity } from "@cortex/desk-core/identity"
+import { identity } from "@cortex/desk-core/identity"
+import { everyone } from "@cortex/desk-core/people"
 import { ChevronRight, FolderOpen, LayoutGrid, ListChecks, Plus, ShieldCheck } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -172,7 +173,7 @@ export async function Shell({
             <div className="border-t p-3">
               {/* Menu stoi ZAWSZE, bo niesie też język i wygląd. Lista osób jest pusta,
                 gdy przełączenie nic by nie zmieniło — patrz `identity().switchable`. */}
-              <Persona me={u} everyone={switchable ? USERS : []} />
+              <Persona me={u} everyone={switchable ? await everyone() : []} />
             </div>
           </aside>
 
