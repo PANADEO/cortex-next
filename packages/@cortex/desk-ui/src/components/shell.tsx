@@ -45,6 +45,20 @@ export async function Shell({
   await migrate()
   const [locale, translate] = await Promise.all([deskLocale(), deskT()])
   const { user: u, switchable } = await identity()
+  if (u.active === false) {
+    // Zdanie zamiast strony błędu. Konto zostaje razem ze swoimi sprawami i dziennikiem
+    // — nie kasuje się dowodu razem z odejściem człowieka z firmy.
+    return (
+      <DeskLocaleProvider locale={locale}>
+        <div className="desk grid h-full place-items-center p-8 text-center">
+          <div>
+            <div className="t-h2">{translate("shell.disabledTitle")}</div>
+            <p className="t-body mt-1 text-desk-muted">{translate("shell.disabledLead")}</p>
+          </div>
+        </div>
+      </DeskLocaleProvider>
+    )
+  }
   const p = await policyFor(u)
   const s = await pool.query(
     `select id, title, status, updated_at as "updatedAt" from desk.case_file where owner=$1 order by updated_at desc limit $2`,

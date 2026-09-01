@@ -38,6 +38,7 @@ type Person = {
   dailyLimitUsd: number
   /** `null` znaczy: limit pochodzi z roli, nie jest własny. */
   ownLimit: number | null
+  active: boolean
 }
 
 export function Team({
@@ -94,8 +95,11 @@ export function Team({
         return (
           <li key={p.id} className="px-4 py-3">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="t-body-m">{name || p.id}</span>
+              <span className={`t-body-m ${p.active ? "" : "text-desk-muted line-through"}`}>
+                {name || p.id}
+              </span>
               {p.id === me && <span className="t-micro">{translate("team.you")}</span>}
+              {!p.active && <span className="t-micro">{translate("team.disabled")}</span>}
               <Picker
                 value={p.role}
                 options={roles.map((r) => ({ id: r, label: translate(`team.role.${r}`) }))}
@@ -163,6 +167,23 @@ export function Team({
                 style={{ width: `${Math.max(share, 2)}%` }}
               />
             </div>
+
+            {p.id !== me && (
+              <button
+                onClick={() =>
+                  act(
+                    { action: "active", who: p.id, active: !p.active },
+                    translate(p.active ? "team.disabledDone" : "team.enabledDone", {
+                      name: name || p.id,
+                    }),
+                  )
+                }
+                disabled={taken}
+                className="t-micro mt-1.5 rounded-desk-pill border px-2 py-0.5 text-desk-muted hover:bg-desk-raised hover:text-desk-ink disabled:opacity-50"
+              >
+                {translate(p.active ? "team.disable" : "team.enable")}
+              </button>
+            )}
 
             <button
               onClick={() => setOpen(open === p.id ? null : p.id)}

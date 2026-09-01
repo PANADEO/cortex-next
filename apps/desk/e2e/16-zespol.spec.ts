@@ -125,6 +125,44 @@ test.describe("Obszar 25 · Zespół widziany przez przełożonego", () => {
     expect(zly.status()).toBe(400)
   })
 
+  test("Wyłączone konto nie wchodzi, ale jego sprawy zostają", async ({ page, request }) => {
+    // Konto ZOSTAJE razem ze swoimi sprawami, dziennikiem i nadaniami — dowodu nie
+    // kasuje się razem z odejściem człowieka z firmy. Wyłączone po prostu nie wchodzi.
+    const przed = await (await request.get("/api/team", { headers: jako("robert") })).json()
+    const ile = przed.people.length
+
+    await request.post("/api/team", {
+      headers: jako("robert"),
+      data: { action: "active", who: "anna", active: false },
+    })
+    try {
+      // Ekran mówi ZDANIE, a nie pokazuje strony błędu: to decyzja przełożonego,
+      // nie awaria narzędzia.
+      await as(page, "anna")
+      await otworz(page, "/")
+      await expect(page.getByText("To konto jest wyłączone.")).toBeVisible()
+
+      const po = await (await request.get("/api/team", { headers: jako("robert") })).json()
+      expect(po.people.length).toBe(ile)
+      expect(po.people.find((p: { id: string }) => p.id === "anna").active).toBe(false)
+    } finally {
+      await request.post("/api/team", {
+        headers: jako("robert"),
+        data: { action: "active", who: "anna", active: true },
+      })
+    }
+    await otworz(page, "/")
+    await expect(page.getByText("To konto jest wyłączone.")).toHaveCount(0)
+  })
+
+  test("Przełożony nie może wyłączyć własnego konta", async ({ request }) => {
+    const r = await request.post("/api/team", {
+      headers: jako("robert"),
+      data: { action: "active", who: "robert", active: false },
+    })
+    expect(r.status()).toBe(400)
+  })
+
   test("Przełożony nie może odebrać roli sam sobie", async ({ request }) => {
     // Jedyny przełożony, który zdegraduje sam siebie, zamyka ten ekran przed wszystkimi
     // — łącznie z sobą, więc nie ma już jak tego cofnąć.

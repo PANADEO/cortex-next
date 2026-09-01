@@ -1,6 +1,6 @@
 import { migrate, pool } from "@cortex/desk-core/db"
 import { countResults } from "@cortex/desk-core/folder-server"
-import { whoAmI } from "@cortex/desk-core/identity"
+import { viewer } from "@cortex/desk-core/identity"
 import { CaseList, type CaseRow } from "@cortex/desk-ui/components/case-list"
 import { Shell } from "@cortex/desk-ui/components/shell"
 import { deskT } from "@cortex/desk-ui/i18n/server"
@@ -26,7 +26,7 @@ export default async function Page({
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }) {
   await migrate()
-  const u = await whoAmI()
+  const u = await viewer()
   const translate = await deskT()
 
   const asked = Number((await searchParams)?.strona ?? 1)

@@ -46,6 +46,7 @@ type Row = {
   department: string
   role: string
   daily_limit_usd: string | null
+  active: boolean
 }
 
 const toUser = (r: Row): User => ({
@@ -56,9 +57,10 @@ const toUser = (r: Row): User => ({
   role: isRole(r.role) ? r.role : "member",
   quickTasks: quickTasksByRole[r.role] ?? quickTasksByRole["member"] ?? [],
   ...(r.daily_limit_usd === null ? {} : { dailyLimitUsd: Number(r.daily_limit_usd) }),
+  active: r.active,
 })
 
-const SELECT = `select id, email, first_name, last_name, department, role, daily_limit_usd from desk.person`
+const SELECT = `select id, email, first_name, last_name, department, role, daily_limit_usd, active from desk.person`
 
 export async function everyone(): Promise<User[]> {
   await migrate()
@@ -108,7 +110,7 @@ export async function ensurePerson(email: string): Promise<User> {
     `insert into desk.person (id, email, first_name, last_name, department, role)
      values ($1,$2,$3,$4,'','member')
      on conflict (email) do update set email = excluded.email
-     returning id, email, first_name, last_name, department, role, daily_limit_usd`,
+     returning id, email, first_name, last_name, department, role, daily_limit_usd, active`,
     [email, email, firstName, lastName],
   )
   const created = r.rows[0]
@@ -133,6 +135,18 @@ export async function setDailyLimit(id: string, usd: number | null, by: string):
   if (usd !== null && (!Number.isFinite(usd) || usd < 0)) throw new Error("Limit musi być liczbą.")
   await pool.query(`update desk.person set daily_limit_usd=$2 where id=$1`, [id, usd])
   await audit.write(by, "person.limit", { who: id, usd })
+}
+
+/**
+ * Wyłączenie i włączenie konta. Konto ZOSTAJE — jego sprawy, wpisy w dzienniku i nadania
+ * są dowodem, którego nie kasuje się razem z odejściem człowieka z firmy. Wyłączone
+ * konto po prostu nie wchodzi na Biurko, nawet gdy brama logowania je wpuści: członkostwo
+ * jest własnością tego narzędzia, a nie tylko katalogu firmowego.
+ */
+export async function setActive(id: string, active: boolean, by: string): Promise<void> {
+  await migrate()
+  await pool.query(`update desk.person set active=$2 where id=$1`, [id, active])
+  await audit.write(by, active ? "person.enabled" : "person.disabled", { who: id })
 }
 
 export async function setDepartment(id: string, department: string, by: string): Promise<void> {

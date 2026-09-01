@@ -1,7 +1,7 @@
 import { policyFor } from "@cortex/desk-core/capability-gate"
 import { migrate, pool } from "@cortex/desk-core/db"
 import { countResults } from "@cortex/desk-core/folder-server"
-import { whoAmI } from "@cortex/desk-core/identity"
+import { viewer } from "@cortex/desk-core/identity"
 import { CaseList, type CaseRow } from "@cortex/desk-ui/components/case-list"
 import { Composer } from "@cortex/desk-ui/components/composer"
 import { Shell } from "@cortex/desk-ui/components/shell"
@@ -14,7 +14,7 @@ const ON_DESK = 12
 
 export default async function Desk() {
   await migrate()
-  const u = await whoAmI()
+  const u = await viewer()
   const p = await policyFor(u)
   const translate = await deskT()
   const s = await pool.query(

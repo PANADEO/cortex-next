@@ -6,6 +6,7 @@ import {
   everyone,
   isDepartment,
   isRole,
+  setActive,
   setDailyLimit,
   setDepartment,
   setRole,
@@ -58,6 +59,7 @@ export async function GET() {
         lastName: person.lastName,
         department: person.department,
         role: person.role,
+        active: person.active !== false,
         // Nadane WPROST, ponad rolę — tylko te da się odebrać, i tylko to widać
         // na ekranie jako coś, co ktoś kiedyś zdecydował.
         granted: policy.granted.map((z) => z.id),
@@ -101,6 +103,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: translate("api.unknownDepartment") }, { status: 400 })
     }
     await setDepartment(who, b.department, u.id)
+    return NextResponse.json({ ok: true })
+  }
+
+  if (b.action === "active") {
+    // Ten sam powód, co przy roli: przełożony, który wyłączy sam siebie, zamyka ten
+    // ekran przed sobą i nie ma już jak tego cofnąć.
+    if (who === u.id) {
+      return NextResponse.json({ error: translate("api.cannotDisableSelf") }, { status: 400 })
+    }
+    await setActive(who, Boolean(b.active), u.id)
     return NextResponse.json({ ok: true })
   }
 

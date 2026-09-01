@@ -2,7 +2,7 @@ import * as audit from "@cortex/desk-core/audit-log"
 import { describeEntry } from "@cortex/desk-core/audit-log-text"
 import { capabilityCatalogue, policyFor, spentToday } from "@cortex/desk-core/capability-gate"
 import { pool } from "@cortex/desk-core/db"
-import { whoAmI } from "@cortex/desk-core/identity"
+import { viewer } from "@cortex/desk-core/identity"
 import { DEPARTMENTS, everyone, names, ROLES } from "@cortex/desk-core/people"
 import { Icon } from "@cortex/desk-ui/components/icon"
 import { McpSupervision } from "@cortex/desk-ui/components/mcp-supervision"
@@ -39,7 +39,7 @@ export default async function Page({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const u = await whoAmI()
+  const u = await viewer()
   if (u.role !== "management") notFound()
   const [locale, translate] = await Promise.all([deskLocale(), deskT()])
 

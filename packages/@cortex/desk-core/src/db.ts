@@ -601,6 +601,9 @@ export function migrate(): Promise<void> {
       -- Kolumny dokładane do tabeli, która JUŻ istnieje: create table if not exists
       -- ich nie doda. Ta sama zasada, co przy access_request.
       alter table desk.person add column if not exists daily_limit_usd numeric;
+      -- Odejście z firmy. Konto ZOSTAJE, bo jego sprawy, dziennik i nadania są dowodem,
+      -- którego nie kasuje się razem z człowiekiem. Wyłączone konto po prostu nie wchodzi.
+      alter table desk.person add column if not exists active boolean not null default true;
 
       -- Nadanie zdolności ponad to, co daje rola. Katalog i role zostają w pliku seed,
       -- ale to, co ktoś dostał indywidualnie, musi przeżyć restart i mieć autora.

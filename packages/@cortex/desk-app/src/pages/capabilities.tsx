@@ -1,13 +1,13 @@
 import { policyFor } from "@cortex/desk-core/capability-gate"
 import { departmentLabel } from "@cortex/desk-core/capability-text"
-import { whoAmI } from "@cortex/desk-core/identity"
+import { viewer } from "@cortex/desk-core/identity"
 import { CapabilityList } from "@cortex/desk-ui/components/capability-list"
 import { OtherRequest } from "@cortex/desk-ui/components/other-request"
 import { Shell } from "@cortex/desk-ui/components/shell"
 import { deskT } from "@cortex/desk-ui/i18n/server"
 
 export default async function Page() {
-  const u = await whoAmI()
+  const u = await viewer()
   const p = await policyFor(u)
   const translate = await deskT()
   return (

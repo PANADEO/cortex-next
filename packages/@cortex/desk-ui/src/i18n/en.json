@@ -14,7 +14,9 @@
     },
     "privacy": "Files stay on the company server. Only the content the assistant has to read in order to do the job reaches the model.",
     "memory": "Memory",
-    "sharedWithMe": "Shared with me"
+    "sharedWithMe": "Shared with me",
+    "disabledTitle": "This account is disabled.",
+    "disabledLead": "Your cases and files stay where they are. Ask your manager to enable it again."
   },
   "bottomBar": {
     "cases": "Cases",
@@ -393,7 +395,8 @@
     "notYourCase": "This is not your case.",
     "ownerShares": "Only the owner can share a case.",
     "noSuchPerson": "There is no such person.",
-    "limitMustBeNumber": "The limit has to be a number of zero or more."
+    "limitMustBeNumber": "The limit has to be a number of zero or more.",
+    "cannotDisableSelf": "You cannot disable your own account."
   },
   "tools": {
     "list_files": {
@@ -535,7 +538,9 @@
     "caseShared": "shares the case with {{who}}",
     "caseUnshared": "stops sharing the case with {{who}}",
     "caseMessage": "writes a message on the case",
-    "personLimit": "changes {{who}}’s daily limit"
+    "personLimit": "changes {{who}}’s daily limit",
+    "personDisabled": "disables {{who}}’s account",
+    "personEnabled": "enables {{who}}’s account"
   },
   "capability": {
     "files": {
@@ -660,7 +665,12 @@
     "changeLimit": "Change the daily limit for {{name}}",
     "limitLabel": "Daily limit in dollars",
     "limitFromRole": "Back to the role’s limit",
-    "limitHint": "Enter saves, Esc cancels."
+    "limitHint": "Enter saves, Esc cancels.",
+    "disabled": "account disabled",
+    "disable": "Disable the account",
+    "enable": "Enable the account",
+    "disabledDone": "{{name}} — account disabled",
+    "enabledDone": "{{name}} — account enabled"
   },
   "memory": {
     "title": "Memory",

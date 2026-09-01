@@ -11,7 +11,9 @@
     "skills": "Umiem {{granted}} z {{count}} rzeczy",
     "privacy": "Pliki zostają na serwerze firmy. Do modelu trafia tylko ta treść, którą asystent musi przeczytać, żeby wykonać zlecenie.",
     "memory": "Pamięć",
-    "sharedWithMe": "Udostępnione mi"
+    "sharedWithMe": "Udostępnione mi",
+    "disabledTitle": "To konto jest wyłączone.",
+    "disabledLead": "Twoje sprawy i pliki zostają na miejscu. O ponowne włączenie poproś przełożonego."
   },
   "bottomBar": {
     "cases": "Sprawy",
@@ -412,7 +414,8 @@
     "notYourCase": "To nie jest Twoja sprawa.",
     "ownerShares": "Sprawę udostępnia jej właściciel.",
     "noSuchPerson": "Nie ma takiej osoby.",
-    "limitMustBeNumber": "Limit musi być liczbą nie mniejszą od zera."
+    "limitMustBeNumber": "Limit musi być liczbą nie mniejszą od zera.",
+    "cannotDisableSelf": "Nie możesz wyłączyć własnego konta."
   },
   "tools": {
     "list_files": {
@@ -572,7 +575,9 @@
     "caseShared": "udostępnia sprawę osobie {{who}}",
     "caseUnshared": "cofa wgląd w sprawę osobie {{who}}",
     "caseMessage": "pisze wiadomość przy sprawie",
-    "personLimit": "zmienia dzienny limit {{who}}"
+    "personLimit": "zmienia dzienny limit {{who}}",
+    "personDisabled": "wyłącza konto {{who}}",
+    "personEnabled": "włącza konto {{who}}"
   },
   "capability": {
     "files": {
@@ -697,7 +702,12 @@
     "changeLimit": "Zmień dzienny limit: {{name}}",
     "limitLabel": "Dzienny limit w dolarach",
     "limitFromRole": "Wróć do limitu z roli",
-    "limitHint": "Enter zapisuje, Esc anuluje."
+    "limitHint": "Enter zapisuje, Esc anuluje.",
+    "disabled": "konto wyłączone",
+    "disable": "Wyłącz konto",
+    "enable": "Włącz konto",
+    "disabledDone": "{{name}} — konto wyłączone",
+    "enabledDone": "{{name}} — konto włączone"
   },
   "memory": {
     "title": "Pamięć",

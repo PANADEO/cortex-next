@@ -29,7 +29,22 @@ const DEMO_PERSONAS = process.env.DESK_DEMO_PERSONAS === "1"
  * przyjdzie tu przy przeprowadzce do `app/idp`, bo dziś ten pakiet ciągnąłby za
  * sobą drizzle i całą warstwę bazy powłoki.
  */
+/**
+ * Kto pyta — dla TRAS API. Wyłączone konto zamyka je twardo, bo trasa nie ma jak
+ * powiedzieć człowiekowi zdania: oddaje dane albo ich nie oddaje.
+ */
 export async function whoAmI(): Promise<User> {
+  const { user } = await identity()
+  if (user.active === false) throw new Error(`Konto ${user.id} jest wyłączone.`)
+  return user
+}
+
+/**
+ * Kto pyta — dla EKRANÓW. Wyłączonego konta NIE odrzuca, bo odrzucenie na tym poziomie
+ * dałoby stronę błędu zamiast zdania. Zdanie pisze `Shell`, przez który przechodzi
+ * każdy ekran Biurka; konto wyłączone to decyzja przełożonego, nie awaria narzędzia.
+ */
+export async function viewer(): Promise<User> {
   return (await identity()).user
 }
 
@@ -37,6 +52,15 @@ export async function whoAmI(): Promise<User> {
  * Kto pyta i CZY DA SIĘ TO ZMIENIĆ. Powłoka pokazuje przełącznik person tylko
  * wtedy, gdy przełącznik naprawdę działa — inaczej menu wybiera osobę, tożsamość
  * zostaje stara i wygląda to na awarię Biurka, a jest konfiguracją.
+ */
+/**
+ * Wyłączone konto NIE wchodzi na Biurko, choćby brama logowania je wpuściła: członkostwo
+ * jest własnością tego narzędzia, a nie tylko katalogu firmowego — osoba, która odeszła
+ * z firmy, bywa w katalogu jeszcze przez tygodnie.
+ *
+ * `identity()` tego NIE rozstrzyga i to jest celowe: trasy API mają się zamknąć twardo
+ * (`whoAmI`), a ekran ma powiedzieć człowiekowi zdanie zamiast pokazać stronę błędu.
+ * Konto wyłączone to decyzja przełożonego, nie awaria narzędzia, i tak ma wyglądać.
  */
 export async function identity(): Promise<{ user: User; switchable: boolean }> {
   const h = await headers()

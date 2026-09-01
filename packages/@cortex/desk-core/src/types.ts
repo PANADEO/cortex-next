@@ -51,6 +51,8 @@ export type User = {
   quickTasks: string[]
   /** Limit dzienny tej osoby; brak znaczy „z roli". */
   dailyLimitUsd?: number | undefined
+  /** Wyłączone konto nie wchodzi na Biurko, ale jego sprawy i dziennik zostają. */
+  active?: boolean | undefined
 }
 
 /** Wynik materializacji polityki — to, co fizycznie trafia do instancji. */
