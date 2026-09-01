@@ -13,7 +13,8 @@
       "other": "I can do {{granted}} of {{count}} things"
     },
     "privacy": "Files stay on the company server. Only the content the assistant has to read in order to do the job reaches the model.",
-    "memory": "Memory"
+    "memory": "Memory",
+    "sharedWithMe": "Shared with me"
   },
   "bottomBar": {
     "cases": "Cases",
@@ -378,7 +379,10 @@
     "notGrantable": "This request cannot be granted with one click — it is a submission to the catalogue.",
     "newCase": "New case",
     "cannotDemoteSelf": "You cannot take the manager role away from yourself.",
-    "unknownDepartment": "There is no such department."
+    "unknownDepartment": "There is no such department.",
+    "notYourCase": "This is not your case.",
+    "ownerShares": "Only the owner can share a case.",
+    "noSuchPerson": "There is no such person."
   },
   "tools": {
     "list_files": {
@@ -516,7 +520,10 @@
     "memoryAdded": "adds something to the assistant’s memory",
     "memoryAccepted": "accepts a suggestion into the assistant’s memory",
     "memoryEdited": "edits one of the assistant’s memories",
-    "memoryForgotten": "deletes one of the assistant’s memories"
+    "memoryForgotten": "deletes one of the assistant’s memories",
+    "caseShared": "shares the case with {{who}}",
+    "caseUnshared": "stops sharing the case with {{who}}",
+    "caseMessage": "writes a message on the case"
   },
   "capability": {
     "files": {
@@ -660,5 +667,18 @@
     "empty2": "A memory cannot be empty.",
     "failed": "The memory could not be changed.",
     "privacy": "The memory is yours. Your manager sees in the journal that you accepted or deleted something — never what it said."
+  },
+  "talk": {
+    "seenBy": "Seen by:",
+    "nobody": "only you",
+    "share": "+ Share",
+    "shareWith": "Who should see this case",
+    "stopSharing": "Stop sharing with {{name}}",
+    "write": "Write to the people who can see this case",
+    "send": "Send the message",
+    "placeholder": "Write to the people who can see this case…",
+    "note": "These messages are for people. The assistant does not see them and does not act on them.",
+    "failed": "The message could not be sent.",
+    "empty": "A message cannot be empty."
   }
 }

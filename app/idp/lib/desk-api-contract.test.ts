@@ -37,6 +37,7 @@ const ROUTES: Record<string, string> = {
   "/persona": "persona.ts",
   "/case/new": "case-new.ts",
   "/case/*/turn": "case-turn.ts",
+  "/case/*/talk": "case-talk.ts",
   "/case/*/stop": "case-stop.ts",
   "/case/*/events": "case-events.ts",
 }

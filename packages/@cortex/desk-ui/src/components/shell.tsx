@@ -1,4 +1,5 @@
 import { policyFor } from "@cortex/desk-core/capability-gate"
+import { sharedWith } from "@cortex/desk-core/case-access"
 import { migrate, pool } from "@cortex/desk-core/db"
 import { identity } from "@cortex/desk-core/identity"
 import { everyone } from "@cortex/desk-core/people"
@@ -61,6 +62,10 @@ export async function Shell({
     [u.id],
   )
   const proposed = Number(waitingMemory.rows[0]?.n ?? 0)
+  // Sprawa udostępniona przez kogoś innego nie jest MOJĄ sprawą, więc nie miesza się
+  // z listą powyżej — inaczej pasek boczny przestałby odpowiadać na pytanie „nad czym
+  // pracuję". Osobna sekcja i tylko wtedy, gdy jest co pokazać.
+  const guest = await sharedWith(u.id, 5)
   const visible = s.rows.slice(0, IN_BAR)
 
   return (
@@ -149,6 +154,25 @@ export async function Shell({
                   </li>
                 )}
               </ul>
+
+              {guest.length > 0 && (
+                <>
+                  <div className="t-micro px-2.5 pb-1 pt-4">{translate("shell.sharedWithMe")}</div>
+                  <ul className="space-y-0.5">
+                    {guest.map((w) => (
+                      <li key={w.id}>
+                        <Link
+                          href={t(`/case/${w.id}`)}
+                          className="flex h-9 items-center gap-2 rounded-sm px-2.5 hover:bg-desk-raised/70"
+                        >
+                          <span className="t-body min-w-0 flex-1 truncate">{w.title}</span>
+                          <span className="t-micro shrink-0">{when(w.updatedAt, locale)}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
 
               <div className="mt-4 px-2">
                 <Link

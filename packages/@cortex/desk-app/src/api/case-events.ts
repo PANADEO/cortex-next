@@ -1,3 +1,4 @@
+import { accessTo, messages, sharesOf } from "@cortex/desk-core/case-access"
 import { migrate, pool } from "@cortex/desk-core/db"
 import * as storage from "@cortex/desk-core/desk-storage"
 import { whoAmI } from "@cortex/desk-core/identity"
@@ -13,14 +14,17 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     [id],
   )
   if (!s.rowCount) return NextResponse.json({ error: "Nie ma takiej sprawy." }, { status: 404 })
-  if (s.rows[0].owner !== u.id)
+  const access = await accessTo(id, u.id)
+  if (access === "none")
     return NextResponse.json({ error: "To nie jest Twoja sprawa." }, { status: 403 })
 
   const z = await pool.query(
     `select seq, at, payload from desk.event where case_id=$1 and seq>$2 order by seq`,
     [id, from],
   )
-  const folder = await storage.list(u.id, storage.caseFolder(u.id, id)).catch(() => [])
+  // Teczka leży u WŁAŚCICIELA, nie u patrzącego — gość ogląda cudzą pracę, nie swoją.
+  const owner: string = s.rows[0].owner
+  const folder = await storage.list(owner, storage.caseFolder(owner, id)).catch(() => [])
   return NextResponse.json({
     caseFile: {
       id,
@@ -32,5 +36,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     },
     events: z.rows.map((r) => ({ seq: Number(r.seq), at: r.at, event: r.payload })),
     folder,
+    access,
+    owner,
+    // Wiadomości ludzi jadą OBOK zdarzeń, nie wśród nich: model dostaje `events`,
+    // a tego nie dostaje nigdy.
+    messages: await messages(id),
+    shares: access === "owner" ? await sharesOf(id) : [],
   })
 }

@@ -10,7 +10,8 @@
     "supervision": "Nadzór",
     "skills": "Umiem {{granted}} z {{count}} rzeczy",
     "privacy": "Pliki zostają na serwerze firmy. Do modelu trafia tylko ta treść, którą asystent musi przeczytać, żeby wykonać zlecenie.",
-    "memory": "Pamięć"
+    "memory": "Pamięć",
+    "sharedWithMe": "Udostępnione mi"
   },
   "bottomBar": {
     "cases": "Sprawy",
@@ -397,7 +398,10 @@
     "notGrantable": "Tej prośby nie da się przyznać jednym kliknięciem — to zgłoszenie do katalogu.",
     "newCase": "Nowa sprawa",
     "cannotDemoteSelf": "Nie możesz odebrać roli przełożonego samemu sobie.",
-    "unknownDepartment": "Nie ma takiego działu."
+    "unknownDepartment": "Nie ma takiego działu.",
+    "notYourCase": "To nie jest Twoja sprawa.",
+    "ownerShares": "Sprawę udostępnia jej właściciel.",
+    "noSuchPerson": "Nie ma takiej osoby."
   },
   "tools": {
     "list_files": {
@@ -553,7 +557,10 @@
     "memoryAdded": "dopisuje coś do pamięci asystenta",
     "memoryAccepted": "przyjmuje propozycję do pamięci asystenta",
     "memoryEdited": "poprawia wspomnienie asystenta",
-    "memoryForgotten": "kasuje wspomnienie asystenta"
+    "memoryForgotten": "kasuje wspomnienie asystenta",
+    "caseShared": "udostępnia sprawę osobie {{who}}",
+    "caseUnshared": "cofa wgląd w sprawę osobie {{who}}",
+    "caseMessage": "pisze wiadomość przy sprawie"
   },
   "capability": {
     "files": {
@@ -697,5 +704,18 @@
     "empty2": "Wspomnienie nie może być puste.",
     "failed": "Nie udało się zmienić pamięci.",
     "privacy": "Pamięć jest Twoja. Przełożony widzi w dzienniku, że coś przyjąłeś albo skasowałeś — nigdy treści."
+  },
+  "talk": {
+    "seenBy": "Widzą:",
+    "nobody": "tylko Ty",
+    "share": "+ Udostępnij",
+    "shareWith": "Komu pokazać tę sprawę",
+    "stopSharing": "Cofnij wgląd: {{name}}",
+    "write": "Napisz do osób, które widzą tę sprawę",
+    "send": "Wyślij wiadomość",
+    "placeholder": "Napisz do osób, które widzą tę sprawę…",
+    "note": "Te wiadomości czytają ludzie. Asystent ich nie widzi i nie wykonuje.",
+    "failed": "Nie udało się wysłać.",
+    "empty": "Wiadomość nie może być pusta."
   }
 }

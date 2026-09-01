@@ -547,6 +547,35 @@ export function migrate(): Promise<void> {
         created_at timestamptz not null default now()
       );
 
+      -- SPRAWA WE DWOJE. Domyślnie sprawy nie widzi nikt poza właścicielem i to jest
+      -- dobra reguła — brakowało od niej JAKIEGOKOLWIEK wyjątku, więc dowód, który jest
+      -- całą wartością tego produktu, kończył się na granicy jednego biurka.
+      --
+      -- Udostępnia WŁAŚCICIEL, nigdy przełożony: wgląd w treść cudzej pracy to co innego
+      -- niż nadzór nad zakresem uprawnień, a „prywatna przestrzeń pracy" przestałaby
+      -- cokolwiek znaczyć, gdyby przełożony mógł sobie otworzyć każdą sprawę.
+      create table if not exists desk.case_share (
+        case_id text not null references desk.case_file(id) on delete cascade,
+        who text not null,
+        shared_by text not null,
+        at timestamptz not null default now(),
+        primary key (case_id, who)
+      );
+      create index if not exists case_share_who_idx on desk.case_share (who, at desc);
+
+      -- Rozmowa LUDZI przy sprawie. Osobna tabela, nie desk.event, i to nie jest
+      -- kwestia porządku: zdarzenia sprawy jadą do modelu jako historia, więc komentarz
+      -- wrzucony do tego strumienia stałby się poleceniem dla agenta. Nikt tego nie
+      -- zamawiał, a zrobienie tego źle jest o połowę krótsze niż zrobienie dobrze.
+      create table if not exists desk.case_message (
+        id bigserial primary key,
+        case_id text not null references desk.case_file(id) on delete cascade,
+        who text not null,
+        text text not null,
+        at timestamptz not null default now()
+      );
+      create index if not exists case_message_idx on desk.case_message (case_id, id);
+
       -- PAMIĘĆ ASYSTENTA. Prywatna przestrzeń tej osoby, tak samo jak „Moje pliki":
       -- przełożony widzi w dzienniku, że ktoś coś przyjął albo skasował, ale nigdy
       -- treści. Wpis z treścią zamieniłby ekran nadzoru w podgląd cudzych notatek.

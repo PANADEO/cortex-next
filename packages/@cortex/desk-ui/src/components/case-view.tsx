@@ -29,6 +29,7 @@ import { ActivityTrail } from "./activity-trail"
 import { Artifacts } from "./artifacts"
 import { AttachmentList, type Attachment } from "./attachments"
 import { CapabilityButton } from "./capability-list"
+import { CaseTalk, type CaseMessage, type CaseShare } from "./case-talk"
 import { fileIcon } from "./file-row"
 import { Icon } from "./icon"
 import { CapabilityLock } from "./lock"
@@ -81,7 +82,22 @@ function perTurn(entries: AuditEntry[]): Turn[] {
 const fileUrl = (path: string) => `${api("/file")}?path=${encodeURIComponent(path)}`
 const isImage = (n: string) => /\.(png|jpe?g|gif|webp)$/i.test(n)
 
-export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }) {
+export function CaseView({
+  id,
+  policyFor: p,
+  readOnly,
+  people,
+  everyone,
+  me,
+}: {
+  id: string
+  policyFor: Policy
+  /** Gość ogląda cudzą sprawę: bez pola zlecenia, z rozmową. */
+  readOnly?: boolean
+  people?: Record<string, string>
+  everyone?: { id: string; name: string }[]
+  me?: string
+}) {
   const [entries, setEntries] = useState<AuditEntry[]>([])
   const [caseFile, setCaseFile] = useState<Case | null>(null)
   const [folder, setFolder] = useState<FileMeta[]>([])
@@ -95,6 +111,10 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
   const [panel, setPanelState] = useState(true)
   const [width, setWidthState] = useState(WIDTH_DEFAULT)
   const [selected, setSelected] = useState<string | null>(null)
+  // Wiadomości ludzi i lista wglądów przychodzą tą samą trasą co zdarzenia, ale OBOK
+  // nich — model dostaje `events` i nigdy tego.
+  const [messages, setMessages] = useState<CaseMessage[]>([])
+  const [shares, setShares] = useState<CaseShare[]>([])
   const from = useRef(0)
   const stream = useRef<HTMLDivElement>(null)
   const bottom = useRef<HTMLDivElement>(null)
@@ -182,6 +202,18 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
             )
           return same ? t : next
         })
+
+        setMessages((w) =>
+          w.length === (d.messages ?? []).length &&
+          w.every((x, i) => x.id === d.messages[i]?.id && x.text === d.messages[i]?.text)
+            ? w
+            : (d.messages ?? []),
+        )
+        setShares((w) =>
+          w.length === (d.shares ?? []).length && w.every((x, i) => x.who === d.shares[i]?.who)
+            ? w
+            : (d.shares ?? []),
+        )
 
         if (d.events?.length) {
           from.current = d.events[d.events.length - 1].seq
@@ -589,7 +621,24 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
         )}
 
         <div className="shrink-0 border-t bg-desk-surface p-3">
-          <div className="editor mx-auto max-w-desk-stream rounded-xl border bg-desk-bg">
+          {(messages.length > 0 || shares.length > 0 || !readOnly) && (
+            <div className={readOnly ? "" : "mb-3"}>
+              <CaseTalk
+                id={id}
+                messages={messages}
+                shares={shares}
+                people={people ?? {}}
+                everyone={readOnly ? [] : (everyone ?? [])}
+                me={me ?? ""}
+                canShare={!readOnly}
+                refresh={() => setNow(Date.now())}
+              />
+            </div>
+          )}
+          {/* Pole zlecenia dostaje wyłącznie właściciel: gość ogląda, nie zleca. */}
+          <div
+            className={`editor mx-auto max-w-desk-stream rounded-xl border bg-desk-bg ${readOnly ? "hidden" : ""}`}
+          >
             {pending.length > 0 && (
               <div className="max-h-[136px] overflow-y-auto border-b px-3 py-2.5">
                 <AttachmentList

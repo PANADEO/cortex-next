@@ -128,6 +128,19 @@ export function describeEntry(
         }),
         weight: "important",
       }
+    case "case.shared":
+      return {
+        text: translate("journal.caseShared", { who: firstName(people, s.toWhom) }),
+        weight: "important",
+      }
+    case "case.unshared":
+      return {
+        text: translate("journal.caseUnshared", { who: firstName(people, s.toWhom) }),
+        weight: "important",
+      }
+    // Bez treści — tak samo jak przy pamięci. Dziennik notuje, ŻE ludzie rozmawiali.
+    case "case.message":
+      return { text: translate("journal.caseMessage"), weight: "normal" }
     // PAMIĘĆ. Cztery wpisy i ani jeden z treścią — pamięć jest prywatną przestrzenią
     // tej osoby, a wpis z treścią zamieniłby ekran nadzoru w podgląd cudzych notatek.
     case "memory.added":
