@@ -94,7 +94,12 @@
 
   --desk-accent: var(--primary);
   --desk-accent-ink: var(--primary-foreground);
-  --desk-focus: var(--ring);
+  /* Obrys skupienia bierze AKCENT, a nie `--ring` powłoki. Zmierzone: `--ring` daje
+     2,58:1 wobec tła, czyli poniżej progu 3:1 dla elementów nietekstowych — a obrys
+     skupienia jest jedyną rzeczą, po której osoba pracująca z klawiatury wie, gdzie
+     jest. Akcent jest kolorem marki, więc kontrast ma z definicji (dziś 17,9:1).
+     Ta sama wada siedzi w `--ring` całej powłoki i jest osobnym zadaniem. */
+  --desk-focus: var(--primary);
 
   --desk-ok: var(--success);
   --desk-warn: var(--warning);
@@ -107,6 +112,9 @@
    samą swoistość i siadają na tym samym `<html>`, więc każdy token wypisany tutaj
    wygrywa z mostkiem SAMĄ KOLEJNOŚCIĄ. Pełny blok, jaki tu wcześniej stał, cofał
    Biurko do własnych brązów za każdym razem, gdy ktoś włączył ciemny motyw. */
+.dark .desk {
+  color-scheme: dark;
+}
 .dark {
   --desk-ink-2: 35 8% 76%;
   --desk-muted-2: 35 6% 48%;
@@ -140,11 +148,20 @@ body {
 .desk {
   background: hsl(var(--desk-bg));
   color: hsl(var(--desk-ink));
+  /* Pola, listy rozwijane i paski przewijania WEWNĄTRZ Biurka mają iść za jego motywem.
+     Deklaracja siedzi na `.desk`, a nie na `:root`, bo ten plik świadomie nie maluje
+     dokumentu — pod powłoką przemalowałby wszystkie kafelki naraz. */
+  color-scheme: light;
   font-size: 14px;
   line-height: 22px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "cv05" 1;
+}
+/* Bez tego przeglądarka mobilna czeka 300 ms po stuknięciu, czy nie będzie drugiego —
+   i każdy przycisk Biurka wydaje się o tyle wolniejszy, niż jest. */
+.desk :where(a, button, [role="button"], label, summary) {
+  touch-action: manipulation;
 }
 .desk ::selection {
   background: hsl(var(--desk-accent-soft));

@@ -9,10 +9,19 @@ export default async function Page() {
   await migrate()
   const u = await whoAmI()
   const translate = await deskT()
+  // Lista jest ucięta i ekran ma to POWIEDZIEĆ. Wcześniej pasek boczny pisał
+  // „Wszystkie sprawy (935)", a ta strona pokazywała dwieście i milczała — czyli
+  // dokładnie ta cicha nieprawda, przed którą ten produkt ma bronić.
+  const NEWEST = 200
   const s = await pool.query(
-    `select id, title, status, reason, updated_at as "updatedAt" from desk.case_file where owner=$1 order by updated_at desc limit 200`,
+    `select id, title, status, reason, updated_at as "updatedAt" from desk.case_file where owner=$1 order by updated_at desc limit $2`,
+    [u.id, NEWEST],
+  )
+  const all = await pool.query<{ n: number }>(
+    `select count(*)::int as n from desk.case_file where owner=$1`,
     [u.id],
   )
+  const total = all.rows[0]?.n ?? 0
   const results = await countResults(
     u.id,
     s.rows.map((r) => r.id),
@@ -38,6 +47,11 @@ export default async function Page() {
               </div>
             ) : (
               <CaseList cases={cases} />
+            )}
+            {total > cases.length && (
+              <p className="t-meta mt-3">
+                {translate("cases.truncated", { shown: cases.length, total })}
+              </p>
             )}
           </div>
         </div>

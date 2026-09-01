@@ -89,7 +89,8 @@
       "other": "{{count}} documents"
     },
     "title": "All cases",
-    "lead": "Cases stay on the desk — you can come back to any of them."
+    "lead": "Cases stay on the desk — you can come back to any of them.",
+    "truncated": "Showing the {{shown}} most recent. There are {{total}} cases in total."
   },
   "files": {
     "title": "My files",

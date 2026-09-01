@@ -92,7 +92,8 @@
       "other": "{{count}} dokumentów"
     },
     "title": "Wszystkie sprawy",
-    "lead": "Sprawy zostają na biurku — możesz wrócić do każdej."
+    "lead": "Sprawy zostają na biurku — możesz wrócić do każdej.",
+    "truncated": "Pokazuję {{shown}} najnowszych. Wszystkich spraw jest {{total}}."
   },
   "files": {
     "title": "Moje pliki",

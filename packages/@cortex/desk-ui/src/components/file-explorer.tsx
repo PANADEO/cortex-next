@@ -427,7 +427,7 @@ export function FileExplorer() {
                 <Icon as={X} px={16} />
               </Dialog.Close>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
               {preview && <Preview file={preview} />}
             </div>
           </Dialog.Content>

@@ -64,7 +64,7 @@ export function MoveDialog({
             </Dialog.Description>
           </div>
 
-          <ul className="min-h-0 flex-1 overflow-y-auto p-1.5">
+          <ul className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5">
             {folders.map((k) => {
               const here = k === current
               const isSelected = selected === k
