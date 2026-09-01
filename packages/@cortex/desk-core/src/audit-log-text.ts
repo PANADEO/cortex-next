@@ -112,6 +112,11 @@ export function describeEntry(
         }),
         weight: "important",
       }
+    case "person.limit":
+      return {
+        text: translate("journal.personLimit", { who: firstName(people, s.who) }),
+        weight: "important",
+      }
     case "person.department":
       return {
         text: translate("journal.personDepartment", {

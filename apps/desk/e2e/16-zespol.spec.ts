@@ -92,6 +92,39 @@ test.describe("Obszar 25 · Zespół widziany przez przełożonego", () => {
     expect(anna.grantedDirectly).not.toContain("files.read")
   })
 
+  test("Limit dzienny da się ustawić jednej osobie i cofnąć do wartości z roli", async ({
+    request,
+  }) => {
+    // Rola opisuje typową sytuację, a wyjątek dotyczy jednej osoby — nie ma powodu,
+    // żeby awansować przez niego wszystkich o tej samej roli.
+    const czytaj = async () => {
+      const { people } = await (await request.get("/api/team", { headers: jako("robert") })).json()
+      return people.find((p: { id: string }) => p.id === "anna")
+    }
+    const zRoli = (await czytaj()).dailyLimitUsd
+
+    await request.post("/api/team", {
+      headers: jako("robert"),
+      data: { action: "limit", who: "anna", usd: 7.5 },
+    })
+    expect((await czytaj()).dailyLimitUsd).toBe(7.5)
+    expect((await czytaj()).ownLimit).toBe(7.5)
+
+    // `null` to POWRÓT DO ROLI, a nie zero: zero znaczyłoby „nie wolno ci nic".
+    await request.post("/api/team", {
+      headers: jako("robert"),
+      data: { action: "limit", who: "anna", usd: null },
+    })
+    expect((await czytaj()).dailyLimitUsd).toBe(zRoli)
+    expect((await czytaj()).ownLimit).toBeNull()
+
+    const zly = await request.post("/api/team", {
+      headers: jako("robert"),
+      data: { action: "limit", who: "anna", usd: -3 },
+    })
+    expect(zly.status()).toBe(400)
+  })
+
   test("Przełożony nie może odebrać roli sam sobie", async ({ request }) => {
     // Jedyny przełożony, który zdegraduje sam siebie, zamyka ten ekran przed wszystkimi
     // — łącznie z sobą, więc nie ma już jak tego cofnąć.
@@ -120,5 +153,36 @@ test.describe("Obszar 25 · Zespół widziany przez przełożonego", () => {
     await expect(page.getByText(/cofa zdolność .* osobie Anna Kowalska/).first()).toBeVisible()
     // autor decyzji stoi przy wpisie — dziennik bez autora nie jest dowodem
     await expect(page.getByText("Robert Nowak").first()).toBeVisible()
+  })
+})
+
+test.describe("Obszar 25 · Wszystkie sprawy dają się przewertować", () => {
+  test("Stronicowanie prowadzi do spraw, do których wcześniej nie dało się dojść", async ({
+    page,
+  }) => {
+    // Poprzednie wydanie pokazywało dwieście najnowszych i uczciwie mówiło, ile ich
+    // jest naprawdę — tylko że do reszty nie było ŻADNEJ drogi, więc sprawa sprzed
+    // dwustu innych była w praktyce skasowana.
+    await as(page, "anna")
+    await otworz(page, "/cases")
+    const pierwsza = await page.locator("main a[href*='/case/']").first().getAttribute("href")
+
+    await page.getByRole("link", { name: /Starsze/ }).click()
+    await expect(page.getByText(/Strona 2 z/)).toBeVisible()
+    const druga = await page.locator("main a[href*='/case/']").first().getAttribute("href")
+    expect(druga).not.toBe(pierwsza)
+
+    // Numer strony siedzi w adresie, więc działa też przycisk wstecz.
+    await page.goBack()
+    await expect(page.getByText(/Strona 1 z/)).toBeVisible()
+  })
+
+  test("Numer strony spoza zakresu pokazuje ostatnią, a nie pustkę", async ({ page }) => {
+    await as(page, "anna")
+    await otworz(page, "/cases?strona=9999")
+    const napis = await page.getByText(/Strona \d+ z \d+/).innerText()
+    const [strona, ze] = napis.match(/\d+/g)!.map(Number)
+    expect(strona).toBe(ze)
+    await expect(page.locator("main a[href*='/case/']").first()).toBeVisible()
   })
 })

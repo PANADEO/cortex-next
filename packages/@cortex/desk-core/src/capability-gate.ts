@@ -45,7 +45,9 @@ function build(u: User, extraGrants: string[]): Policy {
     role: u.role,
     granted,
     blocked,
-    dailyLimitUsd: LIMITS[u.role]?.usdPerDay ?? 1,
+    // Limit własny osoby bije limit roli. Rola opisuje typową sytuację; wyjątek
+    // dotyczy jednej osoby i nie ma powodu, żeby awansować przez niego wszystkich.
+    dailyLimitUsd: u.dailyLimitUsd ?? LIMITS[u.role]?.usdPerDay ?? 1,
     fingerprint,
   }
 }

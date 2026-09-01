@@ -2,7 +2,14 @@ import * as audit from "@cortex/desk-core/audit-log"
 import { capabilityCatalogue, policyFor, spentToday } from "@cortex/desk-core/capability-gate"
 import { migrate, pool } from "@cortex/desk-core/db"
 import { whoAmI } from "@cortex/desk-core/identity"
-import { everyone, isDepartment, isRole, setDepartment, setRole } from "@cortex/desk-core/people"
+import {
+  everyone,
+  isDepartment,
+  isRole,
+  setDailyLimit,
+  setDepartment,
+  setRole,
+} from "@cortex/desk-core/people"
 import { deskT } from "@cortex/desk-ui/i18n/server"
 import { NextResponse } from "next/server"
 
@@ -59,6 +66,9 @@ export async function GET() {
         pending: waiting.rows.filter((r) => r.who === person.id).map((r) => r.capability),
         spentUsd: usd,
         dailyLimitUsd: policy.dailyLimitUsd,
+        // Czy limit jest WŁASNY osoby, czy odziedziczony z roli — ekran musi to
+        // rozróżniać, bo „wróć do wartości z roli" to inna operacja niż „ustaw zero".
+        ownLimit: person.dailyLimitUsd ?? null,
       }
     }),
   )
@@ -91,6 +101,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: translate("api.unknownDepartment") }, { status: 400 })
     }
     await setDepartment(who, b.department, u.id)
+    return NextResponse.json({ ok: true })
+  }
+
+  if (b.action === "limit") {
+    const raw = b.usd
+    const usd = raw === null || raw === "" ? null : Number(raw)
+    if (usd !== null && (!Number.isFinite(usd) || usd < 0)) {
+      return NextResponse.json({ error: translate("api.limitMustBeNumber") }, { status: 400 })
+    }
+    await setDailyLimit(who, usd, u.id)
     return NextResponse.json({ ok: true })
   }
 

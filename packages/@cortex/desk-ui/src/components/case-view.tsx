@@ -115,6 +115,7 @@ export function CaseView({
   // nich — model dostaje `events` i nigdy tego.
   const [messages, setMessages] = useState<CaseMessage[]>([])
   const [shares, setShares] = useState<CaseShare[]>([])
+  const [owner, setOwner] = useState<string | null>(null)
   const from = useRef(0)
   const stream = useRef<HTMLDivElement>(null)
   const bottom = useRef<HTMLDivElement>(null)
@@ -209,6 +210,7 @@ export function CaseView({
             ? w
             : (d.messages ?? []),
         )
+        setOwner((w) => (w === d.owner ? w : (d.owner ?? null)))
         setShares((w) =>
           w.length === (d.shares ?? []).length && w.every((x, i) => x.who === d.shares[i]?.who)
             ? w
@@ -400,6 +402,13 @@ export function CaseView({
           <div className="min-w-0 flex-1">
             <div className="t-h3 truncate">{caseFile?.title ?? translate("case.untitled")}</div>
             <div className="t-meta flex items-center gap-1.5">
+              {/* Gość musi wiedzieć, CZYJĄ pracę ogląda — inaczej cudza sprawa
+                  wygląda w pasku bocznym jak jego własna. */}
+              {readOnly && owner && (
+                <span className="shrink-0">
+                  {translate("case.guestOf", { name: people?.[owner] ?? owner })} ·
+                </span>
+              )}
               <span className={`h-1.5 w-1.5 rounded-desk-pill ${DOT[caseFile?.status ?? "new"]}`} />
               {isWorking ? (
                 <span className="text-desk-accent">

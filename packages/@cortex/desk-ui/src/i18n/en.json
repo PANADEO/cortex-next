@@ -83,7 +83,8 @@
     "attachFailed": "Could not attach the file.",
     "retry": "There is no file {{name}} in this case folder. Please make it for real and save it.",
     "notYours": "This is not your case",
-    "notYoursLead": "Each employee sees only their own desk."
+    "notYoursLead": "Each employee sees only their own desk.",
+    "guestOf": "{{name}}’s case"
   },
   "cases": {
     "documents": {
@@ -92,7 +93,10 @@
     },
     "title": "All cases",
     "lead": "Cases stay on the desk — you can come back to any of them.",
-    "truncated": "Showing the {{shown}} most recent. There are {{total}} cases in total."
+    "pages": "Pages",
+    "newer": "← Newer",
+    "older": "Older →",
+    "pageOf": "Page {{page}} of {{pages}} · {{total}} cases"
   },
   "files": {
     "title": "My files",
@@ -139,7 +143,12 @@
       "name": "By name",
       "newest": "Newest",
       "size": "Largest"
-    }
+    },
+    "pick": "Select {{name}}",
+    "picked": "Selected: {{count}}",
+    "unpick": "Clear",
+    "movedManyToTrash": "Moved to the bin: {{count}}",
+    "deleteManyFailed": "The selected files could not be deleted."
   },
   "fileRow": {
     "newName": "New file name",
@@ -159,7 +168,8 @@
     "alreadyHere": "the file is already here",
     "create": "Create",
     "newFolderHere": "New folder here",
-    "confirm": "Move"
+    "confirm": "Move",
+    "movingMany": "Moving {{count}} files"
   },
   "preview": {
     "unsupported": "I cannot show this file on screen.",
@@ -382,7 +392,8 @@
     "unknownDepartment": "There is no such department.",
     "notYourCase": "This is not your case.",
     "ownerShares": "Only the owner can share a case.",
-    "noSuchPerson": "There is no such person."
+    "noSuchPerson": "There is no such person.",
+    "limitMustBeNumber": "The limit has to be a number of zero or more."
   },
   "tools": {
     "list_files": {
@@ -523,7 +534,8 @@
     "memoryForgotten": "deletes one of the assistant’s memories",
     "caseShared": "shares the case with {{who}}",
     "caseUnshared": "stops sharing the case with {{who}}",
-    "caseMessage": "writes a message on the case"
+    "caseMessage": "writes a message on the case",
+    "personLimit": "changes {{who}}’s daily limit"
   },
   "capability": {
     "files": {
@@ -644,7 +656,11 @@
     "open": "Show capabilities",
     "close": "Hide capabilities",
     "empty": "Nobody else is here yet.",
-    "you": "that’s you"
+    "you": "that’s you",
+    "changeLimit": "Change the daily limit for {{name}}",
+    "limitLabel": "Daily limit in dollars",
+    "limitFromRole": "Back to the role’s limit",
+    "limitHint": "Enter saves, Esc cancels."
   },
   "memory": {
     "title": "Memory",

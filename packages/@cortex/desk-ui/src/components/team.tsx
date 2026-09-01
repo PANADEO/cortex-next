@@ -2,7 +2,7 @@
 import { capabilityLabel, departmentLabel as label } from "@cortex/desk-core/capability-text"
 import type { Capability } from "@cortex/desk-core/types"
 import * as Menu from "@radix-ui/react-dropdown-menu"
-import { Check, ChevronDown, Clock, Lock, Minus, Plus } from "lucide-react"
+import { Check, ChevronDown, Clock, Lock, Minus, Pencil, Plus } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useDeskLocale, useDeskT } from "../i18n/client"
 import { zl } from "../lib"
@@ -36,6 +36,8 @@ type Person = {
   pending: string[]
   spentUsd: number
   dailyLimitUsd: number
+  /** `null` znaczy: limit pochodzi z roli, nie jest własny. */
+  ownLimit: number | null
 }
 
 export function Team({
@@ -54,6 +56,7 @@ export function Team({
   const { toast } = useToast()
   const [people, setPeople] = useState<Person[]>([])
   const [open, setOpen] = useState<string | null>(null)
+  const [limiting, setLimiting] = useState<string | null>(null)
   const [taken, setTaken] = useState(false)
 
   const refresh = useCallback(async () => {
@@ -66,17 +69,18 @@ export function Team({
     void refresh()
   }, [refresh])
 
-  async function act(body: Record<string, unknown>, done?: string) {
+  async function act(body: Record<string, unknown>, done?: string): Promise<boolean> {
     setTaken(true)
     const r = await fetch(api("/team"), { method: "POST", body: JSON.stringify(body) })
     setTaken(false)
     if (!r.ok) {
       const d = await r.json().catch(() => ({}))
       toast({ text: d.error || translate("team.failed"), tone: "error" })
-      return
+      return false
     }
     await refresh()
     if (done) toast({ text: done })
+    return true
   }
 
   if (people.length === 0) return <p className="t-meta py-3">{translate("team.empty")}</p>
@@ -107,13 +111,51 @@ export function Team({
                 disabled={taken}
                 choose={(department) => act({ action: "department", who: p.id, department })}
               />
-              <span className="t-meta ml-auto tabular-nums">
+              <span className="t-meta ml-auto flex items-center gap-1.5 tabular-nums">
                 {translate("team.spent", {
                   spent: zl(p.spentUsd, locale),
                   limit: zl(p.dailyLimitUsd, locale),
                 })}
+                <button
+                  onClick={() => setLimiting(limiting === p.id ? null : p.id)}
+                  aria-label={translate("team.changeLimit", { name })}
+                  className="rounded-sm px-1 text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
+                >
+                  <Icon as={Pencil} px={12} />
+                </button>
               </span>
             </div>
+
+            {limiting === p.id && (
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  step="0.5"
+                  defaultValue={p.ownLimit ?? p.dailyLimitUsd}
+                  autoFocus
+                  aria-label={translate("team.limitLabel")}
+                  onKeyDown={async (e) => {
+                    if (e.key === "Escape") setLimiting(null)
+                    if (e.key !== "Enter") return
+                    const usd = Number((e.target as HTMLInputElement).value)
+                    if (await act({ action: "limit", who: p.id, usd })) setLimiting(null)
+                  }}
+                  className="t-body h-8 w-28 rounded-md border bg-desk-bg px-2"
+                />
+                {p.ownLimit !== null && (
+                  // „Wróć do roli" to inna operacja niż „ustaw zero" — zero znaczyłoby
+                  // „nie wolno ci nic", a tu chodzi o powrót do tego, co ma każdy.
+                  <button
+                    onClick={() => act({ action: "limit", who: p.id, usd: null })}
+                    className="t-micro rounded-desk-pill border px-2 py-0.5 text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
+                  >
+                    {translate("team.limitFromRole")}
+                  </button>
+                )}
+                <span className="t-micro">{translate("team.limitHint")}</span>
+              </div>
+            )}
 
             <div className="mt-1.5 h-1 overflow-hidden rounded-desk-pill bg-desk-raised">
               <div

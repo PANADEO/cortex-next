@@ -8,6 +8,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  FolderInput,
   FolderPlus,
   Inbox,
   RotateCcw,
@@ -56,11 +57,15 @@ export function FileExplorer() {
   const [origins, setOrigins] = useState<Record<string, { caseId: string; title: string }>>({})
   const [trash, setTrash] = useState<TrashEntry[]>([])
   const [query, setQuery] = useState("")
+  // Zaznaczenie żyje w komponencie, nie w adresie: to ruch ręki, nie miejsce, w którym
+  // się stoi. Kotwica pamięta ostatnie kliknięcie, żeby Shift brał cały zakres.
+  const [picked, setPicked] = useState<string[]>([])
+  const anchor = useRef<string | null>(null)
   const [order, setOrder] = useState<Order>("name")
   const [showTrash, setShowTrash] = useState(false)
   const [taken, setTaken] = useState(false)
   const [above, setAbove] = useState(false)
-  const [toMove, setToMove] = useState<FileMeta | null>(null)
+  const [toMove, setToMove] = useState<FileMeta[]>([])
   const [preview, setPreview] = useState<FileMeta | null>(null)
   const [newFolder, setNewFolder] = useState(false)
   const counter = useRef(0)
@@ -78,6 +83,10 @@ export function FileExplorer() {
 
   useEffect(() => {
     refresh()
+    // Zaznaczenie dotyczy TEJ listy: po wejściu do innego katalogu wskazywałoby pliki,
+    // których nie widać, a działanie zbiorcze zrobiłoby coś niewidocznego.
+    setPicked([])
+    anchor.current = null
   }, [refresh])
 
   const goTo = (k: string) =>
@@ -129,6 +138,32 @@ export function FileExplorer() {
     })
   }
 
+  /**
+   * Kasowanie zbiorcze z JEDNYM cofnięciem, nie dziesięcioma tostami.
+   *
+   * Cofnięcie przywraca wszystko, co ta operacja skasowała — nie „ostatni plik".
+   * Człowiek podjął jedną decyzję, więc cofa jedną decyzję.
+   */
+  async function removeMany() {
+    const chosen = shown.filter((x) => picked.includes(x.path))
+    const ids: string[] = []
+    for (const p of chosen) {
+      const d = await action({ action: "trash", path: p.path })
+      if (d.ok && d.id) ids.push(String(d.id))
+    }
+    setPicked([])
+    if (ids.length === 0) {
+      toast({ text: translate("files.deleteManyFailed"), tone: "error" })
+      return
+    }
+    toast({
+      text: translate("files.movedManyToTrash", { count: ids.length }),
+      revoke: async () => {
+        for (const id of ids) await action({ action: "restore", id })
+      },
+    })
+  }
+
   async function rename(p: FileMeta, nextName: string): Promise<string | null> {
     const d = await action({ action: "move", from: p.path, to: `${folder}/${nextName}` })
     if (d.ok) return null
@@ -149,6 +184,27 @@ export function FileExplorer() {
     }
     return [...matching].sort(by)
   }, [files, query, order, locale])
+
+  const pick = useCallback(
+    (path: string, shift: boolean) => {
+      setPicked((was) => {
+        const rows = shown.map((x) => x.path)
+        if (shift && anchor.current) {
+          const a = rows.indexOf(anchor.current)
+          const b = rows.indexOf(path)
+          if (a >= 0 && b >= 0) {
+            const range = rows.slice(Math.min(a, b), Math.max(a, b) + 1)
+            return [...new Set([...was, ...range])]
+          }
+        }
+        anchor.current = path
+        return was.includes(path) ? was.filter((x) => x !== path) : [...was, path]
+      })
+    },
+    // `shown` czytamy w środku, więc musi być w zależnościach — inaczej zakres liczyłby
+    // się po nieaktualnej liście i brał nie te pliki, na które człowiek patrzy.
+    [shown],
+  )
 
   // Korzeń to nazwa katalogu NA DYSKU, więc na ekranie podmieniamy ją etykietą —
   // ścieżki zapisane w sprawach zostają nietknięte.
@@ -222,7 +278,32 @@ export function FileExplorer() {
         ))}
       </nav>
 
-      {(files.length > WORTH_FILTERING || query) && (
+      {picked.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-desk-accent-soft-line bg-desk-accent-soft px-3 py-2">
+          <span className="t-body-m">{translate("files.picked", { count: picked.length })}</span>
+          <button
+            onClick={() => setPicked([])}
+            className="t-micro rounded-desk-pill border px-2 py-0.5 hover:bg-desk-raised"
+          >
+            {translate("files.unpick")}
+          </button>
+          <div className="flex-1" />
+          <button
+            onClick={() => setToMove(shown.filter((x) => picked.includes(x.path)))}
+            className="t-btn flex h-8 items-center gap-1.5 rounded-md border bg-desk-surface px-3 hover:bg-desk-raised"
+          >
+            <Icon as={FolderInput} px={14} /> {translate("fileRow.moveTo")}
+          </button>
+          <button
+            onClick={removeMany}
+            className="t-btn flex h-8 items-center gap-1.5 rounded-md border bg-desk-surface px-3 text-desk-bad hover:bg-desk-raised"
+          >
+            <Icon as={Trash2} px={14} /> {translate("fileRow.remove")}
+          </button>
+        </div>
+      )}
+
+      {picked.length === 0 && (files.length > WORTH_FILTERING || query) && (
         <div className="mt-3 flex items-center gap-2">
           <div className="relative min-w-0 flex-1 sm:max-w-xs">
             <Icon
@@ -331,12 +412,15 @@ export function FileExplorer() {
                 key={p.path}
                 p={p}
                 {...(origins[p.path] ? { origin: origins[p.path]! } : {})}
+                picked={picked.includes(p.path)}
+                picking={picked.length > 0}
+                pick={pick}
                 actions={{
                   openFolder: (x) => goTo(x.path),
                   preview: setPreview,
                   download: (x) => window.open(fileUrl(x, true), "_blank"),
                   rename,
-                  move: setToMove,
+                  move: (x) => setToMove([x]),
                   remove,
                 }}
               />
@@ -391,18 +475,26 @@ export function FileExplorer() {
       </div>
 
       <MoveDialog
-        file={toMove}
-        close={() => setToMove(null)}
+        files={toMove}
+        close={() => setToMove([])}
         move={async (target: string) => {
-          const p = toMove
-          if (!p) return
-          const d = await action({ action: "move", from: p.path, to: `${target}/${p.name}` })
-          setToMove(null)
-          if (d.ok)
-            toast({ text: translate("files.moved", { folder: target.split("/").pop() ?? "" }) })
-          else if (d.error === "name-clash")
-            toast({ text: translate("files.alreadyHere", { name: p.name }), tone: "error" })
-          else toast({ text: translate("files.moveFailed"), tone: "error" })
+          const chosen = toMove
+          setToMove([])
+          if (chosen.length === 0) return
+          let moved = 0
+          let clash: string | null = null
+          for (const p of chosen) {
+            const d = await action({ action: "move", from: p.path, to: `${target}/${p.name}` })
+            if (d.ok) moved++
+            else if (d.error === "name-clash") clash = p.name
+          }
+          setPicked([])
+          const folder = target.split("/").pop() ?? ""
+          // Kolizję nazwy mówimy zawsze, nawet gdy reszta przeszła: plik, który został
+          // na miejscu, jest ważniejszą wiadomością niż dziewięć, które doszły.
+          if (clash) toast({ text: translate("files.alreadyHere", { name: clash }), tone: "error" })
+          else if (moved === 0) toast({ text: translate("files.moveFailed"), tone: "error" })
+          if (moved > 0) toast({ text: translate("files.moved", { folder }) })
         }}
       />
 

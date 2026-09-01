@@ -53,10 +53,22 @@ export function FileRow({
   actions,
   active,
   origin,
+  picked,
+  pick,
+  picking,
 }: {
   p: FileMeta
   actions: FileActions
   active?: boolean
+  /**
+   * Zaznaczenie do działania zbiorczego. `undefined` znaczy: ten ekran nie zaznacza
+   * niczego (tak jest z załącznikami sprawy) — i wtedy pola wyboru w ogóle nie ma,
+   * zamiast stać wyłączone i pytać, po co tam jest.
+   */
+  picked?: boolean | undefined
+  pick?: ((path: string, shift: boolean) => void) | undefined
+  /** Czy pola wyboru mają być widoczne bez najeżdżania — prawda, gdy coś już zaznaczono. */
+  picking?: boolean | undefined
   /**
    * Sprawa, z której ten plik przyszedł — WYŁĄCZNIE gdy istnieje na to zdarzenie.
    * Plik bez pochodzenia nie dostaje żadnej plakietki, a w szczególności nie dostaje
@@ -117,10 +129,33 @@ export function FileRow({
     <li className={active ? "bg-desk-raised" : undefined}>
       <div
         onKeyDown={shortcuts}
-        className="group flex h-desk-row items-center gap-2 px-3 hover:bg-desk-raised/60"
+        className={`group flex h-desk-row items-center gap-2 px-3 ${picked ? "bg-desk-accent-soft" : "hover:bg-desk-raised/60"}`}
       >
-        <span className="grid w-7 shrink-0 place-items-center text-desk-muted">
-          <Icon as={fileIcon(p)} px={16} />
+        {/* Ikona typu i pole wyboru dzielą to samo miejsce: rozszerzenie odróżnia
+            .csv od .md i nie ma go po co tracić, dopóki nikt niczego nie zaznacza. */}
+        <span className="relative grid w-7 shrink-0 place-items-center text-desk-muted">
+          <Icon
+            as={fileIcon(p)}
+            px={16}
+            className={pick ? (picked || picking ? "opacity-0" : "group-hover:opacity-0") : ""}
+          />
+          {pick && (
+            <input
+              type="checkbox"
+              checked={Boolean(picked)}
+              // Zaznaczenie zakresem: Shift bierze wszystko od ostatniego kliknięcia.
+              // Bez tego „zaznacz te dwadzieścia" to dwadzieścia kliknięć, czyli ten
+              // sam problem, który to zaznaczanie ma rozwiązać.
+              onClick={(e) => pick(p.path, e.shiftKey)}
+              onChange={() => {}}
+              aria-label={translate("files.pick", { name: p.name })}
+              className={`absolute h-4 w-4 accent-desk-accent ${
+                picked || picking
+                  ? ""
+                  : "opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+              }`}
+            />
+          )}
         </span>
 
         {editing ? (

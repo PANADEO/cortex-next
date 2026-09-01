@@ -84,7 +84,8 @@
     "attachFailed": "Nie udało się dołączyć pliku.",
     "retry": "Nie ma pliku {{name}} w teczce sprawy. Zrób go proszę naprawdę i zapisz.",
     "notYours": "To nie jest Twoja sprawa",
-    "notYoursLead": "Każdy pracownik widzi wyłącznie własne biurko."
+    "notYoursLead": "Każdy pracownik widzi wyłącznie własne biurko.",
+    "guestOf": "sprawa {{name}}"
   },
   "cases": {
     "documents": {
@@ -95,7 +96,10 @@
     },
     "title": "Wszystkie sprawy",
     "lead": "Sprawy zostają na biurku — możesz wrócić do każdej.",
-    "truncated": "Pokazuję {{shown}} najnowszych. Wszystkich spraw jest {{total}}."
+    "pages": "Strony",
+    "newer": "← Nowsze",
+    "older": "Starsze →",
+    "pageOf": "Strona {{page}} z {{pages}} · {{total}} spraw"
   },
   "files": {
     "title": "Moje pliki",
@@ -144,7 +148,12 @@
       "name": "Po nazwie",
       "newest": "Najnowsze",
       "size": "Największe"
-    }
+    },
+    "pick": "Zaznacz {{name}}",
+    "picked": "Zaznaczone: {{count}}",
+    "unpick": "Odznacz",
+    "movedManyToTrash": "Przeniesione do kosza: {{count}}",
+    "deleteManyFailed": "Nie udało się skasować zaznaczonych plików."
   },
   "fileRow": {
     "newName": "Nowa nazwa pliku",
@@ -164,7 +173,8 @@
     "alreadyHere": "plik już tu jest",
     "create": "Utwórz",
     "newFolderHere": "Nowy folder tutaj",
-    "confirm": "Przenieś"
+    "confirm": "Przenieś",
+    "movingMany": "Przenoszę {{count}} plików"
   },
   "preview": {
     "unsupported": "Tego pliku nie umiem pokazać na ekranie.",
@@ -401,7 +411,8 @@
     "unknownDepartment": "Nie ma takiego działu.",
     "notYourCase": "To nie jest Twoja sprawa.",
     "ownerShares": "Sprawę udostępnia jej właściciel.",
-    "noSuchPerson": "Nie ma takiej osoby."
+    "noSuchPerson": "Nie ma takiej osoby.",
+    "limitMustBeNumber": "Limit musi być liczbą nie mniejszą od zera."
   },
   "tools": {
     "list_files": {
@@ -560,7 +571,8 @@
     "memoryForgotten": "kasuje wspomnienie asystenta",
     "caseShared": "udostępnia sprawę osobie {{who}}",
     "caseUnshared": "cofa wgląd w sprawę osobie {{who}}",
-    "caseMessage": "pisze wiadomość przy sprawie"
+    "caseMessage": "pisze wiadomość przy sprawie",
+    "personLimit": "zmienia dzienny limit {{who}}"
   },
   "capability": {
     "files": {
@@ -681,7 +693,11 @@
     "open": "Pokaż zdolności",
     "close": "Ukryj zdolności",
     "empty": "Nie ma tu jeszcze nikogo poza Tobą.",
-    "you": "to Ty"
+    "you": "to Ty",
+    "changeLimit": "Zmień dzienny limit: {{name}}",
+    "limitLabel": "Dzienny limit w dolarach",
+    "limitFromRole": "Wróć do limitu z roli",
+    "limitHint": "Enter zapisuje, Esc anuluje."
   },
   "memory": {
     "title": "Pamięć",

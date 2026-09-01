@@ -9,15 +9,21 @@ import { api } from "../routes"
 import { Icon } from "./icon"
 
 /** Wybór miejsca z listy — nikt nie ma wpisywać ścieżki „Moje pliki/Wnioski 2026" z pamięci. */
+/**
+ * Okno przenoszenia bierze LISTĘ, nie jeden plik — bo przeniesienie dziesięciu do tego
+ * samego katalogu to jedna decyzja człowieka, a nie dziesięć. Pojedynczy plik jest
+ * jednoelementową listą i nie ma dla niego osobnej ścieżki w kodzie.
+ */
 export function MoveDialog({
-  file,
+  files,
   close,
   move,
 }: {
-  file: FileMeta | null
+  files: FileMeta[]
   close: () => void
   move: (target: string) => Promise<void>
 }) {
+  const file = files[0] ?? null
   const [folders, setFolders] = useState<string[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [newForm, setNewForm] = useState("")
@@ -60,7 +66,9 @@ export function MoveDialog({
           <div className="border-b px-4 py-3">
             <Dialog.Title className="t-h3">{translate("move.title")}</Dialog.Title>
             <Dialog.Description className="t-meta">
-              {translate("move.moving", { name: file?.name ?? "" })}
+              {files.length > 1
+                ? translate("move.movingMany", { count: files.length })
+                : translate("move.moving", { name: file?.name ?? "" })}
             </Dialog.Description>
           </div>
 

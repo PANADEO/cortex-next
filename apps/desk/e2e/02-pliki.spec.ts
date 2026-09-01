@@ -172,6 +172,64 @@ test.describe("Obszar 2 · Skąd przyszedł plik — i dlaczego tylko czasem", (
   })
 })
 
+test.describe("Obszar 2 · Działanie na wielu plikach naraz", () => {
+  const KATALOG_WIELU = "Moje pliki/test-zaznaczanie"
+  const plik = (n: string) => ({
+    name: n,
+    mimeType: "text/plain",
+    buffer: Buffer.from(`treść ${n}`),
+  })
+
+  test.beforeEach(async ({ request }) => {
+    const headers = { Cookie: "desk_persona=anna" }
+    await request.post("/api/files", { headers, data: { action: "trash", path: KATALOG_WIELU } })
+    await request.post("/api/files", { headers, data: { action: "folder", path: KATALOG_WIELU } })
+  })
+
+  test.afterAll(async ({ request }) => {
+    await request.post("/api/files", {
+      headers: { Cookie: "desk_persona=anna" },
+      data: { action: "trash", path: KATALOG_WIELU },
+    })
+  })
+
+  test("Zaznaczenie zakresem bierze wszystko między dwoma kliknięciami", async ({ page }) => {
+    // Bez zakresu „zaznacz te dwadzieścia" to dwadzieścia kliknięć — czyli ten sam
+    // problem, który zaznaczanie ma rozwiązać.
+    await as(page, "anna")
+    await otworz(page, `/files?k=${encodeURIComponent(KATALOG_WIELU)}`)
+    await page
+      .locator("input[type=file]")
+      .first()
+      .setInputFiles(["a", "b", "c", "d", "e"].map((n) => plik(`${n}.txt`)))
+    await expect(list(page).locator("li")).toHaveCount(5)
+
+    await page.getByRole("checkbox", { name: "Zaznacz a.txt" }).click()
+    await page.getByRole("checkbox", { name: "Zaznacz d.txt" }).click({ modifiers: ["Shift"] })
+    await expect(page.getByText("Zaznaczone: 4")).toBeVisible()
+  })
+
+  test("Skasowanie zaznaczonych to JEDNO cofnięcie, nie pięć", async ({ page }) => {
+    await as(page, "anna")
+    await otworz(page, `/files?k=${encodeURIComponent(KATALOG_WIELU)}`)
+    await page
+      .locator("input[type=file]")
+      .first()
+      .setInputFiles(["a", "b", "c"].map((n) => plik(`${n}.txt`)))
+    await expect(list(page).locator("li")).toHaveCount(3)
+
+    await page.getByRole("checkbox", { name: "Zaznacz a.txt" }).click()
+    await page.getByRole("checkbox", { name: "Zaznacz c.txt" }).click({ modifiers: ["Shift"] })
+    await page.getByRole("button", { name: "Usuń" }).click()
+    await expect(list(page).locator("li")).toHaveCount(0)
+
+    // Człowiek podjął JEDNĄ decyzję, więc cofa jedną decyzję — a nie ostatni plik.
+    await expect(page.getByText("Przeniesione do kosza: 3")).toBeVisible()
+    await page.getByRole("button", { name: "Cofnij" }).click()
+    await expect(list(page).locator("li")).toHaveCount(3)
+  })
+})
+
 test.describe("Obszar 2 · Znalezienie jednego pliku wśród wielu", () => {
   const KATALOG = "Moje pliki/test-szukanie"
   const trzon = (n: string) => ({

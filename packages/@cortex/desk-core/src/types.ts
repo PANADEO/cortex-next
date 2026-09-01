@@ -49,6 +49,8 @@ export type User = {
   role: Role
   /** Identyfikatory zleceń startowych; słowa stoją w słowniku pod `quickTask.<id>`. */
   quickTasks: string[]
+  /** Limit dzienny tej osoby; brak znaczy „z roli". */
+  dailyLimitUsd?: number | undefined
 }
 
 /** Wynik materializacji polityki — to, co fizycznie trafia do instancji. */

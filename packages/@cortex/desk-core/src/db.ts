@@ -544,6 +544,10 @@ export function migrate(): Promise<void> {
         last_name text not null,
         department text not null default '',
         role text not null default 'member',
+        -- Limit dzienny per OSOBA. Pusto znaczy „bierz z roli" i to jest wartość
+        -- domyślna: rola opisuje typową sytuację, a wyjątek dotyczy jednej osoby,
+        -- nie wszystkich o tej samej roli.
+        daily_limit_usd numeric,
         created_at timestamptz not null default now()
       );
 
@@ -593,6 +597,10 @@ export function migrate(): Promise<void> {
         decided_at timestamptz
       );
       create index if not exists memory_owner_idx on desk.memory (owner, created_at);
+
+      -- Kolumny dokładane do tabeli, która JUŻ istnieje: create table if not exists
+      -- ich nie doda. Ta sama zasada, co przy access_request.
+      alter table desk.person add column if not exists daily_limit_usd numeric;
 
       -- Nadanie zdolności ponad to, co daje rola. Katalog i role zostają w pliku seed,
       -- ale to, co ktoś dostał indywidualnie, musi przeżyć restart i mieć autora.

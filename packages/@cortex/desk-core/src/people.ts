@@ -45,6 +45,7 @@ type Row = {
   last_name: string
   department: string
   role: string
+  daily_limit_usd: string | null
 }
 
 const toUser = (r: Row): User => ({
@@ -54,9 +55,10 @@ const toUser = (r: Row): User => ({
   department: r.department,
   role: isRole(r.role) ? r.role : "member",
   quickTasks: quickTasksByRole[r.role] ?? quickTasksByRole["member"] ?? [],
+  ...(r.daily_limit_usd === null ? {} : { dailyLimitUsd: Number(r.daily_limit_usd) }),
 })
 
-const SELECT = `select id, email, first_name, last_name, department, role from desk.person`
+const SELECT = `select id, email, first_name, last_name, department, role, daily_limit_usd from desk.person`
 
 export async function everyone(): Promise<User[]> {
   await migrate()
@@ -106,7 +108,7 @@ export async function ensurePerson(email: string): Promise<User> {
     `insert into desk.person (id, email, first_name, last_name, department, role)
      values ($1,$2,$3,$4,'','member')
      on conflict (email) do update set email = excluded.email
-     returning id, email, first_name, last_name, department, role`,
+     returning id, email, first_name, last_name, department, role, daily_limit_usd`,
     [email, email, firstName, lastName],
   )
   const created = r.rows[0]
@@ -119,6 +121,18 @@ export async function setRole(id: string, role: Role, by: string): Promise<void>
   await migrate()
   await pool.query(`update desk.person set role=$2 where id=$1`, [id, role])
   await audit.write(by, "person.role", { who: id, role })
+}
+
+/**
+ * Limit dzienny jednej osoby. `null` przywraca wartość z roli — a to jest coś innego
+ * niż zero: zero znaczyłoby „nie wolno ci nic", a my chcemy umieć powiedzieć
+ * „wróć do tego, co ma każdy w twojej roli".
+ */
+export async function setDailyLimit(id: string, usd: number | null, by: string): Promise<void> {
+  await migrate()
+  if (usd !== null && (!Number.isFinite(usd) || usd < 0)) throw new Error("Limit musi być liczbą.")
+  await pool.query(`update desk.person set daily_limit_usd=$2 where id=$1`, [id, usd])
+  await audit.write(by, "person.limit", { who: id, usd })
 }
 
 export async function setDepartment(id: string, department: string, by: string): Promise<void> {
