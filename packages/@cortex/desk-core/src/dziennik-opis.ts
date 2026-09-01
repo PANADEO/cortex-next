@@ -24,7 +24,12 @@ export function opiszWpis(w: Wpis): { tekst: string; waga: 'zwykly' | 'wazny' } 
     case 'tura.start':
       return { tekst: `zleciła pracę · zakres uprawnień ${s.odcisk ?? '?'} (${Array.isArray(s.zdolnosci) ? s.zdolnosci.length : '?'} zdolności)`, waga: 'zwykly' }
     case 'tura.koniec':
-      return { tekst: 'praca zakończona', waga: 'zwykly' }
+      // Koszt policzony z wpisanych w kod stawek, a nie wzięty od dostawcy, to stan
+      // do naprawienia, nie szczegół — dzienny limit pracownika opiera się na tej
+      // liczbie. Cicho wygląda tak samo jak prawidłowy, więc mówi o sobie w dzienniku.
+      return s.skadKoszt === 'oszacowanie'
+        ? { tekst: 'praca zakończona — koszt oszacowany, dostawca go nie podał', waga: 'wazny' }
+        : { tekst: 'praca zakończona', waga: 'zwykly' }
     case 'tura.stop':
       return { tekst: 'zatrzymała pracę agenta', waga: 'zwykly' }
     case 'tura.blad':

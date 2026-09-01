@@ -93,6 +93,43 @@ test.describe('Obszar 10 · Governance widać na ekranie', () => {
   })
 })
 
+test.describe('Obszar 28 · Dzienny limit pilnuje pieniędzy, nie oszacowania', () => {
+  /**
+   * Scenariusz spisany po zdarzeniu. `szacujKoszt` miał gałąź czytającą prawdziwy koszt
+   * od dostawcy i gałąź zapasową ze stawkami wpisanymi w kod — i przez cały czas działała
+   * ta druga, bo `usage.cost` jest polem SPOZA standardu OpenAI i SDK wyrzucało je przy
+   * parsowaniu. Objawu nie było żadnego: liczba wyglądała rozsądnie, bo stawki zgadzały
+   * się z modelem. Rozjechałaby się dopiero przy zmianie modelu — czyli wtedy, gdy nikt
+   * już nie pamięta, że jest co sprawdzać.
+   *
+   * Dlatego zdarzenie `koszt` niesie teraz `skad` i to jego pilnuje ten scenariusz.
+   */
+  test('Koszt tury pochodzi od dostawcy, a nie ze stawek wpisanych w kod', async ({ request }) => {
+    const annaH = { Cookie: 'desk_persona=anna' }
+    const { id } = await (await request.post('/api/sprawa/nowa', { headers: annaH, data: { tytul: 'Koszt' } })).json()
+    const r = await request.post(`/api/sprawa/${id}/tura`, { headers: annaH, data: { tresc: 'Ile to jest 17% z 4200 zł?' } })
+    expect(r.status()).toBe(200)
+
+    // Tura leci w tle — trasa oddaje 200 od razu po zapisaniu myśli, nie po skończeniu pracy.
+    let d
+    let stan = 'pracuje'
+    for (let i = 0; i < 40 && stan === 'pracuje'; i++) {
+      await new Promise((res) => setTimeout(res, 1500))
+      d = await (await request.get(`/api/sprawa/${id}/zdarzenia?od=0`, { headers: annaH })).json()
+      stan = d.sprawa.stan
+    }
+    expect(stan, `tura skończyła się stanem ${stan}: ${d?.sprawa?.powod ?? ''}`).toBe('gotowe')
+    const koszt = d.zdarzenia.find((z: { event: { typ: string } }) => z.event.typ === 'koszt')
+    expect(koszt, 'tura nie zapisała kosztu').toBeTruthy()
+
+    // `skad`, a nie próg kwotowy: prawdziwy koszt i oszacowanie różnią się dziś o kilka
+    // procent, bo stawki zapasowe są ustawione poprawnie. Test na kwotę przechodziłby
+    // więc także wtedy, gdy biurko wróci do zgadywania — czyli nie sprawdzałby niczego.
+    expect((koszt.event as { skad: string }).skad).toBe('dostawca')
+    expect((koszt.event as { usd: number }).usd).toBeGreaterThan(0)
+  })
+})
+
 test.describe('Obszar 11 · Granice, które można sprawdzić', () => {
   test('Kod w piaskownicy nie sięga po pliki spoza swojego katalogu', async ({ request }) => {
     test.setTimeout(180_000)

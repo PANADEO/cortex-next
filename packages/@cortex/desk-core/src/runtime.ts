@@ -41,12 +41,44 @@ export async function dopiszZdarzenie(sprawaId: string, e: DeskEvent) {
   ])
 }
 
+/**
+ * Wyciąga PRAWDZIWY koszt z odpowiedzi cortex-proxy.
+ *
+ * Proxy oddaje go w `usage.cost` — to pole spoza standardu OpenAI, więc SDK
+ * wyrzuca je przy parsowaniu i do `generateText` nie dociera nic. Bez tego
+ * ekstraktora biurko liczyło pracę stawkami wpisanymi w kod, a dzienny limit
+ * pracownika — jedyna twarda granica wydatków w tym produkcie — pilnował
+ * SZACUNKU, nie pieniędzy, które firma naprawdę płaci. Sprawdzone
+ * doświadczalnie: po podmianie stawek zapasowych na absurdalne zapisany koszt
+ * poszedł za nimi, czyli prawdziwa liczba nigdy nie była używana.
+ *
+ * Klucz `cortex-proxy` jest ten sam, po który sięga `szacujKoszt`.
+ */
+const kosztZProxy = {
+  extractMetadata: async ({ parsedBody }: { parsedBody: unknown }) => {
+    const cost = (parsedBody as { usage?: { cost?: unknown } })?.usage?.cost
+    return typeof cost === 'number' ? { 'cortex-proxy': { cost } } : undefined
+  },
+  createStreamExtractor: () => {
+    let cost: number | undefined
+    return {
+      processChunk(chunk: unknown) {
+        const c = (chunk as { usage?: { cost?: unknown } })?.usage?.cost
+        // strumień oddaje `usage` w ostatnim kawałku; sumujemy na wypadek, gdyby oddał więcej
+        if (typeof c === 'number') cost = (cost ?? 0) + c
+      },
+      buildMetadata: () => (cost === undefined ? undefined : { 'cortex-proxy': { cost } }),
+    }
+  },
+}
+
 function model(uzytkownik: string) {
   const provider = createOpenAICompatible({
     name: 'cortex-proxy',
     baseURL: process.env.CORTEX_PROXY_URL!,
     // rejestr cortex-proxy to księga, do której sięgnie audytor — musi widzieć osobę, nie aplikację
     headers: { 'X-User-ID': uzytkownik },
+    metadataExtractor: kosztZProxy,
   })
   return provider(process.env.DESK_MODEL!)
 }
@@ -371,13 +403,13 @@ export async function uruchomTure(u: Uzytkownik, p: Polityka, sprawaId: string, 
 
       const koszt = szacujKoszt(wynik)
       if (wynik.text?.trim()) await dopiszZdarzenie(sprawaId, { typ: 'assistant', tekst: wynik.text.trim() })
-      if (koszt > 0) await dopiszZdarzenie(sprawaId, { typ: 'koszt', usd: koszt })
+      if (koszt.usd > 0) await dopiszZdarzenie(sprawaId, { typ: 'koszt', usd: koszt.usd, skad: koszt.skad })
       await dopiszZdarzenie(sprawaId, { typ: 'lifecycle', stan: 'koniec' })
       await pool.query(
         `update desk.sprawa set stan='gotowe', powod=null, koszt_usd=koszt_usd+$2, zmieniona=now() where id=$1`,
-        [sprawaId, koszt],
+        [sprawaId, koszt.usd],
       )
-      await dziennik.zapisz(u.id, 'tura.koniec', { sprawaId, kosztUsd: koszt })
+      await dziennik.zapisz(u.id, 'tura.koniec', { sprawaId, kosztUsd: koszt.usd, skadKoszt: koszt.skad })
     } catch (e: any) {
       const powod = czytelnyBlad(e)
       await dopiszZdarzenie(sprawaId, { typ: 'lifecycle', stan: 'blad', powod })
@@ -439,12 +471,42 @@ function typObrazu(nazwa: string) {
     : 'image/jpeg'
 }
 
-function szacujKoszt(wynik: any): number {
-  const meta = wynik?.providerMetadata ?? wynik?.experimental_providerMetadata
-  const zProvidera = meta?.['cortex-proxy']?.cost ?? meta?.openaiCompatible?.cost
-  if (typeof zProvidera === 'number') return zProvidera
+/**
+ * Stawki zapasowe, w dolarach za milion tokenów. Domyślne to cennik modelu
+ * z `DESK_MODEL` (Sonnet 5: 2 / 10) — i to jest sprzężenie, o którym trzeba
+ * wiedzieć: zmiana modelu bez zmiany tych liczb zostawia dzienny limit
+ * pracownika liczony wedle cennika modelu, którego już nie ma.
+ *
+ * Liczą się WYŁĄCZNIE wtedy, gdy dostawca nie odda kosztu — a cortex-proxy oddaje
+ * go w `usage.cost`. Dlatego są zapasem, nie cennikiem: przy stawkach ustawionych
+ * źle biurko nie policzy pracy dwa razy drożej, tylko dopiero wtedy, gdy przestanie
+ * dostawać prawdziwą liczbę.
+ */
+const STAWKA_WEJSCIE = Number(process.env.DESK_STAWKA_WEJSCIE ?? 2)
+const STAWKA_WYJSCIE = Number(process.env.DESK_STAWKA_WYJSCIE ?? 10)
+
+const kosztKroku = (x: any): number | undefined => {
+  const meta = x?.providerMetadata ?? x?.experimental_providerMetadata
+  const c = meta?.['cortex-proxy']?.cost ?? meta?.openaiCompatible?.cost
+  return typeof c === 'number' ? c : undefined
+}
+
+type Koszt = { usd: number; skad: 'dostawca' | 'oszacowanie' }
+
+function szacujKoszt(wynik: any): Koszt {
+  // SUMA PO KROKACH, nie koszt ostatniego. Tura sięga po narzędzia, więc `generateText`
+  // robi do dwunastu żądań, a `providerMetadata` na wyniku pochodzi z ostatniego z nich.
+  // Branie jej wprost liczyło jedno żądanie z kilkunastu — i to akurat najtańsze,
+  // bo domykające.
+  const kroki: unknown[] = Array.isArray(wynik?.steps) ? wynik.steps : []
+  const zKrokow = kroki.map(kosztKroku).filter((c): c is number => c !== undefined)
+  if (zKrokow.length) return { usd: zKrokow.reduce((a, b) => a + b, 0), skad: 'dostawca' }
+
+  const zWyniku = kosztKroku(wynik)
+  if (zWyniku !== undefined) return { usd: zWyniku, skad: 'dostawca' }
+
   const u = wynik?.usage ?? {}
   const we = u.inputTokens ?? u.promptTokens ?? 0
   const wy = u.outputTokens ?? u.completionTokens ?? 0
-  return (we / 1e6) * 3 + (wy / 1e6) * 15 // stawki Sonnet 4.5, szacunek POC
+  return { usd: (we / 1e6) * STAWKA_WEJSCIE + (wy / 1e6) * STAWKA_WYJSCIE, skad: 'oszacowanie' }
 }
