@@ -630,7 +630,7 @@
       "text": "Make an expense summary from faktury-08.csv: group it by category, total it up and save it as a spreadsheet."
     },
     "analysis": {
-      "title": "Analysis with a chart",
+      "title": "Analysis with a summary",
       "hint": "add the data",
       "text": "Total it up by category and prepare a short analysis with a recommendation."
     },

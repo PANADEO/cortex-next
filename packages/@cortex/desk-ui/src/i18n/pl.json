@@ -667,7 +667,7 @@
       "text": "Zrób zestawienie kosztów z pliku faktury-08.csv: pogrupuj po kategorii, policz sumy i zapisz jako arkusz."
     },
     "analysis": {
-      "title": "Analiza z wykresem",
+      "title": "Analiza z podsumowaniem",
       "hint": "dodaj dane",
       "text": "Policz sumy po kategoriach i przygotuj krótką analizę z rekomendacją."
     },
