@@ -1,6 +1,14 @@
 import { evidenceFromEvents } from "@cortex/desk-core/evidence"
+import { makeDeskT } from "@cortex/desk-ui/i18n/locale"
 import type { Locator } from "@playwright/test"
 import { as, expect, test } from "./osoby"
+
+/**
+ * Scenariusze czyta człowiek po polsku, więc zdania budujemy polskim tłumaczem.
+ * Przebieg i dowód powstają teraz przy RENDERZE, a nie przy zapisie — funkcje
+ * `describeStep`, `summariseGroup` i `evidenceFromEvents` dostają go jawnie.
+ */
+const pl = makeDeskT("pl")
 
 /** Nagłówek przebiegu przełącza, więc rozwijamy tylko wtedy, gdy naprawdę jest zwinięty. */
 async function rozwin(header: Locator) {
@@ -105,128 +113,137 @@ test.describe("Obszar 3 · Zlecam robotę, dostaję dokument z dowodem", () => {
 
 test.describe("Reguła dowodu — dowód pochodzi ze zdarzeń, nie z opowieści modelu", () => {
   test('Zapisany dokument bez sprawdzenia trafia do „Nie sprawdzone"', () => {
-    const d = evidenceFromEvents([
-      {
-        type: "tool_start",
-        id: "a",
-        name: "read_file",
-        label: "Czytam a.csv",
-        args: { path: "a.csv" },
-      },
-      {
-        type: "tool_end",
-        id: "a",
-        name: "read_file",
-        ok: true,
-        summary: "10 wierszy",
-        ms: 5,
-      },
-      {
-        type: "tool_start",
-        id: "b",
-        name: "write_document",
-        label: "Zapisuję w.md",
-        args: { name: "w.md" },
-      },
-      {
-        type: "tool_end",
-        id: "b",
-        name: "write_document",
-        ok: true,
-        summary: "100 znaków",
-        ms: 5,
-      },
-      { type: "assistant", text: "Sprawdziłem wszystkie pola, wszystko się zgadza." },
-    ])
+    const d = evidenceFromEvents(
+      [
+        {
+          type: "tool_start",
+          id: "a",
+          name: "read_file",
+          label: "Czytam a.csv",
+          args: { path: "a.csv" },
+        },
+        {
+          type: "tool_end",
+          id: "a",
+          name: "read_file",
+          ok: true,
+          summary: "10 wierszy",
+          ms: 5,
+        },
+        {
+          type: "tool_start",
+          id: "b",
+          name: "write_document",
+          label: "Zapisuję w.md",
+          args: { name: "w.md" },
+        },
+        {
+          type: "tool_end",
+          id: "b",
+          name: "write_document",
+          ok: true,
+          summary: "100 znaków",
+          ms: 5,
+        },
+        { type: "assistant", text: "Sprawdziłem wszystkie pola, wszystko się zgadza." },
+      ],
+      pl,
+    )
     expect(d.unverified).toContain("zawartość pliku w.md po zapisie")
     expect(d.produced.join(" ")).not.toMatch(/sprawdzi/i)
   })
 
   test('Sprawdzony dokument nie trafia do „Nie sprawdzone"', () => {
-    const d = evidenceFromEvents([
-      {
-        type: "tool_start",
-        id: "a",
-        name: "read_file",
-        label: "Czytam a.csv",
-        args: { path: "a.csv" },
-      },
-      {
-        type: "tool_end",
-        id: "a",
-        name: "read_file",
-        ok: true,
-        summary: "10 wierszy",
-        ms: 5,
-      },
-      {
-        type: "tool_start",
-        id: "b",
-        name: "write_document",
-        label: "Zapisuję w.md",
-        args: { name: "w.md" },
-      },
-      {
-        type: "tool_end",
-        id: "b",
-        name: "write_document",
-        ok: true,
-        summary: "100 znaków",
-        ms: 5,
-      },
-      {
-        type: "tool_start",
-        id: "c",
-        name: "verify_document",
-        label: "Sprawdzam w.md",
-        args: { name: "w.md" },
-      },
-      {
-        type: "tool_end",
-        id: "c",
-        name: "verify_document",
-        ok: true,
-        summary: "0 pustych pól",
-        ms: 5,
-      },
-    ])
+    const d = evidenceFromEvents(
+      [
+        {
+          type: "tool_start",
+          id: "a",
+          name: "read_file",
+          label: "Czytam a.csv",
+          args: { path: "a.csv" },
+        },
+        {
+          type: "tool_end",
+          id: "a",
+          name: "read_file",
+          ok: true,
+          summary: "10 wierszy",
+          ms: 5,
+        },
+        {
+          type: "tool_start",
+          id: "b",
+          name: "write_document",
+          label: "Zapisuję w.md",
+          args: { name: "w.md" },
+        },
+        {
+          type: "tool_end",
+          id: "b",
+          name: "write_document",
+          ok: true,
+          summary: "100 znaków",
+          ms: 5,
+        },
+        {
+          type: "tool_start",
+          id: "c",
+          name: "verify_document",
+          label: "Sprawdzam w.md",
+          args: { name: "w.md" },
+        },
+        {
+          type: "tool_end",
+          id: "c",
+          name: "verify_document",
+          ok: true,
+          summary: "0 pustych pól",
+          ms: 5,
+        },
+      ],
+      pl,
+    )
     expect(d.unverified).toHaveLength(0)
   })
 
   test("Przeplecione wywołania narzędzi parują się po identyfikatorze, nie po kolejności", () => {
-    const d = evidenceFromEvents([
-      {
-        type: "tool_start",
-        id: "x",
-        name: "read_file",
-        label: "Czytam a.csv",
-        args: { path: "a.csv" },
-      },
-      {
-        type: "tool_start",
-        id: "y",
-        name: "write_document",
-        label: "Zapisuję w.md",
-        args: { name: "w.md" },
-      },
-      // koniec przychodzi w odwrotnej kolejności — tak wygląda równoległe wywołanie narzędzi
-      {
-        type: "tool_end",
-        id: "y",
-        name: "write_document",
-        ok: false,
-        summary: "dysk pełny",
-        ms: 5,
-      },
-      {
-        type: "tool_end",
-        id: "x",
-        name: "read_file",
-        ok: true,
-        summary: "10 wierszy",
-        ms: 5,
-      },
-    ])
+    const d = evidenceFromEvents(
+      [
+        {
+          type: "tool_start",
+          id: "x",
+          name: "read_file",
+          label: "Czytam a.csv",
+          args: { path: "a.csv" },
+        },
+        {
+          type: "tool_start",
+          id: "y",
+          name: "write_document",
+          label: "Zapisuję w.md",
+          args: { name: "w.md" },
+        },
+        // koniec przychodzi w odwrotnej kolejności — tak wygląda równoległe wywołanie narzędzi
+        {
+          type: "tool_end",
+          id: "y",
+          name: "write_document",
+          ok: false,
+          summary: "dysk pełny",
+          ms: 5,
+        },
+        {
+          type: "tool_end",
+          id: "x",
+          name: "read_file",
+          ok: true,
+          summary: "10 wierszy",
+          ms: 5,
+        },
+      ],
+      pl,
+    )
     // nieudany zapis nie może przypisać sobie sukcesu odczytu
     expect(d.intake.join(" ")).toMatch(/a\.csv/)
     expect(d.produced.join(" ")).not.toMatch(/w\.md/)

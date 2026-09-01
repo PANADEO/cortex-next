@@ -52,7 +52,7 @@ function Row({ k, at, now }: { k: Step; at: string; now: number }) {
   const translate = useDeskT()
   const locale = useDeskLocale()
   const [open, setOpen] = useState(k.status === "failed")
-  const o = describeStep(k)
+  const o = describeStep(k, translate)
   const s = STEP_STATUS[k.status]
   const ms = k.status === "running" ? now - new Date(at).getTime() : k.ms
   const duration = stepDuration(ms)
@@ -107,7 +107,10 @@ export function ActivityTrail({
 }) {
   const translate = useDeskT()
   const steps = pairSteps(entries.map((w) => w.event))
-  const evidence = evidenceFromEvents(entries.map((w) => w.event))
+  const evidence = evidenceFromEvents(
+    entries.map((w) => w.event),
+    translate,
+  )
   const stumble = steps.some((k) => k.status === "failed")
   const uncertain = evidence.unverified.length > 0
   const blocked = evidence.notAllowed.length > 0
@@ -146,9 +149,11 @@ export function ActivityTrail({
       ? {
           icon: TriangleAlert,
           className: "text-desk-warn",
-          text: translate("trail.stumbled", { what: summariseGroup(steps).toLowerCase() }),
+          text: translate("trail.stumbled", {
+            what: summariseGroup(steps, translate).toLowerCase(),
+          }),
         }
-      : { icon: Check, className: "text-desk-ok", text: summariseGroup(steps) }
+      : { icon: Check, className: "text-desk-ok", text: summariseGroup(steps, translate) }
 
   return (
     <section

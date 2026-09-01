@@ -1,3 +1,4 @@
+import type { DeskT } from "@cortex/desk-ui/i18n/locale"
 import { pairSteps } from "./steps"
 import { cardFor } from "./tool-cards"
 import type { DeskEvent } from "./types"
@@ -30,7 +31,7 @@ export type Evidence = {
  * jakby agent nic nie zrobił. Dla wbudowanych to nie miało znaczenia; dla pierwszego
  * serwera MCP oznaczałoby ciche zniknięcie jedynej rzeczy, którą ten produkt obiecuje.
  */
-export function evidenceFromEvents(events: DeskEvent[]): Evidence {
+export function evidenceFromEvents(events: DeskEvent[], translate: DeskT): Evidence {
   const intake: string[] = []
   const produced: string[] = []
   const external: string[] = []
@@ -41,7 +42,11 @@ export function evidenceFromEvents(events: DeskEvent[]): Evidence {
     .filter((e): e is Extract<DeskEvent, { type: "blocked" }> => e.type === "blocked")
     .map((e) =>
       e.name
-        ? `${e.description} — wymaga zdolności „${e.name}” (dział ${e.department})`
+        ? translate("evidence.blockedNamed", {
+            description: e.description,
+            name: e.name,
+            department: e.department ?? "",
+          })
         : e.description,
     )
 
@@ -62,8 +67,15 @@ export function evidenceFromEvents(events: DeskEvent[]): Evidence {
     if (c.kind === "verifies" && name) verified.add(name)
 
     if (!c.evidence) continue
-    const line = c.evidence.phrase(name, k.summary ?? "", {
-      label: k.label,
+    const detail = k.summary ?? ""
+    // Bez szczegółu bierzemy krótszy wariant zdania, jeśli karta go ma.
+    const phrase = detail === "" ? (c.evidence.phraseBare ?? c.evidence.phrase) : c.evidence.phrase
+    const line = translate(phrase, {
+      ...c.vars,
+      name,
+      detail,
+      // Etykietę pisze nasz kod przy wywołaniu; gdy jej nie ma, zostaje nazwa rzeczy.
+      label: k.label || name,
       source: c.source,
     })
     if (c.evidence.list === "intake") intake.push(line)
@@ -73,10 +85,10 @@ export function evidenceFromEvents(events: DeskEvent[]): Evidence {
 
   // Reguła: zapisany dokument, którego nikt nie odczytał po zapisie, jest NIESPRAWDZONY.
   for (const n of saved) {
-    if (!verified.has(n)) unverified.push(`zawartość pliku ${n} po zapisie`)
+    if (!verified.has(n)) unverified.push(translate("evidence.unverifiedFile", { name: n }))
   }
   if (saved.size > 0 && fromDesk.size === 0) {
-    unverified.push("dokument powstał bez odczytania choćby jednego pliku z biurka")
+    unverified.push(translate("evidence.noIntake"))
   }
   return {
     intake,

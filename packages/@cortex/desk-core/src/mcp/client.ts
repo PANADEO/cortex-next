@@ -96,18 +96,21 @@ export async function mcpTools(
           name: key,
           kind: "external",
           source: server.name,
-          running: `Pytam ${server.label}`,
-          ok: `Zapytałem ${server.label}`,
+          running: "tools.external.running",
+          ok: "tools.external.ok",
           group: {
-            key: `zewnetrzne:${server.name}`,
-            verb: `zapytałem ${server.label}`,
-            countable: ["raz", "razy", "razy"],
+            key: `external:${server.name}`,
+            phrase: "tools.groups.external",
             weight: 4,
           },
           evidence: {
             list: "intake",
-            phrase: (_x, d) => `${server.label}: ${n.description}${d ? ` — ${d}` : ""}`,
+            phrase: "tools.evidence.externalNamed",
+            phraseBare: "tools.evidence.externalNamedBare",
           },
+          // Nazwa serwera i opis narzędzia to WARTOŚCI wpisane przez zatwierdzającego,
+          // nie części klucza — jadą jako zmienne do zdania ze słownika.
+          vars: { server: server.label, tool: n.description },
         })
 
         result[key] = tool({

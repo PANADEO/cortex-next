@@ -298,7 +298,17 @@
     "asked": "Asked outside the company:",
     "notChecked": "Not checked:",
     "notAllowed": "You have no consent for this:",
-    "note": "This is a list of what actually happened — not of what I wrote above."
+    "note": "This is a list of what actually happened — not of what I wrote above.",
+    "summaryPlain": {
+      "one": "Done: {{count}} action",
+      "other": "Done: {{count}} actions"
+    },
+    "summaryNothing": "Nothing was done",
+    "summaryOther": {
+      "one": "{{count}} other action",
+      "other": "{{count}} other actions"
+    },
+    "summaryJoin": "{{head}} and {{last}}"
   },
   "mcp": {
     "failed": "That did not work.",
@@ -352,5 +362,127 @@
     "alreadyDecided": "This request has already been decided.",
     "notGrantable": "This request cannot be granted with one click — it is a submission to the catalogue.",
     "newCase": "New case"
+  },
+  "tools": {
+    "list_files": {
+      "running": "Browsing the folder",
+      "ok": "Browsed the folder"
+    },
+    "read_file": {
+      "running": "Reading",
+      "ok": "Read"
+    },
+    "write_document": {
+      "running": "Writing",
+      "ok": "Wrote"
+    },
+    "write_sheet": {
+      "running": "Writing a sheet",
+      "ok": "Wrote a sheet"
+    },
+    "generate_image": {
+      "running": "Drawing an image",
+      "ok": "Drew it"
+    },
+    "verify_document": {
+      "running": "Checking after saving",
+      "ok": "Checked after saving"
+    },
+    "run_computation": {
+      "running": "Computing",
+      "ok": "Computed"
+    },
+    "save_to_my_files": {
+      "running": "Saving to My files",
+      "ok": "Saved to My files"
+    },
+    "external": {
+      "running": "Querying {{server}}",
+      "ok": "Queried {{server}}"
+    },
+    "outside": {
+      "running": "Running an action outside the catalogue",
+      "ok": "Ran an action outside the catalogue"
+    },
+    "groups": {
+      "folder": "browsed the folder",
+      "reading": {
+        "one": "read {{count}} file",
+        "other": "read {{count}} files"
+      },
+      "document": {
+        "one": "wrote {{count}} document",
+        "other": "wrote {{count}} documents"
+      },
+      "image": {
+        "one": "drew {{count}} image",
+        "other": "drew {{count}} images"
+      },
+      "computing": "computed",
+      "stored": {
+        "one": "saved {{count}} file to My files",
+        "other": "saved {{count}} files to My files"
+      },
+      "external": {
+        "one": "queried {{server}} once",
+        "other": "queried {{server}} {{count}} times"
+      },
+      "outside": {
+        "one": "ran it once",
+        "other": "ran it {{count}} times"
+      }
+    },
+    "evidence": {
+      "read": "{{name}} — {{detail}}",
+      "wrote": "wrote {{name}} — {{detail}}",
+      "wroteSheet": "wrote sheet {{name}} — {{detail}}",
+      "generated": "generated {{name}}",
+      "verified": "read {{name}} back after saving — {{detail}}",
+      "computed": "computed — {{detail}}",
+      "stored": "saved to My files: {{detail}}",
+      "external": "{{source}}: {{label}} — {{detail}}",
+      "externalNamed": "{{server}}: {{tool}} — {{detail}}",
+      "externalBare": "{{source}}: {{label}}",
+      "externalNamedBare": "{{server}}: {{tool}}"
+    }
+  },
+  "evidence": {
+    "blockedNamed": "{{description}} — needs the “{{name}}” capability ({{department}})",
+    "unverifiedFile": "the contents of {{name}} after saving",
+    "noIntake": "the document was produced without reading a single file from the desk"
+  },
+  "journal": {
+    "caseCreated": "opens a new case",
+    "turnStart": {
+      "one": "sends a job · permission scope {{fingerprint}} ({{count}} capability)",
+      "other": "sends a job · permission scope {{fingerprint}} ({{count}} capabilities)"
+    },
+    "turnEnd": "work finished",
+    "turnEndEstimated": "work finished — cost estimated, the provider did not report it",
+    "turnStopped": "stops the agent’s work",
+    "turnFailed": "work failed: {{reason}}",
+    "requestOpened": "asks for the “{{name}}” capability",
+    "requestGranted": "grants the “{{name}}” capability to {{who}}",
+    "requestDenied": "denies the “{{name}}” capability to {{who}}",
+    "requestOther": "asks for something outside the catalogue: “{{description}}”",
+    "capabilityRevoked": "revokes the “{{name}}” capability from {{who}}",
+    "capabilityMissing": "runs into a missing capability: {{description}}",
+    "accessDenied": "attempt to reach someone else’s work — refused",
+    "fileUpload": "uploads file {{name}}",
+    "fileTrash": "deletes file {{path}}",
+    "fileRestore": "restores a file from the trash",
+    "fileMove": "moves file {{from}}",
+    "fileCopy": "copies file {{from}}",
+    "fileFolder": "creates folder {{path}}",
+    "mcpServerAdded": "adds tool server {{name}}",
+    "mcpServerInspected": "inspects what server {{server}} exposes",
+    "mcpToolApproved": "accepts tool {{tool}} from server {{server}}",
+    "mcpToolWithdrawn": "withdraws tool {{tool}} from server {{server}}",
+    "mcpToolSuspended": "— tool {{tool}} suspended: {{reason}}",
+    "costReset": {
+      "one": "— today’s cost was reset ({{usd}} USD across {{count}} case)",
+      "other": "— today’s cost was reset ({{usd}} USD across {{count}} cases)"
+    },
+    "unknown": "event “{{type}}” (undescribed)"
   }
 }

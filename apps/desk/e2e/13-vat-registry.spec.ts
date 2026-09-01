@@ -1,8 +1,12 @@
 import { evidenceFromEvents } from "@cortex/desk-core/evidence"
 import { SERVER_CATALOGUE, VAT_REGISTRY_TOOLS } from "@cortex/desk-core/mcp/catalogue"
 import type { DeskEvent } from "@cortex/desk-core/types"
+import { makeDeskT } from "@cortex/desk-ui/i18n/locale"
 import type { APIRequestContext } from "@playwright/test"
 import { expect, test } from "./osoby"
+
+/** Scenariusze czyta człowiek po polsku — dowód budujemy polskim tłumaczem. */
+const pl = makeDeskT("pl")
 
 const ANNA = { Cookie: "desk_persona=anna" }
 const ROBERT = { Cookie: "desk_persona=robert" }
@@ -129,14 +133,14 @@ test.describe("Obszar 25 · Odpowiedź obcego serwera nie udaje wykonanej pracy"
   ]
 
   test("Odpytanie trafia do osobnej listy, nie między rzeczy zrobione", () => {
-    const d = evidenceFromEvents(obce)
+    const d = evidenceFromEvents(obce, pl)
     expect(d.external).toHaveLength(1)
     expect(d.produced).toHaveLength(0)
     expect(d.intake).toHaveLength(0)
   })
 
   test("Wiersz nazywa źródło po ludzku, a nie kluczem narzędzia", () => {
-    const [w] = evidenceFromEvents(obce).external
+    const [w] = evidenceFromEvents(obce, pl).external
     expect(w).toContain("wykaz podatników VAT")
     expect(w).toContain("sprawdzenie rachunku w wykazie")
     expect(w).not.toContain("mcp_")

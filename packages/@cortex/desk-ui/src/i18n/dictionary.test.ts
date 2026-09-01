@@ -9,6 +9,7 @@
 // przedrostkiem (`case.status.${x}`) sprawdzamy po przedrostku — musi istnieć
 // przynajmniej jedno rozwinięcie, więc literówka w przedrostku dalej jest czerwona.
 
+import { cardFor, TOOL_CARDS } from "@cortex/desk-core/tool-cards"
 import { readdirSync, readFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -101,6 +102,31 @@ describe("słownik Biurka", () => {
     const e = makeDeskT("en")
     expect(e("shell.skills", { granted: 1, count: 1 })).toBe("I can do 1 of 1 thing")
     expect(e("shell.skills", { granted: 2, count: 9 })).toBe("I can do 2 of 9 things")
+  })
+
+  it("każdy klucz z karty narzędzia istnieje w słowniku", () => {
+    // Karty żyją w `desk-core` i niosą KLUCZE, nie zdania — więc skan wywołań
+    // `translate("…")` ich nie widzi. Literówka w karcie pokazałaby na ekranie
+    // `tools.read_file.ok` zamiast „Przeczytałem", i to tylko przy tym jednym narzędziu.
+    // Dwie karty budowane w locie idą razem z wbudowanymi, bo to WŁAŚNIE one
+    // niosą klucze, których nie widzi żaden skan: karta obcego serwera i karta
+    // narzędzia bez rozpoznawalnego źródła powstają dopiero przy pierwszym wywołaniu.
+    const cards = [
+      ...Object.values(TOOL_CARDS),
+      cardFor("mcp_nbp_kurs_waluty", "nbp"),
+      cardFor("nic_takiego_nie_znam"),
+    ]
+    const fromCards = cards.flatMap((card) =>
+      [
+        card.running,
+        card.ok,
+        card.group?.phrase,
+        card.evidence?.phrase,
+        card.evidence?.phraseBare,
+      ].filter((key): key is string => typeof key === "string"),
+    )
+    expect(fromCards.length).toBeGreaterThan(20)
+    expect(fromCards.filter((key) => !plKeys.includes(key))).toEqual([])
   })
 
   it("brak klucza oddaje sam klucz, a nie pustkę", () => {

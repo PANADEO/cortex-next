@@ -196,7 +196,7 @@ async function Log() {
           <li className="t-meta px-4 py-3">{translate("supervision.logEmpty")}</li>
         )}
         {entries.map((w, i) => {
-          const o = describeEntry({ ...w, at: w.at.toISOString?.() ?? String(w.at) })
+          const o = describeEntry({ ...w, at: w.at.toISOString?.() ?? String(w.at) }, translate)
           const who = USERS.find((x) => x.id === w.who)
           return (
             <li key={i} className="flex gap-3 px-4 py-2.5">

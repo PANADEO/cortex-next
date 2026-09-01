@@ -6,7 +6,10 @@ import {
   toolKey,
 } from "@cortex/desk-core/mcp/hygiene"
 import { cardFor } from "@cortex/desk-core/tool-cards"
+import { makeDeskT } from "@cortex/desk-ui/i18n/locale"
 import { expect, test } from "./osoby"
+
+const pl = makeDeskT("pl")
 
 test.describe("Obszar 21 · Tekst obcego serwera nie dociera do modelu", () => {
   const wrogi = {
@@ -104,6 +107,6 @@ test.describe("Obszar 23 · Karta narzędzia MCP", () => {
     // prefiks nie rozróżni serwera `vat-registry` od `vat`; zdarzenie rozróżni
     const k = cardFor("mcp_vat_registry_vat_status", "wykaz podatników VAT")
     expect(k.source).toBe("wykaz podatników VAT")
-    expect(k.ok).toContain("wykaz podatników VAT")
+    expect(pl(k.ok, k.vars)).toBe("Odpytałem wykaz podatników VAT")
   })
 })

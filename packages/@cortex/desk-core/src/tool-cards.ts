@@ -23,13 +23,18 @@ export type ToolClass =
   | "stores" // przenosi do „Moich plików"
   | "external" // wychodzi poza to biurko — klasa domyślna dla obcego serwera
 
-/** Człon podsumowania grupy. Człony o tym samym kluczu sumują się w jedno zdanie. */
+/**
+ * Człon podsumowania grupy. Człony o tym samym kluczu sumują się w jedno zdanie.
+ *
+ * `phrase` to KLUCZ SŁOWNIKA, a nie napis, i niesie CAŁY człon razem z liczbą:
+ * „przeczytałem {{count}} pliki" / „read {{count}} files". Wcześniej stały tu trzy
+ * osobne pola — czasownik, trzy formy rzeczownika i sufiks — sklejane w tej kolejności
+ * w kodzie. To jest szyk polski; angielski składa to inaczej, a trzeci język jeszcze
+ * inaczej. Jeden klucz z formami liczby mnogiej zostawia szyk słownikowi.
+ */
 export type ToolGroup = {
   key: string
-  verb: string
-  /** rzeczownik do odmiany: [1, 2–4, 5+]. Brak = człon bez liczby. */
-  countable?: [string, string, string]
-  suffix?: string
+  phrase: string
   /** przy skracaniu odpadają najpierw człony o najniższej wadze — dokument nigdy */
   weight: number
 }
@@ -37,7 +42,11 @@ export type ToolGroup = {
 export type ToolCard = {
   name: string
   kind: ToolClass
-  /** czasownik w toku i po zakończeniu: „Zapisuję" / „Zapisałem" */
+  /**
+   * KLUCZE SŁOWNIKA, nie zdania: „w toku" i „po zakończeniu". Zdanie powstaje przy
+   * RENDERZE, a nie przy zapisie zdarzenia — dzięki temu ta sama sprawa czyta się
+   * po polsku i po angielsku, bez przepisywania historii.
+   */
   running: string
   ok: string
   /** który argument niesie nazwę rzeczy, a który pełną ścieżkę do szczegółu */
@@ -53,7 +62,16 @@ export type ToolCard = {
    */
   evidence?: {
     list: "intake" | "produced" | "external"
-    phrase: (name: string, detail: string, k?: { label: string; source: string }) => string
+    /** klucz słownika; dostaje `name`, `detail`, `label` i `source` jako zmienne */
+    phrase: string
+    /**
+     * Wariant tego samego zdania na wypadek, gdy narzędzie NIC nie podsumowało.
+     * Wbudowane podsumowują zawsze, obce nie muszą — a zdanie ze szczegółem
+     * dawałoby wtedy myślnik zawieszony w próżni: „nbp: kurs waluty — ".
+     * Myślnik siedział wcześniej w warunku w kodzie; warunek jest częścią szyku,
+     * więc idzie tam, gdzie reszta szyku, czyli do słownika.
+     */
+    phraseBare?: string
   }
   /**
    * Czy wytworzony plik podlega regule „zapisany, a nieodczytany po zapisie = NIESPRAWDZONY".
@@ -62,6 +80,11 @@ export type ToolCard = {
   verifiable?: boolean
   /** skąd pochodzi — dla narzędzi MCP nazwa serwera, którą wpisał zatwierdzający */
   source: string
+  /**
+   * Zmienne wstawiane w KAŻDE zdanie tej karty. Istnieją dla narzędzi obcego serwera:
+   * jego nazwa nie jest częścią klucza, tylko wartością, którą wpisał zatwierdzający.
+   */
+  vars?: Record<string, string>
 }
 
 const K = (k: ToolCard) => k
@@ -71,115 +94,89 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
     K({
       name: "list_files",
       kind: "browses",
-      running: "Przeglądam teczkę",
-      ok: "Przejrzałem teczkę",
-      group: { key: "teczka", verb: "przejrzałem teczkę", weight: 1 },
+      running: "tools.list_files.running",
+      ok: "tools.list_files.ok",
+      group: { key: "folder", phrase: "tools.groups.folder", weight: 1 },
       source: "builtin",
     }),
     K({
       name: "read_file",
       kind: "reads",
-      running: "Czytam",
-      ok: "Przeczytałem",
+      running: "tools.read_file.running",
+      ok: "tools.read_file.ok",
       argName: "path",
       argPath: "path",
-      group: {
-        key: "czytanie",
-        verb: "przeczytałem",
-        countable: ["plik", "pliki", "plików"],
-        weight: 3,
-      },
-      evidence: { list: "intake", phrase: (n, d) => `${n} — ${d}` },
+      group: { key: "reading", phrase: "tools.groups.reading", weight: 3 },
+      evidence: { list: "intake", phrase: "tools.evidence.read" },
       source: "builtin",
     }),
     K({
       name: "write_document",
       kind: "produces",
-      running: "Zapisuję",
-      ok: "Zapisałem",
+      running: "tools.write_document.running",
+      ok: "tools.write_document.ok",
       argName: "name",
       argPath: "name",
-      group: {
-        key: "dokument",
-        verb: "zapisałem",
-        countable: ["dokument", "dokumenty", "dokumentów"],
-        weight: 5,
-      },
-      evidence: { list: "produced", phrase: (n, d) => `zapisano ${n} — ${d}` },
+      group: { key: "document", phrase: "tools.groups.document", weight: 5 },
+      evidence: { list: "produced", phrase: "tools.evidence.wrote" },
       verifiable: true,
       source: "builtin",
     }),
     K({
       name: "write_sheet",
       kind: "produces",
-      running: "Zapisuję arkusz",
-      ok: "Zapisałem arkusz",
+      running: "tools.write_sheet.running",
+      ok: "tools.write_sheet.ok",
       argName: "name",
       argPath: "name",
       // ten sam klucz co dokument: „zapisałem 2 dokumenty" zamiast dwóch osobnych członów
-      group: {
-        key: "dokument",
-        verb: "zapisałem",
-        countable: ["dokument", "dokumenty", "dokumentów"],
-        weight: 5,
-      },
-      evidence: { list: "produced", phrase: (n, d) => `zapisano arkusz ${n} — ${d}` },
+      group: { key: "document", phrase: "tools.groups.document", weight: 5 },
+      evidence: { list: "produced", phrase: "tools.evidence.wroteSheet" },
       verifiable: true,
       source: "builtin",
     }),
     K({
       name: "generate_image",
       kind: "produces",
-      running: "Rysuję obraz",
-      ok: "Narysowałem",
+      running: "tools.generate_image.running",
+      ok: "tools.generate_image.ok",
       argName: "name",
       argPath: "name",
-      group: {
-        key: "obraz",
-        verb: "narysowałem",
-        countable: ["obraz", "obrazy", "obrazów"],
-        weight: 5,
-      },
-      evidence: { list: "produced", phrase: (n) => `wygenerowano ${n}` },
+      group: { key: "image", phrase: "tools.groups.image", weight: 5 },
+      evidence: { list: "produced", phrase: "tools.evidence.generated" },
       source: "builtin",
     }),
     K({
-      // Świadomie BEZ `grupa`: sprawdzenie niesie stopka dowodu i plakietka przy pliku,
+      // Świadomie BEZ `group`: sprawdzenie niesie stopka dowodu i plakietka przy pliku,
       // a w zdaniu podsumowania wypychałoby rzeczy, które człowiek chce zobaczyć.
       name: "verify_document",
       kind: "verifies",
-      running: "Sprawdzam po zapisie",
-      ok: "Sprawdziłem po zapisie",
+      running: "tools.verify_document.running",
+      ok: "tools.verify_document.ok",
       argName: "name",
       argPath: "name",
-      evidence: { list: "produced", phrase: (n, d) => `odczytano ${n} po zapisie — ${d}` },
+      evidence: { list: "produced", phrase: "tools.evidence.verified" },
       source: "builtin",
     }),
     K({
       name: "run_computation",
       kind: "computes",
-      running: "Liczę",
-      ok: "Policzyłem",
+      running: "tools.run_computation.running",
+      ok: "tools.run_computation.ok",
       argDetail: "description",
-      group: { key: "liczenie", verb: "policzyłem", weight: 4 },
-      evidence: { list: "produced", phrase: (_n, d) => `policzono — ${d}` },
+      group: { key: "computing", phrase: "tools.groups.computing", weight: 4 },
+      evidence: { list: "produced", phrase: "tools.evidence.computed" },
       source: "builtin",
     }),
     K({
       name: "save_to_my_files",
       kind: "stores",
-      running: "Odkładam do Moich plików",
-      ok: "Odłożyłem do Moich plików",
+      running: "tools.save_to_my_files.running",
+      ok: "tools.save_to_my_files.ok",
       argName: "name",
       argPath: "target",
-      group: {
-        key: "odlozone",
-        verb: "odłożyłem",
-        countable: ["plik", "pliki", "plików"],
-        suffix: "do Moich plików",
-        weight: 5,
-      },
-      evidence: { list: "produced", phrase: (_n, d) => `odłożono do Moich plików: ${d}` },
+      group: { key: "stored", phrase: "tools.groups.stored", weight: 5 },
+      evidence: { list: "produced", phrase: "tools.evidence.stored" },
       source: "builtin",
     }),
   ].map((k) => [k.name, k]),
@@ -210,16 +207,15 @@ export function cardFor(name: string, sourceFromEvent?: string): ToolCard {
   // serwera, a przebieg i dowód rysuje przeglądarka. Prefiks klucza to ostatnia deska
   // ratunku — nie rozróżni serwera `vat-registry` od `vat`.
   const server = sourceFromEvent ?? serverFromKey(name)
-  const source = server ?? "poza katalogiem"
+  const source = server ?? "outside-catalogue"
   return {
     name,
     kind: "external",
-    running: server ? `Odpytuję ${server}` : "Wykonuję czynność spoza katalogu",
-    ok: server ? `Odpytałem ${server}` : "Wykonałem czynność spoza katalogu",
+    running: server ? "tools.external.running" : "tools.outside.running",
+    ok: server ? "tools.external.ok" : "tools.outside.ok",
     group: {
-      key: `zewnetrzne:${source}`,
-      verb: server ? `odpytałem ${server}` : "wykonałem",
-      countable: ["raz", "razy", "razy"],
+      key: `external:${source}`,
+      phrase: server ? "tools.groups.external" : "tools.groups.outside",
       weight: 4,
     },
     evidence: {
@@ -227,9 +223,11 @@ export function cardFor(name: string, sourceFromEvent?: string): ToolCard {
       // znaczy „odpowiedział", a nie „rzecz się wydarzyła". Nazwanie tego sprawdzonym
       // byłoby dokładnie tym, przed czym ten produkt ma bronić.
       list: "external",
-      phrase: (_n, d, k) => `${source}: ${k?.label || name}${d ? ` — ${d}` : ""}`,
+      phrase: "tools.evidence.external",
+      phraseBare: "tools.evidence.externalBare",
     },
     source,
+    vars: { server: source },
   }
 }
 

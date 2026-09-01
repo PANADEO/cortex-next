@@ -229,7 +229,14 @@ export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }
     [entries],
   )
   const turns = useMemo(() => perTurn(conversation), [conversation])
-  const evidence = useMemo(() => evidenceFromEvents(entries.map((w) => w.event)), [entries])
+  const evidence = useMemo(
+    () =>
+      evidenceFromEvents(
+        entries.map((w) => w.event),
+        translate,
+      ),
+    [entries, translate],
+  )
   const seconds = since && isWorking ? Math.max(0, Math.round((now - since) / 1000)) : 0
 
   // plik wgrany, ale jeszcze niewysłany, też jest Twój — nie może udawać wyniku pracy

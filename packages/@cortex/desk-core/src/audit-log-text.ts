@@ -1,3 +1,4 @@
+import type { DeskT } from "@cortex/desk-ui/i18n/locale"
 import { capabilityCatalogue } from "./capability-gate"
 import { USERS } from "./identity"
 
@@ -23,14 +24,20 @@ const firstName = (id: unknown) => {
  * Rodzaju nie ma skąd wziąć: `User` go nie niesie i nie powinien. Czas teraźniejszy
  * rodzaju nie ma wcale, a w dzienniku z godziną obok czyta się naturalnie.
  */
-export function describeEntry(w: AuditEntry): { text: string; weight: "normal" | "important" } {
+export function describeEntry(
+  w: AuditEntry,
+  translate: DeskT,
+): { text: string; weight: "normal" | "important" } {
   const s = w.details ?? {}
   switch (w.type) {
     case "case.created":
-      return { text: "zakłada nową sprawę", weight: "normal" }
+      return { text: translate("journal.caseCreated"), weight: "normal" }
     case "turn.start":
       return {
-        text: `zleca pracę · zakres uprawnień ${s.fingerprint ?? "?"} (${Array.isArray(s.capabilities) ? s.capabilities.length : "?"} zdolności)`,
+        text: translate("journal.turnStart", {
+          fingerprint: s.fingerprint ?? "?",
+          count: Array.isArray(s.capabilities) ? s.capabilities.length : 0,
+        }),
         weight: "normal",
       }
     case "turn.end":
@@ -39,78 +46,129 @@ export function describeEntry(w: AuditEntry): { text: string; weight: "normal" |
       // liczbie. Cicho wygląda tak samo jak prawidłowy, więc mówi o sobie w dzienniku.
       return s.costBasis === "estimate"
         ? {
-            text: "praca zakończona — koszt oszacowany, dostawca go nie podał",
+            text: translate("journal.turnEndEstimated"),
             weight: "important",
           }
-        : { text: "praca zakończona", weight: "normal" }
+        : { text: translate("journal.turnEnd"), weight: "normal" }
     case "turn.stopped":
-      return { text: "zatrzymuje pracę agenta", weight: "normal" }
+      return { text: translate("journal.turnStopped"), weight: "normal" }
     case "turn.failed":
-      return { text: `praca nie powiodła się: ${s.reason ?? "bez powodu"}`, weight: "important" }
+      return {
+        text: translate("journal.turnFailed", { reason: String(s.reason ?? "") }),
+        weight: "important",
+      }
     case "request.opened":
-      return { text: `prosi o zdolność „${capabilityName(s.capability)}”`, weight: "important" }
+      return {
+        text: translate("journal.requestOpened", { name: capabilityName(s.capability) }),
+        weight: "important",
+      }
     case "request.granted":
       return {
-        text: `przyznaje zdolność „${capabilityName(s.capability)}” osobie ${firstName(s.toWhom)}`,
+        text: translate("journal.requestGranted", {
+          name: capabilityName(s.capability),
+          who: firstName(s.toWhom),
+        }),
         weight: "important",
       }
     case "request.denied":
       return {
-        text: `odmawia zdolności „${capabilityName(s.capability)}” osobie ${firstName(s.toWhom)}`,
+        text: translate("journal.requestDenied", {
+          name: capabilityName(s.capability),
+          who: firstName(s.toWhom),
+        }),
         weight: "important",
       }
     case "request.other":
       return {
-        text: `prosi o coś spoza katalogu: „${s.description ?? ""}”`,
+        text: translate("journal.requestOther", { description: String(s.description ?? "") }),
         weight: "important",
       }
     case "capability.revoked":
       return {
-        text: `cofa zdolność „${capabilityName(s.capability)}” osobie ${firstName(s.toWhom)}`,
+        text: translate("journal.capabilityRevoked", {
+          name: capabilityName(s.capability),
+          who: firstName(s.toWhom),
+        }),
         weight: "important",
       }
     case "capability.missing":
-      return { text: `napotyka brak zdolności: ${s.description ?? ""}`, weight: "important" }
+      return {
+        text: translate("journal.capabilityMissing", { description: String(s.description ?? "") }),
+        weight: "important",
+      }
     case "access.denied":
-      return { text: "próba sięgnięcia po cudze — odrzucona", weight: "important" }
+      return { text: translate("journal.accessDenied"), weight: "important" }
     case "files.upload":
-      return { text: `wgrywa plik ${s.name ?? ""}`, weight: "normal" }
+      return {
+        text: translate("journal.fileUpload", { name: String(s.name ?? "") }),
+        weight: "normal",
+      }
     case "files.trash":
-      return { text: `usuwa plik ${s.path ?? ""}`, weight: "normal" }
+      return {
+        text: translate("journal.fileTrash", { path: String(s.path ?? "") }),
+        weight: "normal",
+      }
     case "files.restore":
-      return { text: "przywraca plik z kosza", weight: "normal" }
+      return { text: translate("journal.fileRestore"), weight: "normal" }
     case "files.move":
-      return { text: `przenosi plik ${s.from ?? ""}`, weight: "normal" }
+      return {
+        text: translate("journal.fileMove", { from: String(s.from ?? "") }),
+        weight: "normal",
+      }
     case "files.copy":
-      return { text: `kopiuje plik ${s.from ?? ""}`, weight: "normal" }
+      return {
+        text: translate("journal.fileCopy", { from: String(s.from ?? "") }),
+        weight: "normal",
+      }
     case "files.folder":
-      return { text: `tworzy folder ${s.path ?? ""}`, weight: "normal" }
+      return {
+        text: translate("journal.fileFolder", { path: String(s.path ?? "") }),
+        weight: "normal",
+      }
     case "mcp.server.added":
-      return { text: `dodaje serwer narzędzi ${s.name ?? ""}`, weight: "important" }
+      return {
+        text: translate("journal.mcpServerAdded", { name: String(s.name ?? "") }),
+        weight: "important",
+      }
     case "mcp.server.inspected":
-      return { text: `przegląda, co wystawia serwer ${s.server ?? ""}`, weight: "normal" }
+      return {
+        text: translate("journal.mcpServerInspected", { server: String(s.server ?? "") }),
+        weight: "normal",
+      }
     case "mcp.tool.approved":
       return {
-        text: `przyjmuje narzędzie ${s.tool ?? ""} z serwera ${s.server ?? ""}`,
+        text: translate("journal.mcpToolApproved", {
+          tool: String(s.tool ?? ""),
+          server: String(s.server ?? ""),
+        }),
         weight: "important",
       }
     case "mcp.tool.withdrawn":
       return {
-        text: `wycofuje narzędzie ${s.tool ?? ""} z serwera ${s.server ?? ""}`,
+        text: translate("journal.mcpToolWithdrawn", {
+          tool: String(s.tool ?? ""),
+          server: String(s.server ?? ""),
+        }),
         weight: "important",
       }
     case "mcp.tool.suspended":
       // to jedyny wpis, który zapisuje sama aplikacja bez udziału człowieka
       return {
-        text: `— narzędzie ${s.tool ?? ""} wstrzymane: ${s.reason ?? ""}`,
+        text: translate("journal.mcpToolSuspended", {
+          tool: String(s.tool ?? ""),
+          reason: String(s.reason ?? ""),
+        }),
         weight: "important",
       }
     case "cost.reset":
       return {
-        text: `— wyzerowano dzisiejszy koszt (${s.usd ?? 0} USD na ${s.cases ?? 0} sprawach)`,
+        text: translate("journal.costReset", {
+          usd: String(s.usd ?? 0),
+          count: Number(s.cases ?? 0),
+        }),
         weight: "normal",
       }
     default:
-      return { text: `zdarzenie „${w.type}” (nieopisane)`, weight: "normal" }
+      return { text: translate("journal.unknown", { type: w.type }), weight: "normal" }
   }
 }

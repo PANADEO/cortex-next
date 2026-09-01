@@ -313,7 +313,21 @@
     "asked": "Pytałem poza firmą:",
     "notChecked": "Nie sprawdziłem:",
     "notAllowed": "Na to nie masz zgody:",
-    "note": "To jest lista tego, co faktycznie się wydarzyło — nie tego, co napisałem powyżej."
+    "note": "To jest lista tego, co faktycznie się wydarzyło — nie tego, co napisałem powyżej.",
+    "summaryPlain": {
+      "one": "Zrobione: {{count}} czynność",
+      "few": "Zrobione: {{count}} czynności",
+      "many": "Zrobione: {{count}} czynności",
+      "other": "Zrobione: {{count}} czynności"
+    },
+    "summaryNothing": "Nic nie zostało zrobione",
+    "summaryOther": {
+      "one": "{{count}} inną czynność",
+      "few": "{{count}} inne czynności",
+      "many": "{{count}} innych czynności",
+      "other": "{{count}} innych czynności"
+    },
+    "summaryJoin": "{{head}} i {{last}}"
   },
   "mcp": {
     "failed": "Nie udało się.",
@@ -367,5 +381,143 @@
     "alreadyDecided": "Ta prośba jest już rozpatrzona.",
     "notGrantable": "Tej prośby nie da się przyznać jednym kliknięciem — to zgłoszenie do katalogu.",
     "newCase": "Nowa sprawa"
+  },
+  "tools": {
+    "list_files": {
+      "running": "Przeglądam teczkę",
+      "ok": "Przejrzałem teczkę"
+    },
+    "read_file": {
+      "running": "Czytam",
+      "ok": "Przeczytałem"
+    },
+    "write_document": {
+      "running": "Zapisuję",
+      "ok": "Zapisałem"
+    },
+    "write_sheet": {
+      "running": "Zapisuję arkusz",
+      "ok": "Zapisałem arkusz"
+    },
+    "generate_image": {
+      "running": "Rysuję obraz",
+      "ok": "Narysowałem"
+    },
+    "verify_document": {
+      "running": "Sprawdzam po zapisie",
+      "ok": "Sprawdziłem po zapisie"
+    },
+    "run_computation": {
+      "running": "Liczę",
+      "ok": "Policzyłem"
+    },
+    "save_to_my_files": {
+      "running": "Odkładam do Moich plików",
+      "ok": "Odłożyłem do Moich plików"
+    },
+    "external": {
+      "running": "Odpytuję {{server}}",
+      "ok": "Odpytałem {{server}}"
+    },
+    "outside": {
+      "running": "Wykonuję czynność spoza katalogu",
+      "ok": "Wykonałem czynność spoza katalogu"
+    },
+    "groups": {
+      "folder": "przejrzałem teczkę",
+      "reading": {
+        "one": "przeczytałem {{count}} plik",
+        "few": "przeczytałem {{count}} pliki",
+        "many": "przeczytałem {{count}} plików",
+        "other": "przeczytałem {{count}} plików"
+      },
+      "document": {
+        "one": "zapisałem {{count}} dokument",
+        "few": "zapisałem {{count}} dokumenty",
+        "many": "zapisałem {{count}} dokumentów",
+        "other": "zapisałem {{count}} dokumentów"
+      },
+      "image": {
+        "one": "narysowałem {{count}} obraz",
+        "few": "narysowałem {{count}} obrazy",
+        "many": "narysowałem {{count}} obrazów",
+        "other": "narysowałem {{count}} obrazów"
+      },
+      "computing": "policzyłem",
+      "stored": {
+        "one": "odłożyłem {{count}} plik do Moich plików",
+        "few": "odłożyłem {{count}} pliki do Moich plików",
+        "many": "odłożyłem {{count}} plików do Moich plików",
+        "other": "odłożyłem {{count}} plików do Moich plików"
+      },
+      "external": {
+        "one": "odpytałem {{server}} {{count}} raz",
+        "few": "odpytałem {{server}} {{count}} razy",
+        "many": "odpytałem {{server}} {{count}} razy",
+        "other": "odpytałem {{server}} {{count}} razy"
+      },
+      "outside": {
+        "one": "wykonałem {{count}} raz",
+        "few": "wykonałem {{count}} razy",
+        "many": "wykonałem {{count}} razy",
+        "other": "wykonałem {{count}} razy"
+      }
+    },
+    "evidence": {
+      "read": "{{name}} — {{detail}}",
+      "wrote": "zapisano {{name}} — {{detail}}",
+      "wroteSheet": "zapisano arkusz {{name}} — {{detail}}",
+      "generated": "wygenerowano {{name}}",
+      "verified": "odczytano {{name}} po zapisie — {{detail}}",
+      "computed": "policzono — {{detail}}",
+      "stored": "odłożono do Moich plików: {{detail}}",
+      "external": "{{source}}: {{label}} — {{detail}}",
+      "externalNamed": "{{server}}: {{tool}} — {{detail}}",
+      "externalBare": "{{source}}: {{label}}",
+      "externalNamedBare": "{{server}}: {{tool}}"
+    }
+  },
+  "evidence": {
+    "blockedNamed": "{{description}} — wymaga zdolności „{{name}}” (dział {{department}})",
+    "unverifiedFile": "zawartość pliku {{name}} po zapisie",
+    "noIntake": "dokument powstał bez odczytania choćby jednego pliku z biurka"
+  },
+  "journal": {
+    "caseCreated": "zakłada nową sprawę",
+    "turnStart": {
+      "one": "zleca pracę · zakres uprawnień {{fingerprint}} ({{count}} zdolność)",
+      "few": "zleca pracę · zakres uprawnień {{fingerprint}} ({{count}} zdolności)",
+      "many": "zleca pracę · zakres uprawnień {{fingerprint}} ({{count}} zdolności)",
+      "other": "zleca pracę · zakres uprawnień {{fingerprint}} ({{count}} zdolności)"
+    },
+    "turnEnd": "praca zakończona",
+    "turnEndEstimated": "praca zakończona — koszt oszacowany, dostawca go nie podał",
+    "turnStopped": "zatrzymuje pracę agenta",
+    "turnFailed": "praca nie powiodła się: {{reason}}",
+    "requestOpened": "prosi o zdolność „{{name}}”",
+    "requestGranted": "przyznaje zdolność „{{name}}” osobie {{who}}",
+    "requestDenied": "odmawia zdolności „{{name}}” osobie {{who}}",
+    "requestOther": "prosi o coś spoza katalogu: „{{description}}”",
+    "capabilityRevoked": "cofa zdolność „{{name}}” osobie {{who}}",
+    "capabilityMissing": "napotyka brak zdolności: {{description}}",
+    "accessDenied": "próba sięgnięcia po cudze — odrzucona",
+    "fileUpload": "wgrywa plik {{name}}",
+    "fileTrash": "usuwa plik {{path}}",
+    "fileRestore": "przywraca plik z kosza",
+    "fileMove": "przenosi plik {{from}}",
+    "fileCopy": "kopiuje plik {{from}}",
+    "fileFolder": "tworzy folder {{path}}",
+    "mcpServerAdded": "dodaje serwer narzędzi {{name}}",
+    "mcpServerInspected": "przegląda, co wystawia serwer {{server}}",
+    "mcpToolApproved": "przyjmuje narzędzie {{tool}} z serwera {{server}}",
+    "mcpToolWithdrawn": "wycofuje narzędzie {{tool}} z serwera {{server}}",
+    "mcpToolSuspended": "— narzędzie {{tool}} wstrzymane: {{reason}}",
+    "costReset": {
+      "one": "— wyzerowano dzisiejszy koszt ({{usd}} USD na {{count}} sprawie)",
+      "few": "— wyzerowano dzisiejszy koszt ({{usd}} USD na {{count}} sprawach)",
+      "many": "— wyzerowano dzisiejszy koszt ({{usd}} USD na {{count}} sprawach)",
+      "other": "— wyzerowano dzisiejszy koszt ({{usd}} USD na {{count}} sprawach)"
+    },
+    "unknown": "zdarzenie „{{type}}” (nieopisane)"
   }
 }
