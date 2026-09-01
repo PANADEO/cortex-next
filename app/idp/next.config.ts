@@ -37,8 +37,8 @@ const nextConfig: NextConfig = {
   // `/api/desk`, bo `app/api` jest wspólne dla całej aplikacji i grupa tras go nie
   // przenosi. Aplikacja `apps/desk` ma własną konfigurację i zostaje przy korzeniu.
   env: {
-    NEXT_PUBLIC_DESK_BAZA: "/desk",
-    NEXT_PUBLIC_DESK_BAZA_API: "/api/desk",
+    NEXT_PUBLIC_DESK_BASE_PATH: "/desk",
+    NEXT_PUBLIC_DESK_API_BASE_PATH: "/api/desk",
   },
   webpack: (config) => {
     config.resolve.alias = {

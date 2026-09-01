@@ -115,7 +115,7 @@ describe("entitlementOnly — wiersz-uprawnienie zamiast kafelka", () => {
     ["null", null],
   ])(
     "odrzuca %s — kolumna jest booleanem, a cicha koercja ukryłaby kafelek",
-    (_opis, entitlementOnly) => {
+    (_description, entitlementOnly) => {
       expect(TileManifestSchema.safeParse({ ...NATIVE, entitlementOnly }).success).toBe(false)
     },
   )
@@ -149,7 +149,7 @@ describe("kategorie — wyłącznie wartości z zamkniętych list huba", () => {
     ["dział spoza listy", ["sales"]],
     ["jeden zły wśród poprawnych", ["operations", "sales"]],
     ["zła wielkość liter", ["Operations"]],
-  ])("categoryDepartment odrzuca: %s", (_opis, categoryDepartment) => {
+  ])("categoryDepartment odrzuca: %s", (_description, categoryDepartment) => {
     expect(TileManifestSchema.safeParse({ ...NATIVE, categoryDepartment }).success).toBe(false)
   })
 
@@ -231,14 +231,14 @@ describe("defineTile nadal odrzuca wszystko, co odrzucał przed K1", () => {
     ["kind spoza listy", { ...NATIVE, kind: "widget" }],
     ["label pusty", { ...NATIVE, label: "" }],
     ["id puste", { ...NATIVE, id: "" }],
-  ])("%s", (_opis, manifest) => {
+  ])("%s", (_description, manifest) => {
     expect(() => defineTile(manifest as unknown as TileManifest)).toThrow()
   })
 
   it.each([
     ["native", NATIVE],
     ["external-link", EXTERNAL],
-  ])("nadal przyjmuje poprawny manifest %s", (_opis, manifest) => {
+  ])("nadal przyjmuje poprawny manifest %s", (_description, manifest) => {
     expect(defineTile(manifest)).toMatchObject(manifest)
   })
 })

@@ -41,7 +41,7 @@ describe("krótkie nazwy narzędzi AI", () => {
     const ids: readonly string[] = AI_TOOL_DEFINITIONS.map((tool) => tool.id)
     const orphans = Object.keys(shortLabels(locale)).filter((id) => !ids.includes(id))
 
-    expect({ bezNarzedzia: orphans }).toEqual({ bezNarzedzia: [] })
+    expect({ withoutTools: orphans }).toEqual({ withoutTools: [] })
   })
 
   it("brak wpisu spada na nazwę z rejestru, nie na surowy klucz", () => {

@@ -181,6 +181,20 @@ Rely on: **`webapp-testing`** (Playwright + local verification).
 
 ## 13. Naming
 
+### Język
+
+**Kod pisze się po angielsku** — nazwy plików, katalogów, symboli, typów, klas CSS,
+kluczy motywu, zmiennych środowiskowych, kolumn w bazie i wartości pełniących rolę
+identyfikatorów.
+
+**Po polsku zostaje wszystko, co czyta człowiek**: napisy na ekranie, komunikaty,
+treść dziennika, prompty do modelu, komentarze, dokumenty i scenariusze BDD — to
+nimi weryfikujemy produkt i mają być czytelne dla zespołu.
+
+Pilnuje tego `app/idp/lib/naming-language.test.ts` (słownik kurowany ręcznie plus
+diakrytyki plus napisy w pozycjach identyfikatorowych). Odstępstwo wymaga wpisu
+w tym pliku — per plik i per nazwa, z powodem, nigdy per katalog.
+
 ### Files
 - `kebab-case` dla wszystkiego (`package-details-page.tsx`, `use-polling-resource.ts`).
 - Komponenty w pliku: 1 komponent = 1 plik, nazwa pliku = nazwa komponentu.
