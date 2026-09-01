@@ -556,9 +556,15 @@ export function CaseView({
                           />
                         </div>
                       )
+                    // `exhausted` — model nie zmieścił się w limicie kroków. Do tej pory
+                    // wyglądało to na ekranie jak sukces: żadnej karty, sprawa „gotowa",
+                    // a robota skończona w połowie. Karta jest ostrzeżeniem, nie awarią,
+                    // i proponuje to samo co awaria: podziel zlecenie i powtórz.
                     if (
                       ev.type === "lifecycle" &&
-                      (ev.status === "failed" || ev.status === "stopped")
+                      (ev.status === "failed" ||
+                        ev.status === "stopped" ||
+                        ev.status === "exhausted")
                     )
                       return (
                         <div
@@ -568,10 +574,12 @@ export function CaseView({
                           <div className="t-body-m">
                             {ev.status === "failed"
                               ? translate("case.unfinished")
-                              : translate("case.interrupted")}
+                              : ev.status === "exhausted"
+                                ? translate("case.exhausted")
+                                : translate("case.interrupted")}
                           </div>
                           {ev.reason && <p className="t-meta mt-0.5">{ev.reason}</p>}
-                          {ev.status === "failed" && (
+                          {ev.status !== "stopped" && (
                             <button
                               onClick={() => field.current?.focus()}
                               className="t-btn mt-2 flex h-8 items-center gap-1.5 rounded-md border px-2.5 hover:bg-desk-raised"

@@ -1,6 +1,11 @@
 /** Słownik zdarzeń jest NASZ. Żaden typ biblioteki agentowej nie przekracza tej granicy. */
 export type DeskEvent =
-  | { type: "lifecycle"; status: "start" | "end" | "stopped" | "failed"; reason?: string }
+  | {
+      type: "lifecycle"
+      /** `exhausted` — model nie skończył w limicie kroków; to NIE jest sukces ani awaria. */
+      status: "start" | "end" | "stopped" | "failed" | "exhausted"
+      reason?: string
+    }
   | { type: "prompt"; text: string; attachments?: string[] }
   | { type: "attachment"; names: string[] }
   | { type: "assistant"; text: string }

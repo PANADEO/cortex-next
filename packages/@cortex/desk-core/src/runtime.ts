@@ -10,6 +10,7 @@ import { readableFailure } from "./failure"
 import { mcpTools } from "./mcp/client"
 import * as memory from "./memory"
 import * as sandbox from "./sandbox"
+import { beginTurn, endTurn, wasAborted } from "./turn-control"
 import type { DeskEvent, Policy, User } from "./types"
 
 /**
@@ -105,9 +106,57 @@ PRACA NA PLIKACH
 - ZAWSZE, gdy nie możesz zrobić tego, o co proszą — bo nie masz odpowiedniej czynności ALBO bo takiej możliwości tu w ogóle nie ma (poczta, cudze systemy, internet) — NAJPIERW zgłoś to narzędziem report_gap z krótkim opisem tego, czego było trzeba, a dopiero potem odpowiedz. Ta informacja idzie do osoby, która może to zmienić; bez zgłoszenia nikt się nie dowie, że czegoś brakuje.
 - Jeśli czegoś nie da się zrobić dostępnymi narzędziami, powiedz to wprost, wyjaśnij dlaczego i zaproponuj drogę naokoło.`
 
+/**
+ * Wynik jednego kroku narzędzia: co zobaczy CZŁOWIEK (`summary` w dowodzie)
+ * i co dostanie MODEL (`answer`). To są dwie różne rzeczy i dlatego są dwoma polami —
+ * dowód ma być krótki i sprawdzalny, odpowiedź dla modelu bywa całym plikiem.
+ */
+type StepResult = { ok?: boolean; summary: string; answer: string }
+
 export function toolsForPolicy(u: User, p: Policy, caseId: string) {
   const caseFolder = storage.caseFolder(u.id, caseId)
   const emit = (e: DeskEvent) => appendEvent(caseId, e)
+
+  /**
+   * JEDYNA droga, którą narzędzie zapisuje swój krok.
+   *
+   * Powstało po zmierzeniu, że sześć z dziesięciu narzędzi nie miało `try/catch`:
+   * wyjątek w środku (brak pliku, padnięta piaskownica, zerwane połączenie) gubił
+   * `tool_end`, więc krok zostawał na ekranie jako „w toku” NA ZAWSZE, a
+   * `evidenceFromEvents` pomijało go w dowodzie, bo bierze wyłącznie pary ze statusem.
+   * Produkt, którego jedynym argumentem jest dowód, przestawał dowodzić po cichu.
+   *
+   * Zamknięcie jest STRUKTURALNE, nie polega na dopisaniu `try` w dziesięciu miejscach:
+   * `tool_end` leci z `finally` opakowywacza, więc narzędzie dopisane za rok nie ma
+   * gdzie o nim zapomnieć. To ten sam kształt, co `defer` sprzątający katalog sprawy
+   * w demonie piaskownicy.
+   */
+  const step = async (
+    name: string,
+    label: string,
+    args: Record<string, unknown>,
+    body: () => Promise<StepResult>,
+  ): Promise<string> => {
+    const start = Date.now()
+    const id = randomUUID()
+    await emit({ type: "tool_start", id, name, label, args })
+    let end = { ok: false, summary: "przerwane" }
+    let answer = "Czynność nie doszła do skutku."
+    try {
+      const r = await body()
+      end = { ok: r.ok !== false, summary: r.summary }
+      answer = r.answer
+    } catch (e) {
+      // Dowód mówi, że się NIE udało, a model dostaje zdanie, z którym da się coś zrobić.
+      // Surowa treść wyjątku nie idzie ani na ekran, ani do modelu w całości — bywa w niej
+      // ścieżka z serwera albo klucz z nagłówka.
+      end = { ok: false, summary: "czynność się nie powiodła" }
+      answer = `Nie udało się wykonać tej czynności. ${String(e).slice(0, 160)}`
+    } finally {
+      await emit({ type: "tool_end", id, name, ...end, ms: Date.now() - start })
+    }
+    return answer
+  }
   // `ToolSet` z `ai`, nie `Record<string, any>`: to jest dokładnie ten worek, który
   // `generateText` przyjmuje, więc niezgodność kształtu narzędzia wychodzi tutaj,
   // a nie dopiero jako odmowa dostawcy w środku tury.
@@ -159,31 +208,18 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
       inputSchema: z.object({ folder: z.string().optional().describe('domyślnie "Moje pliki"') }),
       execute: async ({ folder }) => {
         const k = folder?.trim() || "Moje pliki"
-        const start = Date.now(),
-          kid = randomUUID()
-        await emit({
-          type: "tool_start",
-          id: kid,
-          name: "list_files",
-          label: `Przeglądam „${k}”`,
-          args: { folder: k },
+        return step("list_files", `Przeglądam „${k}”`, { folder: k }, async () => {
+          const l = await storage.list(u.id, k)
+          const caseEntries = await storage.list(u.id, caseFolder).catch(() => [])
+          return {
+            summary: `${l.length + caseEntries.length} pozycji`,
+            answer:
+              [
+                ...l.map((x) => `${x.folder ? "[katalog] " : ""}${x.path} (${x.size} B)`),
+                ...caseEntries.map((x) => `${x.path} (${x.size} B)`),
+              ].join("\n") || "(pusto)",
+          }
         })
-        const l = await storage.list(u.id, k)
-        const caseEntries = await storage.list(u.id, caseFolder).catch(() => [])
-        const description =
-          [
-            ...l.map((x) => `${x.folder ? "[katalog] " : ""}${x.path} (${x.size} B)`),
-            ...caseEntries.map((x) => `${x.path} (${x.size} B)`),
-          ].join("\n") || "(pusto)"
-        await emit({
-          type: "tool_end",
-          id: kid,
-          name: "list_files",
-          ok: true,
-          summary: `${l.length + caseEntries.length} pozycji`,
-          ms: Date.now() - start,
-        })
-        return description
       },
     })
   }
@@ -192,54 +228,28 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
     t.read_file = tool({
       description: "Czyta zawartość pliku tekstowego z biurka użytkownika.",
       inputSchema: z.object({ path: z.string().describe('np. "Moje pliki/faktury-08.csv"') }),
-      execute: async ({ path }) => {
-        const start = Date.now(),
-          kid = randomUUID()
-        await emit({
-          type: "tool_start",
-          id: kid,
-          name: "read_file",
-          label: `Czytam ${path}`,
-          args: { path },
-        })
-        // Bez tego readFile(utf8) na .jpg zwraca śmieci z ok:true i wpisuje je do dowodu
-        // jako „odczytany plik" — czyli dowód poświadcza coś, czego nie było.
-        const notText = notReadable(path)
-        if (notText) {
-          await emit({
-            type: "tool_end",
-            id: kid,
-            name: "read_file",
-            ok: false,
-            summary: "to nie jest plik tekstowy",
-            ms: Date.now() - start,
-          })
-          return notText
-        }
-        try {
-          const text = await storage.read(u.id, path)
-          const lines = text.split("\n").length
-          await emit({
-            type: "tool_end",
-            id: kid,
-            name: "read_file",
-            ok: true,
-            summary: `${lines} wierszy, ${text.length} znaków`,
-            ms: Date.now() - start,
-          })
-          return text.slice(0, 60000)
-        } catch {
-          await emit({
-            type: "tool_end",
-            id: kid,
-            name: "read_file",
-            ok: false,
-            summary: "nie udało się otworzyć",
-            ms: Date.now() - start,
-          })
-          return `Nie udało się otworzyć pliku ${path}.`
-        }
-      },
+      execute: async ({ path }) =>
+        step("read_file", `Czytam ${path}`, { path }, async () => {
+          // Bez tego readFile(utf8) na .jpg zwraca śmieci z ok:true i wpisuje je do dowodu
+          // jako „odczytany plik" — czyli dowód poświadcza coś, czego nie było.
+          const notText = notReadable(path)
+          if (notText) {
+            return { ok: false, summary: "to nie jest plik tekstowy", answer: notText }
+          }
+          try {
+            const text = await storage.read(u.id, path)
+            return {
+              summary: `${text.split("\n").length} wierszy, ${text.length} znaków`,
+              answer: text.slice(0, 60000),
+            }
+          } catch {
+            return {
+              ok: false,
+              summary: "nie udało się otworzyć",
+              answer: `Nie udało się otworzyć pliku ${path}.`,
+            }
+          }
+        }),
     })
   }
 
@@ -251,27 +261,14 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
         name: z.string().describe('np. "zestawienie-kosztow.md"'),
         text: z.string(),
       }),
-      execute: async ({ name, text }) => {
-        const start = Date.now(),
-          kid = randomUUID()
-        await emit({
-          type: "tool_start",
-          id: kid,
-          name: "write_document",
-          label: `Zapisuję ${name}`,
-          args: { name },
-        })
-        await storage.write(u.id, `${caseFolder}/${name}`, text)
-        await emit({
-          type: "tool_end",
-          id: kid,
-          name: "write_document",
-          ok: true,
-          summary: `${text.length} znaków`,
-          ms: Date.now() - start,
-        })
-        return `Zapisano ${name} w teczce sprawy.`
-      },
+      execute: async ({ name, text }) =>
+        step("write_document", `Zapisuję ${name}`, { name }, async () => {
+          await storage.write(u.id, `${caseFolder}/${name}`, text)
+          return {
+            summary: `${text.length} znaków`,
+            answer: `Zapisano ${name} w teczce sprawy.`,
+          }
+        }),
     })
   }
 
@@ -280,40 +277,23 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
       description:
         "Odczytuje zapisany dokument z teczki sprawy, żeby potwierdzić, co w nim faktycznie jest.",
       inputSchema: z.object({ name: z.string() }),
-      execute: async ({ name }) => {
-        const start = Date.now(),
-          kid = randomUUID()
-        await emit({
-          type: "tool_start",
-          id: kid,
-          name: "verify_document",
-          label: `Sprawdzam ${name} po zapisie`,
-          args: { name },
-        })
-        try {
-          const text = await storage.read(u.id, `${caseFolder}/${name}`)
-          const empty = (text.match(/\[(WPISZ|UZUPEŁNIJ|TODO)[^\]]*\]/gi) ?? []).length
-          await emit({
-            type: "tool_end",
-            id: kid,
-            name: "verify_document",
-            ok: true,
-            summary: `${text.split("\n").length} wierszy, pustych pól: ${empty}`,
-            ms: Date.now() - start,
-          })
-          return `Plik ma ${text.length} znaków. Nieuzupełnionych pól: ${empty}.\n\n${text.slice(0, 4000)}`
-        } catch {
-          await emit({
-            type: "tool_end",
-            id: kid,
-            name: "verify_document",
-            ok: false,
-            summary: "pliku nie ma",
-            ms: Date.now() - start,
-          })
-          return `Pliku ${name} nie ma w teczce sprawy.`
-        }
-      },
+      execute: async ({ name }) =>
+        step("verify_document", `Sprawdzam ${name} po zapisie`, { name }, async () => {
+          try {
+            const text = await storage.read(u.id, `${caseFolder}/${name}`)
+            const empty = (text.match(/\[(WPISZ|UZUPEŁNIJ|TODO)[^\]]*\]/gi) ?? []).length
+            return {
+              summary: `${text.split("\n").length} wierszy, pustych pól: ${empty}`,
+              answer: `Plik ma ${text.length} znaków. Nieuzupełnionych pól: ${empty}.\n\n${text.slice(0, 4000)}`,
+            }
+          } catch {
+            return {
+              ok: false,
+              summary: "pliku nie ma",
+              answer: `Pliku ${name} nie ma w teczce sprawy.`,
+            }
+          }
+        }),
     })
   }
 
@@ -329,27 +309,15 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
       inputSchema: z.object({
         what: z.string().describe("jedno zdanie, do 400 znaków, w języku człowieka"),
       }),
-      execute: async ({ what }) => {
-        const start = Date.now(),
-          kid = randomUUID()
-        await emit({
-          type: "tool_start",
-          id: kid,
-          name: "remember",
-          label: `Proponuję zapamiętać: ${what.slice(0, 60)}`,
-          args: { what },
-        })
-        await memory.propose(u.id, what, caseId)
-        await emit({
-          type: "tool_end",
-          id: kid,
-          name: "remember",
-          ok: true,
-          summary: what.slice(0, 120),
-          ms: Date.now() - start,
-        })
-        return "Propozycja czeka na ekranie „Pamięć”. Powiedz człowiekowi, że może ją tam przyjąć albo odrzucić."
-      },
+      execute: async ({ what }) =>
+        step("remember", `Proponuję zapamiętać: ${what.slice(0, 60)}`, { what }, async () => {
+          await memory.propose(u.id, what, caseId)
+          return {
+            summary: what.slice(0, 120),
+            answer:
+              "Propozycja czeka na ekranie „Pamięć”. Powiedz człowiekowi, że może ją tam przyjąć albo odrzucić.",
+          }
+        }),
     })
   }
 
@@ -364,38 +332,27 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
         folder: z.string().optional().describe('podfolder w „Moich plikach", domyślnie korzeń'),
       }),
       execute: async ({ name, folder }) => {
-        const start = Date.now(),
-          kid = randomUUID()
         const target = folder?.trim() ? `Moje pliki/${folder.trim()}/${name}` : `Moje pliki/${name}`
-        await emit({
-          type: "tool_start",
-          id: kid,
-          name: "save_to_my_files",
-          label: `Odkładam ${name} do Moich plików`,
-          args: { name, target },
-        })
-        try {
-          const stored = await storage.copy(u.id, `${caseFolder}/${name}`, target)
-          await emit({
-            type: "tool_end",
-            id: kid,
-            name: "save_to_my_files",
-            ok: true,
-            summary: stored,
-            ms: Date.now() - start,
-          })
-          return `Plik jest teraz w „Moich plikach" jako ${stored}.`
-        } catch (e) {
-          await emit({
-            type: "tool_end",
-            id: kid,
-            name: "save_to_my_files",
-            ok: false,
-            summary: "nie udało się odłożyć",
-            ms: Date.now() - start,
-          })
-          return `Nie udało się odłożyć pliku ${name} do Moich plików. ${String(e).slice(0, 120)}`
-        }
+        return step(
+          "save_to_my_files",
+          `Odkładam ${name} do Moich plików`,
+          { name, target },
+          async () => {
+            try {
+              const stored = await storage.copy(u.id, `${caseFolder}/${name}`, target)
+              return {
+                summary: stored,
+                answer: `Plik jest teraz w „Moich plikach" jako ${stored}.`,
+              }
+            } catch (e) {
+              return {
+                ok: false,
+                summary: "nie udało się odłożyć",
+                answer: `Nie udało się odłożyć pliku ${name} do Moich plików. ${String(e).slice(0, 120)}`,
+              }
+            }
+          },
+        )
       },
     })
   }
@@ -404,27 +361,14 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
     t.write_sheet = tool({
       description: "Zapisuje zestawienie jako arkusz CSV do teczki sprawy.",
       inputSchema: z.object({ name: z.string(), csv: z.string() }),
-      execute: async ({ name, csv }) => {
-        const start = Date.now(),
-          kid = randomUUID()
-        await emit({
-          type: "tool_start",
-          id: kid,
-          name: "write_sheet",
-          label: `Zapisuję arkusz ${name}`,
-          args: { name },
-        })
-        await storage.write(u.id, `${caseFolder}/${name}`, csv)
-        await emit({
-          type: "tool_end",
-          id: kid,
-          name: "write_sheet",
-          ok: true,
-          summary: `${csv.split("\n").length} wierszy`,
-          ms: Date.now() - start,
-        })
-        return `Zapisano arkusz ${name}.`
-      },
+      execute: async ({ name, csv }) =>
+        step("write_sheet", `Zapisuję arkusz ${name}`, { name }, async () => {
+          await storage.write(u.id, `${caseFolder}/${name}`, csv)
+          return {
+            summary: `${csv.split("\n").length} wierszy`,
+            answer: `Zapisano arkusz ${name}.`,
+          }
+        }),
     })
   }
 
@@ -437,38 +381,32 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
         code: z.string(),
         files: z.array(z.string()).optional(),
       }),
-      execute: async ({ description, code, files }) => {
-        const start = Date.now(),
-          kid = randomUUID()
-        await emit({
-          type: "tool_start",
-          id: kid,
-          name: "run_computation",
-          label: description,
-          args: { description },
-        })
-        const box = await sandbox.create({
-          user: u.id,
-          caseId,
-          mounts: (files ?? []).map((f) => ({
-            fromDesk: f,
-            as: f.split("/").pop()!,
-            write: false,
-          })),
-          egress: [], // brak wyjścia do sieci — NIEEGZEKWOWANE w POC
-        })
-        const r = await box.exec(code)
-        await box.dispose()
-        await emit({
-          type: "tool_end",
-          id: kid,
-          name: "run_computation",
-          ok: r.ok,
-          summary: r.ok ? "policzone" : "błąd wykonania",
-          ms: Date.now() - start,
-        })
-        return r.output || "(brak wyjścia)"
-      },
+      execute: async ({ description, code, files }) =>
+        step("run_computation", description, { description }, async () => {
+          const box = await sandbox.create({
+            user: u.id,
+            caseId,
+            mounts: (files ?? []).map((f) => ({
+              fromDesk: f,
+              as: f.split("/").pop()!,
+              write: false,
+            })),
+            egress: [], // brak wyjścia do sieci — NIEEGZEKWOWANE w POC
+          })
+          // `finally` przy sprzątaniu piaskownicy, bo wyjątek w `exec` zostawiał
+          // katalog i proces bez właściciela — a piaskownica ma po sobie sprzątać
+          // także wtedy, gdy to ona jest przyczyną awarii.
+          try {
+            const r = await box.exec(code)
+            return {
+              ok: r.ok,
+              summary: r.ok ? "policzone" : "błąd wykonania",
+              answer: r.output || "(brak wyjścia)",
+            }
+          } finally {
+            await box.dispose().catch(() => {})
+          }
+        }),
     })
   }
 
@@ -479,65 +417,50 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
         name: z.string().describe('np. "grafika.png"'),
         description: z.string(),
       }),
-      execute: async ({ name, description }) => {
-        const start = Date.now(),
-          kid = randomUUID()
-        await emit({
-          type: "tool_start",
-          id: kid,
-          name: "generate_image",
-          label: `Generuję obraz: ${description.slice(0, 60)}`,
-          args: { name, description },
-        })
-        try {
-          const res = await fetch(`${process.env.CORTEX_PROXY_URL}/chat/completions`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-User-ID": u.id },
-            body: JSON.stringify({
-              model: process.env.DESK_IMAGE_MODEL,
-              modalities: ["image", "text"],
-              messages: [{ role: "user", content: description }],
-            }),
-          })
-          // Kształt odpowiedzi dostawcy obrazów — tylko te pola, po które sięgamy niżej.
-          type ImageResponse = {
-            error?: { message?: string }
-            choices?: { message?: { images?: { image_url?: { url?: string } }[] } }[]
-          }
-          const j = (await res.json()) as ImageResponse
-          const url = j?.choices?.[0]?.message?.images?.[0]?.image_url?.url
-          if (j?.error?.message) throw new Error(String(j.error.message))
-          if (!url?.startsWith("data:")) throw new Error("dostawca nie zwrócił obrazu")
-          // Bez przecinka nie ma ładunku, a `Buffer.from('', 'base64')` zapisałby pusty plik
-          // pod nazwą obrazu — czyli artefakt, który wygląda na powstały i nie da się otworzyć.
-          const b64 = url.split(",")[1]
-          if (!b64) throw new Error("dostawca zwrócił obraz bez treści")
-          await storage.write(u.id, `${caseFolder}/${name}`, Buffer.from(b64, "base64"))
-          await emit({
-            type: "tool_end",
-            id: kid,
-            name: "generate_image",
-            ok: true,
-            summary: `zapisano ${name}`,
-            ms: Date.now() - start,
-          })
-          return `Obraz zapisany jako ${name}.`
-        } catch (e) {
-          await emit({
-            type: "tool_end",
-            id: kid,
-            name: "generate_image",
-            ok: false,
-            summary: String(e).slice(0, 120),
-            ms: Date.now() - start,
-          })
-          const m = String(e)
-          const readably = /modalit|not a valid model|404/i.test(m)
-            ? "Na tej instancji nie ma podłączonego modelu graficznego — administrator musi go udostępnić w cortex-proxy."
-            : m.slice(0, 200)
-          return `Nie udało się wygenerować obrazu. ${readably}`
-        }
-      },
+      execute: async ({ name, description }) =>
+        step(
+          "generate_image",
+          `Generuję obraz: ${description.slice(0, 60)}`,
+          { name, description },
+          async () => {
+            try {
+              const res = await fetch(`${process.env.CORTEX_PROXY_URL}/chat/completions`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-User-ID": u.id },
+                body: JSON.stringify({
+                  model: process.env.DESK_IMAGE_MODEL,
+                  modalities: ["image", "text"],
+                  messages: [{ role: "user", content: description }],
+                }),
+              })
+              // Kształt odpowiedzi dostawcy obrazów — tylko te pola, po które sięgamy niżej.
+              type ImageResponse = {
+                error?: { message?: string }
+                choices?: { message?: { images?: { image_url?: { url?: string } }[] } }[]
+              }
+              const j = (await res.json()) as ImageResponse
+              const url = j?.choices?.[0]?.message?.images?.[0]?.image_url?.url
+              if (j?.error?.message) throw new Error(String(j.error.message))
+              if (!url?.startsWith("data:")) throw new Error("dostawca nie zwrócił obrazu")
+              // Bez przecinka nie ma ładunku, a `Buffer.from('', 'base64')` zapisałby pusty plik
+              // pod nazwą obrazu — czyli artefakt, który wygląda na powstały i nie da się otworzyć.
+              const b64 = url.split(",")[1]
+              if (!b64) throw new Error("dostawca zwrócił obraz bez treści")
+              await storage.write(u.id, `${caseFolder}/${name}`, Buffer.from(b64, "base64"))
+              return { summary: `zapisano ${name}`, answer: `Obraz zapisany jako ${name}.` }
+            } catch (e) {
+              const m = String(e)
+              const readably = /modalit|not a valid model|404/i.test(m)
+                ? "Na tej instancji nie ma podłączonego modelu graficznego — administrator musi go udostępnić w cortex-proxy."
+                : m.slice(0, 200)
+              return {
+                ok: false,
+                summary: m.slice(0, 120),
+                answer: `Nie udało się wygenerować obrazu. ${readably}`,
+              }
+            }
+          },
+        ),
     })
   }
 
@@ -638,6 +561,14 @@ export async function runTurn(u: User, p: Policy, caseId: string) {
   const recalled = memory.recallBlock(remembered)
 
   void (async () => {
+    const signal = beginTurn(caseId)
+    // Koszt zliczany PO KAŻDYM KROKU, a nie dopiero z wyniku tury.
+    //
+    // Bez tego tura przerwana albo przewrócona była pracą za darmo: `generateText`
+    // rzuca wyjątkiem, `result.steps` nie istnieje, więc kilkanaście przepracowanych
+    // żądań do modelu nie zostawiało ani grosza w dzienniku ani w dziennym limicie.
+    // Człowiek mógł wyczerpać budżet firmy turami, które zawsze przerywa.
+    let spentInSteps = 0
     try {
       const result = await generateText({
         model: model(u.id),
@@ -646,6 +577,10 @@ export async function runTurn(u: User, p: Policy, caseId: string) {
         tools: tools,
         stopWhen: stepCountIs(12),
         maxOutputTokens: OUTPUT_CEILING,
+        abortSignal: signal,
+        onStepFinish: (s) => {
+          spentInSteps += stepCost(s as unknown as WithProviderMetadata) ?? 0
+        },
       })
 
       // Rzutowanie na wspólny kształt: `GenerateTextResult` ma własne, węższe typy metadanych
@@ -656,9 +591,18 @@ export async function runTurn(u: User, p: Policy, caseId: string) {
         await appendEvent(caseId, { type: "assistant", text: result.text.trim() })
       if (cost.usd > 0)
         await appendEvent(caseId, { type: "cost", usd: cost.usd, basis: cost.basis })
-      await appendEvent(caseId, { type: "lifecycle", status: "end" })
+      // Wyczerpanie limitu kroków było DO TEJ PORY nieodróżnialne od sukcesu: model
+      // przestawał pracować w połowie zadania, `finishReason` nie czytał nikt, a sprawa
+      // pokazywała się jako gotowa. Człowiek dostawał ciszę i nie wiedział, że ma powtórzyć.
+      const exhausted = result.finishReason === "tool-calls"
+      // Bez `reason`: zdanie dla człowieka stoi w słowniku ekranu pod `case.exhausted`.
+      // Wpisane tutaj zamroziłoby polszczyznę w historii sprawy — tak samo jak przy nazwach
+      // zdolności, i z tego samego powodu.
+      await appendEvent(caseId, { type: "lifecycle", status: exhausted ? "exhausted" : "end" })
+      // `and status='working'` — bez tego domknięcie tury nadpisywało „przerwane"
+      // na „gotowe" i przycisk „przerwij" kłamał.
       await pool.query(
-        `update desk.case_file set status='done', reason=null, cost_usd=cost_usd+$2, updated_at=now() where id=$1`,
+        `update desk.case_file set status='done', reason=null, cost_usd=cost_usd+$2, updated_at=now() where id=$1 and status='working'`,
         [caseId, cost.usd],
       )
       await audit.write(u.id, "turn.end", {
@@ -667,10 +611,32 @@ export async function runTurn(u: User, p: Policy, caseId: string) {
         costBasis: cost.basis,
       })
     } catch (e) {
+      // Koszt tego, co JUŻ zostało zrobione, zapisujemy zawsze — także gdy tura się
+      // przewróciła albo została przerwana. Inaczej dzienny limit pilnowałby wyłącznie
+      // tur zakończonych powodzeniem.
+      if (spentInSteps > 0) {
+        await appendEvent(caseId, { type: "cost", usd: spentInSteps, basis: "provider" })
+        await pool.query(
+          `update desk.case_file set cost_usd=cost_usd+$2, updated_at=now() where id=$1`,
+          [caseId, spentInSteps],
+        )
+        await audit.write(u.id, "turn.end", {
+          caseId,
+          costUsd: spentInSteps,
+          costBasis: "provider",
+          partial: true,
+        })
+      }
+      // Przerwanie na życzenie człowieka NIE jest awarią. Stan zapisał już `case-stop`,
+      // tutaj zostaje wyłącznie nie pisać o awarii tam, gdzie jej nie było.
+      if (wasAborted(e)) {
+        await audit.write(u.id, "turn.stopped", { caseId, source: "abort" })
+        return
+      }
       const reason = readableFailure(e)
       await appendEvent(caseId, { type: "lifecycle", status: "failed", reason })
       await pool.query(
-        `update desk.case_file set status='failed', reason=$2, updated_at=now() where id=$1`,
+        `update desk.case_file set status='failed', reason=$2, updated_at=now() where id=$1 and status='working'`,
         [caseId, reason],
       )
       // Zdanie po polsku trafia na ekran pracownika, surowa treść wyłącznie do dziennika.
@@ -682,6 +648,7 @@ export async function runTurn(u: User, p: Policy, caseId: string) {
         raw: String((e as { message?: unknown })?.message ?? e).slice(0, 400),
       })
     } finally {
+      endTurn(caseId)
       // Połączenia do serwerów MCP żyją dokładnie tyle, co tura — ani krócej
       // (model sięga po narzędzie w środku `generateText`), ani dłużej.
       await mcp.close()

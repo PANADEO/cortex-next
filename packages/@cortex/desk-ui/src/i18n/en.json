@@ -71,6 +71,7 @@
     },
     "unfinished": "I did not finish this job.",
     "interrupted": "Work interrupted.",
+    "exhausted": "The work did not fit into a single turn.",
     "rephrase": "Word it differently",
     "newSteps": "New steps",
     "open": "Open",

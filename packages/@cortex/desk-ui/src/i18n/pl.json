@@ -72,6 +72,7 @@
     },
     "unfinished": "Nie dokończyłem tego zlecenia.",
     "interrupted": "Praca przerwana.",
+    "exhausted": "Praca nie zmieściła się w jednej turze.",
     "rephrase": "Napisz inaczej",
     "newSteps": "Nowe kroki",
     "open": "Otwórz",
