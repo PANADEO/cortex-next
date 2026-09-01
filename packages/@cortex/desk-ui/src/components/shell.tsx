@@ -1,13 +1,13 @@
 import { policyFor } from "@cortex/desk-core/capability-gate"
 import { migrate, pool } from "@cortex/desk-core/db"
-import { USERS, whoAmI } from "@cortex/desk-core/identity"
+import { USERS, identity } from "@cortex/desk-core/identity"
 import { ChevronRight, FolderOpen, ListChecks, Plus, ShieldCheck } from "lucide-react"
 import Link from "next/link"
 import { count, when } from "../lib"
 import { BASE, t } from "../routes"
 import { BottomBar } from "./bottom-bar"
 import { Icon } from "./icon"
-import { Persona } from "./persona-switcher"
+import { Persona, PersonaCard } from "./persona-switcher"
 import { ToastProvider } from "./toast"
 
 const DOT: Record<string, string> = {
@@ -30,7 +30,7 @@ export async function Shell({
   withoutBottomBar?: boolean
 }) {
   await migrate()
-  const u = await whoAmI()
+  const { user: u, switchable } = await identity()
   const p = await policyFor(u)
   const s = await pool.query(
     `select id, title, status, updated_at as "updatedAt" from desk.case_file where owner=$1 order by updated_at desc limit $2`,
@@ -51,7 +51,7 @@ export async function Shell({
       <div className="desk flex h-screen overflow-hidden">
         <aside className="hidden w-desk-side shrink-0 flex-col border-r bg-desk-surface md:flex">
           <div className="border-b p-3">
-            <Persona ja={u} everyone={USERS} />
+            {switchable ? <Persona me={u} everyone={USERS} /> : <PersonaCard me={u} />}
           </div>
 
           <div className="p-3">

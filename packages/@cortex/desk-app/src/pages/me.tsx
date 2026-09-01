@@ -1,5 +1,5 @@
 import { policyFor } from "@cortex/desk-core/capability-gate"
-import { USERS, whoAmI } from "@cortex/desk-core/identity"
+import { USERS, identity } from "@cortex/desk-core/identity"
 import { Icon } from "@cortex/desk-ui/components/icon"
 import { Avatar, Persona } from "@cortex/desk-ui/components/persona-switcher"
 import { Shell } from "@cortex/desk-ui/components/shell"
@@ -9,7 +9,7 @@ import Link from "next/link"
 
 /** Zakładka „Ja" istnieje po to, żeby na telefonie było gdzie trzymać rzeczy sprzed sprawy. */
 export default async function Page() {
-  const u = await whoAmI()
+  const { user: u, switchable } = await identity()
   const p = await policyFor(u)
   return (
     <Shell>
@@ -39,9 +39,11 @@ export default async function Page() {
             </Link>
           </div>
 
-          <div className="mt-6 rounded-lg border bg-desk-surface p-3">
-            <Persona ja={u} everyone={USERS} />
-          </div>
+          {switchable && (
+            <div className="mt-6 rounded-lg border bg-desk-surface p-3">
+              <Persona me={u} everyone={USERS} />
+            </div>
+          )}
 
           <p className="t-micro mt-6">
             {

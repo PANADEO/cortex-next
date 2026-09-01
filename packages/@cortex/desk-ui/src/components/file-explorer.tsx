@@ -14,7 +14,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { count, when } from "../lib"
-import { api } from "../routes"
+import { api, t } from "../routes"
 import { FileRow } from "./file-row"
 import { Icon } from "./icon"
 import { MoveDialog } from "./move-dialog"
@@ -55,7 +55,7 @@ export function FileExplorer() {
   }, [refresh])
 
   const goTo = (k: string) =>
-    router.push(k === ROOT ? "/files" : `/files?k=${encodeURIComponent(k)}`)
+    router.push(k === ROOT ? t("/files") : `${t("/files")}?k=${encodeURIComponent(k)}`)
 
   async function action(body: Record<string, unknown>) {
     const r = await fetch(api("/files"), { method: "POST", body: JSON.stringify(body) })

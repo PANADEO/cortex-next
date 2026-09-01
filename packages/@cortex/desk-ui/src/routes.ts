@@ -16,8 +16,15 @@ export const BASE = process.env.NEXT_PUBLIC_DESK_BASE_PATH ?? ""
  */
 export const API_BASE = process.env.NEXT_PUBLIC_DESK_API_BASE_PATH ?? `${BASE}/api`
 
-/** Adres strony Biurka. `t('/files')` → `/files` albo `/desk/files`. */
-export const t = (path: string) => `${BASE}${path}` || "/"
+/**
+ * Adres strony Biurka. `t('/files')` → `/files` albo `/desk/files`.
+ *
+ * Ogon `/` obcinamy, bo `t("/")` pod prefiksem dawało `/desk/` — adres poprawny,
+ * ale NIE równy temu, co zwraca `usePathname()` (`/desk`). Porównanie „czy
+ * jestem na tej zakładce" wychodziło wtedy fałszywe i pasek dolny nie
+ * podświetlał nigdy pierwszej pozycji.
+ */
+export const t = (path: string) => `${BASE}${path}`.replace(/\/$/, "") || "/"
 
 /** Adres trasy API Biurka. `api('/files')` → `/api/files` albo `/api/desk/files`. */
 export const api = (path: string) => `${API_BASE}${path}`
