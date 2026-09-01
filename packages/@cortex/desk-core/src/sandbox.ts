@@ -2,14 +2,14 @@ import { spawn } from "node:child_process"
 import { promises as fs } from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { pelnaSciezka } from "./biurko"
+import { fullPath } from "./desk-storage"
 
-export type Montaz = { zBiurka: string; jako: string; zapis: boolean }
-export type Limity = { sekundy: number; pamiecMb: number }
-export type Uchwyt = {
+export type Mount = { fromDesk: string; as: string; write: boolean }
+export type Limits = { seconds: number; memoryMb: number }
+export type Handle = {
   id: string
-  katalog: string
-  exec(kod: string): Promise<{ ok: boolean; wyjscie: string }>
+  folder: string
+  exec(code: string): Promise<{ ok: boolean; output: string }>
   dispose(): Promise<void>
 }
 
@@ -33,60 +33,58 @@ export type Uchwyt = {
  * jeśli tego parametru nie będzie tutaj, nie będzie miał gdzie się pojawić, gdy pod spód
  * wejdzie prawdziwy broker.
  */
-export async function utworz(opts: {
-  uzytkownik: string
-  sprawaId: string
-  montaze: Montaz[]
-  limity?: Limity
+export async function create(opts: {
+  user: string
+  caseId: string
+  mounts: Mount[]
+  limits?: Limits
   egress?: string[] // NIEEGZEKWOWANE w POC — patrz E2 w wektorze rozwoju
-}): Promise<Uchwyt> {
-  const limity = opts.limity ?? { sekundy: 30, pamiecMb: 512 }
+}): Promise<Handle> {
+  const limits = opts.limits ?? { seconds: 30, memoryMb: 512 }
   // realpath jest konieczny: na macOS os.tmpdir() zwraca /var/..., a faktyczna ścieżka to
   // /private/var/... — bez rozwinięcia dowiązania uprawnienia nie objęłyby własnego katalogu
-  const katalog = await fs.realpath(
-    await fs.mkdtemp(path.join(os.tmpdir(), `desk-${opts.sprawaId}-`)),
-  )
+  const folder = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), `desk-${opts.caseId}-`)))
 
-  for (const m of opts.montaze) {
+  for (const m of opts.mounts) {
     try {
-      const zrodlo = await pelnaSciezka(opts.uzytkownik, m.zBiurka)
-      const cel = path.join(katalog, m.jako)
+      const source = await fullPath(opts.user, m.fromDesk)
+      const cel = path.join(folder, m.as)
       await fs.mkdir(path.dirname(cel), { recursive: true })
-      await fs.cp(zrodlo, cel, { recursive: true })
+      await fs.cp(source, cel, { recursive: true })
     } catch {
       /* montaż nieistniejącej ścieżki jest cichy — agent zobaczy pusty katalog */
     }
   }
 
   return {
-    id: path.basename(katalog),
-    katalog,
-    async exec(kod: string) {
+    id: path.basename(folder),
+    folder,
+    async exec(code: string) {
       return new Promise((resolve) => {
         // Jawna lista zmiennych środowiskowych. NIGDY ...process.env —
         // to jest ta sama dziura, której nie chcemy odtworzyć za darmo.
-        const env = { PATH: process.env.PATH ?? "", HOME: katalog } as unknown as NodeJS.ProcessEnv
-        const flagi = [
+        const env = { PATH: process.env.PATH ?? "", HOME: folder } as unknown as NodeJS.ProcessEnv
+        const flags = [
           "--permission",
-          `--allow-fs-read=${katalog}/*`,
-          `--allow-fs-write=${katalog}/*`,
-          `--max-old-space-size=${limity.pamiecMb}`,
+          `--allow-fs-read=${folder}/*`,
+          `--allow-fs-write=${folder}/*`,
+          `--max-old-space-size=${limits.memoryMb}`,
         ]
-        const p = spawn(process.execPath, [...flagi, "-e", kod], {
-          cwd: katalog,
+        const p = spawn(process.execPath, [...flags, "-e", code], {
+          cwd: folder,
           env,
-          timeout: limity.sekundy * 1000,
+          timeout: limits.seconds * 1000,
           stdio: ["ignore", "pipe", "pipe"],
         })
         let out = ""
         p.stdout?.on("data", (d: Buffer) => (out += d.toString()))
         p.stderr?.on("data", (d: Buffer) => (out += d.toString()))
-        p.on("close", (code) => resolve({ ok: code === 0, wyjscie: out.slice(0, 8000) }))
-        p.on("error", (e) => resolve({ ok: false, wyjscie: String(e) }))
+        p.on("close", (code) => resolve({ ok: code === 0, output: out.slice(0, 8000) }))
+        p.on("error", (e) => resolve({ ok: false, output: String(e) }))
       })
     },
     async dispose() {
-      await fs.rm(katalog, { recursive: true, force: true }).catch(() => {})
+      await fs.rm(folder, { recursive: true, force: true }).catch(() => {})
     },
   }
 }

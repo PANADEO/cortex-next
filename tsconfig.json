@@ -34,7 +34,7 @@
       "@cortex/desk-ui/components/*": ["packages/@cortex/desk-ui/src/components/*"],
       "@cortex/desk-ui/*": ["packages/@cortex/desk-ui/src/*"],
       "@cortex/desk-app/api/*": ["packages/@cortex/desk-app/src/api/*"],
-      "@cortex/desk-app/strony/*": ["packages/@cortex/desk-app/src/strony/*"],
+      "@cortex/desk-app/pages/*": ["packages/@cortex/desk-app/src/pages/*"],
       "@/*": ["app/idp/*"]
     },
     "types": ["node", "vitest/globals", "@testing-library/jest-dom"]

@@ -84,8 +84,8 @@ Swap to OIDC by replacing the `providers: [...]` array. Callbacks, session, page
 
 ```ts
 // /app/idp/auth.ts
-import NextAuth, { type NextAuthConfig, type User } from "next-auth";
-import Credentials from "next-auth/providers/credentials";
+import NextAuth, { type NextAuthConfig, type User } from "next-auth"
+import Credentials from "next-auth/providers/credentials"
 
 // ===== SWAP POINT #1 — fake user; replace with OIDC provider (see §10) =====
 const FAKE_USER: User & { role: string; tileAccess: string[] } = {
@@ -94,14 +94,14 @@ const FAKE_USER: User & { role: string; tileAccess: string[] } = {
   name: "Demo User",
   role: "admin",
   tileAccess: ["idp"],
-};
+}
 
 const fakeCredentialsProvider = Credentials({
   id: "credentials",
   name: "Demo Login",
   credentials: {},
   authorize: async () => FAKE_USER,
-});
+})
 // ===== END SWAP POINT #1 =====
 
 export const authConfig = {
@@ -114,28 +114,28 @@ export const authConfig = {
     // `user` is what `authorize` returned (or OIDC profile on first sign-in).
     async jwt({ token, user }) {
       if (user) {
-        const u = user as User & { role: string; tileAccess: string[] };
-        token.id = u.id as string;
-        token.email = u.email ?? undefined;
-        token.name = u.name ?? undefined;
-        token.role = u.role;
-        token.tileAccess = u.tileAccess;
+        const u = user as User & { role: string; tileAccess: string[] }
+        token.id = u.id as string
+        token.email = u.email ?? undefined
+        token.name = u.name ?? undefined
+        token.role = u.role
+        token.tileAccess = u.tileAccess
       }
-      return token;
+      return token
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.tileAccess = token.tileAccess as string[];
+        session.user.id = token.id as string
+        session.user.role = token.role as string
+        session.user.tileAccess = token.tileAccess as string[]
       }
-      return session;
+      return session
     },
     authorized: async ({ auth }) => !!auth,
   },
-} satisfies NextAuthConfig;
+} satisfies NextAuthConfig
 
-export const { handlers, signIn, signOut, auth } = NextAuth(authConfig);
+export const { handlers, signIn, signOut, auth } = NextAuth(authConfig)
 ```
 
 ---
@@ -146,32 +146,32 @@ Extends the default `Session`, `User`, and `JWT` types with Cortex-specific fiel
 
 ```ts
 // /app/idp/types/next-auth.d.ts
-import type { DefaultSession, DefaultUser } from "next-auth";
-import type { JWT as DefaultJWT } from "next-auth/jwt";
+import type { DefaultSession, DefaultUser } from "next-auth"
+import type { JWT as DefaultJWT } from "next-auth/jwt"
 
-type CortexRole = "admin" | "operator" | "viewer";
-type CortexTile = "idp" | (string & {}); // open union — more tiles later
+type CortexRole = "admin" | "operator" | "viewer"
+type CortexTile = "idp" | (string & {}) // open union — more tiles later
 
 declare module "next-auth" {
   interface Session {
     user: {
-      id: string;
-      role: CortexRole;
-      tileAccess: CortexTile[];
-    } & DefaultSession["user"];
+      id: string
+      role: CortexRole
+      tileAccess: CortexTile[]
+    } & DefaultSession["user"]
   }
 
   interface User extends DefaultUser {
-    role: CortexRole;
-    tileAccess: CortexTile[];
+    role: CortexRole
+    tileAccess: CortexTile[]
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
-    id: string;
-    role: CortexRole;
-    tileAccess: CortexTile[];
+    id: string
+    role: CortexRole
+    tileAccess: CortexTile[]
   }
 }
 ```
@@ -186,13 +186,13 @@ All components are `"use client"`, so we wrap the root layout with `SessionProvi
 
 ```tsx
 // /app/idp/components/providers/session-provider.tsx
-"use client";
+"use client"
 
-import { SessionProvider } from "next-auth/react";
-import type { ReactNode } from "react";
+import { SessionProvider } from "next-auth/react"
+import type { ReactNode } from "react"
 
 export function AuthSessionProvider({ children }: { children: ReactNode }) {
-  return <SessionProvider refetchOnWindowFocus={false}>{children}</SessionProvider>;
+  return <SessionProvider refetchOnWindowFocus={false}>{children}</SessionProvider>
 }
 ```
 
@@ -201,12 +201,16 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
 Any component can now:
 
 ```tsx
-"use client";
-import { useSession } from "next-auth/react";
+"use client"
+import { useSession } from "next-auth/react"
 export function UserBadge() {
-  const { data: session, status } = useSession();
-  if (status !== "authenticated") return null;
-  return <span>{session.user.name} · {session.user.role}</span>;
+  const { data: session, status } = useSession()
+  if (status !== "authenticated") return null
+  return (
+    <span>
+      {session.user.name} · {session.user.role}
+    </span>
+  )
 }
 ```
 
@@ -220,34 +224,36 @@ Wraps `auth` and redirects unauthenticated users to `/login`, preserving `callba
 
 ```ts
 // /app/idp/middleware.ts
-import { auth } from "@/auth";
-import { NextResponse } from "next/server";
+import { auth } from "@/auth"
+import { NextResponse } from "next/server"
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login"]
 
 export default auth((req) => {
-  const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
-  const isPublic = PUBLIC_PATHS.some((p) => nextUrl.pathname.startsWith(p));
+  const { nextUrl } = req
+  const isLoggedIn = !!req.auth
+  const isPublic = PUBLIC_PATHS.some((p) => nextUrl.pathname.startsWith(p))
 
   if (isPublic) {
     if (isLoggedIn && nextUrl.pathname === "/login") {
-      return NextResponse.redirect(new URL("/dashboard", nextUrl));
+      return NextResponse.redirect(new URL("/dashboard", nextUrl))
     }
-    return NextResponse.next();
+    return NextResponse.next()
   }
   if (!isLoggedIn) {
-    const loginUrl = new URL("/login", nextUrl);
-    loginUrl.searchParams.set("callbackUrl", nextUrl.pathname + nextUrl.search);
-    return NextResponse.redirect(loginUrl);
+    const loginUrl = new URL("/login", nextUrl)
+    loginUrl.searchParams.set("callbackUrl", nextUrl.pathname + nextUrl.search)
+    return NextResponse.redirect(loginUrl)
   }
-  return NextResponse.next();
-});
+  return NextResponse.next()
+})
 
 export const config = {
   // Exclude Next internals, static assets, and the auth API (else redirect loop).
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)"],
-};
+  matcher: [
+    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)",
+  ],
+}
 ```
 
 ---
@@ -258,7 +264,7 @@ Standard v5 one-liner — all HTTP traffic for NextAuth goes through here.
 
 ```ts
 // /app/idp/app/api/auth/[...nextauth]/route.ts
-export { GET, POST } from "@/auth";
+export { GET, POST } from "@/auth"
 ```
 
 ---
@@ -269,21 +275,21 @@ Architecture forbids Server Actions, so we use client-side `signIn` from `next-a
 
 ```tsx
 // /app/idp/app/(auth)/login/page.tsx
-"use client";
+"use client"
 
-import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
-import { Button } from "@cortex/ui/components/button";
+import { signIn } from "next-auth/react"
+import { useSearchParams } from "next/navigation"
+import { useState } from "react"
+import { Button } from "@cortex/ui/components/button"
 
 export default function LoginPage() {
-  const callbackUrl = useSearchParams().get("callbackUrl") ?? "/dashboard";
-  const [isPending, setIsPending] = useState(false);
+  const callbackUrl = useSearchParams().get("callbackUrl") ?? "/dashboard"
+  const [isPending, setIsPending] = useState(false)
 
   async function handleDemoLogin() {
-    setIsPending(true);
+    setIsPending(true)
     // SWAP POINT #2 — replace "credentials" with real provider id ("keycloak").
-    await signIn("credentials", { callbackUrl });
+    await signIn("credentials", { callbackUrl })
   }
 
   return (
@@ -298,7 +304,7 @@ export default function LoginPage() {
         </Button>
       </div>
     </main>
-  );
+  )
 }
 ```
 
@@ -310,7 +316,7 @@ The shared API layer in `/libs/@cortex/api/` reads the session and adds auth hea
 
 ```ts
 // /libs/@cortex/api/auth-headers.ts
-import type { Session } from "next-auth";
+import type { Session } from "next-auth"
 
 /**
  * Build auth headers for outgoing API calls to the IDP backend.
@@ -323,31 +329,36 @@ import type { Session } from "next-auth";
  * returns {} and we rely entirely on cookies + proxy injection.
  */
 export function buildAuthHeaders(session: Session | null): HeadersInit {
-  if (!session?.user?.email) return {};
+  if (!session?.user?.email) return {}
   return {
     "X-Auth-Request-Email": session.user.email,
     "X-Auth-Request-User": session.user.id,
     "X-Cortex-Tile": "idp",
-  };
+  }
 }
 ```
 
 ```ts
 // /libs/@cortex/api/client.ts
-import { getSession } from "next-auth/react";
-import { buildAuthHeaders } from "./auth-headers";
+import { getSession } from "next-auth/react"
+import { buildAuthHeaders } from "./auth-headers"
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/proxy";
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/proxy"
 
 export class ApiError extends Error {
-  constructor(public status: number, public body: string) { super(`API ${status}: ${body}`); }
+  constructor(
+    public status: number,
+    public body: string,
+  ) {
+    super(`API ${status}: ${body}`)
+  }
 }
 
 export async function apiClient<T>(
   path: string,
   init: Omit<RequestInit, "body"> & { body?: unknown } = {},
 ): Promise<T> {
-  const session = await getSession(); // client-safe; reads /api/auth/session
+  const session = await getSession() // client-safe; reads /api/auth/session
   const res = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers: {
@@ -357,9 +368,9 @@ export async function apiClient<T>(
     },
     body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
     credentials: "include",
-  });
-  if (!res.ok) throw new ApiError(res.status, await res.text());
-  return (await res.json()) as T;
+  })
+  if (!res.ok) throw new ApiError(res.status, await res.text())
+  return (await res.json()) as T
 }
 ```
 
@@ -371,14 +382,14 @@ Feature code (TanStack Query hooks per architecture_rules §5/§8) uses `apiClie
 
 Migration from fake user to enterprise SSO is this list of edits — no feature code changes. Effort: **~1h + IdP realm config.**
 
-| # | File | From | To |
-|---|------|------|-----|
-| 1 | `/app/idp/auth.ts` | `fakeCredentialsProvider` | OIDC provider (snippet below) |
-| 2 | `/app/idp/app/(auth)/login/page.tsx` | `signIn("credentials")` | `signIn("keycloak")` — or delete page, let NextAuth redirect to IdP |
-| 3 | `/libs/@cortex/api/auth-headers.ts` | Build headers from session | Return `{}` — proxy injects at edge |
-| 4 | `.env.*` | No OIDC vars | `AUTH_KEYCLOAK_ID/SECRET/ISSUER` |
-| 5 | `auth.ts` `jwt` callback | Hardcoded `role`/`tileAccess` | Read from `profile` (OIDC claims, realm roles, groups) |
-| 6 | `next.config.ts` | — | Add IdP hostname to `images.remotePatterns` if avatars used |
+| #   | File                                 | From                          | To                                                                  |
+| --- | ------------------------------------ | ----------------------------- | ------------------------------------------------------------------- |
+| 1   | `/app/idp/auth.ts`                   | `fakeCredentialsProvider`     | OIDC provider (snippet below)                                       |
+| 2   | `/app/idp/app/(auth)/login/page.tsx` | `signIn("credentials")`       | `signIn("keycloak")` — or delete page, let NextAuth redirect to IdP |
+| 3   | `/libs/@cortex/api/auth-headers.ts`  | Build headers from session    | Return `{}` — proxy injects at edge                                 |
+| 4   | `.env.*`                             | No OIDC vars                  | `AUTH_KEYCLOAK_ID/SECRET/ISSUER`                                    |
+| 5   | `auth.ts` `jwt` callback             | Hardcoded `role`/`tileAccess` | Read from `profile` (OIDC claims, realm roles, groups)              |
+| 6   | `next.config.ts`                     | —                             | Add IdP hostname to `images.remotePatterns` if avatars used         |
 
 **Drop-in for swap point #1 (Keycloak):**
 

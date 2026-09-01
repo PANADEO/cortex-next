@@ -1,0 +1,80 @@
+{
+  "capabilities": [
+    {
+      "id": "files.list",
+      "name": "Przeglądanie teczki",
+      "department": "wszyscy",
+      "description": "Widzi, jakie pliki masz na biurku."
+    },
+    {
+      "id": "files.read",
+      "name": "Czytanie moich plików",
+      "department": "wszyscy",
+      "description": "Otwiera i czyta pliki z Twojego biurka."
+    },
+    {
+      "id": "document.write",
+      "name": "Tworzenie dokumentów",
+      "department": "wszyscy",
+      "description": "Zapisuje gotowy dokument do teczki sprawy."
+    },
+    {
+      "id": "document.verify",
+      "name": "Sprawdzanie po zapisie",
+      "department": "wszyscy",
+      "description": "Odczytuje zapisany plik i potwierdza, co w nim jest."
+    },
+    {
+      "id": "files.keep",
+      "name": "Odkładanie do Moich plików",
+      "department": "wszyscy",
+      "description": "Na Twoją wyraźną prośbę przenosi gotowy plik ze sprawy do Twoich trwałych plików."
+    },
+    {
+      "id": "sheet.write",
+      "name": "Tworzenie arkuszy",
+      "department": "Finanse",
+      "description": "Zapisuje zestawienia w formacie arkusza (CSV)."
+    },
+    {
+      "id": "code.run",
+      "name": "Uruchamianie obliczeń",
+      "department": "IT",
+      "description": "Liczy na danych — sumy, filtry, przeliczenia."
+    },
+    {
+      "id": "image.generate",
+      "name": "Generowanie obrazów",
+      "department": "Marketing",
+      "description": "Tworzy grafikę do prezentacji i postów."
+    },
+    {
+      "id": "counterparty.verify",
+      "name": "Sprawdzanie kontrahenta w wykazie VAT",
+      "department": "Księgowość",
+      "description": "Sprawdza w wykazie Ministerstwa Finansów status VAT firmy i to, czy jej rachunek był w danym dniu w wykazie."
+    }
+  ],
+  "roles": {
+    "member": ["files.list", "files.read", "document.write", "document.verify", "files.keep"],
+    "management": [
+      "files.list",
+      "files.read",
+      "document.write",
+      "document.verify",
+      "files.keep",
+      "sheet.write",
+      "code.run",
+      "image.generate",
+      "counterparty.verify"
+    ]
+  },
+  "limits": {
+    "member": {
+      "usdPerDay": 2
+    },
+    "management": {
+      "usdPerDay": 20
+    }
+  }
+}

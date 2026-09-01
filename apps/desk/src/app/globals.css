@@ -1,4 +1,4 @@
 /* Wejście samodzielnej aplikacji Biurka. Tokeny i dyrektywy Tailwinda przychodzą
    z powłoki, potem arkusz Biurka — kolejność jest tu regułą, nie stylem. */
-@import '@cortex/styles/globals.css';
-@import '@cortex/styles/desk.css';
+@import "@cortex/styles/globals.css";
+@import "@cortex/styles/desk.css";

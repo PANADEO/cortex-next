@@ -1,41 +1,36 @@
-import { dowodZeZdarzen } from "@cortex/desk-core/dowod"
-import { opisKroku, paruj, podsumujGrupe } from "@cortex/desk-core/kroki"
-import { karta } from "@cortex/desk-core/narzedzia"
-import { wytworzone } from "@cortex/desk-core/obietnice"
-import type { DeskEvent } from "@cortex/desk-core/typy"
+import { evidenceFromEvents } from "@cortex/desk-core/evidence"
+import { produced } from "@cortex/desk-core/promises"
+import { describeStep, pairSteps, summariseGroup } from "@cortex/desk-core/steps"
+import { cardFor } from "@cortex/desk-core/tool-cards"
+import type { DeskEvent } from "@cortex/desk-core/types"
 import { expect, test } from "./osoby"
 
 /** Para start/koniec jednego narzędzia — tak, jak zapisuje ją runtime. */
 const para = (
   id: string,
-  nazwa: string,
-  argumenty: Record<string, unknown>,
-  podsumowanie: string,
+  name: string,
+  args: Record<string, unknown>,
+  summary: string,
   ok = true,
 ): DeskEvent[] => [
-  { typ: "narzedzie_start", id, nazwa, etykieta: `etykieta ${nazwa}`, argumenty },
-  { typ: "narzedzie_koniec", id, nazwa, ok, podsumowanie, ms: 5 },
+  { type: "tool_start", id, name, label: `etykieta ${name}`, args },
+  { type: "tool_end", id, name, ok, summary, ms: 5 },
 ]
 
 test.describe("Obszar 19 · Opis i dowód pochodzą z kart, nie z listy nazw w kodzie", () => {
   test("Wbudowane czynności dają dokładnie te same zdania dowodu co przed zmianą", () => {
-    const d = dowodZeZdarzen([
-      ...para("a", "lista_plikow", { katalog: "Moje pliki" }, "3 pozycji"),
-      ...para("b", "czytaj_plik", { sciezka: "Moje pliki/a.csv" }, "10 wierszy"),
-      ...para("c", "zapisz_dokument", { nazwa: "w.md" }, "100 znaków"),
-      ...para("d", "sprawdz_dokument", { nazwa: "w.md" }, "0 pustych pól"),
-      ...para("e", "zapisz_arkusz", { nazwa: "t.csv" }, "5 wierszy"),
-      ...para("f", "generuj_obraz", { nazwa: "i.png", opis: "kot" }, "zapisano i.png"),
-      ...para("g", "uruchom_obliczenia", { opis: "suma" }, "policzone"),
-      ...para(
-        "h",
-        "zapisz_do_moich_plikow",
-        { nazwa: "w.md", cel: "Moje pliki/w.md" },
-        "Moje pliki/w.md",
-      ),
+    const d = evidenceFromEvents([
+      ...para("a", "list_files", { folder: "Moje pliki" }, "3 pozycji"),
+      ...para("b", "read_file", { path: "Moje pliki/a.csv" }, "10 wierszy"),
+      ...para("c", "write_document", { name: "w.md" }, "100 znaków"),
+      ...para("d", "verify_document", { name: "w.md" }, "0 pustych pól"),
+      ...para("e", "write_sheet", { name: "t.csv" }, "5 wierszy"),
+      ...para("f", "generate_image", { name: "i.png", description: "kot" }, "zapisano i.png"),
+      ...para("g", "run_computation", { description: "suma" }, "policzone"),
+      ...para("h", "save_to_my_files", { name: "w.md", cel: "Moje pliki/w.md" }, "Moje pliki/w.md"),
     ])
-    expect(d.weszlo).toEqual(["Moje pliki/a.csv — 10 wierszy"])
-    expect(d.zrobione).toEqual([
+    expect(d.intake).toEqual(["Moje pliki/a.csv — 10 wierszy"])
+    expect(d.produced).toEqual([
       "zapisano w.md — 100 znaków",
       "odczytano w.md po zapisie — 0 pustych pól",
       "zapisano arkusz t.csv — 5 wierszy",
@@ -44,39 +39,39 @@ test.describe("Obszar 19 · Opis i dowód pochodzą z kart, nie z listy nazw w k
       "odłożono do Moich plików: Moje pliki/w.md",
     ])
     // przeglądanie teczki świadomie nie zostawia wiersza — nic nie wnosi i nic nie zmienia
-    expect(d.weszlo.join(" ")).not.toMatch(/pozycji/)
+    expect(d.intake.join(" ")).not.toMatch(/pozycji/)
   })
 
   test("Obraz nadal nie podlega regule sprawdzenia, arkusz nadal podlega", () => {
-    const obraz = dowodZeZdarzen([
-      ...para("a", "czytaj_plik", { sciezka: "x.csv" }, "1 wiersz"),
-      ...para("b", "generuj_obraz", { nazwa: "i.png" }, "zapisano i.png"),
+    const isImage = evidenceFromEvents([
+      ...para("a", "read_file", { path: "x.csv" }, "1 wiersz"),
+      ...para("b", "generate_image", { name: "i.png" }, "zapisano i.png"),
     ])
-    expect(obraz.nieSprawdzone).toHaveLength(0)
+    expect(isImage.unverified).toHaveLength(0)
 
-    const arkusz = dowodZeZdarzen([
-      ...para("a", "czytaj_plik", { sciezka: "x.csv" }, "1 wiersz"),
-      ...para("b", "zapisz_arkusz", { nazwa: "t.csv" }, "5 wierszy"),
+    const sheet = evidenceFromEvents([
+      ...para("a", "read_file", { path: "x.csv" }, "1 wiersz"),
+      ...para("b", "write_sheet", { name: "t.csv" }, "5 wierszy"),
     ])
-    expect(arkusz.nieSprawdzone).toContain("zawartość pliku t.csv po zapisie")
+    expect(sheet.unverified).toContain("zawartość pliku t.csv po zapisie")
   })
 
   test("Zdanie podsumowania grupy brzmi tak samo jak przed zmianą", () => {
-    const k = paruj([
-      ...para("a", "lista_plikow", {}, "3 pozycji"),
-      ...para("b", "czytaj_plik", { sciezka: "a.csv" }, "10 wierszy"),
-      ...para("c", "zapisz_dokument", { nazwa: "w.md" }, "100 znaków"),
-      ...para("d", "sprawdz_dokument", { nazwa: "w.md" }, "0 pustych pól"),
+    const k = pairSteps([
+      ...para("a", "list_files", {}, "3 pozycji"),
+      ...para("b", "read_file", { path: "a.csv" }, "10 wierszy"),
+      ...para("c", "write_document", { name: "w.md" }, "100 znaków"),
+      ...para("d", "verify_document", { name: "w.md" }, "0 pustych pól"),
     ])
-    expect(podsumujGrupe(k)).toBe("Przejrzałem teczkę, przeczytałem 1 plik i zapisałem 1 dokument")
+    expect(summariseGroup(k)).toBe("Przejrzałem teczkę, przeczytałem 1 plik i zapisałem 1 dokument")
   })
 
   test("Dokument i arkusz sumują się w jeden człon, bo dla człowieka to ta sama rzecz", () => {
-    const k = paruj([
-      ...para("a", "zapisz_dokument", { nazwa: "w.md" }, "100 znaków"),
-      ...para("b", "zapisz_arkusz", { nazwa: "t.csv" }, "5 wierszy"),
+    const k = pairSteps([
+      ...para("a", "write_document", { name: "w.md" }, "100 znaków"),
+      ...para("b", "write_sheet", { name: "t.csv" }, "5 wierszy"),
     ])
-    expect(podsumujGrupe(k)).toBe("Zapisałem 2 dokumenty")
+    expect(summariseGroup(k)).toBe("Zapisałem 2 dokumenty")
   })
 })
 
@@ -84,40 +79,40 @@ test.describe("Obszar 20 · Narzędzie, którego nikt nie zna, nie znika po cich
   const obce = para("x", "mcp_nbp_kurs_waluty", { data: "2026-08-31" }, "EUR 4,2841")
 
   test("Nieznane narzędzie zostawia wiersz dowodu — inaczej sprawa udaje, że nic się nie stało", () => {
-    const d = dowodZeZdarzen(obce)
-    expect(d.weszlo.length + d.zrobione.length + d.zewnetrzne.length).toBeGreaterThan(0)
+    const d = evidenceFromEvents(obce)
+    expect(d.intake.length + d.produced.length + d.external.length).toBeGreaterThan(0)
   })
 
   test("Wiersz idzie na osobną listę i nazywa serwer, z którego pochodzi", () => {
-    const d = dowodZeZdarzen(obce)
-    expect(d.zewnetrzne).toHaveLength(1)
-    expect(d.zewnetrzne[0]).toContain("nbp")
-    expect(d.zewnetrzne[0]).toContain("EUR 4,2841")
+    const d = evidenceFromEvents(obce)
+    expect(d.external).toHaveLength(1)
+    expect(d.external[0]).toContain("nbp")
+    expect(d.external[0]).toContain("EUR 4,2841")
     // „odpowiedział 200" to nie to samo co „rzecz się wydarzyła" — ani do zrobionych,
     // ani do tego, co weszło z biurka
-    expect(d.zrobione).toHaveLength(0)
-    expect(d.weszlo).toHaveLength(0)
+    expect(d.produced).toHaveLength(0)
+    expect(d.intake).toHaveLength(0)
   })
 
   test("Przebieg mówi o nim po polsku, nie surowym kluczem narzędzia", () => {
-    const [krok] = paruj(obce)
-    const o = opisKroku(krok!)
-    expect(o.tytul).toBe("Odpytałem nbp")
-    expect(o.tytul).not.toContain("mcp_")
+    const [step] = pairSteps(obce)
+    const o = describeStep(step!)
+    expect(o.title).toBe("Odpytałem nbp")
+    expect(o.title).not.toContain("mcp_")
   })
 
   test("Nieznane narzędzie wchodzi do zdania podsumowania", () => {
-    expect(podsumujGrupe(paruj(obce))).toBe("Odpytałem nbp 1 raz")
+    expect(summariseGroup(pairSteps(obce))).toBe("Odpytałem nbp 1 raz")
   })
 
   test("Nieznana czynność nie udaje, że wytworzyła plik", () => {
-    expect(wytworzone(obce)).toHaveLength(0)
-    expect(karta("mcp_nbp_kurs_waluty").klasa).toBe("zewnetrzna")
+    expect(produced(obce)).toHaveLength(0)
+    expect(cardFor("mcp_nbp_kurs_waluty").kind).toBe("external")
   })
 
   test("Narzędzie bez rozpoznawalnego serwera też dostaje kartę, a nie wyjątek", () => {
-    const k = karta("cos_zupelnie_innego")
-    expect(k.klasa).toBe("zewnetrzna")
+    const k = cardFor("cos_zupelnie_innego")
+    expect(k.kind).toBe("external")
     expect(k.ok).toContain("spoza katalogu")
   })
 })

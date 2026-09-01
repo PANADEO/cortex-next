@@ -9,15 +9,15 @@
 
 ## 0. Referencje (wszystkie w `docs/work/`)
 
-| Plik | Zawartość |
-|---|---|
-| `streamlit-ux-map.md` | 5 ekranów, flowy, session state, edge cases — źródło prawdy dla UX |
-| `api-contract.md` | 28 endpointów, 4 enumy, state machine, 8 red flagów |
-| `ts-types-draft.ts` | TypeScript types dla wszystkich read models — paste do `@cortex/types` |
-| `design-tokens.md` | Tokens z shadcnuidashboard/logistics + tailwind.config + globals.css |
-| `auth-setup.md` | NextAuth v5 blueprint, 6 swap pointów, fake user |
-| `repo-setup.md` | Wszystkie configi paste-ready (package.json, next.config, tsconfig, …) |
-| `lego-blocks.md` | 65 komponentów, priorytety, prop sketche, build order |
+| Plik                  | Zawartość                                                              |
+| --------------------- | ---------------------------------------------------------------------- |
+| `streamlit-ux-map.md` | 5 ekranów, flowy, session state, edge cases — źródło prawdy dla UX     |
+| `api-contract.md`     | 28 endpointów, 4 enumy, state machine, 8 red flagów                    |
+| `ts-types-draft.ts`   | TypeScript types dla wszystkich read models — paste do `@cortex/types` |
+| `design-tokens.md`    | Tokens z shadcnuidashboard/logistics + tailwind.config + globals.css   |
+| `auth-setup.md`       | NextAuth v5 blueprint, 6 swap pointów, fake user                       |
+| `repo-setup.md`       | Wszystkie configi paste-ready (package.json, next.config, tsconfig, …) |
+| `lego-blocks.md`      | 65 komponentów, priorytety, prop sketche, build order                  |
 
 ---
 
@@ -26,6 +26,7 @@
 **Dodane:** `react-resizable-panels` (używany przez shadcn `Resizable`) — dla `PackageSideBySide` (document viewer ⇄ json editor split). Dodaj do `package.json` w Wave 0.
 
 **Potwierdzone lock:**
+
 - Next.js 15 + React 18, wszystko `"use client"`, bez RSC/Server Actions
 - shadcn/ui (new-york style, zinc base) + Tailwind 3.4 + CSS vars
 - TanStack Query + Zustand + RHF + Zod
@@ -108,9 +109,11 @@
 Kolejność (przód = mniej zależności):
 
 **Day 5:**
+
 - `EmptyState`, `LoadingState`, `ErrorState`, `PageHeader`, `DataCard`, `StatusBadge` (typed na `ProcessingState | VerificationState` z `@cortex/types`), `FormField` (RHF wrapper), `UserMenu` (reads NextAuth session)
 
 **Day 6:**
+
 - `DataTable` (TanStack Table + `@tanstack/react-virtual` gdy rows > 200; selection, sort, sticky header, server-pag mode)
 - `JsonViewer` (recursive, collapsible, copy-node)
 - `ActionLogTimeline` (virtualized gdy > 100)
@@ -181,6 +184,7 @@ Parallelizable gdy Lego gotowe. Jeden ekran dziennie.
 **Day 10 — Package Details** (najbardziej skomplikowany)
 
 `app/idp/features/package-details/`:
+
 - `DetailLayout` z 4 tabami: Overview | Analysis Result | Action Log | Source Materials
 - **Overview tab**: PackageStatusChip + metadata cards (imported date, size, tokens/cost) + `PackageActionButtons` (reads `/transitions`, renderuje enabled buttons z confirm dialogs) + Reprocess dialog (fast toggle + ai-context) + Download ZIP + Show Structure modal (JsonViewer 640px) + Export dropdown z warnings dialog (block na errors, "Export Anyway" przy warnings) + User Notes card
 - **Analysis Result tab**: `JsonViewer` gdy nie verification OR nie assignee; `JsonEditor` (P1) gdy verification in progress + email matches assignee (case-insensitive compare z `useSession().user.email`)
@@ -240,17 +244,17 @@ Parallelizable gdy Lego gotowe. Jeden ekran dziennie.
 
 ## 4. Red flagi z risercza — jak adresujemy
 
-| Red flag | Źródło | Mitygacja w planie |
-|---|---|---|
-| `analysis_result` nietypowany w openapi | R2 | W `@cortex/types` modelujemy jako `unknown`; `JsonViewer`/`JsonEditor` bierze `unknown`; schema Zod dopisujemy w `app/idp/features/verification/schemas.ts` z tego co wiemy ze Streamlita (seller, buyer, transport_info, invoice_header, delivery_terms, totals, lines) |
-| Mutations zwracają `{}` | R2 | TanStack Query: po każdej mutacji `invalidateQueries` na relevant key. Brak optimistic updates na start. |
-| Money/weight jako string | R2 | `@cortex/utils/formatters` — `formatMoney(v: string)`, walidacja Zod `.string().regex(/^-?\d+(\.\d+)?$/)`. **Nigdy** `Number(v)` w formach. |
-| Auth header niezadeklarowany w openapi | R2 | Ręczne wstawienie w `@cortex/api.apiClient` przez `buildAuthHeaders(session)` — swap point do real proxy udokumentowany. |
-| State machine inferowalna, niezadeklarowana | R2 | **Nie budujemy client-side machine.** `PackageActionButtons` renderuje ENABLED only te, które przyszły z `/transitions` endpoint. Brak gadania. |
-| Polling nie może stomp user input | R1 | `AutoRefreshIndicator` + explicit `enabled` prop kontrolowany przez `verification_state` i `editingReprocessContext` state. |
-| Monochrome design, słabo rozpoznawalne tiles | R3 | Per-tile accent override — IDP dostaje `--accent-tile` CSS var. W Wave 4 (TileMenu) zdefiniuj gradient/kolor per-tile w metadata. |
-| `outputFileTracingRoot` musi wskazywać repo root | R5 | W `next.config.ts` ustawione (`repo-setup.md` §5). Weryfikacja Docker build w Wave 7. |
-| PackageActionType nadzbiorem PackageStatus | R2 | Nie equate. W `StatusBadge` używamy `ProcessingState`/`VerificationState`; w `ActionLogTimeline` używamy `PackageActionType`. Rozdzielone typami. |
+| Red flag                                         | Źródło | Mitygacja w planie                                                                                                                                                                                                                                                       |
+| ------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `analysis_result` nietypowany w openapi          | R2     | W `@cortex/types` modelujemy jako `unknown`; `JsonViewer`/`JsonEditor` bierze `unknown`; schema Zod dopisujemy w `app/idp/features/verification/schemas.ts` z tego co wiemy ze Streamlita (seller, buyer, transport_info, invoice_header, delivery_terms, totals, lines) |
+| Mutations zwracają `{}`                          | R2     | TanStack Query: po każdej mutacji `invalidateQueries` na relevant key. Brak optimistic updates na start.                                                                                                                                                                 |
+| Money/weight jako string                         | R2     | `@cortex/utils/formatters` — `formatMoney(v: string)`, walidacja Zod `.string().regex(/^-?\d+(\.\d+)?$/)`. **Nigdy** `Number(v)` w formach.                                                                                                                              |
+| Auth header niezadeklarowany w openapi           | R2     | Ręczne wstawienie w `@cortex/api.apiClient` przez `buildAuthHeaders(session)` — swap point do real proxy udokumentowany.                                                                                                                                                 |
+| State machine inferowalna, niezadeklarowana      | R2     | **Nie budujemy client-side machine.** `PackageActionButtons` renderuje ENABLED only te, które przyszły z `/transitions` endpoint. Brak gadania.                                                                                                                          |
+| Polling nie może stomp user input                | R1     | `AutoRefreshIndicator` + explicit `enabled` prop kontrolowany przez `verification_state` i `editingReprocessContext` state.                                                                                                                                              |
+| Monochrome design, słabo rozpoznawalne tiles     | R3     | Per-tile accent override — IDP dostaje `--accent-tile` CSS var. W Wave 4 (TileMenu) zdefiniuj gradient/kolor per-tile w metadata.                                                                                                                                        |
+| `outputFileTracingRoot` musi wskazywać repo root | R5     | W `next.config.ts` ustawione (`repo-setup.md` §5). Weryfikacja Docker build w Wave 7.                                                                                                                                                                                    |
+| PackageActionType nadzbiorem PackageStatus       | R2     | Nie equate. W `StatusBadge` używamy `ProcessingState`/`VerificationState`; w `ActionLogTimeline` używamy `PackageActionType`. Rozdzielone typami.                                                                                                                        |
 
 ---
 

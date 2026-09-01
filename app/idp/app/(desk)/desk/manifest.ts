@@ -6,7 +6,7 @@ import { defineTile } from "@cortex/tile-sdk"
 // i opis. „Biurko" to nazwa produktu, nie identyfikator.
 //
 // Własna grupa tras `(desk)`, nie `(main)`: moduł przychodzi z własną powłoką
-// (lista spraw po lewej, pasek dolny na telefonie), dokładnie tak jak Cortex
+// (list spraw po lewej, pasek dolny na telefonie), dokładnie tak jak Cortex
 // Cowork. Wstawienie go pod generyczny AppShell dałoby dwa sidebary obok
 // siebie i dwa paski górne jeden pod drugim.
 export const deskTile = defineTile({

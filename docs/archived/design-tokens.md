@@ -23,27 +23,27 @@
 
 ### 2.1 Semantic tokens (HSL — compatible with shadcn/ui CSS-vars mode)
 
-| Token                  | Light HSL              | Light HEX  | Dark HSL               | Dark HEX   |
-|------------------------|------------------------|------------|------------------------|------------|
-| `--background`         | `0 0% 100%`            | `#ffffff`  | `0 0% 3.9%`            | `#0a0a0a`  |
-| `--foreground`         | `0 0% 3.9%`            | `#0a0a0a`  | `0 0% 98%`             | `#fafafa`  |
-| `--card`               | `0 0% 100%`            | `#ffffff`  | `0 0% 9%`              | `#171717`  |
-| `--card-foreground`    | `0 0% 3.9%`            | `#0a0a0a`  | `0 0% 98%`             | `#fafafa`  |
-| `--popover`            | `0 0% 100%`            | `#ffffff`  | `0 0% 9%`              | `#171717`  |
-| `--popover-foreground` | `0 0% 3.9%`            | `#0a0a0a`  | `0 0% 98%`             | `#fafafa`  |
-| `--primary`            | `0 0% 9%`              | `#171717`  | `0 0% 89.8%`           | `#e5e5e5`  |
-| `--primary-foreground` | `0 0% 98%`             | `#fafafa`  | `0 0% 9%`              | `#171717`  |
-| `--secondary`          | `0 0% 96.1%`           | `#f5f5f5`  | `0 0% 14.9%`           | `#262626`  |
-| `--secondary-foreground` | `0 0% 9%`            | `#171717`  | `0 0% 98%`             | `#fafafa`  |
-| `--muted`              | `0 0% 96.1%`           | `#f5f5f5`  | `0 0% 14.9%`           | `#262626`  |
-| `--muted-foreground`   | `0 0% 45.1%`           | `#737373`  | `0 0% 63.1%`           | `#a1a1a1`  |
-| `--accent`             | `0 0% 96.1%`           | `#f5f5f5`  | `0 0% 14.9%`           | `#262626`  |
-| `--accent-foreground`  | `0 0% 9%`              | `#171717`  | `0 0% 98%`             | `#fafafa`  |
-| `--destructive`        | `0 84.2% 45.5%`        | `#e7000b`  | `0 100% 70%`           | `#ff6467`  |
-| `--destructive-foreground` | `0 0% 98%`         | `#fafafa`  | `0 0% 98%`             | `#fafafa`  |
-| `--border`             | `0 0% 89.8%`           | `#e5e5e5`  | `0 0% 14.9%`           | `#262626`† |
-| `--input`              | `0 0% 89.8%`           | `#e5e5e5`  | `0 0% 14.9%`           | `#262626`† |
-| `--ring`               | `0 0% 63.1%`           | `#a1a1a1`  | `0 0% 45.1%`           | `#737373`  |
+| Token                      | Light HSL       | Light HEX | Dark HSL     | Dark HEX   |
+| -------------------------- | --------------- | --------- | ------------ | ---------- |
+| `--background`             | `0 0% 100%`     | `#ffffff` | `0 0% 3.9%`  | `#0a0a0a`  |
+| `--foreground`             | `0 0% 3.9%`     | `#0a0a0a` | `0 0% 98%`   | `#fafafa`  |
+| `--card`                   | `0 0% 100%`     | `#ffffff` | `0 0% 9%`    | `#171717`  |
+| `--card-foreground`        | `0 0% 3.9%`     | `#0a0a0a` | `0 0% 98%`   | `#fafafa`  |
+| `--popover`                | `0 0% 100%`     | `#ffffff` | `0 0% 9%`    | `#171717`  |
+| `--popover-foreground`     | `0 0% 3.9%`     | `#0a0a0a` | `0 0% 98%`   | `#fafafa`  |
+| `--primary`                | `0 0% 9%`       | `#171717` | `0 0% 89.8%` | `#e5e5e5`  |
+| `--primary-foreground`     | `0 0% 98%`      | `#fafafa` | `0 0% 9%`    | `#171717`  |
+| `--secondary`              | `0 0% 96.1%`    | `#f5f5f5` | `0 0% 14.9%` | `#262626`  |
+| `--secondary-foreground`   | `0 0% 9%`       | `#171717` | `0 0% 98%`   | `#fafafa`  |
+| `--muted`                  | `0 0% 96.1%`    | `#f5f5f5` | `0 0% 14.9%` | `#262626`  |
+| `--muted-foreground`       | `0 0% 45.1%`    | `#737373` | `0 0% 63.1%` | `#a1a1a1`  |
+| `--accent`                 | `0 0% 96.1%`    | `#f5f5f5` | `0 0% 14.9%` | `#262626`  |
+| `--accent-foreground`      | `0 0% 9%`       | `#171717` | `0 0% 98%`   | `#fafafa`  |
+| `--destructive`            | `0 84.2% 45.5%` | `#e7000b` | `0 100% 70%` | `#ff6467`  |
+| `--destructive-foreground` | `0 0% 98%`      | `#fafafa` | `0 0% 98%`   | `#fafafa`  |
+| `--border`                 | `0 0% 89.8%`    | `#e5e5e5` | `0 0% 14.9%` | `#262626`† |
+| `--input`                  | `0 0% 89.8%`    | `#e5e5e5` | `0 0% 14.9%` | `#262626`† |
+| `--ring`                   | `0 0% 63.1%`    | `#a1a1a1` | `0 0% 45.1%` | `#737373`  |
 
 † Reference page actually shipped `#f5ffff` for `--border`/`--input` in dark mode — that's a **bug in the reference** (washed-out cyan). We override to neutral charcoal (`#262626`) which matches its actual visual rendering on solid dark surfaces.
 
@@ -53,19 +53,19 @@
 
 These are not in the reference's `--*-foreground` set, but we need them for IDP (invoice statuses, validation states). Derived from the reference's chart palette + Tailwind defaults.
 
-| Token              | Light HSL          | Light HEX  | Dark HSL           | Dark HEX   | Use                                   |
-|--------------------|--------------------|------------|--------------------|------------|---------------------------------------|
-| `--success`        | `142 71% 45%`      | `#22c55e`  | `160 100% 37%`     | `#00bc7d`  | "Delivery"-style positive badges     |
-| `--success-foreground` | `142 76% 18%`  | `#008236`  | `0 0% 98%`         | `#fafafa`  | text on success bg                    |
-| `--warning`        | `36 100% 50%`      | `#fe9a00`  | `36 100% 50%`      | `#fe9a00`  | review-needed states                  |
-| `--warning-foreground` | `36 100% 22%` | `#7c4a00`  | `0 0% 9%`          | `#171717`  |                                       |
-| `--info`           | `225 84% 49%`      | `#1447e6`  | `225 84% 49%`      | `#1447e6`  | "Transfer"-style neutral-active badges |
-| `--info-foreground`| `225 84% 95%`      | `#dbeafe`  | `0 0% 98%`         | `#fafafa`  |                                       |
+| Token                  | Light HSL     | Light HEX | Dark HSL       | Dark HEX  | Use                                    |
+| ---------------------- | ------------- | --------- | -------------- | --------- | -------------------------------------- |
+| `--success`            | `142 71% 45%` | `#22c55e` | `160 100% 37%` | `#00bc7d` | "Delivery"-style positive badges       |
+| `--success-foreground` | `142 76% 18%` | `#008236` | `0 0% 98%`     | `#fafafa` | text on success bg                     |
+| `--warning`            | `36 100% 50%` | `#fe9a00` | `36 100% 50%`  | `#fe9a00` | review-needed states                   |
+| `--warning-foreground` | `36 100% 22%` | `#7c4a00` | `0 0% 9%`      | `#171717` |                                        |
+| `--info`               | `225 84% 49%` | `#1447e6` | `225 84% 49%`  | `#1447e6` | "Transfer"-style neutral-active badges |
+| `--info-foreground`    | `225 84% 95%` | `#dbeafe` | `0 0% 98%`     | `#fafafa` |                                        |
 
 ### 2.3 Sidebar tokens (separate scope — shadcn convention)
 
 | Token                          | Light HEX | Dark HEX  |
-|--------------------------------|-----------|-----------|
+| ------------------------------ | --------- | --------- |
 | `--sidebar`                    | `#f5f5f5` | `#171717` |
 | `--sidebar-foreground`         | `#54545c` | `#fafafa` |
 | `--sidebar-primary`            | `#171717` | `#e5e5e5` |
@@ -82,11 +82,11 @@ Note: sidebar-foreground in light is **`#54545c`** (cool gray, NOT pure neutral)
 Reference uses two distinct palettes per theme (warm in light, cool in dark). For Cortex IDP we standardize on a single palette across themes (data continuity matters more than aesthetic coherence in dashboards).
 
 ```css
---chart-1: 18 100% 48%;    /* #f54a00 — orange */
---chart-2: 175 100% 29%;   /* #009689 — teal */
---chart-3: 196 72% 23%;    /* #104e64 — deep cyan */
---chart-4: 44 100% 50%;    /* #ffb900 — amber */
---chart-5: 36 100% 50%;    /* #fe9a00 — orange-amber */
+--chart-1: 18 100% 48%; /* #f54a00 — orange */
+--chart-2: 175 100% 29%; /* #009689 — teal */
+--chart-3: 196 72% 23%; /* #104e64 — deep cyan */
+--chart-4: 44 100% 50%; /* #ffb900 — amber */
+--chart-5: 36 100% 50%; /* #fe9a00 — orange-amber */
 ```
 
 ### 2.5 Neutral scale
@@ -102,47 +102,48 @@ Tailwind's `neutral-*` is the source. Map: 50/100/200 = backgrounds & borders, 5
 ### Font stack
 
 ```css
---font-sans: "Inter", "Inter Fallback", ui-sans-serif, system-ui, -apple-system,
-             BlinkMacSystemFont, "Segoe UI", sans-serif;
---font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-             "Liberation Mono", "Courier New", monospace;
+--font-sans:
+  "Inter", "Inter Fallback", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+  "Segoe UI", sans-serif;
+--font-mono:
+  ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 ```
 
 Load via `next/font/google` with `subsets: ["latin", "latin-ext"]` (latin-ext for Polish diacritics — non-negotiable for ITSG/IDP context).
 
 ### Size scale (matches reference's actual `--text-*` values)
 
-| Token        | Size       | Line height           | Tailwind class |
-|--------------|------------|-----------------------|----------------|
-| `--text-xs`  | `0.75rem`  | `calc(1/0.75)` ≈ 1rem | `text-xs`      |
-| `--text-sm`  | `0.813rem` | `calc(1.25/0.875)`    | `text-sm` *    |
-| `--text-base`| `1rem`     | `calc(1.5/1)` = 1.5   | `text-base`    |
-| `--text-lg`  | `1.125rem` | `calc(1.75/1.125)`    | `text-lg`      |
-| `--text-xl`  | `1.25rem`  | `calc(1.75/1.25)`     | `text-xl`      |
-| `--text-2xl` | `1.5rem`   | `calc(2/1.5)`         | `text-2xl`     |
-| `--text-3xl` | `1.875rem` | `calc(2.25/1.875)`    | `text-3xl`     |
-| `--text-4xl` | `2.25rem`  | (default)             | `text-4xl`     |
+| Token         | Size       | Line height           | Tailwind class |
+| ------------- | ---------- | --------------------- | -------------- |
+| `--text-xs`   | `0.75rem`  | `calc(1/0.75)` ≈ 1rem | `text-xs`      |
+| `--text-sm`   | `0.813rem` | `calc(1.25/0.875)`    | `text-sm` *    |
+| `--text-base` | `1rem`     | `calc(1.5/1)` = 1.5   | `text-base`    |
+| `--text-lg`   | `1.125rem` | `calc(1.75/1.125)`    | `text-lg`      |
+| `--text-xl`   | `1.25rem`  | `calc(1.75/1.25)`     | `text-xl`      |
+| `--text-2xl`  | `1.5rem`   | `calc(2/1.5)`         | `text-2xl`     |
+| `--text-3xl`  | `1.875rem` | `calc(2.25/1.875)`    | `text-3xl`     |
+| `--text-4xl`  | `2.25rem`  | (default)             | `text-4xl`     |
 
 \* **Important:** reference overrides `--text-sm` to `0.813rem` (~13px) instead of Tailwind's default `0.875rem`. This is the **single most distinctive typography choice** in the reference — gives the dashboard its "tight, dense" feel. Buttons render at `13.008px`. Replicate this.
 
 ### Weights used
 
-| Weight | Value | Use                                        |
-|--------|-------|--------------------------------------------|
-| Light    | 300 | (defined, unused in observed components)   |
-| Normal   | 400 | body text, sidebar inactive nav            |
-| Medium   | 500 | buttons, active nav, badges, table headers |
-| Semibold | 600 | section titles, card headers               |
-| Bold     | 700 | rare — only large hero numbers             |
+| Weight   | Value | Use                                        |
+| -------- | ----- | ------------------------------------------ |
+| Light    | 300   | (defined, unused in observed components)   |
+| Normal   | 400   | body text, sidebar inactive nav            |
+| Medium   | 500   | buttons, active nav, badges, table headers |
+| Semibold | 600   | section titles, card headers               |
+| Bold     | 700   | rare — only large hero numbers             |
 
 ### Letter spacing
 
-| Token                | Value     | Use                                       |
-|----------------------|-----------|-------------------------------------------|
-| `--tracking-tighter` | `-0.05em` | hero numbers (`Load Price: $6,533.44`)    |
-| `--tracking-tight`   | `-0.025em`| H1/H2 headings                            |
-| `--tracking-normal`  | `0`       | body, default                             |
-| `--tracking-wide`    | `0.025em` | uppercase labels, table headers           |
+| Token                | Value      | Use                                    |
+| -------------------- | ---------- | -------------------------------------- |
+| `--tracking-tighter` | `-0.05em`  | hero numbers (`Load Price: $6,533.44`) |
+| `--tracking-tight`   | `-0.025em` | H1/H2 headings                         |
+| `--tracking-normal`  | `0`        | body, default                          |
+| `--tracking-wide`    | `0.025em`  | uppercase labels, table headers        |
 
 ---
 
@@ -154,14 +155,14 @@ Reference uses Tailwind's default `--spacing: 0.25rem` (4px base). No deviation 
 
 ### 4.2 Border radius
 
-| Token         | Value      | Use                                    |
-|---------------|------------|----------------------------------------|
-| `--radius`    | `0.625rem` | base — drives all derived radii        |
-| `--radius-sm` | `0.375rem` | `calc(var(--radius) - 4px)` — badges, chips |
-| `--radius-md` | `0.5rem`   | `calc(var(--radius) - 2px)` — buttons, inputs |
-| `--radius-lg` | `0.625rem` | cards, dialogs                          |
-| `--radius-xl` | `0.875rem` | `calc(var(--radius) + 4px)` — large surfaces |
-| `--radius-2xl`| `1rem`     | rare (popovers with strong elevation)  |
+| Token          | Value      | Use                                           |
+| -------------- | ---------- | --------------------------------------------- |
+| `--radius`     | `0.625rem` | base — drives all derived radii               |
+| `--radius-sm`  | `0.375rem` | `calc(var(--radius) - 4px)` — badges, chips   |
+| `--radius-md`  | `0.5rem`   | `calc(var(--radius) - 2px)` — buttons, inputs |
+| `--radius-lg`  | `0.625rem` | cards, dialogs                                |
+| `--radius-xl`  | `0.875rem` | `calc(var(--radius) + 4px)` — large surfaces  |
+| `--radius-2xl` | `1rem`     | rare (popovers with strong elevation)         |
 
 **Key observation:** badges in the reference use `4px` radius (smaller than `--radius-sm`). Buttons use `8px` (between sm and md). This means:
 
@@ -177,12 +178,12 @@ Default `1px` everywhere. Reference uses `border` (1px solid var(--border)) for 
 
 Reference does **not** define `--shadow-*` tokens on `:root`. Shadows are applied via Tailwind utility classes. Observed:
 
-| Class       | Value                                                                                   | Use                                       |
-|-------------|-----------------------------------------------------------------------------------------|-------------------------------------------|
-| `shadow-xs` | `0 1px 2px 0 rgb(0 0 0 / 0.05)`                                                          | inputs (focus), input groups              |
-| `shadow-sm` | `0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)`                          | inset main content area, cards on hover   |
-| `shadow-md` | `0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)`                       | popovers, dropdowns                       |
-| `shadow-lg` | `0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)`                     | dialogs, command palette                  |
+| Class       | Value                                                                | Use                                     |
+| ----------- | -------------------------------------------------------------------- | --------------------------------------- |
+| `shadow-xs` | `0 1px 2px 0 rgb(0 0 0 / 0.05)`                                      | inputs (focus), input groups            |
+| `shadow-sm` | `0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)`      | inset main content area, cards on hover |
+| `shadow-md` | `0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)`   | popovers, dropdowns                     |
+| `shadow-lg` | `0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)` | dialogs, command palette                |
 
 **Critical:** the reference is **shadow-light**. Cards default to `border` only, not `shadow`. Elevation is signalled through borders + subtle bg shifts (`bg-card` vs `bg-background`). This is the "modern flat" look. Don't add shadows reflexively.
 
@@ -192,16 +193,17 @@ Reference does **not** define `--shadow-*` tokens on `:root`. Shadows are applie
 
 ### 5.1 Sidebar
 
-| Property                | Value                              |
-|-------------------------|------------------------------------|
-| Width (expanded)        | `240px` (`calc(0.25rem * 60)` = 15rem)   |
-| Width (collapsed/icon)  | `48px` (`3rem`)                    |
-| Background (light)      | `#f5f5f5` (`--sidebar`)            |
-| Background (dark)       | `#171717`                          |
-| Border-right            | `1px solid var(--sidebar-border)`  |
-| Transition              | `width 0.15s cubic-bezier(0.4, 0, 0.2, 1)` |
+| Property               | Value                                      |
+| ---------------------- | ------------------------------------------ |
+| Width (expanded)       | `240px` (`calc(0.25rem * 60)` = 15rem)     |
+| Width (collapsed/icon) | `48px` (`3rem`)                            |
+| Background (light)     | `#f5f5f5` (`--sidebar`)                    |
+| Background (dark)      | `#171717`                                  |
+| Border-right           | `1px solid var(--sidebar-border)`          |
+| Transition             | `width 0.15s cubic-bezier(0.4, 0, 0.2, 1)` |
 
 **Nav item (link):**
+
 - Height: `32px`
 - Padding: `2px 8px` (very tight — drives the dense aesthetic)
 - Font: `13px` (`text-sm`), weight `400` inactive / `500` active
@@ -245,12 +247,13 @@ Reference does **not** define `--shadow-*` tokens on `:root`. Shadows are applie
 
 Two variants observed in reference (Delivery green, Transfer blue):
 
-| Variant   | Background | Text       | Notes                          |
-|-----------|------------|------------|--------------------------------|
-| Delivery  | `#dbfce7`  | `#008236`  | green-100 bg + green-700 text  |
-| Transfer  | `#dbeafe`  | `#1447e6`  | blue-100 bg + blue-600 text    |
+| Variant  | Background | Text      | Notes                         |
+| -------- | ---------- | --------- | ----------------------------- |
+| Delivery | `#dbfce7`  | `#008236` | green-100 bg + green-700 text |
+| Transfer | `#dbeafe`  | `#1447e6` | blue-100 bg + blue-600 text   |
 
 **Spec:**
+
 - Padding: `2px 10px`
 - Border-radius: `4px`
 - Font: `12px`, `font-medium`
@@ -258,17 +261,18 @@ Two variants observed in reference (Delivery green, Transfer blue):
 
 **Cortex extension** (for IDP statuses):
 
-| Status        | Background     | Text       |
-|---------------|---------------|------------|
-| `success` (Verified, Delivered) | `#dbfce7` | `#008236` |
-| `info` (In progress, Transfer)  | `#dbeafe` | `#1447e6` |
-| `warning` (Needs review)        | `#fef3c7` | `#a16207` |
-| `destructive` (Failed, Rejected)| `#fee2e2` | `#b91c1c` |
-| `neutral` (Draft)               | `#f5f5f5` | `#525252` |
+| Status                           | Background | Text      |
+| -------------------------------- | ---------- | --------- |
+| `success` (Verified, Delivered)  | `#dbfce7`  | `#008236` |
+| `info` (In progress, Transfer)   | `#dbeafe`  | `#1447e6` |
+| `warning` (Needs review)         | `#fef3c7`  | `#a16207` |
+| `destructive` (Failed, Rejected) | `#fee2e2`  | `#b91c1c` |
+| `neutral` (Draft)                | `#f5f5f5`  | `#525252` |
 
 ### 5.6 Buttons
 
 **Primary** (e.g. "New Load"):
+
 - Height: `36px`
 - Padding: `8px 12px`
 - Background: `var(--primary)` = `#171717`
@@ -322,18 +326,19 @@ Empty state (not in reference, derived): centered `py-16`, icon `40px` muted-fg,
 
 ## 6. Interaction details
 
-| Element              | Hover                          | Focus-visible              | Active            | Transition                         |
-|----------------------|--------------------------------|----------------------------|-------------------|------------------------------------|
-| Button (primary)     | `bg-primary/90`                | `ring-2 ring-ring ring-offset-2` | `bg-primary/95` | `all 150ms ease`                  |
-| Button (ghost)       | `bg-accent`                    | same                       | `bg-accent/80`    | same                               |
-| Card                 | `border-color: var(--ring)` (subtle, optional) | n/a       | n/a               | `border-color 150ms`               |
-| Sidebar nav          | `bg-sidebar-accent`            | `ring-2 ring-sidebar-ring` | active = white bg | `background-color 150ms`           |
-| Input                | `border-color: var(--ring)/50` | `border-ring ring-ring/50 ring-[3px]` | n/a    | `border-color 150ms, box-shadow 150ms` |
-| Table row            | `bg-muted/50`                  | n/a                        | `bg-muted`        | `background-color 100ms`           |
+| Element          | Hover                                          | Focus-visible                         | Active            | Transition                             |
+| ---------------- | ---------------------------------------------- | ------------------------------------- | ----------------- | -------------------------------------- |
+| Button (primary) | `bg-primary/90`                                | `ring-2 ring-ring ring-offset-2`      | `bg-primary/95`   | `all 150ms ease`                       |
+| Button (ghost)   | `bg-accent`                                    | same                                  | `bg-accent/80`    | same                                   |
+| Card             | `border-color: var(--ring)` (subtle, optional) | n/a                                   | n/a               | `border-color 150ms`                   |
+| Sidebar nav      | `bg-sidebar-accent`                            | `ring-2 ring-sidebar-ring`            | active = white bg | `background-color 150ms`               |
+| Input            | `border-color: var(--ring)/50`                 | `border-ring ring-ring/50 ring-[3px]` | n/a               | `border-color 150ms, box-shadow 150ms` |
+| Table row        | `bg-muted/50`                                  | n/a                                   | `bg-muted`        | `background-color 100ms`               |
 
 **Standard transition:** `--default-transition-duration: 0.15s`, `--default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1)` (Tailwind's `ease-in-out`). Use `transition-all` sparingly — prefer `transition-colors` or `transition-[background-color,border-color]` for performance.
 
 **Easing tokens:**
+
 ```css
 --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 --ease-out: cubic-bezier(0, 0, 0.2, 1);
@@ -477,15 +482,12 @@ Empty state (not in reference, derived): centered `py-16`, icon `40px` muted-fg,
 ### 7.2 `tailwind.config.ts` — theme extension
 
 ```ts
-import type { Config } from "tailwindcss";
-import { fontFamily } from "tailwindcss/defaultTheme";
+import type { Config } from "tailwindcss"
+import { fontFamily } from "tailwindcss/defaultTheme"
 
 const config: Config = {
   darkMode: "class",
-  content: [
-    "./app/**/*.{ts,tsx}",
-    "./libs/@cortex/ui/**/*.{ts,tsx}",
-  ],
+  content: ["./app/**/*.{ts,tsx}", "./libs/@cortex/ui/**/*.{ts,tsx}"],
   theme: {
     container: { center: true, padding: "2rem", screens: { "2xl": "1400px" } },
     extend: {
@@ -593,9 +595,9 @@ const config: Config = {
     },
   },
   plugins: [require("tailwindcss-animate")],
-};
+}
 
-export default config;
+export default config
 ```
 
 ### 7.3 `components.json` (shadcn/ui CLI config)
@@ -633,13 +635,14 @@ export default config;
 
 ## 8. Risk & next steps
 
-**Risk if used as-is:** the palette is *very* monochrome. Three risks:
+**Risk if used as-is:** the palette is _very_ monochrome. Three risks:
 
 1. **Visual flatness across tiles.** When IDP, future kafelek 2, kafelek 3 all render the same neutral chrome, users will struggle to know which app they're in. Mitigation: per-tile **accent color override** (single hue swap on `--info` or a new `--brand` token), not chrome change.
 2. **Status badge palette is undersized.** Reference exposes only 2 (Delivery / Transfer). IDP will need ~6-8 (Draft, Importing, Classified, NeedsReview, Verified, Allocated, Failed, Cancelled). Defined in §5.5; verify with Patryk against actual IDP state machine.
 3. **No motion design captured.** Reference is mostly static. We'll need to define stepper transitions, document loading states, drag-and-drop feedback ourselves. Use `framer-motion` per architecture (sec. interaction) — keep durations at `150-250ms`, `ease-in-out`, no bounce/spring (boring is professional in B2B).
 
 **Next steps:**
+
 1. Implement `/libs/@cortex/styles/tokens.css` exactly as §7.1.
 2. Wire `tailwind.config.ts` per §7.2.
 3. Run `pnpm dlx shadcn@latest init` with §7.3 config.

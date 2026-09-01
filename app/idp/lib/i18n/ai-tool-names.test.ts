@@ -34,7 +34,7 @@ describe("krótkie nazwy narzędzi AI", () => {
       (tool) => tool.id,
     )
 
-    expect({ bezKrotkiejNazwy: missing }).toEqual({ bezKrotkiejNazwy: [] })
+    expect({ withoutShortName: missing }).toEqual({ withoutShortName: [] })
   })
 
   it.each(LOCALES)("%s: żadna krótka nazwa nie wisi bez narzędzia", (locale) => {

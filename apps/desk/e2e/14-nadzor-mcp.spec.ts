@@ -1,13 +1,13 @@
 import type { APIRequestContext } from "@playwright/test"
-import { expect, jako, test } from "./osoby"
+import { as, expect, test } from "./osoby"
 // Kształt odpowiedzi `/api/mcp` widziany przez scenariusz — tyle, ile sprawdza, nie więcej.
-type NarzedzieWKatalogu = {
-  nazwaZdalna: string
-  odcisk?: string
-  stan?: string
-  zatwierdzil?: string
+type CatalogueTool = {
+  remoteName: string
+  fingerprint?: string
+  status?: string
+  approvedBy?: string
 }
-type SerwerWKatalogu = { nazwa: string; narzedzia: NarzedzieWKatalogu[] }
+type CatalogueServer = { name: string; tools: CatalogueTool[] }
 
 const ROBERT = { Cookie: "desk_persona=robert" }
 const ANNA = { Cookie: "desk_persona=anna" }
@@ -16,48 +16,48 @@ const OPIS =
 
 // Szukanie z odmową zamiast `!`: scenariusz, który nie znalazł serwera, ma powiedzieć
 // CZEGO nie znalazł, a nie wywrócić się linijkę dalej na czymś, co wygląda na błąd asercji.
-const bialaLista = async (request: APIRequestContext): Promise<SerwerWKatalogu> => {
-  const s = (await katalog(request)).find((x) => x.nazwa === "biala-lista")
-  if (!s) throw new Error('W katalogu nie ma serwera „biala-lista".')
+const vatRegistry = async (request: APIRequestContext): Promise<CatalogueServer> => {
+  const s = (await folder(request)).find((x) => x.name === "vat-registry")
+  if (!s) throw new Error('W katalogu nie ma serwera „vat-registry".')
   return s
 }
 
-const narzedzie = (s: SerwerWKatalogu, nazwaZdalna: string): NarzedzieWKatalogu => {
-  const n = s.narzedzia.find((x) => x.nazwaZdalna === nazwaZdalna)
-  if (!n) throw new Error(`Serwer „${s.nazwa}" nie wystawia narzędzia „${nazwaZdalna}".`)
+const tool = (s: CatalogueServer, remoteName: string): CatalogueTool => {
+  const n = s.tools.find((x) => x.remoteName === remoteName)
+  if (!n) throw new Error(`Serwer „${s.name}" nie wystawia narzędzia „${remoteName}".`)
   return n
 }
 
-const katalog = async (request: APIRequestContext): Promise<SerwerWKatalogu[]> =>
-  (await (await request.get("/api/mcp", { headers: ROBERT })).json()).serwery
+const folder = async (request: APIRequestContext): Promise<CatalogueServer[]> =>
+  (await (await request.get("/api/mcp", { headers: ROBERT })).json()).servers
 
 test.describe("Obszar 26 · Katalog serwerów należy do przełożonego, nie do kodu", () => {
   test("Pracownik nie widzi katalogu ani nie może go zmienić", async ({ request }) => {
     expect((await request.get("/api/mcp", { headers: ANNA })).status()).toBe(403)
     const proba = await request.post("/api/mcp", {
       headers: ANNA,
-      data: { akcja: "wycofaj", serwer: "biala-lista", nazwaZdalna: "sprawdz_nip" },
+      data: { action: "wycofaj", server: "vat-registry", remoteName: "vat_status" },
     })
     expect(proba.status()).toBe(403)
   })
 
   test("Katalog przychodzi z bazy, a każde narzędzie ma autora zgody", async ({ request }) => {
-    const s = await bialaLista(request)
-    for (const n of s.narzedzia) {
-      expect(n.zatwierdzil).toBeTruthy()
-      expect(n.stan).toBe("zatwierdzone")
+    const s = await vatRegistry(request)
+    for (const n of s.tools) {
+      expect(n.approvedBy).toBeTruthy()
+      expect(n.status).toBe("approved")
     }
   })
 
   test("Przeglądanie serwera pokazuje surowy tekst dostawcy — pod etykietą, czyj to tekst", async ({
     page,
   }) => {
-    await jako(page, "robert")
-    await page.goto("/nadzor")
+    await as(page, "robert")
+    await page.goto("/supervision")
     await page.getByRole("button", { name: "Przejrzyj" }).first().click()
 
     await expect(page.getByText("Co ten serwer wystawia")).toBeVisible()
-    await expect(page.getByText("sprawdz_nip")).toBeVisible()
+    await expect(page.getByText("vat_status")).toBeVisible()
     await page.getByText("Co dostawca pisze o tym narzędziu").first().click()
     await expect(page.getByText("Tekst dostawcy serwera, nie nasz:").first()).toBeVisible()
   })
@@ -68,16 +68,16 @@ test.describe("Obszar 26 · Katalog serwerów należy do przełożonego, nie do 
     const r = await request.post("/api/mcp", {
       headers: ROBERT,
       data: {
-        akcja: "zatwierdz",
-        serwer: "biala-lista",
-        nazwaZdalna: "sprawdz_nip",
-        opis: "  ",
-        krotko: "",
-        zdolnosc: "kontrahent.sprawdz",
+        action: "zatwierdz",
+        server: "vat-registry",
+        remoteName: "vat_status",
+        description: "  ",
+        shortLabel: "",
+        capability: "counterparty.verify",
       },
     })
     expect(r.status()).toBe(400)
-    expect((await r.json()).blad).toMatch(/pisze je człowiek/)
+    expect((await r.json()).error).toMatch(/pisze je człowiek/)
   })
 
   test("Nieznana zdolność jest odrzucana — narzędzie musi przejść przez katalog", async ({
@@ -86,12 +86,12 @@ test.describe("Obszar 26 · Katalog serwerów należy do przełożonego, nie do 
     const r = await request.post("/api/mcp", {
       headers: ROBERT,
       data: {
-        akcja: "zatwierdz",
-        serwer: "biala-lista",
-        nazwaZdalna: "sprawdz_nip",
-        opis: OPIS,
-        krotko: "x",
-        zdolnosc: "wymyslona.zdolnosc",
+        action: "zatwierdz",
+        server: "vat-registry",
+        remoteName: "vat_status",
+        description: OPIS,
+        shortLabel: "x",
+        capability: "wymyslona.zdolnosc",
       },
     })
     expect(r.status()).toBe(400)
@@ -100,7 +100,7 @@ test.describe("Obszar 26 · Katalog serwerów należy do przełożonego, nie do 
   test("Serwer musi mieć adres http — stdio jest zabronione", async ({ request }) => {
     const r = await request.post("/api/mcp", {
       headers: ROBERT,
-      data: { akcja: "dodaj", nazwa: "lokalny", etykieta: "Lokalny", url: "stdio:///usr/bin/cos" },
+      data: { action: "dodaj", name: "lokalny", label: "Lokalny", url: "stdio:///usr/bin/cos" },
     })
     expect(r.status()).toBe(400)
   })
@@ -110,35 +110,35 @@ test.describe("Obszar 27 · Odcisk wiąże zgodę ze słowami człowieka, nie ty
   test("Inny opis zatwierdzającego daje inny odcisk, choć schemat jest ten sam", async ({
     request,
   }) => {
-    const przed = narzedzie(await bialaLista(request), "sprawdz_nip").odcisk
+    const before = tool(await vatRegistry(request), "vat_status").fingerprint
 
     const r = await request.post("/api/mcp", {
       headers: ROBERT,
       data: {
-        akcja: "zatwierdz",
-        serwer: "biala-lista",
-        nazwaZdalna: "sprawdz_nip",
-        opis: "Zupełnie inny opis tej samej czynności, napisany przez kogoś innego.",
-        krotko: "inny opis",
-        zdolnosc: "kontrahent.sprawdz",
+        action: "zatwierdz",
+        server: "vat-registry",
+        remoteName: "vat_status",
+        description: "Zupełnie inny opis tej samej czynności, napisany przez kogoś innego.",
+        shortLabel: "inny opis",
+        capability: "counterparty.verify",
       },
     })
     expect(r.ok()).toBeTruthy()
 
-    const po = narzedzie(await bialaLista(request), "sprawdz_nip")
-    expect(po.odcisk).not.toBe(przed)
-    expect(po.zatwierdzil).toBe("robert")
+    const po = tool(await vatRegistry(request), "vat_status")
+    expect(po.fingerprint).not.toBe(before)
+    expect(po.approvedBy).toBe("robert")
 
     // przywracamy pierwotny opis, żeby kolejne scenariusze zastały to samo biurko
     await request.post("/api/mcp", {
       headers: ROBERT,
       data: {
-        akcja: "zatwierdz",
-        serwer: "biala-lista",
-        nazwaZdalna: "sprawdz_nip",
-        opis: OPIS,
-        krotko: "sprawdzenie statusu VAT",
-        zdolnosc: "kontrahent.sprawdz",
+        action: "zatwierdz",
+        server: "vat-registry",
+        remoteName: "vat_status",
+        description: OPIS,
+        shortLabel: "sprawdzenie statusu VAT",
+        capability: "counterparty.verify",
       },
     })
   })
@@ -146,21 +146,22 @@ test.describe("Obszar 27 · Odcisk wiąże zgodę ze słowami człowieka, nie ty
   test("Wycofanie usuwa narzędzie z katalogu, a dziennik zapamiętuje kto", async ({ request }) => {
     await request.post("/api/mcp", {
       headers: ROBERT,
-      data: { akcja: "wycofaj", serwer: "biala-lista", nazwaZdalna: "sprawdz_rachunek" },
+      data: { action: "wycofaj", server: "vat-registry", remoteName: "bank_account_check" },
     })
-    const s = await bialaLista(request)
-    expect(s.narzedzia.some((n) => n.nazwaZdalna === "sprawdz_rachunek")).toBe(false)
+    const s = await vatRegistry(request)
+    expect(s.tools.some((n) => n.remoteName === "bank_account_check")).toBe(false)
 
     // wraca przez ten sam ekran, którym się je przyjmuje
     const wraca = await request.post("/api/mcp", {
       headers: ROBERT,
       data: {
-        akcja: "zatwierdz",
-        serwer: "biala-lista",
-        nazwaZdalna: "sprawdz_rachunek",
-        opis: "Sprawdza w wykazie Ministerstwa Finansów, czy podany numer rachunku był w danym dniu przypisany do firmy o podanym NIP.",
-        krotko: "sprawdzenie rachunku w wykazie",
-        zdolnosc: "kontrahent.sprawdz",
+        action: "zatwierdz",
+        server: "vat-registry",
+        remoteName: "bank_account_check",
+        description:
+          "Sprawdza w wykazie Ministerstwa Finansów, czy podany numer rachunku był w danym dniu przypisany do firmy o podanym NIP.",
+        shortLabel: "sprawdzenie rachunku w wykazie",
+        capability: "counterparty.verify",
       },
     })
     expect(wraca.ok()).toBeTruthy()

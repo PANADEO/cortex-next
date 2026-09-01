@@ -139,17 +139,14 @@ Proste, bo na tym etapie nie potrzeba więcej. Ale API musi być takie, żeby sw
 ```ts
 // flags.ts
 export type FeatureFlag =
-  | "idp.classification"
-  | "idp.rules-editor"
-  | "idp.handsontable-tables"
-  | "cortex.dark-mode";
+  "idp.classification" | "idp.rules-editor" | "idp.handsontable-tables" | "cortex.dark-mode"
 
 const DEFAULTS: Record<FeatureFlag, boolean> = {
   "idp.classification": true,
   "idp.rules-editor": false,
   "idp.handsontable-tables": false,
   "cortex.dark-mode": true,
-};
+}
 ```
 
 ### Trzy źródła (w kolejności priorytetów)

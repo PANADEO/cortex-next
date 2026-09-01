@@ -18,11 +18,11 @@ on-prem / model-agnostic. Każda faza ma klienta-poligon - feature bez klienta n
 
 Każdy kafelek platformy jest jednym z **trzech archetypów**:
 
-| Archetyp | Co obrazuje | Przykład dziś w repo |
-| --- | --- | --- |
-| **`agent-config`** | Agenta: jego skille, strefę danych, model, harmonogram, historię runów | brak - Faza 1 |
-| **`dashboard`** | Dane/artefakty produkowane przez agentów lub systemy | `idp` (dashboard), `okna-czasowe` |
-| **`task-chat`** | Konwersację, która tworzy zadania i artefakty | `cortex-cowork` |
+| Archetyp           | Co obrazuje                                                            | Przykład dziś w repo              |
+| ------------------ | ---------------------------------------------------------------------- | --------------------------------- |
+| **`agent-config`** | Agenta: jego skille, strefę danych, model, harmonogram, historię runów | brak - Faza 1                     |
+| **`dashboard`**    | Dane/artefakty produkowane przez agentów lub systemy                   | `idp` (dashboard), `okna-czasowe` |
+| **`task-chat`**    | Konwersację, która tworzy zadania i artefakty                          | `cortex-cowork`                   |
 
 Implementacyjnie: pole `archetype` w `Tile` (`app/idp/lib/tiles.ts`) + wspólne kontrakty per
 archetyp w `/libs/@cortex/types`. Kategorie functional/department zostają jako drugi wymiar.

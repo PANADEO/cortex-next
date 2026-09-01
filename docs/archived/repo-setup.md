@@ -153,12 +153,12 @@ cortex_frontend/
       "@cortex/ui/*": ["libs/@cortex/ui/src/*"],
       "@cortex/styles": ["libs/@cortex/styles/index.ts"],
       "@cortex/styles/*": ["libs/@cortex/styles/*"],
-      "@cortex/api":    ["libs/@cortex/api/src/index.ts"],
-      "@cortex/api/*":  ["libs/@cortex/api/src/*"],
-      "@cortex/types":  ["libs/@cortex/types/src/index.ts"],
-      "@cortex/types/*":["libs/@cortex/types/src/*"],
-      "@cortex/utils":  ["libs/@cortex/utils/src/index.ts"],
-      "@cortex/utils/*":["libs/@cortex/utils/src/*"],
+      "@cortex/api": ["libs/@cortex/api/src/index.ts"],
+      "@cortex/api/*": ["libs/@cortex/api/src/*"],
+      "@cortex/types": ["libs/@cortex/types/src/index.ts"],
+      "@cortex/types/*": ["libs/@cortex/types/src/*"],
+      "@cortex/utils": ["libs/@cortex/utils/src/index.ts"],
+      "@cortex/utils/*": ["libs/@cortex/utils/src/*"],
       "@/*": ["app/idp/*"]
     },
     "types": ["node", "vitest/globals", "@testing-library/jest-dom"]
@@ -252,11 +252,7 @@ import animate from "tailwindcss-animate"
 
 const config: Config = {
   darkMode: ["class"],
-  content: [
-    "./app/**/*.{ts,tsx,mdx}",
-    "./libs/**/*.{ts,tsx,mdx}",
-    "./.ladle/**/*.{ts,tsx}",
-  ],
+  content: ["./app/**/*.{ts,tsx,mdx}", "./libs/**/*.{ts,tsx,mdx}", "./.ladle/**/*.{ts,tsx}"],
   theme: {
     container: { center: true, padding: "1rem", screens: { "2xl": "1400px" } },
     extend: {
@@ -267,10 +263,16 @@ const config: Config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
-        secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
         muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
         accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
-        destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
         card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
       },
       borderRadius: {
@@ -304,34 +306,57 @@ export default { plugins: { tailwindcss: {}, autoprefixer: {} } }
 @layer base {
   /* Defaults = shadcn zinc. R3 overrides with real tokens via @cortex/styles/tokens.css. */
   :root {
-    --background: 0 0% 100%; --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%; --card-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%; --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%; --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%; --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%; --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%; --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%; --input: 240 5.9% 90%; --ring: 240 5.9% 10%;
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 240 10% 3.9%; --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%; --card-foreground: 0 0% 98%;
-    --primary: 0 0% 98%; --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%; --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%; --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%; --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%; --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%; --input: 240 3.7% 15.9%; --ring: 240 4.9% 83.9%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
   }
 
-  * { @apply border-border; }
-  body { @apply bg-background text-foreground antialiased; }
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
 }
 ```
 
 Imported once in `app/idp/app/layout.tsx`:
+
 ```ts
 import "@cortex/styles/globals.css"
 ```
@@ -372,15 +397,15 @@ import "@cortex/styles/globals.css"
 Worker file generated by `npm run msw-init` into `app/idp/public/mockServiceWorker.js`.
 
 `app/idp/mocks/handlers.ts`:
+
 ```ts
 import { http, HttpResponse } from "msw"
 
-export const handlers = [
-  http.get("/api/packages", () => HttpResponse.json({ items: [] })),
-]
+export const handlers = [http.get("/api/packages", () => HttpResponse.json({ items: [] }))]
 ```
 
 `app/idp/mocks/browser.ts`:
+
 ```ts
 "use client"
 import { setupWorker } from "msw/browser"
@@ -390,6 +415,7 @@ export const worker = setupWorker(...handlers)
 ```
 
 `app/idp/mocks/msw-provider.tsx`:
+
 ```tsx
 "use client"
 import { useEffect, useState } from "react"
@@ -417,11 +443,17 @@ Wrap in root layout **above** `QueryClientProvider`. `.env.local`: `NEXT_PUBLIC_
 Stories live next to components: `libs/@cortex/ui/src/**/*.stories.tsx`.
 
 `.ladle/config.mjs`:
+
 ```js
-export default { stories: "libs/@cortex/ui/src/**/*.stories.{ts,tsx}", viteConfig: ".ladle/vite.config.mjs", port: 61000 }
+export default {
+  stories: "libs/@cortex/ui/src/**/*.stories.{ts,tsx}",
+  viteConfig: ".ladle/vite.config.mjs",
+  port: 61000,
+}
 ```
 
 `.ladle/vite.config.mjs` — mirror `@cortex/*` aliases so Vite resolves them:
+
 ```js
 import { defineConfig } from "vite"
 import path from "node:path"
@@ -433,13 +465,14 @@ export default defineConfig({
       "@cortex/styles": a("libs/@cortex/styles"),
       "@cortex/utils": a("libs/@cortex/utils/src"),
       "@cortex/types": a("libs/@cortex/types/src"),
-      "@cortex/api":   a("libs/@cortex/api/src"),
+      "@cortex/api": a("libs/@cortex/api/src"),
     },
   },
 })
 ```
 
 `.ladle/components.tsx`:
+
 ```tsx
 import "../libs/@cortex/styles/globals.css"
 export const Provider = ({ children }: { children: React.ReactNode }) => <>{children}</>
@@ -452,12 +485,17 @@ Run: `npm run ladle`.
 ## 11. ESLint + Prettier
 
 `.eslintrc.cjs`:
+
 ```js
 module.exports = {
   root: true,
   parser: "@typescript-eslint/parser",
   parserOptions: { ecmaVersion: 2023, sourceType: "module", project: "./tsconfig.json" },
-  extends: ["next/core-web-vitals", "plugin:@typescript-eslint/recommended", "plugin:tailwindcss/recommended"],
+  extends: [
+    "next/core-web-vitals",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:tailwindcss/recommended",
+  ],
   settings: {
     next: { rootDir: "app/idp" },
     tailwindcss: { config: "tailwind.config.ts", callees: ["cn", "clsx"] },
@@ -472,6 +510,7 @@ module.exports = {
 ```
 
 `.prettierrc`:
+
 ```json
 {
   "semi": false,
@@ -509,14 +548,14 @@ await fs.cp(path.join(pdfDistDir, "cmaps"), path.join(publicPdfDir, "cmaps"), {
   force: true,
   recursive: true,
 })
-await fs.cp(
-  path.join(pdfDistDir, "standard_fonts"),
-  path.join(publicPdfDir, "standard_fonts"),
-  { force: true, recursive: true },
-)
+await fs.cp(path.join(pdfDistDir, "standard_fonts"), path.join(publicPdfDir, "standard_fonts"), {
+  force: true,
+  recursive: true,
+})
 ```
 
 In react-pdf setup:
+
 ```ts
 import { pdfjs } from "react-pdf"
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.min.mjs"

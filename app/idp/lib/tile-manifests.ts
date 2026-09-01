@@ -15,8 +15,8 @@
 // zarejestruje się jako kandydat do aktywacji w żadnej instancji.
 
 import { cortexCoworkTile } from "@/app/(cowork)/cortex-cowork/manifest"
-import { aiToolsTile } from "@/app/(main)/ai-tools/manifest"
 import { deskTile } from "@/app/(desk)/desk/manifest"
+import { aiToolsTile } from "@/app/(main)/ai-tools/manifest"
 import { cortexConfigTile } from "@/app/(main)/cortex-config/manifest"
 import { documentParserTile } from "@/app/(main)/document-parser/manifest"
 import { geoScoreCalculatorTile } from "@/app/(main)/geo-score-calculator/manifest"

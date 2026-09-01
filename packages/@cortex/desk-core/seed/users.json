@@ -1,0 +1,52 @@
+{
+  "users": [
+    {
+      "id": "anna",
+      "firstName": "Anna",
+      "lastName": "Kowalska",
+      "department": "Księgowość",
+      "role": "member",
+      "quickTasks": [
+        {
+          "title": "Zestawienie kosztów miesiąca",
+          "hint": "dodaj plik z fakturami (CSV lub XLSX)",
+          "text": "Zrób zestawienie kosztów z pliku faktury-08.csv: pogrupuj po kategorii, policz sumy i zapisz gotowy dokument."
+        },
+        {
+          "title": "Sprawdź, czego brakuje w dokumencie",
+          "hint": "dodaj dokument do sprawdzenia",
+          "text": "Przejrzyj dokument i wypisz, które pola są puste albo wymagają uzupełnienia."
+        },
+        {
+          "title": "Notatka ze spotkania",
+          "hint": "dodaj transkrypcję albo notatki",
+          "text": "Zrób z tego zwięzłą notatkę: ustalenia, kto co robi, terminy."
+        }
+      ]
+    },
+    {
+      "id": "robert",
+      "firstName": "Robert",
+      "lastName": "Nowak",
+      "department": "Zarząd",
+      "role": "management",
+      "quickTasks": [
+        {
+          "title": "Zestawienie kosztów miesiąca",
+          "hint": "dodaj plik z fakturami (CSV lub XLSX)",
+          "text": "Zrób zestawienie kosztów z pliku faktury-08.csv: pogrupuj po kategorii, policz sumy i zapisz jako arkusz."
+        },
+        {
+          "title": "Analiza z wykresem",
+          "hint": "dodaj dane",
+          "text": "Policz sumy po kategoriach i przygotuj krótką analizę z rekomendacją."
+        },
+        {
+          "title": "Grafika do prezentacji",
+          "hint": "opisz, co ma być na obrazku",
+          "text": "Wygeneruj grafikę tytułową do prezentacji o wynikach kwartału."
+        }
+      ]
+    }
+  ]
+}

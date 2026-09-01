@@ -15,11 +15,11 @@ To pozwala podpinać endpoint po endpoincie, weryfikować kontrakt, a demo dalej
 
 ## Tryby operacyjne
 
-| Tryb | `NEXT_PUBLIC_API_MOCKING` | `IDP_BACKEND_URL` | `rewrites()` | Efekt |
-|---|---|---|---|---|
-| **Pełny mock** (default dev) | `enabled` | — | pusty | Wszystko przez MSW, frontend standalone |
-| **Pełny prod** | `disabled` | same-origin (za Caddy) | pusty | Wszystko leci do real API (Caddy forwarduje) |
-| **Partial carve-out** | `enabled` | `http://localhost:8000` | lista endpointów | Hybrid — wybrane endpointy real, reszta mock |
+| Tryb                         | `NEXT_PUBLIC_API_MOCKING` | `IDP_BACKEND_URL`       | `rewrites()`     | Efekt                                        |
+| ---------------------------- | ------------------------- | ----------------------- | ---------------- | -------------------------------------------- |
+| **Pełny mock** (default dev) | `enabled`                 | —                       | pusty            | Wszystko przez MSW, frontend standalone      |
+| **Pełny prod**               | `disabled`                | same-origin (za Caddy)  | pusty            | Wszystko leci do real API (Caddy forwarduje) |
+| **Partial carve-out**        | `enabled`                 | `http://localhost:8000` | lista endpointów | Hybrid — wybrane endpointy real, reszta mock |
 
 ## Pattern — 3 składniki
 
@@ -53,8 +53,11 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
-        { source: "/user/me",                  destination: `${IDP_BACKEND_URL}/user/me` },
-        { source: "/packages/dashboard-stats", destination: `${IDP_BACKEND_URL}/packages/dashboard-stats` },
+        { source: "/user/me", destination: `${IDP_BACKEND_URL}/user/me` },
+        {
+          source: "/packages/dashboard-stats",
+          destination: `${IDP_BACKEND_URL}/packages/dashboard-stats`,
+        },
       ],
       afterFiles: [],
       fallback: [],
@@ -120,26 +123,31 @@ Browser: apiClient.get("/packages/get_all")
 ## Pułapki — cztery rzeczy, które nas tu zjadły
 
 ### Pułapka 1: MSW cross-origin nie interceptuje
+
 Ustawienie `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000` wyłącza MSW globalnie, bo service worker w browserze interceptuje tylko same-origin. Skutek: wszystko leci do backendu, missing endpoints dają 404.
 
 **Rozwiązanie:** zostawić `apiClient.baseUrl` puste (same-origin), sterować rewrite'em przez server-side env (`IDP_BACKEND_URL`).
 
 ### Pułapka 2: Next `afterFiles` przegrywa z dynamic route
+
 `rewrites()` zwracające tablicę to `afterFiles` — aplikują się po routingu. Path `/packages/dashboard-stats` matchuje `/packages/[id]`, który istnieje → rewrite nigdy nie zadziała.
 
 **Rozwiązanie:** `beforeFiles`.
 
 ### Pułapka 3: MSW dynamic handler łapie konkretne paths
+
 `http.get("/packages/:id", ...)` łapie `/packages/dashboard-stats` i zwraca `PACKAGE_NOT_FOUND` (bo nie istnieje paczka o takim id). Request nigdy nie opuszcza MSW, rewrite nie ma szans zadziałać.
 
 **Rozwiązanie:** explicit `passthrough()` handler **na początku** tablicy handlerów.
 
 ### Pułapka 4: rewrite dynamic route łapie page navigation
+
 `{ source: "/packages/:id", destination: "..." }` jest **method- i Accept-agnostic**. Gdy frontend ma page component `app/packages/[id]/page.tsx`, wejście do `/packages/xxx` w browserze (nawigacja) wysyła `GET` matchujący rewrite → Next nie renderuje page, tylko proxuje do IDP → user widzi **surowy JSON** zamiast UI.
 
 Statyczne ścieżki (`/packages/dashboard-stats`, `/user/me`) nie mają tego problemu, bo nie kolidują z page routes. Dotyczy tylko parametrycznych `:id`.
 
 **Rozwiązanie:** `has` condition odsiewający tylko API fetche przez `Accept: application/json` (apiClient ustawia go explicitnie):
+
 ```ts
 {
   source: "/packages/:id",
@@ -147,6 +155,7 @@ Statyczne ścieżki (`/packages/dashboard-stats`, `/user/me`) nie mają tego pro
   destination: `${IDP_BACKEND_URL}/packages/:id`,
 }
 ```
+
 Page navigation (Accept: `text/html,...`) nie matchuje — Next renderuje page. Fetch z `apiClient` (Accept: `application/json`) matchuje — rewrite proxuje do IDP.
 
 ## Kiedy przełączyć się na "pełny prod"
@@ -166,13 +175,14 @@ Oprócz opisanego wyżej server-side `rewrites()` carve-out, istnieje **drugi me
 
 **Kluczowa różnica vs `rewrites()`:** `NEXT_PUBLIC_USE_REAL_IDP` steruje **MSW service workerem** (czy fetch z browsera jest interceptowany przez mock czy przepuszczany), a `rewrites()` steruje **Next dev serverem** (czy request jest proxowany do backendu). Dla endpointów które NIE mają MSW mocków (np. całe invoice-supervisor) middleware proxy działa niezależnie od tej flagi.
 
-| Scenariusz | `NEXT_PUBLIC_API_MOCKING` | `NEXT_PUBLIC_USE_REAL_IDP` | Efekt |
-|---|---|---|---|
-| Pełny mock | `enabled` | — | MSW mockuje endpointy IDP które mają handlery; reszta leci do backendu |
-| Hybrid IDP | `enabled` | `true` | MSW dodaje passthrough dla ~38 endpointów IDP; reszta mockowana |
-| Pełny prod | `disabled` | — | MSW wyłączone całkowicie |
+| Scenariusz | `NEXT_PUBLIC_API_MOCKING` | `NEXT_PUBLIC_USE_REAL_IDP` | Efekt                                                                  |
+| ---------- | ------------------------- | -------------------------- | ---------------------------------------------------------------------- |
+| Pełny mock | `enabled`                 | —                          | MSW mockuje endpointy IDP które mają handlery; reszta leci do backendu |
+| Hybrid IDP | `enabled`                 | `true`                     | MSW dodaje passthrough dla ~38 endpointów IDP; reszta mockowana        |
+| Pełny prod | `disabled`                | —                          | MSW wyłączone całkowicie                                               |
 
 **Endpointy objęte passthrough** (lista w `handlers.ts`, sekcja `NEXT_PUBLIC_USE_REAL_IDP === "true"`):
+
 - `/user/me`, `/user/preferences`
 - `/config`, `/config/feature-flags`, `/config/custom-statuses`
 - `/idp/version`
@@ -180,6 +190,7 @@ Oprócz opisanego wyżej server-side `rewrites()` carve-out, istnieje **drugi me
 - `/classification/*`, `/rules/*`
 
 **Kiedy ustawić:**
+
 - `NEXT_PUBLIC_USE_REAL_IDP=true` — gdy chcesz testować IDP endpointy (packages, config, rules) z realnym backendem, ale trzymać resztę na mockach.
 - Brak flagi — gdy backend IDP nie jest dostępny lokalnie lub chcesz pełną izolację mocków.
 

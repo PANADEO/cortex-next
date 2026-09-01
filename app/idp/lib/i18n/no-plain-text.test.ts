@@ -350,8 +350,13 @@ const DATA_NOT_UI = [
   "app/idp/lib/ilustromat/prompt-builder.ts",
   // Pola `description` narzędzi agenta (Vercel AI SDK) — to jest PROMPT, czytany
   // przez model, nie etykieta czytana przez człowieka. Na ekran idą osobne
-  // czasowniki z kart narzędzi (`narzedzia.ts`), i to one są napisem.
+  // czasowniki z kart narzędzi (`tool-cards.ts`), i to one są napisem.
   "packages/@cortex/desk-core/src/runtime.ts",
+  // Ta sama kategoria dla narzędzi z serwerów MCP: `description` to opis, który
+  // zatwierdzający napisał DLA MODELU i który wchodzi do odcisku zgody, a `label`
+  // to nazwa serwera wpisana przez przełożonego — dana instancji, nie interfejs.
+  "packages/@cortex/desk-core/src/mcp/catalogue.ts",
+  "packages/@cortex/desk-core/src/mcp/client.ts",
 ]
 
 function listTs(root: string): string[] {

@@ -261,9 +261,7 @@ describe("pole „Nazwa” a aktualnie wybrany język", () => {
     cleanup()
     useLocaleStore.getState().setLocale("en")
     renderUnder("neutral")
-    expect(screen.getAllByText(/You are editing the English translation/).length).toBeGreaterThan(
-      0,
-    )
+    expect(screen.getAllByText(/You are editing the English translation/).length).toBeGreaterThan(0)
   })
 })
 

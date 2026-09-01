@@ -1,0 +1,716 @@
+"use client"
+import { evidenceFromEvents } from "@cortex/desk-core/evidence"
+import { splitFolder } from "@cortex/desk-core/folder"
+import { produced, unbackedPromises } from "@cortex/desk-core/promises"
+import type { AuditEntry, FileMeta, Policy } from "@cortex/desk-core/types"
+import * as Dialog from "@radix-ui/react-dialog"
+import * as Menu from "@radix-ui/react-dropdown-menu"
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  ChevronLeft,
+  Info,
+  LoaderCircle,
+  MoreHorizontal,
+  PanelRight,
+  PanelRightClose,
+  Paperclip,
+  RotateCcw,
+  Square,
+  X,
+} from "lucide-react"
+import Link from "next/link"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { zl } from "../lib"
+import { api, t } from "../routes"
+import { ActivityTrail } from "./activity-trail"
+import { Artifacts } from "./artifacts"
+import { AttachmentList, type Attachment } from "./attachments"
+import { CapabilityButton } from "./capability-list"
+import { fileIcon } from "./file-row"
+import { Icon } from "./icon"
+import { CapabilityLock } from "./lock"
+import { Markdown } from "./markdown"
+import { PanelHandle, WIDTH_DEFAULT, clamp } from "./resize-handle"
+import { ResultPanel } from "./result-panel"
+import { useToast } from "./toast"
+import { UnbackedPromises } from "./unbacked-promises"
+
+type Case = {
+  id: string
+  title: string
+  status: string
+  reason: string | null
+  cost: number
+  updatedAt: string
+}
+
+const LABEL: Record<string, string> = {
+  new: "new",
+  working: "working",
+  done: "done",
+  stopped: "stopped",
+  failed: "nie udało się",
+}
+const DOT: Record<string, string> = {
+  new: "bg-cichy-2",
+  working: "bg-akcent puls",
+  done: "bg-ok",
+  stopped: "bg-warn",
+  failed: "bg-bad",
+}
+
+type Turn = { key: number; command: AuditEntry | null; work: AuditEntry[]; po: AuditEntry[] }
+
+/**
+ * Strumień dzielimy na tury — jedno polecenie, jedna praca, jedna odpowiedź.
+ * Bez tego przy drugim zleceniu w tej samej sprawie wszystkie kroki wpadają do jednej karty,
+ * a przebieg ląduje pod odpowiedzią, choć wydarzył się przed nią.
+ */
+function perTurn(entries: AuditEntry[]): Turn[] {
+  const turns: Turn[] = []
+  let current: Turn | null = null
+  for (const w of entries) {
+    const t = w.event.type
+    if (t === "prompt" || !current) {
+      current = { key: w.seq, command: t === "prompt" ? w : null, work: [], po: [] }
+      turns.push(current)
+      if (t === "prompt") continue
+    }
+    if (t === "tool_start" || t === "tool_end") current.work.push(w)
+    else if (t === "assistant" || t === "lifecycle" || t === "blocked") current.po.push(w)
+  }
+  return turns
+}
+
+const fileUrl = (path: string) => `${api("/file")}?path=${encodeURIComponent(path)}`
+const isImage = (n: string) => /\.(png|jpe?g|gif|webp)$/i.test(n)
+
+export function CaseView({ id, policyFor: p }: { id: string; policyFor: Policy }) {
+  const [entries, setEntries] = useState<AuditEntry[]>([])
+  const [caseFile, setCaseFile] = useState<Case | null>(null)
+  const [folder, setFolder] = useState<FileMeta[]>([])
+  const [text, setText] = useState("")
+  const [pending, setPending] = useState<Attachment[]>([])
+  const [sending, setSending] = useState<{ text: string; files: string[] } | null>(null)
+  const [now, setNow] = useState(() => Date.now())
+  const [since, setSince] = useState<number | null>(null)
+  const [atBottom, setAtBottom] = useState(true)
+  const [sheet, setSheet] = useState(false)
+  const [panel, setPanelState] = useState(true)
+  const [width, setWidthState] = useState(WIDTH_DEFAULT)
+  const [selected, setSelected] = useState<string | null>(null)
+  const from = useRef(0)
+  const stream = useRef<HTMLDivElement>(null)
+  const bottom = useRef<HTMLDivElement>(null)
+  const evidenceFooter = useRef<HTMLDivElement>(null)
+  const picker = useRef<HTMLInputElement>(null)
+  const field = useRef<HTMLTextAreaElement>(null)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    try {
+      const z = localStorage.getItem("desk_panel_wyniku")
+      if (z !== null) setPanelState(z === "1")
+      const s = Number(localStorage.getItem("desk_panel_szerokosc"))
+      if (s) setWidthState(clamp(s))
+    } catch {
+      /* prywatne okno albo zablokowane dane witryny */
+    }
+  }, [])
+
+  const setPanel = useCallback((v: boolean) => {
+    setPanelState(v)
+    try {
+      localStorage.setItem("desk_panel_wyniku", v ? "1" : "0")
+    } catch {
+      /* nieistotne */
+    }
+  }, [])
+
+  const setWidth = useCallback((px: number) => {
+    setWidthState(px)
+    try {
+      localStorage.setItem("desk_panel_szerokosc", String(px))
+    } catch {
+      /* nieistotne */
+    }
+  }, [])
+
+  // okno zwężone myszką po ustawieniu szerokości nie może zostawić panelu szerszego niż ekran
+  useEffect(() => {
+    const na = () => setWidthState((s) => clamp(s))
+    window.addEventListener("resize", na)
+    return () => window.removeEventListener("resize", na)
+  }, [])
+
+  const isWorking = caseFile?.status === "working"
+
+  /**
+   * Odpytujemy z wykrywaniem zmiany. Wcześniej `setSprawa` i `setTeczka` odpalały się co 700 ms
+   * z nową tożsamością obiektu, więc React przerysowywał całe drzewo — i gubił zaznaczenie
+   * tekstu, którego człowiek właśnie próbował skopiować.
+   */
+  useEffect(() => {
+    let alive = true
+    let handle: ReturnType<typeof setTimeout>
+    let interval = 700
+
+    async function tick() {
+      try {
+        const r = await fetch(`${api("")}/case/${id}/events?from=${from.current}`, {
+          cache: "no-store",
+        })
+        if (!r.ok || !alive) return
+        const d = await r.json()
+
+        setCaseFile((s) =>
+          s &&
+          s.status === d.caseFile.status &&
+          s.title === d.caseFile.title &&
+          s.cost === d.caseFile.cost &&
+          s.reason === d.caseFile.reason
+            ? s
+            : d.caseFile,
+        )
+        setFolder((t) => {
+          const next: FileMeta[] = d.folder ?? []
+          const same =
+            t.length === next.length &&
+            t.every(
+              (x, i) =>
+                x.path === next[i]?.path &&
+                x.size === next[i]?.size &&
+                x.modifiedAt === next[i]?.modifiedAt,
+            )
+          return same ? t : next
+        })
+
+        if (d.events?.length) {
+          from.current = d.events[d.events.length - 1].seq
+          setEntries((w) => [...w, ...d.events])
+          const start = d.events.find(
+            (z: AuditEntry) =>
+              z.event.type === "lifecycle" && (z.event as { status?: string }).status === "start",
+          )
+          if (start) setSince(new Date(start.at).getTime())
+        }
+        // zakończona sprawa nie potrzebuje odpytywania co 700 ms — zwalniamy, dopóki nie ruszy nowa tura
+        interval = d.caseFile?.status === "working" ? 700 : 4000
+      } finally {
+        if (alive) handle = setTimeout(tick, interval)
+      }
+    }
+
+    tick()
+    return () => {
+      alive = false
+      clearTimeout(handle)
+    }
+  }, [id])
+
+  // zegar chodzi wyłącznie wtedy, gdy jest co odliczać
+  useEffect(() => {
+    if (!isWorking && !sending) return
+    const z = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(z)
+  }, [isWorking, sending])
+
+  useEffect(() => {
+    if (atBottom) bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+  }, [entries.length, atBottom])
+
+  const onScroll = useCallback(() => {
+    const el = stream.current
+    if (!el) return
+    setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 80)
+  }, [])
+
+  // `zalacznik` to zdarzenie o pochodzeniu pliku, nie wypowiedź — w rozmowie nie ma czego pokazać
+  const conversation = useMemo(
+    () => entries.filter((w) => w.event.type !== "attachment"),
+    [entries],
+  )
+  const turns = useMemo(() => perTurn(conversation), [conversation])
+  const evidence = useMemo(() => evidenceFromEvents(entries.map((w) => w.event)), [entries])
+  const seconds = since && isWorking ? Math.max(0, Math.round((now - since) / 1000)) : 0
+
+  // plik wgrany, ale jeszcze niewysłany, też jest Twój — nie może udawać wyniku pracy
+  const uploading = useMemo(() => pending.map((z) => z.name), [pending])
+  const { results, attachments } = useMemo(
+    () =>
+      splitFolder(
+        folder,
+        entries.map((w) => w.event),
+        uploading,
+      ),
+    [folder, entries, uploading],
+  )
+
+  // „ostatni" ma znaczyć NAJNOWSZY, nie alfabetycznie ostatni — storage.list sortuje po nazwie
+  const inOrder = useMemo(
+    () => [...results].sort((a, b) => a.modifiedAt.localeCompare(b.modifiedAt)),
+    [results],
+  )
+  const last = inOrder.at(-1) ?? null
+  const active = useMemo(
+    () => [...results, ...attachments].find((x) => x.path === selected) ?? last,
+    [results, attachments, selected, last],
+  )
+
+  const byName = useCallback((n: string) => folder.find((x) => x.name === n) ?? null, [folder])
+
+  /** Jedno wejście do podglądu — z karty artefaktu, z załącznika w rozmowie i z panelu. */
+  const showFile = useCallback(
+    (file: FileMeta | null) => {
+      if (!file) return
+      setSelected(file.path)
+      if (window.matchMedia("(min-width: 1024px)").matches) setPanel(true)
+      else setSheet(true)
+    },
+    [setPanel],
+  )
+
+  // optymistyczna wiadomość znika, gdy dojdzie prawdziwe zdarzenie polecenia
+  const commandCount = turns.filter((t) => t.command).length
+  const commandsBeforeSend = useRef(0)
+  useEffect(() => {
+    if (sending && commandCount > commandsBeforeSend.current) setSending(null)
+  }, [commandCount, sending])
+
+  async function send() {
+    const ready = pending.filter((z) => !z.uploading).map((z) => z.name)
+    if ((!text.trim() && !ready.length) || isWorking || pending.some((z) => z.uploading)) return
+    const t = text
+    commandsBeforeSend.current = commandCount
+    setSending({ text: t, files: ready })
+    setText("")
+    setPending([])
+    setAtBottom(true)
+    const r = await fetch(`${api("")}/case/${id}/turn`, {
+      method: "POST",
+      body: JSON.stringify({ text: t, attachments: ready }),
+    })
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}))
+      setSending(null)
+      setText(t)
+      toast({ text: d.error ?? "Nie udało się wysłać zlecenia.", tone: "error" })
+    }
+  }
+
+  /** Załącznik ląduje w teczce TEJ sprawy — „Moje pliki" zostają nietknięte. */
+  async function attach(files: FileList | null) {
+    if (!files?.length) return
+    const fresh: Attachment[] = Array.from(files).map((f) => ({
+      name: f.name,
+      preview: f.type.startsWith("image/") ? URL.createObjectURL(f) : undefined,
+      uploading: true,
+    }))
+    setPending((z) => [...z, ...fresh])
+
+    const fd = new FormData()
+    fd.append("caseId", id)
+    Array.from(files).forEach((f) => fd.append("file", f))
+    const r = await fetch(api("/files/upload"), { method: "POST", body: fd })
+    const d = await r.json().catch(() => ({}))
+
+    if (!r.ok) {
+      setPending((z) => z.filter((x) => !fresh.some((n) => n.name === x.name)))
+      toast({ text: d.error ?? "Nie udało się dołączyć pliku.", tone: "error" })
+      return
+    }
+    // serwer mógł nadać inną nazwę, gdy taka już była w teczce
+    setPending((z) =>
+      z.map((x) => {
+        const i = fresh.findIndex((n) => n.name === x.name)
+        return i >= 0 ? { ...x, name: d.names?.[i] ?? x.name, uploading: false } : x
+      }),
+    )
+    field.current?.focus()
+  }
+
+  const toEvidence = () =>
+    evidenceFooter.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+  const taken = isWorking || Boolean(sending)
+
+  const retry = (name: string) => {
+    setText(`Nie ma pliku ${name} w teczce sprawy. Zrób go proszę naprawdę i write.`)
+    field.current?.focus()
+  }
+
+  const table = (
+    <ResultPanel
+      results={inOrder}
+      attachments={attachments}
+      active={active}
+      onPick={(x) => setSelected(x.path)}
+      evidence={evidence}
+      toEvidence={toEvidence}
+    />
+  )
+
+  return (
+    <div className="flex h-full">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex h-pasek shrink-0 items-center gap-2 border-b bg-surface px-3">
+          <Link
+            href={t("/")}
+            aria-label="Wróć do biurka"
+            className="grid h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised md:hidden"
+          >
+            <Icon as={ChevronLeft} px={20} />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <div className="t-h3 truncate">{caseFile?.title ?? "Case"}</div>
+            <div className="t-meta flex items-center gap-1.5">
+              <span className={`h-1.5 w-1.5 rounded-pill ${DOT[caseFile?.status ?? "new"]}`} />
+              {isWorking ? (
+                <span className="text-akcent">
+                  pracuje · {seconds < 60 ? `${seconds} s` : `${Math.round(seconds / 60)} min`}
+                </span>
+              ) : (
+                <span>{LABEL[caseFile?.status ?? "new"]}</span>
+              )}
+            </div>
+          </div>
+          {isWorking && (
+            <button
+              onClick={() => fetch(`${api("")}/case/${id}/stop`, { method: "POST" })}
+              className="t-btn flex h-8 items-center gap-1.5 rounded-md border px-2.5 hover:bg-raised"
+            >
+              <Icon as={Square} px={14} /> Stop
+            </button>
+          )}
+          <button
+            onClick={() => setPanel(!panel)}
+            aria-pressed={panel}
+            aria-label={panel ? "Ukryj panel wyniku" : "Pokaż panel wyniku"}
+            title={panel ? "Ukryj wynik" : "Pokaż wynik"}
+            className="hidden h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised lg:grid"
+          >
+            <Icon as={panel ? PanelRightClose : PanelRight} px={16} />
+          </button>
+          <Menu.Root>
+            <Menu.Trigger
+              aria-label="Więcej o sprawie"
+              className="grid h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised"
+            >
+              <Icon as={MoreHorizontal} px={16} />
+            </Menu.Trigger>
+            <Menu.Portal>
+              <Menu.Content
+                align="end"
+                sideOffset={4}
+                collisionPadding={12}
+                className="z-50 min-w-[240px] rounded-md border bg-surface p-3 shadow-pop"
+              >
+                <div className="t-sekcja flex items-center gap-2 pb-2">
+                  <Icon as={Info} px={14} /> Szczegóły sprawy
+                </div>
+                <dl className="t-meta space-y-1">
+                  <div className="flex justify-between gap-4">
+                    <dt>Czynności</dt>
+                    <dd className="text-ink">
+                      {entries.filter((w) => w.event.type === "tool_start").length}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt>Dokumenty</dt>
+                    <dd className="text-ink">{results.length}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt>TurnCost</dt>
+                    <dd className="text-ink">{zl(caseFile?.cost ?? 0)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt>Uprawnienia</dt>
+                    <dd className="text-ink">
+                      jak w dziale {p.role === "management" ? "Zarząd" : "Księgowość"} (
+                      {p.granted.length} z {p.granted.length + p.blocked.length})
+                    </dd>
+                  </div>
+                </dl>
+              </Menu.Content>
+            </Menu.Portal>
+          </Menu.Root>
+        </header>
+
+        <div
+          ref={stream}
+          onScroll={onScroll}
+          className="relative min-h-0 flex-1 overflow-y-auto px-4 py-5"
+        >
+          <div className="mx-auto flex max-w-strumien flex-col gap-4">
+            {turns.map((turn, i) => {
+              const lastTurn = i === turns.length - 1 && !sending
+              const e = turn.command?.event
+              const attached = e?.type === "prompt" ? (e.attachments ?? []) : []
+              const turnEvents = turn.work.map((w) => w.event)
+              const artifacts = produced(turnEvents)
+                .map(byName)
+                .filter((x): x is FileMeta => Boolean(x))
+              return (
+                <div key={turn.key} className="flex flex-col gap-4">
+                  {e?.type === "prompt" && (
+                    <Command
+                      text={e.text}
+                      attachments={attached.map((n) => ({
+                        name: n,
+                        preview: isImage(n) ? fileUrl(`Sprawy/${id}/${n}`) : undefined,
+                      }))}
+                      open={(n) => showFile(byName(n))}
+                    />
+                  )}
+
+                  {turn.work.length > 0 && (
+                    <div ref={lastTurn ? evidenceFooter : undefined}>
+                      <ActivityTrail
+                        entries={turn.work}
+                        isWorking={isWorking && lastTurn}
+                        now={now}
+                      />
+                    </div>
+                  )}
+
+                  {isWorking && lastTurn && turn.work.length === 0 && <Removing />}
+
+                  <Artifacts files={artifacts} open={showFile} />
+
+                  {turn.po.map((w) => {
+                    const ev = w.event
+                    if (ev.type === "blocked")
+                      return (
+                        <CapabilityLock
+                          key={w.seq}
+                          description={ev.description}
+                          name={ev.name}
+                          department={ev.department}
+                          capabilityId={ev.capabilityId}
+                        />
+                      )
+                    if (ev.type === "assistant")
+                      return (
+                        <div key={w.seq} className="flex flex-col gap-3">
+                          <div className="max-w-miara">
+                            <Markdown text={ev.text} />
+                          </div>
+                          <UnbackedPromises
+                            names={unbackedPromises(ev.text, turnEvents, folder)}
+                            request={retry}
+                          />
+                        </div>
+                      )
+                    if (
+                      ev.type === "lifecycle" &&
+                      (ev.status === "failed" || ev.status === "stopped")
+                    )
+                      return (
+                        <div
+                          key={w.seq}
+                          className={`rounded-lg border bg-surface px-4 py-3 ${ev.status === "failed" ? "border-bad" : "border-warn"}`}
+                        >
+                          <div className="t-tresc-m">
+                            {ev.status === "failed"
+                              ? "Nie dokończyłem tego zlecenia."
+                              : "Praca przerwana."}
+                          </div>
+                          {ev.reason && <p className="t-meta mt-0.5">{ev.reason}</p>}
+                          {ev.status === "failed" && (
+                            <button
+                              onClick={() => field.current?.focus()}
+                              className="t-btn mt-2 flex h-8 items-center gap-1.5 rounded-md border px-2.5 hover:bg-raised"
+                            >
+                              <Icon as={RotateCcw} px={14} /> Napisz inaczej
+                            </button>
+                          )}
+                        </div>
+                      )
+                    return null
+                  })}
+                </div>
+              )
+            })}
+
+            {/* zlecenie widać od razu po kliknięciu, zanim serwer zdąży zapisać zdarzenie */}
+            {sending && (
+              <div className="flex flex-col gap-4">
+                <Command
+                  text={sending.text}
+                  attachments={sending.files.map((n) => ({
+                    name: n,
+                    preview: isImage(n) ? fileUrl(`Sprawy/${id}/${n}`) : undefined,
+                  }))}
+                />
+                <Removing />
+              </div>
+            )}
+
+            <div ref={bottom} />
+          </div>
+
+          {!atBottom && (
+            <button
+              onClick={() => {
+                setAtBottom(true)
+                bottom.current?.scrollIntoView({ behavior: "smooth" })
+              }}
+              className="t-meta sticky bottom-2 left-1/2 flex h-8 -translate-x-1/2 items-center gap-1.5 rounded-pill border bg-surface px-3 shadow-pop hover:text-ink"
+            >
+              <Icon as={ArrowDown} px={14} /> Nowe kroki
+            </button>
+          )}
+        </div>
+
+        {active && (
+          <button
+            onClick={() => setSheet(true)}
+            className="flex h-12 shrink-0 items-center gap-2 border-t bg-surface px-4 text-left lg:hidden"
+          >
+            <Icon as={fileIcon(active)} px={16} className="shrink-0 text-cichy" />
+            <span className="t-tresc-m min-w-0 flex-1 truncate">{active.name}</span>
+            <span className="t-meta shrink-0">Otwórz</span>
+            <Icon as={ChevronDown} px={16} className="shrink-0 -rotate-90 text-cichy" />
+          </button>
+        )}
+
+        <div className="shrink-0 border-t bg-surface p-3">
+          <div className="edytor mx-auto max-w-strumien rounded-xl border bg-bg">
+            {pending.length > 0 && (
+              <div className="max-h-[136px] overflow-y-auto border-b px-3 py-2.5">
+                <AttachmentList
+                  files={pending}
+                  remove={(n) => setPending((z) => z.filter((x) => x.name !== n))}
+                />
+              </div>
+            )}
+            <textarea
+              ref={field}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={2}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return
+                if (window.matchMedia("(hover: hover)").matches && !e.shiftKey) {
+                  e.preventDefault()
+                  send()
+                }
+              }}
+              onPaste={(e) => {
+                const files = Array.from(e.clipboardData.files)
+                if (!files.length) return
+                e.preventDefault()
+                const dt = new DataTransfer()
+                files.forEach((f) => dt.items.add(f))
+                attach(dt.files)
+              }}
+              placeholder={
+                taken ? "Pracuję — poczekaj albo naciśnij Stop" : "Napisz, co mam zrobić…"
+              }
+              className="t-tresc w-full resize-none bg-transparent px-3.5 pt-3 outline-none placeholder:text-cichy-2"
+            />
+            <div className="flex items-center gap-1 px-2 pb-2">
+              <input
+                ref={picker}
+                type="file"
+                multiple
+                hidden
+                onChange={(e) => {
+                  attach(e.target.files)
+                  e.target.value = ""
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => picker.current?.click()}
+                className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-cichy hover:bg-raised hover:text-ink"
+              >
+                <Icon as={Paperclip} px={14} /> Dodaj plik
+              </button>
+              <CapabilityButton p={p} />
+              <div className="flex-1" />
+              <button
+                onClick={send}
+                disabled={
+                  (!text.trim() && !pending.length) || taken || pending.some((z) => z.uploading)
+                }
+                aria-label="Wyślij zlecenie"
+                className="grid h-9 w-9 place-items-center rounded-md bg-akcent text-akcent-ink hover:bg-akcent-hover disabled:opacity-35"
+              >
+                <Icon
+                  as={taken ? LoaderCircle : ArrowUp}
+                  px={16}
+                  className={taken ? "obrot" : undefined}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {panel && (
+        <>
+          <PanelHandle width={width} set={setWidth} collapse={() => setPanel(false)} />
+          <aside
+            style={{ width: width }}
+            className="hidden shrink-0 border-l bg-surface lg:block"
+            aria-label="Panel wyniku"
+          >
+            {table}
+          </aside>
+        </>
+      )}
+
+      <Dialog.Root open={sheet} onOpenChange={setSheet}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-40 bg-ink/25 lg:hidden" />
+          <Dialog.Content className="arkusz fixed inset-x-0 bottom-0 z-50 h-[88vh] overflow-hidden rounded-t-xl border-t bg-surface lg:hidden">
+            <div className="flex h-11 items-center justify-between border-b px-3">
+              <Dialog.Title className="t-h3">Wynik</Dialog.Title>
+              <Dialog.Close
+                aria-label="Zamknij"
+                className="grid h-8 w-8 place-items-center rounded-sm text-cichy hover:bg-raised"
+              >
+                <Icon as={X} px={16} />
+              </Dialog.Close>
+            </div>
+            <div className="h-[calc(88vh-44px)]">{table}</div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    </div>
+  )
+}
+
+/** Polecenie człowieka: bąbel po prawej, o szerokości treści, z zaznaczalnym tekstem. */
+function Command({
+  text,
+  attachments,
+  open,
+}: {
+  text: string
+  attachments: Attachment[]
+  open?: (n: string) => void
+}) {
+  return (
+    <div className="flex flex-col items-end gap-2 self-end">
+      <AttachmentList files={attachments} open={open} className="justify-end" />
+      {text && (
+        <div className="t-tresc max-w-[min(560px,85%)] select-text whitespace-pre-wrap rounded-xl rounded-br-sm bg-akcent-soft px-3.5 py-2.5 text-akcent-soft-ink">
+          {text}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Luka między kliknięciem a pierwszym krokiem to 1–2 sekundy ciszy — tu jest jej wypełnienie. */
+function Removing() {
+  return (
+    <div className="t-meta flex items-center gap-2">
+      <Icon as={LoaderCircle} px={14} className="obrot text-akcent" />
+      <span className="puls">Zabieram się do pracy…</span>
+    </div>
+  )
+}

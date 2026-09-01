@@ -47,7 +47,9 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../
  */
 const BANNED_WORDS = new Set([
   "adres",
+  "akcja",
   "akcje",
+  "argumenty",
   "artefakty",
   "awaria",
   "awatar",
@@ -57,23 +59,38 @@ const BANNED_WORDS = new Set([
   "biurko",
   "blad",
   "brama",
+  "cofnij",
   "czas",
+  "czasownik",
+  "czesci",
   "czytaj",
   "czytelny",
+  "dane",
+  "decyzja",
+  "detal",
+  "docelowy",
   "dodaj",
+  "dodatkowe",
   "dolny",
   "dopisz",
   "dostawca",
   "dowod",
   "dryf",
+  "dzial",
   "dziennik",
   "dzisiaj",
   "eksplorator",
+  "etykieta",
+  "fraza",
   "grupa",
   "grupe",
   "higiena",
   "ikona",
+  "imie",
   "inna",
+  "inne",
+  "jest",
+  "kandydaci",
   "kandydat",
   "kanoniczny",
   "karta",
@@ -87,7 +104,9 @@ const BANNED_WORDS = new Set([
   "klient",
   "klodka",
   "klucz",
+  "kolejnosc",
   "kolizja",
+  "komu",
   "kopiuj",
   "kosz",
   "kosza",
@@ -95,7 +114,9 @@ const BANNED_WORDS = new Set([
   "krok",
   "kroki",
   "kroku",
+  "krotko",
   "kto",
+  "liczone",
   "limity",
   "lista",
   "listy",
@@ -103,44 +124,63 @@ const BANNED_WORDS = new Set([
   "montaz",
   "mysl",
   "nadzor",
+  "naglowki",
   "narzedzi",
   "narzedzia",
   "narzedzie",
+  "nazwa",
+  "nazwe",
+  "nazwisko",
+  "nazwy",
   "nowa",
   "nowy",
   "obietnice",
   "obraz",
+  "obrazem",
+  "obrot",
   "oczysc",
   "odcisk",
+  "odmowa",
+  "odrzucone",
   "odrzucony",
   "opis",
   "opisz",
   "ostatnie",
+  "otwarty",
   "panelu",
   "paruj",
   "pasek",
   "pelna",
   "pelny",
+  "piaskownica",
   "plik",
   "pliki",
   "pliku",
   "podglad",
+  "podsumowanie",
   "podsumuj",
   "podziel",
+  "pokaz",
   "pokrycia",
+  "pole",
   "policz",
   "polityka",
   "polityki",
+  "poprzednie",
   "potrafie",
   "powloka",
+  "powod",
   "prosba",
   "prosby",
   "przebieg",
   "przejrzyj",
   "przenies",
+  "przeniesienia",
   "przycisk",
   "przygotuj",
+  "przyjete",
   "przywroc",
+  "przyznane",
   "rola",
   "roli",
   "rozmiar",
@@ -148,78 +188,99 @@ const BANNED_WORDS = new Set([
   "sciezka",
   "serwer",
   "serwerow",
+  "serwery",
+  "skad",
   "spraw",
   "sprawa",
+  "sprawdzalny",
   "sprawy",
   "stan",
   "strony",
+  "sufiks",
+  "szczegol",
+  "szczegoly",
   "szer",
   "teczka",
   "teczke",
+  "tekst",
+  "teraz",
   "tostow",
   "tozsamosc",
   "trasy",
   "tresc",
+  "trwa",
   "tura",
   "ture",
+  "typ",
   "typy",
+  "tytul",
   "uchwyt",
   "uprawnien",
   "uruchom",
   "utworz",
+  "utworzona",
   "uzytkownicy",
   "uzytkownik",
+  "waga",
   "wgraj",
   "widok",
   "wiersz",
+  "wlasciciel",
   "wpis",
+  "wpisy",
   "wstrzymaj",
+  "wybor",
   "wycofaj",
   "wydano",
   "wynik",
   "wyniki",
   "wytwarza",
   "wytworzone",
+  "zablokowane",
   "zacisnij",
   "zalacznik",
   "zalacznika",
   "zalaczniki",
   "zalacznikow",
+  "zamknij",
   "zapisz",
   "zasiej",
   "zatwierdz",
   "zatwierdzone",
+  "zaznaczony",
+  "zdalna",
   "zdarzen",
   "zdarzenia",
   "zdarzenie",
   "zdolnosc",
   "zdolnosci",
   "zlecenia",
+  "zmien",
+  "zmieniona",
+  "zmieniony",
+  "znana",
+  "zrodlo",
   "zwin",
 ])
 
 const DIACRITICS = /[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/
 
 /**
- * ODROCZENIA — katalogi, których strażnik jeszcze nie pilnuje.
+ * ODROCZENIA — katalogi, których strażnik jeszcze nie pilnuje. DZIŚ: ŻADEN.
  *
- * Kluczem jest KATALOG, nie plik, i to jest wymóg, nie wygoda: w App Routerze plik
- * zawsze nazywa się `page.tsx` albo `route.ts`, więc ścieżką pliku nie da się wyrazić
- * „ten katalog ma polską nazwę".
+ * Lista powstała razem ze strażnikiem i miała siedem pozycji — cały moduł Biurka.
+ * Wszystkie zostały skreślone: kod, schemat bazy, wartości utrwalone w kolumnach
+ * i w `payload`, adresy tras i nazwy narzędzi widziane przez model są po angielsku.
  *
- * Lista MOŻE TYLKO MALEĆ. Pilnuje tego osobna asercja niżej: dopisanie czegokolwiek
- * wymaga zmiany także tamtego oczekiwania, czyli świadomej decyzji, a nie jednej
- * linijki w drodze do zielonego testu.
+ * Kluczem był KATALOG, nie plik, i to był wymóg, nie wygoda: w App Routerze plik
+ * zawsze nazywa się `page.tsx` albo `route.ts`, więc ścieżką pliku nie dało się
+ * wyrazić „ten katalog ma polską nazwę".
+ *
+ * Lista MOŻE TYLKO MALEĆ, a dziś jest pusta — czyli dopisanie czegokolwiek wymaga
+ * zmiany także asercji niżej, więc świadomej decyzji, a nie jednej linijki w drodze
+ * do zielonego testu.
  */
-const DEFERRED_DIRS = [
-  "app/idp/app/(desk)/",
-  "app/idp/app/api/desk/",
-  "apps/desk/",
-  "apps/mcp-biala-lista/",
-  "packages/@cortex/desk-app/",
-  "packages/@cortex/desk-core/",
-  "packages/@cortex/desk-ui/",
-]
+const DEFERRED_DIRS: string[] = []
 
 /**
  * Pliki scenariuszy BDD są poza zasięgiem CAŁKOWICIE, nie przez odroczenie. Ich treść to
@@ -272,14 +333,14 @@ const KEYS_OUTSIDE_OUR_CODE: Record<string, string[]> = {
   "app/idp/app/(main)/invoice-supervisor/policies/page.tsx": ["mała", "średnia", "duża"],
   "app/idp/components/invoice-supervisor/policy-form-dialog.tsx": ["mała", "średnia", "duża"],
   // Rodzaje klienta, tak jak nazywa je backend faktur.
-  "app/idp/lib/invoice-supervisor/types.ts": ["nowy", "stały"],
+  "app/idp/lib/invoice-supervisor/types.ts": ["nowy", "stały", "nazwa_klienta", "nazwa_sprzedawcy"],
   // Nazwa kategorii na hubie — klucz mapy jest ETYKIETĄ, którą widzi użytkownik.
-  "app/idp/lib/tiles.ts": ["Treści"],
-  "app/idp/components/ai-tools/ai-tools-dashboard.tsx": ["Treści"],
+  "app/idp/lib/tiles.ts": ["Treści", "Tekst"],
+  "app/idp/components/ai-tools/ai-tools-dashboard.tsx": ["Treści", "Tekst"],
   // Rodzaj dokumentu przysyłany przez backend IDP.
   "app/idp/components/idp-basic/document-preview-panel.tsx": ["przewoźnik"],
   // Pola eksportu JSON, który otwiera księgowość — przypadek 2.
-  "app/idp/lib/token-usage/csv.ts": ["uzytkownicy"],
+  "app/idp/lib/token-usage/csv.ts": ["uzytkownicy", "podsumowanie", "szczegoly"],
 }
 
 /** Właściwości, których wartość jest IDENTYFIKATOREM, choć bywa napisem. */
@@ -388,19 +449,11 @@ describe("kod pisze się po angielsku", () => {
     expect(scanned.length).toBeGreaterThan(100)
   })
 
-  it("lista odroczeń obejmuje wyłącznie Biurko i może tylko maleć", () => {
-    // Reszta repozytorium przeszła od pierwszego dnia — polszczyzna w nazwach poza
-    // Biurkiem sprowadzała się do siedmiu plików i została naprawiona w tym samym
-    // commicie. Skreślenie wiersza z tej listy jest pracą, nie formalnością.
-    expect(DEFERRED_DIRS).toEqual([
-      "app/idp/app/(desk)/",
-      "app/idp/app/api/desk/",
-      "apps/desk/",
-      "apps/mcp-biala-lista/",
-      "packages/@cortex/desk-app/",
-      "packages/@cortex/desk-core/",
-      "packages/@cortex/desk-ui/",
-    ])
+  it("nie ma już ani jednego odroczenia", () => {
+    // Skreślenie wiersza z tej listy było pracą, nie formalnością: siedem katalogów
+    // Biurka przeszło przemianowanie razem ze schematem bazy i danymi. Dopisanie
+    // czegokolwiek tutaj wymaga zmiany TEJ asercji — i to jest cała jej rola.
+    expect(DEFERRED_DIRS).toEqual([])
   })
 
   // JEDEN przypadek na katalog, nie jeden na plik. `it.each` po tysiącu plików wygląda
@@ -455,7 +508,10 @@ describe("strażnik naprawdę odrzuca polszczyznę", () => {
     const found = inspect('const e = { typ: "zdarzenie", label: "zapisz dokument w teczce" }')
     // jeden zarzut: WARTOŚĆ pola `typ`. Zdanie pod `label` jest prozą i przechodzi,
     // choć zawiera to samo słowo `zapisz` — o tym rozstrzyga pozycja, nie treść.
-    expect(found).toEqual(["polskie słowo „zdarzenie” w nazwie: zdarzenie (pole typ)"])
+    expect(found).toEqual([
+      "polskie słowo „typ” w nazwie: typ",
+      "polskie słowo „zdarzenie” w nazwie: zdarzenie (pole typ)",
+    ])
   })
 
   it("polska nazwa katalogu też się liczy", () => {

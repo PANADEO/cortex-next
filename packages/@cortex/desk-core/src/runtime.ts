@@ -2,14 +2,14 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
 import { generateText, stepCountIs, tool, type ModelMessage, type ToolSet } from "ai"
 import { randomUUID } from "node:crypto"
 import { z } from "zod"
-import { czytelnyBlad } from "./awaria"
-import * as biurko from "./biurko"
-import { maZdolnosc } from "./brama-zdolnosci"
-import { migracja, pool } from "./db"
-import * as dziennik from "./dziennik"
-import { narzedziaMcp } from "./mcp/klient"
+import * as audit from "./audit-log"
+import { hasCapability } from "./capability-gate"
+import { migrate, pool } from "./db"
+import * as storage from "./desk-storage"
+import { readableFailure } from "./failure"
+import { mcpTools } from "./mcp/client"
 import * as sandbox from "./sandbox"
-import type { DeskEvent, Polityka, Uzytkownik } from "./typy"
+import type { DeskEvent, Policy, User } from "./types"
 
 /**
  * F4 · RUNTIME AGENTA — jedyne miejsce w kodzie, które zna bibliotekę agentową.
@@ -32,11 +32,11 @@ import type { DeskEvent, Polityka, Uzytkownik } from "./typy"
  * dwudziestu stron tekstu — więcej, niż potrzebuje którykolwiek dokument,
  * jaki biurko dziś wytwarza.
  */
-const SUFIT_ODPOWIEDZI = Number(process.env.DESK_SUFIT_ODPOWIEDZI ?? 8000)
+const OUTPUT_CEILING = Number(process.env.DESK_OUTPUT_CEILING ?? 8000)
 
-export async function dopiszZdarzenie(sprawaId: string, e: DeskEvent) {
-  await pool.query(`insert into desk.zdarzenie (sprawa_id, payload) values ($1,$2)`, [
-    sprawaId,
+export async function appendEvent(caseId: string, e: DeskEvent) {
+  await pool.query(`insert into desk.event (case_id, payload) values ($1,$2)`, [
+    caseId,
     JSON.stringify(e),
   ])
 }
@@ -52,9 +52,9 @@ export async function dopiszZdarzenie(sprawaId: string, e: DeskEvent) {
  * doświadczalnie: po podmianie stawek zapasowych na absurdalne zapisany koszt
  * poszedł za nimi, czyli prawdziwa liczba nigdy nie była używana.
  *
- * Klucz `cortex-proxy` jest ten sam, po który sięga `szacujKoszt`.
+ * Klucz `cortex-proxy` jest ten sam, po który sięga `turnCost`.
  */
-const kosztZProxy = {
+const costFromProxy = {
   extractMetadata: async ({ parsedBody }: { parsedBody: unknown }) => {
     const cost = (parsedBody as { usage?: { cost?: unknown } })?.usage?.cost
     return typeof cost === "number" ? { "cortex-proxy": { cost } } : undefined
@@ -72,13 +72,13 @@ const kosztZProxy = {
   },
 }
 
-function model(uzytkownik: string) {
+function model(user: string) {
   const provider = createOpenAICompatible({
     name: "cortex-proxy",
     baseURL: process.env.CORTEX_PROXY_URL!,
     // rejestr cortex-proxy to księga, do której sięgnie audytor — musi widzieć osobę, nie aplikację
-    headers: { "X-User-ID": uzytkownik },
-    metadataExtractor: kosztZProxy,
+    headers: { "X-User-ID": user },
+    metadataExtractor: costFromProxy,
   })
   return provider(process.env.DESK_MODEL!)
 }
@@ -101,12 +101,12 @@ PRACA NA PLIKACH
 - Gotową robotę zapisujesz narzędziem, nie wklejasz długiego dokumentu do rozmowy. Krótką odpowiedź (kilka zdań, jedna liczba, wyjaśnienie) mówisz normalnie w rozmowie — nie robisz z niej pliku.
 - Po zapisaniu dokumentu odczytaj go narzędziem sprawdzającym i napisz, co w nim faktycznie jest.
 - Pliki, które tworzysz, trafiają do teczki tej sprawy. Do trwałych „Moich plików" przenosisz coś WYŁĄCZNIE wtedy, gdy człowiek o to poprosi.
-- ZAWSZE, gdy nie możesz zrobić tego, o co proszą — bo nie masz odpowiedniej czynności ALBO bo takiej możliwości tu w ogóle nie ma (poczta, cudze systemy, internet) — NAJPIERW zgłoś to narzędziem zglos_brak z krótkim opisem tego, czego było trzeba, a dopiero potem odpowiedz. Ta informacja idzie do osoby, która może to zmienić; bez zgłoszenia nikt się nie dowie, że czegoś brakuje.
+- ZAWSZE, gdy nie możesz zrobić tego, o co proszą — bo nie masz odpowiedniej czynności ALBO bo takiej możliwości tu w ogóle nie ma (poczta, cudze systemy, internet) — NAJPIERW zgłoś to narzędziem report_gap z krótkim opisem tego, czego było trzeba, a dopiero potem odpowiedz. Ta informacja idzie do osoby, która może to zmienić; bez zgłoszenia nikt się nie dowie, że czegoś brakuje.
 - Jeśli czegoś nie da się zrobić dostępnymi narzędziami, powiedz to wprost, wyjaśnij dlaczego i zaproponuj drogę naokoło.`
 
-export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: string) {
-  const katalogSprawy = biurko.katalogSprawy(u.id, sprawaId)
-  const zdarz = (e: DeskEvent) => dopiszZdarzenie(sprawaId, e)
+export function toolsForPolicy(u: User, p: Policy, caseId: string) {
+  const caseFolder = storage.caseFolder(u.id, caseId)
+  const emit = (e: DeskEvent) => appendEvent(caseId, e)
   // `ToolSet` z `ai`, nie `Record<string, any>`: to jest dokładnie ten worek, który
   // `generateText` przyjmuje, więc niezgodność kształtu narzędzia wychodzi tutaj,
   // a nie dopiero jako odmowa dostawcy w środku tury.
@@ -121,331 +121,330 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
    * do katalogu robimy tutaj. Dzięki temu kłódka na ekranie pochodzi z CZYNNOŚCI agenta,
    * a nie z naszego domysłu o treści polecenia.
    */
-  t.zglos_brak = tool({
+  t.report_gap = tool({
     description:
       "Zgłasza, że do wykonania zlecenia zabrakło Ci czynności, której nie masz. " +
       "Wywołaj to ZANIM napiszesz odpowiedź, a potem powiedz człowiekowi, co zrobiłeś zamiast tego.",
     inputSchema: z.object({
-      czego_potrzebowalem: z
-        .string()
-        .describe('krótko, po polsku, np. „zapisać to jako arkusz Excela"'),
+      whatINeeded: z.string().describe('krótko, po polsku, np. „zapisać to jako arkusz Excela"'),
     }),
-    execute: async ({ czego_potrzebowalem }) => {
-      const trafiona = dopasujZdolnosc(czego_potrzebowalem, p.zablokowane)
-      await zdarz({
-        typ: "zablokowane",
-        opis: czego_potrzebowalem,
-        ...(trafiona
-          ? { zdolnoscId: trafiona.id, nazwa: trafiona.nazwa, dzial: trafiona.dzial }
-          : {}),
+    execute: async ({ whatINeeded }) => {
+      const hit = matchCapability(whatINeeded, p.blocked)
+      await emit({
+        type: "blocked",
+        description: whatINeeded,
+        ...(hit ? { capabilityId: hit.id, name: hit.name, department: hit.department } : {}),
       })
-      await dziennik.zapisz(u.id, "zdolnosc.brak", {
-        sprawaId,
-        opis: czego_potrzebowalem,
-        zdolnosc: trafiona?.id,
+      await audit.write(u.id, "capability.missing", {
+        caseId,
+        description: whatINeeded,
+        capability: hit?.id,
       })
-      return trafiona
-        ? `Odnotowane. Tej czynności nie masz włączonej — zgodę wydaje dział ${trafiona.dzial}. Człowiek zobaczył prośbę o dostęp; zrób teraz to, co da się zrobić bez niej.`
+      return hit
+        ? `Odnotowane. Tej czynności nie masz włączonej — zgodę wydaje dział ${hit.department}. Człowiek zobaczył prośbę o dostęp; zrób teraz to, co da się zrobić bez niej.`
         : "Odnotowane. Powiedz człowiekowi wprost, czego nie da się zrobić, i zaproponuj drogę naokoło."
     },
   })
 
-  if (maZdolnosc(p, "pliki.lista")) {
-    t.lista_plikow = tool({
+  if (hasCapability(p, "files.list")) {
+    t.list_files = tool({
       description: "Pokazuje pliki na biurku użytkownika (Moje pliki oraz teczka bieżącej sprawy).",
-      inputSchema: z.object({ katalog: z.string().optional().describe('domyślnie "Moje pliki"') }),
-      execute: async ({ katalog }) => {
-        const k = katalog?.trim() || "Moje pliki"
+      inputSchema: z.object({ folder: z.string().optional().describe('domyślnie "Moje pliki"') }),
+      execute: async ({ folder }) => {
+        const k = folder?.trim() || "Moje pliki"
         const start = Date.now(),
           kid = randomUUID()
-        await zdarz({
-          typ: "narzedzie_start",
+        await emit({
+          type: "tool_start",
           id: kid,
-          nazwa: "lista_plikow",
-          etykieta: `Przeglądam „${k}”`,
-          argumenty: { katalog: k },
+          name: "list_files",
+          label: `Przeglądam „${k}”`,
+          args: { folder: k },
         })
-        const l = await biurko.lista(u.id, k)
-        const lSprawy = await biurko.lista(u.id, katalogSprawy).catch(() => [])
-        const opis =
+        const l = await storage.list(u.id, k)
+        const caseEntries = await storage.list(u.id, caseFolder).catch(() => [])
+        const description =
           [
-            ...l.map((x) => `${x.katalog ? "[katalog] " : ""}${x.sciezka} (${x.rozmiar} B)`),
-            ...lSprawy.map((x) => `${x.sciezka} (${x.rozmiar} B)`),
+            ...l.map((x) => `${x.folder ? "[katalog] " : ""}${x.path} (${x.size} B)`),
+            ...caseEntries.map((x) => `${x.path} (${x.size} B)`),
           ].join("\n") || "(pusto)"
-        await zdarz({
-          typ: "narzedzie_koniec",
+        await emit({
+          type: "tool_end",
           id: kid,
-          nazwa: "lista_plikow",
+          name: "list_files",
           ok: true,
-          podsumowanie: `${l.length + lSprawy.length} pozycji`,
+          summary: `${l.length + caseEntries.length} pozycji`,
           ms: Date.now() - start,
         })
-        return opis
+        return description
       },
     })
   }
 
-  if (maZdolnosc(p, "pliki.czytaj")) {
-    t.czytaj_plik = tool({
+  if (hasCapability(p, "files.read")) {
+    t.read_file = tool({
       description: "Czyta zawartość pliku tekstowego z biurka użytkownika.",
-      inputSchema: z.object({ sciezka: z.string().describe('np. "Moje pliki/faktury-08.csv"') }),
-      execute: async ({ sciezka }) => {
+      inputSchema: z.object({ path: z.string().describe('np. "Moje pliki/faktury-08.csv"') }),
+      execute: async ({ path }) => {
         const start = Date.now(),
           kid = randomUUID()
-        await zdarz({
-          typ: "narzedzie_start",
+        await emit({
+          type: "tool_start",
           id: kid,
-          nazwa: "czytaj_plik",
-          etykieta: `Czytam ${sciezka}`,
-          argumenty: { sciezka },
+          name: "read_file",
+          label: `Czytam ${path}`,
+          args: { path },
         })
         // Bez tego readFile(utf8) na .jpg zwraca śmieci z ok:true i wpisuje je do dowodu
         // jako „odczytany plik" — czyli dowód poświadcza coś, czego nie było.
-        const nieTekstowy = nieDoOdczytu(sciezka)
-        if (nieTekstowy) {
-          await zdarz({
-            typ: "narzedzie_koniec",
+        const notText = notReadable(path)
+        if (notText) {
+          await emit({
+            type: "tool_end",
             id: kid,
-            nazwa: "czytaj_plik",
+            name: "read_file",
             ok: false,
-            podsumowanie: "to nie jest plik tekstowy",
+            summary: "to nie jest plik tekstowy",
             ms: Date.now() - start,
           })
-          return nieTekstowy
+          return notText
         }
         try {
-          const tresc = await biurko.czytaj(u.id, sciezka)
-          const linie = tresc.split("\n").length
-          await zdarz({
-            typ: "narzedzie_koniec",
+          const text = await storage.read(u.id, path)
+          const lines = text.split("\n").length
+          await emit({
+            type: "tool_end",
             id: kid,
-            nazwa: "czytaj_plik",
+            name: "read_file",
             ok: true,
-            podsumowanie: `${linie} wierszy, ${tresc.length} znaków`,
+            summary: `${lines} wierszy, ${text.length} znaków`,
             ms: Date.now() - start,
           })
-          return tresc.slice(0, 60000)
+          return text.slice(0, 60000)
         } catch {
-          await zdarz({
-            typ: "narzedzie_koniec",
+          await emit({
+            type: "tool_end",
             id: kid,
-            nazwa: "czytaj_plik",
+            name: "read_file",
             ok: false,
-            podsumowanie: "nie udało się otworzyć",
+            summary: "nie udało się otworzyć",
             ms: Date.now() - start,
           })
-          return `Nie udało się otworzyć pliku ${sciezka}.`
+          return `Nie udało się otworzyć pliku ${path}.`
         }
       },
     })
   }
 
-  if (maZdolnosc(p, "dokument.zapisz")) {
-    t.zapisz_dokument = tool({
+  if (hasCapability(p, "document.write")) {
+    t.write_document = tool({
       description:
         "Zapisuje gotowy dokument do teczki bieżącej sprawy. Format markdown albo zwykły tekst.",
       inputSchema: z.object({
-        nazwa: z.string().describe('np. "zestawienie-kosztow.md"'),
-        tresc: z.string(),
+        name: z.string().describe('np. "zestawienie-kosztow.md"'),
+        text: z.string(),
       }),
-      execute: async ({ nazwa, tresc }) => {
+      execute: async ({ name, text }) => {
         const start = Date.now(),
           kid = randomUUID()
-        await zdarz({
-          typ: "narzedzie_start",
+        await emit({
+          type: "tool_start",
           id: kid,
-          nazwa: "zapisz_dokument",
-          etykieta: `Zapisuję ${nazwa}`,
-          argumenty: { nazwa },
+          name: "write_document",
+          label: `Zapisuję ${name}`,
+          args: { name },
         })
-        await biurko.zapisz(u.id, `${katalogSprawy}/${nazwa}`, tresc)
-        await zdarz({
-          typ: "narzedzie_koniec",
+        await storage.write(u.id, `${caseFolder}/${name}`, text)
+        await emit({
+          type: "tool_end",
           id: kid,
-          nazwa: "zapisz_dokument",
+          name: "write_document",
           ok: true,
-          podsumowanie: `${tresc.length} znaków`,
+          summary: `${text.length} znaków`,
           ms: Date.now() - start,
         })
-        return `Zapisano ${nazwa} w teczce sprawy.`
+        return `Zapisano ${name} w teczce sprawy.`
       },
     })
   }
 
-  if (maZdolnosc(p, "dokument.sprawdz")) {
-    t.sprawdz_dokument = tool({
+  if (hasCapability(p, "document.verify")) {
+    t.verify_document = tool({
       description:
         "Odczytuje zapisany dokument z teczki sprawy, żeby potwierdzić, co w nim faktycznie jest.",
-      inputSchema: z.object({ nazwa: z.string() }),
-      execute: async ({ nazwa }) => {
+      inputSchema: z.object({ name: z.string() }),
+      execute: async ({ name }) => {
         const start = Date.now(),
           kid = randomUUID()
-        await zdarz({
-          typ: "narzedzie_start",
+        await emit({
+          type: "tool_start",
           id: kid,
-          nazwa: "sprawdz_dokument",
-          etykieta: `Sprawdzam ${nazwa} po zapisie`,
-          argumenty: { nazwa },
+          name: "verify_document",
+          label: `Sprawdzam ${name} po zapisie`,
+          args: { name },
         })
         try {
-          const tresc = await biurko.czytaj(u.id, `${katalogSprawy}/${nazwa}`)
-          const puste = (tresc.match(/\[(WPISZ|UZUPEŁNIJ|TODO)[^\]]*\]/gi) ?? []).length
-          await zdarz({
-            typ: "narzedzie_koniec",
+          const text = await storage.read(u.id, `${caseFolder}/${name}`)
+          const empty = (text.match(/\[(WPISZ|UZUPEŁNIJ|TODO)[^\]]*\]/gi) ?? []).length
+          await emit({
+            type: "tool_end",
             id: kid,
-            nazwa: "sprawdz_dokument",
+            name: "verify_document",
             ok: true,
-            podsumowanie: `${tresc.split("\n").length} wierszy, pustych pól: ${puste}`,
+            summary: `${text.split("\n").length} wierszy, pustych pól: ${empty}`,
             ms: Date.now() - start,
           })
-          return `Plik ma ${tresc.length} znaków. Nieuzupełnionych pól: ${puste}.\n\n${tresc.slice(0, 4000)}`
+          return `Plik ma ${text.length} znaków. Nieuzupełnionych pól: ${empty}.\n\n${text.slice(0, 4000)}`
         } catch {
-          await zdarz({
-            typ: "narzedzie_koniec",
+          await emit({
+            type: "tool_end",
             id: kid,
-            nazwa: "sprawdz_dokument",
+            name: "verify_document",
             ok: false,
-            podsumowanie: "pliku nie ma",
+            summary: "pliku nie ma",
             ms: Date.now() - start,
           })
-          return `Pliku ${nazwa} nie ma w teczce sprawy.`
+          return `Pliku ${name} nie ma w teczce sprawy.`
         }
       },
     })
   }
 
-  if (maZdolnosc(p, "pliki.zapisz")) {
-    t.zapisz_do_moich_plikow = tool({
+  if (hasCapability(p, "files.keep")) {
+    t.save_to_my_files = tool({
       description:
         'Odkłada plik z teczki bieżącej sprawy do trwałych „Moich plików" użytkownika. ' +
         "Wywołuj WYŁĄCZNIE wtedy, gdy człowiek wyraźnie o to poprosił — to jego prywatna przestrzeń, " +
         "a nie miejsce, w którym sam z siebie zostawiasz robocze wyniki.",
       inputSchema: z.object({
-        nazwa: z.string().describe('nazwa pliku z teczki sprawy, np. "zestawienie-kosztow.md"'),
+        name: z.string().describe('nazwa pliku z teczki sprawy, np. "zestawienie-kosztow.md"'),
         folder: z.string().optional().describe('podfolder w „Moich plikach", domyślnie korzeń'),
       }),
-      execute: async ({ nazwa, folder }) => {
+      execute: async ({ name, folder }) => {
         const start = Date.now(),
           kid = randomUUID()
-        const cel = folder?.trim() ? `Moje pliki/${folder.trim()}/${nazwa}` : `Moje pliki/${nazwa}`
-        await zdarz({
-          typ: "narzedzie_start",
+        const target = folder?.trim() ? `Moje pliki/${folder.trim()}/${name}` : `Moje pliki/${name}`
+        await emit({
+          type: "tool_start",
           id: kid,
-          nazwa: "zapisz_do_moich_plikow",
-          etykieta: `Odkładam ${nazwa} do Moich plików`,
-          argumenty: { nazwa, cel },
+          name: "save_to_my_files",
+          label: `Odkładam ${name} do Moich plików`,
+          args: { name, target },
         })
         try {
-          const gdzie = await biurko.kopiuj(u.id, `${katalogSprawy}/${nazwa}`, cel)
-          await zdarz({
-            typ: "narzedzie_koniec",
+          const stored = await storage.copy(u.id, `${caseFolder}/${name}`, target)
+          await emit({
+            type: "tool_end",
             id: kid,
-            nazwa: "zapisz_do_moich_plikow",
+            name: "save_to_my_files",
             ok: true,
-            podsumowanie: gdzie,
+            summary: stored,
             ms: Date.now() - start,
           })
-          return `Plik jest teraz w „Moich plikach" jako ${gdzie}.`
+          return `Plik jest teraz w „Moich plikach" jako ${stored}.`
         } catch (e) {
-          await zdarz({
-            typ: "narzedzie_koniec",
+          await emit({
+            type: "tool_end",
             id: kid,
-            nazwa: "zapisz_do_moich_plikow",
+            name: "save_to_my_files",
             ok: false,
-            podsumowanie: "nie udało się odłożyć",
+            summary: "nie udało się odłożyć",
             ms: Date.now() - start,
           })
-          return `Nie udało się odłożyć pliku ${nazwa} do Moich plików. ${String(e).slice(0, 120)}`
+          return `Nie udało się odłożyć pliku ${name} do Moich plików. ${String(e).slice(0, 120)}`
         }
       },
     })
   }
 
-  if (maZdolnosc(p, "arkusz.zapisz")) {
-    t.zapisz_arkusz = tool({
+  if (hasCapability(p, "sheet.write")) {
+    t.write_sheet = tool({
       description: "Zapisuje zestawienie jako arkusz CSV do teczki sprawy.",
-      inputSchema: z.object({ nazwa: z.string(), csv: z.string() }),
-      execute: async ({ nazwa, csv }) => {
+      inputSchema: z.object({ name: z.string(), csv: z.string() }),
+      execute: async ({ name, csv }) => {
         const start = Date.now(),
           kid = randomUUID()
-        await zdarz({
-          typ: "narzedzie_start",
+        await emit({
+          type: "tool_start",
           id: kid,
-          nazwa: "zapisz_arkusz",
-          etykieta: `Zapisuję arkusz ${nazwa}`,
-          argumenty: { nazwa },
+          name: "write_sheet",
+          label: `Zapisuję arkusz ${name}`,
+          args: { name },
         })
-        await biurko.zapisz(u.id, `${katalogSprawy}/${nazwa}`, csv)
-        await zdarz({
-          typ: "narzedzie_koniec",
+        await storage.write(u.id, `${caseFolder}/${name}`, csv)
+        await emit({
+          type: "tool_end",
           id: kid,
-          nazwa: "zapisz_arkusz",
+          name: "write_sheet",
           ok: true,
-          podsumowanie: `${csv.split("\n").length} wierszy`,
+          summary: `${csv.split("\n").length} wierszy`,
           ms: Date.now() - start,
         })
-        return `Zapisano arkusz ${nazwa}.`
+        return `Zapisano arkusz ${name}.`
       },
     })
   }
 
-  if (maZdolnosc(p, "kod.uruchom")) {
-    t.uruchom_obliczenia = tool({
+  if (hasCapability(p, "code.run")) {
+    t.run_computation = tool({
       description:
         'Uruchamia obliczenia na danych. Podaj kod w JavaScript (Node) oraz listę plików z biurka w polu `pliki` — zostaną zamontowane w katalogu roboczym pod swoimi nazwami (np. "faktury-08.csv"). Wypisz wynik przez console.log.',
       inputSchema: z.object({
-        opis: z.string().describe("po ludzku, co liczysz"),
-        kod: z.string(),
-        pliki: z.array(z.string()).optional(),
+        description: z.string().describe("po ludzku, co liczysz"),
+        code: z.string(),
+        files: z.array(z.string()).optional(),
       }),
-      execute: async ({ opis, kod, pliki }) => {
+      execute: async ({ description, code, files }) => {
         const start = Date.now(),
           kid = randomUUID()
-        await zdarz({
-          typ: "narzedzie_start",
+        await emit({
+          type: "tool_start",
           id: kid,
-          nazwa: "uruchom_obliczenia",
-          etykieta: opis,
-          argumenty: { opis },
+          name: "run_computation",
+          label: description,
+          args: { description },
         })
-        const box = await sandbox.utworz({
-          uzytkownik: u.id,
-          sprawaId,
-          montaze: (pliki ?? []).map((f) => ({
-            zBiurka: f,
-            jako: f.split("/").pop()!,
-            zapis: false,
+        const box = await sandbox.create({
+          user: u.id,
+          caseId,
+          mounts: (files ?? []).map((f) => ({
+            fromDesk: f,
+            as: f.split("/").pop()!,
+            write: false,
           })),
           egress: [], // brak wyjścia do sieci — NIEEGZEKWOWANE w POC
         })
-        const r = await box.exec(kod)
+        const r = await box.exec(code)
         await box.dispose()
-        await zdarz({
-          typ: "narzedzie_koniec",
+        await emit({
+          type: "tool_end",
           id: kid,
-          nazwa: "uruchom_obliczenia",
+          name: "run_computation",
           ok: r.ok,
-          podsumowanie: r.ok ? "policzone" : "błąd wykonania",
+          summary: r.ok ? "policzone" : "błąd wykonania",
           ms: Date.now() - start,
         })
-        return r.wyjscie || "(brak wyjścia)"
+        return r.output || "(brak wyjścia)"
       },
     })
   }
 
-  if (maZdolnosc(p, "obraz.generuj")) {
-    t.generuj_obraz = tool({
+  if (hasCapability(p, "image.generate")) {
+    t.generate_image = tool({
       description: "Generuje obraz na podstawie opisu i zapisuje go w teczce sprawy.",
-      inputSchema: z.object({ nazwa: z.string().describe('np. "grafika.png"'), opis: z.string() }),
-      execute: async ({ nazwa, opis }) => {
+      inputSchema: z.object({
+        name: z.string().describe('np. "grafika.png"'),
+        description: z.string(),
+      }),
+      execute: async ({ name, description }) => {
         const start = Date.now(),
           kid = randomUUID()
-        await zdarz({
-          typ: "narzedzie_start",
+        await emit({
+          type: "tool_start",
           id: kid,
-          nazwa: "generuj_obraz",
-          etykieta: `Generuję obraz: ${opis.slice(0, 60)}`,
-          argumenty: { nazwa, opis },
+          name: "generate_image",
+          label: `Generuję obraz: ${description.slice(0, 60)}`,
+          args: { name, description },
         })
         try {
           const res = await fetch(`${process.env.CORTEX_PROXY_URL}/chat/completions`, {
@@ -454,15 +453,15 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
             body: JSON.stringify({
               model: process.env.DESK_IMAGE_MODEL,
               modalities: ["image", "text"],
-              messages: [{ role: "user", content: opis }],
+              messages: [{ role: "user", content: description }],
             }),
           })
           // Kształt odpowiedzi dostawcy obrazów — tylko te pola, po które sięgamy niżej.
-          type OdpowiedzObrazu = {
+          type ImageResponse = {
             error?: { message?: string }
             choices?: { message?: { images?: { image_url?: { url?: string } }[] } }[]
           }
-          const j = (await res.json()) as OdpowiedzObrazu
+          const j = (await res.json()) as ImageResponse
           const url = j?.choices?.[0]?.message?.images?.[0]?.image_url?.url
           if (j?.error?.message) throw new Error(String(j.error.message))
           if (!url?.startsWith("data:")) throw new Error("dostawca nie zwrócił obrazu")
@@ -470,30 +469,30 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
           // pod nazwą obrazu — czyli artefakt, który wygląda na powstały i nie da się otworzyć.
           const b64 = url.split(",")[1]
           if (!b64) throw new Error("dostawca zwrócił obraz bez treści")
-          await biurko.zapisz(u.id, `${katalogSprawy}/${nazwa}`, Buffer.from(b64, "base64"))
-          await zdarz({
-            typ: "narzedzie_koniec",
+          await storage.write(u.id, `${caseFolder}/${name}`, Buffer.from(b64, "base64"))
+          await emit({
+            type: "tool_end",
             id: kid,
-            nazwa: "generuj_obraz",
+            name: "generate_image",
             ok: true,
-            podsumowanie: `zapisano ${nazwa}`,
+            summary: `zapisano ${name}`,
             ms: Date.now() - start,
           })
-          return `Obraz zapisany jako ${nazwa}.`
+          return `Obraz zapisany jako ${name}.`
         } catch (e) {
-          await zdarz({
-            typ: "narzedzie_koniec",
+          await emit({
+            type: "tool_end",
             id: kid,
-            nazwa: "generuj_obraz",
+            name: "generate_image",
             ok: false,
-            podsumowanie: String(e).slice(0, 120),
+            summary: String(e).slice(0, 120),
             ms: Date.now() - start,
           })
           const m = String(e)
-          const czytelnie = /modalit|not a valid model|404/i.test(m)
+          const readably = /modalit|not a valid model|404/i.test(m)
             ? "Na tej instancji nie ma podłączonego modelu graficznego — administrator musi go udostępnić w cortex-proxy."
             : m.slice(0, 200)
-          return `Nie udało się wygenerować obrazu. ${czytelnie}`
+          return `Nie udało się wygenerować obrazu. ${readably}`
         }
       },
     })
@@ -503,84 +502,81 @@ export function narzedziaDlaPolityki(u: Uzytkownik, p: Polityka, sprawaId: strin
 }
 
 /** Uruchamia turę w tle. Zwraca natychmiast — praca trwa bez podpiętego klienta. */
-export async function uruchomTure(u: Uzytkownik, p: Polityka, sprawaId: string) {
+export async function runTurn(u: User, p: Policy, caseId: string) {
   // Ani treść zlecenia, ani załączniki NIE są tu parametrami, choć kiedyś były: trasa
   // dopisuje zdarzenie `mysl` razem z nimi PRZED wywołaniem tury, więc historia niżej
   // i tak je odczytuje. Drugie źródło tej samej informacji rozjeżdżało się przy każdej
   // poprawce jednego z nich — i już raz wysłało modelowi to samo polecenie dwa razy,
   // naliczając podwójny koszt.
-  await migracja()
+  await migrate()
   await pool.query(
-    `update desk.sprawa set stan='pracuje', powod=null, zmieniona=now() where id=$1`,
-    [sprawaId],
+    `update desk.case_file set status='working', reason=null, updated_at=now() where id=$1`,
+    [caseId],
   )
-  await dopiszZdarzenie(sprawaId, { typ: "lifecycle", stan: "start" })
-  await dziennik.zapisz(u.id, "tura.start", {
-    sprawaId,
-    odcisk: p.odcisk,
-    zdolnosci: p.przyznane.map((z) => z.id),
+  await appendEvent(caseId, { type: "lifecycle", status: "start" })
+  await audit.write(u.id, "turn.start", {
+    caseId,
+    fingerprint: p.fingerprint,
+    capabilities: p.granted.map((z) => z.id),
   })
 
   // Szew MCP jest prawdziwy od tego commita, choć katalog serwerów jest pusty.
   // Narzędzia z zatwierdzonych serwerów przechodzą przez TĘ SAMĄ bramę zdolności
   // i ten sam filtr na odkryciu, co wbudowane — inaczej byłaby to druga furtka.
-  const mcp = await narzedziaMcp(p, (e) => dopiszZdarzenie(sprawaId, e))
-  const narzedzia = { ...narzedziaDlaPolityki(u, p, sprawaId), ...mcp.narzedzia }
+  const mcp = await mcpTools(p, (e) => appendEvent(caseId, e))
+  const tools = { ...toolsForPolicy(u, p, caseId), ...mcp.tools }
 
-  const historia = await pool.query<{ payload: DeskEvent }>(
-    `select payload from desk.zdarzenie where sprawa_id=$1 order by seq`,
-    [sprawaId],
+  const history = await pool.query<{ payload: DeskEvent }>(
+    `select payload from desk.event where case_id=$1 order by seq`,
+    [caseId],
   )
   // Obrazy z załączników idą do modelu jako obraz, nie jako nazwa pliku — inaczej agent
   // odpowiada „nie umiem czytać obrazków", choć model widzi. Limitujemy liczbę, bo każdy
   // obraz kosztuje przy każdej kolejnej turze tej samej sprawy.
-  const MAX_OBRAZOW = 4
+  const MAX_IMAGES = 4
 
-  async function czesciWiadomosci(tekst: string, pliki: string[]) {
-    const obrazy = pliki.filter((n) => /\.(png|jpe?g|gif|webp)$/i.test(n))
-    const inne = pliki.filter((n) => !obrazy.includes(n))
-    const czesci: Extract<ModelMessage, { role: "user" }>["content"] = []
-    for (const nazwa of obrazy) {
+  async function messageParts(text: string, files: string[]) {
+    const images = files.filter((n) => /\.(png|jpe?g|gif|webp)$/i.test(n))
+    const others = files.filter((n) => !images.includes(n))
+    const parts: Extract<ModelMessage, { role: "user" }>["content"] = []
+    for (const name of images) {
       try {
-        const dane = await biurko.czytajBinarnie(
-          u.id,
-          `${biurko.katalogSprawy(u.id, sprawaId)}/${nazwa}`,
-        )
-        czesci.push({ type: "image", image: dane, mediaType: typObrazu(nazwa) })
+        const data = await storage.readBinary(u.id, `${storage.caseFolder(u.id, caseId)}/${name}`)
+        parts.push({ type: "image", image: data, mediaType: imageMediaType(name) })
       } catch {
-        inne.push(nazwa)
+        others.push(name)
       }
     }
-    const opisInnych = inne.length
-      ? `\n\n[Załączone pliki w teczce sprawy: ${inne.join(", ")}]`
+    const otherDescription = others.length
+      ? `\n\n[Załączone pliki w teczce sprawy: ${others.join(", ")}]`
       : ""
-    czesci.push({ type: "text", text: tekst + opisInnych })
-    return czesci
+    parts.push({ type: "text", text: text + otherDescription })
+    return parts
   }
 
-  const wiadomosci: ModelMessage[] = []
-  let budzetObrazow = MAX_OBRAZOW
-  const historiaMysli = historia.rows.filter((r) => r.payload.typ === "mysl")
-  const odKtorejWolnoObrazy = Math.max(0, historiaMysli.length - 1)
+  const messages: ModelMessage[] = []
+  let imageBudget = MAX_IMAGES
+  const promptHistory = history.rows.filter((r) => r.payload.type === "prompt")
+  const imagesAllowedFrom = Math.max(0, promptHistory.length - 1)
 
-  let licznikMysli = 0
-  for (const r of historia.rows) {
+  let promptCounter = 0
+  for (const r of history.rows) {
     const e = r.payload
-    if (e.typ === "assistant") wiadomosci.push({ role: "assistant", content: e.tekst })
-    if (e.typ === "mysl") {
-      const stare = e.zalaczniki ?? []
+    if (e.type === "assistant") messages.push({ role: "assistant", content: e.text })
+    if (e.type === "prompt") {
+      const previous = e.attachments ?? []
       // obrazy ze starszych tur pomijamy — liczy się bieżące pytanie i to bezpośrednio przed nim
-      const wolno = licznikMysli >= odKtorejWolnoObrazy && budzetObrazow > 0
-      licznikMysli++
-      if (wolno && stare.length) {
-        const czesci = await czesciWiadomosci(e.tekst, stare)
-        budzetObrazow -= czesci.filter((c) => c.type === "image").length
-        wiadomosci.push({ role: "user", content: czesci })
+      const allowed = promptCounter >= imagesAllowedFrom && imageBudget > 0
+      promptCounter++
+      if (allowed && previous.length) {
+        const parts = await messageParts(e.text, previous)
+        imageBudget -= parts.filter((c) => c.type === "image").length
+        messages.push({ role: "user", content: parts })
       } else {
-        const opis = stare.length
-          ? `\n\n[Załączone pliki w teczce sprawy: ${stare.join(", ")}]`
+        const description = previous.length
+          ? `\n\n[Załączone pliki w teczce sprawy: ${previous.join(", ")}]`
           : ""
-        wiadomosci.push({ role: "user", content: e.tekst + opis })
+        messages.push({ role: "user", content: e.text + description })
       }
     }
   }
@@ -590,59 +586,59 @@ export async function uruchomTure(u: Uzytkownik, p: Polityka, sprawaId: string) 
 
   void (async () => {
     try {
-      const wynik = await generateText({
+      const result = await generateText({
         model: model(u.id),
-        system: `${SYSTEM}\n\nUżytkownik: ${u.imie} ${u.nazwisko}, dział ${u.dzial}. Teczka bieżącej sprawy: ${biurko.katalogSprawy(u.id, sprawaId)}.`,
-        messages: wiadomosci,
-        tools: narzedzia,
+        system: `${SYSTEM}\n\nUżytkownik: ${u.firstName} ${u.lastName}, dział ${u.department}. Teczka bieżącej sprawy: ${storage.caseFolder(u.id, caseId)}.`,
+        messages: messages,
+        tools: tools,
         stopWhen: stepCountIs(12),
-        maxOutputTokens: SUFIT_ODPOWIEDZI,
+        maxOutputTokens: OUTPUT_CEILING,
       })
 
       // Rzutowanie na wspólny kształt: `GenerateTextResult` ma własne, węższe typy metadanych
-      // dostawcy, a `szacujKoszt` interesuje wyłącznie jedno pole, którego tamte nie deklarują,
+      // dostawcy, a `turnCost` interesuje wyłącznie jedno pole, którego tamte nie deklarują,
       // bo wstawia je nasz `metadataExtractor`.
-      const koszt = szacujKoszt(wynik as unknown as WynikTury)
-      if (wynik.text?.trim())
-        await dopiszZdarzenie(sprawaId, { typ: "assistant", tekst: wynik.text.trim() })
-      if (koszt.usd > 0)
-        await dopiszZdarzenie(sprawaId, { typ: "koszt", usd: koszt.usd, skad: koszt.skad })
-      await dopiszZdarzenie(sprawaId, { typ: "lifecycle", stan: "koniec" })
+      const cost = turnCost(result as unknown as TurnResult)
+      if (result.text?.trim())
+        await appendEvent(caseId, { type: "assistant", text: result.text.trim() })
+      if (cost.usd > 0)
+        await appendEvent(caseId, { type: "cost", usd: cost.usd, basis: cost.basis })
+      await appendEvent(caseId, { type: "lifecycle", status: "end" })
       await pool.query(
-        `update desk.sprawa set stan='gotowe', powod=null, koszt_usd=koszt_usd+$2, zmieniona=now() where id=$1`,
-        [sprawaId, koszt.usd],
+        `update desk.case_file set status='done', reason=null, cost_usd=cost_usd+$2, updated_at=now() where id=$1`,
+        [caseId, cost.usd],
       )
-      await dziennik.zapisz(u.id, "tura.koniec", {
-        sprawaId,
-        kosztUsd: koszt.usd,
-        skadKoszt: koszt.skad,
+      await audit.write(u.id, "turn.end", {
+        caseId,
+        costUsd: cost.usd,
+        costBasis: cost.basis,
       })
     } catch (e) {
-      const powod = czytelnyBlad(e)
-      await dopiszZdarzenie(sprawaId, { typ: "lifecycle", stan: "blad", powod })
+      const reason = readableFailure(e)
+      await appendEvent(caseId, { type: "lifecycle", status: "failed", reason })
       await pool.query(
-        `update desk.sprawa set stan='blad', powod=$2, zmieniona=now() where id=$1`,
-        [sprawaId, powod],
+        `update desk.case_file set status='failed', reason=$2, updated_at=now() where id=$1`,
+        [caseId, reason],
       )
       // Zdanie po polsku trafia na ekran pracownika, surowa treść wyłącznie do dziennika.
-      // Bez niej diagnoza sprowadza się do zgadywania, KTÓRA gałąź `czytelnyBlad` zadziałała,
+      // Bez niej diagnoza sprowadza się do zgadywania, KTÓRA gałąź `readableFailure` zadziałała,
       // a to już raz kosztowało pół dnia szukania nieistniejącego braku środków.
-      await dziennik.zapisz(u.id, "tura.blad", {
-        sprawaId,
-        powod,
-        surowy: String((e as { message?: unknown })?.message ?? e).slice(0, 400),
+      await audit.write(u.id, "turn.failed", {
+        caseId,
+        reason,
+        raw: String((e as { message?: unknown })?.message ?? e).slice(0, 400),
       })
     } finally {
       // Połączenia do serwerów MCP żyją dokładnie tyle, co tura — ani krócej
       // (model sięga po narzędzie w środku `generateText`), ani dłużej.
-      await mcp.zamknij()
+      await mcp.close()
     }
   })()
 }
 
 /** Zwraca wyjaśnienie po polsku, jeśli pliku po prostu nie da się przeczytać jako tekst. */
-function nieDoOdczytu(sciezka: string): string | null {
-  const ext = sciezka.split(".").pop()?.toLowerCase() ?? ""
+function notReadable(path: string): string | null {
+  const ext = path.split(".").pop()?.toLowerCase() ?? ""
   if (["png", "jpg", "jpeg", "webp", "gif", "bmp", "heic"].includes(ext)) {
     return "To jest obraz, nie plik tekstowy. Poproś użytkownika, żeby dołączył go do wiadomości — wtedy go zobaczysz."
   }
@@ -661,25 +657,25 @@ function nieDoOdczytu(sciezka: string): string | null {
   return null
 }
 
-const TROPY: Record<string, RegExp> = {
-  "arkusz.zapisz": /arkusz|excel|xlsx|spreadsheet|csv|tabel/i,
-  "kod.uruchom": /policz|oblicz|przelicz|wykres|skrypt|kod|statystyk/i,
-  "obraz.generuj": /obraz|grafik|rysun|ilustrac|zdjęci|wygeneruj.*obraz/i,
-  "pliki.zapisz": /moich plik|do moich|trwal/i,
-  "dokument.zapisz": /zapisa.*dokument|utworzy.*plik/i,
-  "pliki.czytaj": /przeczyta|odczyta|otworzy.*plik/i,
-  "pliki.lista": /lista plik|zajrze.*teczk|zobaczy.*plik/i,
-  "kontrahent.sprawdz":
+const CAPABILITY_HINTS: Record<string, RegExp> = {
+  "sheet.write": /arkusz|excel|xlsx|spreadsheet|csv|tabel/i,
+  "code.run": /policz|oblicz|przelicz|wykres|skrypt|kod|statystyk/i,
+  "image.generate": /obraz|grafik|rysun|ilustrac|zdjęci|wygeneruj.*obraz/i,
+  "files.keep": /moich plik|do moich|trwal/i,
+  "document.write": /zapisa.*dokument|utworzy.*plik/i,
+  "files.read": /przeczyta|odczyta|otworzy.*plik/i,
+  "files.list": /list plik|zajrze.*teczk|zobaczy.*plik/i,
+  "counterparty.verify":
     /biał[ae] li[sś]|wykaz podatnik|status vat|czynn.*podatnik|\bnip\b|rachunek.*kontrahent|nale[żz]yt.*starann/i,
 }
 
 /** Model opisuje brak swoimi słowami — nazwę zdolności i dział dokładamy my. */
-function dopasujZdolnosc(opis: string, zablokowane: Polityka["zablokowane"]) {
-  return zablokowane.find((z) => TROPY[z.id]?.test(opis))
+function matchCapability(description: string, blocked: Policy["blocked"]) {
+  return blocked.find((z) => CAPABILITY_HINTS[z.id]?.test(description))
 }
 
-function typObrazu(nazwa: string) {
-  const ext = nazwa.split(".").pop()?.toLowerCase()
+function imageMediaType(name: string) {
+  const ext = name.split(".").pop()?.toLowerCase()
   return ext === "png"
     ? "image/png"
     : ext === "gif"
@@ -700,23 +696,23 @@ function typObrazu(nazwa: string) {
  * źle biurko nie policzy pracy dwa razy drożej, tylko dopiero wtedy, gdy przestanie
  * dostawać prawdziwą liczbę.
  */
-const STAWKA_WEJSCIE = Number(process.env.DESK_STAWKA_WEJSCIE ?? 2)
-const STAWKA_WYJSCIE = Number(process.env.DESK_STAWKA_WYJSCIE ?? 10)
+const INPUT_RATE = Number(process.env.DESK_INPUT_RATE ?? 2)
+const OUTPUT_RATE = Number(process.env.DESK_OUTPUT_RATE ?? 10)
 
-type ZMetadanymi = {
+type WithProviderMetadata = {
   providerMetadata?: Record<string, Record<string, unknown>> | undefined
   experimental_providerMetadata?: Record<string, Record<string, unknown>> | undefined
 }
 
-const kosztKroku = (x: ZMetadanymi | undefined): number | undefined => {
+const stepCost = (x: WithProviderMetadata | undefined): number | undefined => {
   const meta = x?.providerMetadata ?? x?.experimental_providerMetadata
   const c = meta?.["cortex-proxy"]?.cost ?? meta?.openaiCompatible?.cost
   return typeof c === "number" ? c : undefined
 }
 
-type Koszt = { usd: number; skad: "dostawca" | "oszacowanie" }
+type TurnCost = { usd: number; basis: "provider" | "estimate" }
 
-type WynikTury = ZMetadanymi & {
+type TurnResult = WithProviderMetadata & {
   steps?: unknown[] | undefined
   usage?:
     | {
@@ -728,20 +724,20 @@ type WynikTury = ZMetadanymi & {
     | undefined
 }
 
-function szacujKoszt(wynik: WynikTury): Koszt {
+function turnCost(result: TurnResult): TurnCost {
   // SUMA PO KROKACH, nie koszt ostatniego. Tura sięga po narzędzia, więc `generateText`
   // robi do dwunastu żądań, a `providerMetadata` na wyniku pochodzi z ostatniego z nich.
   // Branie jej wprost liczyło jedno żądanie z kilkunastu — i to akurat najtańsze,
   // bo domykające.
-  const kroki = Array.isArray(wynik?.steps) ? (wynik.steps as ZMetadanymi[]) : []
-  const zKrokow = kroki.map(kosztKroku).filter((c): c is number => c !== undefined)
-  if (zKrokow.length) return { usd: zKrokow.reduce((a, b) => a + b, 0), skad: "dostawca" }
+  const steps = Array.isArray(result?.steps) ? (result.steps as WithProviderMetadata[]) : []
+  const fromSteps = steps.map(stepCost).filter((c): c is number => c !== undefined)
+  if (fromSteps.length) return { usd: fromSteps.reduce((a, b) => a + b, 0), basis: "provider" }
 
-  const zWyniku = kosztKroku(wynik)
-  if (zWyniku !== undefined) return { usd: zWyniku, skad: "dostawca" }
+  const fromResult = stepCost(result)
+  if (fromResult !== undefined) return { usd: fromResult, basis: "provider" }
 
-  const u = wynik?.usage ?? {}
+  const u = result?.usage ?? {}
   const we = u.inputTokens ?? u.promptTokens ?? 0
   const wy = u.outputTokens ?? u.completionTokens ?? 0
-  return { usd: (we / 1e6) * STAWKA_WEJSCIE + (wy / 1e6) * STAWKA_WYJSCIE, skad: "oszacowanie" }
+  return { usd: (we / 1e6) * INPUT_RATE + (wy / 1e6) * OUTPUT_RATE, basis: "estimate" }
 }

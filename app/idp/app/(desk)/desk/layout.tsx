@@ -12,7 +12,7 @@ import type { ReactNode } from "react"
 import "@cortex/styles/desk.css"
 
 /**
- * Kafelek `desk` przychodzi z WŁASNĄ powłoką (lista spraw po lewej, pasek dolny
+ * Kafelek `desk` przychodzi z WŁASNĄ powłoką (list spraw po lewej, pasek dolny
  * na telefonie), więc stoi w osobnej grupie tras — tak samo jak Cortex Cowork.
  * Pod generycznym `AppShell` miałby dwa sidebary obok siebie.
  *
