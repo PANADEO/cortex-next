@@ -1,6 +1,8 @@
 "use client"
 
 import { AppGate } from "@/components/shell/app-gate"
+import { isLocale } from "@/lib/i18n/config"
+import { useLocaleStore } from "@/lib/i18n/locale-store"
 import { usePresetStore } from "@/lib/presets/preset-store"
 import {
   presetChoiceToStored,
@@ -9,7 +11,7 @@ import {
   type PresetChoiceId,
 } from "@/lib/presets/registry"
 import { DESK_APP_CODE } from "@/lib/tiles"
-import { DeskAppearanceProvider } from "@cortex/desk-ui/i18n/client"
+import { DeskAppearanceProvider, DeskShellLocaleProvider } from "@cortex/desk-ui/i18n/client"
 import { useMemo, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -33,6 +35,8 @@ function Appearance({ children }: { children: ReactNode }) {
   const { t } = useTranslation("common")
   const stored = usePresetStore((s) => s.preset)
   const setPreset = usePresetStore((s) => s.setPreset)
+  const locale = useLocaleStore((s) => s.locale)
+  const setLocale = useLocaleStore((s) => s.setLocale)
 
   const appearance = useMemo(
     () => ({
@@ -43,7 +47,25 @@ function Appearance({ children }: { children: ReactNode }) {
     [stored, setPreset, t],
   )
 
-  return <DeskAppearanceProvider appearance={appearance}>{children}</DeskAppearanceProvider>
+  // Język powłoki wstrzykiwany tą samą drogą i z tego samego powodu co wygląd: Biurko
+  // trzyma swój w ciasteczku (czyta je serwer), powłoka w `localStorage` (serwer go nie
+  // widzi). Bez tego mostu przełącznik w menu osoby przestawiał wyłącznie Biurko,
+  // a katalog aplikacji witał po powrocie w poprzednim języku.
+  const shellLocale = useMemo(
+    () => ({
+      current: locale,
+      set: (next: string) => {
+        if (isLocale(next)) setLocale(next)
+      },
+    }),
+    [locale, setLocale],
+  )
+
+  return (
+    <DeskShellLocaleProvider shell={shellLocale}>
+      <DeskAppearanceProvider appearance={appearance}>{children}</DeskAppearanceProvider>
+    </DeskShellLocaleProvider>
+  )
 }
 
 /**

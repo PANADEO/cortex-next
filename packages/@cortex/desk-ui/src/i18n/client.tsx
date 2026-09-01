@@ -1,7 +1,8 @@
 "use client"
 import { useRouter } from "next/navigation"
-import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from "react"
 import {
+  adoptableShellLocale,
   DEFAULT_DESK_LOCALE,
   DESK_LOCALE_COOKIE,
   makeDeskT,
@@ -30,6 +31,39 @@ export type DeskAppearance = {
 }
 
 const AppearanceContext = createContext<DeskAppearance | null>(null)
+
+/**
+ * Język RESZTY POWŁOKI — wstrzykiwany tak samo jak wygląd i z tego samego powodu.
+ *
+ * Biurko trzyma swój język w ciasteczku, bo czyta go serwer przy renderze; powłoka
+ * trzyma swój w `localStorage`, o którym serwer nic nie wie. Dwa niezależne
+ * przełączniki dawały stan, w którym Biurko mówi po angielsku, a katalog aplikacji
+ * po powrocie wita po polsku — i nie da się tego naprawić po żadnej z tych stron
+ * osobno, bo żadna nie widzi drugiej.
+ */
+export type DeskShellLocale = { current: string; set: (locale: string) => void }
+
+const ShellLocaleContext = createContext<DeskShellLocale | null>(null)
+
+export function DeskShellLocaleProvider({
+  shell,
+  children,
+}: {
+  shell: DeskShellLocale
+  children: ReactNode
+}) {
+  return <ShellLocaleContext.Provider value={shell}>{children}</ShellLocaleContext.Provider>
+}
+
+export function useDeskShellLocale(): DeskShellLocale | null {
+  return useContext(ShellLocaleContext)
+}
+
+const writeCookie = (next: DeskLocale) => {
+  // Zapis wprost w `document.cookie`, bez trasy API. To preferencja widoku, nie sekret:
+  // ciasteczko musi być czytelne dla JS-a, żeby przełącznik działał bez rundy do serwera.
+  document.cookie = `${DESK_LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`
+}
 
 export function DeskLocaleProvider({
   locale,
@@ -64,18 +98,42 @@ export function useDeskAppearance(): DeskAppearance | null {
   return useContext(AppearanceContext)
 }
 
+/**
+ * Przestawia język Biurka I CAŁEJ POWŁOKI. Przełącznik w menu osoby jest na trasach
+ * Biurka jedynym widocznym, więc przestawienie go tylko u siebie zostawiałoby katalog
+ * aplikacji w poprzednim języku. `router.refresh()` każe serwerowi przerysować ekrany
+ * już w nowym języku.
+ */
 export function useSetDeskLocale(): (locale: DeskLocale) => void {
   const router = useRouter()
-  // Zapis wprost w `document.cookie`, bez trasy API. To preferencja widoku, nie sekret:
-  // ciasteczko musi być czytelne dla JS-a, żeby przełącznik działał bez rundy do serwera,
-  // a `router.refresh()` każe serwerowi przerysować ekrany już w nowym języku.
+  const shell = useDeskShellLocale()
   return useCallback(
     (next: DeskLocale) => {
-      document.cookie = `${DESK_LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`
+      writeCookie(next)
+      shell?.set(next)
       router.refresh()
     },
-    [router],
+    [router, shell],
   )
+}
+
+/**
+ * Druga strona mostu: język zmieniony W POWŁOCE (w katalogu aplikacji, gdzie Biurka
+ * nie ma) dogania Biurko przy wejściu. Rozjazd może powstać wyłącznie tą drogą — zmiana
+ * po stronie Biurka ustawia od razu obie strony — więc gdy się różnią, prawdziwa jest
+ * powłoka. Wywołane raz, przez przełącznik osoby: on stoi na każdym ekranie Biurka.
+ */
+export function useShellLocaleBridge(): void {
+  const locale = useDeskLocale()
+  const shell = useDeskShellLocale()
+  const router = useRouter()
+  const wanted = shell?.current
+  useEffect(() => {
+    const next = adoptableShellLocale(wanted, locale)
+    if (!next) return
+    writeCookie(next)
+    router.refresh()
+  }, [wanted, locale, router])
 }
 
 export function useDeskT(): DeskT {

@@ -4,7 +4,13 @@ import type { User } from "@cortex/desk-core/types"
 import * as Menu from "@radix-ui/react-dropdown-menu"
 import { Check, ChevronDown } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useDeskAppearance, useDeskLocale, useDeskT, useSetDeskLocale } from "../i18n/client"
+import {
+  useDeskAppearance,
+  useDeskLocale,
+  useDeskT,
+  useSetDeskLocale,
+  useShellLocaleBridge,
+} from "../i18n/client"
 import { DESK_LOCALES, DESK_LOCALE_NAMES } from "../i18n/locale"
 import { api, t as route } from "../routes"
 import { Icon } from "./icon"
@@ -40,6 +46,9 @@ export function Persona({ me, everyone }: { me: User; everyone: User[] }) {
   const locale = useDeskLocale()
   const setLocale = useSetDeskLocale()
   const appearance = useDeskAppearance()
+  // Ten komponent stoi na każdym ekranie Biurka, więc most języka wisi tutaj:
+  // język zmieniony w katalogu aplikacji dogania Biurko przy pierwszym wejściu.
+  useShellLocaleBridge()
 
   async function toggle(id: string) {
     await fetch(api("/persona"), { method: "POST", body: JSON.stringify({ id }) })

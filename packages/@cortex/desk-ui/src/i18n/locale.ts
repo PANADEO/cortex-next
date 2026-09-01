@@ -71,3 +71,17 @@ export function makeDeskT(locale: DeskLocale): DeskT {
     return form === undefined ? key : fill(form, vars)
   }
 }
+
+/**
+ * Czy Biurko ma przejąć język powłoki — i jaki.
+ *
+ * Decyzja siedzi TUTAJ, a nie w efekcie Reacta, bo to w niej mieszka jedyne realne
+ * ryzyko mostu: efekt, który przestawia język, wywołuje przerysowanie, a przerysowanie
+ * uruchamia efekt. Dopóki „równe" i „nieznane" znaczą „nie rób nic", pętli nie ma —
+ * i to da się sprawdzić bez przeglądarki.
+ */
+export function adoptableShellLocale(shell: unknown, desk: DeskLocale): DeskLocale | null {
+  if (typeof shell !== "string") return null
+  if (!(DESK_LOCALES as readonly string[]).includes(shell)) return null
+  return shell === desk ? null : (shell as DeskLocale)
+}
