@@ -9,7 +9,8 @@
     "myFiles": "Moje pliki",
     "supervision": "Nadzór",
     "skills": "Umiem {{granted}} z {{count}} rzeczy",
-    "privacy": "Pliki zostają na serwerze firmy. Do modelu trafia tylko ta treść, którą asystent musi przeczytać, żeby wykonać zlecenie."
+    "privacy": "Pliki zostają na serwerze firmy. Do modelu trafia tylko ta treść, którą asystent musi przeczytać, żeby wykonać zlecenie.",
+    "memory": "Pamięć"
   },
   "bottomBar": {
     "cases": "Sprawy",
@@ -477,6 +478,12 @@
         "few": "wykonałem {{count}} razy",
         "many": "wykonałem {{count}} razy",
         "other": "wykonałem {{count}} razy"
+      },
+      "remember": {
+        "one": "zaproponowałem {{count}} rzecz do zapamiętania",
+        "few": "zaproponowałem {{count}} rzeczy do zapamiętania",
+        "many": "zaproponowałem {{count}} rzeczy do zapamiętania",
+        "other": "zaproponowałem {{count}} rzeczy do zapamiętania"
       }
     },
     "evidence": {
@@ -491,6 +498,10 @@
       "externalNamed": "{{server}}: {{tool}} — {{detail}}",
       "externalBare": "{{source}}: {{label}}",
       "externalNamedBare": "{{server}}: {{tool}}"
+    },
+    "remember": {
+      "running": "Proponuję zapamiętać",
+      "ok": "Zaproponowałem zapamiętanie"
     }
   },
   "evidence": {
@@ -538,7 +549,11 @@
     "capabilityGranted": "nadaje zdolność „{{name}}” osobie {{who}}",
     "personCreated": "wchodzi na Biurko pierwszy raz ({{email}})",
     "personRole": "zmienia rolę {{who}} na „{{role}}\"",
-    "personDepartment": "przypisuje {{who}} do działu {{department}}"
+    "personDepartment": "przypisuje {{who}} do działu {{department}}",
+    "memoryAdded": "dopisuje coś do pamięci asystenta",
+    "memoryAccepted": "przyjmuje propozycję do pamięci asystenta",
+    "memoryEdited": "poprawia wspomnienie asystenta",
+    "memoryForgotten": "kasuje wspomnienie asystenta"
   },
   "capability": {
     "files": {
@@ -596,6 +611,12 @@
       "marketing": "Marketing",
       "accounting": "Księgowość",
       "management": "Zarząd"
+    },
+    "memory": {
+      "write": {
+        "name": "Proponowanie do pamięci",
+        "description": "Proponuje, żeby coś zapamiętać na przyszłość. Wchodzi do pamięci dopiero, gdy to przyjmiesz."
+      }
     }
   },
   "quickTask": {
@@ -654,5 +675,27 @@
     "close": "Ukryj zdolności",
     "empty": "Nie ma tu jeszcze nikogo poza Tobą.",
     "you": "to Ty"
+  },
+  "memory": {
+    "title": "Pamięć",
+    "lead": "To wszystko, co asystent o Tobie wie. Nic tu nie wchodzi bez Twojej zgody i wszystko możesz skasować.",
+    "proposedTitle": "Asystent proponuje zapamiętać",
+    "proposedLead": "Dopóki tego nie przyjmiesz, asystent o tym nie wie.",
+    "keptTitle": "Asystent pamięta",
+    "count": "{{count}} z {{limit}}",
+    "accept": "Przyjmij",
+    "reject": "Odrzuć propozycję",
+    "add": "Dopisz od siebie",
+    "addPlaceholder": "Np. „Faktury dostaję jako CSV z kolumnami: data, kontrahent, netto, VAT, kategoria\"…",
+    "addLabel": "Nowe wspomnienie",
+    "editLabel": "Treść wspomnienia",
+    "edit": "Popraw: {{text}}",
+    "forget": "Skasuj: {{text}}",
+    "empty": "Asystent jeszcze nic o Tobie nie wie.",
+    "emptyHint": "Dopisz coś sam albo poproś go w rozmowie, żeby coś zapamiętał.",
+    "full": "Pamięć mieści {{limit}} rzeczy. Skasuj coś, żeby zrobić miejsce.",
+    "empty2": "Wspomnienie nie może być puste.",
+    "failed": "Nie udało się zmienić pamięci.",
+    "privacy": "Pamięć jest Twoja. Przełożony widzi w dzienniku, że coś przyjąłeś albo skasowałeś — nigdy treści."
   }
 }

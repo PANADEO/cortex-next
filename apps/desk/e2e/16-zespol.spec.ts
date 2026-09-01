@@ -1,4 +1,4 @@
-import { as, expect, test } from "./osoby"
+import { as, expect, otworz, test } from "./osoby"
 
 /**
  * Obszar 25 · ZESPÓŁ — governance przestaje być jednostronne.
@@ -40,7 +40,7 @@ test.describe("Obszar 25 · Zespół widziany przez przełożonego", () => {
 
   test("Nadanie zmienia to, co pracownik widzi u siebie", async ({ page, request }) => {
     await as(page, "anna")
-    await page.goto("/capabilities")
+    await otworz(page, "/capabilities")
     await expect(page.getByText("Tworzenie arkuszy")).toBeVisible()
     await expect(page.getByText("Na to nie masz jeszcze zgody:")).toBeVisible()
 
@@ -72,7 +72,7 @@ test.describe("Obszar 25 · Zespół widziany przez przełożonego", () => {
     // Sprawdzamy u ANNY, nie u Roberta: odebranie, które zmienia wyłącznie ekran
     // przełożonego, jest teatrem — a zdolność dalej trafiałaby do modelu.
     await as(page, "anna")
-    await page.goto("/capabilities")
+    await otworz(page, "/capabilities")
     const locked = page.locator("li", { hasText: "Tworzenie arkuszy" }).first()
     await expect(locked.getByRole("button", { name: /Poproś o dostęp/ })).toBeVisible()
 
@@ -114,7 +114,7 @@ test.describe("Obszar 25 · Zespół widziany przez przełożonego", () => {
       data: { action: "revoke", who: "anna", capability: ARKUSZE },
     })
     await as(page, "robert")
-    await page.goto("/supervision?section=log")
+    await otworz(page, "/supervision?section=log")
     // Bez zawężenia do listy: pasek boczny też jest listą i stoi w dokumencie pierwszy.
     await expect(page.getByText(/nadaje zdolność .* osobie Anna Kowalska/).first()).toBeVisible()
     await expect(page.getByText(/cofa zdolność .* osobie Anna Kowalska/).first()).toBeVisible()

@@ -35,10 +35,21 @@
     {
       "id": "counterparty.verify",
       "department": "accounting"
+    },
+    {
+      "id": "memory.write",
+      "department": "everyone"
     }
   ],
   "roles": {
-    "member": ["files.list", "files.read", "document.write", "document.verify", "files.keep"],
+    "member": [
+      "files.list",
+      "files.read",
+      "document.write",
+      "document.verify",
+      "files.keep",
+      "memory.write"
+    ],
     "management": [
       "files.list",
       "files.read",
@@ -48,7 +59,8 @@
       "sheet.write",
       "code.run",
       "image.generate",
-      "counterparty.verify"
+      "counterparty.verify",
+      "memory.write"
     ]
   },
   "limits": {

@@ -8,6 +8,7 @@ import { migrate, pool } from "./db"
 import * as storage from "./desk-storage"
 import { readableFailure } from "./failure"
 import { mcpTools } from "./mcp/client"
+import * as memory from "./memory"
 import * as sandbox from "./sandbox"
 import type { DeskEvent, Policy, User } from "./types"
 
@@ -316,6 +317,42 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
     })
   }
 
+  if (hasCapability(p, "memory.write")) {
+    t.remember = tool({
+      description:
+        "PROPONUJE zapamiętanie czegoś na przyszłość — nie zapamiętuje. Propozycja trafia " +
+        "na ekran „Pamięć” i zaczyna działać dopiero, gdy człowiek ją przyjmie. Nigdy nie " +
+        "mów, że coś zapamiętałeś; powiedz, że proponujesz to zapamiętać. " +
+        "Proponuj rzeczy, które przydadzą się w KOLEJNYCH sprawach: jak wyglądają pliki tej " +
+        "osoby, jak nazywa rzeczy, co zwykle chce dostać na końcu. Nigdy danych z jednej " +
+        "sprawy, które za tydzień będą nieaktualne.",
+      inputSchema: z.object({
+        what: z.string().describe("jedno zdanie, do 400 znaków, w języku człowieka"),
+      }),
+      execute: async ({ what }) => {
+        const start = Date.now(),
+          kid = randomUUID()
+        await emit({
+          type: "tool_start",
+          id: kid,
+          name: "remember",
+          label: `Proponuję zapamiętać: ${what.slice(0, 60)}`,
+          args: { what },
+        })
+        await memory.propose(u.id, what, caseId)
+        await emit({
+          type: "tool_end",
+          id: kid,
+          name: "remember",
+          ok: true,
+          summary: what.slice(0, 120),
+          ms: Date.now() - start,
+        })
+        return "Propozycja czeka na ekranie „Pamięć”. Powiedz człowiekowi, że może ją tam przyjąć albo odrzucić."
+      },
+    })
+  }
+
   if (hasCapability(p, "files.keep")) {
     t.save_to_my_files = tool({
       description:
@@ -520,10 +557,16 @@ export async function runTurn(u: User, p: Policy, caseId: string) {
     [caseId],
   )
   await appendEvent(caseId, { type: "lifecycle", status: "start" })
+  // Pamięć wpływa na turę, ale nie zostawia zdarzenia narzędzia — więc panel dowodu
+  // by jej nie zobaczył. Zapisujemy identyfikatory wstrzykniętych wspomnień, żeby
+  // zdanie „asystent pamiętał wtedy te trzy rzeczy" było ODCZYTEM z historii,
+  // a nie deklaracją. Ta sama zasada, co przy pochodzeniu pliku.
+  const remembered = await memory.kept(u.id)
   await audit.write(u.id, "turn.start", {
     caseId,
     fingerprint: p.fingerprint,
     capabilities: p.granted.map((z) => z.id),
+    remembered: remembered.map((m) => m.id),
   })
 
   // Szew MCP jest prawdziwy od tego commita, choć katalog serwerów jest pusty.
@@ -590,11 +633,15 @@ export async function runTurn(u: User, p: Policy, caseId: string) {
   // jest już ostatnią pozycją historii powyżej. Doklejanie go tu po raz drugi wysyłało
   // model dwa razy to samo — i podwójnie naliczało koszt oraz obraz.
 
+  // Zdania idą do modelu DOSŁOWNIE — budowa bloku siedzi w `memory.ts`, bo tam da się
+  // ją sprawdzić bez wołania modelu.
+  const recalled = memory.recallBlock(remembered)
+
   void (async () => {
     try {
       const result = await generateText({
         model: model(u.id),
-        system: `${SYSTEM}\n\nUżytkownik: ${u.firstName} ${u.lastName}, dział ${u.department}. Teczka bieżącej sprawy: ${storage.caseFolder(u.id, caseId)}.`,
+        system: `${SYSTEM}\n\nUżytkownik: ${u.firstName} ${u.lastName}, dział ${u.department}. Teczka bieżącej sprawy: ${storage.caseFolder(u.id, caseId)}.${recalled}`,
         messages: messages,
         tools: tools,
         stopWhen: stepCountIs(12),

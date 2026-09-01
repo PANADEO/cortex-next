@@ -547,6 +547,24 @@ export function migrate(): Promise<void> {
         created_at timestamptz not null default now()
       );
 
+      -- PAMIĘĆ ASYSTENTA. Prywatna przestrzeń tej osoby, tak samo jak „Moje pliki":
+      -- przełożony widzi w dzienniku, że ktoś coś przyjął albo skasował, ale nigdy
+      -- treści. Wpis z treścią zamieniłby ekran nadzoru w podgląd cudzych notatek.
+      --
+      -- Skasowane wspomnienia znikają, nie idą do kosza: kosz w prywatnej przestrzeni
+      -- udawałby, że człowiek czegoś nie skasował.
+      create table if not exists desk.memory (
+        id bigserial primary key,
+        owner text not null,
+        text text not null,
+        -- 'proposed' (asystent zaproponował) | 'kept' (człowiek przyjął albo wpisał sam)
+        status text not null default 'kept',
+        source_case_id text,
+        created_at timestamptz not null default now(),
+        decided_at timestamptz
+      );
+      create index if not exists memory_owner_idx on desk.memory (owner, created_at);
+
       -- Nadanie zdolności ponad to, co daje rola. Katalog i role zostają w pliku seed,
       -- ale to, co ktoś dostał indywidualnie, musi przeżyć restart i mieć autora.
       create table if not exists desk.grant (

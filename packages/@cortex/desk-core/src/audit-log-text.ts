@@ -128,6 +128,16 @@ export function describeEntry(
         }),
         weight: "important",
       }
+    // PAMIĘĆ. Cztery wpisy i ani jeden z treścią — pamięć jest prywatną przestrzenią
+    // tej osoby, a wpis z treścią zamieniłby ekran nadzoru w podgląd cudzych notatek.
+    case "memory.added":
+      return { text: translate("journal.memoryAdded"), weight: "normal" }
+    case "memory.accepted":
+      return { text: translate("journal.memoryAccepted"), weight: "normal" }
+    case "memory.edited":
+      return { text: translate("journal.memoryEdited"), weight: "normal" }
+    case "memory.forgotten":
+      return { text: translate("journal.memoryForgotten"), weight: "normal" }
     case "capability.missing":
       return {
         text: translate("journal.capabilityMissing", { description: String(s.description ?? "") }),

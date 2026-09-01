@@ -12,7 +12,8 @@
       "one": "I can do {{granted}} of {{count}} thing",
       "other": "I can do {{granted}} of {{count}} things"
     },
-    "privacy": "Files stay on the company server. Only the content the assistant has to read in order to do the job reaches the model."
+    "privacy": "Files stay on the company server. Only the content the assistant has to read in order to do the job reaches the model.",
+    "memory": "Memory"
   },
   "bottomBar": {
     "cases": "Cases",
@@ -446,6 +447,10 @@
       "outside": {
         "one": "ran it once",
         "other": "ran it {{count}} times"
+      },
+      "remember": {
+        "one": "suggested {{count}} thing to remember",
+        "other": "suggested {{count}} things to remember"
       }
     },
     "evidence": {
@@ -460,6 +465,10 @@
       "externalNamed": "{{server}}: {{tool}} — {{detail}}",
       "externalBare": "{{source}}: {{label}}",
       "externalNamedBare": "{{server}}: {{tool}}"
+    },
+    "remember": {
+      "running": "Suggesting something to remember",
+      "ok": "Suggested something to remember"
     }
   },
   "evidence": {
@@ -503,7 +512,11 @@
     "capabilityGranted": "grants the “{{name}}” capability to {{who}}",
     "personCreated": "signs in to the Desk for the first time ({{email}})",
     "personRole": "changes {{who}}’s role to “{{role}}”",
-    "personDepartment": "assigns {{who}} to {{department}}"
+    "personDepartment": "assigns {{who}} to {{department}}",
+    "memoryAdded": "adds something to the assistant’s memory",
+    "memoryAccepted": "accepts a suggestion into the assistant’s memory",
+    "memoryEdited": "edits one of the assistant’s memories",
+    "memoryForgotten": "deletes one of the assistant’s memories"
   },
   "capability": {
     "files": {
@@ -561,6 +574,12 @@
       "marketing": "Marketing",
       "accounting": "Accounting",
       "management": "Management"
+    },
+    "memory": {
+      "write": {
+        "name": "Proposing things to remember",
+        "description": "Suggests something worth remembering for next time. It enters the memory only once you accept it."
+      }
     }
   },
   "quickTask": {
@@ -619,5 +638,27 @@
     "close": "Hide capabilities",
     "empty": "Nobody else is here yet.",
     "you": "that’s you"
+  },
+  "memory": {
+    "title": "Memory",
+    "lead": "Everything the assistant knows about you. Nothing gets in without your consent, and you can delete all of it.",
+    "proposedTitle": "The assistant suggests remembering",
+    "proposedLead": "Until you accept it, the assistant does not know it.",
+    "keptTitle": "The assistant remembers",
+    "count": "{{count}} of {{limit}}",
+    "accept": "Accept",
+    "reject": "Reject the suggestion",
+    "add": "Add your own",
+    "addPlaceholder": "For example “Invoices arrive as CSV with these columns: date, supplier, net, VAT, category”…",
+    "addLabel": "New memory",
+    "editLabel": "Memory text",
+    "edit": "Edit: {{text}}",
+    "forget": "Delete: {{text}}",
+    "empty": "The assistant does not know anything about you yet.",
+    "emptyHint": "Add something yourself, or ask it in a conversation to remember something.",
+    "full": "The memory holds {{limit}} things. Delete one to make room.",
+    "empty2": "A memory cannot be empty.",
+    "failed": "The memory could not be changed.",
+    "privacy": "The memory is yours. Your manager sees in the journal that you accepted or deleted something — never what it said."
   }
 }

@@ -169,6 +169,18 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
       source: "builtin",
     }),
     K({
+      // Świadomie BEZ `evidence`: propozycja NIE jest rzeczą, która się wydarzyła.
+      // Wiersz w dowodzie mówiłby, że asystent coś zapamiętał — a on wyłącznie
+      // poprosił człowieka, żeby mu na to pozwolił.
+      name: "remember",
+      kind: "browses",
+      running: "tools.remember.running",
+      ok: "tools.remember.ok",
+      argDetail: "what",
+      group: { key: "remember", phrase: "tools.groups.remember", weight: 2 },
+      source: "builtin",
+    }),
+    K({
       name: "save_to_my_files",
       kind: "stores",
       running: "tools.save_to_my_files.running",

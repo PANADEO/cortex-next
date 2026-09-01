@@ -1,5 +1,5 @@
 import type { APIRequestContext, Page } from "@playwright/test"
-import { as, expect, test } from "./osoby"
+import { as, expect, otworz, test } from "./osoby"
 
 /** Nazwa pliku pojawia się też w tostach, więc asercje celują w samą listę. */
 const list = (page: Page) => page.getByRole("list", { name: "Pliki w tym folderze" })
@@ -22,7 +22,7 @@ test.beforeAll(async ({ request }) => {
 test.describe("Obszar 2 · Moje pliki — teczka, która przeżywa sprawę", () => {
   test("Wgrany plik zostaje na biurku i przeżywa przeładowanie", async ({ page }) => {
     await as(page, "anna")
-    await page.goto("/files")
+    await otworz(page, "/files")
     await page
       .locator("input[type=file]")
       .first()
@@ -40,7 +40,7 @@ test.describe("Obszar 2 · Moje pliki — teczka, która przeżywa sprawę", () 
     page,
   }) => {
     await as(page, "anna")
-    await page.goto("/files")
+    await otworz(page, "/files")
     await page.getByRole("button", { name: "Więcej opcji dla test-wgrany.txt" }).first().click()
     await page.getByRole("menuitem", { name: /Usuń/ }).click()
     await expect(list(page).getByText("test-wgrany.txt")).toHaveCount(0)
@@ -51,7 +51,7 @@ test.describe("Obszar 2 · Moje pliki — teczka, która przeżywa sprawę", () 
 
   test("Skasowany plik można też odzyskać z kosza", async ({ page }) => {
     await as(page, "anna")
-    await page.goto("/files")
+    await otworz(page, "/files")
     await page.getByRole("button", { name: "Więcej opcji dla test-wgrany.txt" }).first().click()
     await page.getByRole("menuitem", { name: /Usuń/ }).click()
     await expect(list(page).getByText("test-wgrany.txt")).toHaveCount(0)
@@ -66,7 +66,7 @@ test.describe("Obszar 2 · Moje pliki — teczka, która przeżywa sprawę", () 
 
   test("Zmiana nazwy dzieje się w wierszu, nie w okienku systemowym", async ({ page }) => {
     await as(page, "anna")
-    await page.goto("/files")
+    await otworz(page, "/files")
     await page.getByRole("button", { name: "Więcej opcji dla test-wgrany.txt" }).first().click()
     await page.getByRole("menuitem", { name: /Zmień nazwę/ }).click()
     const field = page.getByRole("textbox", { name: "Nowa nazwa pliku" })
@@ -88,7 +88,7 @@ test.describe("Obszar 2 · Moje pliki — teczka, która przeżywa sprawę", () 
 
   test("Nazwa zajęta nie kasuje cudzego pliku — zmiana jest odrzucana", async ({ page }) => {
     await as(page, "anna")
-    await page.goto("/files")
+    await otworz(page, "/files")
     await page.getByRole("button", { name: "Więcej opcji dla test-wgrany.txt" }).first().click()
     await page.getByRole("menuitem", { name: /Zmień nazwę/ }).click()
     const field = page.getByRole("textbox", { name: "Nowa nazwa pliku" })
@@ -105,7 +105,7 @@ test.describe("Obszar 2 · Moje pliki — teczka, która przeżywa sprawę", () 
 
   test("Pliki są prywatne", async ({ page }) => {
     await as(page, "robert")
-    await page.goto("/files")
+    await otworz(page, "/files")
     await expect(list(page).getByText("test-wgrany.txt")).toHaveCount(0)
   })
 })
@@ -113,7 +113,7 @@ test.describe("Obszar 2 · Moje pliki — teczka, która przeżywa sprawę", () 
 test.describe("Skróty klawiszowe z menu naprawdę działają", () => {
   test("F2 na wierszu otwiera edycję nazwy", async ({ page }) => {
     await as(page, "anna")
-    await page.goto("/files")
+    await otworz(page, "/files")
     await list(page).getByText("test-wgrany.txt").click()
     await page.keyboard.press("Escape")
     await list(page)
@@ -132,7 +132,7 @@ test.describe("Obszar 2 · Skąd przyszedł plik — i dlaczego tylko czasem", (
 
   test("Plik odłożony ze sprawy nazywa ją i prowadzi do niej", async ({ page, request }) => {
     await as(page, "anna")
-    await page.goto("/files")
+    await otworz(page, "/files")
     await page
       .locator("input[type=file]")
       .first()
@@ -165,7 +165,7 @@ test.describe("Obszar 2 · Skąd przyszedł plik — i dlaczego tylko czasem", (
     // ekran nie zaczął zgadywać. „Wgrany przez Ciebie" byłoby domysłem — a produkt,
     // który raz zgadnie pochodzenie, przestaje być dowodem na cokolwiek.
     await as(page, "anna")
-    await page.goto("/files")
+    await otworz(page, "/files")
     const wiersz = list(page).locator("li", { hasText: "test-wgrany.txt" })
     await expect(wiersz).toHaveCount(1)
     await expect(wiersz.getByRole("link", { name: /Ze sprawy/ })).toHaveCount(0)
@@ -202,7 +202,7 @@ test.describe("Obszar 2 · Znalezienie jednego pliku wśród wielu", () => {
 
   test("Pole zawężania zostawia trafienia i tylko trafienia", async ({ page }) => {
     await as(page, "anna")
-    await page.goto(`/files?k=${encodeURIComponent(KATALOG)}`)
+    await otworz(page, `/files?k=${encodeURIComponent(KATALOG)}`)
     await page
       .locator("input[type=file]")
       .first()
@@ -225,7 +225,7 @@ test.describe("Obszar 2 · Znalezienie jednego pliku wśród wielu", () => {
 
   test("Zawężenie bez trafień mówi wprost, że nic nie pasuje", async ({ page }) => {
     await as(page, "anna")
-    await page.goto(`/files?k=${encodeURIComponent(KATALOG)}`)
+    await otworz(page, `/files?k=${encodeURIComponent(KATALOG)}`)
     await page
       .getByRole("searchbox", { name: "Znajdź w tym katalogu" })
       .fill("czegoś takiego nie ma")
@@ -236,13 +236,22 @@ test.describe("Obszar 2 · Znalezienie jednego pliku wśród wielu", () => {
 
   test("Porządek „Najnowsze” stawia świeżo wgrany plik na górze", async ({ page }) => {
     await as(page, "anna")
-    await page.goto(`/files?k=${encodeURIComponent(KATALOG)}`)
-    // Po nazwie ten plik stoi w środku stawki, po dacie — pierwszy. Różnica jest dowodem.
-    await page
-      .locator("input[type=file]")
-      .first()
-      .setInputFiles([trzon("zzz-ostatni.txt")])
-    await expect(list(page).locator("li").first()).toContainText("faktura-marzec.txt")
+    await otworz(page, `/files?k=${encodeURIComponent(KATALOG)}`)
+    // Scenariusz wgrywa WSZYSTKO sam, zamiast liczyć na pliki z poprzedniego —
+    // test, który przechodzi wyłącznie w towarzystwie, nie mówi nic o kodzie.
+    // Ośmiu plików potrzeba, bo pasek porządku pokazuje się dopiero, gdy jest co
+    // porządkować; przy dwóch nie ma go i nie powinno być.
+    const picker = page.locator("input[type=file]").first()
+    await picker.setInputFiles([
+      trzon("aaa-pierwszy.txt"),
+      ...Array.from({ length: 7 }, (_, i) => trzon(`wypelniacz-${i}.txt`)),
+    ])
+    await expect(list(page).getByText("aaa-pierwszy.txt")).toBeVisible()
+    await picker.setInputFiles([trzon("zzz-ostatni.txt")])
+    await expect(list(page).getByText("zzz-ostatni.txt")).toBeVisible()
+
+    // Po nazwie „aaa" stoi pierwsze, po dacie — ostatnie. Różnica jest dowodem.
+    await expect(list(page).locator("li").first()).toContainText("aaa-pierwszy.txt")
 
     await page.getByRole("button", { name: "Po nazwie" }).click()
     await page.getByRole("menuitem", { name: "Najnowsze" }).click()

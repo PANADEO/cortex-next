@@ -2,7 +2,15 @@ import { policyFor } from "@cortex/desk-core/capability-gate"
 import { migrate, pool } from "@cortex/desk-core/db"
 import { identity } from "@cortex/desk-core/identity"
 import { everyone } from "@cortex/desk-core/people"
-import { ChevronRight, FolderOpen, LayoutGrid, ListChecks, Plus, ShieldCheck } from "lucide-react"
+import {
+  Brain,
+  ChevronRight,
+  FolderOpen,
+  LayoutGrid,
+  ListChecks,
+  Plus,
+  ShieldCheck,
+} from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { DeskLocaleProvider } from "../i18n/client"
@@ -46,6 +54,13 @@ export async function Shell({
     [u.id],
   )
   const total = Number(all.rows[0]?.total ?? 0)
+  // Propozycja pamięci czeka na CZŁOWIEKA i nie działa, dopóki jej nie przyjmie —
+  // więc musi być widoczna stąd, a nie dopiero po wejściu na ekran pamięci.
+  const waitingMemory = await pool.query<{ n: string }>(
+    `select count(*)::text as n from desk.memory where owner=$1 and status='proposed'`,
+    [u.id],
+  )
+  const proposed = Number(waitingMemory.rows[0]?.n ?? 0)
   const visible = s.rows.slice(0, IN_BAR)
 
   return (
@@ -142,6 +157,18 @@ export async function Shell({
                 >
                   <Icon as={FolderOpen} px={16} className="text-desk-muted" />{" "}
                   {translate("shell.myFiles")}
+                </Link>
+                <Link
+                  href={t("/memory")}
+                  className="t-body flex h-9 items-center gap-2 rounded-sm px-2.5 hover:bg-desk-raised/70"
+                >
+                  <Icon as={Brain} px={16} className="text-desk-muted" />{" "}
+                  {translate("shell.memory")}
+                  {proposed > 0 && (
+                    <span className="t-micro ml-auto rounded-desk-pill bg-desk-accent-soft px-1.5 text-desk-accent-soft-ink">
+                      {proposed}
+                    </span>
+                  )}
                 </Link>
                 {u.role === "management" && (
                   <Link
