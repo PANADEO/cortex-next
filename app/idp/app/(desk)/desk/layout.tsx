@@ -20,6 +20,6 @@ import "@cortex/styles/desk.css"
  * kto ma jakikolwiek grant — a Biurko wydaje agentowi zdolności, w tym takie,
  * które sięgają poza firmę.
  */
-export default function UkladBiurka({ children }: { children: ReactNode }) {
+export default function DeskLayout({ children }: { children: ReactNode }) {
   return <AppGate tileId={DESK_APP_CODE}>{children}</AppGate>
 }

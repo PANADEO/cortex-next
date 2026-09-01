@@ -95,11 +95,11 @@ describe("pliki tłumaczeń", () => {
 
     // Format `typ; co robi[; ograniczenie]` — bez średnika zostaje sama nazwa
     // miejsca, a to za mało, żeby wybrać słowo w obcym języku.
-    const bezTypu = Object.entries(context)
+    const withoutType = Object.entries(context)
       .filter(([, value]) => !value.includes(";"))
       .map(([key]) => key)
 
-    expect({ bezTypu }).toEqual({ bezTypu: [] })
+    expect({ withoutType }).toEqual({ withoutType: [] })
   })
 
   /**
