@@ -38,6 +38,51 @@ export const isRole = (value: unknown): value is Role =>
 export const isDepartment = (value: unknown): value is string =>
   typeof value === "string" && DEPARTMENTS.includes(value)
 
+/**
+ * CO O TEJ OSOBIE WIE POWŁOKA.
+ *
+ * Powłoka trzyma swoich użytkowników w `system_config.users` — w TEJ SAMEJ bazie, tylko
+ * w innym schemacie. Czytamy je zwykłym SQL-em zamiast wciągać drizzle i całą warstwę
+ * bazy powłoki do pakietu, który stoi też w `apps/desk`; to była cena, przez którą
+ * `identity.ts` świadomie ich wcześniej nie czytał.
+ *
+ * PODZIAŁ WŁASNOŚCI: powłoka wie, KTO to jest (imię i nazwisko) i czy w ogóle należy do
+ * firmy. Biurko wie, co ta osoba może U SIEBIE — rola, dział, limit, nadania. Żadna
+ * strona nie nadpisuje drugiej.
+ *
+ * Brak tabeli to normalny stan, nie awaria: `apps/desk` bywa uruchamiane samo.
+ */
+let shellHasUsers: boolean | null = null
+
+async function shellKnowsUsers(): Promise<boolean> {
+  if (shellHasUsers === null) {
+    const r = await pool.query<{ t: string | null }>(
+      `select to_regclass('system_config.users')::text as t`,
+    )
+    shellHasUsers = Boolean(r.rows[0]?.t)
+  }
+  return shellHasUsers
+}
+
+/**
+ * „Aktywny" znaczy aktywny PO OBU STRONACH — przecięcie, nigdy suma. Osoba wyłączona
+ * w powłoce nie wchodzi na Biurko, choćby Biurko o niej nie słyszało, i odwrotnie:
+ * przełożony może wyłączyć konto w samym Biurku, nie ruszając katalogu firmowego.
+ */
+const SELECT_WITH_SHELL = `
+  select p.id, p.email, p.first_name, p.last_name, p.department, p.role, p.daily_limit_usd,
+         (p.active and coalesce(s.is_active, true)) as active,
+         s.full_name as shell_name
+    from desk.person p
+    left join system_config.users s on lower(s.email) = p.email`
+
+const SELECT_ALONE = `
+  select id, email, first_name, last_name, department, role, daily_limit_usd, active,
+         null::text as shell_name
+    from desk.person p`
+
+const select = async () => ((await shellKnowsUsers()) ? SELECT_WITH_SHELL : SELECT_ALONE)
+
 type Row = {
   id: string
   email: string
@@ -47,12 +92,23 @@ type Row = {
   role: string
   daily_limit_usd: string | null
   active: boolean
+  shell_name: string | null
+}
+
+/**
+ * Imię i nazwisko bierzemy z POWŁOKI, gdy je zna: to ona jest katalogiem firmowym,
+ * a Biurko zgaduje je z adresu tylko wtedy, gdy nie ma skąd wziąć lepszych.
+ */
+const splitName = (r: Row): [string, string] => {
+  if (!r.shell_name?.trim()) return [r.first_name, r.last_name]
+  const parts = r.shell_name.trim().split(/\s+/)
+  return [parts[0] ?? r.first_name, parts.slice(1).join(" ")]
 }
 
 const toUser = (r: Row): User => ({
   id: r.id,
-  firstName: r.first_name,
-  lastName: r.last_name,
+  firstName: splitName(r)[0],
+  lastName: splitName(r)[1],
   department: r.department,
   role: isRole(r.role) ? r.role : "member",
   quickTasks: quickTasksByRole[r.role] ?? quickTasksByRole["member"] ?? [],
@@ -60,17 +116,15 @@ const toUser = (r: Row): User => ({
   active: r.active,
 })
 
-const SELECT = `select id, email, first_name, last_name, department, role, daily_limit_usd, active from desk.person`
-
 export async function everyone(): Promise<User[]> {
   await migrate()
-  const r = await pool.query<Row>(`${SELECT} order by last_name, first_name`)
+  const r = await pool.query<Row>(`${await select()} order by p.last_name, p.first_name`)
   return r.rows.map(toUser)
 }
 
 export async function person(id: string): Promise<User | null> {
   await migrate()
-  const r = await pool.query<Row>(`${SELECT} where id=$1`, [id])
+  const r = await pool.query<Row>(`${await select()} where p.id=$1`, [id])
   return r.rows[0] ? toUser(r.rows[0]) : null
 }
 
@@ -95,28 +149,49 @@ export async function names(): Promise<Record<string, string>> {
  */
 export async function ensurePerson(email: string): Promise<User> {
   await migrate()
-  const found = await pool.query<Row>(`${SELECT} where email=$1`, [email])
+  const found = await pool.query<Row>(`${await select()} where p.email=$1`, [email])
   if (found.rows[0]) return toUser(found.rows[0])
 
-  const local = email.split("@")[0] ?? email
-  // Z adresu da się wyciągnąć co najwyżej „imię.nazwisko" — i tylko tyle udajemy,
-  // że wiemy. Reszta jest do poprawienia przez przełożonego na ekranie zespołu.
-  const parts = local.split(/[._-]+/).filter(Boolean)
-  const capitalise = (w: string) => w.charAt(0).toLocaleUpperCase("pl") + w.slice(1)
-  const firstName = capitalise(parts[0] ?? local)
-  const lastName = parts.length > 1 ? capitalise(parts[parts.length - 1]!) : ""
+  // Imię i nazwisko pytamy najpierw POWŁOKĘ: to ona jest katalogiem firmowym.
+  // Z adresu da się wyciągnąć co najwyżej „imię.nazwisko" i tyle udajemy, że wiemy,
+  // dopiero gdy powłoka nic o tej osobie nie wie.
+  const [firstName, lastName] = (await shellName(email)) ?? guessName(email)
 
-  const r = await pool.query<Row>(
+  const r = await pool.query<{ id: string }>(
     `insert into desk.person (id, email, first_name, last_name, department, role)
      values ($1,$2,$3,$4,'','member')
      on conflict (email) do update set email = excluded.email
-     returning id, email, first_name, last_name, department, role, daily_limit_usd, active`,
+     returning id`,
     [email, email, firstName, lastName],
   )
   const created = r.rows[0]
   if (!created) throw new Error(`Nie udało się założyć konta dla ${email}.`)
   await audit.write(created.id, "person.created", { email })
-  return toUser(created)
+  // Odczyt PRZEZ ten sam widok co reszta: `returning` z insertu zna wyłącznie kolumny
+  // Biurka, więc oddawałby `active: true` osobie, którą powłoka ma za nieaktywną.
+  const fresh = await person(created.id)
+  if (!fresh) throw new Error(`Nie udało się odczytać konta ${created.id}.`)
+  return fresh
+}
+
+/** Imię i nazwisko z katalogu powłoki, jeśli tam są. */
+async function shellName(email: string): Promise<[string, string] | null> {
+  if (!(await shellKnowsUsers())) return null
+  const r = await pool.query<{ full_name: string | null }>(
+    `select full_name from system_config.users where lower(email)=$1`,
+    [email],
+  )
+  const full = r.rows[0]?.full_name?.trim()
+  if (!full) return null
+  const parts = full.split(/\s+/)
+  return [parts[0] ?? full, parts.slice(1).join(" ")]
+}
+
+const guessName = (email: string): [string, string] => {
+  const local = email.split("@")[0] ?? email
+  const parts = local.split(/[._-]+/).filter(Boolean)
+  const capitalise = (w: string) => w.charAt(0).toLocaleUpperCase("pl") + w.slice(1)
+  return [capitalise(parts[0] ?? local), parts.length > 1 ? capitalise(parts.at(-1)!) : ""]
 }
 
 export async function setRole(id: string, role: Role, by: string): Promise<void> {
