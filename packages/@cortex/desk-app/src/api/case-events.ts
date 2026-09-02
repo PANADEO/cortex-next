@@ -2,21 +2,25 @@ import { accessTo, messages, sharesOf } from "@cortex/desk-core/case-access"
 import { migrate, pool } from "@cortex/desk-core/db"
 import * as storage from "@cortex/desk-core/desk-storage"
 import { whoAmI } from "@cortex/desk-core/identity"
+import { deskT } from "@cortex/desk-ui/i18n/server"
 import { NextResponse } from "next/server"
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   await migrate()
   const { id } = await params
   const u = await whoAmI()
+  const translate = await deskT()
   const from = Number(new URL(req.url).searchParams.get("from") ?? 0)
   const s = await pool.query(
     `select owner, title, status, reason, cost_usd::float8 as cost, updated_at as "updatedAt" from desk.case_file where id=$1`,
     [id],
   )
-  if (!s.rowCount) return NextResponse.json({ error: "Nie ma takiej sprawy." }, { status: 404 })
+  if (!s.rowCount) {
+    return NextResponse.json({ error: translate("api.noSuchCase") }, { status: 404 })
+  }
   const access = await accessTo(id, u.id)
   if (access === "none")
-    return NextResponse.json({ error: "To nie jest Twoja sprawa." }, { status: 403 })
+    return NextResponse.json({ error: translate("api.notYourCase") }, { status: 403 })
 
   const z = await pool.query(
     `select seq, at, payload from desk.event where case_id=$1 and seq>$2 order by seq`,

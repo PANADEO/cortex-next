@@ -92,7 +92,9 @@
   },
   "quickTasks": {
     "member": [
+      "expensesSheet",
       "expensesDocument",
+      "analysis",
       "documentGaps",
       "meetingNotes"
     ],

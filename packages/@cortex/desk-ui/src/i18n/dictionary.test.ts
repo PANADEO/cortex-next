@@ -168,16 +168,105 @@ describe("słownik Biurka", () => {
    * (`approver()` w `people.ts`), i wolno powiedzieć, że asystent zgłosi rzecz sam.
    * Nie wolno odesłać do nikogo.
    */
+  /**
+   * ŻADNA TRASA NIE ODDAJE ZDANIA WPISANEGO NA SZTYWNO.
+   *
+   * Napis w kodzie trasy jest niewidoczny dla wszystkiego, co pilnuje słownika: nie ma go
+   * w `pl.json`, więc nie ma go też w `en.json`, i użytkownik anglojęzyczny dostaje
+   * mieszankę dwóch języków w jednej sesji. Poprawiane ręcznie trzy razy pod rząd —
+   * `file.ts`, potem `files-upload.ts`, potem `case-events/turn/stop`. Za czwartym razem
+   * ma zapalić się światło, a nie znowu czyjaś czujność.
+   *
+   * REGUŁA JEST NIEZALEŻNA OD JĘZYKA i to nie jest ozdoba. Pierwsza wersja szukała
+   * polskich znaków diakrytycznych — i przepuściłaby większość zdań, których miała
+   * pilnować, bo „To nie jest Twoja sprawa." i „Nie ma takiej sprawy." nie mają ANI
+   * JEDNEGO ogonka. Wykryło to dopiero wstrzyknięcie; sam wcześniejszy `grep` po
+   * diakrytykach pokazywał zero i niczego nie dowodził.
+   *
+   * Reguła brzmi więc odwrotnie: pole `error` dostaje WYŁĄCZNIE wynik `translate(...)`.
+   * Napis dosłowny jest zabroniony, chyba że stoi na krótkiej liście kodów, które front
+   * czyta maszynowo i nikt ich nie ogląda.
+   */
+  it("żadna trasa nie oddaje zdania wpisanego na sztywno", () => {
+    const API = path.join(here, "../../../desk-app/src/api")
+    /** Kody czytane przez front, nie zdania dla człowieka. */
+    const MACHINE_CODES = new Set(["name-clash", "missing-email"])
+    const offenders: string[] = []
+    for (const file of readdirSync(API).filter((one) => one.endsWith(".ts"))) {
+      if (file.startsWith("test-")) continue // narzędzia testowe nie mówią do człowieka
+      const source = ts.createSourceFile(
+        file,
+        readFileSync(path.join(API, file), "utf8"),
+        ts.ScriptTarget.Latest,
+        true,
+        ts.ScriptKind.TS,
+      )
+      const visit = (node: ts.Node): void => {
+        if (
+          ts.isPropertyAssignment(node) &&
+          ts.isIdentifier(node.name) &&
+          node.name.text === "error" &&
+          ts.isStringLiteralLike(node.initializer) &&
+          !MACHINE_CODES.has(node.initializer.text)
+        ) {
+          offenders.push(`${file}: "${node.initializer.text}"`)
+        }
+        ts.forEachChild(node, visit)
+      }
+      visit(source)
+    }
+    expect(offenders).toEqual([])
+  })
+
   it("żadne zdanie nie odsyła do bezimiennej władzy", () => {
-    // Lista rośnie po każdej próbie obejścia. Weryfikator przeszedł przez „admin",
-    // „informatyk" i „dział techniczny" — żadne nie było w pierwszej wersji, a każde
-    // odsyła Basię dokładnie tam samo: do kogoś, kogo nie zna i nie ma jak zapytać.
-    const FACELESS =
-      /\badmin\w*|helpdesk|help desk|informatyk\w*|serwisant\w*|wsparci\w+ (?:techniczn\w*|IT)|dzia[łl]\w* (?:IT|techniczn\w+)|dzia[łl]\w+ techniczn\w+|support (?:team|desk)|IT (?:department|support)|obs[łl]ug[aię] techniczn\w+/i
+    // KSZTAŁT REGUŁY, NIE DŁUGOŚĆ LISTY. Pierwsza wersja szukała rzeczowników
+    // („administrator", „helpdesk") i była zła w obie strony naraz. Przeciekała, bo `\w`
+    // w JS bez flagi `u` NIE OBEJMUJE polskich liter — „obsługa techniczna" była łapana,
+    // „obsługę techniczną" już nie. I podnosiła fałszywy alarm na zdaniach niewinnych:
+    // „Administratorem danych osobowych jest firma" to klauzula RODO, którą ma każde
+    // polskie pismo, a „Koszty administracyjne" to pozycja z każdego zestawienia wydatków.
+    // Zablokowanie ich na budowie byłoby gorsze niż przeciek, bo zmusza do obchodzenia
+    // strażnika — a strażnik, którego się obchodzi, przestaje cokolwiek znaczyć.
+    //
+    // Rzecz, o którą nam chodzi, nie jest SŁOWEM, tylko CZYNNOŚCIĄ: odesłaniem człowieka
+    // do kogoś, kogo nie umie wskazać. Reguła sprawdza więc parę „czasownik odesłania
+    // + bezimienny adresat" w jednym zdaniu. Klauzula RODO nie ma czasownika odesłania
+    // i przechodzi; „zgłoś to do działu informatycznego" ma i nie przechodzi.
+    const SENDS = [
+      "zg[łl]o[śs]", "popro[śs]", "skontaktuj", "napisz", "zapytaj", "zadzwo[ńn]",
+      "oddaj", "przeka[żz]", "powiedz", "udaj si[ęe]", "zwr[óo][ćc] si[ęe]", "zwr[óo][ćc] to",
+      "contact", "ask", "report (?:it|this)", "call", "reach out",
+    ]
+    const NOBODY = [
+      "administrator", "admin\\b", "sysadmin", "helpdesk", "help-?desk",
+      "informatyk", "informatyczn", "serwis", "technik", "support",
+      "wsparci", "infolini", "opiekun\\p{L}* systemu", "zespo[łl]\\p{L}* wsparcia",
+      "dzia[łl]\\p{L}* (?:it|techniczn|informatyczn)", "obs[łl]ug\\p{L}* techniczn",
+      "it team", "tech support",
+    ]
+    // Para musi stać w JEDNYM zdaniu — bez tego „Zgłoś zestawienie. Administratorem
+    // danych jest firma." dałoby trafienie przez granicę dwóch niezwiązanych zdań.
+    const FACELESS = new RegExp(
+      `(?:${SENDS.join("|")})[^.!?]{0,60}?(?:${NOBODY.join("|")})`,
+      "iu",
+    )
+    // Samo „IT" jako dział — OSOBNO i z uwzględnieniem wielkości liter. Wrzucone do
+    // listy wyżej dawało cztery fałszywe alarmy naraz, wszystkie angielskie: „Ask your
+    // manager for it." to `ask` + zaimek `it`, a nie odesłanie do działu informatycznego.
+    // Wielka litera rozróżnia te dwa znaczenia lepiej niż jakikolwiek kontekst, jaki
+    // dałoby się tu wypisać.
+    // Dwa kroki, bo jedno wyrażenie nie uniesie dwóch różnych wrażliwości naraz:
+    // czasownik szukamy bez względu na wielkość liter, samo „IT" — z jej uwzględnieniem.
+    // Sklejone w jeden wzorzec bez flagi `i` gubiło „Zgłoś" pisane wielką literą.
+    const SENDS_RE = new RegExp(`(?:${SENDS.join("|")})`, "iu")
+    const sendsToIT = (text: string) =>
+      text
+        .split(/(?<=[.!?])\s+/)
+        .some((sentence) => SENDS_RE.test(sentence) && /\bIT\b/u.test(sentence))
     const offenders: string[] = []
     const walk = (node: unknown, key: string) => {
       if (typeof node === "string") {
-        if (FACELESS.test(node)) offenders.push(`${key} = ${node}`)
+        if (FACELESS.test(node) || sendsToIT(node)) offenders.push(`${key} = ${node}`)
         return
       }
       if (node && typeof node === "object") {

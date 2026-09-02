@@ -10,15 +10,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   await migrate()
   const { id } = await params
   const u = await whoAmI()
+  // Słownik POWYŻEJ pierwszej odmowy — te dwie padają, zanim dojdzie do limitu.
+  const translate = await deskT()
   const s = await pool.query(`select owner, title from desk.case_file where id=$1`, [id])
-  if (!s.rowCount) return NextResponse.json({ error: "Nie ma takiej sprawy." }, { status: 404 })
+  if (!s.rowCount) {
+    return NextResponse.json({ error: translate("api.noSuchCase") }, { status: 404 })
+  }
   if (s.rows[0].owner !== u.id) {
     await audit.write(u.id, "access.denied", { caseId: id })
-    return NextResponse.json({ error: "To nie jest Twoja sprawa." }, { status: 403 })
+    return NextResponse.json({ error: translate("api.notYourCase") }, { status: 403 })
   }
   const p = await policyFor(u)
   const spent = await spentToday(u.id)
-  const translate = await deskT()
   if (spent >= p.dailyLimitUsd) {
     return NextResponse.json({ error: translate("api.dailyLimit") }, { status: 429 })
   }
@@ -27,7 +30,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     ? attachments.filter((z) => typeof z === "string").slice(0, 10)
     : []
   if (!text?.trim() && !files.length)
-    return NextResponse.json({ error: "Puste zlecenie." }, { status: 400 })
+    return NextResponse.json({ error: translate("api.emptyJob") }, { status: 400 })
 
   await appendEvent(id, {
     type: "prompt",

@@ -166,10 +166,20 @@ export async function approverName(): Promise<string> {
  * Osoba spod bramy logowania. Nieznany adres ZAKŁADA KONTO, a nie rzuca wyjątkiem.
  *
  * Rola startowa to `member`, i to nie jest wygoda, tylko rachunek: w tym katalogu
- * `member` to pięć zdolności, z których żadna nie wychodzi poza biurko tej osoby ani
- * poza firmę — przeglądanie własnych plików, czytanie ich, napisanie dokumentu,
- * sprawdzenie go po zapisie i odłożenie do własnych plików. Wszystko powyżej —
- * arkusze, kod, obrazy, wykaz VAT — wymaga nadania przez przełożonego.
+ * `member` to dziesięć zdolności, z których ŻADNA nie wychodzi poza biurko tej osoby
+ * ani poza firmę — przeglądanie własnych plików, czytanie ich, rozpoznanie dokumentu,
+ * napisanie i sprawdzenie go, policzenie czegoś, zapisanie arkusza, odłożenie wyniku
+ * i zapamiętanie ustalenia. Zaglądanie na wspólną półkę też, ale bez podmieniania
+ * tego, co czyta cały zespół.
+ *
+ * ARKUSZE I OBLICZENIA weszły tu 02.09.2026, decyzją właściciela produktu. Bez nich
+ * „policz sprzedaż za sierpień i zapisz zestawienie" — czyli najczęstsze zadanie tej
+ * osoby — kończyło się kłódką, i najczęstszym ekranem księgowej była prośba o zgodę
+ * zamiast wyniku pracy. Rachunek się przez to nie zmienił: obliczenie chodzi
+ * w piaskownicy bez sieci, a arkusz ląduje w teczce sprawy.
+ *
+ * Nadania przełożonego wymaga to, co wychodzi POZA tę osobę albo poza firmę:
+ * odkładanie na wspólną półkę, generowanie obrazów, odpytywanie wykazu VAT.
  *
  * Założenie konta idzie do dziennika. Pierwsze wejście nowej osoby do narzędzia,
  * które pracuje na jej plikach, jest zdarzeniem, o którym audytor ma prawo wiedzieć.

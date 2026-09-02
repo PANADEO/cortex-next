@@ -534,6 +534,11 @@ function report(argv) {
   const stale = KNOWN_BELOW.filter(
     (one) => measured.has(one) && !below.some((bad) => `${bad.skin} — ${label(bad.pair)}` === one),
   )
+  // Wpis, do którego NIE PASUJE żadna mierzona para — literówka w nazwie skórki albo
+  // roli, która przestała istnieć. Przechodził cicho i był najwygodniejszym sposobem
+  // schowania regresji: nazwa wygląda jak zgoda, a nie zgadza się z niczym, więc niczego
+  // nie dopuszcza ANI nie zgłasza. Znalezione przy powtórnej weryfikacji.
+  const unknown = KNOWN_BELOW.filter((one) => !measured.has(one))
 
   console.log(`  RAZEM ${below.length} z ${results.length} par poniżej progu`)
   console.log(`         w tym ${known.length} znanych i dopuszczonych, ${failed.length} nowych`)
@@ -541,7 +546,11 @@ function report(argv) {
     console.log("\nZNANE ODSTĘPSTWA, KTÓRE JUŻ PRZECHODZĄ — skreśl je z KNOWN_BELOW:")
     stale.forEach((one) => console.log(`  ${one}`))
   }
-  return failed.length === 0 && stale.length === 0
+  if (unknown.length) {
+    console.log("\nWPISY W KNOWN_BELOW, DO KTÓRYCH NIC NIE PASUJE — literówka albo martwa rola:")
+    unknown.forEach((one) => console.log(`  ${one}`))
+  }
+  return failed.length === 0 && stale.length === 0 && unknown.length === 0
 }
 
 /**

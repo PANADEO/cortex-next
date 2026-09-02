@@ -24,6 +24,20 @@ const SEARCH_THRESHOLD = 14
  * Grupujemy po dziale — to jedyny wymiar, który rośnie razem z katalogiem.
  * Porządek liczy się z NAZW, nie z wartości: alfabet działów jest inny w każdym języku.
  */
+/**
+ * Czy w ogóle grupować po działach. Nagłówek ma sens dopiero wtedy, gdy jest co grupować —
+ * przy jednym dziale „Dla wszystkich" nad całą listą byłby samym szumem.
+ *
+ * WYNIESIONE Z KOMPONENTU, żeby dało się sprawdzić PRZYPADEK NEGATYWNY. Scenariusz e2e
+ * pilnował go przez kontrast dwóch person: pracownica miała wtedy zdolności wyłącznie
+ * „dla wszystkich", więc u niej nagłówków nie było. Decyzja o oddaniu roli startowej
+ * arkuszy i obliczeń ten kontrast skasowała — żadna persona w zasiewie nie ma już
+ * jednego działu — i asercja negatywna zniknęła razem z nim, po cichu. Reguła jest
+ * czystą funkcją jednej linii, więc jej miejsce i tak było tutaj, nie w przeglądarce.
+ */
+export const shouldGroup = (zd: Pick<Capability, "department">[]) =>
+  new Set(zd.map((z) => z.department)).size > 1
+
 function byDepartment(zd: Capability[], label: (d: string) => string, locale: string) {
   const m = new Map<string, Capability[]>()
   for (const z of zd) m.set(z.department, [...(m.get(z.department) ?? []), z])
@@ -91,9 +105,7 @@ export function CapabilityList({
   const have = p.granted.filter(matches)
   const missing = p.blocked.filter(matches)
   const all = p.granted.length + p.blocked.length
-  // grupowanie ma sens dopiero wtedy, gdy jest co grupować — przy jednym dziale
-  // nagłówek „Dla wszystkich" nad całą listą byłby samym szumem
-  const groupBy = new Set(have.map((z) => z.department)).size > 1
+  const groupBy = shouldGroup(have)
 
   return (
     <div className={dense ? "text-[13px]" : "text-[14px]"}>

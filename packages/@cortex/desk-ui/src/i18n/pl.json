@@ -476,7 +476,8 @@
     "addressNotAllowed": "Adres {{host}} nie jest dozwolony w tej instancji. Dopisz go do zmiennej {{variable}} w konfiguracji wdrożenia — docker-compose.yml, usługa cortex-frontend — i uruchom instancję ponownie. Dziś dozwolone: {{allowed}}.",
     "noAnswerInTime": "Serwer nie odpowiedział w ciągu {{seconds}} s. Sprawdź, czy działa pod tym adresem.",
     "noSuchFile": "Nie ma takiego pliku.",
-    "noSuchCase": "Nie ma takiej sprawy."
+    "noSuchCase": "Nie ma takiej sprawy.",
+    "emptyJob": "Zlecenie jest puste — napisz, co mam zrobić."
   },
   "tools": {
     "list_files": {

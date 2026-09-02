@@ -1,4 +1,5 @@
-// Każda trasa, która sięga po dysk Biurka, MUSI zapytać bramę wspólnej półki.
+// Każda trasa, która sięga po dysk Biurka, MUSI zapytać bramę wspólnej półki — i musi
+// zapytać jej ROZSTRZYGAJĄCO, a nie tylko wymówić jej nazwę.
 //
 // DLACZEGO TEN STRAŻNIK ISTNIEJE. Brama była pilnowana w połowie i nikt tego nie widział,
 // bo połowa działała wzorowo. `files.ts` filtrował spis po `shared.read` i blokował zmiany
@@ -6,47 +7,42 @@
 // `file.ts` oddawał BAJTY każdemu, kto zna ścieżkę, a `files-upload.ts` przyjmował katalog
 // z formularza i pisał na półkę bez pytania. Odebranie zdolności nie odbierało niczego.
 //
-// Testy jednostkowe tego nie łapały, bo każda z tych tras z osobna robiła to, co miała.
-// Brakowało nie sprawdzenia zachowania, tylko sprawdzenia KOMPLETU: bramy nie stawia się
-// na trasie, tylko na całej powierzchni. Dlatego ten strażnik czyta katalog tras, a nie
-// wywołuje którejkolwiek z nich — nowy plik obok jest dokładnie tym zdarzeniem, którego
-// żaden istniejący test nie zobaczy.
+// DLACZEGO DRZEWO SKŁADNIOWE, A NIE WYRAŻENIE REGULARNE. Pierwsza wersja szukała napisów
+// i została obeszła PIĘCIOMA sposobami, każdy zwykłym, niewinnym TypeScriptem:
+//
+//   from "fs"                           — bez przedrostka `node:`
+//   from 'node:fs'                      — apostrofy zamiast cudzysłowów
+//   await import("node:fs/promises")     — import dynamiczny
+//   mayTouchShared(…); return read(…)    — brama WYWOŁANA, wynik WYRZUCONY
+//   const N = "mayTouchShared(…)"        — nazwa bramy w napisie
+//
+// Trzy pierwsze to sama pisownia; wzorzec dałoby się łatać w nieskończoność. Czwarty jest
+// inny i to on przesądził o przepisaniu: strażnik sprawdzał, czy brama została WYMÓWIONA,
+// nie czy ROZSTRZYGA. Tego wyrażenie regularne nie odróżni, bo różnica siedzi w składni,
+// nie w tekście. Parser TypeScriptu widzi jedno i drugie: import w każdej postaci
+// i wywołanie, którego wynik naprawdę steruje przebiegiem.
+//
+// GRANICA, ŚWIADOMA: skanujemy `.ts` wprost w tym katalogu, bez podkatalogów. Dziś tras
+// w podkatalogach nie ma — a osobny test niżej pilnuje, żeby ta granica nie stała się
+// cicho dziurą w dniu, w którym ktoś taki katalog założy.
 
-import { readdirSync, readFileSync } from "node:fs"
+import { readdirSync, readFileSync, statSync } from "node:fs"
 import path from "node:path"
+import ts from "typescript"
 import { describe, expect, it } from "vitest"
 
 const API = __dirname
 
-/**
- * Sięga po dysk — przez warstwę Biurka ALBO wprost przez system plików.
- *
- * Drugi wariant dopisany po tym, jak weryfikator obszedł tego strażnika sondą, która
- * importowała `node:fs` i składała ścieżkę z `DESK_DATA_DIR` i parametru zapytania.
- * Trasa nie tknęła `desk-storage`, więc strażnik jej nie widział — a czytała pliki tak
- * samo. Brama pilnowana po IMPORCIE jednego modułu jest pilnowana po nazwie, nie po skutku.
- */
-const TOUCHES_DISK = /from "@cortex\/desk-core\/desk-storage"|from "node:fs(?:\/promises)?"/
+/** Moduły, przez które da się dotknąć dysku — po NAZWIE MODUŁU, nie po pisowni importu. */
+const DISK_MODULES = new Set([
+  "@cortex/desk-core/desk-storage",
+  "node:fs",
+  "node:fs/promises",
+  "fs",
+  "fs/promises",
+])
 
-/**
- * Pyta bramę — obojętne, którą z dwóch twarzy tej samej decyzji, ale musi ją WYWOŁAĆ
- * W KODZIE. Dwie poprawki, obie po nieudanych próbach obejścia:
- *
- * 1. Nawias. Bez niego wzorzec łapał sam napis, więc wystarczyło wspomnieć nazwę
- *    gdziekolwiek. Wyszło przy wstrzykiwaniu błędu: podmiana na `mayTouchSharedXX`
- *    zostawiała strażnika zielonym.
- * 2. Zdejmowanie komentarzy. `// TODO: mayTouchShared(may, p, "read")` przechodziło —
- *    czyli notatka „kiedyś to dopiszę" wystarczała za bramę. Znalazł to weryfikator.
- *
- * Zdejmowanie jest zgrubne: nie rozumie napisów ani wyrażeń regularnych, więc `"//"`
- * w napisie utnie resztę wiersza. Dla tras HTTP tego repozytorium to nie ma znaczenia,
- * a każde nieporozumienie idzie w stronę SUROWSZĄ — trasa wygląda wtedy na taką,
- * która bramy nie woła, i strażnik krzyczy zamiast milczeć.
- */
-const ASKS_GATE = /(?:mayTouchShared|refuseShared)\s*\(/
-
-const withoutComments = (source: string) =>
-  source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "")
+const GATES = new Set(["mayTouchShared", "refuseShared"])
 
 /**
  * Trasy, które dysku dotykają, a bramy NIE potrzebują — każda z powodem wpisanym tutaj,
@@ -56,17 +52,91 @@ const withoutComments = (source: string) =>
 const EXEMPT: Record<string, string> = {
   "case-new.ts":
     "ścieżkę teczki składa serwer z identyfikatora sprawy — katalog nie przychodzi od przeglądarki",
-  "case-events.ts":
-    "parametr `from` to kursor zdarzeń (liczba), nie ścieżka na dysku",
+  "case-events.ts": "parametr `from` to kursor zdarzeń (liczba), nie ścieżka na dysku",
   "test-reset.ts": "narzędzie testowe, nie trasa produktu",
   "test-saved-file.ts": "narzędzie testowe, nie trasa produktu",
   "test-seed-turn.ts": "narzędzie testowe, nie trasa produktu",
 }
 
+const parse = (file: string) =>
+  ts.createSourceFile(
+    file,
+    readFileSync(path.join(API, file), "utf8"),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  )
+
+/** Każdy import — statyczny i dynamiczny — sprowadzony do nazwy modułu. */
+function importedModules(source: ts.SourceFile): Set<string> {
+  const found = new Set<string>()
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node) && ts.isStringLiteralLike(node.moduleSpecifier)) {
+      found.add(node.moduleSpecifier.text)
+    }
+    // `await import("node:fs")` — wywołanie, którego „nazwą” jest słowo kluczowe `import`.
+    const first = ts.isCallExpression(node) ? node.arguments[0] : undefined
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      first &&
+      ts.isStringLiteralLike(first)
+    ) {
+      found.add(first.text)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  return found
+}
+
+/**
+ * Czy brama gdziekolwiek ROZSTRZYGA. Nie wystarczy ją wywołać: wynik musi sterować
+ * przebiegiem — stać w warunku, w wyrażeniu logicznym, w `return` albo wpaść do zmiennej,
+ * którą ktoś dalej czyta. Wywołanie, którego wynik nigdzie nie idzie, jest wymówieniem
+ * nazwy — i to jest dokładnie to obejście, przez które ten test został przepisany.
+ */
+function gateDecides(source: ts.SourceFile): boolean {
+  let decides = false
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      GATES.has(node.expression.text)
+    ) {
+      // W górę przez nawiasy i negacje — `!mayTouchShared(…)` to ta sama decyzja, odwrócona.
+      let at: ts.Node = node
+      while (
+        at.parent &&
+        (ts.isParenthesizedExpression(at.parent) ||
+          (ts.isPrefixUnaryExpression(at.parent) &&
+            at.parent.operator === ts.SyntaxKind.ExclamationToken))
+      ) {
+        at = at.parent
+      }
+      const parent: ts.Node | undefined = at.parent
+      if (
+        parent &&
+        (ts.isIfStatement(parent) ||
+          ts.isConditionalExpression(parent) ||
+          ts.isBinaryExpression(parent) ||
+          ts.isReturnStatement(parent) ||
+          ts.isVariableDeclaration(parent) ||
+          ts.isWhileStatement(parent))
+      ) {
+        decides = true
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  return decides
+}
+
 const routes = readdirSync(API)
   .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
-  .map((f) => ({ name: f, source: readFileSync(path.join(API, f), "utf8") }))
-  .filter((r) => TOUCHES_DISK.test(r.source))
+  .map((name) => ({ name: name, source: parse(name) }))
+  .filter((r) => [...importedModules(r.source)].some((m) => DISK_MODULES.has(m)))
 
 describe("brama wspólnej półki na całej powierzchni HTTP", () => {
   it("w ogóle znajduje trasy sięgające po dysk", () => {
@@ -75,18 +145,22 @@ describe("brama wspólnej półki na całej powierzchni HTTP", () => {
     expect(routes.length).toBeGreaterThanOrEqual(4)
   })
 
-  it.each(routes.map((r) => [r.name, r]))("%s pyta bramę albo ma wpisany powód", (_n, route) => {
-    const reason = EXEMPT[route.name]
-    if (reason) {
-      expect(reason.length, `powód zwolnienia ${route.name} jest pusty`).toBeGreaterThan(20)
-      return
-    }
-    expect(
-      ASKS_GATE.test(withoutComments(route.source)),
-      `${route.name} sięga po dysk Biurka, ale nie pyta o wspólną półkę. ` +
-        "Dołóż `mayTouchShared` przy ścieżce od użytkownika albo wpisz powód do EXEMPT.",
-    ).toBe(true)
-  })
+  it.each(routes.map((r) => [r.name, r] as const))(
+    "%s pyta bramę rozstrzygająco albo ma wpisany powód",
+    (_n, route) => {
+      const reason = EXEMPT[route.name]
+      if (reason) {
+        expect(reason.length, `powód zwolnienia ${route.name} jest pusty`).toBeGreaterThan(20)
+        return
+      }
+      expect(
+        gateDecides(route.source),
+        `${route.name} sięga po dysk Biurka, ale brama wspólnej półki nic tam nie rozstrzyga. ` +
+          "Wywołanie `mayTouchShared`, którego wynik nigdzie nie idzie, bramą nie jest. " +
+          "Dołóż warunek przy ścieżce od użytkownika albo wpisz powód do EXEMPT.",
+      ).toBe(true)
+    },
+  )
 
   it("nie zwalnia tras, których już nie ma", () => {
     // Zwolnienie, które przeżyło usunięcie trasy, jest zaproszeniem do pomyłki:
@@ -95,5 +169,18 @@ describe("brama wspólnej półki na całej powierzchni HTTP", () => {
     for (const name of Object.keys(EXEMPT)) {
       expect(onDisk.has(name), `EXEMPT wymienia ${name}, którego nie ma w katalogu`).toBe(true)
     }
+  })
+
+  it("katalog tras nie urósł w głąb ani poza .ts", () => {
+    // Skan jest płaski i obejmuje wyłącznie `.ts`. Gdy pojawi się podkatalog albo `.tsx`,
+    // ta granica stanie się dziurą — i stanie się nią po cichu. Dlatego mówi o tym test,
+    // a nie komentarz.
+    const strays = readdirSync(API).filter(
+      (entry) => statSync(path.join(API, entry)).isDirectory() || entry.endsWith(".tsx"),
+    )
+    expect(
+      strays,
+      "skan tras jest płaski i tylko dla .ts — rozszerz go, zanim dołożysz takie pliki",
+    ).toEqual([])
   })
 })

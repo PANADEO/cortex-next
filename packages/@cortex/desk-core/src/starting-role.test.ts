@@ -68,6 +68,45 @@ describe("rola startowa unosi zadanie, nie tylko listę", () => {
     },
   )
 
+  /**
+   * ZLECENIE STARTOWE, KTÓREGO ROLA NIE UNIESIE, JEST OBIETNICĄ BEZ POKRYCIA.
+   *
+   * Te zdania stoją na pustym ekranie jako gotowe do kliknięcia — czyli jako pierwsza
+   * rzecz, jaką pani Basia w tym produkcie robi. Zlecenie prowadzące prosto do kłódki
+   * jest gorsze niż jego brak: uczy w pierwszej minucie, że narzędzie mówi „nie".
+   *
+   * Rzecz wyszła przy weryfikacji decyzji o arkuszach: rola dostała `sheet.write`
+   * i `code.run`, a zlecenia startowe zostały dokumentowe — pół decyzji, i to takie
+   * pół, którego nikt by nie zauważył, bo nic nie pęka.
+   */
+  const NEEDS: Record<string, string[]> = {
+    expensesDocument: ["files.read", "code.run", "document.write", "files.keep"],
+    expensesSheet: ["files.read", "code.run", "sheet.write", "files.keep"],
+    analysis: ["files.read", "code.run", "document.write"],
+    documentGaps: ["files.read", "document.read"],
+    meetingNotes: ["document.write"],
+    titleImage: ["image.generate"],
+  }
+
+  it.each(Object.keys(ROLES).map((role) => [role, role] as const))(
+    "każde zlecenie startowe roli „%s” da się wykonać jej uprawnieniami",
+    (_n, role) => {
+      const has = new Set(ROLES[role] ?? [])
+      const offered = (capabilities.quickTasks as Record<string, string[]>)[role] ?? []
+      expect(offered.length, `rola ${role} nie ma ani jednego zlecenia startowego`).toBeGreaterThan(
+        0,
+      )
+      const broken = offered.flatMap((task) => {
+        const needed = NEEDS[task]
+        if (!needed) return [`${task} — brak wpisu w NEEDS; dopisz, czego wymaga`]
+        return needed
+          .filter((capability) => !has.has(capability))
+          .map((capability) => `${task} prowadzi do kłódki: brakuje ${capability}`)
+      })
+      expect(broken).toEqual([])
+    },
+  )
+
   it("przełożony potrafi wszystko, co pracownica", () => {
     // Rola wyższa, która czegoś NIE umie, to najbardziej mylący możliwy stan: przełożony
     // nadaje uprawnienie, którego sam nie ma, i nie rozumie, czemu u niego nie działa.

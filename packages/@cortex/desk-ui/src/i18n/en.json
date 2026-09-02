@@ -457,7 +457,8 @@
     "addressNotAllowed": "Address {{host}} is not allowed on this instance. Add it to the {{variable}} variable in the deployment configuration — docker-compose.yml, service cortex-frontend — and restart the instance. Currently allowed: {{allowed}}.",
     "noAnswerInTime": "The server did not answer within {{seconds}} s. Check whether it is running at that address.",
     "noSuchFile": "There is no such file.",
-    "noSuchCase": "There is no such case."
+    "noSuchCase": "There is no such case.",
+    "emptyJob": "The job is empty — write what I should do."
   },
   "tools": {
     "list_files": {
