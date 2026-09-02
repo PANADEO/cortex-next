@@ -420,6 +420,10 @@
       "running": "Reading",
       "ok": "Read"
     },
+    "read_document": {
+      "running": "Recognising",
+      "ok": "Recognised"
+    },
     "write_document": {
       "running": "Writing",
       "ok": "Wrote"
@@ -458,6 +462,10 @@
         "one": "read {{count}} file",
         "other": "read {{count}} files"
       },
+      "recognising": {
+        "one": "recognised {{count}} document",
+        "other": "recognised {{count}} documents"
+      },
       "document": {
         "one": "wrote {{count}} document",
         "other": "wrote {{count}} documents"
@@ -486,6 +494,7 @@
     },
     "evidence": {
       "read": "{{name}} — {{detail}}",
+      "recognised": "recognised {{name}} — {{detail}}",
       "wrote": "wrote {{name}} — {{detail}}",
       "wroteSheet": "wrote sheet {{name}} — {{detail}}",
       "generated": "generated {{name}}",
@@ -572,6 +581,10 @@
       }
     },
     "document": {
+      "read": {
+        "name": "Reading scanned documents",
+        "description": "Reads PDFs, scans and photos of documents that cannot be opened as text. The content comes from recognising the page images, so it is a reading, not a copy of the file."
+      },
       "write": {
         "name": "Writing documents",
         "description": "Saves a finished document to the case folder."

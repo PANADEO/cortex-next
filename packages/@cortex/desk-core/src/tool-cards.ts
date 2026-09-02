@@ -127,6 +127,29 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
       source: "builtin",
     }),
     K({
+      /**
+       * `reads`, tak samo jak `read_file` — bo dokument zbudowany wyłącznie z PDF-a MA się
+       * liczyć jako wniesiona treść. Bez tego panel wypisywałby „dokument powstał bez
+       * odczytania choćby jednego pliku z biurka” nad sprawą, w której cała treść przyszła
+       * z faktury tej osoby.
+       *
+       * Ale osobna GRUPA i osobna FRAZA dowodu, mimo tej samej klasy. Wspólny klucz grupy
+       * dałby zdanie „przeczytałem 2 pliki” o dwóch rzeczach, które są różne: jedna to
+       * bajty z dysku, druga to odpowiedź modelu wizyjnego na obrazek strony. Ta różnica
+       * jest całą treścią ADR-0001 §8 i człowiek ma ją widzieć w dowodzie, a nie dowiadywać
+       * się o niej z dokumentacji.
+       */
+      name: "read_document",
+      kind: "reads",
+      running: "tools.read_document.running",
+      ok: "tools.read_document.ok",
+      argName: "path",
+      argPath: "path",
+      group: { key: "recognising", phrase: "tools.groups.recognising", weight: 3 },
+      evidence: { list: "intake", phrase: "tools.evidence.recognised" },
+      source: "builtin",
+    }),
+    K({
       name: "write_document",
       kind: "produces",
       running: "tools.write_document.running",

@@ -439,6 +439,10 @@
       "running": "Czytam",
       "ok": "Przeczytałem"
     },
+    "read_document": {
+      "running": "Rozpoznaję",
+      "ok": "Rozpoznałem"
+    },
     "write_document": {
       "running": "Zapisuję",
       "ok": "Zapisałem"
@@ -478,6 +482,12 @@
         "few": "przeczytałem {{count}} pliki",
         "many": "przeczytałem {{count}} plików",
         "other": "przeczytałem {{count}} plików"
+      },
+      "recognising": {
+        "one": "rozpoznałem {{count}} dokument",
+        "few": "rozpoznałem {{count}} dokumenty",
+        "many": "rozpoznałem {{count}} dokumentów",
+        "other": "rozpoznałem {{count}} dokumentów"
       },
       "document": {
         "one": "zapisałem {{count}} dokument",
@@ -519,6 +529,7 @@
     },
     "evidence": {
       "read": "{{name}} — {{detail}}",
+      "recognised": "rozpoznano {{name}} — {{detail}}",
       "wrote": "zapisano {{name}} — {{detail}}",
       "wroteSheet": "zapisano arkusz {{name}} — {{detail}}",
       "generated": "wygenerowano {{name}}",
@@ -609,6 +620,10 @@
       }
     },
     "document": {
+      "read": {
+        "name": "Rozpoznawanie dokumentów",
+        "description": "Odczytuje PDF-y, skany i zdjęcia dokumentów, których nie da się otworzyć jako tekst. Treść powstaje z rozpoznania obrazu stron, więc jest odczytem, a nie kopią pliku."
+      },
       "write": {
         "name": "Tworzenie dokumentów",
         "description": "Zapisuje gotowy dokument do teczki sprawy."

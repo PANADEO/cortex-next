@@ -9,6 +9,10 @@
       "department": "everyone"
     },
     {
+      "id": "document.read",
+      "department": "everyone"
+    },
+    {
       "id": "shared.read",
       "department": "everyone"
     },
@@ -53,6 +57,7 @@
     "member": [
       "files.list",
       "files.read",
+      "document.read",
       "shared.read",
       "document.write",
       "document.verify",
@@ -62,6 +67,7 @@
     "management": [
       "files.list",
       "files.read",
+      "document.read",
       "shared.read",
       "document.write",
       "document.verify",

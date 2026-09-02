@@ -11,6 +11,14 @@ import { hasCapability } from "./capability-gate"
  * stron zwykłego tekstu i mieści typowe zestawienie miesięczne w całości.
  */
 const READ_LIMIT = 60_000
+import {
+  DocumentParserFailure,
+  isRecognisable,
+  notReadable,
+  recogniseDocument,
+  recognitionAnswer,
+  recognitionSummary,
+} from "./document-parser"
 import { sandboxFailureLine } from "./failure"
 import { isShared } from "./folder"
 import { refuseShared } from "./shared-access"
@@ -249,7 +257,7 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
         step("read_file", `Czytam ${path}`, { path }, async () => {
           // Bez tego readFile(utf8) na .jpg zwraca śmieci z ok:true i wpisuje je do dowodu
           // jako „odczytany plik" — czyli dowód poświadcza coś, czego nie było.
-          const notText = notReadable(path)
+          const notText = notReadable(path, hasCapability(p, "document.read"))
           if (notText) {
             return { ok: false, summary: "to nie jest plik tekstowy", answer: notText }
           }
@@ -275,6 +283,80 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
               ok: false,
               summary: "nie udało się otworzyć",
               answer: `Nie udało się otworzyć pliku ${path}.`,
+            }
+          }
+        }),
+    })
+  }
+
+  if (hasCapability(p, "document.read")) {
+    /**
+     * OSOBNA CZYNNOŚĆ, nie gałąź w `read_file` (ADR-0001 §8). `read_file` czyta bajty
+     * z dysku; ta prosi usługę, żeby narysowała strony i pokazała je modelowi wizyjnemu.
+     * Wynik jest tekstem modelu — a cały ten produkt stoi na zdaniu, że dowód nigdy
+     * z tekstu modelu nie pochodzi. Schowanie obu pod jedną kartą znaczyłoby, że
+     * ta różnica przestaje być widoczna dokładnie tam, gdzie ma być widoczna najbardziej.
+     */
+    t.read_document = tool({
+      description:
+        "Odczytuje dokument, którego nie da się przeczytać jako tekst: PDF, skan, zdjęcie " +
+        "dokumentu, plik Worda, Excela albo prezentację. Strony są ROZPOZNAWANE przez model " +
+        "z obrazu, więc wynik jest odczytem, a nie dosłowną treścią pliku — kwoty i numery " +
+        "traktuj jako do sprawdzenia i nigdy nie twierdź, że cytujesz plik dosłownie. " +
+        "Do plików tekstowych (txt, csv, md) używaj read_file — są tańsze i pewne.",
+      inputSchema: z.object({ path: z.string().describe('np. "Moje pliki/faktura-08.pdf"') }),
+      execute: async ({ path }) =>
+        step("read_document", `Rozpoznaję ${path}`, { path }, async () => {
+          // Plik tekstowy odbijamy PRZED wywołaniem usługi: rozpoznawanie kosztuje
+          // pieniądze i oddaje domysł tam, gdzie `read_file` oddaje pewność.
+          if (!isRecognisable(path)) {
+            return {
+              ok: false,
+              summary: "to nie jest dokument do rozpoznania",
+              answer:
+                `Pliku ${path} nie ma po co rozpoznawać. Jeśli to zwykły tekst, arkusz CSV ` +
+                "albo markdown — przeczytaj go czynnością read_file. Jeśli to archiwum albo " +
+                "program, nie da się z niego nic odczytać.",
+            }
+          }
+          const nie = refuseShared(may, path, "read")
+          if (nie) return { ok: false, summary: "brak dostępu do wspólnej półki", answer: nie }
+
+          let bytes: Buffer
+          try {
+            bytes = await storage.readBinary(u.id, path)
+          } catch {
+            return {
+              ok: false,
+              summary: "nie udało się otworzyć",
+              answer: `Nie udało się otworzyć pliku ${path}.`,
+            }
+          }
+
+          const name = path.split("/").pop() ?? path
+          try {
+            const recognised = await recogniseDocument({
+              fileName: name,
+              bytes,
+              // Rejestr cortex-proxy to księga dla audytora — ma widzieć osobę, nie usługę.
+              user: u.id,
+            })
+            return {
+              // Liczba stron NIE jest ozdobą: to jedyne miejsce, w którym człowiek zobaczy,
+              // że usługa przetworzyła sam początek długiego dokumentu.
+              summary: recognitionSummary(recognised),
+              answer: recognitionAnswer(name, recognised),
+            }
+          } catch (e) {
+            // Awaria usługi zamyka krok jak każda inna — para zdarzeń domyka się w `step`,
+            // ale dowód ma powiedzieć CO się zepsuło, a nie tylko że się nie udało.
+            const why = e instanceof DocumentParserFailure ? e.message : String(e).slice(0, 120)
+            return {
+              ok: false,
+              summary: `nie udało się rozpoznać — ${why}`,
+              answer:
+                `Nie udało się rozpoznać dokumentu ${name}: ${why}. Powiedz o tym człowiekowi ` +
+                "i zaproponuj wersję tekstową albo wklejenie potrzebnego fragmentu.",
             }
           }
         }),
@@ -733,27 +815,6 @@ export async function runTurn(u: User, p: Policy, caseId: string) {
   })()
 }
 
-/** Zwraca wyjaśnienie po polsku, jeśli pliku po prostu nie da się przeczytać jako tekst. */
-function notReadable(path: string): string | null {
-  const ext = path.split(".").pop()?.toLowerCase() ?? ""
-  if (["png", "jpg", "jpeg", "webp", "gif", "bmp", "heic"].includes(ext)) {
-    return "To jest obraz, nie plik tekstowy. Poproś użytkownika, żeby dołączył go do wiadomości — wtedy go zobaczysz."
-  }
-  if (["xlsx", "xls"].includes(ext)) {
-    return "Nie umiem otworzyć pliku Excela. Poproś użytkownika, żeby zapisał go jako CSV (w Excelu: Plik → Zapisz jako → CSV) i wgrał ponownie."
-  }
-  if (ext === "docx" || ext === "doc") {
-    return "Nie umiem otworzyć pliku Worda. Poproś użytkownika o wersję w formacie tekstowym albo o wklejenie treści."
-  }
-  if (ext === "pdf") {
-    return "Nie umiem odczytać PDF-a. Poproś użytkownika o wersję tekstową albo o wklejenie potrzebnego fragmentu."
-  }
-  if (["zip", "rar", "7z", "exe", "dmg"].includes(ext)) {
-    return "To jest archiwum albo program, nie dokument. Nie umiem tego otworzyć."
-  }
-  return null
-}
-
 const CAPABILITY_HINTS: Record<string, RegExp> = {
   "sheet.write": /arkusz|excel|xlsx|spreadsheet|csv|tabel/i,
   "code.run": /policz|oblicz|przelicz|wykres|skrypt|kod|statystyk/i,
@@ -761,6 +822,10 @@ const CAPABILITY_HINTS: Record<string, RegExp> = {
   "files.keep": /moich plik|do moich|trwal/i,
   "document.write": /zapisa.*dokument|utworzy.*plik/i,
   "files.read": /przeczyta|odczyta|otworzy.*plik/i,
+  // Bez „odczytać" i „przeczytać" w tym wzorcu, choć pasowałyby: dopasowanie bierze
+  // PIERWSZĄ pasującą zablokowaną zdolność w kolejności katalogu, a tam `files.read`
+  // stoi wyżej i łapie oba te czasowniki. Rozróżnia się je nośnikiem — PDF, skan, Word.
+  "document.read": /pdf|skan|zeskan|rozpozna|ocr|word|docx|zdjęci.*(faktur|dokument)/i,
   "files.list": /list plik|zajrze.*teczk|zobaczy.*plik/i,
   "counterparty.verify":
     /biał[ae] li[sś]|wykaz podatnik|status vat|czynn.*podatnik|\bnip\b|rachunek.*kontrahent|nale[żz]yt.*starann/i,
