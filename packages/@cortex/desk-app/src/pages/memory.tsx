@@ -1,4 +1,5 @@
 import { MemoryList } from "@cortex/desk-ui/components/memory-list"
+import { Loading } from "@cortex/desk-ui/components/loading"
 import { Shell } from "@cortex/desk-ui/components/shell"
 import { deskT } from "@cortex/desk-ui/i18n/server"
 import { Suspense } from "react"
@@ -12,7 +13,7 @@ export default async function Page() {
           <h1 className="t-display">{translate("memory.title")}</h1>
           <p className="t-body mt-1 text-desk-muted">{translate("memory.lead")}</p>
           <div className="mt-6">
-            <Suspense>
+            <Suspense fallback={<Loading rows={4} />}>
               <MemoryList />
             </Suspense>
           </div>

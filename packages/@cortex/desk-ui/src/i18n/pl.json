@@ -30,7 +30,8 @@
     "close": "Zamknij",
     "cancel": "Anuluj",
     "undo": "Cofnij",
-    "closeToast": "Zamknij powiadomienie"
+    "closeToast": "Zamknij powiadomienie",
+    "loading": "Ładuję…"
   },
   "case": {
     "untitled": "Sprawa",

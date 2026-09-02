@@ -33,7 +33,8 @@
     "close": "Close",
     "cancel": "Cancel",
     "undo": "Undo",
-    "closeToast": "Dismiss the notification"
+    "closeToast": "Dismiss the notification",
+    "loading": "Loading…"
   },
   "case": {
     "untitled": "Case",

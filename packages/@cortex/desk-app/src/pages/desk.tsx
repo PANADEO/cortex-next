@@ -4,6 +4,7 @@ import { countResults } from "@cortex/desk-core/folder-server"
 import { viewer } from "@cortex/desk-core/identity"
 import { CaseList, type CaseRow } from "@cortex/desk-ui/components/case-list"
 import { Composer } from "@cortex/desk-ui/components/composer"
+import { Loading } from "@cortex/desk-ui/components/loading"
 import { Shell } from "@cortex/desk-ui/components/shell"
 import { deskT } from "@cortex/desk-ui/i18n/server"
 import { t } from "@cortex/desk-ui/routes"
@@ -49,7 +50,7 @@ export default async function Desk() {
             <p className="t-meta mt-0.5">{translate("home.privacy")}</p>
           </div>
 
-          <Suspense>
+          <Suspense fallback={<Loading rows={5} />}>
             <Composer quickTasks={u.quickTasks} policyFor={p} hasCases={cases.length} />
           </Suspense>
 
