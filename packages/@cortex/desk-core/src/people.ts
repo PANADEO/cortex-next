@@ -172,13 +172,22 @@ export async function approverName(): Promise<string> {
  * i zapamiętanie ustalenia. Zaglądanie na wspólną półkę też, ale bez podmieniania
  * tego, co czyta cały zespół.
  *
- * ARKUSZE I OBLICZENIA weszły tu 02.09.2026, decyzją właściciela produktu. Bez nich
- * „policz sprzedaż za sierpień i zapisz zestawienie" — czyli najczęstsze zadanie tej
- * osoby — kończyło się kłódką, i najczęstszym ekranem księgowej była prośba o zgodę
- * zamiast wyniku pracy. Rachunek się przez to nie zmienił: obliczenie chodzi
- * w piaskownicy bez sieci, a arkusz ląduje w teczce sprawy.
+ * ARKUSZE weszły tu 02.09.2026, decyzją właściciela produktu. Bez nich „zrób zestawienie
+ * i zapisz jako arkusz" — czyli najczęstsze zadanie tej osoby — kończyło się kłódką,
+ * i najczęstszym ekranem księgowej była prośba o zgodę zamiast wyniku pracy. Rachunek
+ * się przez to nie zmienił: `write_sheet` zapisuje CSV wprost do teczki sprawy, bez
+ * uruchamiania czyjegokolwiek kodu.
  *
- * Nadania przełożonego wymaga to, co wychodzi POZA tę osobę albo poza firmę:
+ * URUCHAMIANIE OBLICZEŃ zostaje przy przełożonym i to NIE jest ostrożność, tylko stan
+ * piaskownicy: dopóki `DESK_SANDBOX_SOCKET` nie wskazuje demona, biegnie ścieżka zapasowa
+ * na modelu uprawnień Node — a ta ma OTWARTĄ SIEĆ (patrz `sandbox.ts`, sekcja „czego nadal
+ * nie ma"). Tamten komentarz mówi wprost, że w środowisku klienta `code.run` nie powinno
+ * być przyznawane domyślnie, a `ensurePerson` zakłada konto KAŻDEMU, kogo wpuści brama
+ * logowania. Razem znaczyłoby to: dowolny kod z dostępem do internetu, na serwerze firmy,
+ * dla każdego nowego adresu. Demon `cortex-sandbox` zamyka sieć (`--network=none`) —
+ * po jego podłączeniu ta zdolność może tu wrócić i wtedy będzie to decyzja, a nie przeoczenie.
+ *
+ * Nadania przełożonego wymaga poza tym to, co wychodzi POZA tę osobę albo poza firmę:
  * odkładanie na wspólną półkę, generowanie obrazów, odpytywanie wykazu VAT.
  *
  * Założenie konta idzie do dziennika. Pierwsze wejście nowej osoby do narzędzia,

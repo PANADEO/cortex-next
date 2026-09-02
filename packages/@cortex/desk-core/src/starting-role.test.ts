@@ -27,6 +27,17 @@ const ROLES = capabilities.roles as Record<string, string[]>
 const JOBS = [
   {
     what: "policz sprzedaż za sierpień z faktur i zapisz zestawienie w moich plikach",
+    // ZABLOKOWANE, ze wskazaniem CO to zdejmie. To jest zadanie, dla którego to biurko
+    // powstało, i właściciel produktu wprost zdecydował, że rola startowa ma je unieść.
+    // Nie unosi, bo `code.run` wróciło do przełożonego: dopóki `DESK_SANDBOX_SOCKET`
+    // nie wskazuje demona, obliczenia biegną ścieżką zapasową z OTWARTĄ SIECIĄ, a
+    // `sandbox.ts` mówi wprost, że w środowisku klienta ta zdolność nie powinna być
+    // przyznawana domyślnie. `ensurePerson` zakłada konto każdemu spod bramy logowania,
+    // więc znaczyłoby to dowolny kod z internetem dla każdego nowego adresu.
+    //
+    // Wpis ma ZNIKNĄĆ w dniu podłączenia demona — pilnuje tego test niżej, więc nie da
+    // się o nim zapomnieć ani zostawić go jako wygodnej wymówki.
+    blocked: "code.run czeka na demona piaskownicy z zamkniętą siecią (cortex-sandbox)",
     steps: [
       ["files.list", "znaleźć faktury na biurku"],
       ["files.read", "przeczytać je"],
@@ -64,6 +75,17 @@ describe("rola startowa unosi zadanie, nie tylko listę", () => {
       const missing = job.steps
         .filter(([capability]) => !has.has(capability as string))
         .map(([capability, why]) => `${capability} — bez tego nie da się ${why}`)
+      const blocked = (job as { blocked?: string }).blocked
+      if (blocked) {
+        // Luka NAZWANA jest czymś innym niż luka przemilczana — ale tylko dopóki
+        // naprawdę istnieje. Wpis, który przestał blokować, ma zniknąć.
+        expect(
+          missing.length,
+          `„${blocked}” już nie blokuje — skreśl pole blocked z tego zadania`,
+        ).toBeGreaterThan(0)
+        expect(blocked.length).toBeGreaterThan(20)
+        return
+      }
       expect(missing).toEqual([])
     },
   )
@@ -79,10 +101,17 @@ describe("rola startowa unosi zadanie, nie tylko listę", () => {
    * i `code.run`, a zlecenia startowe zostały dokumentowe — pół decyzji, i to takie
    * pół, którego nikt by nie zauważył, bo nic nie pęka.
    */
+  //
+  // WYMIENIAMY TO, BEZ CZEGO ZADANIA NIE DA SIĘ WYKONAĆ — nie to, co je poprawia.
+  // Rozróżnienie jest istotne: liczenie w piaskownicy daje wynik pewniejszy niż rachunek
+  // modelu w głowie, ale zestawienie z dziesięciu faktur powstanie i bez niej. Wpisanie
+  // `code.run` jako wymogu zamieniłoby ten strażnik w zapis MOICH przekonań o tym, jak
+  // zadanie powinno przebiegać, a on ma pilnować jednej rzeczy: czy zlecenie z pustego
+  // ekranu prowadzi do kłódki.
   const NEEDS: Record<string, string[]> = {
-    expensesDocument: ["files.read", "code.run", "document.write", "files.keep"],
-    expensesSheet: ["files.read", "code.run", "sheet.write", "files.keep"],
-    analysis: ["files.read", "code.run", "document.write"],
+    expensesDocument: ["files.read", "document.write", "files.keep"],
+    expensesSheet: ["files.read", "sheet.write", "files.keep"],
+    analysis: ["files.read", "document.write"],
     documentGaps: ["files.read", "document.read"],
     meetingNotes: ["document.write"],
     titleImage: ["image.generate"],
