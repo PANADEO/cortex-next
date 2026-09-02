@@ -18,7 +18,7 @@ const step = (name: string, args: Record<string, unknown>): DeskEvent[] => {
     { type: "tool_end", id, name, ok: true, summary: "gotowe", ms: 1 },
   ]
 }
-const plik = (name: string): FileMeta => ({
+const file = (name: string): FileMeta => ({
   path: name, name, folder: false, size: 10, modifiedAt: "2026-09-02T10:00:00Z",
 })
 
@@ -76,7 +76,7 @@ describe("obietnice bez pokrycia", () => {
 
   it("plik leżący w teczce sprawy broni się sam", () => {
     expect(
-      unbackedPromises("Zapisałem zestawienie.csv.", [], [plik("zestawienie.csv")]),
+      unbackedPromises("Zapisałem zestawienie.csv.", [], [file("zestawienie.csv")]),
     ).toEqual([])
   })
 
