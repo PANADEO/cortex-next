@@ -483,6 +483,12 @@ export function migrate(): Promise<void> {
       create index if not exists event_stored_file_idx
         on desk.event ((payload->>'summary'))
         where payload->>'name' = 'save_to_my_files';
+      -- Dzienny limit pyta o zdarzenia kosztu z DZISIAJ (capability-gate.ts). Bez tego
+      -- indeksu jest to przegląd wszystkich zdarzeń w bazie przed KAŻDYM zleceniem —
+      -- a zdarzeń przybywa z każdą turą każdej osoby, więc koszt rośnie z wiekiem wdrożenia.
+      create index if not exists event_cost_idx
+        on desk.event (at)
+        where payload->>'type' = 'cost';
 
       create table if not exists desk.audit_log (
         id bigserial primary key,

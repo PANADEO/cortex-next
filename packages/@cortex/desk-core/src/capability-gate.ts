@@ -56,11 +56,30 @@ export function hasCapability(p: Policy, id: string) {
   return p.granted.some((z) => z.id === id)
 }
 
+/**
+ * DZISIEJSZY WYDATEK — suma tego, co NAPRAWDĘ poszło dzisiaj, a nie koszt spraw,
+ * których dziś dotknięto.
+ *
+ * Poprzednia wersja sumowała `cost_usd` spraw z `updated_at` z dzisiaj. Sprawa sprzed
+ * tygodnia, w której ktoś dopisał jedno zdanie, wnosiła wtedy CAŁY swój historyczny
+ * koszt do dzisiejszego limitu — i człowiek dostawał „wyczerpany dzienny limit" za
+ * pieniądze wydane w zeszłym miesiącu. Wystarczyło otworzyć starą, drogą sprawę.
+ * W drugą stronę było równie źle: koszt z wczoraj znikał z rachunku, gdy sprawy dziś
+ * nie ruszono, więc limit dawał się obejść przez samo odczekanie do północy.
+ *
+ * Zdarzenie `cost` niesie kwotę i własny znacznik czasu, więc pytamy o nie wprost.
+ * To jest ta sama zasada, na której stoi cały dowód: liczy się to, co się wydarzyło
+ * i zostało zapisane, a nie stan wyliczony z czegoś obok.
+ */
 export async function spentToday(user: string): Promise<number> {
   await migrate()
   const r = await pool.query<{ total: string }>(
-    `select coalesce(sum(cost_usd),0)::text as total from desk.case_file
-     where owner=$1 and updated_at::date = now()::date`,
+    `select coalesce(sum((e.payload->>'usd')::numeric),0)::text as total
+       from desk.event e
+       join desk.case_file c on c.id = e.case_id
+      where c.owner=$1
+        and e.payload->>'type' = 'cost'
+        and e.at::date = now()::date`,
     [user],
   )
   return Number(r.rows[0]?.total ?? 0)
