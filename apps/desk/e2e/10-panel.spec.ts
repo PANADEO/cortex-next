@@ -15,6 +15,18 @@ async function nowaSprawa(request: APIRequestContext, who: string, title: string
 const panelu = (page: Page) => page.getByRole("complementary", { name: "Panel wyniku" })
 const uchwytu = (page: Page) => page.getByRole("separator", { name: "Szerokość panelu wyniku" })
 
+/**
+ * Pusta sprawa NIE MA dziś panelu — musi na niego zarobić treścią albo decyzją człowieka.
+ * Te scenariusze badają sam uchwyt, więc otwierają panel jawnie, zamiast liczyć na to,
+ * że otworzy się sam. Wcześniej otwierał się zawsze i zabierał ćwierć ekranu sprawie,
+ * w której nie było jeszcze czego pokazać.
+ */
+async function otworzPanel(page: Page) {
+  const pokaz = page.getByRole("button", { name: "Pokaż panel wyniku" })
+  if (await pokaz.isVisible()) await pokaz.click()
+  await expect(panelu(page)).toBeVisible()
+}
+
 async function szerokoscPanelu(page: Page) {
   const b = await panelu(page).boundingBox()
   return b?.width ?? 0
@@ -25,6 +37,7 @@ test.describe("Obszar 13 · Panel wyniku słucha ręki", () => {
     await as(page, "anna")
     const id = await nowaSprawa(request, "anna", "Szerokość")
     await page.goto(`/case/${id}`)
+    await otworzPanel(page)
 
     const before = await szerokoscPanelu(page)
     const u = await uchwytu(page).boundingBox()
@@ -43,7 +56,7 @@ test.describe("Obszar 13 · Panel wyniku słucha ręki", () => {
     await as(page, "anna")
     const id = await nowaSprawa(request, "anna", "Zwijanie")
     await page.goto(`/case/${id}`)
-    await expect(panelu(page)).toBeVisible()
+    await otworzPanel(page)
 
     const u = await uchwytu(page).boundingBox()
     await page.mouse.move(u!.x + u!.width / 2, u!.y + 200)
@@ -61,6 +74,7 @@ test.describe("Obszar 13 · Panel wyniku słucha ręki", () => {
     await as(page, "anna")
     const id = await nowaSprawa(request, "anna", "Trwała szerokość")
     await page.goto(`/case/${id}`)
+    await otworzPanel(page)
 
     const u = await uchwytu(page).boundingBox()
     await page.mouse.move(u!.x + u!.width / 2, u!.y + 200)
@@ -78,6 +92,7 @@ test.describe("Obszar 13 · Panel wyniku słucha ręki", () => {
     await as(page, "anna")
     const id = await nowaSprawa(request, "anna", "Klawiatura")
     await page.goto(`/case/${id}`)
+    await otworzPanel(page)
 
     const before = await szerokoscPanelu(page)
     await uchwytu(page).focus()

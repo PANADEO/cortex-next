@@ -488,6 +488,7 @@
       "generated": "generated {{name}}",
       "verified": "read {{name}} back after saving — {{detail}}",
       "computed": "computed — {{detail}}",
+      "used": "used in a computation: {{name}}",
       "stored": "saved to My files: {{detail}}",
       "external": "{{source}}: {{label}} — {{detail}}",
       "externalNamed": "{{server}}: {{tool}} — {{detail}}",

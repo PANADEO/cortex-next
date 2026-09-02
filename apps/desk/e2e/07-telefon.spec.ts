@@ -33,8 +33,13 @@ test.describe("Obszar 7 · Telefon", () => {
   test("Dolna nawigacja nie zasłania treści na dole strony", async ({ page }) => {
     await as(page, "anna")
     await page.goto("/files")
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
     const trash = page.getByRole("button", { name: /^Kosz/ })
+    // `scrollIntoViewIfNeeded`, a NIE `window.scrollTo`: strona przewija się w kontenerze
+    // wewnętrznym, więc przewijanie okna nie ruszało niczego. Przy krótkiej liście kosz
+    // i tak mieścił się na ekranie, więc test przechodził — ale mierzył wtedy „element
+    // jest widoczny", a nie „nawigacja go nie zasłania". Przy dłuższej liście `pod` robił
+    // się `null`, bo punkt wypadał poza oknem, i test padał, choć nic nikogo nie zasłaniało.
+    await trash.scrollIntoViewIfNeeded()
     await expect(trash).toBeVisible()
     const zaslonione = await trash.evaluate((el) => {
       const r = el.getBoundingClientRect()

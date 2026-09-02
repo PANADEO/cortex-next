@@ -52,6 +52,22 @@ export type ToolCard = {
   /** który argument niesie nazwę rzeczy, a który pełną ścieżkę do szczegółu */
   argName?: string
   argPath?: string
+  /**
+   * Który argument niesie LISTĘ plików z biurka, które WESZŁY do sprawy — i jakim zdaniem
+   * je zapisać w „Co weszło".
+   *
+   * To jest oś OSOBNA od `kind`. `kind` mówi, CZYM czynność jest; ta mówi, CO do sprawy
+   * weszło. Zmieszanie ich dało błąd, który przez cały czas siedział w piaskownicy:
+   * `run_computation` montuje pliki z biurka pod ich nazwami i liczy na nich, ale jest
+   * klasy „computes", więc nie karmił `fromDesk`. Sprawa policzona w piaskownicy w całości
+   * — czyli dokładnie ta, do której piaskownica służy — dostawała w panelu zdanie
+   * „dokument powstał bez odczytania choćby jednego pliku z biurka". To była NIEPRAWDA
+   * wypisana z powagą, w jedynym miejscu tego produktu, które nie ma prawa się mylić.
+   *
+   * Osobne pole, a nie druga wartość `kind`, bo obliczenie NIE jest odczytaniem: człowiek
+   * ma widzieć, że plik wszedł do sprawy, i osobno — że wszedł jako dane, a nie jako lektura.
+   */
+  inputs?: { arg: string; phrase: string }
   /** gdy nie ma podsumowania z narzędzia, szczegół bierzemy z tego argumentu */
   argDetail?: string
   /** brak `grupa` znaczy: ta czynność świadomie nie wchodzi do zdania podsumowania */
@@ -161,6 +177,7 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
     K({
       name: "run_computation",
       kind: "computes",
+      inputs: { arg: "files", phrase: "tools.evidence.used" },
       running: "tools.run_computation.running",
       ok: "tools.run_computation.ok",
       argDetail: "description",

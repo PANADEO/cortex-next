@@ -99,15 +99,23 @@ test.describe("Obszar 8 · Rozmowa, którą da się prowadzić", () => {
     const { id } = await r.json()
     await page.goto(`/case/${id}`)
 
+    const pokaz = page.getByRole("button", { name: "Pokaż panel wyniku" })
     const schowaj = page.getByRole("button", { name: "Ukryj panel wyniku" })
+
+    // Pusta sprawa startuje BEZ panelu — musi on na siebie zarobić. Sprawdzamy więc
+    // decyzję człowieka w OBU kierunkach, bo dopiero to jest „zostaje": otwarty ma
+    // zostać otwarty mimo pustej sprawy, a schowany ma zostać schowany.
+    await expect(pokaz).toBeVisible()
+    await pokaz.click()
     await expect(schowaj).toBeVisible()
-    await schowaj.click()
-    await expect(page.getByRole("button", { name: "Pokaż panel wyniku" })).toBeVisible()
 
     await page.reload()
-    await expect(page.getByRole("button", { name: "Pokaż panel wyniku" })).toBeVisible()
-    await page.getByRole("button", { name: "Pokaż panel wyniku" }).click()
-    await expect(page.getByRole("button", { name: "Ukryj panel wyniku" })).toBeVisible()
+    await expect(schowaj).toBeVisible()
+    await schowaj.click()
+    await expect(pokaz).toBeVisible()
+
+    await page.reload()
+    await expect(pokaz).toBeVisible()
   })
 
   test("Wskaźnik pracy pojawia się od razu po wysłaniu, nie po pierwszym kroku", async ({

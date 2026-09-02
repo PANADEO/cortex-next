@@ -14,6 +14,11 @@ export default defineConfig({
       "@cortex/tile-sdk": a("packages/@cortex/tile-sdk/src"),
       "@cortex/service": a("packages/@cortex/service/src"),
       "@cortex/db": a("packages/@cortex/db/src"),
+      // Biurko: `desk-core` sięga do słownika `desk-ui` (typ tłumacza, a w testach także
+      // sama funkcja). Bez tego aliasu każdy test dowodu przewracał się na rozwiązaniu
+      // ścieżki, a nie na tym, co miał sprawdzać.
+      "@cortex/desk-ui": a("packages/@cortex/desk-ui/src"),
+      "@cortex/desk-core": a("packages/@cortex/desk-core/src"),
       "@": a("app/idp"),
     },
   },

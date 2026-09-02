@@ -521,6 +521,7 @@
       "generated": "wygenerowano {{name}}",
       "verified": "odczytano {{name}} po zapisie — {{detail}}",
       "computed": "policzono — {{detail}}",
+      "used": "wzięto do obliczeń: {{name}}",
       "stored": "odłożono do Moich plików: {{detail}}",
       "external": "{{source}}: {{label}} — {{detail}}",
       "externalNamed": "{{server}}: {{tool}} — {{detail}}",

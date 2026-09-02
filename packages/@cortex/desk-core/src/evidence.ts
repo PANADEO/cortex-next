@@ -61,14 +61,31 @@ export function evidenceFromEvents(events: DeskEvent[], translate: DeskT): Evide
   for (const k of pairSteps(events)) {
     if (k.status !== "ok") continue
     const c = cardFor(k.name, k.source)
-    const a = k.args as Record<string, string>
-    const name = c.argName ? (a[c.argName] ?? "") : ""
+    // `unknown`, a nie `string`: argumenty narzędzi niosą też LISTY (pliki wchodzące do
+    // piaskownicy), a rzutowanie na `Record<string, string>` było wtedy zapewnieniem
+    // nieprawdziwym — kompilator przestawał pilnować akurat tego miejsca, w którym
+    // wartość nie jest napisem.
+    const a = k.args as Record<string, unknown>
+    const name = c.argName && typeof a[c.argName] === "string" ? (a[c.argName] as string) : ""
 
     // Odczyt Z BIURKA, nie z dowolnego źródła: na tym stoi zdanie o dokumencie,
     // który powstał bez zajrzenia do choćby jednego pliku tej osoby.
     if (c.kind === "reads" && name) fromDesk.add(name)
     if (c.kind === "produces" && c.verifiable && name) saved.add(name)
     if (c.kind === "verifies" && name) verified.add(name)
+
+    // Pliki, które weszły do sprawy jako DANE — np. zamontowane w piaskownicy. Karmią ten
+    // sam zbiór co odczyt, bo na nim stoi zdanie o dokumencie powstałym bez zajrzenia do
+    // czegokolwiek; pomijamy plik już policzony, żeby ta sama faktura nie pojawiła się
+    // w „Co weszło" dwa razy dlatego, że agent liczył na niej dwukrotnie.
+    if (c.inputs) {
+      const given = a[c.inputs.arg]
+      for (const file of Array.isArray(given) ? given : []) {
+        if (typeof file !== "string" || file === "" || fromDesk.has(file)) continue
+        fromDesk.add(file)
+        intake.push(translate(c.inputs.phrase, { name: file }))
+      }
+    }
 
     if (!c.evidence) continue
     const detail = k.summary ?? ""

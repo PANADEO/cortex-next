@@ -86,6 +86,7 @@ const everything = policy(
   "files.keep",
   "sheet.write",
   "memory.write",
+  "code.run",
 )
 
 /** Para zdarzeń jednego kroku, dopasowana po `id` — tak jak robi to ekran. */
@@ -127,6 +128,26 @@ describe("krok narzędzia, gdy narzędzie się przewraca", () => {
     // Model dostaje zdanie, a nie wyjątek — inaczej tura kończy się awarią całej pracy.
     expect(typeof answer).toBe("string")
     expect(String(answer).length).toBeGreaterThan(0)
+  })
+
+  it("obliczenie zapisuje w zdarzeniu, KTÓRE pliki do niego weszły", async () => {
+    // Druga połowa tej samej poprawki co w evidence.test.ts, i ta ważniejsza: dowód
+    // powstaje wyłącznie ze zdarzeń, więc karta z osią wejścia nie ma czego czytać,
+    // dopóki `run_computation` nie zapisze listy plików w `tool_start`. Wcześniej szedł
+    // tam sam opis, i sprawa policzona na fakturach twierdziła w panelu, że nikt do
+    // żadnego pliku nie zajrzał. Piaskownica się tu przewróci i to nie szkodzi —
+    // `tool_start` leci PRZED wykonaniem, więc asercja mierzy dokładnie to, co ma.
+    await call("run_computation", {
+      description: "sumuję faktury",
+      code: "console.log(1)",
+      files: ["Moje pliki/f1.csv", "Moje pliki/f2.csv"],
+    })()
+    const { start } = step("run_computation")
+    expect(start, "brak tool_start dla obliczenia").toBeTruthy()
+    expect((start as { args: { files?: unknown } }).args.files).toEqual([
+      "Moje pliki/f1.csv",
+      "Moje pliki/f2.csv",
+    ])
   })
 
   it("surowa treść wyjątku nie wychodzi do dowodu", async () => {

@@ -398,7 +398,9 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
         files: z.array(z.string()).optional(),
       }),
       execute: async ({ description, code, files }) =>
-        step("run_computation", description, { description }, async () => {
+        // `files` MUSI wejść do zdarzenia, nie tylko do wywołania piaskownicy: dowód
+        // powstaje wyłącznie ze zdarzeń, więc czego tu nie ma, tego dla sprawy nie było.
+        step("run_computation", description, { description, files: files ?? [] }, async () => {
           const box = await sandbox.create({
             user: u.id,
             caseId,
