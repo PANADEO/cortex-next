@@ -1,3 +1,39 @@
+/**
+ * POWODY, dla których krok narzędzia się nie udał — SKOŃCZONA lista.
+ *
+ * Istnieje po to, żeby zdanie „co teraz” brało się z tego, CO SIĘ STAŁO, a nie z nazwy
+ * narzędzia. Nazwa narzędzia nie mówi, czy powtórzenie ma sens: to samo `write_sheet`
+ * raz pada przez brak zgody na folder (powtórzenie nic nie da), a raz przez chwilową
+ * awarię dysku (powtórzenie jest jedyną sensowną radą).
+ *
+ * Lista jest zamknięta CELOWO. Powód spoza niej nie istnieje — jest za to `undefined`,
+ * czyli „nie wiadomo”, i ono ma własne, bezpieczne zdanie. Dopisanie powodu wymaga
+ * dopisania mu zdań w obu słownikach; pilnuje tego test `steps-failure.test.ts`.
+ */
+export type StepFailure =
+  /** czynność zatrzymała się w połowie — nie wiemy, czy zdążyła cokolwiek zrobić */
+  | "interrupted"
+  /** ta osoba nie ma zgody na folder, którego czynność dotyczyła */
+  | "no-access"
+  /** pliku o tej nazwie nie ma tam, gdzie czynność go szukała */
+  | "no-such-file"
+  /** plik jest, ale nie dało się go otworzyć */
+  | "cannot-open"
+  /** plik jest innego rodzaju, niż ta czynność obsługuje */
+  | "wrong-kind"
+  /** dokument jest, ale nie dało się wyciągnąć z niego treści */
+  | "cannot-recognise"
+  /** zapis albo odłożenie pliku się nie powiodło */
+  | "cannot-save"
+  /** kod obliczenia przewrócił się na błędzie */
+  | "computation-error"
+  /** obliczenie oparło się o sufit czasu, pamięci albo rozmiaru wyniku */
+  | "computation-stopped"
+  /** usługa spoza Biurka nie dała rady */
+  | "outside-service"
+  /** wyjątek, którego nie umiemy nazwać — świadomie nazwany, a nie przemilczany */
+  | "unknown"
+
 /** Słownik zdarzeń jest NASZ. Żaden typ biblioteki agentowej nie przekracza tej granicy. */
 export type DeskEvent =
   | {
@@ -31,6 +67,20 @@ export type DeskEvent =
       ok: boolean
       summary: string
       ms: number
+      /**
+       * POWÓD, dla którego krok się nie udał. Wpisuje go `runtime.ts` w chwili awarii;
+       * przy kroku udanym go nie ma.
+       *
+       * DLACZEGO OSOBNE POLE, skoro obok stoi `summary`. `summary` jest ZDANIEM po polsku,
+       * pisanym przy zapisie zdarzenia — nie da się go przetłumaczyć wstecz ani na nim
+       * rozgałęzić bez dopasowywania napisów, a dopasowanie napisu do decyzji zerwało
+       * w tym repozytorium już plakietkę „sprawdzony”. Powód jest WARTOŚCIĄ ze skończonej
+       * listy, więc ekran może z niego wyprowadzić zdanie „co teraz” w obu językach.
+       *
+       * Pole jest opcjonalne, bo sprawy zapisane przed jego wprowadzeniem go nie mają —
+       * i dlatego ekran musi mieć jedno bezpieczne zdanie domyślne.
+       */
+      reason?: StepFailure
     }
   | {
       type: "blocked"

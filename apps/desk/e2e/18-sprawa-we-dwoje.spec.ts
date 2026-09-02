@@ -98,7 +98,7 @@ test.describe("Obszar 27 · Udostępnienie sprawy do wglądu", () => {
     await otworz(page, `/case/${id}`)
     await expect(page.getByText("Zerknij, proszę, na to zestawienie.")).toBeVisible()
     // pole zlecenia dostaje wyłącznie właściciel — gość ogląda, nie zleca
-    await expect(page.getByRole("button", { name: "Wyślij zlecenie" })).toHaveCount(0)
+    await expect(page.getByRole("button", { name: "Zleć zadanie" })).toHaveCount(0)
     // ...ale odpisać może, bo po to mu tę sprawę pokazano
     await expect(page.getByRole("textbox", { name: /Napisz do osób/ })).toBeVisible()
   })

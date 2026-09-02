@@ -17,7 +17,12 @@
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    /* 43%, nie shadcnowe 45,1%: na własnym tle (`--muted`, 96,1%) tamta wartość dawała
+       4,35:1, czyli poniżej AA dla tekstu — a to jest kolor KAŻDEGO podpisu w produkcie.
+       43% daje 4,70:1 na tle przygaszonym i 5,13:1 na białym. Zmiana jest o dwa punkty
+       jasności, więc dla oka niewidoczna; widoczna jest dopiero dla kogoś, kto ten podpis
+       musi przeczytać. Zmierzone: `node scripts/kontrast-tokenow.mjs`. */
+    --muted-foreground: 0 0% 43%;
     --accent: 0 0% 96.1%;
     --accent-foreground: 0 0% 9%;
 
@@ -154,7 +159,12 @@
     --popover-foreground: 20 30% 12%;
 
     --primary: 20 95% 50%;
-    --primary-foreground: 40 50% 99%;
+    /* Atrament na pomarańczy, a nie krem. Krem `40 50% 99%` na `20 95% 50%` daje 3,23:1,
+       czyli etykieta na przycisku głównym jest poniżej progu — a to najczęściej klikany
+       element skórki. Sama pomarańcza zostaje nietknięta, bo to ona jest charakterem
+       `customs`; zmienia się tylko to, co się na niej kładzie: `--foreground` tej skórki,
+       czyli 5,06:1. */
+    --primary-foreground: 20 30% 12%;
 
     --secondary: 40 60% 92%;
     --secondary-foreground: 20 40% 18%;

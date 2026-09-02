@@ -150,6 +150,17 @@ describe("krok narzędzia, gdy narzędzie się przewraca", () => {
     ])
   })
 
+  it.each(cases)("%s: krok nieudany niesie POWÓD, nie tylko zdanie", async (name, run) => {
+    // Powód jest wartością ze skończonej listy, a `summary` polskim zdaniem. Ekran
+    // wyprowadza z powodu radę „co teraz”; ze zdania dałoby się to zrobić wyłącznie
+    // dopasowaniem napisu — a dopasowanie napisu do decyzji zerwało w tym repozytorium
+    // już raz plakietkę „sprawdzony”, po cichu i w obu językach.
+    await run()
+    const { end } = step(name)
+    expect(end!.ok).toBe(false)
+    expect(end!.reason, `${name}: nieudany krok bez powodu`).toBeTruthy()
+  })
+
   it("surowa treść wyjątku nie wychodzi do dowodu", async () => {
     // Dowód czyta człowiek i audytor. Ścieżki z serwera ani treści wyjątków tam nie ma;
     // pełna treść zostaje w odpowiedzi dla modelu i w dzienniku.

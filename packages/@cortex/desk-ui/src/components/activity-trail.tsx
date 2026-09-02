@@ -1,6 +1,7 @@
 "use client"
 import { evidenceFromEvents } from "@cortex/desk-core/evidence"
 import {
+  describeFailure,
   describeStep,
   pairSteps,
   stepDuration,
@@ -20,6 +21,7 @@ import {
   Lock,
   ShieldCheck,
   TriangleAlert,
+  X,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { useDeskLocale, useDeskT } from "../i18n/client"
@@ -41,22 +43,77 @@ function Pill({ name }: { name: string }) {
   )
 }
 
+/**
+ * Krok, który padł, ma WŁASNĄ ikonę i WŁASNY token koloru — nie pożycza ich od
+ * ostrzeżenia. Wcześniej stał tu ten sam trójkąt i ten sam `desk-warn`, co przy
+ * „niesprawdzone", więc dwie różne rzeczy wyglądały identycznie: „zrobiłem, ale nie
+ * odczytałem po zapisie" i „nie zrobiłem wcale". Krzyżyk mówi „tego nie ma", trójkąt
+ * mówi „to jest, ale uważaj" — i tę różnicę widać zanim człowiek przeczyta tytuł.
+ *
+ * Samo rozróżnienie graficzne niczego jednak nie niesie: porażkę niesie SŁOWO w tytule
+ * („Nie zapisałem"), a ikona i kolor tylko je wspierają.
+ */
 const STEP_STATUS: Record<Step["status"], { icon: LucideIcon; className: string; spin?: boolean }> =
   {
     running: { icon: LoaderCircle, className: "text-desk-accent", spin: true },
     ok: { icon: Check, className: "text-desk-muted" },
-    failed: { icon: TriangleAlert, className: "text-desk-warn" },
+    failed: { icon: X, className: "text-desk-bad" },
   }
 
-function Row({ k, at, now }: { k: Step; at: string; now: number }) {
+/**
+ * TRZY ZDANIA KROKU, KTÓRY SIĘ NIE UDAŁ — w stałej kolejności i z nagłówkami.
+ *
+ * Nagłówki są tu po to, żeby środkowe zdanie dało się znaleźć wzrokiem, nie czytając
+ * całości. Jest ono najważniejsze z trójki: najgorsza awaria to taka, po której człowiek
+ * nie wie, czy coś się już wydarzyło — i wtedy jedynym bezpiecznym ruchem jest nie ruszać
+ * niczego. Zdania powstają w `describeFailure`, ze zdarzenia; ten komponent ich nie pisze.
+ */
+function Failure({ text }: { text: { happened: string; changed: string; next: string } }) {
+  const translate = useDeskT()
+  const parts = [
+    { title: translate("trail.failure.titleHappened"), body: text.happened },
+    { title: translate("trail.failure.titleChanged"), body: text.changed },
+    { title: translate("trail.failure.titleNext"), body: text.next },
+  ]
+  return (
+    <div className="space-y-2 pt-1">
+      {parts.map((part) => (
+        <div key={part.title}>
+          {/*
+            `desk-muted`, nie `desk-muted-2`: ten drugi ma na tle podniesionym 2,59:1,
+            czyli poniżej progu 4,5:1 dla tekstu (pomiar: `npm run kontrast:pomiar`).
+            Nagłówek, którego nie widać, jest gorszy niż jego brak — a to jest ostatnie
+            miejsce w produkcie, które wolno przeoczyć wzrokiem.
+          */}
+          <div className="t-micro text-desk-muted">{part.title}</div>
+          <p className="text-desk-ink">{part.body}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function Row({
+  k,
+  at,
+  now,
+  approver,
+}: {
+  k: Step
+  at: string
+  now: number
+  /** „Imię Nazwisko" osoby wydającej zgody; pusto, gdy Biurko nie umie jej wskazać. */
+  approver?: string | undefined
+}) {
   const translate = useDeskT()
   const locale = useDeskLocale()
   const [open, setOpen] = useState(k.status === "failed")
   const o = describeStep(k, translate)
+  const failure = describeFailure(k, translate, approver)
   const s = STEP_STATUS[k.status]
   const ms = k.status === "running" ? now - new Date(at).getTime() : k.ms
   const duration = stepDuration(ms)
-  const hasDetail = Boolean(o.path || o.detail)
+  const hasDetail = Boolean(o.path || o.detail || failure)
 
   return (
     <li>
@@ -87,6 +144,7 @@ function Row({ k, at, now }: { k: Step; at: string; now: number }) {
         <div className="pb-2 pl-10 pr-3 pt-0.5 text-[13px] leading-5 text-desk-muted">
           {o.path && <div>{translate("trail.onFile", { path: o.path })}</div>}
           {o.detail && <div>{translate("trail.saw", { detail: o.detail })}</div>}
+          {failure && <Failure text={failure} />}
           <div className="t-micro pt-0.5">
             {new Intl.DateTimeFormat(locale, { timeStyle: "medium" }).format(new Date(at))}
           </div>
@@ -100,10 +158,13 @@ export function ActivityTrail({
   entries,
   isWorking,
   now,
+  approver,
 }: {
   entries: AuditEntry[]
   isWorking: boolean
   now: number
+  /** Przechodzi do zdania „co teraz" przy kroku, który padł — patrz `describeFailure`. */
+  approver?: string | undefined
 }) {
   const translate = useDeskT()
   const steps = pairSteps(entries.map((w) => w.event))
@@ -112,6 +173,10 @@ export function ActivityTrail({
     translate,
   )
   const stumble = steps.some((k) => k.status === "failed")
+  // „Zrobione z potknięciem: nic nie zostało zrobione" jest zdaniem sprzecznym samym
+  // ze sobą, a właśnie tak brzmiał nagłówek, gdy PADŁY WSZYSTKIE kroki. Grupa, z której
+  // nie wyszła ani jedna czynność, mówi wprost, że się nie udało.
+  const nothingDone = stumble && !steps.some((k) => k.status === "ok")
   const uncertain = evidence.unverified.length > 0
   const blocked = evidence.notAllowed.length > 0
   const external = evidence.external.length > 0
@@ -145,15 +210,17 @@ export function ActivityTrail({
         spin: true,
         text: translate("trail.working"),
       }
-    : stumble
-      ? {
-          icon: TriangleAlert,
-          className: "text-desk-warn",
-          text: translate("trail.stumbled", {
-            what: summariseGroup(steps, translate).toLowerCase(),
-          }),
-        }
-      : { icon: Check, className: "text-desk-ok", text: summariseGroup(steps, translate) }
+    : nothingDone
+      ? { icon: X, className: "text-desk-bad", text: translate("trail.allFailed") }
+      : stumble
+        ? {
+            icon: TriangleAlert,
+            className: "text-desk-warn",
+            text: translate("trail.stumbled", {
+              what: summariseGroup(steps, translate).toLowerCase(),
+            }),
+          }
+        : { icon: Check, className: "text-desk-ok", text: summariseGroup(steps, translate) }
 
   return (
     <section
@@ -193,15 +260,21 @@ export function ActivityTrail({
         </button>
       </h3>
 
+      {/*
+        Kreski osi tu NIE MA i to jest poprawka, nie przeoczenie. Biegła na `left-[22px]`,
+        czyli dokładnie przez środek kolumny ikon (`px-3` + połowa `w-5`), mimo komentarza
+        twierdzącego, że biegnie pod nimi — przecinała każdy krzyżyk i każdą fajkę w poprzek.
+      */}
       {!collapsed && (
-        <ul aria-label={translate("trail.steps")} className="relative space-y-0.5 border-t py-1.5">
-          {/* oś: kreska biegnie pod kolumną ikon, nie przez nie */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute bottom-3 left-[22px] top-3 w-px bg-desk-line"
-          />
+        <ul aria-label={translate("trail.steps")} className="space-y-0.5 border-t py-1.5">
           {steps.map((k) => (
-            <Row key={k.i} k={k} at={entries[k.i]?.at ?? new Date().toISOString()} now={now} />
+            <Row
+              key={k.i}
+              k={k}
+              at={entries[k.i]?.at ?? new Date().toISOString()}
+              now={now}
+              approver={approver}
+            />
           ))}
         </ul>
       )}

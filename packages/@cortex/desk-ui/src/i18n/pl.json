@@ -79,10 +79,10 @@
     "tryAgain": "Spróbuj jeszcze raz",
     "newSteps": "Nowe kroki",
     "open": "Otwórz",
-    "busyPlaceholder": "Pracuję — poczekaj albo naciśnij Stop",
-    "placeholder": "Napisz, co mam zrobić…",
+    "busyNote": "Pracuję — poczekaj albo naciśnij Stop",
+    "placeholder": "Napisz, co mam zrobić",
+    "example": "np. policz koszty z faktur za sierpień",
     "addFile": "Dodaj plik",
-    "send": "Wyślij zlecenie",
     "resultPanel": "Panel wyniku",
     "result": "Wynik",
     "starting": "Zabieram się do pracy…",
@@ -287,27 +287,31 @@
       "many": "Umiem tu {{count}} rzeczy",
       "other": "Umiem tu {{count}} rzeczy"
     },
-    "requestQueued": "Prośba o „{{name}}” poszła do działu. Dostaniesz znać, gdy ktoś ją rozpatrzy."
+    "requestQueued": "Prośba o „{{name}}” czeka na przełożonego. Dostaniesz znać, gdy ją rozpatrzy."
   },
   "composer": {
     "untitled": "Bez tytułu",
     "attachFailed": "nie udało się dołączyć plików",
     "rejected": "Nie udało się przyjąć zlecenia.",
     "startFailed": "Nie udało się zacząć sprawy. Spróbuj jeszcze raz.",
-    "placeholder": "Co mam dla Ciebie zrobić?",
     "send": "Zleć zadanie",
-    "startFrom": "Zacznij od jednej z rzeczy, które umiem w Twoim dziale:",
-    "hints": "Podpowiedzi"
+    "startFrom": "…albo wybierz gotowe:"
   },
   "lock": {
     "requestFailed": "Nie udało się wysłać prośby.",
-    "requestSent": "Prośba o „{{name}}” poszła do działu {{department}}.",
+    "requestSent": "Prośba o „{{name}}” czeka na przełożonego. Dostaniesz znać, gdy ją rozpatrzy.",
     "needs": "Do tego potrzebuję zdolności „{{name}}”, której nie masz włączonej.",
     "notAllowed": "Tego nie umiem zrobić przy Twoich uprawnieniach.",
-    "about": "Chodziło o: {{description}}"
+    "about": "Chodziło o: {{description}}",
+    "decidedBy": "Zgodę wydaje {{person}}, Twój przełożony.",
+    "decidedByAnyone": "Zgodę wydaje Twój przełożony.",
+    "askForApproval": "Poproś o zgodę",
+    "writeWhatYouNeed": "Napisz, czego potrzeba"
   },
   "otherRequest": {
     "sent": "Prośba poszła do przełożonego. Odezwie się, gdy ją rozpatrzy.",
+    "privacy": "{{person}} zobaczy to, co tu napiszesz. Nic więcej ze sprawy nie wysyłamy.",
+    "privacyAnyone": "Przełożony zobaczy to, co tu napiszesz. Nic więcej ze sprawy nie wysyłamy.",
     "trigger": "Potrzebuję czegoś innego",
     "title": "Napisz, czego potrzebujesz",
     "lead": "To trafi do przełożonego. Jeśli okaże się przydatne dla większej liczby osób, stanie się nową umiejętnością.",
@@ -366,7 +370,47 @@
       "many": "{{count}} innych czynności",
       "other": "{{count}} innych czynności"
     },
-    "summaryJoin": "{{head}} i {{last}}"
+    "summaryJoin": "{{head}} i {{last}}",
+    "failure": {
+      "titleHappened": "Co się stało",
+      "titleChanged": "Czy coś się zmieniło",
+      "titleNext": "Co teraz",
+      "happened": {
+        "interrupted": "Ta czynność zatrzymała się w połowie.",
+        "noAccess": "Nie masz zgody na folder, którego ta czynność dotyczyła.",
+        "noSuchFile": "Tego pliku nie ma tam, gdzie go szukałem.",
+        "cannotOpen": "Nie udało się otworzyć pliku.",
+        "wrongKind": "Ten plik jest innego rodzaju, niż ta czynność obsługuje.",
+        "cannotRecognise": "Nie udało się odczytać treści z tego dokumentu.",
+        "cannotSave": "Nie udało się zapisać pliku.",
+        "computationError": "Obliczenie przewróciło się na błędzie w kodzie.",
+        "computationStopped": "Obliczenie przekroczyło dozwoloną miarę i zostało zatrzymane.",
+        "outsideService": "Usługa spoza Biurka nie dała rady tego zrobić.",
+        "unknown": "Ta czynność nie doszła do skutku."
+      },
+      "changed": {
+        "browses": "Nie. Nic nie otworzyłem i nic nie zmieniłem.",
+        "reads": "Nie. Treść nie weszła do sprawy, a Twój plik został nietknięty.",
+        "produces": "Nie. Plik nie powstał i żaden istniejący nie został nadpisany.",
+        "verifies": "Nie. Sprawdzenie się nie odbyło, ale sam plik jest nietknięty.",
+        "computes": "Nie. Nic nie zostało policzone i żaden Twój plik się nie zmienił.",
+        "stores": "Nie. W Moich plikach nic nie przybyło ani się nie zmieniło.",
+        "external": "Nie wiem, czy tamta strona to zrobiła. Zanim powtórzysz, upewnij się, że nie zrobiła tego dwa razy.",
+        "unknown": "Nie wiem. Czynność zatrzymała się w połowie — zajrzyj do teczki sprawy, zanim poprosisz o to jeszcze raz."
+      },
+      "next": {
+        "tryAgain": "To nie jest Twój błąd. Poproś o to samo jeszcze raz — jeśli i tym razem się nie uda, zgłoszę to sam osobie, która może to naprawić.",
+        "lookInFolder": "Zajrzyj do teczki sprawy i zobacz, co w niej jest, zanim poprosisz o to jeszcze raz.",
+        "askForAccess": "Poproś przełożonego o dostęp do tego folderu, a potem zleć to jeszcze raz.",
+        "checkTheName": "Sprawdź nazwę pliku w teczce sprawy i podaj ją dokładnie tak, jak tam widnieje.",
+        "anotherFile": "Wskaż inny plik albo napisz, żebym spróbował odczytać ten jako dokument.",
+        "pasteTheFragment": "Otwórz ten plik i zobacz, czy da się go przeczytać. Jeśli tak, wklej potrzebny fragment do zlecenia.",
+        "describeMorePrecisely": "Napisz dokładniej, co ma być w wyniku — z dokładniejszym opisem obliczenie zwykle udaje się za drugim razem.",
+        "smallerPortion": "Poproś o policzenie mniejszej porcji naraz — na przykład jednego miesiąca zamiast całego roku.",
+        "tryAgainTell": "To nie jest Twój błąd. Poproś o to samo jeszcze raz — jeśli i tym razem się nie uda, powiedz o tym swojemu przełożonemu: {{person}}."
+      }
+    },
+    "allFailed": "Nie udało się"
   },
   "mcp": {
     "failed": "Nie udało się.",
@@ -435,47 +479,58 @@
   "tools": {
     "list_files": {
       "running": "Przeglądam teczkę",
-      "ok": "Przejrzałem teczkę"
+      "ok": "Przejrzałem teczkę",
+      "failed": "Nie przejrzałem teczki"
     },
     "read_file": {
       "running": "Czytam",
-      "ok": "Przeczytałem"
+      "ok": "Przeczytałem",
+      "failed": "Nie przeczytałem"
     },
     "read_document": {
       "running": "Rozpoznaję",
-      "ok": "Rozpoznałem"
+      "ok": "Rozpoznałem",
+      "failed": "Nie rozpoznałem"
     },
     "write_document": {
       "running": "Zapisuję",
-      "ok": "Zapisałem"
+      "ok": "Zapisałem",
+      "failed": "Nie zapisałem"
     },
     "write_sheet": {
       "running": "Zapisuję arkusz",
-      "ok": "Zapisałem arkusz"
+      "ok": "Zapisałem arkusz",
+      "failed": "Nie zapisałem arkusza"
     },
     "generate_image": {
       "running": "Rysuję obraz",
-      "ok": "Narysowałem"
+      "ok": "Narysowałem",
+      "failed": "Nie narysowałem"
     },
     "verify_document": {
       "running": "Sprawdzam po zapisie",
-      "ok": "Sprawdziłem po zapisie"
+      "ok": "Sprawdziłem po zapisie",
+      "failed": "Nie sprawdziłem po zapisie"
     },
     "run_computation": {
       "running": "Liczę",
-      "ok": "Policzyłem"
+      "ok": "Policzyłem",
+      "failed": "Nie policzyłem"
     },
     "save_to_my_files": {
       "running": "Odkładam do Moich plików",
-      "ok": "Odłożyłem do Moich plików"
+      "ok": "Odłożyłem do Moich plików",
+      "failed": "Nie odłożyłem do Moich plików"
     },
     "external": {
       "running": "Odpytuję {{server}}",
-      "ok": "Odpytałem {{server}}"
+      "ok": "Odpytałem {{server}}",
+      "failed": "Nie odpytałem {{server}}"
     },
     "outside": {
       "running": "Wykonuję czynność spoza katalogu",
-      "ok": "Wykonałem czynność spoza katalogu"
+      "ok": "Wykonałem czynność spoza katalogu",
+      "failed": "Nie wykonałem czynności spoza katalogu"
     },
     "groups": {
       "folder": "przejrzałem teczkę",
@@ -546,7 +601,8 @@
     },
     "remember": {
       "running": "Proponuję zapamiętać",
-      "ok": "Zaproponowałem zapamiętanie"
+      "ok": "Zaproponowałem zapamiętanie",
+      "failed": "Nie zaproponowałem zapamiętania"
     }
   },
   "evidence": {
@@ -686,7 +742,7 @@
     "expensesDocument": {
       "title": "Zestawienie kosztów miesiąca",
       "hint": "dodaj plik z fakturami (CSV lub XLSX)",
-      "text": "Zrób zestawienie kosztów z pliku faktury-08.csv: pogrupuj po kategorii, policz sumy i zapisz gotowy dokument."
+      "text": "Zrób zestawienie kosztów z faktur: pogrupuj po kategorii, policz sumy i zapisz gotowy dokument."
     },
     "documentGaps": {
       "title": "Sprawdź, czego brakuje w dokumencie",
@@ -701,7 +757,7 @@
     "expensesSheet": {
       "title": "Zestawienie kosztów miesiąca",
       "hint": "dodaj plik z fakturami (CSV lub XLSX)",
-      "text": "Zrób zestawienie kosztów z pliku faktury-08.csv: pogrupuj po kategorii, policz sumy i zapisz jako arkusz."
+      "text": "Zrób zestawienie kosztów z faktur: pogrupuj po kategorii, policz sumy i zapisz jako arkusz."
     },
     "analysis": {
       "title": "Analiza z podsumowaniem",

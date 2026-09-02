@@ -130,8 +130,8 @@ test.describe("Obszar 8 · Rozmowa, którą da się prowadzić", () => {
     })
     const { id } = await r.json()
     await page.goto(`/case/${id}`)
-    await page.getByPlaceholder("Napisz, co mam zrobić…").fill("Opowiedz dowcip o księgowym.")
-    await page.getByRole("button", { name: "Wyślij zlecenie" }).click()
+    await page.getByLabel("Napisz, co mam zrobić").fill("Opowiedz dowcip o księgowym.")
+    await page.getByRole("button", { name: "Zleć zadanie" }).click()
     // bez optymistycznego wpisu ten napis pojawiłby się dopiero po odpytaniu, czyli z opóźnieniem
     await expect(page.getByText("Zabieram się do pracy…")).toBeVisible({ timeout: 1500 })
   })

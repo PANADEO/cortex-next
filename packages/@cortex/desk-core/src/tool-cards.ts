@@ -43,12 +43,19 @@ export type ToolCard = {
   name: string
   kind: ToolClass
   /**
-   * KLUCZE SŁOWNIKA, nie zdania: „w toku" i „po zakończeniu". Zdanie powstaje przy
-   * RENDERZE, a nie przy zapisie zdarzenia — dzięki temu ta sama sprawa czyta się
-   * po polsku i po angielsku, bez przepisywania historii.
+   * KLUCZE SŁOWNIKA, nie zdania: „w toku", „po zakończeniu" i „po niepowodzeniu".
+   * Zdanie powstaje przy RENDERZE, a nie przy zapisie zdarzenia — dzięki temu ta sama
+   * sprawa czyta się po polsku i po angielsku, bez przepisywania historii.
+   *
+   * `failed` NIE jest opcjonalne, i to jest cała jego treść. Wcześniej tytuł kroku
+   * powstawał jako „w toku albo po zakończeniu", więc krok, który PADŁ, dostawał zdanie
+   * sukcesu: „Zapisałem arkusz" nad czynnością, po której arkusza nie ma. Wymagane pole
+   * zamienia przeoczenie w błąd kompilacji — także dla karty budowanej w locie dla
+   * narzędzia z obcego serwera, bo to ona wraca do stanu sprzed zmiany najciszej.
    */
   running: string
   ok: string
+  failed: string
   /** który argument niesie nazwę rzeczy, a który pełną ścieżkę do szczegółu */
   argName?: string
   argPath?: string
@@ -112,6 +119,7 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
       kind: "browses",
       running: "tools.list_files.running",
       ok: "tools.list_files.ok",
+      failed: "tools.list_files.failed",
       group: { key: "folder", phrase: "tools.groups.folder", weight: 1 },
       source: "builtin",
     }),
@@ -120,6 +128,7 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
       kind: "reads",
       running: "tools.read_file.running",
       ok: "tools.read_file.ok",
+      failed: "tools.read_file.failed",
       argName: "path",
       argPath: "path",
       group: { key: "reading", phrase: "tools.groups.reading", weight: 3 },
@@ -143,6 +152,7 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
       kind: "reads",
       running: "tools.read_document.running",
       ok: "tools.read_document.ok",
+      failed: "tools.read_document.failed",
       argName: "path",
       argPath: "path",
       group: { key: "recognising", phrase: "tools.groups.recognising", weight: 3 },
@@ -154,6 +164,7 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
       kind: "produces",
       running: "tools.write_document.running",
       ok: "tools.write_document.ok",
+      failed: "tools.write_document.failed",
       argName: "name",
       argPath: "name",
       group: { key: "document", phrase: "tools.groups.document", weight: 5 },
@@ -166,6 +177,7 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
       kind: "produces",
       running: "tools.write_sheet.running",
       ok: "tools.write_sheet.ok",
+      failed: "tools.write_sheet.failed",
       argName: "name",
       argPath: "name",
       // ten sam klucz co dokument: „zapisałem 2 dokumenty" zamiast dwóch osobnych członów
@@ -179,6 +191,7 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
       kind: "produces",
       running: "tools.generate_image.running",
       ok: "tools.generate_image.ok",
+      failed: "tools.generate_image.failed",
       argName: "name",
       argPath: "name",
       group: { key: "image", phrase: "tools.groups.image", weight: 5 },
@@ -192,6 +205,7 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
       kind: "verifies",
       running: "tools.verify_document.running",
       ok: "tools.verify_document.ok",
+      failed: "tools.verify_document.failed",
       argName: "name",
       argPath: "name",
       evidence: { list: "produced", phrase: "tools.evidence.verified" },
@@ -203,6 +217,7 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
       inputs: { arg: "files", phrase: "tools.evidence.used" },
       running: "tools.run_computation.running",
       ok: "tools.run_computation.ok",
+      failed: "tools.run_computation.failed",
       argDetail: "description",
       group: { key: "computing", phrase: "tools.groups.computing", weight: 4 },
       evidence: { list: "produced", phrase: "tools.evidence.computed" },
@@ -216,6 +231,7 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
       kind: "browses",
       running: "tools.remember.running",
       ok: "tools.remember.ok",
+      failed: "tools.remember.failed",
       argDetail: "what",
       group: { key: "remember", phrase: "tools.groups.remember", weight: 2 },
       source: "builtin",
@@ -225,6 +241,7 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
       kind: "stores",
       running: "tools.save_to_my_files.running",
       ok: "tools.save_to_my_files.ok",
+      failed: "tools.save_to_my_files.failed",
       argName: "name",
       argPath: "target",
       group: { key: "stored", phrase: "tools.groups.stored", weight: 5 },
@@ -265,6 +282,7 @@ export function cardFor(name: string, sourceFromEvent?: string): ToolCard {
     kind: "external",
     running: server ? "tools.external.running" : "tools.outside.running",
     ok: server ? "tools.external.ok" : "tools.outside.ok",
+    failed: server ? "tools.external.failed" : "tools.outside.failed",
     group: {
       key: `external:${source}`,
       phrase: server ? "tools.groups.external" : "tools.groups.outside",

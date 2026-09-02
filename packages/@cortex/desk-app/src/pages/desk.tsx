@@ -51,7 +51,7 @@ export default async function Desk() {
           </div>
 
           <Suspense fallback={<Loading rows={5} />}>
-            <Composer quickTasks={u.quickTasks} policyFor={p} hasCases={cases.length} />
+            <Composer quickTasks={u.quickTasks} policyFor={p} />
           </Suspense>
 
           <div className="mt-9">

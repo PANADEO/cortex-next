@@ -1,8 +1,8 @@
 import { evidenceFromEvents } from "@cortex/desk-core/evidence"
 import { produced } from "@cortex/desk-core/promises"
-import { describeStep, pairSteps, summariseGroup } from "@cortex/desk-core/steps"
+import { describeFailure, describeStep, pairSteps, summariseGroup } from "@cortex/desk-core/steps"
 import { cardFor } from "@cortex/desk-core/tool-cards"
-import type { DeskEvent } from "@cortex/desk-core/types"
+import type { DeskEvent, StepFailure } from "@cortex/desk-core/types"
 import { makeDeskT } from "@cortex/desk-ui/i18n/locale"
 import { expect, test } from "./osoby"
 
@@ -20,9 +20,18 @@ const para = (
   args: Record<string, unknown>,
   summary: string,
   ok = true,
+  powod?: StepFailure,
 ): DeskEvent[] => [
   { type: "tool_start", id, name, label: `etykieta ${name}`, args },
-  { type: "tool_end", id, name, ok, summary, ms: 5 },
+  {
+    type: "tool_end",
+    id,
+    name,
+    ok,
+    summary,
+    ms: 5,
+    ...(powod === undefined ? {} : { reason: powod }),
+  },
 ]
 
 test.describe("Obszar 19 · Opis i dowód pochodzą z kart, nie z listy nazw w kodzie", () => {
@@ -139,5 +148,72 @@ test.describe("Obszar 20 · Narzędzie, którego nikt nie zna, nie znika po cich
     expect(k.kind).toBe("external")
     // `ok` to KLUCZ słownika — zdanie powstaje dopiero przy renderze
     expect(pl(k.ok, k.vars)).toBe("Wykonałem czynność spoza katalogu")
+  })
+})
+
+test.describe("Obszar 30 · Krok, który się nie udał, przestaje kłamać", () => {
+  const nieudanyArkusz = para(
+    "s",
+    "write_sheet",
+    { name: "zestawienie.csv" },
+    "nie udało się otworzyć",
+    false,
+    "cannot-open",
+  )
+
+  test("Tytuł kroku, który padł, nie jest zdaniem sukcesu", () => {
+    // To było JEDYNE miejsce w produkcie, w którym ekran mówił nieprawdę: nad czynnością,
+    // po której arkusza nie ma, stało „Zapisałem arkusz”.
+    const [krok] = pairSteps(nieudanyArkusz)
+    const opis = describeStep(krok!, pl)
+    expect(opis.title).toBe("Nie zapisałem arkusza")
+    expect(opis.title).not.toBe("Zapisałem arkusz")
+  })
+
+  test("Pod krokiem stoją trzy zdania w stałej kolejności", () => {
+    const [krok] = pairSteps(nieudanyArkusz)
+    const zdania = describeFailure(krok!, pl)
+    expect(zdania).not.toBeNull()
+    // 1. CO SIĘ STAŁO — z powodu zapisanego w zdarzeniu, nie z nazwy narzędzia.
+    expect(zdania!.happened).toBe("Nie udało się otworzyć pliku.")
+    // 2. CZY COŚ SIĘ ZMIENIŁO — najważniejsze z trójki.
+    expect(zdania!.changed).toContain("Plik nie powstał")
+    // 3. CO TERAZ — ruch, który ta osoba może wykonać.
+    expect(zdania!.next).toMatch(/jeszcze raz/)
+  })
+
+  test("Zdanie „co teraz” bierze się z POWODU, a nie z nazwy narzędzia", () => {
+    // To samo narzędzie, dwa powody, dwie różne rady. Rada wyprowadzona z nazwy
+    // narzędzia byłaby przy obu ta sama — i przy jednym z nich fałszywa.
+    const brakZgody = pairSteps(
+      para("a", "write_sheet", { name: "x.csv" }, "brak zgody", false, "no-access"),
+    )[0]!
+    const awariaDysku = pairSteps(
+      para("b", "write_sheet", { name: "x.csv" }, "nie udało się zapisać", false, "cannot-save"),
+    )[0]!
+    expect(describeFailure(brakZgody, pl)!.next).not.toBe(describeFailure(awariaDysku, pl)!.next)
+    expect(describeFailure(brakZgody, pl)!.next).toMatch(/dostęp/)
+  })
+
+  test("Przy obcym serwerze ekran mówi „nie wiem”, a nie „nic się nie stało”", () => {
+    const obce = pairSteps(
+      para("c", "mcp_nbp_kurs_waluty", {}, "serwer nie odpowiedział", false, "outside-service"),
+    )[0]!
+    const zdania = describeFailure(obce, pl)!
+    expect(describeStep(obce, pl).title).toBe("Nie odpytałem nbp")
+    expect(zdania.changed).toMatch(/Nie wiem/)
+    expect(zdania.changed).toMatch(/dwa razy/)
+  })
+
+  test("Grupa, z której nie wyszła ani jedna czynność, nie mówi „zrobione”", () => {
+    // Nagłówek brzmiał „Zrobione z potknięciem: nic nie zostało zrobione” — zdanie
+    // sprzeczne samo ze sobą. Tu pilnujemy samego podsumowania, którym się karmił.
+    const same = pairSteps([
+      ...para("a", "read_file", { path: "x.csv" }, "nie udało się otworzyć", false, "cannot-open"),
+      ...para("b", "write_sheet", { name: "y.csv" }, "nie udało się zapisać", false, "cannot-save"),
+    ])
+    expect(same.every((k) => k.status === "failed")).toBe(true)
+    expect(summariseGroup(same, pl)).toBe("Nic nie zostało zrobione")
+    expect(pl("trail.allFailed")).toBe("Nie udało się")
   })
 })

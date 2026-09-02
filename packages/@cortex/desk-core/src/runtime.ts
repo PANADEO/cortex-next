@@ -4,13 +4,9 @@ import { randomUUID } from "node:crypto"
 import { z } from "zod"
 import * as audit from "./audit-log"
 import { hasCapability } from "./capability-gate"
-
-/**
- * Ile znaków pliku trafia do modelu. Sufit musi istnieć — okno kontekstu jest skończone —
- * ale ma o sobie MÓWIĆ. Wartość dobrana pod dokumenty księgowe: 60 tys. znaków to ok. 30
- * stron zwykłego tekstu i mieści typowe zestawienie miesięczne w całości.
- */
-const READ_LIMIT = 60_000
+import { safeCsv } from "./csv-safety"
+import { migrate, pool } from "./db"
+import * as storage from "./desk-storage"
 import {
   DocumentParserFailure,
   isRecognisable,
@@ -19,18 +15,21 @@ import {
   recognitionAnswer,
   recognitionSummary,
 } from "./document-parser"
-import { sandboxFailureLine } from "./failure"
+import { isInfrastructure, readableFailure, sandboxFailureLine } from "./failure"
 import { isShared } from "./folder"
-import { refuseShared } from "./shared-access"
-import { safeCsv } from "./csv-safety"
-import { migrate, pool } from "./db"
-import * as storage from "./desk-storage"
-import { isInfrastructure, readableFailure } from "./failure"
 import { mcpTools } from "./mcp/client"
 import * as memory from "./memory"
 import * as sandbox from "./sandbox"
+import { refuseShared } from "./shared-access"
 import { beginTurn, endTurn, wasAborted } from "./turn-control"
-import type { DeskEvent, Policy, User } from "./types"
+import type { DeskEvent, Policy, StepFailure, User } from "./types"
+
+/**
+ * Ile znaków pliku trafia do modelu. Sufit musi istnieć — okno kontekstu jest skończone —
+ * ale ma o sobie MÓWIĆ. Wartość dobrana pod dokumenty księgowe: 60 tys. znaków to ok. 30
+ * stron zwykłego tekstu i mieści typowe zestawienie miesięczne w całości.
+ */
+const READ_LIMIT = 60_000
 
 /**
  * F4 · RUNTIME AGENTA — jedyne miejsce w kodzie, które zna bibliotekę agentową.
@@ -130,7 +129,17 @@ PRACA NA PLIKACH
  * i co dostanie MODEL (`answer`). To są dwie różne rzeczy i dlatego są dwoma polami —
  * dowód ma być krótki i sprawdzalny, odpowiedź dla modelu bywa całym plikiem.
  */
-type StepResult = { ok?: boolean; summary: string; answer: string }
+type StepResult = {
+  ok?: boolean
+  summary: string
+  answer: string
+  /**
+   * POWÓD niepowodzenia — wartość ze skończonej listy, nie zdanie. `summary` jest
+   * polskim zdaniem dla dowodu i nie da się z niego wyprowadzić rady „co teraz"
+   * inaczej niż dopasowaniem napisu; powód da się. Krok udany go nie ma.
+   */
+  reason?: StepFailure
+}
 
 export function toolsForPolicy(u: User, p: Policy, caseId: string) {
   const caseFolder = storage.caseFolder(u.id, caseId)
@@ -159,20 +168,36 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
     const start = Date.now()
     const id = randomUUID()
     await emit({ type: "tool_start", id, name, label, args })
-    let end = { ok: false, summary: "przerwane" }
+    // `reason` jest opcjonalny CELOWO: krok udany powodu nie ma, a `exactOptionalPropertyTypes`
+    // odróżnia „klucza nie ma" od „klucz jest i ma undefined". Stąd rozgałęzienie przy
+    // składaniu obiektu zamiast wpisania `reason: r.reason`.
+    let end: { ok: boolean; summary: string; reason?: StepFailure } = {
+      ok: false,
+      summary: "przerwane",
+      reason: "interrupted",
+    }
     let answer = "Czynność nie doszła do skutku."
     try {
       const r = await body()
-      end = { ok: r.ok !== false, summary: r.summary }
+      end = {
+        ok: r.ok !== false,
+        summary: r.summary,
+        ...(r.reason === undefined ? {} : { reason: r.reason }),
+      }
       answer = r.answer
     } catch (e) {
       // Dowód mówi, że się NIE udało, a model dostaje zdanie, z którym da się coś zrobić.
       // Surowa treść wyjątku nie idzie ani na ekran, ani do modelu w całości — bywa w niej
       // ścieżka z serwera albo klucz z nagłówka.
-      end = { ok: false, summary: "czynność się nie powiodła" }
+      end = { ok: false, summary: "czynność się nie powiodła", reason: "unknown" }
       answer = `Nie udało się wykonać tej czynności. ${String(e).slice(0, 160)}`
     } finally {
-      await emit({ type: "tool_end", id, name, ...end, ms: Date.now() - start })
+      // NIEZMIENNIK: krok nieudany ZAWSZE niesie powód. Bez tego narzędzie dopisane za rok
+      // wróciłoby po cichu do stanu, w którym ekran nie ma z czego powiedzieć „co teraz" —
+      // dokładnie tak, jak wcześniej nie miał z czego powiedzieć, że coś się nie udało.
+      const closing =
+        !end.ok && end.reason === undefined ? { ...end, reason: "unknown" as const } : end
+      await emit({ type: "tool_end", id, name, ...closing, ms: Date.now() - start })
     }
     return answer
   }
@@ -233,7 +258,13 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
         const k = folder?.trim() || "Moje pliki"
         return step("list_files", `Przeglądam „${k}”`, { folder: k }, async () => {
           const nie = refuseShared(may, k, "read")
-          if (nie) return { ok: false, summary: "brak dostępu do wspólnej półki", answer: nie }
+          if (nie)
+            return {
+              ok: false,
+              summary: "brak dostępu do wspólnej półki",
+              reason: "no-access",
+              answer: nie,
+            }
           const l = await storage.list(u.id, k)
           const caseEntries = await storage.list(u.id, caseFolder).catch(() => [])
           return {
@@ -259,10 +290,21 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
           // jako „odczytany plik" — czyli dowód poświadcza coś, czego nie było.
           const notText = notReadable(path, hasCapability(p, "document.read"))
           if (notText) {
-            return { ok: false, summary: "to nie jest plik tekstowy", answer: notText }
+            return {
+              ok: false,
+              summary: "to nie jest plik tekstowy",
+              reason: "wrong-kind",
+              answer: notText,
+            }
           }
           const nie = refuseShared(may, path, "read")
-          if (nie) return { ok: false, summary: "brak dostępu do wspólnej półki", answer: nie }
+          if (nie)
+            return {
+              ok: false,
+              summary: "brak dostępu do wspólnej półki",
+              reason: "no-access",
+              answer: nie,
+            }
           try {
             const text = await storage.read(u.id, path)
             // Obcięcie MÓWI o sobie — w obu kierunkach. Wcześniej `slice(60000)` ucinało
@@ -282,6 +324,7 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
             return {
               ok: false,
               summary: "nie udało się otworzyć",
+              reason: "cannot-open",
               answer: `Nie udało się otworzyć pliku ${path}.`,
             }
           }
@@ -313,6 +356,7 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
             return {
               ok: false,
               summary: "to nie jest dokument do rozpoznania",
+              reason: "wrong-kind",
               answer:
                 `Pliku ${path} nie ma po co rozpoznawać. Jeśli to zwykły tekst, arkusz CSV ` +
                 "albo markdown — przeczytaj go czynnością read_file. Jeśli to archiwum albo " +
@@ -320,7 +364,13 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
             }
           }
           const nie = refuseShared(may, path, "read")
-          if (nie) return { ok: false, summary: "brak dostępu do wspólnej półki", answer: nie }
+          if (nie)
+            return {
+              ok: false,
+              summary: "brak dostępu do wspólnej półki",
+              reason: "no-access",
+              answer: nie,
+            }
 
           let bytes: Buffer
           try {
@@ -329,6 +379,7 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
             return {
               ok: false,
               summary: "nie udało się otworzyć",
+              reason: "cannot-open",
               answer: `Nie udało się otworzyć pliku ${path}.`,
             }
           }
@@ -354,6 +405,7 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
             return {
               ok: false,
               summary: `nie udało się rozpoznać — ${why}`,
+              reason: "cannot-recognise",
               answer:
                 `Nie udało się rozpoznać dokumentu ${name}: ${why}. Powiedz o tym człowiekowi ` +
                 "i zaproponuj wersję tekstową albo wklejenie potrzebnego fragmentu.",
@@ -400,6 +452,7 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
             return {
               ok: false,
               summary: "pliku nie ma",
+              reason: "no-such-file",
               answer: `Pliku ${name} nie ma w teczce sprawy.`,
             }
           }
@@ -456,7 +509,13 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
           { name, target },
           async () => {
             const nie = refuseShared(may, target, "write")
-            if (nie) return { ok: false, summary: "brak zgody na wspólną półkę", answer: nie }
+            if (nie)
+              return {
+                ok: false,
+                summary: "brak zgody na wspólną półkę",
+                reason: "no-access",
+                answer: nie,
+              }
             try {
               const stored = await storage.copy(u.id, `${caseFolder}/${name}`, target)
               return {
@@ -467,6 +526,7 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
               return {
                 ok: false,
                 summary: "nie udało się odłożyć",
+                reason: "cannot-save",
                 answer: `Nie udało się odłożyć pliku ${name} do Moich plików. ${String(e).slice(0, 120)}`,
               }
             }
@@ -550,11 +610,21 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
             // Bez tego jedyną wiedzą człowieka było „błąd wykonania", a treść błędu
             // szła do modelu i przepadała.
             const reason = r.ok ? "" : sandboxFailureLine(r.output)
+            // Powód rozróżnia dwie rzeczy, które dla człowieka mają RÓŻNE wyjścia: kod,
+            // który się przewrócił (opisz zlecenie dokładniej), i obliczenie oparte
+            // o sufit (poproś o mniejszą porcję). Sufit ma pierwszeństwo, bo to on
+            // jest prawdziwą przyczyną, gdy oba zaszły naraz.
+            const failure: StepFailure | undefined = r.stopped
+              ? "computation-stopped"
+              : r.ok
+                ? undefined
+                : "computation-error"
             return {
               ok: r.ok,
               summary:
                 stopped ||
                 (r.ok ? "policzone" : reason ? `błąd wykonania — ${reason}` : "błąd wykonania"),
+              ...(failure === undefined ? {} : { reason: failure }),
               answer: r.output || "(brak wyjścia)",
             }
           } finally {
@@ -610,6 +680,7 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
               return {
                 ok: false,
                 summary: m.slice(0, 120),
+                reason: "outside-service",
                 answer: `Nie udało się wygenerować obrazu. ${readably}`,
               }
             }

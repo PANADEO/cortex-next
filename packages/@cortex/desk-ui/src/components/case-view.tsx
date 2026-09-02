@@ -7,7 +7,6 @@ import * as Dialog from "@radix-ui/react-dialog"
 import * as Menu from "@radix-ui/react-dropdown-menu"
 import {
   ArrowDown,
-  ArrowUp,
   ChevronDown,
   ChevronLeft,
   Info,
@@ -15,7 +14,6 @@ import {
   MoreHorizontal,
   PanelRight,
   PanelRightClose,
-  Paperclip,
   RotateCcw,
   Square,
   X,
@@ -28,7 +26,6 @@ import { api, t } from "../routes"
 import { ActivityTrail } from "./activity-trail"
 import { Artifacts } from "./artifacts"
 import { AttachmentList, type Attachment } from "./attachments"
-import { CapabilityButton } from "./capability-list"
 import { CaseTalk, type CaseMessage, type CaseShare } from "./case-talk"
 import { fileIcon } from "./file-row"
 import { Icon } from "./icon"
@@ -36,6 +33,7 @@ import { CapabilityLock } from "./lock"
 import { Markdown } from "./markdown"
 import { PanelHandle, WIDTH_DEFAULT, clamp } from "./resize-handle"
 import { ResultPanel } from "./result-panel"
+import { TaskField } from "./task-field"
 import { useToast } from "./toast"
 import { UnbackedPromises } from "./unbacked-promises"
 
@@ -89,6 +87,7 @@ export function CaseView({
   people,
   everyone,
   me,
+  approver,
 }: {
   id: string
   policyFor: Policy
@@ -97,6 +96,11 @@ export function CaseView({
   people?: Record<string, string>
   everyone?: { id: string; name: string }[]
   me?: string
+  /**
+   * „Imię Nazwisko" osoby wydającej zgodę — dla karty odmowy. Wchodzi PROPEM z ekranu
+   * serwera, bo kto decyduje, wie baza, a kłódka jest komponentem klienta.
+   */
+  approver?: string | undefined
 }) {
   const [entries, setEntries] = useState<AuditEntry[]>([])
   const [caseFile, setCaseFile] = useState<Case | null>(null)
@@ -123,7 +127,6 @@ export function CaseView({
   const stream = useRef<HTMLDivElement>(null)
   const bottom = useRef<HTMLDivElement>(null)
   const evidenceFooter = useRef<HTMLDivElement>(null)
-  const picker = useRef<HTMLInputElement>(null)
   const field = useRef<HTMLTextAreaElement>(null)
   const translate = useDeskT()
   const locale = useDeskLocale()
@@ -267,10 +270,7 @@ export function CaseView({
   )
   const turns = useMemo(() => perTurn(conversation), [conversation])
   // Czynności CAŁEJ sprawy — patrz komentarz przy `turns.map` niżej.
-  const caseEvents = useMemo(
-    () => turns.flatMap((turn) => turn.work.map((w) => w.event)),
-    [turns],
-  )
+  const caseEvents = useMemo(() => turns.flatMap((turn) => turn.work.map((w) => w.event)), [turns])
   const evidence = useMemo(
     () =>
       evidenceFromEvents(
@@ -542,6 +542,7 @@ export function CaseView({
                         entries={turn.work}
                         isWorking={isWorking && lastTurn}
                         now={now}
+                        approver={approver}
                       />
                     </div>
                   )}
@@ -558,8 +559,8 @@ export function CaseView({
                           key={w.seq}
                           description={ev.description}
                           name={ev.name}
-                          department={ev.department}
                           capabilityId={ev.capabilityId}
+                          approver={approver}
                         />
                       )
                     if (ev.type === "assistant")
@@ -685,78 +686,22 @@ export function CaseView({
               />
             </div>
           )}
-          {/* Pole zlecenia dostaje wyłącznie właściciel: gość ogląda, nie zleca. */}
-          <div
-            className={`editor mx-auto max-w-desk-stream rounded-xl border bg-desk-bg ${readOnly ? "hidden" : ""}`}
-          >
-            {pending.length > 0 && (
-              <div className="max-h-[136px] overflow-y-auto border-b px-3 py-2.5">
-                <AttachmentList
-                  files={pending}
-                  remove={(n) => setPending((z) => z.filter((x) => x.name !== n))}
-                />
-              </div>
-            )}
-            <textarea
-              ref={field}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={2}
-              onKeyDown={(e) => {
-                if (e.key !== "Enter") return
-                if (window.matchMedia("(hover: hover)").matches && !e.shiftKey) {
-                  e.preventDefault()
-                  send()
-                }
-              }}
-              onPaste={(e) => {
-                const files = Array.from(e.clipboardData.files)
-                if (!files.length) return
-                e.preventDefault()
-                const dt = new DataTransfer()
-                files.forEach((f) => dt.items.add(f))
-                attach(dt.files)
-              }}
-              placeholder={
-                taken ? translate("case.busyPlaceholder") : translate("case.placeholder")
-              }
-              className="t-body w-full resize-none bg-transparent px-3.5 pt-3 outline-none placeholder:text-desk-muted-2"
+          {/* Pole zlecenia dostaje wyłącznie właściciel: gość ogląda, nie zleca.
+              To DOKŁADNIE to samo pole co na biurku — jeden komponent, jedna postać,
+              więc osoba, która nauczyła się go raz, nie uczy się go tu drugi raz. */}
+          <div className={`mx-auto max-w-desk-stream ${readOnly ? "hidden" : ""}`}>
+            <TaskField
+              text={text}
+              onText={setText}
+              hint={taken ? translate("case.busyNote") : translate("case.example")}
+              box={field}
+              busy={taken}
+              files={pending}
+              removeFile={(n) => setPending((z) => z.filter((x) => x.name !== n))}
+              onFiles={attach}
+              onSend={send}
+              policyFor={p}
             />
-            <div className="flex items-center gap-1 px-2 pb-2">
-              <input
-                ref={picker}
-                type="file"
-                multiple
-                hidden
-                onChange={(e) => {
-                  attach(e.target.files)
-                  e.target.value = ""
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => picker.current?.click()}
-                className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
-              >
-                <Icon as={Paperclip} px={14} /> {translate("case.addFile")}
-              </button>
-              <CapabilityButton p={p} />
-              <div className="flex-1" />
-              <button
-                onClick={send}
-                disabled={
-                  (!text.trim() && !pending.length) || taken || pending.some((z) => z.uploading)
-                }
-                aria-label={translate("case.send")}
-                className="grid h-9 w-9 place-items-center rounded-md bg-desk-accent text-desk-accent-ink hover:bg-desk-accent-hover disabled:opacity-35"
-              >
-                <Icon
-                  as={taken ? LoaderCircle : ArrowUp}
-                  px={16}
-                  className={taken ? "spin" : undefined}
-                />
-              </button>
-            </div>
           </div>
         </div>
       </div>

@@ -111,6 +111,7 @@ export async function mcpTools(
           source: server.name,
           running: "tools.external.running",
           ok: "tools.external.ok",
+          failed: "tools.external.failed",
           group: {
             key: `external:${server.name}`,
             phrase: "tools.groups.external",

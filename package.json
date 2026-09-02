@@ -18,6 +18,7 @@
     "test:watch": "vitest",
     "tile-manifests": "node scripts/generate-tile-manifests.mjs",
     "i18n:batch": "node scripts/i18n-batch.mjs",
+    "kontrast:pomiar": "node scripts/kontrast-tokenow.mjs",
     "test:e2e": "npm run tile-manifests && playwright test",
     "test:e2e:ui": "npm run tile-manifests && playwright test --ui",
     "test:e2e:install": "playwright install chromium",

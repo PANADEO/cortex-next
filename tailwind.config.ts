@@ -28,7 +28,17 @@ const config: Config = {
   // komentarze tego pliku, produkując narzędzia-widma (`.antialiased`,
   // `.[text-transform:var(--label-transform)]`) — czyli ten sam problem, który
   // zawężenie globu wyżej właśnie usuwa.
-  safelist: ["skin-customs", "skin-domino"],
+  //
+  // `dark` na tej liście nie jest ozdobą ani asekuracją: BEZ NIEGO SAMODZIELNA
+  // APLIKACJA BIURKA NIE MA CIEMNEJ PALETY. Znalezione pomiarem — `.dark { --background:
+  // 0 0% 3.9% … }` z `globals.css` nie trafiało do arkusza `apps/desk`, więc po włączeniu
+  // ciemnego motywu tokeny powłoki zostawały jasne, a te, które Biurko trzyma u siebie
+  // (`.dark` w `desk.css` jest zwykłym CSS-em, więc purge go nie rusza), przełączały się
+  // na ciemne. Wychodziła z tego mieszanka: jasny amber ostrzeżenia na białej karcie,
+  // 1,74:1. Objaw jest ten sam co opisany wyżej dla skinów, tylko odwrócony — tam ginie
+  // `.skin-x`, a zostaje `.skin-x.dark`; tu ginie samo `.dark`, a `.skin-domino.dark`
+  // zostaje. Mierzy to `apps/desk/e2e/15-dostepnosc.spec.ts`.
+  safelist: ["dark", "skin-customs", "skin-domino"],
   theme: {
     container: {
       center: true,
@@ -129,7 +139,11 @@ const config: Config = {
         "desk-accent-ink": "hsl(var(--desk-accent-ink))",
         "desk-accent-soft": "color-mix(in oklab, hsl(var(--desk-accent)) 12%, hsl(var(--desk-surface)))",
         "desk-accent-soft-line": "color-mix(in oklab, hsl(var(--desk-accent)) 30%, hsl(var(--desk-line)))",
-        "desk-accent-soft-ink": "color-mix(in oklab, hsl(var(--desk-accent)) 80%, hsl(var(--desk-ink)))",
+        // 70% akcentu, nie 80%: pod skórką `customs` napis w dymku rozmowy i inicjały
+        // w plakietce osoby miały na własnym miękkim tle 3,97:1. Dosypanie atramentu
+        // podnosi to do 4,72:1 i nie odbiera roli sensu — to dalej jest atrament
+        // podbarwiony akcentem, w pozostałych skórkach dziś 6,3–14:1.
+        "desk-accent-soft-ink": "color-mix(in oklab, hsl(var(--desk-accent)) 70%, hsl(var(--desk-ink)))",
         "desk-focus": "hsl(var(--desk-focus))",
         "desk-ok": "hsl(var(--desk-ok))",
         "desk-warn": "hsl(var(--desk-warn))",

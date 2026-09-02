@@ -136,6 +136,33 @@ export async function names(): Promise<Record<string, string>> {
 }
 
 /**
+ * KTO WYDAJE ZGODĘ — z imienia, o ile da się je wskazać bez zgadywania.
+ *
+ * USTALENIE, KTÓRE TRZEBA POWIEDZIEĆ WPROST: Biurko NIE ZNA przełożonego pojedynczej
+ * osoby. Takiego pola nie ma ani w `desk.person`, ani w katalogu powłoki
+ * (`system_config.users` niesie imię, nazwisko i to, czy konto jest czynne). Biurko zna
+ * ROLĘ: prośby rozpatruje `management` i wyłącznie ona — `PATCH /request` odrzuca
+ * każdego innego. Imię na karcie odmowy bierze się więc z roli, a nie z relacji
+ * podwładny–przełożony, bo takiej relacji tu po prostu nie ma.
+ *
+ * Gdy osób z tą rolą jest kilka, oddajemy `null` zamiast wybierać pierwszą z brzegu.
+ * „Zgodę wydaje Robert Nowak" powiedziane o cudzym przełożonym jest GORSZE niż
+ * „Zgodę wydaje Twój przełożony": wysyła człowieka do niewłaściwych drzwi, a prośba
+ * i tak trafia do kolejki, którą widzą wszyscy z tej roli. Ta sama ścieżka obsługuje
+ * wdrożenie, w którym roli `management` nie ma jeszcze wcale.
+ */
+export async function approver(): Promise<User | null> {
+  const deciding = (await everyone()).filter((x) => x.role === "management" && x.active !== false)
+  return deciding.length === 1 ? (deciding[0] ?? null) : null
+}
+
+/** „Imię Nazwisko" osoby wydającej zgodę — pusty napis, gdy nie da się jej wskazać. */
+export async function approverName(): Promise<string> {
+  const who = await approver()
+  return who ? `${who.firstName} ${who.lastName}`.trim() : ""
+}
+
+/**
  * Osoba spod bramy logowania. Nieznany adres ZAKŁADA KONTO, a nie rzuca wyjątkiem.
  *
  * Rola startowa to `member`, i to nie jest wygoda, tylko rachunek: w tym katalogu

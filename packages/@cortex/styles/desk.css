@@ -27,9 +27,23 @@
   --desk-accent-soft-ink: 20 78% 30%;
   --desk-focus: 22 90% 45%;
 
-  /* semantyczne — nigdy jako wypełnienie tła treści */
+  /* Semantyczne — nigdy jako wypełnienie tła treści, zawsze jako ATRAMENT: napis,
+     ikona, kropka stanu. Ta jedna zasada rozstrzyga, dlaczego trzy pozycje niżej NIE
+     idą przez mostek (patrz §1b) i dlaczego mają akurat takie jasności.
+
+     Zmierzone (`node scripts/kontrast-tokenow.mjs`) — najgorsza para w motywie jasnym
+     wśród WSZYSTKICH skórek, czyli za każdym razem pod Dominem, bo jego papier jest
+     najciemniejszy z jasnych:
+       ok   150 52% 30% → 4,58:1  (na tle podniesionym)   przechodzi bez zmiany
+       bad  358 62% 45% → 4,86:1  (na tle podniesionym)   przechodzi bez zmiany
+       warn  42 92% 32% → 3,37:1  (na własnym miękkim tle) NIE przechodziło;
+                                   25% daje 4,75:1
+     Ruszona jest wyłącznie jasność ostrzeżenia. Odcień 42° i nasycenie 92% zostają, bo
+     to one niosą znaczenie — po zmianie to dalej jest ta sama bursztynowa ochra, tylko
+     czytelna. Odbarwienie zamiast przyciemnienia (np. 42 60% 30%) też dałoby próg, ale
+     kosztem sygnału: ostrzeżenie zrobiłoby się oliwkowe. */
   --desk-ok: 150 52% 30%;
-  --desk-warn: 42 92% 32%;
+  --desk-warn: 42 92% 25%;
   --desk-bad: 358 62% 45%;
   --desk-ok-soft: 150 40% 94%;
   --desk-warn-soft: 44 80% 93%;
@@ -101,9 +115,25 @@
      Ta sama wada siedzi w `--ring` całej powłoki i jest osobnym zadaniem. */
   --desk-focus: var(--primary);
 
-  --desk-ok: var(--success);
-  --desk-warn: var(--warning);
-  --desk-bad: var(--destructive);
+  /* TRZECH RÓL SEMANTYCZNYCH TU CELOWO NIE MA, choć powłoka ma dla nich tokeny.
+     `--success`, `--warning` i `--destructive` są w powłoce WYPEŁNIENIAMI — mają
+     własną parę `-foreground`, czyli atrament, który się na nich kładzie. Biurko
+     używa tych ról odwrotnie: jako atramentu na papierze. Podpięcie wypełnienia pod
+     atrament dawało napisy, których nie da się przeczytać — zmierzone w motywie
+     jasnym: ostrzeżenie 2,14:1 na karcie i 1,91:1 na własnym miękkim tle, sukces
+     2,30:1, a pod skórką `customs` ostrzeżenie 1,76:1. To jest dokładnie ta liczba,
+     o którą poszedł spór w konsylium: 2,14:1 to pomiar mostka, 4,35:1 to pomiar
+     wartości z §1, którą mostek nadpisywał. Obie strony liczyły dobrze.
+
+     Odwrotność też nie działa i warto to mieć zapisane, żeby nikt nie próbował:
+     `var(--warning-foreground)` jest atramentem NA wypełnieniu, więc jego biegunowość
+     idzie za jasnością wypełnienia, a nie za tłem strony — pod `customs` `--success-foreground`
+     to kremowy `40 50% 99%`, czyli sukces na papierze miałby 1,05:1.
+
+     Skutek uboczny jest zamierzony: kolory sygnałowe Biurka przestają iść za skórką.
+     Domino ma tę samą zasadę zapisaną wprost („czerwień błędu i zieleń sukcesu są
+     sygnałem, nie wystrojem” — patrz `globals.css`), tylko trzymało ją po stronie
+     powłoki; teraz trzyma ją też Biurko. Pilnuje tego `apps/desk/e2e/15-dostepnosc.spec.ts`. */
 }
 
 /* ══ 2. MOTYW CIEMNY ══════════════════════════════════════════
@@ -116,6 +146,15 @@
   color-scheme: dark;
 }
 .dark {
+  /* Trzy role semantyczne muszą tu być wypisane, bo od §1b nie przychodzą już z powłoki,
+     a wartości z §1 są atramentem NA PAPIERZE i na ciemnym tle byłyby prawie niewidoczne
+     (ostrzeżenie 42 92% 25% na ciemnej karcie: 2,74:1, przy progu 4,5:1). Ten sam odcień i to samo nasycenie,
+     przeniesione na drugą stronę skali jasności. Zmierzone, najgorsza para wśród skórek:
+     ok 6,44:1 · warn 6,74:1 · bad 5,10:1. */
+  --desk-ok: 150 52% 50%;
+  --desk-warn: 42 92% 58%;
+  --desk-bad: 358 62% 68%;
+
   --desk-ink-2: 35 8% 76%;
   --desk-muted-2: 35 6% 48%;
   --desk-line-strong: 34 6% 31%;

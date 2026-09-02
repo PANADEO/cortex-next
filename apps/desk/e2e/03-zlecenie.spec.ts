@@ -10,6 +10,9 @@ import { as, expect, test } from "./osoby"
  */
 const pl = makeDeskT("pl")
 
+/** Pole zlecenia ma etykietę, nie tekst zastępczy — i ta etykieta nie znika przy pisaniu. */
+const POLE = "Napisz, co mam zrobić"
+
 /** Nagłówek przebiegu przełącza, więc rozwijamy tylko wtedy, gdy naprawdę jest zwinięty. */
 async function rozwin(header: Locator) {
   if ((await header.getAttribute("aria-expanded")) === "false") await header.click()
@@ -19,17 +22,12 @@ test.describe("Obszar 3 · Zlecam robotę, dostaję dokument z dowodem", () => {
   test("Karta zlecenia wstawia treść, nie wysyła", async ({ page }) => {
     await as(page, "anna")
     await page.goto("/")
-    await page.waitForSelector(
-      'button:has-text("Podpowiedzi"), button:has-text("Notatka ze spotkania")',
-    )
-    const rozwin = page.getByRole("button", { name: "Podpowiedzi", exact: true })
-    if (await rozwin.count()) await rozwin.click()
     await page
       .getByRole("button", { name: /Notatka ze spotkania/ })
       .first()
       .click()
 
-    const field = page.getByPlaceholder("Co mam dla Ciebie zrobić?")
+    const field = page.getByLabel(POLE)
     await expect(field).toHaveValue(/notatk/i)
     // nic nie zostało wysłane: zostajemy na biurku, przycisk nadal zaprasza do wysłania
     expect(new URL(page.url()).pathname).toBe("/")
@@ -44,7 +42,7 @@ test.describe("Obszar 3 · Zlecam robotę, dostaję dokument z dowodem", () => {
       await as(page, "anna")
       await page.goto("/")
       await page
-        .getByPlaceholder("Co mam dla Ciebie zrobić?")
+        .getByLabel(POLE)
         .fill(
           "Przeczytaj Moje pliki/notatka-spotkanie.txt i zapisz z tego zwięzłą notatkę jako notatka.md, potem sprawdź plik po zapisie.",
         )
@@ -90,7 +88,7 @@ test.describe("Obszar 3 · Zlecam robotę, dostaję dokument z dowodem", () => {
       await as(page, "anna")
       await page.goto("/")
       await page
-        .getByPlaceholder("Co mam dla Ciebie zrobić?")
+        .getByLabel(POLE)
         .fill(
           "Przeczytaj Moje pliki/notatka-spotkanie.txt i zapisz streszczenie jako streszczenie.md, potem sprawdź plik po zapisie.",
         )

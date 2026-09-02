@@ -306,7 +306,49 @@ test.describe("Obszar 18 · Awaria mówi prawdę, ale nie cudzymi słowami", () 
   test("Znane awarie mają własne zdania, nie surowy tekst dostawcy", () => {
     expect(readableFailure(new Error("401 Unauthorized"))).toMatch(/klucza do modelu/)
     expect(readableFailure(new Error("rate limit exceeded"))).toMatch(/limit zapytań/)
-    expect(readableFailure(new Error("fetch failed"))).toMatch(/cortex-proxy/)
-    expect(readableFailure(new Error("Cannot connect to API: bad port"))).toMatch(/cortex-proxy/)
+    expect(readableFailure(new Error("fetch failed"))).toMatch(/nie udało się połączyć/i)
+    expect(readableFailure(new Error("Cannot connect to API: bad port"))).toMatch(
+      /nie udało się połączyć/i,
+    )
+  })
+
+  // Ta asercja stała wcześniej NA ODWRÓT: sprawdzała, że zdanie o awarii łącza ZAWIERA
+  // słowo „cortex-proxy". Czyli bramka pilnowała, żeby księgowa dostawała nazwę kontenera
+  // jako polecenie do wykonania — rzecz, której nie ma jak sprawdzić i o której nie ma
+  // prawa wiedzieć. Nazwa nie znika: zostaje w dzienniku, w polu `raw`.
+  test("Zdanie dla pracownicy nie zawiera nazw naszej infrastruktury", () => {
+    const awarie = [
+      "fetch failed",
+      "Cannot connect to API: bad port",
+      "401 Unauthorized",
+      "ECONNREFUSED 127.0.0.1:4000",
+      "Kaboom w nieznanym miejscu",
+    ]
+    for (const tresc of awarie) {
+      const m = readableFailure(new Error(tresc))
+      for (const nazwa of ["cortex-proxy", "proxy", "docker", "kontener", "localhost", "http"]) {
+        expect(m.toLowerCase(), `zdanie dla „${tresc}” niesie „${nazwa}”`).not.toContain(nazwa)
+      }
+    }
+  })
+
+  // Ślepy zaułek: zdanie, którego CAŁĄ radą jest rola bez zadania. Człowiek nie wie ani
+  // co powiedzieć, ani czy sam może cokolwiek zrobić — a najczęściej może.
+  test("Żadne zdanie nie kończy się samym „zgłoś to administratorowi”", () => {
+    const awarie = [
+      "401 Unauthorized",
+      "fetch failed",
+      "This request requires more credits, or fewer max_tokens",
+      "402 Insufficient credits",
+      "Kaboom w nieznanym miejscu",
+    ]
+    for (const tresc of awarie) {
+      const m = readableFailure(new Error(tresc))
+      expect(m, `zdanie dla „${tresc}” kończy się rolą bez zadania`).not.toMatch(
+        /zgłoś to administratorowi\.?$/i,
+      )
+      // Gdy administrator w zdaniu jest, zdanie musi MÓWIĆ, co mu powiedzieć.
+      if (/administrator/i.test(m)) expect(m).toMatch(/powiedz administratorowi, że/i)
+    }
   })
 })

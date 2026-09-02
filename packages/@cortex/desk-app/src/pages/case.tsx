@@ -2,7 +2,7 @@ import { policyFor } from "@cortex/desk-core/capability-gate"
 import { accessTo } from "@cortex/desk-core/case-access"
 import { migrate, pool } from "@cortex/desk-core/db"
 import { viewer } from "@cortex/desk-core/identity"
-import { everyone, names } from "@cortex/desk-core/people"
+import { approverName, everyone, names } from "@cortex/desk-core/people"
 import { CaseView } from "@cortex/desk-ui/components/case-view"
 import { Shell } from "@cortex/desk-ui/components/shell"
 import { deskT } from "@cortex/desk-ui/i18n/server"
@@ -54,6 +54,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           name: `${x.firstName} ${x.lastName}`.trim() || x.id,
         }))}
         me={u.id}
+        approver={await approverName()}
       />
     </Shell>
   )

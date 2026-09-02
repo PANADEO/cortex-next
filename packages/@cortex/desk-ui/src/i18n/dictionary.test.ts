@@ -122,6 +122,10 @@ describe("słownik Biurka", () => {
       [
         card.running,
         card.ok,
+        // `failed` doszło razem z krokiem, który przestał kłamać w tytule. Bez tej pozycji
+        // literówka w kluczu porażki pokazałaby na ekranie `tools.write_sheet.failed`
+        // dokładnie w chwili, w której coś poszło nie tak — czyli w najgorszym momencie.
+        card.failed,
         card.group?.phrase,
         card.evidence?.phrase,
         card.evidence?.phraseBare,
@@ -149,6 +153,56 @@ describe("słownik Biurka", () => {
     ]
     expect(wanted.length).toBeGreaterThan(30)
     expect(wanted.filter((k) => !plKeys.includes(k))).toEqual([])
+  })
+
+  /**
+   * ŻADNE ZDANIE NIE ODSYŁA DO BEZIMIENNEJ WŁADZY.
+   *
+   * Ten ślepy zaułek wracał w tym produkcie DWA RAZY. Najpierw siedział w `failure.ts`
+   * („zgłoś to administratorowi"), został stamtąd usunięty — i wrócił tydzień później
+   * w słowniku przebiegu, przy okazji przebudowy kroku, który padł. Pani Basia nie wie,
+   * kto to administrator, nie ma jego numeru i nie ma jak go zapytać; zdanie, które ją
+   * tam odsyła, kończy się dla niej ścianą i powrotem do robienia ręcznie.
+   *
+   * Wolno odesłać do PRZEŁOŻONEGO, bo tę osobę Biurko umie wskazać z imienia
+   * (`approver()` w `people.ts`), i wolno powiedzieć, że asystent zgłosi rzecz sam.
+   * Nie wolno odesłać do nikogo.
+   */
+  it("żadne zdanie nie odsyła do bezimiennej władzy", () => {
+    const FACELESS =
+      /administrator|administratorowi|administratora|helpdesk|wsparci[ae] techniczn|support team|IT department|dział IT/i
+    const offenders: string[] = []
+    const walk = (node: unknown, key: string) => {
+      if (typeof node === "string") {
+        if (FACELESS.test(node)) offenders.push(`${key} = ${node}`)
+        return
+      }
+      if (node && typeof node === "object") {
+        for (const [k, v] of Object.entries(node)) walk(v, key ? `${key}.${k}` : k)
+      }
+    }
+    walk(pl, "pl")
+    walk(en, "en")
+    expect(offenders).toEqual([])
+  })
+
+  it("żadne zdanie nie kończy się samą rolą, bez zadania", () => {
+    // Ten sam ślepy zaułek, który zamknięto w `failure.ts`, wchodził tą drugą drogą:
+    // przez słownik. „…zgłoś to administratorowi." jest CAŁĄ radą, jaką człowiek
+    // dostawał — rola bez zadania, bez treści zgłoszenia, często zamiast czynności,
+    // którą mógł wykonać sam. Wolno wymienić administratora czy przełożonego, ale nie
+    // jako ostatnie słowo zdania.
+    const DEAD_ENDS: Record<string, RegExp[]> = {
+      pl: [/zgłoś to (administratorowi|przełożonemu)\.?$/i, /skontaktuj się z administratorem\.?$/i],
+      en: [/report it to (your |the )?administrator\.?$/i, /contact (your |the )?administrator\.?$/i],
+    }
+    for (const locale of DESK_LOCALES) {
+      const translate = makeDeskT(locale)
+      const guilty = (locale === "pl" ? plKeys : enKeys).filter((key) =>
+        (DEAD_ENDS[locale] ?? []).some((shape) => shape.test(translate(key).trim())),
+      )
+      expect(guilty, `${locale}: zdanie kończy się rolą bez zadania`).toEqual([])
+    }
   })
 
   it("brak klucza oddaje sam klucz, a nie pustkę", () => {

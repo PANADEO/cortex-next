@@ -11,13 +11,43 @@ import { useToast } from "./toast"
  * Katalog zdolności jest z założenia krótki i kurowany — a praca ma długi ogon.
  * To jest kanał na wszystko, czego w katalogu nie ma: nie da się tego przyznać
  * kliknięciem i nie udajemy, że się da. Trafia do przełożonego jako sygnał.
+ *
+ * OKNO OTWIERA SIĘ TAKŻE Z KARTY ODMOWY, i to jest jego drugie, ważniejsze wejście.
+ * Gdy opis zdolności nie trafił w katalog, karta nie ma czego poprosić jednym
+ * kliknięciem — ale wciąż ma dokąd wysłać człowieka. `defaultText` wpisuje wtedy
+ * z góry zdanie asystenta, żeby pani Basia nie musiała sama nazywać rzeczy,
+ * której nazwy nie zna.
+ *
+ * ZDANIE O PRYWATNOŚCI JEST TU WARUNKIEM, NIE OZDOBĄ. Ułatwienie „przeczytaj
+ * i wyślij" bez niego robi z treści sprawy ścieżkę najmniejszego oporu: człowiek
+ * dokleja do prośby fragment faktury, bo nie wie, że wysyła dokładnie to, co widzi.
  */
-export function OtherRequest() {
+export function OtherRequest({
+  defaultText = "",
+  approver,
+  label,
+  onSent,
+}: {
+  /** Zdanie, z którym okno się otwiera — opis z odmowy, gotowy do poprawienia. */
+  defaultText?: string
+  /** „Imię Nazwisko" osoby wydającej zgodę; pusto, gdy Biurko nie umie jej wskazać. */
+  approver?: string | undefined
+  /** Napis na przycisku otwierającym; domyślnie zdanie z ekranu „Co potrafię". */
+  label?: string | undefined
+  onSent?: (() => void) | undefined
+}) {
   const [openItems, setOpenItems] = useState(false)
-  const [text, setText] = useState("")
+  const [text, setText] = useState(defaultText)
   const [taken, setTaken] = useState(false)
   const { toast } = useToast()
   const translate = useDeskT()
+
+  // Okno otwiera się ZAWSZE z tekstem wyjściowym, także za drugim razem: człowiek,
+  // który je zamknął i wrócił, ma zobaczyć to samo zdanie, a nie swój porzucony szkic.
+  function change(next: boolean) {
+    setOpenItems(next)
+    if (next) setText(defaultText)
+  }
 
   async function send() {
     if (!text.trim() || taken) return
@@ -33,14 +63,15 @@ export function OtherRequest() {
     }
     setOpenItems(false)
     setText("")
+    onSent?.()
     toast({ text: translate("otherRequest.sent") })
   }
 
   return (
-    <Dialog.Root open={openItems} onOpenChange={setOpenItems}>
+    <Dialog.Root open={openItems} onOpenChange={change}>
       <Dialog.Trigger className="t-btn flex items-center gap-1.5 rounded-md border px-3 py-1.5 hover:bg-desk-raised">
         <Icon as={MessageSquarePlus} px={16} className="text-desk-muted" />
-        {translate("otherRequest.trigger")}
+        {label ?? translate("otherRequest.trigger")}
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-desk-ink/25" />
@@ -60,6 +91,11 @@ export function OtherRequest() {
             </Dialog.Close>
           </div>
           <div className="p-4">
+            <p className="t-meta mb-2">
+              {approver
+                ? translate("otherRequest.privacy", { person: approver })
+                : translate("otherRequest.privacyAnyone")}
+            </p>
             <textarea
               autoFocus
               value={text}
