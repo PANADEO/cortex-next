@@ -69,7 +69,18 @@ services:
   # seed-tile-manifests.mjs PRZED seed-system-config.mjs — patrz komentarz w
   # docker-compose.yml (ta sama usługa).
   migrate:
-    image: ghcr.io/panadeo/cortex-frontend:${IMAGE_TAG:-latest}
+    # WŁASNY obraz tego repo, nie odziedziczony po cortex-frontend. Plik przyszedł
+    # tu razem z kodem i przez jakiś czas ciągnął obrazy poprzednika — co znaczyło,
+    # że wdrożenie „Cortex Next" dostawało build INNEGO repo, a zmiany scalone tutaj
+    # nie docierały do klienta wcale. Nazwy kontenerów i wolumenów zostają
+    # `cortex-frontend*` CELOWO: to są identyfikatory istniejących danych i wpisów
+    # w playbookach devops, a przemianowanie wolumenu znaczy `migrate` na czystej
+    # bazie i utratę kont, ról i grantów.
+    #
+    # WARUNEK KONIECZNY: obrazy pod tą nazwą powstają dopiero po wypchnięciu tagu
+    # `v*` w PANADEO/cortex-next (.github/workflows/docker-build.yml). Do tego czasu
+    # `ghcr.io/panadeo/cortex-next` NIE ISTNIEJE i wdrożenie z tego pliku nie wstanie.
+    image: ghcr.io/panadeo/cortex-next:${IMAGE_TAG:-latest}
     container_name: cortex-frontend-migrate${ENVIRONMENT_TAG}
     restart: "no"
     depends_on:
@@ -118,7 +129,7 @@ services:
       - no-new-privileges:true
 
   cortex-frontend:
-    image: ghcr.io/panadeo/cortex-frontend:${IMAGE_TAG:-latest}
+    image: ghcr.io/panadeo/cortex-next:${IMAGE_TAG:-latest}
     container_name: cortex-frontend${ENVIRONMENT_TAG}
     restart: unless-stopped
     depends_on:
@@ -142,6 +153,13 @@ services:
       # reguła nie brzmi „tylko adresy publiczne". Bez tej listy przełożony wpisujący
       # `http://127.0.0.1:5432` kazałby kontenerowi Biurka tam pójść.
       - MCP_ALLOWED_HOSTS=${MCP_ALLOWED_HOSTS:-}
+      # Adres Parsera Dokumentów. Dwaj odbiorcy tej jednej usługi: kafelek Parsera
+      # (app/idp/lib/document-parser) i czynność `read_document` Biurka
+      # (packages/@cortex/desk-core/src/document-parser.ts). Bez tej linii adres
+      # musiałby przyjść z .env, a gdy go tam nie ma — nie ma go wcale i OBAJ
+      # odbijają się w pustkę. Domyślka celuje w usługę niżej, z ${ENVIRONMENT_TAG},
+      # żeby UAT nie chodził do parsera produkcji.
+      - DOCUMENT_PARSER_BACKEND_URL=${DOCUMENT_PARSER_BACKEND_URL:-http://document-parser-backend${ENVIRONMENT_TAG}:8000}
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
       - PORT=80
@@ -172,6 +190,74 @@ services:
       - cortex_frontend_desk_data:/data/desk
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
+
+  # ── Parser Dokumentów ──────────────────────────────────────────────────────
+  # Do 02.09.2026 tych dwóch usług NIE BYŁO w tym pliku, choć w docker-compose.yml
+  # stoją od początku. Skutek widoczny WYŁĄCZNIE na wdrożeniu: lokalnie czytanie
+  # PDF-ów działa i ma zielone testy, a u klienta czynność `read_document` Biurka
+  # i kafelek Parsera odbijają się od adresu, pod którym nic nie stoi. Dokładnie ta
+  # klasa defektu, przed którą ostrzega .claude/skills/code-compose („rozjazd między
+  # dwoma plikami compose jest cichy") — i w tym repo już trzeci raz.
+  document-parser-backend:
+    image: ghcr.io/panadeo/cortex-next/services/document-parser:${IMAGE_TAG:-latest}
+    container_name: document-parser-backend${ENVIRONMENT_TAG}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Sidecar adresowany po NAZWIE KONTENERA z ${ENVIRONMENT_TAG}, nie po nazwie
+      # usługi: sieć jest wspólna i zewnętrzna (`external: true` niżej), więc na
+      # jednym hoście stoją obok siebie produkcja i UAT. Bez tagu backend UAT-u
+      # trafiłby do unoservera produkcji — cicho i tylko czasem.
+      - UNO_HOST=document-parser-unoserver${ENVIRONMENT_TAG}
+      - UNO_PORT=2003
+      - CORTEX_PROXY_URL=${CORTEX_PROXY_URL:-http://host.docker.internal:8240}
+      - CORTEX_PROXY_API_KEY=${CORTEX_PROXY_API_KEY:-}
+      # Bez wartości domyślnej — fail-closed, tak samo jak w docker-compose.yml
+      # (Q3 design docu). Puste = /health mówi „ok", a pierwsze wywołanie modelu
+      # pada czytelnym DependencyError. Instancja, która ma czytać PDF-y, MUSI to
+      # ustawić razem z kluczem wyżej; zweryfikowana wartość stoi w .env.example.
+      - DOCUMENT_PARSER_VISION_MODEL=${DOCUMENT_PARSER_VISION_MODEL:-}
+    depends_on:
+      document-parser-unoserver:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # BRAK `ports:` — CELOWO, dokładnie jak w docker-compose.yml (D6). Osiągalny
+    # wyłącznie po Docker DNS z kontenera powłoki.
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=512m
+
+  # LibreOffice headless — sidecar konwersji formatów biurowych do PDF, zanim
+  # model wizyjny w ogóle zobaczy stronę. Bez niego backend wstaje, ale każdy
+  # DOCX i XLSX kończy się błędem zależności.
+  document-parser-unoserver:
+    image: ghcr.io/panadeo/cortex-next/services/document-parser-unoserver:${IMAGE_TAG:-latest}
+    container_name: document-parser-unoserver${ENVIRONMENT_TAG}
+    restart: unless-stopped
+    command: ["python3", "-m", "unoserver.server", "--interface", "0.0.0.0", "--port", "2003"]
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "unoserver"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=512M
 
 networks:
   default:
