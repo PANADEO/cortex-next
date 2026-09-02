@@ -55,3 +55,37 @@ export function isInfrastructure(e: unknown): boolean {
     s,
   )
 }
+
+/**
+ * OSTATNIA LINIA BŁĘDU Z PIASKOWNICY — żeby „nie udało się" przestało być całą wiedzą.
+ *
+ * DLACZEGO POWSTAŁO. Nieudane obliczenie zapisywało w sprawie jedno zdanie: „błąd
+ * wykonania". Treść błędu — traceback, który kod naprawdę wypisał — szła do modelu
+ * i przepadała, więc ani człowiek, ani wsparcie nie miało z czego zdiagnozować, co się
+ * zepsuło. Zmierzone na żywej sprawie: trzy nieudane obliczenia, 96 bajtów treści błędu,
+ * i ani jednego znaku z tego w dowodzie.
+ *
+ * DLACZEGO TO NIE JEST ZŁAMANIE REGUŁY „surowa treść wyjątku nie wychodzi do dowodu".
+ * Tamta reguła chroni przed wyciekiem NASZYCH wnętrzności — ścieżek na serwerze i treści
+ * wyjątków Node'a z warstwy plików. Tutaj mówimy o błędzie KODU, który agent sam napisał
+ * i który wykonał się w piaskownicy: to jest wynik jego pracy, a nie nasza infrastruktura.
+ *
+ * Bierzemy WYŁĄCZNIE ostatnią niepustą linię, bo w Pythonie i w Node to jest linia
+ * z typem i komunikatem wyjątku, a wszystko powyżej to ścieżki w kodzie tymczasowym,
+ * które nikomu nic nie mówią. Twardy sufit, bo komunikat wyjątku potrafi nieść wartość
+ * z pliku klienta (`KeyError: 'nazwa kontrahenta'`) — jedna linia to diagnoza,
+ * a cały traceback byłby kopią danych w drugim miejscu.
+ */
+export function sandboxFailureLine(output: string, limit = 120): string {
+  const lines = output.split("\n").map((l) => l.trim())
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i]!
+    if (line === "") continue
+    // Wiersze ramki tracebacku same w sobie nic nie znaczą — szukamy dalej w górę.
+    if (line.startsWith("File \"") || line.startsWith("Traceback") || line.startsWith("at ")) {
+      continue
+    }
+    return line.length > limit ? `${line.slice(0, limit)}…` : line
+  }
+  return ""
+}

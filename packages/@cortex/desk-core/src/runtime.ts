@@ -11,6 +11,7 @@ import { hasCapability } from "./capability-gate"
  * stron zwykłego tekstu i mieści typowe zestawienie miesięczne w całości.
  */
 const READ_LIMIT = 60_000
+import { sandboxFailureLine } from "./failure"
 import { isShared } from "./folder"
 import { refuseShared } from "./shared-access"
 import { safeCsv } from "./csv-safety"
@@ -463,9 +464,15 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
               output: "wynik był za duży i został ucięty",
             }
             const stopped = r.stopped ? (why[r.stopped] ?? "obliczenie zostało zatrzymane") : ""
+            // Gdy kod padł, do dowodu idzie POWÓD, a nie sama informacja, że padł.
+            // Bez tego jedyną wiedzą człowieka było „błąd wykonania", a treść błędu
+            // szła do modelu i przepadała.
+            const reason = r.ok ? "" : sandboxFailureLine(r.output)
             return {
               ok: r.ok,
-              summary: stopped || (r.ok ? "policzone" : "błąd wykonania"),
+              summary:
+                stopped ||
+                (r.ok ? "policzone" : reason ? `błąd wykonania — ${reason}` : "błąd wykonania"),
               answer: r.output || "(brak wyjścia)",
             }
           } finally {
