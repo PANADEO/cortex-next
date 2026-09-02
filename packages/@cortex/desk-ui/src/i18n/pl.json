@@ -456,7 +456,7 @@
     "toolGone": "Serwer nie wystawia już tego narzędzia.",
     "noSuchServer": "Nie ma takiego serwera.",
     "connectFailed": "Nie udało się połączyć: {{reason}}",
-    "unknownAction": "Nieznana akcja.",
+    "unknownAction": "Nie znam takiej czynności.",
     "somethingOutside": "coś, czego nie ma w katalogu",
     "writeWhatYouNeed": "Napisz, czego potrzebujesz.",
     "noSuchCapability": "Nie ma takiej zdolności.",
@@ -474,7 +474,9 @@
     "limitMustBeNumber": "Limit musi być liczbą nie mniejszą od zera.",
     "cannotDisableSelf": "Nie możesz wyłączyć własnego konta.",
     "addressNotAllowed": "Adres {{host}} nie jest dozwolony w tej instancji. Dopisz go do zmiennej {{variable}} w konfiguracji wdrożenia — docker-compose.yml, usługa cortex-frontend — i uruchom instancję ponownie. Dziś dozwolone: {{allowed}}.",
-    "noAnswerInTime": "Serwer nie odpowiedział w ciągu {{seconds}} s. Sprawdź, czy działa pod tym adresem."
+    "noAnswerInTime": "Serwer nie odpowiedział w ciągu {{seconds}} s. Sprawdź, czy działa pod tym adresem.",
+    "noSuchFile": "Nie ma takiego pliku.",
+    "noSuchCase": "Nie ma takiej sprawy."
   },
   "tools": {
     "list_files": {

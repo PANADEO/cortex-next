@@ -21,9 +21,9 @@ test.describe("Obszar 10 · Governance widać na ekranie", () => {
 
   test("Pracownik nie może przyznać zdolności sam sobie", async ({ request }) => {
     const headers = { Cookie: "desk_persona=anna" }
-    await request.post("/api/request", { headers: headers, data: { capability: "sheet.write" } })
+    await request.post("/api/request", { headers: headers, data: { capability: "counterparty.verify" } })
     const moje = await (await request.get("/api/request", { headers: headers })).json()
-    const p = moje.requests.find((x: { capability: string }) => x.capability === "sheet.write")
+    const p = moje.requests.find((x: { capability: string }) => x.capability === "counterparty.verify")
 
     const proba = await request.patch("/api/request", {
       headers: headers,
@@ -49,31 +49,31 @@ test.describe("Obszar 10 · Governance widać na ekranie", () => {
 
     await as(page, "anna")
     await page.goto("/capabilities")
-    await expect(page.getByText("zgoda należy do działu: Finanse")).toBeVisible()
-    await request.post("/api/request", { headers: annaH, data: { capability: "sheet.write" } })
+    await expect(page.getByText("zgoda należy do działu: Księgowość")).toBeVisible()
+    await request.post("/api/request", { headers: annaH, data: { capability: "counterparty.verify" } })
 
     await as(page, "robert")
     await page.goto("/supervision")
-    await expect(page.getByText("prosi o zdolność „Tworzenie arkuszy”")).toBeVisible()
+    await expect(page.getByText("prosi o zdolność „Sprawdzanie kontrahenta w wykazie VAT”")).toBeVisible()
     await page.getByRole("button", { name: "Przyznaj" }).first().click()
     await expect(page.getByText("ma teraz zdolność")).toBeVisible()
 
     // zakres Anny zmienił się naprawdę — nie tylko stan prośby
     await as(page, "anna")
     await page.goto("/capabilities")
-    await expect(page.getByText("zgoda należy do działu: Finanse")).toHaveCount(0)
-    await expect(page.getByText("Tworzenie arkuszy")).toBeVisible()
+    await expect(page.getByText("zgoda należy do działu: Księgowość")).toHaveCount(0)
+    await expect(page.getByText("Sprawdzanie kontrahenta w wykazie VAT")).toBeVisible()
   })
 
   test("Przełożony może cofnąć to, co przyznał", async ({ page, request }) => {
     const annaH = { Cookie: "desk_persona=anna" }
-    await request.post("/api/request", { headers: annaH, data: { capability: "sheet.write" } })
+    await request.post("/api/request", { headers: annaH, data: { capability: "counterparty.verify" } })
     const wszystkie = await (
       await request.get("/api/request", { headers: { Cookie: "desk_persona=robert" } })
     ).json()
     const p = wszystkie.requests.find(
       (x: { capability: string; status: string }) =>
-        x.capability === "sheet.write" && x.status === "pending",
+        x.capability === "counterparty.verify" && x.status === "pending",
     )
     await request.patch("/api/request", {
       headers: { Cookie: "desk_persona=robert" },
@@ -87,7 +87,7 @@ test.describe("Obszar 10 · Governance widać na ekranie", () => {
 
     await as(page, "anna")
     await page.goto("/capabilities")
-    await expect(page.getByText("zgoda należy do działu: Finanse")).toBeVisible()
+    await expect(page.getByText("zgoda należy do działu: Księgowość")).toBeVisible()
   })
 
   test("Dziennik mówi po polsku, nie surowym JSON-em", async ({ page, request }) => {
@@ -269,17 +269,26 @@ test.describe("Obszar 12 · Potrzeby spoza katalogu", () => {
   })
 
   test("Katalog grupuje się działami, gdy jest co grupować", async ({ page }) => {
-    // Anna ma zdolności wyłącznie „dla wszystkich" — nagłówek działu byłby szumem
+    // Do 02.09.2026 stało tu założenie, że Anna ma zdolności wyłącznie „dla wszystkich",
+    // więc u niej nagłówków działów nie ma wcale. Decyzja właściciela produktu o oddaniu
+    // arkuszy i obliczeń roli startowej to założenie unieważniła — i dobrze, bo było ono
+    // opisem ZASIEWU, nie reguły. Reguła brzmi: nagłówek działu pojawia się wtedy,
+    // gdy jest co grupować, i sprawdzamy ją teraz na obu osobach, a nie na kontraście
+    // między nimi.
     await as(page, "anna")
-    await page.goto("/capabilities")
-    await expect(page.getByText("Dla wszystkich")).toHaveCount(0)
-
-    // Robert ma zdolności z czterech działów — wtedy grupowanie zaczyna nieść informację
-    await as(page, "robert")
     await page.goto("/capabilities")
     await expect(page.getByText("Dla wszystkich")).toBeVisible()
     await expect(page.getByText("Finanse", { exact: true })).toBeVisible()
+
+    // Przełożony ma dodatkowo działy, których pracownica nie ma — grupowanie niesie
+    // wtedy informację o tym, czego jej brakuje i u kogo o to prosić.
+    await as(page, "robert")
+    await page.goto("/capabilities")
+    await expect(page.getByText("Dla wszystkich")).toBeVisible()
     await expect(page.getByText("Marketing", { exact: true })).toBeVisible()
+    // Zawężone do treści ekranu: „Zarząd" stoi też w pasku jako rola Roberta,
+    // a nas interesuje NAGŁÓWEK DZIAŁU w katalogu, nie podpis pod jego nazwiskiem.
+    await expect(page.getByRole("main").getByText("Zarząd", { exact: true })).toBeVisible()
   })
 })
 

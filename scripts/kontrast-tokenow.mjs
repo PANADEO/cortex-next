@@ -526,9 +526,22 @@ function report(argv) {
     const bad = mine.filter((one) => !one.passes).length
     console.log(`  ${skin.name.padEnd(20)} ${bad} z ${mine.length} poniżej progu`)
   }
+  // Lista może tylko MALEĆ. Wpis, który zaczął przechodzić, musi z niej zniknąć —
+  // inaczej jest wygodnym miejscem na schowanie przyszłej regresji pod cudzą zgodą.
+  // Reguła stała najpierw wyłącznie w e2e, czyli była egzekwowana dopiero z przeglądarką;
+  // tutaj kosztuje trzy linie i działa wszędzie, gdzie da się uruchomić `node`.
+  const measured = new Set(results.map((one) => `${one.skin} — ${label(one.pair)}`))
+  const stale = KNOWN_BELOW.filter(
+    (one) => measured.has(one) && !below.some((bad) => `${bad.skin} — ${label(bad.pair)}` === one),
+  )
+
   console.log(`  RAZEM ${below.length} z ${results.length} par poniżej progu`)
   console.log(`         w tym ${known.length} znanych i dopuszczonych, ${failed.length} nowych`)
-  return failed.length === 0
+  if (stale.length) {
+    console.log("\nZNANE ODSTĘPSTWA, KTÓRE JUŻ PRZECHODZĄ — skreśl je z KNOWN_BELOW:")
+    stale.forEach((one) => console.log(`  ${one}`))
+  }
+  return failed.length === 0 && stale.length === 0
 }
 
 /**

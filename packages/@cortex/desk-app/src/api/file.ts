@@ -53,6 +53,6 @@ export async function GET(req: Request) {
     }
     return new NextResponse(new Uint8Array(data), { headers: headers })
   } catch {
-    return NextResponse.json({ error: "nie ma takiego pliku" }, { status: 404 })
+    return NextResponse.json({ error: translate("api.noSuchFile") }, { status: 404 })
   }
 }

@@ -16,23 +16,27 @@ const MAX = 25 * 1024 * 1024
  */
 export async function POST(req: Request) {
   const u = await whoAmI()
+  // Słownik POWYŻEJ pierwszej odmowy: odpowiedzi o cudzej sprawie padają, zanim
+  // w ogóle dojdzie do plików, a każda z nich jest zdaniem dla człowieka.
+  const translate = await deskT()
   const form = await req.formData()
   const caseId = form.get("caseId") as string | null
 
   let folder: string
   if (caseId) {
     const s = await pool.query(`select owner from desk.case_file where id=$1`, [caseId])
-    if (!s.rowCount) return NextResponse.json({ error: "Nie ma takiej sprawy." }, { status: 404 })
+    if (!s.rowCount) {
+      return NextResponse.json({ error: translate("api.noSuchCase") }, { status: 404 })
+    }
     if (s.rows[0].owner !== u.id) {
       await audit.write(u.id, "access.denied", { caseId })
-      return NextResponse.json({ error: "To nie jest Twoja sprawa." }, { status: 403 })
+      return NextResponse.json({ error: translate("api.notYourCase") }, { status: 403 })
     }
     folder = storage.caseFolder(u.id, caseId)
   } else {
     folder = (form.get("folder") as string) || "Moje pliki"
   }
 
-  const translate = await deskT()
   // Katalog przychodzi Z FORMULARZA, więc przeglądarka może wskazać wspólną półkę — i do
   // tej pory wskazywała skutecznie, bez pytania o `shared.write`. Podmiana firmowego wzoru
   // pisma jest zdarzeniem o zasięgu całej firmy (patrz `shared-access.ts`), więc nie może

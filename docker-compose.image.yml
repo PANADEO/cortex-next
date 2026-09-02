@@ -80,7 +80,15 @@ services:
     # WARUNEK KONIECZNY: obrazy pod tą nazwą powstają dopiero po wypchnięciu tagu
     # `v*` w PANADEO/cortex-next (.github/workflows/docker-build.yml). Do tego czasu
     # `ghcr.io/panadeo/cortex-next` NIE ISTNIEJE i wdrożenie z tego pliku nie wstanie.
-    image: ghcr.io/panadeo/cortex-next:${IMAGE_TAG:-latest}
+    #
+    # DLACZEGO `:?`, A NIE DOMYŚLNY `latest`. Ten workflow publikuje `latest` WYŁĄCZNIE
+    # przy budowie z gałęzi `main` (`enable: github.ref == 'refs/heads/main'`), a odpala
+    # się na `push: tags: v*`. Budowa z tagu NIGDY nie dostaje więc `latest` — i domyślka
+    # `${IMAGE_TAG:-latest}` kazałaby wdrożeniu ciągnąć tag, którego nikt nie publikuje.
+    # Awaria wyszłaby dopiero na serwerze, jako „manifest unknown", i to dla wszystkich
+    # czterech obrazów naraz. `:?` zatrzymuje to w `docker compose config`, czytelnym
+    # zdaniem, zanim ktokolwiek dotknie hosta. Ta sama postawa co przy POSTGRES_PASSWORD.
+    image: ghcr.io/panadeo/cortex-next:${IMAGE_TAG:?ustaw IMAGE_TAG w .env — obrazy tego repo NIE MAJA tagu `latest`, patrz komentarz przy usludze migrate}
     container_name: cortex-frontend-migrate${ENVIRONMENT_TAG}
     restart: "no"
     depends_on:
@@ -129,7 +137,7 @@ services:
       - no-new-privileges:true
 
   cortex-frontend:
-    image: ghcr.io/panadeo/cortex-next:${IMAGE_TAG:-latest}
+    image: ghcr.io/panadeo/cortex-next:${IMAGE_TAG:?ustaw IMAGE_TAG w .env — obrazy tego repo NIE MAJA tagu `latest`, patrz komentarz przy usludze migrate}
     container_name: cortex-frontend${ENVIRONMENT_TAG}
     restart: unless-stopped
     depends_on:
@@ -199,7 +207,7 @@ services:
   # klasa defektu, przed którą ostrzega .claude/skills/code-compose („rozjazd między
   # dwoma plikami compose jest cichy") — i w tym repo już trzeci raz.
   document-parser-backend:
-    image: ghcr.io/panadeo/cortex-next/services/document-parser:${IMAGE_TAG:-latest}
+    image: ghcr.io/panadeo/cortex-next/services/document-parser:${IMAGE_TAG:?ustaw IMAGE_TAG w .env — obrazy tego repo NIE MAJA tagu `latest`, patrz komentarz przy usludze migrate}
     container_name: document-parser-backend${ENVIRONMENT_TAG}
     restart: unless-stopped
     env_file:
@@ -239,7 +247,7 @@ services:
   # model wizyjny w ogóle zobaczy stronę. Bez niego backend wstaje, ale każdy
   # DOCX i XLSX kończy się błędem zależności.
   document-parser-unoserver:
-    image: ghcr.io/panadeo/cortex-next/services/document-parser-unoserver:${IMAGE_TAG:-latest}
+    image: ghcr.io/panadeo/cortex-next/services/document-parser-unoserver:${IMAGE_TAG:?ustaw IMAGE_TAG w .env — obrazy tego repo NIE MAJA tagu `latest`, patrz komentarz przy usludze migrate}
     container_name: document-parser-unoserver${ENVIRONMENT_TAG}
     restart: unless-stopped
     command: ["python3", "-m", "unoserver.server", "--interface", "0.0.0.0", "--port", "2003"]

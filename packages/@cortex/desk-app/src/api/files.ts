@@ -64,7 +64,7 @@ export async function POST(req: Request) {
     else if (b.action === "restore") result = { ok: true, ...(await storage.restore(u.id, b.id)) }
     else if (b.action === "empty-trash")
       result = { ok: true, removed: await storage.emptyTrash(u.id) }
-    else return NextResponse.json({ error: "nieznana akcja" }, { status: 400 })
+    else return NextResponse.json({ error: translate("api.unknownAction") }, { status: 400 })
     // Do dziennika idą POLA WYMIENIONE Z NAZWY, nie całe ciało żądania. Wcześniej
     // zapisywaliśmy `b` w całości, więc do trwałego rejestru trafiało wszystko, co
     // przeglądarka zechciała dopisać — także pola, których nikt nie przejrzał, i te,

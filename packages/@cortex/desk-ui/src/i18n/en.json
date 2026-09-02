@@ -437,7 +437,7 @@
     "toolGone": "The server no longer exposes this tool.",
     "noSuchServer": "There is no such server.",
     "connectFailed": "Could not connect: {{reason}}",
-    "unknownAction": "Unknown action.",
+    "unknownAction": "I do not know that action.",
     "somethingOutside": "something the catalogue does not have",
     "writeWhatYouNeed": "Write what you need.",
     "noSuchCapability": "There is no such capability.",
@@ -455,7 +455,9 @@
     "limitMustBeNumber": "The limit has to be a number of zero or more.",
     "cannotDisableSelf": "You cannot disable your own account.",
     "addressNotAllowed": "Address {{host}} is not allowed on this instance. Add it to the {{variable}} variable in the deployment configuration — docker-compose.yml, service cortex-frontend — and restart the instance. Currently allowed: {{allowed}}.",
-    "noAnswerInTime": "The server did not answer within {{seconds}} s. Check whether it is running at that address."
+    "noAnswerInTime": "The server did not answer within {{seconds}} s. Check whether it is running at that address.",
+    "noSuchFile": "There is no such file.",
+    "noSuchCase": "There is no such case."
   },
   "tools": {
     "list_files": {

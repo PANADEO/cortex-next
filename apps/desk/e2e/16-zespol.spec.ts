@@ -11,14 +11,19 @@ import { as, expect, otworz, test } from "./osoby"
  * pada na każdej rozmowie o AI w firmie, zaraz po „a skąd wiem, co on zrobił?".
  */
 
-const ARKUSZE = "sheet.write"
+// Zdolność użyta w tych scenariuszach musi być taka, której rola startowa NIE MA —
+// inaczej „przyznanie" i „odebranie" nie mają czego zmienić i test przechodzi na pusto.
+// Do 02.09.2026 stały tu arkusze (`sheet.write`); decyzją właściciela produktu weszły
+// do roli `member`, bo bez nich pani Basia trafiała na kłódkę w swoim najczęstszym
+// zadaniu. `counterparty.verify` zostaje przy przełożonym — patrz `starting-role.test.ts`.
+const KONTRAHENCI = "counterparty.verify"
 const jako = (who: "anna" | "robert") => ({ Cookie: `desk_persona=${who}` })
 
 /** Stan wyjściowy: Anna nie ma arkuszy z roli, więc każdy ślad po nich jest nasz. */
 test.beforeEach(async ({ request }) => {
   await request.post("/api/team", {
     headers: jako("robert"),
-    data: { action: "revoke", who: "anna", capability: ARKUSZE },
+    data: { action: "revoke", who: "anna", capability: KONTRAHENCI },
   })
 })
 
@@ -41,18 +46,18 @@ test.describe("Obszar 25 · Zespół widziany przez przełożonego", () => {
   test("Nadanie zmienia to, co pracownik widzi u siebie", async ({ page, request }) => {
     await as(page, "anna")
     await otworz(page, "/capabilities")
-    await expect(page.getByText("Tworzenie arkuszy")).toBeVisible()
+    await expect(page.getByText("Sprawdzanie kontrahenta w wykazie VAT")).toBeVisible()
     await expect(page.getByText("Na to nie masz jeszcze zgody:")).toBeVisible()
 
     const grant = await request.post("/api/team", {
       headers: jako("robert"),
-      data: { action: "grant", who: "anna", capability: ARKUSZE },
+      data: { action: "grant", who: "anna", capability: KONTRAHENCI },
     })
     expect(grant.ok()).toBe(true)
 
     await page.reload()
     // po nadaniu zdolność stoi wśród tych, które ma — a nie pod kłódką
-    const owned = page.locator("li", { hasText: "Tworzenie arkuszy" }).first()
+    const owned = page.locator("li", { hasText: "Sprawdzanie kontrahenta w wykazie VAT" }).first()
     await expect(owned.getByRole("button", { name: /Poproś o dostęp/ })).toHaveCount(0)
   })
 
@@ -62,24 +67,24 @@ test.describe("Obszar 25 · Zespół widziany przez przełożonego", () => {
   }) => {
     await request.post("/api/team", {
       headers: jako("robert"),
-      data: { action: "grant", who: "anna", capability: ARKUSZE },
+      data: { action: "grant", who: "anna", capability: KONTRAHENCI },
     })
     await request.post("/api/team", {
       headers: jako("robert"),
-      data: { action: "revoke", who: "anna", capability: ARKUSZE },
+      data: { action: "revoke", who: "anna", capability: KONTRAHENCI },
     })
 
     // Sprawdzamy u ANNY, nie u Roberta: odebranie, które zmienia wyłącznie ekran
     // przełożonego, jest teatrem — a zdolność dalej trafiałaby do modelu.
     await as(page, "anna")
     await otworz(page, "/capabilities")
-    const locked = page.locator("li", { hasText: "Tworzenie arkuszy" }).first()
+    const locked = page.locator("li", { hasText: "Sprawdzanie kontrahenta w wykazie VAT" }).first()
     await expect(locked.getByRole("button", { name: /Poproś o dostęp/ })).toBeVisible()
 
     const after = await (await request.get("/api/team", { headers: jako("robert") })).json()
     const anna = after.people.find((p: { id: string }) => p.id === "anna")
-    expect(anna.granted).not.toContain(ARKUSZE)
-    expect(anna.grantedDirectly).not.toContain(ARKUSZE)
+    expect(anna.granted).not.toContain(KONTRAHENCI)
+    expect(anna.grantedDirectly).not.toContain(KONTRAHENCI)
   })
 
   test("Zdolności z roli nie da się odebrać po jednej", async ({ request }) => {
@@ -178,11 +183,11 @@ test.describe("Obszar 25 · Zespół widziany przez przełożonego", () => {
   test("Obie decyzje zostawiają ślad w dzienniku, z autorem", async ({ page, request }) => {
     await request.post("/api/team", {
       headers: jako("robert"),
-      data: { action: "grant", who: "anna", capability: ARKUSZE },
+      data: { action: "grant", who: "anna", capability: KONTRAHENCI },
     })
     await request.post("/api/team", {
       headers: jako("robert"),
-      data: { action: "revoke", who: "anna", capability: ARKUSZE },
+      data: { action: "revoke", who: "anna", capability: KONTRAHENCI },
     })
     await as(page, "robert")
     await otworz(page, "/supervision?section=log")

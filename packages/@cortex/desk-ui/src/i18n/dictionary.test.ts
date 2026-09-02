@@ -169,8 +169,11 @@ describe("słownik Biurka", () => {
    * Nie wolno odesłać do nikogo.
    */
   it("żadne zdanie nie odsyła do bezimiennej władzy", () => {
+    // Lista rośnie po każdej próbie obejścia. Weryfikator przeszedł przez „admin",
+    // „informatyk" i „dział techniczny" — żadne nie było w pierwszej wersji, a każde
+    // odsyła Basię dokładnie tam samo: do kogoś, kogo nie zna i nie ma jak zapytać.
     const FACELESS =
-      /administrator|administratorowi|administratora|helpdesk|wsparci[ae] techniczn|support team|IT department|dział IT/i
+      /\badmin\w*|helpdesk|help desk|informatyk\w*|serwisant\w*|wsparci\w+ (?:techniczn\w*|IT)|dzia[łl]\w* (?:IT|techniczn\w+)|dzia[łl]\w+ techniczn\w+|support (?:team|desk)|IT (?:department|support)|obs[łl]ug[aię] techniczn\w+/i
     const offenders: string[] = []
     const walk = (node: unknown, key: string) => {
       if (typeof node === "string") {

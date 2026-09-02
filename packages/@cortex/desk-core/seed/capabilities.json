@@ -61,6 +61,8 @@
       "shared.read",
       "document.write",
       "document.verify",
+      "sheet.write",
+      "code.run",
       "files.keep",
       "memory.write"
     ],

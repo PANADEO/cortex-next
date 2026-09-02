@@ -18,16 +18,35 @@ import { describe, expect, it } from "vitest"
 
 const API = __dirname
 
-/** Sięga po dysk Biurka — czyli po tę samą warstwę, na której leży wspólna półka. */
-const TOUCHES_DISK = /from "@cortex\/desk-core\/desk-storage"/
+/**
+ * Sięga po dysk — przez warstwę Biurka ALBO wprost przez system plików.
+ *
+ * Drugi wariant dopisany po tym, jak weryfikator obszedł tego strażnika sondą, która
+ * importowała `node:fs` i składała ścieżkę z `DESK_DATA_DIR` i parametru zapytania.
+ * Trasa nie tknęła `desk-storage`, więc strażnik jej nie widział — a czytała pliki tak
+ * samo. Brama pilnowana po IMPORCIE jednego modułu jest pilnowana po nazwie, nie po skutku.
+ */
+const TOUCHES_DISK = /from "@cortex\/desk-core\/desk-storage"|from "node:fs(?:\/promises)?"/
 
 /**
- * Pyta bramę — obojętne, którą z dwóch twarzy tej samej decyzji, ale musi ją WYWOŁAĆ.
- * Nawias jest tu istotny: bez niego wzorzec łapał sam napis, więc wystarczyło wspomnieć
- * nazwę w komentarzu, żeby trasa przeszła. Wyszło to przy wstrzykiwaniu błędu — pierwsza
- * próba podmieniła nazwę na `mayTouchSharedXX` i strażnik nadal był zielony.
+ * Pyta bramę — obojętne, którą z dwóch twarzy tej samej decyzji, ale musi ją WYWOŁAĆ
+ * W KODZIE. Dwie poprawki, obie po nieudanych próbach obejścia:
+ *
+ * 1. Nawias. Bez niego wzorzec łapał sam napis, więc wystarczyło wspomnieć nazwę
+ *    gdziekolwiek. Wyszło przy wstrzykiwaniu błędu: podmiana na `mayTouchSharedXX`
+ *    zostawiała strażnika zielonym.
+ * 2. Zdejmowanie komentarzy. `// TODO: mayTouchShared(may, p, "read")` przechodziło —
+ *    czyli notatka „kiedyś to dopiszę" wystarczała za bramę. Znalazł to weryfikator.
+ *
+ * Zdejmowanie jest zgrubne: nie rozumie napisów ani wyrażeń regularnych, więc `"//"`
+ * w napisie utnie resztę wiersza. Dla tras HTTP tego repozytorium to nie ma znaczenia,
+ * a każde nieporozumienie idzie w stronę SUROWSZĄ — trasa wygląda wtedy na taką,
+ * która bramy nie woła, i strażnik krzyczy zamiast milczeć.
  */
 const ASKS_GATE = /(?:mayTouchShared|refuseShared)\s*\(/
+
+const withoutComments = (source: string) =>
+  source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "")
 
 /**
  * Trasy, które dysku dotykają, a bramy NIE potrzebują — każda z powodem wpisanym tutaj,
@@ -63,7 +82,7 @@ describe("brama wspólnej półki na całej powierzchni HTTP", () => {
       return
     }
     expect(
-      ASKS_GATE.test(route.source),
+      ASKS_GATE.test(withoutComments(route.source)),
       `${route.name} sięga po dysk Biurka, ale nie pyta o wspólną półkę. ` +
         "Dołóż `mayTouchShared` przy ścieżce od użytkownika albo wpisz powód do EXEMPT.",
     ).toBe(true)

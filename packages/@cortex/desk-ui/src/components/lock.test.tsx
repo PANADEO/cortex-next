@@ -14,11 +14,17 @@
 //   2. napis na przycisku jedzie ze słownika, a nie z komponentu (dowód: zmienia się
 //      z językiem i nie jest samym kluczem);
 //   3. karta mówi, KTO wydaje zgodę — z imienia, gdy Biurko je zna, a bezimiennie,
-//      gdy nie zna; nigdy przez dział, do którego nie da się podejść i zapytać.
+//      gdy nie zna; nigdy przez dział, do którego nie da się podejść i zapytać;
+//   4. przycisk NAPRAWDĘ DOKĄDŚ PROWADZI — kliknięcie wysyła prośbę, która niesie
+//      zdolność. Ten punkt dopisano po weryfikacji: reszta pliku sprawdzała, że
+//      przycisk ISTNIEJE i ma właściwy napis, więc przycisk renderowany zawsze, także
+//      bez `capabilityId`, przechodził jako poprawny — a `request()` wychodziło wtedy
+//      pierwszą linią i nie robiło NIC. Karta z martwym przyciskiem jest gorsza niż
+//      karta bez przycisku: obiecuje wyjście, którego nie ma.
 
 import "@testing-library/jest-dom/vitest"
-import { render, within } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import { fireEvent, render, waitFor, within } from "@testing-library/react"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { DeskLocaleProvider } from "../i18n/client"
 import { DESK_LOCALES, makeDeskT, type DeskLocale } from "../i18n/locale"
 import { CapabilityLock } from "./lock"
@@ -53,6 +59,10 @@ const APPROVERS = [
   { what: "przełożonego nie da się wskazać", approver: "" },
 ]
 
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
 describe("karta odmowy zawsze kończy się czynnością", () => {
   for (const locale of DESK_LOCALES) {
     for (const shape of SHAPES) {
@@ -77,6 +87,43 @@ describe("karta odmowy zawsze kończy się czynnością", () => {
       }
     }
   }
+
+  it("kliknięcie w „Poproś o zgodę” naprawdę wysyła prośbę o TĘ zdolność", async () => {
+    const calls: { url: string; body: unknown }[] = []
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({ url: String(url), body: JSON.parse(String(init?.body ?? "{}")) })
+      return new Response(JSON.stringify({ ok: true }), { status: 200 })
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const view = show("pl", { description: "policzenie arkusza", capabilityId: "sheet.write" })
+    fireEvent.click(within(view.container).getAllByRole("button")[0]!)
+
+    await waitFor(() => expect(calls.length).toBe(1))
+    expect(calls[0]?.url).toContain("/request")
+    // Prośba bez zdolności jest prośbą o nic — przełożony dostaje wiersz,
+    // z którego nie wynika, co ma nadać.
+    expect(calls[0]?.body).toMatchObject({ capability: "sheet.write" })
+    view.unmount()
+  })
+
+  it("bez zdolności karta NIE pokazuje przycisku, który nic nie robi", () => {
+    // `request()` wychodzi pierwszą linią, gdy nie ma `capabilityId` — więc przycisk
+    // „Poproś o zgodę” w tym wariancie byłby MARTWY. Zdarzenie bez zdolności ma prowadzić
+    // do napisania własnymi słowami, i to jest jedyna droga, która stąd dokądś prowadzi.
+    //
+    // To jest ten sam wariant, którym da się ominąć trzy testy powyżej: przycisk istnieje,
+    // ma napis ze słownika i napis jest jednym z dwóch dozwolonych — a mimo to kliknięcie
+    // nie robi nic. Sprawdzenie „czy jest co kliknąć” nie jest sprawdzeniem „czy to działa”.
+    const translate = makeDeskT("pl")
+    const view = show("pl", { description: "coś nietypowego" })
+    const labels = within(view.container)
+      .getAllByRole("button")
+      .map((one) => (one.textContent ?? "").trim())
+    expect(labels).not.toContain(translate("lock.askForApproval"))
+    expect(labels.length).toBeGreaterThan(0)
+    view.unmount()
+  })
 
   it("napis na przycisku jedzie ze słownika, a nie z komponentu", () => {
     const pl = show("pl", { description: "zapisać jako arkusz" })
