@@ -5,19 +5,21 @@ import { isShared } from "@cortex/desk-core/folder"
 import { mayTouchShared } from "@cortex/desk-core/shared-access"
 import { originsInMyFiles } from "@cortex/desk-core/file-origin"
 import { whoAmI } from "@cortex/desk-core/identity"
+import { deskT } from "@cortex/desk-ui/i18n/server"
 import { NextResponse } from "next/server"
 
 export async function GET(req: Request) {
   const u = await whoAmI()
   const p = await policyFor(u)
   const may = (id: string) => hasCapability(p, id)
+  const translate = await deskT()
   const sp = new URL(req.url).searchParams
   const folder = sp.get("folder") ?? "Moje pliki"
   // Brama TAKŻE tutaj, nie tylko w narzędziach agenta. Ekran plików sięga po tę samą
   // warstwę dysku co model, więc brama pilnowana wyłącznie po stronie narzędzi byłaby
   // pilnowana w połowie — a przeglądarka jest tą połową, którą człowiek ma pod ręką.
   if (!mayTouchShared(may, folder, "read")) {
-    return NextResponse.json({ error: "Brak dostępu do wspólnej półki." }, { status: 403 })
+    return NextResponse.json({ error: translate("api.noSharedAccess") }, { status: 403 })
   }
   // Pochodzenie jedzie ŚCIEŻKĄ, nie przy pliku, bo listę plików daje dysk, a pochodzenie
   // baza — i to są dwa różne źródła prawdy, których nie zszywamy po stronie serwera.
@@ -37,13 +39,14 @@ export async function POST(req: Request) {
   const u = await whoAmI()
   const p = await policyFor(u)
   const may = (id: string) => hasCapability(p, id)
+  const translate = await deskT()
   const b = await req.json()
   // Każda ścieżka, którą to żądanie dotyka — źródłowa i docelowa. `move` ze wspólnej półki
   // jest zapisem po OBU stronach: w miejscu docelowym przybywa, w źródłowym ubywa.
   const touched = [b.path, b.from, b.to].filter((x): x is string => typeof x === "string")
   if (touched.some((x) => isShared(x)) && !may("shared.write")) {
     return NextResponse.json(
-      { error: "Odkładanie na wspólną półkę nadaje przełożony." },
+      { error: translate("api.noSharedWrite") },
       { status: 403 },
     )
   }
@@ -62,7 +65,17 @@ export async function POST(req: Request) {
     else if (b.action === "empty-trash")
       result = { ok: true, removed: await storage.emptyTrash(u.id) }
     else return NextResponse.json({ error: "nieznana akcja" }, { status: 400 })
-    await audit.write(u.id, `files.${b.action}`, b)
+    // Do dziennika idą POLA WYMIENIONE Z NAZWY, nie całe ciało żądania. Wcześniej
+    // zapisywaliśmy `b` w całości, więc do trwałego rejestru trafiało wszystko, co
+    // przeglądarka zechciała dopisać — także pola, których nikt nie przejrzał, i te,
+    // które ktoś doda tu za pół roku. Dziennika nie da się potem posprzątać: to jest
+    // rejestr, w którym wpisy zostają.
+    await audit.write(u.id, `files.${b.action}`, {
+      ...(typeof b.path === "string" ? { path: b.path } : {}),
+      ...(typeof b.from === "string" ? { from: b.from } : {}),
+      ...(typeof b.to === "string" ? { to: b.to } : {}),
+      ...(typeof b.id === "string" ? { id: b.id } : {}),
+    })
     return NextResponse.json(result)
   } catch (e) {
     if (e instanceof storage.NameClash) {

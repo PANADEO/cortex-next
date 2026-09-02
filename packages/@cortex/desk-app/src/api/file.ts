@@ -1,5 +1,7 @@
+import { hasCapability, policyFor } from "@cortex/desk-core/capability-gate"
 import * as storage from "@cortex/desk-core/desk-storage"
 import { whoAmI } from "@cortex/desk-core/identity"
+import { mayTouchShared } from "@cortex/desk-core/shared-access"
 import { deskT } from "@cortex/desk-ui/i18n/server"
 import { NextResponse } from "next/server"
 import { promises as fs } from "node:fs"
@@ -27,6 +29,16 @@ export async function GET(req: Request) {
   const filePath = sp.get("path")
   const translate = await deskT()
   if (!filePath) return NextResponse.json({ error: translate("api.noPath") }, { status: 400 })
+  // BRAMA WSPÓLNEJ PÓŁKI — brakowało jej dokładnie tutaj, i to jest ta połowa bramy,
+  // o której mówi komentarz w `files.ts`: pilnowaliśmy SPISU i zmian, nie samych BAJTÓW.
+  // Lista plików filtrowała katalogi wspólne po `shared.read`, więc na ekranie ich nie
+  // było — ale ta trasa oddawała zawartość każdemu, kto zna ścieżkę. A ścieżkę znać
+  // łatwo: wystarczy raz mieć wgląd, zanim przełożony go odbierze, albo usłyszeć nazwę
+  // pliku od kolegi. Odebranie zdolności nie odbierało niczego.
+  const p = await policyFor(u)
+  if (!mayTouchShared((id) => hasCapability(p, id), filePath, "read")) {
+    return NextResponse.json({ error: translate("api.noSharedAccess") }, { status: 403 })
+  }
   try {
     const full = await storage.fullPath(u.id, filePath)
     const data = await fs.readFile(full)

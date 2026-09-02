@@ -399,6 +399,8 @@
   },
   "api": {
     "noPath": "brak ścieżki",
+    "noSharedAccess": "Nie masz wglądu we wspólną półkę firmy. O dostęp poproś przełożonego.",
+    "noSharedWrite": "Odkładanie na wspólną półkę nadaje przełożony.",
     "tooLarge": "{{name}} waży więcej niż 25 MB.",
     "dailyLimit": "Wyczerpany dzienny limit kosztów. Poproś przełożonego o podniesienie.",
     "costUnreadable": "Nie udało się odczytać dzisiejszego kosztu.",

@@ -1,7 +1,9 @@
 import * as audit from "@cortex/desk-core/audit-log"
+import { hasCapability, policyFor } from "@cortex/desk-core/capability-gate"
 import { pool } from "@cortex/desk-core/db"
 import * as storage from "@cortex/desk-core/desk-storage"
 import { whoAmI } from "@cortex/desk-core/identity"
+import { mayTouchShared } from "@cortex/desk-core/shared-access"
 import { appendEvent } from "@cortex/desk-core/runtime"
 import { deskT } from "@cortex/desk-ui/i18n/server"
 import { NextResponse } from "next/server"
@@ -31,6 +33,15 @@ export async function POST(req: Request) {
   }
 
   const translate = await deskT()
+  // Katalog przychodzi Z FORMULARZA, więc przeglądarka może wskazać wspólną półkę — i do
+  // tej pory wskazywała skutecznie, bez pytania o `shared.write`. Podmiana firmowego wzoru
+  // pisma jest zdarzeniem o zasięgu całej firmy (patrz `shared-access.ts`), więc nie może
+  // zależeć od tego, którą trasą plik przyszedł. Teczka sprawy tej bramy nie potrzebuje:
+  // jej ścieżkę składa serwer z `caseId`, którego własność sprawdziliśmy wyżej.
+  const p = await policyFor(u)
+  if (!mayTouchShared((id) => hasCapability(p, id), folder, "write")) {
+    return NextResponse.json({ error: translate("api.noSharedWrite") }, { status: 403 })
+  }
   const files = form.getAll("file") as File[]
   const names: string[] = []
   for (const f of files) {

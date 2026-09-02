@@ -380,6 +380,8 @@
   },
   "api": {
     "noPath": "no path given",
+    "noSharedAccess": "You do not have access to the company shelf. Ask your manager for it.",
+    "noSharedWrite": "Your manager grants the right to put things on the company shelf.",
     "tooLarge": "{{name}} is larger than 25 MB.",
     "dailyLimit": "The daily cost limit is used up. Ask your manager to raise it.",
     "costUnreadable": "Could not read today’s cost.",
