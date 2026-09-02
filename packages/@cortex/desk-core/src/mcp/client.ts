@@ -8,6 +8,15 @@ import { registerCard } from "../tool-cards"
 import type { DeskEvent, Policy } from "../types"
 import { serverCatalogue, suspendTool } from "./catalogue-store"
 import { fingerprint, sanitiseSchema, SchemaRejected, toolKey } from "./hygiene"
+import {
+  CALL_DEADLINE_MS,
+  clipResult,
+  INSPECT_DEADLINE_MS,
+  NoAnswerInTime,
+  RESULT_CEILING,
+  withDeadline,
+} from "./limits"
+import { AddressNotAllowed, assertAllowedAddress } from "./server-address"
 export type { ApprovedTool, McpServer } from "./catalogue"
 
 /**
@@ -62,6 +71,10 @@ export async function mcpTools(
 
     let client: Awaited<ReturnType<typeof experimental_createMCPClient>> | null = null
     try {
+      // ADRES SPRAWDZAMY, ZANIM POLECI PIERWSZE ŻĄDANIE. `experimental_createMCPClient`
+      // nawiązuje połączenie i wysyła `initialize` już w konstruktorze, więc sprawdzenie
+      // postawione choćby wiersz niżej byłoby sprawdzeniem PO fakcie.
+      assertAllowedAddress(server.url)
       client = await experimental_createMCPClient({
         // Streamable HTTP, nigdy stdio: stdio w aplikacji webowej to nie transport,
         // tylko uruchomienie obcego binarium z uprawnieniami procesu Node.
@@ -127,30 +140,57 @@ export async function mcpTools(
               source: server.label,
               args: args as Record<string, unknown>,
             })
+            // `tool_end` leci z `finally`, tak samo jak w opakowywaczu `step()` wbudowanych
+            // czynności. Para musi domknąć się TAKŻE przy odrzuconym adresie i przy ciszy
+            // serwera — krok bez `tool_end` wisi na ekranie „w toku" na zawsze i wypada
+            // z dowodu, a dowód powstaje wyłącznie ze zdarzeń.
+            let end = { ok: false, summary: "przerwane" }
+            let answer: unknown = "Czynność nie doszła do skutku."
+            let failure: { thrown: unknown } | null = null
             try {
-              const r = await (raw as { execute: (a: unknown) => Promise<unknown> }).execute(args)
-              // „serwer odpowiedział" to NIE to samo co „rzecz się wydarzyła" — stąd wiersz
-              // dowodu idzie do „Co weszło", a nie do „Co zrobione". Decyduje o tym karta wyżej.
-              await emit({
-                type: "tool_end",
-                id: kid,
-                name: key,
-                ok: true,
-                summary: "serwer odpowiedział",
-                ms: Date.now() - start,
-              })
-              return r
+              // Sprawdzenie POWTÓRZONE w chwili wywołania, a nie tylko przy rejestracji:
+              // bramka ma siedzieć na ścieżce, która naprawdę otwiera gniazdo.
+              assertAllowedAddress(server.url)
+              const raced = await withDeadline(
+                CALL_DEADLINE_MS,
+                (raw as { execute: (a: unknown) => Promise<unknown> }).execute(args),
+              )
+              if (raced.late) {
+                // Zdanie po ludzku, nie surowy błąd — ten sam ton, co `step()`: dowód mówi,
+                // że się NIE udało, a model dostaje zdanie, z którym da się coś zrobić.
+                end = {
+                  ok: false,
+                  summary: `serwer nie odpowiedział w ciągu ${CALL_DEADLINE_MS / 1000} s`,
+                }
+                answer =
+                  `Serwer ${server.label} nie odpowiedział w ciągu ${CALL_DEADLINE_MS / 1000} sekund. ` +
+                  "Nie wiadomo, czy po jego stronie cokolwiek się wydarzyło — powiedz to człowiekowi " +
+                  "wprost i nie zakładaj żadnego wyniku."
+              } else {
+                const clipped = clipResult(raced.value)
+                // „serwer odpowiedział" to NIE to samo co „rzecz się wydarzyła" — stąd wiersz
+                // dowodu idzie do „Co weszło", a nie do „Co zrobione". Decyduje o tym karta wyżej.
+                end = {
+                  ok: true,
+                  summary: clipped.clipped
+                    ? `serwer odpowiedział, wynik obcięty do ${RESULT_CEILING} znaków z ${clipped.length}`
+                    : "serwer odpowiedział",
+                }
+                answer = clipped.value
+              }
             } catch (e) {
-              await emit({
-                type: "tool_end",
-                id: kid,
-                name: key,
-                ok: false,
-                summary: String(e).slice(0, 120),
-                ms: Date.now() - start,
-              })
-              throw e
+              if (e instanceof AddressNotAllowed) {
+                end = { ok: false, summary: "adres serwera nie jest dozwolony" }
+                answer = `${e.message} Powiedz o tym człowiekowi — adres serwera ustawia przełożony.`
+              } else {
+                end = { ok: false, summary: String(e).slice(0, 120) }
+                failure = { thrown: e }
+              }
+            } finally {
+              await emit({ type: "tool_end", id: kid, name: key, ...end, ms: Date.now() - start })
             }
+            if (failure) throw failure.thrown
+            return answer
           },
         })
       }
@@ -161,7 +201,7 @@ export async function mcpTools(
       await emit({
         type: "blocked",
         description:
-          e instanceof ToolDrift || e instanceof SchemaRejected
+          e instanceof ToolDrift || e instanceof SchemaRejected || e instanceof AddressNotAllowed
             ? e.message
             : `Nie udało się połączyć z ${server.name}.`,
       })
@@ -197,9 +237,26 @@ export type ToolCandidate = {
  * zwraca kandydatów do obejrzenia przez człowieka.
  */
 export async function inspectServer(url: string, name: string): Promise<ToolCandidate[]> {
-  const client = await experimental_createMCPClient({ transport: { type: "http", url } })
+  // PIERWSZA rzecz w tej funkcji, przed jakimkolwiek wyjściem na sieć. To tutaj wpisany
+  // przed chwilą adres jest odpytywany po raz pierwszy — sprawdzenie postawione dopiero
+  // przy rejestracji narzędzi byłoby sprawdzeniem po tym, jak kontener Biurka już poszedł
+  // tam, gdzie mu kazano.
+  assertAllowedAddress(url)
+  // Uchwyt w pudełku, a nie w `let`: klienta trzeba zamknąć także wtedy, gdy zdążył
+  // powstać, ale całość przekroczyła termin.
+  const open: { client: Awaited<ReturnType<typeof experimental_createMCPClient>> | null } = {
+    client: null,
+  }
   try {
-    const remote = await client.tools({ schemas: "automatic" })
+    const raced = await withDeadline(
+      INSPECT_DEADLINE_MS,
+      (async () => {
+        open.client = await experimental_createMCPClient({ transport: { type: "http", url } })
+        return open.client.tools({ schemas: "automatic" })
+      })(),
+    )
+    if (raced.late) throw new NoAnswerInTime(INSPECT_DEADLINE_MS)
+    const remote = raced.value
     return Object.entries(
       remote as Record<string, { inputSchema?: unknown; description?: string }>,
     ).map(([remoteName, def]) => {
@@ -226,6 +283,6 @@ export async function inspectServer(url: string, name: string): Promise<ToolCand
       }
     })
   } finally {
-    await client.close().catch(() => {})
+    await open.client?.close().catch(() => {})
   }
 }

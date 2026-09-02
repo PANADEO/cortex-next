@@ -137,6 +137,11 @@ services:
       # `desk-storage.ts` domyśla się `./.data` w warstwie zapisywalnej kontenera,
       # czyli w miejscu, które znika przy każdym `docker compose up` nowego obrazu.
       - DESK_DATA_DIR=/data/desk
+      # Kto może być serwerem MCP. Domyślnie `mcp-*`, czyli usługi nazwane tak w tym
+      # samym compose — adres PRYWATNY z definicji i to jest przypadek poprawny, więc
+      # reguła nie brzmi „tylko adresy publiczne". Bez tej listy przełożony wpisujący
+      # `http://127.0.0.1:5432` kazałby kontenerowi Biurka tam pójść.
+      - MCP_ALLOWED_HOSTS=${MCP_ALLOWED_HOSTS:-}
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
       - PORT=80
