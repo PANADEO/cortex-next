@@ -59,6 +59,21 @@ describe("obietnice bez pokrycia", () => {
     ])
   })
 
+  it("NIE oskarża w turze, która tylko STRESZCZA wcześniejszą pracę", () => {
+    // Przypadek ze zrzutu ekranu. Agent czytał faktury w turze pierwszej, a w trzeciej
+    // streszcza, co zrobił — tura streszczająca nie ma ANI JEDNEGO zdarzenia. Liczona
+    // osobno oskarżała go o zmyślenie nazw, które sama sprawa widziała dwie tury wcześniej.
+    const wczesniej = [
+      ...step("read_file", { path: "Moje pliki/faktury-2026-08.csv" }),
+      ...step("read_file", { path: "Moje pliki/kontrahenci.csv" }),
+      ...step("write_sheet", { name: "zestawienie-sierpien.csv" }),
+    ].flat()
+    const streszczenie =
+      "Na samym początku poprosiłeś o policzenie sprzedaży za sierpień z pliku " +
+      "faktury-2026-08.csv oraz kontrahenci.csv i zapisanie tego jako arkusz."
+    expect(unbackedPromises(streszczenie, wczesniej, [])).toEqual([])
+  })
+
   it("plik leżący w teczce sprawy broni się sam", () => {
     expect(
       unbackedPromises("Zapisałem zestawienie.csv.", [], [plik("zestawienie.csv")]),

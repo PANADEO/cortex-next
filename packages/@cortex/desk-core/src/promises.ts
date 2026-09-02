@@ -29,10 +29,16 @@ const PROMISE = /zapis|create|stworz|wygenerow|przygotowa|powsta/i
  *
  * Nazwa poparta odczytem jest poparta ZDARZENIEM tak samo jak nazwa poparta zapisem;
  * różnica jest w tym, co się z plikiem stało, a nie w tym, czy istnieje.
+ *
+ * I LICZYMY CAŁĄ SPRAWĘ, nie jedną turę — to była druga połowa tej samej dziury.
+ * Agent czyta faktury w turze pierwszej, a w trzeciej streszcza, co zrobił. Tura
+ * streszczająca nie ma ANI JEDNEGO zdarzenia, więc liczona osobno oskarżała go
+ * o zmyślenie nazw, które sama sprawa widziała na oczy dwie tury wcześniej.
+ * „Czy ten plik kiedykolwiek wszedł do sprawy" jest pytaniem o sprawę.
  */
 export function unbackedPromises(
   text: string,
-  turnEvents: DeskEvent[],
+  caseEvents: DeskEvent[],
   folder: FileMeta[],
 ): string[] {
   if (!PROMISE.test(text)) return []
@@ -42,7 +48,7 @@ export function unbackedPromises(
   // porównujemy więc po ostatnim członie.
   const add = (value: string) => covered.add(value.split("/").pop()!.toLowerCase())
 
-  for (const k of pairSteps(turnEvents)) {
+  for (const k of pairSteps(caseEvents)) {
     if (k.status !== "ok") continue
     const args = k.args as Record<string, unknown>
     if (producesFile(k.name)) {

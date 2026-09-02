@@ -266,6 +266,11 @@ export function CaseView({
     [entries],
   )
   const turns = useMemo(() => perTurn(conversation), [conversation])
+  // Czynności CAŁEJ sprawy — patrz komentarz przy `turns.map` niżej.
+  const caseEvents = useMemo(
+    () => turns.flatMap((turn) => turn.work.map((w) => w.event)),
+    [turns],
+  )
   const evidence = useMemo(
     () =>
       evidenceFromEvents(
@@ -503,6 +508,13 @@ export function CaseView({
           className="relative min-h-0 flex-1 overflow-y-auto px-4 py-5"
         >
           <div className="mx-auto flex max-w-desk-stream flex-col gap-4">
+            {/*
+              Wszystkie czynności SPRAWY, nie jednej tury. „Czy ten plik kiedykolwiek
+              wszedł do sprawy" jest pytaniem o sprawę: agent czyta faktury w turze
+              pierwszej, a w trzeciej streszcza, co zrobił — i tura streszczająca nie ma
+              ANI JEDNEGO zdarzenia, więc liczona osobno oskarżała go o zmyślenie nazw,
+              które sama sprawa widziała na oczy dwie tury wcześniej.
+            */}
             {turns.map((turn, i) => {
               const lastTurn = i === turns.length - 1 && !sending
               const e = turn.command?.event
@@ -557,7 +569,7 @@ export function CaseView({
                             <Markdown text={ev.text} />
                           </div>
                           <UnbackedPromises
-                            names={unbackedPromises(ev.text, turnEvents, folder)}
+                            names={unbackedPromises(ev.text, caseEvents, folder)}
                             request={retry}
                           />
                         </div>
