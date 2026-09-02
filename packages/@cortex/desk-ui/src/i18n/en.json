@@ -406,7 +406,9 @@
     "ownerShares": "Only the owner can share a case.",
     "noSuchPerson": "There is no such person.",
     "limitMustBeNumber": "The limit has to be a number of zero or more.",
-    "cannotDisableSelf": "You cannot disable your own account."
+    "cannotDisableSelf": "You cannot disable your own account.",
+    "addressNotAllowed": "Address {{host}} is not allowed on this instance. Add it to the {{variable}} variable in the deployment configuration — docker-compose.yml, service cortex-frontend — and restart the instance. Currently allowed: {{allowed}}.",
+    "noAnswerInTime": "The server did not answer within {{seconds}} s. Check whether it is running at that address."
   },
   "tools": {
     "list_files": {
@@ -615,6 +617,14 @@
         "name": "Proposing things to remember",
         "description": "Suggests something worth remembering for next time. It enters the memory only once you accept it."
       }
+    },
+    "shared.read": {
+      "name": "Shared files",
+      "description": "Access to the company shelf — templates, price lists and documents the whole team works from."
+    },
+    "shared.write": {
+      "name": "Publishing to the shared shelf",
+      "description": "Adding and changing documents the whole team sees. Replacing one of them affects the entire company."
     }
   },
   "quickTask": {

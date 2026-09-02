@@ -23,6 +23,34 @@ import type { DeskEvent, FileMeta } from "./types"
  */
 export const MY_FILES = "Moje pliki"
 
+/**
+ * WSPÓLNA PÓŁKA — jedyny katalog, który NIE należy do jednego biurka.
+ *
+ * Leży fizycznie poza katalogami osób (`<dane>/wspolne`, nie `<dane>/biurka/<osoba>`),
+ * a w ścieżkach logicznych występuje pod tą nazwą, tak jak „Moje pliki". Dzięki temu
+ * reszta produktu — teczki, dowód, montaże do piaskownicy — operuje dalej na napisach
+ * i nie musi wiedzieć, że istnieją dwa korzenie.
+ *
+ * NIE JEST dowiązaniem symbolicznym w biurku osoby, i to jest decyzja, nie wygoda:
+ * dowiązanie w katalogu, który trafia do piaskownicy, to dokładnie ta ścieżka
+ * wyprowadzania cudzych danych, którą demon musi po sobie zamiatać.
+ *
+ * Ta sama zasada co przy `MY_FILES`: nazwa katalogu, nie etykieta — zostaje po polsku
+ * w każdym języku interfejsu, bo przemianowanie rozjechałoby ścieżki zapisane w sprawach.
+ */
+export const SHARED = "Wspólne pliki"
+
+/**
+ * Czy ta ścieżka logiczna wskazuje na wspólną półkę. Stoi tu, a nie w `desk-storage`,
+ * z tego samego powodu co `MY_FILES`: to jest arytmetyka na napisach, pytają o nią
+ * i brama, i komponenty klienckie, a tamten moduł zaczyna się od `node:fs`.
+ *
+ * Porównanie po SEGMENCIE, nie po prefiksie napisu — „Wspólne plikiXYZ" nie jest
+ * wspólną półką i nie ma prawa się nią stać przez zbieżność pierwszych liter.
+ */
+export const isShared = (relative: string) =>
+  relative === SHARED || relative.startsWith(SHARED + "/")
+
 export function splitFolder(files: FileMeta[], events: DeskEvent[], uploading: string[] = []) {
   const fromHuman = new Set<string>(uploading)
   for (const e of events) {

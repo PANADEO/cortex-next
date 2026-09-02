@@ -11,8 +11,10 @@ test.describe("Obszar 5 · Zdolności stopniowane wg roli", () => {
     await otworz(page, "/capabilities")
     await expect(page.getByText("Tworzenie dokumentów")).toBeVisible()
     await expect(page.getByText("Uruchamianie obliczeń")).toBeVisible()
-    // cztery kłódki: arkusz, kod, obraz i sprawdzanie kontrahenta w wykazie VAT
-    await expect(page.getByRole("button", { name: "Poproś o dostęp" })).toHaveCount(4)
+    // pięć kłódek: arkusz, kod, obraz, sprawdzanie kontrahenta w wykazie VAT
+    // oraz odkładanie na wspólną półkę — pracownica na nią ZAGLĄDA, ale nie podmienia
+    // dokumentów, które czyta cały zespół.
+    await expect(page.getByRole("button", { name: "Poproś o dostęp" })).toHaveCount(5)
 
     await as(page, "robert")
     await otworz(page, "/capabilities")

@@ -3,13 +3,31 @@ import { promises as fs } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fullPath } from "./desk-storage"
+import { createBox, daemonConfigured, disposeBox, execBox } from "./sandbox-daemon"
+
+/**
+ * Sufit wyjścia ścieżki ZASTĘPCZEJ. Było 8 000 znaków i było obcinane po cichu. Przez
+ * piaskownicę przechodzą wyciągi z dokumentów i zestawienia, więc osiem tysięcy znaków
+ * to mniej niż jedna strona tabeli — a prawdziwe sufity ustawia demon, nie to miejsce.
+ */
+const FALLBACK_OUTPUT = 200_000
 
 export type Mount = { fromDesk: string; as: string; write: boolean }
 export type Limits = { seconds: number; memoryMb: number }
+/**
+ * `stopped` i `produced` są OPCJONALNE, bo ścieżka zastępcza ich nie zna. Wołający ma je
+ * traktować jak informację, której może nie być — a nie jak obietnicę.
+ */
+export type ExecOutcome = {
+  ok: boolean
+  output: string
+  stopped?: string
+  produced?: string[]
+}
 export type Handle = {
   id: string
   folder: string
-  exec(code: string): Promise<{ ok: boolean; output: string }>
+  exec(code: string): Promise<ExecOutcome>
   dispose(): Promise<void>
 }
 
@@ -33,21 +51,15 @@ export type Handle = {
  * jeśli tego parametru nie będzie tutaj, nie będzie miał gdzie się pojawić, gdy pod spód
  * wejdzie prawdziwy broker.
  */
-export async function create(opts: {
-  user: string
-  caseId: string
-  mounts: Mount[]
-  limits?: Limits
-  egress?: string[] // NIEEGZEKWOWANE w POC — patrz E2 w wektorze rozwoju
-}): Promise<Handle> {
-  const limits = opts.limits ?? { seconds: 30, memoryMb: 512 }
-  // realpath jest konieczny: na macOS os.tmpdir() zwraca /var/..., a faktyczna ścieżka to
-  // /private/var/... — bez rozwinięcia dowiązania uprawnienia nie objęłyby własnego katalogu
-  const folder = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), `desk-${opts.caseId}-`)))
-
-  for (const m of opts.mounts) {
+/**
+ * Kopiuje pliki z biurka do katalogu roboczego sprawy. Wspólne dla obu ścieżek, bo to
+ * jedyne miejsce, które wie, co znaczy „Moje pliki" — demon nie ma prawa tego wiedzieć
+ * i nie dostaje dostępu do cudzych biurek, tylko gotowe bajty pod nazwą.
+ */
+async function mountInto(folder: string, user: string, mounts: Mount[]) {
+  for (const m of mounts) {
     try {
-      const source = await fullPath(opts.user, m.fromDesk)
+      const source = await fullPath(user, m.fromDesk)
       const target = path.join(folder, m.as)
       await fs.mkdir(path.dirname(target), { recursive: true })
       await fs.cp(source, target, { recursive: true })
@@ -55,6 +67,49 @@ export async function create(opts: {
       /* montaż nieistniejącej ścieżki jest cichy — agent zobaczy pusty katalog */
     }
   }
+}
+
+export async function create(opts: {
+  user: string
+  caseId: string
+  mounts: Mount[]
+  limits?: Limits
+  /** identyfikator środowiska z `GET /v1/presets`, NIGDY nazwa obrazu */
+  preset?: string
+}): Promise<Handle> {
+  const limits = opts.limits ?? { seconds: 30, memoryMb: 512 }
+
+  // PIASKOWNICA PRAWDZIWA, gdy demon jest podłączony. Wszystko poniżej tego `if` to ścieżka
+  // ZASTĘPCZA, świadomie słabsza — jej ograniczenia są wypisane w komentarzu nad tą funkcją
+  // i nie wolno ich przemilczeć tylko dlatego, że demon zwykle jest.
+  if (daemonConfigured()) {
+    const box = await createBox({
+      user: opts.user,
+      caseId: opts.caseId,
+      ...(opts.preset === undefined ? {} : { preset: opts.preset }),
+      limits: { seconds: limits.seconds, memoryMb: limits.memoryMb },
+    })
+    await mountInto(box.folder, opts.user, opts.mounts)
+    return {
+      id: box.id,
+      folder: box.folder,
+      async exec(code: string) {
+        // Zapas 15 s ponad limit sprawy: chcemy usłyszeć od demona „timeout" jako WYNIK,
+        // a nie zerwać połączenie i zgadywać, co się stało po drugiej stronie.
+        const r = await execBox(box.id, code, (limits.seconds + 15) * 1000)
+        return { ok: r.ok, output: r.output, stopped: r.stopped, produced: r.produced }
+      },
+      async dispose() {
+        await disposeBox(box.id).catch(() => {})
+      },
+    }
+  }
+
+  // realpath jest konieczny: na macOS os.tmpdir() zwraca /var/..., a faktyczna ścieżka to
+  // /private/var/... — bez rozwinięcia dowiązania uprawnienia nie objęłyby własnego katalogu
+  const folder = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), `desk-${opts.caseId}-`)))
+
+  await mountInto(folder, opts.user, opts.mounts)
 
   return {
     id: path.basename(folder),
@@ -79,7 +134,16 @@ export async function create(opts: {
         let out = ""
         p.stdout?.on("data", (d: Buffer) => (out += d.toString()))
         p.stderr?.on("data", (d: Buffer) => (out += d.toString()))
-        p.on("close", (code) => resolve({ ok: code === 0, output: out.slice(0, 8000) }))
+        // CZWARTE ciche obcięcie w tym produkcie: `slice(0, 8000)` ucinało wynik i nie
+        // mówiło o tym nikomu, więc wynik obcięty był nieodróżnialny od kompletnego.
+        p.on("close", (code) => {
+          const clipped = out.length > FALLBACK_OUTPUT
+          resolve({
+            ok: code === 0 && !clipped,
+            output: clipped ? out.slice(0, FALLBACK_OUTPUT) : out,
+            ...(clipped ? { stopped: "output" } : {}),
+          })
+        })
         p.on("error", (e) => resolve({ ok: false, output: String(e) }))
       })
     },

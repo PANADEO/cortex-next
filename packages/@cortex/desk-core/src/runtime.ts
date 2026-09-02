@@ -4,6 +4,15 @@ import { randomUUID } from "node:crypto"
 import { z } from "zod"
 import * as audit from "./audit-log"
 import { hasCapability } from "./capability-gate"
+
+/**
+ * Ile znaków pliku trafia do modelu. Sufit musi istnieć — okno kontekstu jest skończone —
+ * ale ma o sobie MÓWIĆ. Wartość dobrana pod dokumenty księgowe: 60 tys. znaków to ok. 30
+ * stron zwykłego tekstu i mieści typowe zestawienie miesięczne w całości.
+ */
+const READ_LIMIT = 60_000
+import { isShared } from "./folder"
+import { refuseShared } from "./shared-access"
 import { safeCsv } from "./csv-safety"
 import { migrate, pool } from "./db"
 import * as storage from "./desk-storage"
@@ -203,6 +212,10 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
     },
   })
 
+  // Brama wspólnej półki pyta o zdolność tej osoby — ta sama funkcja, co przy wszystkich
+  // pozostałych. Drugiego modelu uprawnień nie ma i mieć nie będzie (ADR-0001).
+  const may = (id: string) => hasCapability(p, id)
+
   if (hasCapability(p, "files.list")) {
     t.list_files = tool({
       description: "Pokazuje pliki na biurku użytkownika (Moje pliki oraz teczka bieżącej sprawy).",
@@ -210,6 +223,8 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
       execute: async ({ folder }) => {
         const k = folder?.trim() || "Moje pliki"
         return step("list_files", `Przeglądam „${k}”`, { folder: k }, async () => {
+          const nie = refuseShared(may, k, "read")
+          if (nie) return { ok: false, summary: "brak dostępu do wspólnej półki", answer: nie }
           const l = await storage.list(u.id, k)
           const caseEntries = await storage.list(u.id, caseFolder).catch(() => [])
           return {
@@ -237,11 +252,22 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
           if (notText) {
             return { ok: false, summary: "to nie jest plik tekstowy", answer: notText }
           }
+          const nie = refuseShared(may, path, "read")
+          if (nie) return { ok: false, summary: "brak dostępu do wspólnej półki", answer: nie }
           try {
             const text = await storage.read(u.id, path)
+            // Obcięcie MÓWI o sobie — w obu kierunkach. Wcześniej `slice(60000)` ucinało
+            // po cichu, a podsumowanie podawało PEŁNĄ długość: dowód poświadczał odczyt
+            // całego pliku, którego model nigdy w całości nie zobaczył.
+            const cut = text.length > READ_LIMIT
+            const shown = cut ? text.slice(0, READ_LIMIT) : text
             return {
-              summary: `${text.split("\n").length} wierszy, ${text.length} znaków`,
-              answer: text.slice(0, 60000),
+              summary: cut
+                ? `${text.length} znaków, pokazane pierwsze ${READ_LIMIT}`
+                : `${text.split("\n").length} wierszy, ${text.length} znaków`,
+              answer: cut
+                ? `${shown}\n\n[Plik jest dłuższy — powyżej pierwsze ${READ_LIMIT} z ${text.length} znaków.]`
+                : shown,
             }
           } catch {
             return {
@@ -333,12 +359,21 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
         folder: z.string().optional().describe('podfolder w „Moich plikach", domyślnie korzeń'),
       }),
       execute: async ({ name, folder }) => {
-        const target = folder?.trim() ? `Moje pliki/${folder.trim()}/${name}` : `Moje pliki/${name}`
+        // Podfolder może wskazać wspólną półkę — wtedy to nie jest „moje", tylko firmowe,
+        // i decyduje o tym inna zdolność.
+        const wanted = folder?.trim() ?? ""
+        const target = isShared(wanted)
+          ? `${wanted}/${name}`
+          : wanted
+            ? `Moje pliki/${wanted}/${name}`
+            : `Moje pliki/${name}`
         return step(
           "save_to_my_files",
           `Odkładam ${name} do Moich plików`,
           { name, target },
           async () => {
+            const nie = refuseShared(may, target, "write")
+            if (nie) return { ok: false, summary: "brak zgody na wspólną półkę", answer: nie }
             try {
               const stored = await storage.copy(u.id, `${caseFolder}/${name}`, target)
               return {
@@ -409,16 +444,28 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
               as: f.split("/").pop()!,
               write: false,
             })),
-            egress: [], // brak wyjścia do sieci — NIEEGZEKWOWANE w POC
+            // Sieci NIE MA i nie da się o nią poprosić: profil demona przybija
+            // `--network=none` każdej sprawie. Wcześniej stało tu `egress: []` z komentarzem
+            // „NIEEGZEKWOWANE w POC" — parametr, który wyglądał na granicę i nią nie był.
           })
           // `finally` przy sprzątaniu piaskownicy, bo wyjątek w `exec` zostawiał
           // katalog i proces bez właściciela — a piaskownica ma po sobie sprzątać
           // także wtedy, gdy to ona jest przyczyną awarii.
           try {
             const r = await box.exec(code)
+            // „Za duże" to nie to samo co „nie udało się" — i człowiek ma zobaczyć różnicę.
+            // Bez tego rozróżnienia obliczenie ucięte na suficie wygląda w dowodzie
+            // dokładnie tak samo jak kod, który rzucił wyjątkiem.
+            const why: Record<string, string> = {
+              timeout: "obliczenie trwało za długo",
+              memory: "obliczenie potrzebowało za dużo pamięci",
+              processes: "obliczenie uruchomiło za dużo procesów",
+              output: "wynik był za duży i został ucięty",
+            }
+            const stopped = r.stopped ? (why[r.stopped] ?? "obliczenie zostało zatrzymane") : ""
             return {
               ok: r.ok,
-              summary: r.ok ? "policzone" : "błąd wykonania",
+              summary: stopped || (r.ok ? "policzone" : "błąd wykonania"),
               answer: r.output || "(brak wyjścia)",
             }
           } finally {

@@ -9,6 +9,10 @@
       "department": "everyone"
     },
     {
+      "id": "shared.read",
+      "department": "everyone"
+    },
+    {
       "id": "document.write",
       "department": "everyone"
     },
@@ -19,6 +23,10 @@
     {
       "id": "files.keep",
       "department": "everyone"
+    },
+    {
+      "id": "shared.write",
+      "department": "management"
     },
     {
       "id": "sheet.write",
@@ -45,6 +53,7 @@
     "member": [
       "files.list",
       "files.read",
+      "shared.read",
       "document.write",
       "document.verify",
       "files.keep",
@@ -53,9 +62,11 @@
     "management": [
       "files.list",
       "files.read",
+      "shared.read",
       "document.write",
       "document.verify",
       "files.keep",
+      "shared.write",
       "sheet.write",
       "code.run",
       "image.generate",
@@ -72,8 +83,22 @@
     }
   },
   "quickTasks": {
-    "member": ["expensesDocument", "documentGaps", "meetingNotes"],
-    "management": ["expensesSheet", "analysis", "titleImage"]
+    "member": [
+      "expensesDocument",
+      "documentGaps",
+      "meetingNotes"
+    ],
+    "management": [
+      "expensesSheet",
+      "analysis",
+      "titleImage"
+    ]
   },
-  "departments": ["accounting", "finance", "it", "marketing", "management"]
+  "departments": [
+    "accounting",
+    "finance",
+    "it",
+    "marketing",
+    "management"
+  ]
 }

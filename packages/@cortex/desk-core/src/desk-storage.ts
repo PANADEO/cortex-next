@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs"
 import path from "node:path"
-import { MY_FILES } from "./folder"
+import { MY_FILES, SHARED } from "./folder"
 import type { FileMeta, TrashEntry } from "./types"
 
 const BASE = path.resolve(process.env.DESK_DATA_DIR ?? "./.data")
@@ -10,13 +10,33 @@ const BASE = path.resolve(process.env.DESK_DATA_DIR ?? "./.data")
  * W POC katalog na dysku; w produkcji usługa desk-store.
  * Reguła: powłoka nigdy nie sięga do dysku bezpośrednio, wyłącznie tędy.
  */
+/**
+ * Rozwiązuje ścieżkę LOGICZNĄ na fizyczną, wybierając jeden z dwóch korzeni: biurko tej
+ * osoby albo wspólną półkę. Sprawdzenie zawierania jest robione OSOBNO dla każdego korzenia
+ * i po rozwinięciu ścieżki — to jest jedyne miejsce, które stoi między nazwą podaną przez
+ * model a dyskiem, więc dwa korzenie nie mogą znaczyć dwóch różnych rygorów.
+ */
 function safePath(user: string, wzgledna: string) {
-  const root = path.join(BASE, "biurka", user)
-  const target = path.resolve(root, wzgledna.replace(/^\/+/, ""))
+  const clean = wzgledna.replace(/^\/+/, "")
+  // Segment, nie prefiks napisu: „Wspólne plikiXYZ" ma NIE trafiać na wspólną półkę.
+  const shared = clean === SHARED || clean.startsWith(SHARED + "/")
+  const root = shared ? path.join(BASE, "wspolne") : path.join(BASE, "biurka", user)
+  const inner = shared ? clean.slice(SHARED.length).replace(/^\/+/, "") : clean
+  const target = path.resolve(root, inner)
   if (target !== root && !target.startsWith(root + path.sep)) {
     throw new Error("Ścieżka poza biurkiem")
   }
-  return { root, target }
+  return { root, target, shared }
+}
+
+/**
+ * Droga powrotna: z fizycznej ścieżki na logiczną. Bez tego lista plików ze wspólnej półki
+ * oddawałaby ścieżki bez prefiksu, a wołający odesłałby je z powrotem jako ścieżki
+ * we WŁASNYM biurku — czyli plik znikałby przy pierwszym kliknięciu.
+ */
+function logical(root: string, full: string, shared: boolean) {
+  const rel = path.relative(root, full)
+  return shared ? path.join(SHARED, rel) : rel
 }
 
 export async function prepareDesk(user: string) {
@@ -24,12 +44,15 @@ export async function prepareDesk(user: string) {
   await fs.mkdir(path.join(root, MY_FILES), { recursive: true })
   await fs.mkdir(path.join(root, "Sprawy"), { recursive: true })
   await fs.mkdir(path.join(root, ".trash"), { recursive: true })
+  // Wspólna półka jest JEDNA na instalację, więc powstaje przy pierwszym biurku
+  // i nie jest niczyja.
+  await fs.mkdir(path.join(BASE, "wspolne"), { recursive: true })
   return root
 }
 
 export async function list(user: string, wzgledna = MY_FILES): Promise<FileMeta[]> {
   await prepareDesk(user)
-  const { root, target } = safePath(user, wzgledna)
+  const { root, target, shared } = safePath(user, wzgledna)
   await fs.mkdir(target, { recursive: true })
   const entries = await fs.readdir(target, { withFileTypes: true })
   const out: FileMeta[] = []
@@ -38,7 +61,7 @@ export async function list(user: string, wzgledna = MY_FILES): Promise<FileMeta[
     const full = path.join(target, w.name)
     const st = await fs.stat(full)
     out.push({
-      path: path.relative(root, full),
+      path: logical(root, full, shared),
       name: w.name,
       folder: w.isDirectory(),
       size: st.size,
@@ -248,6 +271,12 @@ export async function folders(user: string, relativeRoot = MY_FILES, depth = 4):
   }
   await prepareDesk(user)
   await descend(relativeRoot, 0)
+  // Wspólna półka dochodzi do drzewa jako osobna gałąź, a nie jako podkatalog biurka —
+  // bo nim nie jest. O tym, czy człowiek ją zobaczy, decyduje brama zdolności wyżej.
+  if (relativeRoot === MY_FILES) {
+    out.push(SHARED)
+    await descend(SHARED, 0)
+  }
   return out
 }
 

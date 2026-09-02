@@ -425,7 +425,9 @@
     "ownerShares": "Sprawę udostępnia jej właściciel.",
     "noSuchPerson": "Nie ma takiej osoby.",
     "limitMustBeNumber": "Limit musi być liczbą nie mniejszą od zera.",
-    "cannotDisableSelf": "Nie możesz wyłączyć własnego konta."
+    "cannotDisableSelf": "Nie możesz wyłączyć własnego konta.",
+    "addressNotAllowed": "Adres {{host}} nie jest dozwolony w tej instancji. Dopisz go do zmiennej {{variable}} w konfiguracji wdrożenia — docker-compose.yml, usługa cortex-frontend — i uruchom instancję ponownie. Dziś dozwolone: {{allowed}}.",
+    "noAnswerInTime": "Serwer nie odpowiedział w ciągu {{seconds}} s. Sprawdź, czy działa pod tym adresem."
   },
   "tools": {
     "list_files": {
@@ -652,6 +654,14 @@
         "name": "Proponowanie do pamięci",
         "description": "Proponuje, żeby coś zapamiętać na przyszłość. Wchodzi do pamięci dopiero, gdy to przyjmiesz."
       }
+    },
+    "shared.read": {
+      "name": "Wspólne pliki",
+      "description": "Zaglądanie na wspólną półkę firmy — wzory pism, cenniki, dokumenty, z których korzysta cały zespół."
+    },
+    "shared.write": {
+      "name": "Odkładanie na wspólną półkę",
+      "description": "Dodawanie i zmienianie dokumentów, które widzi cały zespół. Podmiana takiego pliku jest zdarzeniem o zasięgu całej firmy."
     }
   },
   "quickTask": {
