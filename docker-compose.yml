@@ -170,6 +170,12 @@ services:
       # bez nagłówka żądanie administratora (realnie zdarzyło się na cortex-next
       # 05.08.2026). Brak wpisu w `.env` działa jak dotąd — patrz docs/local-run.md.
       DEV_USER_EMAIL: ${DEV_USER_EMAIL-${ADMIN_EMAIL:-dev@cortex.local}}
+      # Katalog plików Biurka („Moje pliki", teczki spraw, kosz). MUSI wskazywać
+      # na wolumen — bez tego `desk-storage.ts` domyśla się `./.data` w warstwie
+      # zapisywalnej kontenera i dokumenty klienta znikają przy każdym odtworzeniu
+      # kontenera. Ta sama wartość i ten sam wolumen co w docker-compose.image.yml;
+      # pilnuje tego `compose-db-parity.test.ts`.
+      DESK_DATA_DIR: /data/desk
       # Ilustromat — modele konfigurowalne per instancja klienta. Puste =
       # domyślne z app/idp/lib/ilustromat/config.ts, nie awaria.
       ILUSTROMAT_TEXT_MODEL: ${ILUSTROMAT_TEXT_MODEL:-}
@@ -224,6 +230,9 @@ services:
       - "host.docker.internal:host-gateway"
     security_opt:
       - no-new-privileges:true
+    volumes:
+      # Pliki Biurka przeżywają odtworzenie kontenera. Patrz DESK_DATA_DIR wyżej.
+      - cortex_frontend_desk_data:/data/desk
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
 
@@ -345,3 +354,4 @@ services:
 
 volumes:
   cortex_postgres_data:
+  cortex_frontend_desk_data:

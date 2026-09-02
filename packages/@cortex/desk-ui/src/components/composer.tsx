@@ -168,7 +168,9 @@ export function Composer({
           <button
             type="button"
             onClick={() => picker.current?.click()}
-            className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
+            // `whitespace-nowrap`: na 360 px etykiety łamały się w środku wyrazu
+            // („Dodaj / plik", „Umiem tu 6 / rzeczy") i pasek wyglądał na zepsuty.
+            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-sm px-2 py-1 text-[13px] text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
           >
             <Icon as={Paperclip} px={14} /> {translate("case.addFile")}
           </button>

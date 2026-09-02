@@ -133,6 +133,10 @@ services:
       # (precedencja environment/env_file, `:-`, adresowanie po nazwie
       # kontenera). Musi być IDENTYCZNA — migracje i aplikacja czytają jedną bazę.
       - DATABASE_URL=${DATABASE_URL:-postgres://${POSTGRES_USER:-cortex}:${POSTGRES_PASSWORD}@cortex-frontend-postgres${ENVIRONMENT_TAG}:5432/${POSTGRES_DB:-cortex}}
+      # Katalog plików Biurka. MUSI wskazywać na wolumen niżej — bez tej zmiennej
+      # `desk-storage.ts` domyśla się `./.data` w warstwie zapisywalnej kontenera,
+      # czyli w miejscu, które znika przy każdym `docker compose up` nowego obrazu.
+      - DESK_DATA_DIR=/data/desk
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
       - PORT=80
@@ -154,6 +158,13 @@ services:
       - cortex_frontend_ai_tools_history:/data/ai-tools-history
       - cortex_frontend_cowork_data:/app/app/idp/.data/cortex-cowork
       - cortex_frontend_okna_czasowe_data:/app/app/idp/.data/okna-czasowe
+      # Pliki Biurka: „Moje pliki", teczki spraw i kosz. Do 02.09.2026 tego
+      # wolumenu NIE BYŁO, a `desk-storage.ts` domyśla się `./.data` — czyli
+      # dokumenty klienta leżały w efemerycznym systemie plików kontenera
+      # i KAŻDE wdrożenie nowego obrazu je kasowało. Baza przeżywała, dysk nie,
+      # więc po wdrożeniu zostawały sprawy opisujące pliki, których już nie ma —
+      # a dowód pracy jest rozdzielony między jedno i drugie.
+      - cortex_frontend_desk_data:/data/desk
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
 
@@ -166,6 +177,7 @@ volumes:
   cortex_frontend_ai_tools_history:
   cortex_frontend_cowork_data:
   cortex_frontend_okna_czasowe_data:
+  cortex_frontend_desk_data:
   # Jedyny wolumen z jawnym `name:`. Pozostałe rozdziela dziś WYŁĄCZNIE prefiks
   # nazwy projektu, czyli nazwa katalogu wdrożenia (/home/itsg/cortex-frontend
   # vs /home/itsg/cortex-frontend-uat) — ta sama ukryta zależność, przed którą

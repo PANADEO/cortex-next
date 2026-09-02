@@ -25,6 +25,7 @@
   },
   "persona": {
     "switch": "Switch person (demo)",
+    "settings": "Language and appearance",
     "language": "Language",
     "appearance": "Appearance"
   },
@@ -88,6 +89,7 @@
     "retry": "There is no file {{name}} in this case folder. Please make it for real and save it.",
     "notYours": "This is not your case",
     "notYoursLead": "Each employee sees only their own desk.",
+    "backToCases": "Back to cases",
     "guestOf": "{{name}}’s case"
   },
   "cases": {
@@ -119,6 +121,10 @@
     "trash": "Trash",
     "trashEmpty": "The trash is empty.",
     "trashHint": "Deleted files stay here until you take them out.",
+    "trashMore": "Show older ({{count}})",
+    "emptyTrash": "Empty the bin",
+    "emptyTrashSure": "Permanently delete {{count}} items from the bin? This cannot be undone.",
+    "trashEmptied": "Bin emptied — {{count}} items removed.",
     "fromFolder": "from {{folder}}",
     "restore": "Restore",
     "download": "Download",
@@ -243,6 +249,8 @@
     "log": "What happened",
     "logEmpty": "The journal is empty.",
     "logNote": "The application writes this journal itself. The agent has no access to it and cannot change it.",
+    "today": "Today",
+    "yesterday": "Yesterday",
     "tabTeam": "Team"
   },
   "home": {

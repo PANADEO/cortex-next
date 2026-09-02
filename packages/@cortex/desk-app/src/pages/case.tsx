@@ -6,6 +6,8 @@ import { everyone, names } from "@cortex/desk-core/people"
 import { CaseView } from "@cortex/desk-ui/components/case-view"
 import { Shell } from "@cortex/desk-ui/components/shell"
 import { deskT } from "@cortex/desk-ui/i18n/server"
+import { t } from "@cortex/desk-ui/routes"
+import Link from "next/link"
 import { notFound } from "next/navigation"
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
@@ -23,6 +25,14 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           <div>
             <div className="t-h2">{translate("case.notYours")}</div>
             <p className="t-body mt-1 text-desk-muted">{translate("case.notYoursLead")}</p>
+            {/* Bez tego ekran był ślepym zaułkiem: odmowa bez wyjścia. Stara zakładka
+                do cudzej sprawy zostawiała człowieka bez czegokolwiek do kliknięcia. */}
+            <Link
+              href={t("/")}
+              className="t-btn mt-4 inline-flex h-9 items-center rounded-md border px-3 hover:bg-desk-raised"
+            >
+              {translate("case.backToCases")}
+            </Link>
           </div>
         </div>
       </Shell>

@@ -108,7 +108,10 @@ export function CaseView({
   const [since, setSince] = useState<number | null>(null)
   const [atBottom, setAtBottom] = useState(true)
   const [sheet, setSheet] = useState(false)
-  const [panel, setPanelState] = useState(true)
+  // `null` znaczy „człowiek się nie wypowiedział". Wtedy panel MUSI ZAROBIĆ na swoje
+  // miejsce treścią: przy pustej sprawie zabierał ćwierć szerokości ekranu pod zdanie
+  // „Tu pojawi się gotowy dokument", także wtedy, gdy nic tam nigdy nie miało trafić.
+  const [panelChoice, setPanelChoice] = useState<boolean | null>(null)
   const [width, setWidthState] = useState(WIDTH_DEFAULT)
   const [selected, setSelected] = useState<string | null>(null)
   // Wiadomości ludzi i lista wglądów przychodzą tą samą trasą co zdarzenia, ale OBOK
@@ -129,7 +132,7 @@ export function CaseView({
   useEffect(() => {
     try {
       const z = localStorage.getItem("desk_panel_wyniku")
-      if (z !== null) setPanelState(z === "1")
+      if (z !== null) setPanelChoice(z === "1")
       const s = Number(localStorage.getItem("desk_panel_szerokosc"))
       if (s) setWidthState(clamp(s))
     } catch {
@@ -138,7 +141,7 @@ export function CaseView({
   }, [])
 
   const setPanel = useCallback((v: boolean) => {
-    setPanelState(v)
+    setPanelChoice(v)
     try {
       localStorage.setItem("desk_panel_wyniku", v ? "1" : "0")
     } catch {
@@ -295,6 +298,9 @@ export function CaseView({
     () => [...results, ...attachments].find((x) => x.path === selected) ?? last,
     [results, attachments, selected, last],
   )
+
+  // Decyzja człowieka bije wszystko; bez niej rozstrzyga zawartość.
+  const panel = panelChoice ?? (results.length > 0 || attachments.length > 0)
 
   const byName = useCallback((n: string) => folder.find((x) => x.name === n) ?? null, [folder])
 

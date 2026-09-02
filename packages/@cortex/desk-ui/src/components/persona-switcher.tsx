@@ -2,7 +2,7 @@
 import { departmentLabel } from "@cortex/desk-core/capability-text"
 import type { User } from "@cortex/desk-core/types"
 import * as Menu from "@radix-ui/react-dropdown-menu"
-import { Check, ChevronDown } from "lucide-react"
+import { Check, ChevronDown, Settings2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import {
   useDeskAppearance,
@@ -40,7 +40,20 @@ export function Avatar({ u, px = 36 }: { u: User; px?: number }) {
  * z zewnątrz, więc menu wybierałoby osobę i nic by się nie działo: wygląda to na
  * awarię Biurka, a jest konfiguracją.
  */
-export function Persona({ me, everyone }: { me: User; everyone: User[] }) {
+export function Persona({
+  me,
+  everyone,
+  /**
+   * `settingsOnly` — wyzwalacz bez wizytówki. Na ekranie „Ja" tożsamość stoi już
+   * w nagłówku, więc pełna wizytówka byłaby TRZECIM imieniem i działem na jednym
+   * ekranie. Menu jest tam potrzebne dla języka i wyglądu, wizytówka nie.
+   */
+  settingsOnly,
+}: {
+  me: User
+  everyone: User[]
+  settingsOnly?: boolean
+}) {
   const router = useRouter()
   const translate = useDeskT()
   const locale = useDeskLocale()
@@ -59,13 +72,24 @@ export function Persona({ me, everyone }: { me: User; everyone: User[] }) {
   return (
     <Menu.Root>
       <Menu.Trigger className="flex w-full items-center gap-2.5 rounded-md p-1 text-left hover:bg-desk-raised/70">
-        <Avatar u={me} />
-        <span className="min-w-0 flex-1">
-          <span className="t-body-m block truncate">
-            {me.firstName} {me.lastName}
-          </span>
-          <span className="t-meta block truncate">{departmentLabel(translate, me.department)}</span>
-        </span>
+        {settingsOnly ? (
+          <>
+            <Icon as={Settings2} px={16} className="shrink-0 text-desk-muted" />
+            <span className="t-body min-w-0 flex-1">{translate("persona.settings")}</span>
+          </>
+        ) : (
+          <>
+            <Avatar u={me} />
+            <span className="min-w-0 flex-1">
+              <span className="t-body-m block truncate">
+                {me.firstName} {me.lastName}
+              </span>
+              <span className="t-meta block truncate">
+                {departmentLabel(translate, me.department)}
+              </span>
+            </span>
+          </>
+        )}
         <Icon as={ChevronDown} px={16} className="shrink-0 text-desk-muted" />
       </Menu.Trigger>
       <Menu.Portal>

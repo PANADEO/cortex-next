@@ -124,4 +124,45 @@ describe("baza w plikach compose", () => {
     expect(volume, "brak wolumenu cortex_frontend_postgres_data").not.toBeNull()
     expect(volume?.join("\n")).toMatch(/name:.*\$\{ENVIRONMENT_TAG\}/)
   })
+
+  // CZWARTY NIEZMIENNIK, dopisany 02.09.2026 po znalezisku, które kosztowało
+  // dokładnie to, przed czym broni nagłówek tego pliku: „utracone dane".
+  //
+  // Pliki Biurka — „Moje pliki", teczki spraw i kosz — NIE MIAŁY WOLUMENU
+  // W ŻADNYM z plików compose, a `desk-storage.ts` domyśla się `./.data`.
+  // Czyli dokumenty klienta leżały w warstwie zapisywalnej kontenera i każde
+  // wdrożenie nowego obrazu je kasowało. Baza przeżywała, dysk nie — więc
+  // po wdrożeniu zostawały sprawy opisujące pliki, których już nie ma,
+  // a dowód pracy jest rozdzielony między jedno i drugie.
+  //
+  // To nie była luka funkcjonalna, tylko trwająca utrata danych. Nic tego nie
+  // zgłaszało, bo lokalnie `./.data` żyje w katalogu repozytorium i wygląda,
+  // jakby działało.
+  it.each(COMPOSE_FILES)("%s: pliki Biurka mają wolumen, a nie warstwę kontenera", (composeFile) => {
+    const lines = composeLines(composeFile)
+    const frontend = service(composeFile, "cortex-frontend")
+    expect(frontend, `${composeFile}: brak usługi cortex-frontend`).not.toBeNull()
+    const body = (frontend ?? []).join("\n")
+
+    // Zmienna MUSI być ustawiona jawnie — domyślka w kodzie celuje w katalog,
+    // który znika razem z kontenerem.
+    const declared = body.match(/DESK_DATA_DIR[:=]\s*(\S+)/)
+    expect(declared, `${composeFile}: cortex-frontend nie ustawia DESK_DATA_DIR`).not.toBeNull()
+    const target = declared![1]!
+
+    // ...i musi wskazywać na NAZWANY wolumen zamontowany dokładnie tam.
+    const mounts = block(frontend ?? [], "volumes", 4)
+    expect(mounts, `${composeFile}: cortex-frontend nie ma sekcji volumes`).not.toBeNull()
+    const mount = (mounts ?? []).find((line) => line.includes(`:${target}`))
+    expect(
+      mount,
+      `${composeFile}: nic nie jest zamontowane w ${target} — pliki Biurka zniknęłyby przy odtworzeniu kontenera`,
+    ).toBeTruthy()
+
+    const volumeName = mount!.trim().replace(/^-\s*/, "").split(":")[0]!
+    expect(
+      block(lines, volumeName, 2),
+      `${composeFile}: wolumen ${volumeName} zamontowany, ale niezadeklarowany`,
+    ).not.toBeNull()
+  })
 })

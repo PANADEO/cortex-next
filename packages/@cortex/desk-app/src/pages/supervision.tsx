@@ -10,10 +10,13 @@ import { RequestSupervision } from "@cortex/desk-ui/components/request-supervisi
 import { SectionTabs } from "@cortex/desk-ui/components/section-tabs"
 import { Shell } from "@cortex/desk-ui/components/shell"
 import { Team } from "@cortex/desk-ui/components/team"
+import type { DeskLocale } from "@cortex/desk-ui/i18n/locale"
 import { deskLocale, deskT } from "@cortex/desk-ui/i18n/server"
 import { zl } from "@cortex/desk-ui/lib"
+import { t } from "@cortex/desk-ui/routes"
 import { ShieldCheck } from "lucide-react"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
+import { Fragment } from "react"
 
 /**
  * Ekran przełożonego: kto o co prosi, co się dzisiaj działo i ile to kosztowało.
@@ -44,6 +47,11 @@ export default async function Page({
   const [locale, translate] = await Promise.all([deskLocale(), deskT()])
 
   const asked = (await searchParams)?.section
+  // Nieznana sekcja PRZEKIEROWUJE na adres kanoniczny, zamiast po cichu pokazać
+  // domyślną. Literówka w zakładce dawała ekran, który wygląda poprawnie i mówi
+  // co innego, niż mówi adres — a to jest ten rodzaj cichej niezgodności, który
+  // w produkcie o dowodach kosztuje najwięcej zaufania.
+  if (asked !== undefined && !isSection(asked)) redirect(t("/supervision"))
   const section: Section = isSection(asked) ? asked : "decisions"
 
   // Liczby do plakietek lecą ZAWSZE — to one mówią, czy warto tam zajrzeć — ale są
@@ -200,6 +208,26 @@ async function Spending() {
   )
 }
 
+const sameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate()
+
+/** „Dzisiaj" i „Wczoraj" nazwane, starsze — pełną datą z dniem tygodnia. */
+function dayLabel(d: Date, locale: DeskLocale, translate: (k: string) => string) {
+  const now = new Date()
+  if (sameDay(d, now)) return translate("supervision.today")
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  if (sameDay(d, yesterday)) return translate("supervision.yesterday")
+  return new Intl.DateTimeFormat(locale, {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(d)
+}
+
 async function Log() {
   const [locale, translate] = await Promise.all([deskLocale(), deskT()])
   const [entries, people] = await Promise.all([audit.latest(40), names()])
@@ -217,20 +245,34 @@ async function Log() {
             people,
           )
           const who = people[w.who]
+          // Kolumna niosła samą godzinę, więc wpis z wczoraj wyglądał identycznie jak
+          // dzisiejszy — a dziennik audytowy ma pozwalać ustalić KIEDY, nie tylko O KTÓREJ.
+          // Nagłówek dnia zamiast daty przy każdym wierszu: kolumna zostaje wąska
+          // i pozostaje porównywalna między wierszami.
+          const at = new Date(w.at)
+          const previous = entries[i - 1]
+          const newDay = !previous || !sameDay(new Date(previous.at), at)
           return (
-            <li key={i} className="flex gap-3 px-4 py-2.5">
-              <span className="t-meta w-20 shrink-0 tabular-nums">
-                {new Intl.DateTimeFormat(locale, {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }).format(new Date(w.at))}
-              </span>
-              <span
-                className={`t-body min-w-0 flex-1 ${o.weight === "important" ? "" : "text-desk-ink-2"}`}
-              >
-                <span className="font-medium">{who ?? w.who}</span> {o.text}
-              </span>
-            </li>
+            <Fragment key={i}>
+              {newDay && (
+                <li className="t-micro bg-desk-raised/40 px-4 py-1.5 tabular-nums">
+                  {dayLabel(at, locale, translate)}
+                </li>
+              )}
+              <li className="flex gap-3 px-4 py-2.5">
+                <span className="t-meta w-20 shrink-0 tabular-nums">
+                  {new Intl.DateTimeFormat(locale, {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }).format(at)}
+                </span>
+                <span
+                  className={`t-body min-w-0 flex-1 ${o.weight === "important" ? "" : "text-desk-ink-2"}`}
+                >
+                  <span className="font-medium">{who ?? w.who}</span> {o.text}
+                </span>
+              </li>
+            </Fragment>
           )
         })}
       </ul>

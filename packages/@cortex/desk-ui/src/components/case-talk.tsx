@@ -1,4 +1,5 @@
 "use client"
+import * as Menu from "@radix-ui/react-dropdown-menu"
 import { MessageSquare, Send, Share2, X } from "lucide-react"
 import { useState } from "react"
 import { useDeskLocale, useDeskT } from "../i18n/client"
@@ -88,36 +89,36 @@ export function CaseTalk({
             </span>
           ))}
           {shares.length === 0 && <span className="t-micro">{translate("talk.nobody")}</span>}
+          {/* Menu zamiast systemowego `<select>`. Surowa kontrolka systemu otwierała się
+              cudzym stylem, nachodziła na napis obok i wyglądała jak wstawka z innej
+              aplikacji — w miejscu, w którym człowiek podejmuje decyzję o cudzym
+              dostępie do swojej pracy. Reszta Biurka używa tego samego menu. */}
           {canShare && canInvite.length > 0 && (
-            <>
-              {opening ? (
-                <select
-                  autoFocus
-                  aria-label={translate("talk.shareWith")}
-                  defaultValue=""
-                  onChange={async (e) => {
-                    if (e.target.value) await act({ action: "share", who: e.target.value })
-                    setOpening(false)
-                  }}
-                  onBlur={() => setOpening(false)}
-                  className="t-micro h-6 rounded-desk-pill border bg-desk-surface px-2 text-desk-ink"
+            <Menu.Root open={opening} onOpenChange={setOpening}>
+              <Menu.Trigger className="t-micro rounded-desk-pill border px-2 py-0.5 text-desk-muted hover:bg-desk-raised hover:text-desk-ink">
+                {translate("talk.share")}
+              </Menu.Trigger>
+              <Menu.Portal>
+                <Menu.Content
+                  align="start"
+                  sideOffset={4}
+                  className="z-50 min-w-[200px] rounded-md border bg-desk-surface py-1 shadow-desk-pop"
                 >
-                  <option value="">{translate("talk.shareWith")}</option>
+                  <Menu.Label className="t-micro px-3 py-1">
+                    {translate("talk.shareWith")}
+                  </Menu.Label>
                   {canInvite.map((u) => (
-                    <option key={u.id} value={u.id}>
+                    <Menu.Item
+                      key={u.id}
+                      onSelect={() => act({ action: "share", who: u.id })}
+                      className="t-body flex cursor-pointer items-center px-3 py-1.5 outline-none data-[highlighted]:bg-desk-raised"
+                    >
                       {u.name}
-                    </option>
+                    </Menu.Item>
                   ))}
-                </select>
-              ) : (
-                <button
-                  onClick={() => setOpening(true)}
-                  className="t-micro rounded-desk-pill border px-2 py-0.5 text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
-                >
-                  {translate("talk.share")}
-                </button>
-              )}
-            </>
+                </Menu.Content>
+              </Menu.Portal>
+            </Menu.Root>
           )}
         </div>
       )}

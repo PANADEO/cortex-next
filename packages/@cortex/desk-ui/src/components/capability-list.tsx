@@ -199,7 +199,7 @@ export function CapabilityButton({ p }: { p: Policy }) {
   const translate = useDeskT()
   return (
     <Menu.Root open={open} onOpenChange={setOtwarty}>
-      <Menu.Trigger className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13px] text-desk-muted hover:bg-desk-raised hover:text-desk-ink">
+      <Menu.Trigger className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-sm px-2 py-1 text-[13px] text-desk-muted hover:bg-desk-raised hover:text-desk-ink">
         <Icon as={Check} px={14} className="text-desk-ok" />
         {translate("capabilities.canDoHere", { count: p.granted.length })}
         <Icon

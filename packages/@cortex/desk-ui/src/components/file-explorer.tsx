@@ -44,6 +44,9 @@ type Order = (typeof ORDERS)[number]
  */
 const WORTH_FILTERING = 7
 
+/** Ile pozycji kosza pokazujemy naraz. */
+const TRASH_PAGE = 12
+
 export function FileExplorer() {
   const router = useRouter()
   const params = useSearchParams()
@@ -62,6 +65,9 @@ export function FileExplorer() {
   const anchor = useRef<string | null>(null)
   const [order, setOrder] = useState<Order>("name")
   const [showTrash, setShowTrash] = useState(false)
+  // Kosz rozwijał się w całości — na biurku pokazowym 139 wierszy naraz. Pokazujemy
+  // najnowsze, bo po plik z kosza sięga się zaraz po skasowaniu, a nie po miesiącu.
+  const [trashShown, setTrashShown] = useState(TRASH_PAGE)
   const [taken, setTaken] = useState(false)
   const [above, setAbove] = useState(false)
   const [toMove, setToMove] = useState<FileMeta[]>([])
@@ -443,12 +449,13 @@ export function FileExplorer() {
               <p className="t-meta">{translate("files.trashEmpty")}</p>
             ) : (
               <ul className="space-y-1.5">
-                {trash.map((k) => (
+                {trash.slice(0, trashShown).map((k) => (
                   <li key={k.id} className="flex items-center gap-2">
                     <span className="min-w-0 flex-1">
                       <span className="t-body block truncate">{k.name}</span>
                       <span className="t-micro block">
-                        {translate("files.fromFolder", { folder: k.fromFolder })} · {when(k.when, locale)}
+                        {translate("files.fromFolder", { folder: k.fromFolder })} ·{" "}
+                        {when(k.when, locale)}
                       </span>
                     </span>
                     <button
@@ -468,7 +475,31 @@ export function FileExplorer() {
                 ))}
               </ul>
             )}
-            <p className="t-micro pt-2">{translate("files.trashHint")}</p>
+            {trash.length > trashShown && (
+              <button
+                onClick={() => setTrashShown((n) => n + TRASH_PAGE)}
+                className="t-meta mt-2 hover:text-desk-ink"
+              >
+                {translate("files.trashMore", { count: trash.length - trashShown })}
+              </button>
+            )}
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <p className="t-micro">{translate("files.trashHint")}</p>
+              {trash.length > 0 && (
+                <button
+                  onClick={async () => {
+                    // Nieodwracalne, więc pytamy — ale raz, nie przy każdym pliku.
+                    if (!window.confirm(translate("files.emptyTrashSure", { count: trash.length })))
+                      return
+                    const d = await action({ action: "empty-trash" })
+                    if (d.ok) toast({ text: translate("files.trashEmptied", { count: d.removed }) })
+                  }}
+                  className="t-meta shrink-0 text-desk-bad hover:underline"
+                >
+                  {translate("files.emptyTrash")}
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

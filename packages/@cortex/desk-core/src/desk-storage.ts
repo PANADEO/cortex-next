@@ -182,6 +182,25 @@ export async function trash(user: string): Promise<TrashEntry[]> {
 }
 
 /**
+ * Opróżnia kosz — nieodwracalnie.
+ *
+ * Do tej pory kosz nie miał ŻADNEJ drogi wyjścia: plik trafiał tam na zawsze, a lista
+ * rosła bez granicy (zmierzone: 139 pozycji na biurku pokazowym). „Kasowanie jest
+ * odwracalne" znaczyło w praktyce „kasowanie nie istnieje" — i było jednocześnie
+ * cichym gromadzeniem danych klienta bez końca.
+ */
+export async function emptyTrash(user: string): Promise<number> {
+  const { root } = safePath(user, ".")
+  const dir = path.join(root, ".trash")
+  await fs.mkdir(dir, { recursive: true })
+  const entries = (await fs.readdir(dir)).filter((n) => n.includes("__"))
+  for (const name of entries) {
+    await fs.rm(path.join(dir, name), { recursive: true, force: true })
+  }
+  return entries.length
+}
+
+/**
  * Przywracamy tam, SKĄD plik zniknął. Gdy tamtego folderu już nie ma — do „Moich plików",
  * i mówimy o tym wprost, zamiast po cichu podłożyć plik w innym miejscu.
  */

@@ -33,6 +33,8 @@ export async function POST(req: Request) {
       result = { ok: true, target: await storage.copy(u.id, b.from, b.to) }
     else if (b.action === "trash") result = { ok: true, id: await storage.toTrash(u.id, b.path) }
     else if (b.action === "restore") result = { ok: true, ...(await storage.restore(u.id, b.id)) }
+    else if (b.action === "empty-trash")
+      result = { ok: true, removed: await storage.emptyTrash(u.id) }
     else return NextResponse.json({ error: "nieznana akcja" }, { status: 400 })
     await audit.write(u.id, `files.${b.action}`, b)
     return NextResponse.json(result)

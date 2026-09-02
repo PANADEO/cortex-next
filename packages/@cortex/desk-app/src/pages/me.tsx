@@ -102,9 +102,12 @@ export default async function Page() {
             )}
           </div>
 
+          {/* Menu osoby niesie własną wizytówkę, więc na tym ekranie byłaby TRZECIA
+              z rzędu — imię i dział stoją już w nagłówku wyżej. Zostaje to, po co
+              tu naprawdę się wchodzi: przełączenie osoby, język i wygląd. */}
           {switchable && (
             <div className="mt-6 rounded-lg border bg-desk-surface p-3">
-              <Persona me={u} everyone={await everyone()} />
+              <Persona me={u} everyone={await everyone()} settingsOnly />
             </div>
           )}
 
