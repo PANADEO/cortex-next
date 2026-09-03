@@ -108,6 +108,13 @@ describe("rola startowa unosi zadanie, nie tylko listę", () => {
   // `code.run` jako wymogu zamieniłoby ten strażnik w zapis MOICH przekonań o tym, jak
   // zadanie powinno przebiegać, a on ma pilnować jednej rzeczy: czy zlecenie z pustego
   // ekranu prowadzi do kłódki.
+  //
+  // SPRAWDZONE NA ŻYWYM MODELU, nie wydedukowane. Zarzut brzmiał: zlecenia mówią „policz",
+  // `CAPABILITY_HINTS` mapuje „policz" na `code.run`, więc trzy z pięciu prowadzą do kłódki.
+  // Scenariusz `16-zespol.spec.ts` („pani Basia dowozi bez proszenia o zgodę", `@model`)
+  // przepuszcza to zlecenie przez prawdziwą turę: kłódki nie ma, arkusz powstaje. Zdjęcie
+  // roli `sheet.write` zapala go na czerwono, więc mierzy to, co trzeba. `HINTS` NAZYWA
+  // zdolność w chwili zgłoszenia braku — nie wymaga jej.
   const NEEDS: Record<string, string[]> = {
     expensesDocument: ["files.read", "document.write", "files.keep"],
     expensesSheet: ["files.read", "sheet.write", "files.keep"],

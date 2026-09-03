@@ -44,6 +44,15 @@ export async function POST(req: Request) {
   // Każda ścieżka, którą to żądanie dotyka — źródłowa i docelowa. `move` ze wspólnej półki
   // jest zapisem po OBU stronach: w miejscu docelowym przybywa, w źródłowym ubywa.
   const touched = [b.path, b.from, b.to].filter((x): x is string => typeof x === "string")
+  // PRZYWRACANIE Z KOSZA idzie po samym identyfikatorze, więc żadna z trzech ścieżek
+  // wyżej go nie opisuje — a plik potrafi wrócić NA WSPÓLNĄ PÓŁKĘ. Osoba, której
+  // odebrano `shared.write` po wyrzuceniu firmowego wzoru do własnego kosza, odkładała
+  // go z powrotem bez żadnej zdolności. Pytamy o CEL RZECZYWISTY: gdy pierwotnego
+  // folderu już nie ma, plik ląduje w „Moich plikach" i zgoda nie jest potrzebna.
+  if (b.action === "restore" && typeof b.id === "string") {
+    const planned = await storage.restoreTarget(u.id, b.id).catch(() => null)
+    if (planned) touched.push(planned.folder)
+  }
   if (touched.some((x) => isShared(x)) && !may("shared.write")) {
     return NextResponse.json(
       { error: translate("api.noSharedWrite") },

@@ -1,4 +1,10 @@
+import type { DeskEvent } from "@cortex/desk-core/types"
+import { makeDeskT } from "@cortex/desk-ui/i18n/locale"
+import type { APIRequestContext } from "@playwright/test"
 import { as, expect, otworz, test } from "./osoby"
+
+/** Zlecenie czyta człowiek po polsku — bierzemy je ze słownika, nie z parafrazy. */
+const pl = makeDeskT("pl")
 
 /**
  * Obszar 25 · ZESPÓŁ — governance przestaje być jednostronne.
@@ -228,4 +234,91 @@ test.describe("Obszar 25 · Wszystkie sprawy dają się przewertować", () => {
     expect(strona).toBe(ze)
     await expect(page.locator("main a[href*='/case/']").first()).toBeVisible()
   })
+})
+
+/**
+ * Obszar 25 · ZLECENIE Z PUSTEGO EKRANU MUSI SIĘ UDAĆ ROLĄ STARTOWĄ.
+ *
+ * DLACZEGO TO STOI OSOBNO OD `starting-role.test.ts`. Tamten test czyta zasiew i sprawdza,
+ * czy zlecenie da się złożyć ze zdolności, które rola ma. To jest sprawdzenie NA PAPIERZE
+ * i nie umie odpowiedzieć na jedyne pytanie, które naprawdę boli: czy agent, postawiony
+ * przed tym zdaniem i pozbawiony `code.run`, dowiezie arkusz — czy zgłosi brak i pani Basia
+ * zobaczy w pierwszej minucie kłódkę zamiast wyniku.
+ *
+ * Odpowiedzi nie da się wyprowadzić z kodu, bo zależy od decyzji modelu w turze. Stąd
+ * `@model`: scenariusz kosztuje pieniądze i stoi poza `gate:desk`.
+ *
+ * ZARZUT, KTÓRY TO ZAMYKA. Zlecenia startowe mówią „policz", a `CAPABILITY_HINTS`
+ * w `runtime.ts` mapuje „policz" na `code.run`, którego rola startowa nie ma. Z samego
+ * zestawienia tych dwóch miejsc wychodzi, że trzy z pięciu zleceń prowadzą do kłódki —
+ * i to była teza do sprawdzenia, a nie fakt: `HINTS` służy NAZWANIU zdolności w chwili
+ * zgłoszenia braku, nie jej wymaganiu, a `run_computation` w ogóle nie trafia do modelu
+ * bez zdolności (filtr na odkryciu, `runtime.ts`). Sprawdzamy więc zachowanie, nie kod.
+ */
+test.describe("Obszar 25 · Zlecenie startowe kończy się wynikiem, nie kłódką", () => {
+  const ANNA = { Cookie: "desk_persona=anna" }
+
+  /** Ta sama droga, którą jedzie tura z ekranu — bez przeglądarki, bo pytamy o zdarzenia. */
+  async function tura(request: APIRequestContext, title: string, text: string) {
+    const { id } = await (
+      await request.post("/api/case/new", { headers: ANNA, data: { title } })
+    ).json()
+    const start = await request.post(`/api/case/${id}/turn`, { headers: ANNA, data: { text } })
+    if (!start.ok())
+      throw new Error(`tura odrzucona (${start.status()}): ${(await start.text()).slice(0, 200)}`)
+    for (let i = 0; i < 90; i++) {
+      await new Promise((r) => setTimeout(r, 2000))
+      const d = await (await request.get(`/api/case/${id}/events`, { headers: ANNA })).json()
+      if (d.caseFile.status !== "working" && d.caseFile.status !== "new")
+        return d.events as { event: DeskEvent }[]
+    }
+    throw new Error("tura się nie skończyła")
+  }
+
+  test(
+    "„Zestawienie kosztów miesiąca” pani Basia dowozi bez proszenia o zgodę",
+    { tag: "@model" },
+    async ({ request }) => {
+      test.setTimeout(220_000)
+
+      // TEKST ZE SŁOWNIKA, nie z parafrazy: gdyby ktoś przepisał zlecenie na takie,
+      // którego rola nie unosi, ten scenariusz ma spaść — a parafraza w teście
+      // sprawdzałaby moje wyobrażenie o zleceniu zamiast zlecenia z ekranu.
+      const zlecenie = pl("quickTask.expensesSheet.text")
+      expect(zlecenie).toContain("policz")
+
+      // WARUNEK WSTĘPNY PRZED WYDANIEM PIENIĘDZY: bez pliku z fakturami na biurku
+      // scenariusz nie sprawdziłby niczego, a turę i tak by opłacił.
+      const { files } = await (await request.get("/api/files", { headers: ANNA })).json()
+      const faktury = (files as { path: string }[]).filter((f) => f.path.endsWith(".csv"))
+      expect(faktury.length, "biurko Anny nie ma pliku CSV — nie ma czego liczyć").toBeGreaterThan(
+        0,
+      )
+
+      const events = await tura(request, "Zestawienie kosztów — rola startowa", zlecenie)
+      const uzyte = events
+        .filter((x) => x.event.type === "tool_start")
+        .map((x) => (x.event as { name: string }).name)
+
+      // KONTROLA DODATNIA: tura zrobiła cokolwiek. Bez tego wiersza scenariusz byłby
+      // zielony także wtedy, gdy agent nie kiwnął palcem — brak kłódki jest wtedy
+      // prawdą bez wartości.
+      expect(uzyte.length, "agent nie użył żadnego narzędzia — nie ma czego oceniać").toBeGreaterThan(
+        0,
+      )
+
+      // SEDNO: żadnej prośby o dostęp. `blocked` to jest dokładnie to zdarzenie,
+      // z którego bierze się kłódka na ekranie.
+      const klodki = events
+        .filter((x) => x.event.type === "blocked")
+        .map((x) => (x.event as { description: string }).description)
+      expect(klodki, `zlecenie startowe skończyło się prośbą o dostęp: ${klodki.join("; ")}`).toEqual(
+        [],
+      )
+
+      // OBIETNICA ZLECENIA: „zapisz jako arkusz". Tura bez arkusza nie jest sukcesem,
+      // nawet jeśli obeszła się bez kłódki.
+      expect(uzyte, `użyte narzędzia: ${uzyte.join(", ")}`).toContain("write_sheet")
+    },
+  )
 })

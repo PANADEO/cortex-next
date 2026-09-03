@@ -227,6 +227,33 @@ export async function emptyTrash(user: string): Promise<number> {
  * Przywracamy tam, SKĄD plik zniknął. Gdy tamtego folderu już nie ma — do „Moich plików",
  * i mówimy o tym wprost, zamiast po cichu podłożyć plik w innym miejscu.
  */
+/**
+ * DOKĄD WRÓCI plik z kosza — policzone, ale jeszcze nie wykonane.
+ *
+ * Wyniesione z `restore`, bo brama wspólnej półki musi zapytać PRZED przeniesieniem,
+ * a nie po. Do 03.09.2026 nie miała o co zapytać: `files.ts` sprawdzało `path`, `from`
+ * i `to`, a przywracanie idzie po samym identyfikatorze z kosza — więc osoba, której
+ * odebrano `shared.write` po wyrzuceniu firmowego wzoru pisma do własnego kosza,
+ * odkładała go z powrotem na półkę bez żadnej zdolności. Brama pilnowana w połowie,
+ * w wąskim przypadku, ale dokładnie ta sama klasa co poprzednie.
+ *
+ * Liczymy CEL RZECZYWISTY, nie pierwotny folder: gdy tamtego już nie ma, plik ląduje
+ * w „Moich plikach" i wtedy zgoda na półkę nie jest potrzebna. Pytanie o folder
+ * pierwotny odmawiałoby wtedy bez powodu.
+ */
+export async function restoreTarget(user: string, id: string) {
+  if (id.includes("/") || id.includes("\\") || !id.includes("__"))
+    throw new Error("Zły identyfikator")
+  const { basis } = splitId(id)
+  const folder = path.dirname(basis)
+  try {
+    await fs.access(safePath(user, folder).target)
+    return { folder: folder, landedElsewhere: false }
+  } catch {
+    return { folder: MY_FILES, landedElsewhere: true }
+  }
+}
+
 export async function restore(user: string, id: string) {
   if (id.includes("/") || id.includes("\\") || !id.includes("__"))
     throw new Error("Zły identyfikator")
@@ -235,14 +262,9 @@ export async function restore(user: string, id: string) {
   const { basis } = splitId(id)
 
   const folder = path.dirname(basis)
-  let targetFolder = folder
-  let landedElsewhere = false
-  try {
-    await fs.access(safePath(user, folder).target)
-  } catch {
-    targetFolder = MY_FILES
-    landedElsewhere = true
-  }
+  const planned = await restoreTarget(user, id)
+  const targetFolder = planned.folder
+  const landedElsewhere = planned.landedElsewhere
 
   const target = safePath(user, path.join(targetFolder, path.basename(basis))).target
   await fs.mkdir(path.dirname(target), { recursive: true })

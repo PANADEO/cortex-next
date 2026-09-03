@@ -177,7 +177,7 @@ describe("słownik Biurka", () => {
   it("żadna trasa nie oddaje zdania wpisanego na sztywno", () => {
     const API = path.join(here, "../../../desk-app/src/api")
     /** Kody czytane przez front, nie zdania dla człowieka. */
-    const MACHINE_CODES = new Set(["name-clash", "missing-email"])
+    const MACHINE_CODES = new Set(["name-clash"])
     const offenders: string[] = []
     for (const file of readdirSync(API).filter((one) => one.endsWith(".ts"))) {
       if (file.startsWith("test-")) continue // narzędzia testowe nie mówią do człowieka
@@ -285,19 +285,53 @@ describe("słownik Biurka", () => {
    * skanie całego słownika zapalałyby się na każdej fakturze za naprawę samochodu. Zdanie z `{{person}}` przechodzi zawsze: skoro pada imię, adresat
    * nie jest bezimienny, choćby stał obok słowa „IT".
    */
+  /**
+   * ZDANIA, KTÓRE DOMYKAJĄ trudny moment — jedyne, na których ciąży obowiązek wskazania
+   * człowieka. Zakres z rundy poprzedniej obejmował cztery przedrostki i był ZA WĄSKI:
+   * `composer.startFailed` („nie udało się zacząć sprawy") oraz `trail.failure.happened.*`
+   * i `changed.*` to zakończenia w czystej postaci, a przechodziły bokiem — bo objęty
+   * był wyłącznie `trail.failure.next.*`, czyli jedno z trzech zdań tej samej karty.
+   *
+   * Wszystkie te grupy to komunikaty systemu. Słownictwo faktur — „serwis", „technik",
+   * „support" — w nich nie występuje, więc rozszerzenie zakresu nie wnosi z powrotem
+   * kolizji, przez którą ta reguła była przepisywana.
+   */
+  const ENDING_PREFIXES = [
+    /^trail\./,
+    /^lock\./,
+    /^failure\./,
+    /^api\./,
+    /^composer\./,
+    /^mcp\./,
+    /^promises\./,
+    /^otherRequest\./,
+  ]
+
   it("żadne zakończenie nie odsyła do bezimiennej władzy", () => {
     /** Klucze, które DOMYKAJĄ trudny moment — jedyne miejsce, gdzie odesłanie ma sens. */
-    const ENDINGS = [/^trail\.failure\.next\./, /^lock\./, /^failure\./, /^api\./]
+    const ENDINGS = ENDING_PREFIXES
+    // „dostawca" i „producent" świadomie POZA listą: w `mcp.*` to dostawca serwera
+    // narzędzi, zwykły rzeczownik z opisu, a nie ktoś, do kogo odsyłamy człowieka.
+    // Wpisane na próbę, dały trzy fałszywe alarmy na własnym słowniku i wyleciały.
+    //
+    // `\p{L}` zamiast `\w`, bo `\w` bez tego NIE OBEJMUJE polskich liter — przez to
+    // „obsługa techniczna" było łapane, a „obsługę techniczną" przechodziło. Ten sam
+    // błąd wracał tu dwa razy, więc znika razem z `\w`.
     const FACELESS =
-      /admin\w*|helpdesk|help[- ]desk|informatyk\w*|serwis\w*|technik\w*|sysadmin\w*|infolini\w*|dzia[łl]\w* (?:IT|techniczn\w+)|wsparci\w+ techniczn\w+|obs[łl]ug\w+ techniczn\w+|support (?:team|desk)|IT (?:department|support)|tech support|opiekun\w* systemu/iu
+      /admin\p{L}*|helpdesk|help[- ]desk|informatyk\p{L}*|serwis\p{L}*|technik\p{L}*|sysadmin\p{L}*|infolini\p{L}*|programi[sś][tc]\p{L}*|deweloper\p{L}*|dzia[łl]\p{L}* (?:techniczn\p{L}+|informatyczn\p{L}+)|wsparci\p{L}+|obs[łl]ug\p{L}+ techniczn\p{L}+|opiekun\p{L}* systemu|tech support|\bsupport(?:u|em|owi|cie)?\b(?!s)/iu
     const offenders: string[] = []
     const walk = (node: unknown, key: string) => {
       if (typeof node === "string") {
         if (!ENDINGS.some((one) => one.test(key.replace(/^(pl|en)\./, "")))) return
         // Imię własne w zdaniu znaczy, że adresat JEST wskazany — reszta zdania może
         // wtedy nazywać jego dział, i to jest pomoc, nie ściana.
-        if (node.includes("{{person}}")) return
-        if (FACELESS.test(node)) offenders.push(`${key} = ${node}`)
+        // Wskazanie człowieka znosi zarzut: imię podstawiane przez `{{person}}` ALBO
+        // słowo „przełożony", które Biurko umie rozwinąć do imienia (`approver()`).
+        if (node.includes("{{person}}") || /prze[łl]o[żz]on|manager|kierownik/iu.test(node)) return
+        // Samo „IT" jako dział — WIELKIMI literami, i to nie jest drobiazg: z flagą `i`
+        // angielskie „check whether it supports text" jest odesłaniem do działu IT.
+        // Fałszywy alarm na własnym słowniku wrócił tą drogą raz i tędy nie wróci.
+        if (FACELESS.test(node) || /\bIT\b/u.test(node)) offenders.push(`${key} = ${node}`)
         return
       }
       if (node && typeof node === "object") {
@@ -312,7 +346,7 @@ describe("słownik Biurka", () => {
   it("strażnik zakończeń w ogóle coś ogląda", () => {
     // Bez tego cały test wyżej mógłby być zielony dlatego, że zakres jest pusty —
     // wystarczyłaby zmiana nazwy grupy w słowniku i nikt by się nie dowiedział.
-    const ENDINGS = [/^trail\.failure\.next\./, /^lock\./, /^failure\./, /^api\./]
+    const ENDINGS = ENDING_PREFIXES
     const counted: string[] = []
     const walk = (node: unknown, key: string) => {
       if (typeof node === "string") {

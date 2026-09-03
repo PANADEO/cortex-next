@@ -22,7 +22,7 @@
 // i sprawdzam kod odpowiedzi. Żaden zapis importu tego nie zmieni, a zaślepka bramy
 // natychmiast czerwieni się na kontroli pozytywnej niżej.
 
-import { readdirSync, readFileSync } from "node:fs"
+import { readdirSync, readFileSync, statSync } from "node:fs"
 import path from "node:path"
 import ts from "typescript"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -42,7 +42,42 @@ vi.mock("@cortex/desk-core/capability-gate", () => ({
   spentToday: async () => 0,
 }))
 
+/**
+ * DYSK JEST ATRAPĄ, KTÓRA RZUCA — i to jest poprawka po prawdziwej szkodzie, nie
+ * ostrożność. Bez niej kontrola pozytywna przechodziła bramę i naprawdę ZAPISYWAŁA:
+ * w `.data/wspolne` narosły dwadzieścia dwa pliki `cennik (N).csv`, po jednym na każde
+ * uruchomienie testów. Na maszynie z ustawionym `DESK_DATA_DIR` byłby to zapis na
+ * PRAWDZIWĄ wspólną półkę firmy, wykonany przez test jednostkowy.
+ *
+ * Rzucająca atrapa naprawia przy okazji drugą, subtelniejszą wadę: „przeszło bramę"
+ * znaczy teraz dokładnie tyle i nic więcej. Wcześniej wyjątek z bazy liczył się za
+ * przejście, więc test nie odróżniał „doszło do dysku i padło" od „doszło do dysku
+ * i zapisało".
+ */
 const SHARED = "Wspólne pliki"
+const OFF_THE_DISK = "brama przepuściła — dalej już nie idziemy"
+const refuse = () => {
+  throw new Error(OFF_THE_DISK)
+}
+vi.mock("@cortex/desk-core/desk-storage", () => ({
+  list: refuse,
+  trash: refuse,
+  folders: refuse,
+  fullPath: refuse,
+  writeNew: refuse,
+  move: refuse,
+  copy: refuse,
+  toTrash: refuse,
+  restore: refuse,
+  // Udaje plik wyrzucony ZE WSPÓLNEJ PÓŁKI: tam właśnie chciałby wrócić.
+  restoreTarget: async () => ({ folder: SHARED, landedElsewhere: false }),
+  emptyTrash: refuse,
+  createFolder: refuse,
+  caseFolder: () => "Sprawy/x",
+  NameClash: class NameClash extends Error {},
+}))
+vi.mock("@cortex/desk-core/file-origin", () => ({ originsInMyFiles: refuse }))
+
 
 /**
  * Jak zawołać każdą trasę tak, żeby DOTKNĘŁA wspólnej półki. To jest jedyne miejsce,
@@ -79,6 +114,19 @@ const CALLS: { route: string; what: string; call: () => Promise<Response> }[] = 
     },
   },
   {
+    route: "files.ts",
+    what: "przywrócenie z kosza pliku, który wrócić chce NA wspólną półkę",
+    call: async () => {
+      const { POST } = await import("./files")
+      return POST(
+        new Request("http://d/api/files", {
+          method: "POST",
+          body: JSON.stringify({ action: "restore", id: "cennik.csv__1234" }),
+        }),
+      )
+    },
+  },
+  {
     route: "files-upload.ts",
     what: "wgranie pliku NA wspólną półkę",
     call: async () => {
@@ -107,8 +155,22 @@ const EXEMPT: Record<string, string> = {
   "test-seed-turn.ts": "narzędzie testowe, nie trasa produktu",
 }
 
-/** Moduły, przez które da się dotknąć dysku — po NAZWIE, nie po pisowni importu. */
-const DISK = /desk-storage|node:fs|(?:^|["'])fs(?:\/promises)?["']/
+/**
+ * Moduły, przez które da się dotknąć dysku — po NAZWIE MODUŁU. `moduleSpecifier.text`
+ * nie zawiera cudzysłowów, więc wzorzec, który ich wymagał, nie widział `from "fs"` —
+ * ta sama dziura, którą domknąłem rundę wcześniej i otworzyłem z powrotem, przepisując
+ * regex. Stąd teraz zbiór dokładnych nazw plus `desk-core/sandbox`, który też kopiuje
+ * pliki z biurka (`mounts.fromDesk`).
+ */
+const DISK_MODULES = new Set([
+  "fs",
+  "fs/promises",
+  "node:fs",
+  "node:fs/promises",
+  "@cortex/desk-core/desk-storage",
+  "@cortex/desk-core/sandbox",
+])
+const DISK = { test: (spec: string) => DISK_MODULES.has(spec) }
 
 function touchesDisk(file: string): boolean {
   const source = ts.createSourceFile(
@@ -204,6 +266,19 @@ describe("żadna trasa nie wymyka się temu sprawdzeniu", () => {
       ).toBe(true)
     },
   )
+
+  it("katalog tras nie urósł w głąb ani poza .ts", () => {
+    // Skan pokrycia jest PŁASKI i obejmuje wyłącznie `.ts`. Gdy pojawi się podkatalog
+    // albo `.tsx`, ta granica stanie się dziurą — i stanie się nią po cichu. Test zniknął
+    // przy przepisywaniu strażnika na wołanie tras; wraca, bo granica została.
+    const strays = readdirSync(API).filter(
+      (entry) => statSync(path.join(API, entry)).isDirectory() || entry.endsWith(".tsx"),
+    )
+    expect(
+      strays,
+      "skan pokrycia jest płaski i tylko dla .ts — rozszerz go, zanim dołożysz takie pliki",
+    ).toEqual([])
+  })
 
   it("nie zwalnia tras, których już nie ma", () => {
     const present = new Set(readdirSync(API))

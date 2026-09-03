@@ -72,6 +72,15 @@ export function count(n: number, one: string, several: string, many: string) {
  * skończonej listy, którą dałoby się przetłumaczyć.
  */
 export function reasonText(translate: (key: string) => string, reason: string): string {
-  const known = new Set(["stopped-by-you", "server-restart"])
-  return known.has(reason) ? translate(`case.reason.${reason}`) : reason
+  // JEDNO ŹRÓDŁO: pyta słownik i patrzy, czy odpowiedział. Pierwsza wersja trzymała
+  // listę znanych kodów TUTAJ, obok tej samej listy w `pl.json` — czyli dokładnie
+  // ta klasa defektu, od której zaczął się spór o kontrast: jedna wartość deklarowana
+  // dwa razy i nikt nie wie, która wygrywa. Dopisanie trzeciego kodu w bazie bez wpisu
+  // tutaj pokazywałoby człowiekowi surowe `stopped-by-limit`.
+  //
+  // `makeDeskT` oddaje SAM KLUCZ, gdy wpisu nie ma — to jest cały mechanizm rozpoznania
+  // i jest już przetestowany osobno („brak klucza oddaje sam klucz, a nie pustkę").
+  const key = `case.reason.${reason}`
+  const said = translate(key)
+  return said === key ? reason : said
 }
