@@ -668,6 +668,16 @@
         "description": "Reads the saved file back and confirms what is in it."
       }
     },
+    "shared": {
+      "read": {
+        "name": "Shared files",
+        "description": "Access to the company shelf — templates, price lists and documents the whole team works from."
+      },
+      "write": {
+        "name": "Publishing to the shared shelf",
+        "description": "Adding and changing documents the whole team sees. Replacing one of them affects the entire company."
+      }
+    },
     "sheet": {
       "write": {
         "name": "Writing spreadsheets",
@@ -705,14 +715,6 @@
         "name": "Proposing things to remember",
         "description": "Suggests something worth remembering for next time. It enters the memory only once you accept it."
       }
-    },
-    "shared.read": {
-      "name": "Shared files",
-      "description": "Access to the company shelf — templates, price lists and documents the whole team works from."
-    },
-    "shared.write": {
-      "name": "Publishing to the shared shelf",
-      "description": "Adding and changing documents the whole team sees. Replacing one of them affects the entire company."
     }
   },
   "quickTask": {

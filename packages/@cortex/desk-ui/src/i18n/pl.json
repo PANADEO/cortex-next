@@ -707,6 +707,16 @@
         "description": "Odczytuje zapisany plik i potwierdza, co w nim jest."
       }
     },
+    "shared": {
+      "read": {
+        "name": "Wspólne pliki",
+        "description": "Zaglądanie na wspólną półkę firmy — wzory pism, cenniki, dokumenty, z których korzysta cały zespół."
+      },
+      "write": {
+        "name": "Odkładanie na wspólną półkę",
+        "description": "Dodawanie i zmienianie dokumentów, które widzi cały zespół. Podmiana takiego pliku jest zdarzeniem o zasięgu całej firmy."
+      }
+    },
     "sheet": {
       "write": {
         "name": "Tworzenie arkuszy",
@@ -744,14 +754,6 @@
         "name": "Proponowanie do pamięci",
         "description": "Proponuje, żeby coś zapamiętać na przyszłość. Wchodzi do pamięci dopiero, gdy to przyjmiesz."
       }
-    },
-    "shared.read": {
-      "name": "Wspólne pliki",
-      "description": "Zaglądanie na wspólną półkę firmy — wzory pism, cenniki, dokumenty, z których korzysta cały zespół."
-    },
-    "shared.write": {
-      "name": "Odkładanie na wspólną półkę",
-      "description": "Dodawanie i zmienianie dokumentów, które widzi cały zespół. Podmiana takiego pliku jest zdarzeniem o zasięgu całej firmy."
     }
   },
   "quickTask": {

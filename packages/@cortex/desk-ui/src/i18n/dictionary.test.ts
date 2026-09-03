@@ -135,6 +135,38 @@ describe("słownik Biurka", () => {
     expect(fromCards.filter((key) => !plKeys.includes(key))).toEqual([])
   })
 
+  /**
+   * ŻADNA NAZWA KLUCZA NIE ZAWIERA KROPKI — i to nie jest porządkowanie, tylko naprawa
+   * całej rodziny błędów, która potrafi przejść przez wszystkie pozostałe testy.
+   *
+   * `makeDeskT` rozcina klucz po kropkach i schodzi po gałęziach. Grupa nazwana dosłownie
+   * „shared.read" jest więc NIEOSIĄGALNA: przy szukaniu `capability.shared.read.name`
+   * czytnik wchodzi w `capability`, szuka `shared`, nie znajduje i oddaje sam klucz.
+   *
+   * Najgorsze jest to, że TEN test o zdolnościach zostawał zielony. Buduje listę kluczy
+   * przez spłaszczenie słownika kropkami, a po spłaszczeniu grupa „shared.read" wygląda
+   * DOKŁADNIE tak samo jak prawdziwa ścieżka `shared` → `read`. Strażnik potwierdzał
+   * więc, że słowa są, podczas gdy na ekranie „Co potrafię" stało gołe `shared.read`
+   * i `shared.write` — przez wiele wydań, po polsku i po angielsku.
+   */
+  it("żadna nazwa klucza nie zawiera kropki", () => {
+    const offenders: string[] = []
+    const walk = (node: unknown, at: string) => {
+      if (!node || typeof node !== "object") return
+      for (const [key, value] of Object.entries(node)) {
+        if (key.includes(".")) offenders.push(`${at ? `${at}.` : ""}${key}`)
+        walk(value, at ? `${at}.${key}` : key)
+      }
+    }
+    walk(pl, "")
+    walk(en, "")
+    expect(
+      offenders,
+      "kropka w NAZWIE klucza czyni go nieosiągalnym dla `makeDeskT`, a jednocześnie " +
+        "nieodróżnialnym od prawdziwej ścieżki dla testów, które spłaszczają słownik",
+    ).toEqual([])
+  })
+
   it("każda zdolność, dział i zlecenie startowe ma swoje słowa", () => {
     // Zasiew niesie TOŻSAMOŚĆ, słowa stoją tutaj — a klucz buduje `capabilityLabel`,
     // więc skan wywołań `translate("…")` go nie widzi. Bez tego testu nowa zdolność
