@@ -5,6 +5,7 @@ import { useDeskLocale, useDeskT } from "../i18n/client"
 import { when } from "../lib"
 import { api } from "../routes"
 import { Icon } from "./icon"
+import { Loading } from "./loading"
 import { useToast } from "./toast"
 
 /**
@@ -28,7 +29,7 @@ export function MemoryList() {
   const translate = useDeskT()
   const locale = useDeskLocale()
   const { toast } = useToast()
-  const [memories, setMemories] = useState<Memory[]>([])
+  const [memories, setMemories] = useState<Memory[] | null>(null)
   const [limit, setLimit] = useState(30)
   const [maxChars, setMaxChars] = useState(400)
   const [editing, setEditing] = useState<number | null>(null)
@@ -57,6 +58,17 @@ export function MemoryList() {
     await refresh()
     return true
   }
+
+  // TRZY STANY, NIE DWA. `null` to „jeszcze nie wiem", `[]` to „nic tu nie ma" — dwie
+  // RÓŻNE odpowiedzi, które do 03.09.2026 wyglądały identycznie, bo stan startowy był
+  // pustą tablicą. Ekran przez cały czas pobierania twierdził „Asystent jeszcze nic
+  // o Tobie nie wie", mając w bazie wspomnienia. Zmierzone przy `/api/memory`
+  // odpowiadającym w 800 ms: to zdanie stało 826 ms, po czym po cichu zmieniało się
+  // w listę — czyli człowiek zdążył przeczytać nieprawdę i wyciągnąć z niej wniosek.
+  //
+  // `loading.tsx` trasy tego NIE ŁAPAŁ i nie mógł: on kończy się w chwili, gdy dojdzie
+  // odpowiedź serwera, a tutaj pobieranie zaczyna się DOPIERO PO hydratacji.
+  if (memories === null) return <Loading rows={4} />
 
   const proposed = memories.filter((m) => m.status === "proposed")
   const kept = memories.filter((m) => m.status === "kept")

@@ -23,6 +23,7 @@ import { useDeskLocale, useDeskT } from "../i18n/client"
 import { when } from "../lib"
 import { api, t } from "../routes"
 import { FileRow } from "./file-row"
+import { Loading } from "./loading"
 import { Icon } from "./icon"
 import { MoveDialog } from "./move-dialog"
 import { Preview, fileUrl } from "./preview"
@@ -55,7 +56,10 @@ export function FileExplorer() {
   const locale = useDeskLocale()
   const { toast } = useToast()
 
-  const [files, setFiles] = useState<FileMeta[]>([])
+  // `null` = „jeszcze nie wiem", `[]` = „katalog jest pusty". Patrz gałąź `files === null`
+  // niżej: bez tego rozróżnienia ekran przez cały czas pobierania mówił „Tu jeszcze nic
+  // nie ma", stojąc nad pełnym katalogiem.
+  const [files, setFiles] = useState<FileMeta[] | null>(null)
   const [origins, setOrigins] = useState<Record<string, { caseId: string; title: string }>>({})
   const [trash, setTrash] = useState<TrashEntry[]>([])
   const [query, setQuery] = useState("")
@@ -177,9 +181,10 @@ export function FileExplorer() {
 
   const shown = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase(locale)
+    const known = files ?? []
     const matching = needle
-      ? files.filter((p) => p.name.toLocaleLowerCase(locale).includes(needle))
-      : files
+      ? known.filter((p) => p.name.toLocaleLowerCase(locale).includes(needle))
+      : known
     const by = (a: FileMeta, b: FileMeta) => {
       if (a.folder !== b.folder) return Number(b.folder) - Number(a.folder)
       if (a.folder) return a.name.localeCompare(b.name, locale)
@@ -308,7 +313,7 @@ export function FileExplorer() {
         </div>
       )}
 
-      {picked.length === 0 && (files.length > WORTH_FILTERING || query) && (
+      {picked.length === 0 && ((files?.length ?? 0) > WORTH_FILTERING || query) && (
         <div className="mt-3 flex items-center gap-2">
           <div className="relative min-w-0 flex-1 sm:max-w-xs">
             <Icon
@@ -366,6 +371,13 @@ export function FileExplorer() {
         {above ? (
           <div className="t-body p-10 text-center text-desk-accent-soft-ink">
             {translate("files.dropHere", { folder: folder.split("/").pop() ?? "" })}
+          </div>
+        ) : files === null ? (
+          // CZEKANIE STOI PRZED PUSTYM KATALOGIEM, bo to są dwie różne odpowiedzi:
+          // „jeszcze nie wiem" kontra „nic tu nie ma". Ta sama granica, co niżej między
+          // pustym wynikiem zawężenia a pustym katalogiem.
+          <div className="p-3">
+            <Loading rows={6} />
           </div>
         ) : shown.length === 0 && query ? (
           // Pusty wynik zawężenia to CO INNEGO niż pusty katalog — podpowiedź „przeciągnij

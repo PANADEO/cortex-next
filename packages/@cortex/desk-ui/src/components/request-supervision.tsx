@@ -6,6 +6,7 @@ import { useDeskLocale, useDeskT } from "../i18n/client"
 import { when } from "../lib"
 import { api } from "../routes"
 import { Icon } from "./icon"
+import { Loading } from "./loading"
 import { useToast } from "./toast"
 
 type Request = {
@@ -21,7 +22,7 @@ type Request = {
 }
 
 export function RequestSupervision() {
-  const [requests, setRequests] = useState<Request[]>([])
+  const [requests, setRequests] = useState<Request[] | null>(null)
   const [taken, setTaken] = useState<number | null>(null)
   const translate = useDeskT()
   const locale = useDeskLocale()
@@ -71,14 +72,20 @@ export function RequestSupervision() {
     })
   }
 
-  const pending = requests.filter((p) => p.status === "pending")
-  const decided = requests.filter((p) => p.status !== "pending")
+  const pending = (requests ?? []).filter((p) => p.status === "pending")
+  const decided = (requests ?? []).filter((p) => p.status !== "pending")
 
   return (
     <div className="space-y-6">
       <section>
         <h2 className="t-section mb-2">{translate("requests.waiting")}</h2>
-        {pending.length === 0 ? (
+        {requests === null ? (
+          // NAJDROŻSZE KŁAMSTWO W CAŁYM PRODUKCIE stało akurat tutaj: „nic nie czeka"
+          // pokazane przełożonemu, zanim wiadomo, czy coś czeka. Kolejka decyzji jest
+          // jedyną rzeczą na tym ekranie, która wymaga CZŁOWIEKA — jej fałszywe „pusto"
+          // kończy się tym, że ktoś czeka na zgodę, o której nikt się nie dowiedział.
+          <Loading rows={3} />
+        ) : pending.length === 0 ? (
           <div className="rounded-lg border border-dashed p-6 text-center">
             <Icon as={Inbox} px={20} className="mx-auto text-desk-muted-2" />
             <p className="t-meta mt-1.5">{translate("requests.nothing")}</p>

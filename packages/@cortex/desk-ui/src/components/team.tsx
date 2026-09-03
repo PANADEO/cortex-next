@@ -8,6 +8,7 @@ import { useDeskLocale, useDeskT } from "../i18n/client"
 import { zl } from "../lib"
 import { api } from "../routes"
 import { Icon } from "./icon"
+import { Loading } from "./loading"
 import { useToast } from "./toast"
 
 /**
@@ -55,7 +56,7 @@ export function Team({
   const translate = useDeskT()
   const locale = useDeskLocale()
   const { toast } = useToast()
-  const [people, setPeople] = useState<Person[]>([])
+  const [people, setPeople] = useState<Person[] | null>(null)
   const [open, setOpen] = useState<string | null>(null)
   const [limiting, setLimiting] = useState<string | null>(null)
   const [taken, setTaken] = useState(false)
@@ -84,6 +85,10 @@ export function Team({
     return true
   }
 
+  // „Nie ma tu jeszcze nikogo poza Tobą" to ODPOWIEDŹ, więc nie wolno jej pokazać,
+  // zanim odpowiedź istnieje. Przełożony wchodzący na zakładkę zespołu widział ją
+  // przez cały czas pobierania — nad pełną listą ludzi.
+  if (people === null) return <Loading rows={5} />
   if (people.length === 0) return <p className="t-meta py-3">{translate("team.empty")}</p>
 
   return (

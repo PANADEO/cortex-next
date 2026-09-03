@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useDeskT } from "../i18n/client"
 import { api } from "../routes"
 import { Icon } from "./icon"
+import { Loading } from "./loading"
 import { useToast } from "./toast"
 
 type Tool = {
@@ -41,7 +42,7 @@ type Candidate = {
  * napisał o nim własnymi słowami — bo to jego zdanie, nie zdanie serwera, zobaczy model.
  */
 export function McpSupervision() {
-  const [servers, setServers] = useState<Server[]>([])
+  const [servers, setServers] = useState<Server[] | null>(null)
   const [capabilities, setCapabilities] = useState<Capability[]>([])
   const [candidates, setCandidates] = useState<Record<string, Candidate[]>>({})
   const [busy, setBusy] = useState<string | null>(null)
@@ -83,7 +84,10 @@ export function McpSupervision() {
       <p className="t-meta mb-3">{translate("mcp.lead")}</p>
 
       <div className="space-y-3">
-        {servers.map((s) => (
+        {/* Pusta lista serwerów wygląda dokładnie tak samo jak lista jeszcze niepobrana —
+            a to jest różnica między „nie podpięto żadnego serwera" a „zaraz pokażę". */}
+        {servers === null && <Loading rows={2} />}
+        {(servers ?? []).map((s) => (
           <div key={s.name} className="overflow-hidden rounded-lg border bg-desk-surface">
             <div className="flex items-center gap-2 border-b px-4 py-2.5">
               <Icon as={Globe} px={16} className="shrink-0 text-desk-muted" />

@@ -371,6 +371,35 @@ body {
   animation: spin 1s linear infinite;
 }
 
+/* Wskaźnik ładowania UJAWNIA SIĘ DOPIERO PO CHWILI — pokazany od razu tylko mruga.
+
+   SKĄD 100 ms. Pomiar na tym repozytorium (03.09.2026, przejście na „Pamięć"
+   kliknięciem w pasku bocznym): ekran rysuje się 91 ms po kliknięciu, dane
+   z `/api/memory` dochodzą na 113 ms. Wskaźnik pokazany bez zwłoki żyłby tam
+   22 ms — mrugnięcie, które zabiera uwagę i nie zdąży nic powiedzieć. Próg 100 ms
+   to granica, poniżej której reakcja czyta się jako natychmiastowa; poniżej niej
+   sygnał jest kosztem, a nie informacją.
+
+   DLACZEGO CSS, A NIE ZEGAR W REAKCIE. Szkielet stoi w drzewie od pierwszego
+   rysunku, więc od razu trzyma WYSOKOŚĆ listy i treść nie podskakuje, gdy dojdzie.
+   Jest tylko przezroczysty. Gdy dane zdążą przed 100 ms, znika, zanim stanie się
+   widoczny — nie ma więc czego gasić i nie trzeba minimalnego czasu wyświetlenia,
+   które sztucznie opóźniałoby gotową treść.
+
+   Wejście jest PŁYNNE, nie skokowe: nawet krótkie pojawienie się nie szarpie okiem.
+   Przy `prefers-reduced-motion` reguła niżej skraca czas trwania do 1 ms, a
+   opóźnienie zostaje — czyli znika RUCH, zostaje SYGNAŁ STANU. Ta sama zasada,
+   co przy `.step-running` i `.pulse`. */
+@keyframes desk-wait-in {
+  to {
+    opacity: 1;
+  }
+}
+.desk-wait {
+  opacity: 0;
+  animation: desk-wait-in var(--desk-t) var(--desk-ease-enter) 100ms forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .desk,
   .desk *,

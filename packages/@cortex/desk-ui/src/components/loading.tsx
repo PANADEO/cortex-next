@@ -1,49 +1,44 @@
-import { deskT } from "../i18n/server"
-
 /**
- * ŁADOWANIE — kółko i szkielet wiersza, w jednym miejscu.
+ * ŁADOWANIE — szkielet listy. JEDEN nośnik czekania w całym Biurku.
  *
- * DLACZEGO POWSTAŁO. Ekrany „Moje pliki", „Pamięć" i lista spraw stały na `<Suspense>`
- * BEZ `fallback`. Granica bez zapasowej treści renderuje PUSTKĘ, dopóki dane nie dojdą —
- * więc człowiek wchodził na ekran, widział nic, i po chwili treść pojawiała się sama.
- * Wygląda to jak pusty katalog, a nie jak czekanie, i to jest różnica między „nic tu nie
- * mam" a „zaraz pokażę".
+ * DLACZEGO SZKIELET, A NIE KÓŁKO. Kółko mówi tylko „czekaj" i jest małym obiektem
+ * pośrodku pustej płachty — czyli ekran DALEJ wygląda na pusty, a to jest dokładnie to
+ * nieporozumienie, które ten komponent ma usunąć. Szkielet pokazuje KSZTAŁT odpowiedzi
+ * (tyle a tyle wierszy listy) i trzyma jej wysokość, więc treść nie podskakuje, kiedy
+ * dojdzie. Wariant z kółkiem był tu wcześniej i nie miał ANI JEDNEGO wywołania — poszedł,
+ * żeby dwa nośniki nie rozjechały się między ekranami.
  *
- * DWA KSZTAŁTY, bo czekanie ma dwa różne konteksty:
- *  · `rows` — szkielet listy. Trzyma WYSOKOŚĆ, więc treść nie podskakuje przy pojawieniu
- *    się, a oko od razu wie, czego się spodziewać. Do list plików, wspomnień, spraw.
- *  · bez `rows` — kółko z podpisem. Do miejsc, gdzie nie znamy kształtu treści.
+ * DLACZEGO BEZ NAPISU. Napis wymagałby tłumaczenia, tłumaczenie na serwerze wymaga
+ * `await deskT()` (a ten sięga po ciasteczko), i przez to komponent był FUNKCJĄ
+ * ASYNCHRONICZNĄ importującą `i18n/server`. Dwa skutki, oba złe: bramka `desk-client-purity`
+ * słusznie nie wpuściłaby go do komponentu przeglądarki — a właśnie tam czekanie trwa
+ * najdłużej — i zapasowa treść `<Suspense>` sama się zawieszała. Bez napisu komponent jest
+ * zwykłą funkcją i wolno go użyć PO OBU STRONACH granicy: w `loading.tsx` trasy, w
+ * `fallback` `<Suspense>` i w komponencie klienckim, który dopiero pobiera dane.
  *
- * `role="status"` i `aria-live="polite"`, bo czytnik ekranu ma powiedzieć, że coś się
- * dzieje — pusty ekran nie mówi nic także jemu. `motion-reduce:animate-none` zostawia
- * podpis osobom, dla których wirujące elementy są kosztem, a nie informacją.
+ * DLACZEGO `aria-busy` ZAMIAST TEKSTU DLA CZYTNIKA. `aria-busy="true"` to standardowy
+ * sposób powiedzenia „ten obszar jest właśnie uzupełniany" — czytnik wstrzymuje się
+ * z czytaniem, aż flaga zniknie razem ze szkieletem, i wtedy ogłasza TREŚĆ. Zdanie
+ * „Ładuję…" powiedziałoby mniej, a kosztowało napis w dwóch słownikach.
+ *
+ * Pasek ma WYSOKOŚĆ WIERSZA (`h-desk-row`), a nie wysokość dobraną na oko — inaczej treść
+ * podskakuje w chwili, w której dochodzi, czyli szkielet oddaje ręką to, co wziął nogą.
+ * Wartość idzie z tokenu, więc zmiana gęstości list nie rozjedzie się z tym plikiem.
+ *
+ * Same paski są `aria-hidden`: to rysunek zastępczy, nie informacja. Klasa `desk-wait`
+ * (patrz `desk.css`) odpowiada za to, że szkielet ujawnia się dopiero po 100 ms —
+ * tam stoi pomiar, z którego wzięła się ta liczba.
  */
-export async function Loading({ rows }: { rows?: number }) {
-  const translate = await deskT()
-  const label = translate("common.loading")
-
-  if (rows && rows > 0) {
-    return (
-      <div role="status" aria-live="polite" className="space-y-2">
-        <span className="sr-only">{label}</span>
-        {Array.from({ length: rows }, (_, i) => (
-          <div
-            key={i}
-            aria-hidden
-            className="h-11 animate-pulse rounded-desk bg-desk-line/40 motion-reduce:animate-none"
-          />
-        ))}
-      </div>
-    )
-  }
-
+export function Loading({ rows = 5 }: { rows?: number }) {
   return (
-    <div role="status" aria-live="polite" className="flex items-center gap-2 py-6 text-desk-muted">
-      <span
-        aria-hidden
-        className="size-4 animate-spin rounded-full border-2 border-desk-line border-t-desk-ink motion-reduce:animate-none"
-      />
-      <span className="t-meta">{label}</span>
+    <div role="status" aria-busy="true" aria-live="polite" className="desk-wait space-y-2">
+      {Array.from({ length: rows }, (_, i) => (
+        <div
+          key={i}
+          aria-hidden
+          className="h-desk-row animate-pulse rounded-desk bg-desk-line/40 motion-reduce:animate-none"
+        />
+      ))}
     </div>
   )
 }
