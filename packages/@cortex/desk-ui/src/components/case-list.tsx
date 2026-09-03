@@ -6,7 +6,7 @@
 import { ChevronRight, FileText } from "lucide-react"
 import Link from "next/link"
 import { useDeskLocale, useDeskT } from "../i18n/client"
-import { when } from "../lib"
+import { reasonText, when } from "../lib"
 import { BASE } from "../routes"
 import { Icon } from "./icon"
 
@@ -56,7 +56,7 @@ export function CaseList({ cases }: { cases: CaseRow[] }) {
                     </span>
                   </>
                 )}
-                {r.reason && <span className="truncate">· {r.reason}</span>}
+                {r.reason && <span className="truncate">· {reasonText(translate, r.reason)}</span>}
               </span>
             </span>
             <Icon as={ChevronRight} px={16} className="shrink-0 text-desk-muted-2" />

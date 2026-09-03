@@ -3,6 +3,7 @@ import { policyFor, spentToday } from "@cortex/desk-core/capability-gate"
 import { migrate, pool } from "@cortex/desk-core/db"
 import { whoAmI } from "@cortex/desk-core/identity"
 import { appendEvent, runTurn } from "@cortex/desk-core/runtime"
+import { DESK_LOCALES, makeDeskT } from "@cortex/desk-ui/i18n/locale"
 import { deskT } from "@cortex/desk-ui/i18n/server"
 import { NextResponse } from "next/server"
 
@@ -37,7 +38,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     text: text?.trim() ?? "",
     ...(files.length ? { attachments: files } : {}),
   })
-  if (s.rows[0].title === "Nowa sprawa" && text?.trim()) {
+  // Tytuł zastępczy porównujemy we WSZYSTKICH językach, nie z polskim napisem.
+  // `case-new.ts` nadaje go przez `translate("api.newCase")`, więc dla `en` brzmi
+  // „New case" — a porównanie z „Nowa sprawa" nigdy się dla niego nie zgadzało
+  // i sprawa anglojęzycznego użytkownika ZOSTAWAŁA bez tytułu na zawsze. To był
+  // skutek uboczny przenoszenia napisów do słownika: poprawiono NADAWANIE,
+  // nie poprawiono porównania. Ten sam błąd zrobi każdy, kto tu dopisze kolejny język,
+  // więc lista bierze się ze słownika, a nie z ręki.
+  const placeholders = new Set(DESK_LOCALES.map((one) => makeDeskT(one)("api.newCase")))
+  if (placeholders.has(s.rows[0].title) && text?.trim()) {
     await pool.query(`update desk.case_file set title=$2 where id=$1`, [
       id,
       text.trim().slice(0, 60),

@@ -92,7 +92,11 @@
     "notYours": "To nie jest Twoja sprawa",
     "notYoursLead": "Każdy pracownik widzi wyłącznie własne biurko.",
     "backToCases": "Wróć do spraw",
-    "guestOf": "sprawa {{name}}"
+    "guestOf": "sprawa {{name}}",
+    "reason": {
+      "stopped-by-you": "przerwane przez Ciebie",
+      "server-restart": "przerwane restartem serwera"
+    }
   },
   "cases": {
     "documents": {

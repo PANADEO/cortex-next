@@ -218,6 +218,64 @@ describe("słownik Biurka", () => {
     expect(offenders).toEqual([])
   })
 
+  /**
+   * ŻADNA TRASA NIE PORÓWNUJE SIĘ Z NAPISEM ZE SŁOWNIKA.
+   *
+   * `case-turn.ts` sprawdzał `title === "Nowa sprawa"`, żeby wiedzieć, czy sprawa ma
+   * jeszcze tytuł zastępczy — a `case-new.ts` nadaje ten tytuł przez `translate`, więc
+   * po angielsku brzmi on „New case". Porównanie nie zgadzało się nigdy i sprawa
+   * anglojęzycznego użytkownika zostawała bez tytułu NA ZAWSZE.
+   *
+   * To jest skutek uboczny przenoszenia napisów do słownika: poprawia się nadawanie,
+   * zapomina o porównaniu — i nic nie pęka, bo po polsku wszystko działa. Klasa błędu,
+   * nie literówka: powtórzy się przy każdym napisie, który jest jednocześnie znacznikiem
+   * stanu. Stąd strażnik, a nie poprawka.
+   */
+  it("żadna trasa nie porównuje się z napisem ze słownika", () => {
+    const API = path.join(here, "../../../desk-app/src/api")
+    // Bierzemy pod uwagę wyłącznie napisy, które są ZDANIAMI: mają spację albo literę
+    // spoza ASCII. Jednowyrazowy token bez ogonków to kod, nie tekst dla człowieka —
+    // a kolizje bywają prawdziwe: angielskie `requests.stateGranted` to dosłownie słowo
+    // „granted", identyczne z kodem stanu, którym `request.ts` słusznie się posługuje.
+    // Bez tego zawężenia strażnik karałby kod poprawny, czyli robiłby dokładnie to,
+    // co przy poprzednich strażnikach okazało się gorsze od przecieku.
+    const isSentence = (text: string) => /\s/.test(text) || /[^\u0000-\u007F]/.test(text)
+    const values = new Set<string>()
+    const collect = (node: unknown) => {
+      if (typeof node === "string") {
+        if (isSentence(node)) values.add(node)
+      } else if (node && typeof node === "object") Object.values(node).forEach(collect)
+    }
+    collect(pl)
+    collect(en)
+    const offenders: string[] = []
+    for (const file of readdirSync(API).filter((one) => one.endsWith(".ts"))) {
+      const source = ts.createSourceFile(
+        file,
+        readFileSync(path.join(API, file), "utf8"),
+        ts.ScriptTarget.Latest,
+        true,
+        ts.ScriptKind.TS,
+      )
+      const visit = (node: ts.Node): void => {
+        if (
+          ts.isBinaryExpression(node) &&
+          (node.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken ||
+            node.operatorToken.kind === ts.SyntaxKind.ExclamationEqualsEqualsToken)
+        ) {
+          for (const side of [node.left, node.right]) {
+            if (ts.isStringLiteralLike(side) && values.has(side.text)) {
+              offenders.push(`${file}: porównanie z „${side.text}” — to jest napis ze słownika`)
+            }
+          }
+        }
+        ts.forEachChild(node, visit)
+      }
+      visit(source)
+    }
+    expect(offenders).toEqual([])
+  })
+
   it("żadne zdanie nie odsyła do bezimiennej władzy", () => {
     // KSZTAŁT REGUŁY, NIE DŁUGOŚĆ LISTY. Pierwsza wersja szukała rzeczowników
     // („administrator", „helpdesk") i była zła w obie strony naraz. Przeciekała, bo `\w`

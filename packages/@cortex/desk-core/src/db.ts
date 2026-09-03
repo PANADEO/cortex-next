@@ -627,7 +627,7 @@ export function migrate(): Promise<void> {
     // Ruszamy WYŁĄCZNIE sprawy bez śladu życia od dwóch minut — inaczej start drugiej
     // instancji zabijałby pracę, którą pierwsza właśnie wykonuje.
     const r = await pool.query(
-      `update desk.case_file c set status='stopped', reason='przerwane restartem serwera'
+      `update desk.case_file c set status='stopped', reason='server-restart'
        where c.status='working'
          and coalesce(
                (select max(e.at) from desk.event e where e.case_id = c.id),

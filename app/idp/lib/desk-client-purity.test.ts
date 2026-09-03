@@ -107,9 +107,16 @@ describe("komponent przeglądarki nie wciąga kodu serwera", () => {
     // `files.ts` nie jest komponentem klienckim, więc w skanie nie bierze udziału — ale
     // jako wejście pokazuje, że łańcuch jest przechodzony do końca.
     const trail = pathToServerModule("packages/@cortex/desk-app/src/api/files.ts")
-    expect(trail).toContain("desk-storage.ts")
-    expect(trail).toContain("node:fs")
-    expect(trail?.split(" → ")).toHaveLength(3)
+    expect(trail, "łańcuch z trasy BFF do modułu serwerowego nie został znaleziony").not.toBeNull()
+    const hops = trail!.split(" → ")
+    // WŁASNOŚĆ, nie konkretna trasa. Pierwotnie stało tu żądanie dokładnie trzech
+    // przystanków przez `desk-storage.ts` — i test padł w dniu, w którym `files.ts`
+    // dostał kolejny import, bo walker znalazł KRÓTSZĄ drogę do innego modułu
+    // serwerowego. Strażnik działał; przespecyfikowana była asercja. Pilnujemy więc
+    // tego, co ma być prawdą: droga jest POŚREDNIA (więcej niż jeden przystanek)
+    // i kończy się na module wbudowanym Node.
+    expect(hops.length, `oczekiwano drogi pośredniej, dostano: ${trail}`).toBeGreaterThan(2)
+    expect(hops.at(-1)).toMatch(/^node:/)
   })
 
   it("czysty moduł przechodzi", () => {

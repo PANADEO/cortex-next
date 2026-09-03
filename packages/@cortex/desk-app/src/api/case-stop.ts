@@ -18,13 +18,16 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   // w którym tura zdążyła domknąć się sama i nadpisać „przerwane" na „gotowe".
   stopTurn(id)
   await pool.query(
-    `update desk.case_file set status='stopped', reason='przerwane przez Ciebie', updated_at=now() where id=$1 and status='working'`,
+    // KOD, nie zdanie. Ta wartość ląduje w bazie i w zdarzeniu, czyli ZOSTAJE — a zdania
+    // się nie przepisuje, więc wpisany tu polski napis skazywałby angielskiego użytkownika
+    // na polszczyznę na zawsze, także po naprawieniu wszystkiego dookoła.
+    `update desk.case_file set status='stopped', reason='stopped-by-you', updated_at=now() where id=$1 and status='working'`,
     [id],
   )
   await appendEvent(id, {
     type: "lifecycle",
     status: "stopped",
-    reason: "przerwane przez Ciebie",
+    reason: "stopped-by-you",
   })
   await audit.write(u.id, "turn.stopped", { caseId: id })
   return NextResponse.json({ ok: true })

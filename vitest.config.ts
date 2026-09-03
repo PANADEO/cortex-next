@@ -20,6 +20,11 @@ export default defineConfig({
       "@cortex/desk-ui": a("packages/@cortex/desk-ui/src"),
       "@cortex/desk-core": a("packages/@cortex/desk-core/src"),
       "@": a("app/idp"),
+      // `server-only` to pakiet, którego całą treścią jest `throw` — pilnuje granicy
+      // klient/serwer przy budowaniu Next. W teście tej granicy nie ma, a on i tak
+      // przewraca każdy test wołający trasę BFF wprost. Zaślepka dotyczy WYŁĄCZNIE
+      // testów; budowanie używa prawdziwego pakietu.
+      "server-only": a("test/server-only-stub.ts"),
     },
   },
   esbuild: {

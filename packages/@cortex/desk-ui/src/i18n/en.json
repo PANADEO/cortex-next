@@ -91,7 +91,11 @@
     "notYours": "This is not your case",
     "notYoursLead": "Each employee sees only their own desk.",
     "backToCases": "Back to cases",
-    "guestOf": "{{name}}’s case"
+    "guestOf": "{{name}}’s case",
+    "reason": {
+      "stopped-by-you": "you stopped it",
+      "server-restart": "interrupted by a server restart"
+    }
   },
   "cases": {
     "documents": {

@@ -21,7 +21,7 @@ import {
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useDeskLocale, useDeskT } from "../i18n/client"
-import { zl } from "../lib"
+import { reasonText, zl } from "../lib"
 import { api, t } from "../routes"
 import { ActivityTrail } from "./activity-trail"
 import { Artifacts } from "./artifacts"
@@ -597,7 +597,7 @@ export function CaseView({
                                 ? translate("case.exhausted")
                                 : translate("case.interrupted")}
                           </div>
-                          {ev.reason && <p className="t-meta mt-0.5">{ev.reason}</p>}
+                          {ev.reason && <p className="t-meta mt-0.5">{reasonText(translate, ev.reason)}</p>}
                           {ev.status !== "stopped" && (
                             <button
                               // Przy awarii ŁĄCZA sensowna jest jedna rzecz: to samo zlecenie

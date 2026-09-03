@@ -51,3 +51,27 @@ export function count(n: number, one: string, several: string, many: string) {
   if (d >= 2 && d <= 4 && (s < 12 || s > 14)) return `${n} ${several}`
   return `${n} ${many}`
 }
+
+/**
+ * POWÓD ZATRZYMANIA SPRAWY po ludzku, w języku patrzącego.
+ *
+ * Kolumna `case_file.reason` trzyma dwa różne rodzaje wartości i to rozróżnienie jest
+ * tu całą treścią:
+ *   · KODY — „stopped-by-you", „server-restart" — czyli przyczyny, które Biurko zna
+ *     i potrafi nazwać w każdym języku;
+ *   · ZDANIA — wynik `readableFailure()` przy awarii, złożony z tego, co realnie padło.
+ *
+ * Do 03.09.2026 kodów nie było wcale: zatrzymanie zapisywało do bazy polskie zdanie
+ * „przerwane przez Ciebie", a ekran renderował je dosłownie. Zdarzeń i wierszy się nie
+ * przepisuje, więc angielski użytkownik miał tam polszczyznę NA ZAWSZE — także po
+ * naprawieniu wszystkiego dookoła.
+ *
+ * Nieznana wartość wraca bez zmian i to jest zamierzone: stare sprawy dalej mówią to,
+ * co powiedziały, a zdania awarii nie udają, że są kodami. Sprowadzenie ICH do słownika
+ * to osobna praca — `readableFailure` składa zdanie z treści błędu, więc nie ma
+ * skończonej listy, którą dałoby się przetłumaczyć.
+ */
+export function reasonText(translate: (key: string) => string, reason: string): string {
+  const known = new Set(["stopped-by-you", "server-restart"])
+  return known.has(reason) ? translate(`case.reason.${reason}`) : reason
+}
