@@ -264,6 +264,7 @@ const HAPPENED: Record<StepFailure, string> = {
   "computation-error": "trail.failure.happened.computationError",
   "computation-stopped": "trail.failure.happened.computationStopped",
   "outside-service": "trail.failure.happened.outsideService",
+  "no-such-procedure": "trail.failure.happened.noSuchProcedure",
   unknown: "trail.failure.happened.unknown",
 }
 
@@ -284,6 +285,9 @@ const NEXT: Record<StepFailure, string> = {
   "computation-error": "trail.failure.next.describeMorePrecisely",
   "computation-stopped": "trail.failure.next.smallerPortion",
   "outside-service": "trail.failure.next.tryAgain",
+  // Rada NIE brzmi „spróbuj jeszcze raz": procedury nie ma i drugie podejście też jej
+  // nie znajdzie. Wyjściem jest poproszenie przełożonego, żeby taką zasadę spisał.
+  "no-such-procedure": "trail.failure.next.askForProcedure",
   unknown: "trail.failure.next.tryAgain",
 }
 
@@ -296,6 +300,7 @@ const CHANGED: Record<ToolClass, string> = {
   computes: "trail.failure.changed.computes",
   stores: "trail.failure.changed.stores",
   external: "trail.failure.changed.external",
+  consults: "trail.failure.changed.consults",
 }
 
 /** Gdy nie wiadomo, czy czynność dobiegła do końca — klasa też nic nie mówi. */

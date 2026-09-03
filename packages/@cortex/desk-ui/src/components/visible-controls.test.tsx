@@ -137,6 +137,7 @@ const NO_EVIDENCE: Evidence = {
   // `external` i `notAllowed` NIE SĄ opcjonalne — pominięte, dawały błąd typu, którego
   // `tsc -p apps/desk` nie widzi, bo ten projekt nie obejmuje testów tego pakietu.
   external: [],
+  basis: [],
   unverified: [],
   notAllowed: [],
   files: { saved: [], verified: [] },

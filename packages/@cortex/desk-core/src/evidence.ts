@@ -44,6 +44,19 @@ export type Evidence = {
   produced: EvidenceLine[]
   /** piąta lista: co poszło poza to biurko i do kogo — nigdy nie mieszana ze „zrobione" */
   external: EvidenceLine[]
+  /**
+   * WG CZEGO — spisane zasady firmy, po które model sięgnął w tej sprawie, z numerem
+   * wydania i nazwiskiem osoby, która je wydała.
+   *
+   * Osobna lista, nie wiersz w „Co weszło": procedura nie jest treścią wniesioną do sprawy,
+   * tylko PODSTAWĄ, według której sprawę zrobiono. W biurze rachunkowym to jest gotowy
+   * dowód należytej staranności i ma się czytać jak taki, a nie jak kolejny odczyt pliku.
+   *
+   * Wiersz powstaje ZE ZDARZENIA `open_procedure`. Procedura w trybie `always` wchodzi do
+   * promptu bez zdarzenia i do dowodu NIE trafia — to jest świadome i wynika wprost z reguły
+   * „dowód powstaje wyłącznie ze zdarzeń": tekst w prompcie nie jest czynnością.
+   */
+  basis: EvidenceLine[]
   unverified: string[]
   notAllowed: string[]
   /**
@@ -71,6 +84,7 @@ export function evidenceFromEvents(events: DeskEvent[], translate: DeskT): Evide
   const intake: EvidenceLine[] = []
   const produced: EvidenceLine[] = []
   const external: EvidenceLine[] = []
+  const basis: EvidenceLine[] = []
   const unverified: string[] = []
   // czwarta lista: rzeczy, których agent nie zrobił nie dlatego, że nie umiał,
   // tylko dlatego, że ta osoba nie ma na nie zgody
@@ -209,6 +223,7 @@ export function evidenceFromEvents(events: DeskEvent[], translate: DeskT): Evide
     }
     if (c.evidence.list === "intake") intake.push(line)
     else if (c.evidence.list === "external") external.push(line)
+    else if (c.evidence.list === "basis") basis.push(line)
     else produced.push(line)
   }
 
@@ -223,6 +238,7 @@ export function evidenceFromEvents(events: DeskEvent[], translate: DeskT): Evide
     intake,
     produced,
     external,
+    basis,
     unverified,
     notAllowed,
     files: { saved: [...saved], verified: [...verified] },

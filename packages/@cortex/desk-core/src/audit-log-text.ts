@@ -235,6 +235,28 @@ export function describeEntry(
         }),
         weight: "important",
       }
+    // WYDANIE PROCEDURY JEST PODPISEM POD DOKUMENTEM, więc waży tyle, co zgoda na
+    // narzędzie: bez tych trzech wierszy ekran nadzoru pokazywał „zdarzenie
+    // procedure.published (nieopisane)" dokładnie tam, gdzie stoi dowód należytej
+    // staranności — czyli w jedynym miejscu, w którym audytor go szuka.
+    case "procedure.published":
+      return {
+        text: translate("journal.procedurePublished", {
+          name: String(s.name ?? ""),
+          edition: Number(s.edition ?? 0),
+        }),
+        weight: "important",
+      }
+    case "procedure.withdrawn":
+      return {
+        text: translate("journal.procedureWithdrawn", { name: String(s.name ?? "") }),
+        weight: "important",
+      }
+    case "procedure.restored":
+      return {
+        text: translate("journal.procedureRestored", { name: String(s.name ?? "") }),
+        weight: "important",
+      }
     case "cost.reset":
       return {
         text: translate("journal.costReset", {

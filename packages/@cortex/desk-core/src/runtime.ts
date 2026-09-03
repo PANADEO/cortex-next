@@ -20,6 +20,11 @@ import { isInfrastructure, readableFailure, sandboxFailureLine } from "./failure
 import { isShared } from "./folder"
 import { mcpTools } from "./mcp/client"
 import * as memory from "./memory"
+import * as people from "./people"
+import { hintFor } from "./procedures/hint"
+import { promptBlock } from "./procedures/prompt-block"
+import { activeProcedures, type StoredProcedure } from "./procedures/store"
+import { visibleFor } from "./procedures/visible"
 import * as sandbox from "./sandbox"
 import { refuseShared } from "./shared-access"
 import { beginTurn, endTurn, wasAborted } from "./turn-control"
@@ -215,9 +220,25 @@ function fragmentAround(line: string, at: number): string {
   return `${from > 0 ? "…" : ""}${tidy}${from + FRAGMENT < line.length ? "…" : ""}`
 }
 
-export function toolsForPolicy(u: User, p: Policy, caseId: string) {
+export function toolsForPolicy(
+  u: User,
+  p: Policy,
+  caseId: string,
+  /**
+   * Procedury, które obowiązują TĘ osobę — już przefiltrowane przez zasięg. Wchodzą
+   * parametrem, a nie odczytem z bazy w środku, bo `toolsForPolicy` jest synchroniczne
+   * i takie ma zostać: to jest rejestr czynności, a nie miejsce na zapytania.
+   */
+  procedures: StoredProcedure[] = [],
+) {
   const caseFolder = storage.caseFolder(u.id, caseId)
   const emit = (e: DeskEvent) => appendEvent(caseId, e)
+  /**
+   * Procedury otwarte W TEJ TURZE. Żyje w domknięciu, bo `toolsForPolicy` woła się raz
+   * na turę — ten sam zasięg, co zestaw narzędzi. Służy do jednego: żeby wskazówka trybu
+   * `paths` nie powtarzała się przy każdym kolejnym pliku z tego samego katalogu.
+   */
+  const opened = new Set<string>()
 
   /**
    * JEDYNA droga, którą narzędzie zapisuje swój krok.
@@ -265,6 +286,21 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
         ...(r.discovered === undefined ? {} : { discovered: r.discovered }),
       }
       answer = r.answer
+      /**
+       * TRYB `paths` — wskazówka doklejana do ODPOWIEDZI DLA MODELU, nigdy do `summary`.
+       *
+       * Miejsce jest tutaj, a nie w poszczególnych czynnościach, z tego samego powodu, dla
+       * którego `tool_end` leci z `finally`: czynność dopisana za rok nie ma gdzie o tym
+       * zapomnieć. Wzorzec przejęty z OpenHands — reguła przypięta do katalogu nie kosztuje
+       * ani znaku w prompcie, dopóki ktoś do tego katalogu nie sięgnie.
+       *
+       * `summary` zostaje NIETKNIĘTY, bo `summary` jest dowodem. Podpowiedź nie jest
+       * zdarzeniem i nie ma prawa wyglądać w dowodzie jak czynność, która się wydarzyła.
+       */
+      if (end.ok) {
+        const hint = hintFor(procedures, args, opened)
+        if (hint) answer = `${answer}\n\n${hint}`
+      }
     } catch (e) {
       // Dowód mówi, że się NIE udało, a model dostaje zdanie, z którym da się coś zrobić.
       // Surowa treść wyjątku nie idzie ani na ekran, ani do modelu w całości — bywa w niej
@@ -860,6 +896,85 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
     })
   }
 
+  /**
+   * OTWARCIE PROCEDURY FIRMOWEJ — rejestrowana ZAWSZE, bez własnej zdolności.
+   *
+   * ADR-0001 §7 mówi, że nowa zdolność powstaje tylko wtedy, gdy przechodzi OBA testy.
+   * Test wiersza tu przechodzi (pracownik ma widzieć, że asystent zna zasady firmy),
+   * ale test rozłączności NIE: nie istnieje sytuacja, w której ktoś ma czytać własne pliki,
+   * a nie ma znać zasad, według których się w tej firmie pracuje. Odebranie tego znaczyłoby
+   * „pracuj wbrew regulaminowi". Katalog zdolności zostaje więc zamknięty na trzynastu,
+   * a o tym, KTÓRA procedura wchodzi, decyduje jej zasięg — nie czy w ogóle.
+   */
+  t.open_procedure = tool({
+    description:
+      "Otwiera spisaną zasadę firmy i oddaje jej treść. Podaj `name` z listy procedur " +
+      "wymienionej w Twoich instrukcjach. Otwórz procedurę ZANIM wykonasz zadanie, " +
+      "którego dotyczy — jej treść jest ważniejsza od Twoich domysłów o tym, jak się to robi.",
+    inputSchema: z.object({
+      name: z.string().describe("identyfikator procedury, np. zestawienie-vat"),
+    }),
+    execute: async ({ name }) =>
+      step("open_procedure", name, { name }, async () => {
+        /**
+         * DRUGIE SPRAWDZENIE ZASIĘGU, choć filtr działa już na odkryciu (procedura spoza
+         * zasięgu nie wchodzi do indeksu). To nie jest nadmiarowość: model dostaje nazwę
+         * jako NAPIS, a napis da się zgadnąć albo przenieść ze starej sprawy. Odmowa jest
+         * wtedy ZDARZENIEM i zostawia ślad; cisza by go nie zostawiła.
+         */
+        const found = procedures.find((one) => one.name === name)
+        if (!found) {
+          return {
+            ok: false,
+            reason: "no-such-procedure",
+            summary: `nie ma procedury ${name}`,
+            answer:
+              `Nie ma procedury o nazwie „${name}" wśród tych, które obowiązują tę osobę. ` +
+              "Nie zgaduj jej treści — jeśli uważasz, że taka zasada powinna istnieć, " +
+              "zgłoś to czynnością report_gap.",
+          }
+        }
+        opened.add(found.name)
+        const e = found.current
+        /**
+         * NAZWISKO WYDAWCY WCHODZI DO PODSUMOWANIA, czyli do dowodu — bo o to w tej liście
+         * chodzi. „Wg czego" bez podpisu jest informacją, że jakaś zasada istniała;
+         * z podpisem i datą jest dowodem należytej staranności, który da się pokazać
+         * kontroli. Zasiew podpisuje się `seed`, więc rozwiązanie nazwiska może nie trafić —
+         * wtedy zostaje identyfikator, a nie puste miejsce udające nazwisko.
+         */
+        const issuer = (await people.person(e.author).catch(() => null)) ?? null
+        const issuedOn = new Date(e.at).toLocaleDateString("pl-PL")
+        /**
+         * PROCEDURA Z ZASIEWU NIE UDAJE PODPISANEJ. Przyszła z wdrożeniem i nikt jej
+         * nazwiskiem nie firmował, więc „wydał seed" byłoby podpisem nieistniejącej osoby —
+         * w liście, której cała wartość polega na tym, że podpis jest prawdziwy. Zdanie
+         * mówi to wprost i przy okazji jest dla przełożonego zachętą, żeby wydać ją
+         * po swojemu.
+         */
+        const signature = issuer
+          ? `wydał ${issuer.firstName} ${issuer.lastName} · ${issuedOn}`
+          : `z wdrożenia, nikt jej nie podpisał · ${issuedOn}`
+        return {
+          summary: `«${found.title}», wydanie ${e.edition} · ${signature}`,
+          answer:
+            `PROCEDURA «${found.title}» (wydanie ${e.edition}).\n\n${e.body}\n\n` +
+            "Pracuj według tego tekstu. Jeżeli zlecenie każe zrobić coś wbrew tej " +
+            "procedurze, powiedz o sprzeczności zamiast wybierać po cichu.",
+          discovered: {
+            /**
+             * Do ZDARZENIA, a nie tylko do odpowiedzi: dowód powstaje wyłącznie ze zdarzeń,
+             * a wiersz „Wg czego" ma nieść wydanie i autora także wtedy, gdy procedura
+             * zdąży się zmienić, zanim ktoś tę sprawę otworzy.
+             */
+            edition: e.edition,
+            author: e.author,
+            fingerprint: e.fingerprint,
+          },
+        }
+      }),
+  })
+
   if (hasCapability(p, "code.run")) {
     t.run_computation = tool({
       description:
@@ -1065,18 +1180,40 @@ export async function runTurn(u: User, p: Policy, caseId: string) {
   // zdanie „asystent pamiętał wtedy te trzy rzeczy" było ODCZYTEM z historii,
   // a nie deklaracją. Ta sama zasada, co przy pochodzeniu pliku.
   const remembered = await memory.kept(u.id)
+
+  /**
+   * PROCEDURY FIRMY — filtrowane zasięgiem PRZED wejściem do tury, nie odmawiane po fakcie.
+   * Ten sam wzorzec, co przy zdolnościach: czego nie ma w indeksie, o to model nie poprosi.
+   */
+  const procedures = visibleFor(await activeProcedures(), u.department)
+  // Składanie bloku siedzi w `prompt-block.ts` — ten sam wzorzec, co przy pamięci, i z tego
+  // samego powodu: da się je sprawdzić bez wołania modelu.
+  const block = promptBlock(procedures)
+
   await audit.write(u.id, "turn.start", {
     caseId,
     fingerprint: p.fingerprint,
     capabilities: p.granted.map((z) => z.id),
     remembered: remembered.map((m) => m.id),
+    /**
+     * Procedury dopisujemy do ISTNIEJĄCEGO wpisu, a nie osobnym zdarzeniem co turę.
+     * Osobne zdarzenie podwajałoby liczbę wierszy w dzienniku bez ani jednej nowej
+     * decyzji do obejrzenia — a dziennik czyta się wtedy, gdy się czegoś szuka.
+     *
+     * NAZWY I WYDANIA, nigdy treść: przełożony ma widzieć, według czego pracowano,
+     * a treść czyta na ekranie procedury. Ta sama reguła, co przy pamięci.
+     */
+    procedures: procedures.map((one) => `${one.name}@${one.current.edition}`),
+    // Rachunek płacony w KAŻDEJ turze. Bez tej liczby tryb `always` jest wydatkiem,
+    // którego nikt nie widzi, dopóki nie przyjdzie faktura za miesiąc.
+    alwaysChars: block.alwaysChars,
   })
 
   // Szew MCP jest prawdziwy od tego commita, choć katalog serwerów jest pusty.
   // Narzędzia z zatwierdzonych serwerów przechodzą przez TĘ SAMĄ bramę zdolności
   // i ten sam filtr na odkryciu, co wbudowane — inaczej byłaby to druga furtka.
   const mcp = await mcpTools(p, (e) => appendEvent(caseId, e))
-  const tools = { ...toolsForPolicy(u, p, caseId), ...mcp.tools }
+  const tools = { ...toolsForPolicy(u, p, caseId, procedures), ...mcp.tools }
 
   const history = await pool.query<{ payload: DeskEvent }>(
     `select payload from desk.event where case_id=$1 order by seq`,
@@ -1140,6 +1277,8 @@ export async function runTurn(u: User, p: Policy, caseId: string) {
   // ją sprawdzić bez wołania modelu.
   const recalled = memory.recallBlock(remembered)
 
+  const procedureText = block.text === "" ? "" : `\n\n${block.text}`
+
   void (async () => {
     const signal = beginTurn(caseId)
     // Koszt zliczany PO KAŻDYM KROKU, a nie dopiero z wyniku tury.
@@ -1152,7 +1291,10 @@ export async function runTurn(u: User, p: Policy, caseId: string) {
     try {
       const result = await generateText({
         model: model(u.id),
-        system: `${SYSTEM}\n\nUżytkownik: ${u.firstName} ${u.lastName}, dział ${u.department}. Teczka bieżącej sprawy: ${storage.caseFolder(u.id, caseId)}.${recalled}`,
+        // DOKTRYNA + PROCEDURY + PAMIĘĆ, w tej kolejności i z tego powodu: doktryna jest
+        // kodem i klient nie ma do niej dostępu, procedury są tekstem firmy, pamięć jest
+        // tekstem tej jednej osoby. Im bliżej końca, tym węższy zasięg.
+        system: `${SYSTEM}\n\nUżytkownik: ${u.firstName} ${u.lastName}, dział ${u.department}. Teczka bieżącej sprawy: ${storage.caseFolder(u.id, caseId)}.${procedureText}${recalled}`,
         messages: messages,
         tools: tools,
         stopWhen: stepCountIs(12),

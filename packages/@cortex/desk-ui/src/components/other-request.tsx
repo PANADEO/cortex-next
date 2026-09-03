@@ -26,6 +26,9 @@ export function OtherRequest({
   defaultText = "",
   approver,
   label,
+  title,
+  lead,
+  placeholder,
   onSent,
 }: {
   /** Zdanie, z którym okno się otwiera — opis z odmowy, gotowy do poprawienia. */
@@ -34,6 +37,18 @@ export function OtherRequest({
   approver?: string | undefined
   /** Napis na przycisku otwierającym; domyślnie zdanie z ekranu „Co potrafię". */
   label?: string | undefined
+  /**
+   * Trzy napisy okna — nagłówek, zdanie wprowadzające i podpowiedź w polu — do
+   * PODMIANY, nie do dopisania obok.
+   *
+   * Ekran „Jak to robimy" prosi o co innego niż ekran „Co potrafię": tam brakuje
+   * umiejętności, tutaj spisanej zasady. Domyślne zdanie („stanie się nową
+   * umiejętnością") byłoby wtedy nieprawdą — a droga prośby ma zostać JEDNA,
+   * bo druga znaczyłaby drugą skrzynkę, do której przełożony musi pamiętać zajrzeć.
+   */
+  title?: string | undefined
+  lead?: string | undefined
+  placeholder?: string | undefined
   onSent?: (() => void) | undefined
 }) {
   const [openItems, setOpenItems] = useState(false)
@@ -78,9 +93,11 @@ export function OtherRequest({
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(520px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border bg-desk-surface shadow-desk-window">
           <div className="flex items-start gap-3 border-b px-4 py-3">
             <div className="min-w-0 flex-1">
-              <Dialog.Title className="t-h3">{translate("otherRequest.title")}</Dialog.Title>
+              <Dialog.Title className="t-h3">
+                {title ?? translate("otherRequest.title")}
+              </Dialog.Title>
               <Dialog.Description className="t-meta">
-                {translate("otherRequest.lead")}
+                {lead ?? translate("otherRequest.lead")}
               </Dialog.Description>
             </div>
             <Dialog.Close
@@ -102,7 +119,7 @@ export function OtherRequest({
               onChange={(e) => setText(e.target.value)}
               rows={4}
               aria-label={translate("otherRequest.field")}
-              placeholder={translate("otherRequest.placeholder")}
+              placeholder={placeholder ?? translate("otherRequest.placeholder")}
               className="t-body w-full resize-none rounded-md border bg-desk-bg px-3 py-2 outline-none placeholder:text-desk-muted-2"
             />
           </div>

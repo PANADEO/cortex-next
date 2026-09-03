@@ -31,6 +31,8 @@ const ROUTES: Record<string, string> = {
   "/files/upload": "files-upload.ts",
   "/file": "file.ts",
   "/mcp": "mcp.ts",
+  "/procedures": "procedures.ts",
+  "/procedures/supervision": "procedure-supervision.ts",
   "/request": "request.ts",
   "/team": "team.ts",
   "/memory": "memory.ts",

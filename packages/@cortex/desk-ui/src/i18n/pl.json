@@ -265,7 +265,8 @@
     "today": "Dzisiaj",
     "yesterday": "Wczoraj",
     "tabTeam": "Zespół",
-    "tabOutcomes": "Nieudane"
+    "tabOutcomes": "Nieudane",
+    "tabProcedures": "Procedury"
   },
   "outcomes": {
     "title": "Co się nie udało",
@@ -347,6 +348,82 @@
       "other": "Umiem tu {{count}} rzeczy"
     },
     "requestQueued": "Prośba o „{{name}}” czeka na przełożonego. Dostaniesz znać, gdy ją rozpatrzy."
+  },
+  "procedures": {
+    "title": "Jak to robimy",
+    "lead": "Tak umówiliśmy się pracować w dziale {{department}}. Asystent trzyma się dokładnie tego samego.",
+    "empty": "Nie mamy jeszcze spisanej ani jednej zasady, która dotyczy Twojej pracy.",
+    "emptyHint": "Jeśli coś robi się u nas w ustalony sposób, napisz o tym — przełożony może to spisać.",
+    "showBody": "Pokaż treść",
+    "issued": "wydanie {{edition}} · wydał {{who}} · {{date}}",
+    "unsigned": "wydanie {{edition}} · {{date}} · nikt z firmy tego jeszcze nie podpisał",
+    "propose": "Zaproponuj procedurę",
+    "proposeTitle": "Napisz, czego tu brakuje",
+    "proposeLead": "To trafi do przełożonego. Jeśli uzna, że tak właśnie u nas się robi, spisze to i wyda.",
+    "proposePlaceholder": "np. „Nie mamy spisane, jak opisujemy faktury od zagranicznych dostawców”",
+    "note": "Tu nic się nie zmienia. Zasady spisuje i wydaje przełożony, a każda z nich ma datę i podpis.",
+    "count": {
+      "one": "{{count}} zasada",
+      "few": "{{count}} zasady",
+      "many": "{{count}} zasad",
+      "other": "{{count}} zasad"
+    },
+    "manageTitle": "Procedury firmy",
+    "manageLead": "Spisane zasady tego, jak się u nas robi konkretne rzeczy. Ty je wydajesz i Ty je wycofujesz — przy każdej widać, kto i kiedy.",
+    "costTitle": "Ile to dokłada do każdego polecenia",
+    "costLead": "Zasada czytana przy każdym poleceniu jest do niego doklejana za każdym razem — także wtedy, gdy sprawa jej nie dotyczy. Poniżej widać, ile znaków dokłada się u ludzi z danego działu.",
+    "costNone": "Na razie nic. Żadna zasada nie jest czytana przy każdym poleceniu.",
+    "costCounting": "Liczę…",
+    "costChars": {
+      "one": "{{count}} znak",
+      "few": "{{count}} znaki",
+      "many": "{{count}} znaków",
+      "other": "{{count}} znaków"
+    },
+    "costDraft": {
+      "one": "Ta zasada dołoży {{count}} znak do każdego polecenia — także do tych, które jej nie dotyczą.",
+      "few": "Ta zasada dołoży {{count}} znaki do każdego polecenia — także do tych, które jej nie dotyczą.",
+      "many": "Ta zasada dołoży {{count}} znaków do każdego polecenia — także do tych, które jej nie dotyczą.",
+      "other": "Ta zasada dołoży {{count}} znaków do każdego polecenia — także do tych, które jej nie dotyczą."
+    },
+    "nothingYet": "Nie ma jeszcze ani jednej procedury.",
+    "stateWithdrawn": "wycofana",
+    "mode": {
+      "index": "Asystent sięga po nią, gdy jej potrzebuje",
+      "always": "Asystent czyta ją przy każdym poleceniu",
+      "paths": "Asystent dostaje ją przy wskazanych folderach"
+    },
+    "modeWhat": {
+      "index": "Widzi tytuł i to jedno zdanie opisu, a po treść sięga dopiero, gdy zadanie do niej pasuje. To jest zwykły wybór.",
+      "always": "Treść wchodzi do każdego polecenia, więc kosztuje bez przerwy. Tak zapisuje się zasady, które dotyczą wszystkiego.",
+      "paths": "Nie kosztuje nic, dopóki asystent nie sięgnie do wypisanych folderów."
+    },
+    "scopeEveryone": "dotyczy wszystkich",
+    "scopeSome": "dotyczy działów: {{departments}}",
+    "folders": "foldery: {{folders}}",
+    "newEdition": "Wydaj nowe wydanie",
+    "withdraw": "Wycofaj",
+    "restore": "Przywróć",
+    "withdrawn": "Wycofane: {{title}}. Asystent przestaje z tego korzystać.",
+    "restored": "Przywrócone: {{title}}",
+    "history": "Poprzednie wydania",
+    "write": "Napisz nową procedurę",
+    "formNew": "Nowa procedura",
+    "formNext": "Nowe wydanie: {{title}}",
+    "fieldTitle": "Tytuł",
+    "hintTitle": "np. „Zestawienie VAT”",
+    "fieldDescription": "Jedno zdanie: czego to dotyczy",
+    "hintDescription": "np. „Jak składamy miesięczne zestawienie VAT z faktur”",
+    "fieldMode": "Kiedy asystent to czyta",
+    "fieldPaths": "Foldery, przy których ma to dostać",
+    "hintPaths": "Jeden folder w każdej linii, np. Moje pliki/Faktury",
+    "fieldScope": "Kogo to dotyczy",
+    "hintScope": "Nie zaznaczaj nic, jeśli dotyczy wszystkich w firmie.",
+    "fieldBody": "Treść",
+    "hintBody": "Napisz to tak, jak tłumaczysz nowej osobie w zespole. Punkty czytają się lepiej niż akapit.",
+    "publish": "Wydaj",
+    "published": "Wydane: {{title}} · wydanie {{edition}}",
+    "failed": "Nie udało się."
   },
   "composer": {
     "untitled": "Bez tytułu",
@@ -449,7 +526,8 @@
         "computationError": "Obliczenie przewróciło się na błędzie w kodzie.",
         "computationStopped": "Obliczenie przekroczyło dozwoloną miarę i zostało zatrzymane.",
         "outsideService": "Usługa spoza Biurka nie dała rady tego zrobić.",
-        "unknown": "Ta czynność nie doszła do skutku."
+        "unknown": "Ta czynność nie doszła do skutku.",
+        "noSuchProcedure": "Nie ma takiej spisanej zasady firmy — albo nie dotyczy ona Twojego działu."
       },
       "changed": {
         "browses": "Nie. Nic nie otworzyłem i nic nie zmieniłem.",
@@ -459,7 +537,8 @@
         "computes": "Nie. Nic nie zostało policzone i żaden Twój plik się nie zmienił.",
         "stores": "Nie. W Moich plikach nic nie przybyło ani się nie zmieniło.",
         "external": "Nie wiem, czy tamta strona to zrobiła. Zanim powtórzysz, upewnij się, że nie zrobiła tego dwa razy.",
-        "unknown": "Nie wiem. Czynność zatrzymała się w połowie — zajrzyj do teczki sprawy, zanim poprosisz o to jeszcze raz."
+        "unknown": "Nie wiem. Czynność zatrzymała się w połowie — zajrzyj do teczki sprawy, zanim poprosisz o to jeszcze raz.",
+        "consults": "Nie. Zasada firmy nie została otwarta, ale nic się przez to nie zmieniło."
       },
       "next": {
         "tryAgain": "To nie jest Twój błąd. Poproś o to samo jeszcze raz — jeśli i tym razem się nie uda, zgłoszę to sam osobie, która może to naprawić.",
@@ -470,7 +549,8 @@
         "pasteTheFragment": "Otwórz ten plik i zobacz, czy da się go przeczytać. Jeśli tak, wklej potrzebny fragment do zlecenia.",
         "describeMorePrecisely": "Napisz dokładniej, co ma być w wyniku — z dokładniejszym opisem obliczenie zwykle udaje się za drugim razem.",
         "smallerPortion": "Poproś o policzenie mniejszej porcji naraz — na przykład jednego miesiąca zamiast całego roku.",
-        "tryAgainTell": "To nie jest Twój błąd. Poproś o to samo jeszcze raz — jeśli i tym razem się nie uda, powiedz o tym swojemu przełożonemu: {{person}}."
+        "tryAgainTell": "To nie jest Twój błąd. Poproś o to samo jeszcze raz — jeśli i tym razem się nie uda, powiedz o tym swojemu przełożonemu: {{person}}.",
+        "askForProcedure": "Poproś przełożonego, żeby taką zasadę spisał. Do tego czasu asystent pracuje według tego, co umie ogólnie."
       }
     },
     "allFailed": "Nie udało się"
@@ -520,6 +600,15 @@
     "noSuchServer": "Nie ma takiego serwera.",
     "connectFailed": "Nie udało się połączyć: {{reason}}",
     "unknownAction": "Nie znam takiej czynności.",
+    "procedureNeedsWords": "Wpisz tytuł i jedno zdanie o tym, czego ta procedura dotyczy.",
+    "procedureNeedsBody": "Wpisz treść — to ona jest procedurą.",
+    "procedureNeedsPaths": "Przy tym ustawieniu wypisz przynajmniej jeden folder, po jednym w linii.",
+    "procedureBadTitle": "Z tego tytułu nie umiem zrobić nazwy. Użyj w nim liter albo cyfr.",
+    "procedureExists": "Procedura o takim tytule już u nas jest. Zmień tytuł albo wydaj nowe wydanie tamtej.",
+    "procedureNoSuch": "Nie ma takiej procedury.",
+    "procedureNoSuchDepartment": "Nie znam takiego działu.",
+    "procedureBadPath": "Wzorzec folderu nie może zawierać przecinka. Wpisz każdy folder w osobnej linii.",
+    "procedureBroken": "Nie umiem zapisać tej procedury w takiej postaci. Sprawdź tytuł i zdanie opisu — nie mogą zaczynać się ani kończyć cudzysłowem.",
     "somethingOutside": "coś, czego nie ma w katalogu",
     "writeWhatYouNeed": "Napisz, czego potrzebujesz.",
     "noSuchCapability": "Nie ma takiej zdolności.",
@@ -655,6 +744,12 @@
         "few": "zaproponowałem {{count}} rzeczy do zapamiętania",
         "many": "zaproponowałem {{count}} rzeczy do zapamiętania",
         "other": "zaproponowałem {{count}} rzeczy do zapamiętania"
+      },
+      "consulting": {
+        "one": "sprawdziłem {{count}} zasadę firmy",
+        "few": "sprawdziłem {{count}} zasady firmy",
+        "many": "sprawdziłem {{count}} zasad firmy",
+        "other": "sprawdziłem {{count}} zasad firmy"
       }
     },
     "evidence": {
@@ -676,12 +771,18 @@
       "external": "{{source}}: {{label}} — {{detail}}",
       "externalNamed": "{{server}}: {{tool}} — {{detail}}",
       "externalBare": "{{source}}: {{label}}",
-      "externalNamedBare": "{{server}}: {{tool}}"
+      "externalNamedBare": "{{server}}: {{tool}}",
+      "basis": "wg procedury {{detail}}"
     },
     "remember": {
       "running": "Proponuję zapamiętać",
       "ok": "Zaproponowałem zapamiętanie",
       "failed": "Nie zaproponowałem zapamiętania"
+    },
+    "open_procedure": {
+      "running": "Sięgam po zasady firmy",
+      "ok": "Sprawdziłem zasady firmy",
+      "failed": "Nie udało się otworzyć zasad firmy"
     }
   },
   "evidence": {
@@ -739,7 +840,10 @@
     "caseMessage": "pisze wiadomość przy sprawie",
     "personLimit": "zmienia dzienny limit {{who}}",
     "personDisabled": "wyłącza konto {{who}}",
-    "personEnabled": "włącza konto {{who}}"
+    "personEnabled": "włącza konto {{who}}",
+    "procedurePublished": "wydaje procedurę „{{name}}” · wydanie {{edition}}",
+    "procedureWithdrawn": "wycofuje procedurę „{{name}}”",
+    "procedureRestored": "przywraca procedurę „{{name}}”"
   },
   "capability": {
     "files": {

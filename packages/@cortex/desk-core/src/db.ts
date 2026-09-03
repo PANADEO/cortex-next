@@ -604,6 +604,54 @@ export function migrate(): Promise<void> {
       );
       create index if not exists memory_owner_idx on desk.memory (owner, created_at);
 
+      -- PROCEDURY FIRMOWE — tekst człowieka z firmy o tym, jak się u nas coś robi.
+      --
+      -- DWIE TABELE, tak samo jak przy MCP i z tego samego powodu. procedure trzyma
+      -- TOŻSAMOŚĆ (kto to widzi, jak wchodzi do tury, czy jeszcze obowiązuje),
+      -- procedure_edition trzyma TREŚĆ razem z autorem i datą. Rozdzielenie jest po to,
+      -- żeby zdanie „wydanie 3, wydał Robert Nowak 12.09.2026" było DANĄ, a nie napisem
+      -- sklejanym przy renderze: w biurze rachunkowym to jest dowód należytej staranności
+      -- i musi dać się odtworzyć dla sprawy sprzed roku.
+      --
+      -- Stare wydania ZOSTAJĄ. Sprawa sprzed miesiąca powołuje się na wydanie, które
+      -- wtedy obowiązywało, a nie na dzisiejsze — kasowanie poprzedniego wydania przy
+      -- wydaniu nowego zabierałoby dowód wstecz.
+      create table if not exists desk.procedure (
+        name text primary key,
+        title text not null,
+        -- JEDNO zdanie. To ono, i tylko ono, wchodzi do indeksu w prompcie każdej tury,
+        -- więc jego długość jest kosztem płaconym bez przerwy.
+        description text not null,
+        -- 'index' (domyślne, koszt zero do użycia) | 'always' (treść w każdej turze)
+        -- | 'paths' (wskazówka przy dotknięciu pasującej ścieżki)
+        loading text not null default 'index',
+        paths text[] not null default '{}',
+        -- Działy, które tę procedurę widzą. PUSTE = wszyscy. To jest filtr NA ODKRYCIU:
+        -- procedura spoza zasięgu nie wchodzi do indeksu, więc model nie ma jak o nią poprosić.
+        scope text[] not null default '{}',
+        -- 'active' | 'withdrawn'. Wycofana zostaje w bazie, bo sprawy się na nią powołują.
+        status text not null default 'active',
+        -- 'seed' (przyszła z wdrożeniem) | 'human' (napisał ją przełożony)
+        origin text not null default 'seed',
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      );
+
+      create table if not exists desk.procedure_edition (
+        id bigserial primary key,
+        procedure text not null references desk.procedure(name) on delete cascade,
+        edition int not null,
+        body text not null,
+        -- Identyfikator osoby, nie napis z nazwiskiem: nazwisko zmienia się po ślubie,
+        -- a dowód ma przeżyć tę zmianę.
+        author text not null,
+        fingerprint text not null,
+        at timestamptz not null default now(),
+        unique (procedure, edition)
+      );
+      create index if not exists procedure_edition_idx
+        on desk.procedure_edition (procedure, edition desc);
+
       -- Kolumny dokładane do tabeli, która JUŻ istnieje: create table if not exists
       -- ich nie doda. Ta sama zasada, co przy access_request.
       alter table desk.person add column if not exists daily_limit_usd numeric;

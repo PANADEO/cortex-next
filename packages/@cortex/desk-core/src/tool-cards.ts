@@ -22,6 +22,7 @@ export type ToolClass =
   | "computes" // liczy w piaskownicy
   | "stores" // przenosi do „Moich plików"
   | "external" // wychodzi poza to biurko — klasa domyślna dla obcego serwera
+  | "consults" // sięga po spisaną zasadę firmy — nie wnosi treści, wnosi PODSTAWĘ
 
 /**
  * Człon podsumowania grupy. Człony o tym samym kluczu sumują się w jedno zdanie.
@@ -101,7 +102,7 @@ export type ToolCard = {
    * Brak = czynność nie zostawia wiersza (tak jest z przeglądaniem teczki).
    */
   evidence?: {
-    list: "intake" | "produced" | "external"
+    list: "intake" | "produced" | "external" | "basis"
     /** klucz słownika; dostaje `name`, `detail`, `label` i `source` jako zmienne */
     phrase: string
     /**
@@ -257,6 +258,27 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
       argName: "name",
       argPath: "name",
       evidence: { list: "produced", phrase: "tools.evidence.verified" },
+      source: "builtin",
+    }),
+    K({
+      /**
+       * OTWARCIE PROCEDURY FIRMOWEJ. Osobna klasa `consults`, a nie `reads`, i to nie jest
+       * porządkowanie: `reads` karmi zbiór „co weszło z biurka", na którym stoi zdanie
+       * o dokumencie powstałym bez zajrzenia do czegokolwiek. Procedura nie jest plikiem
+       * tej osoby — jest regułą firmy. Sprawa zrobiona WYŁĄCZNIE po przeczytaniu procedury
+       * nadal jest sprawą bez wejścia i ma tak zostać opisana.
+       */
+      name: "open_procedure",
+      kind: "consults",
+      // BEZ `argName` — i to jest decyzja. Argumentem jest identyfikator („zestawienie-vat"),
+      // a wiersz dowodu ma nieść TYTUŁ DLA LUDZI razem z wydaniem i podpisem, czyli to,
+      // co i tak siedzi w podsumowaniu. `argName` dawał oba naraz: „wg procedury
+      // «zestawienie-vat» «Zestawienie VAT», wydanie 1".
+      running: "tools.open_procedure.running",
+      ok: "tools.open_procedure.ok",
+      failed: "tools.open_procedure.failed",
+      group: { key: "consulting", phrase: "tools.groups.consulting", weight: 1 },
+      evidence: { list: "basis", phrase: "tools.evidence.basis" },
       source: "builtin",
     }),
     K({

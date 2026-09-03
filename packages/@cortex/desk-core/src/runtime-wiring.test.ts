@@ -305,6 +305,59 @@ describe("czynność nie oddaje danych w próżnię", () => {
   })
 })
 
+describe("zasady firmy nie stoją za bramką zdolności", () => {
+  /**
+   * DECYZJA Z ADR-0001 §7, zapisana tu jako strażnik, bo jest kontrintuicyjna i wróci.
+   *
+   * `open_procedure` jest zarejestrowane ZAWSZE, dla każdej roli, i NIE MA własnej
+   * zdolności. Nowa zdolność powstaje tylko wtedy, gdy przechodzi oba testy; test
+   * rozłączności tu nie przechodzi, bo nie istnieje sytuacja, w której ktoś ma czytać
+   * własne pliki, a nie ma znać zasad, według których się w tej firmie pracuje. Odebranie
+   * tego znaczyłoby „pracuj wbrew regulaminowi".
+   *
+   * Ktoś zobaczy kiedyś, że wszystkie inne czynności stoją pod `hasCapability`, uzna to
+   * za niedopatrzenie i „poprawi". Wtedy pracownik bez nowej zdolności przestanie widzieć
+   * zasady firmy — po cichu, bo model po prostu nie dostanie narzędzia.
+   */
+  it("`open_procedure` nie stoi pod żadnym `hasCapability`", () => {
+    const source = parse(runtimeText)
+    const guards: string[] = []
+    const visit = (node: ts.Node, inside: string[]): void => {
+      let next = inside
+      if (ts.isIfStatement(node)) {
+        const cond = node.expression.getText()
+        if (cond.includes("hasCapability")) {
+          // Wchodzimy w gałąź `then` z odnotowanym warunkiem; `else` nas nie interesuje,
+          // bo rejestracja czynności zawsze siedzi w `then`.
+          visit(node.thenStatement, [...inside, cond])
+          if (node.elseStatement) visit(node.elseStatement, inside)
+          return
+        }
+      }
+      if (
+        ts.isBinaryExpression(node) &&
+        node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+        node.left.getText() === "t.open_procedure" &&
+        inside.length > 0
+      ) {
+        guards.push(inside.join(" && "))
+      }
+      ts.forEachChild(node, (child) => visit(child, next))
+    }
+    visit(source, [])
+    expect(
+      guards,
+      "`open_procedure` trafiło pod bramkę zdolności — pracownik bez niej przestanie " +
+        "widzieć zasady firmy, i to bez jednego błędu na ekranie. Patrz ADR-0001 §7.",
+    ).toEqual([])
+  })
+
+  it("a mimo to jest naprawdę rejestrowane", () => {
+    // Kontrola dodatnia: test wyżej jest zielony także wtedy, gdy czynności nie ma wcale.
+    expect(runtimeText).toContain("t.open_procedure = tool({")
+  })
+})
+
 describe("karta czynności nie wskazuje na argument, którego nie ma", () => {
   /**
    * DLACZEGO. `evidence.ts` czyta argument PO NAZWIE (`a[c.inputs.arg]`, `a[c.outputs.arg]`,

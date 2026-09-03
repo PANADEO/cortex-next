@@ -5,9 +5,11 @@ import { pool } from "@cortex/desk-core/db"
 import { viewer } from "@cortex/desk-core/identity"
 import { failedCaseCount } from "@cortex/desk-core/outcomes"
 import { DEPARTMENTS, everyone, names, ROLES } from "@cortex/desk-core/people"
+import { activeProcedures } from "@cortex/desk-core/procedures/store"
 import { Icon } from "@cortex/desk-ui/components/icon"
 import { McpSupervision } from "@cortex/desk-ui/components/mcp-supervision"
 import { Outcomes } from "@cortex/desk-ui/components/outcomes"
+import { ProcedureSupervision } from "@cortex/desk-ui/components/procedure-supervision"
 import { RequestSupervision } from "@cortex/desk-ui/components/request-supervision"
 import { SectionTabs } from "@cortex/desk-ui/components/section-tabs"
 import { Shell } from "@cortex/desk-ui/components/shell"
@@ -38,7 +40,18 @@ import { Fragment } from "react"
 // to, co wymaga go dziś. Zaraz potem idzie odpowiedź na pytanie, które zadaje mu jego
 // szef — przed katalogiem narzędzi i przed dziennikiem, bo tamte dwa czyta się wtedy,
 // gdy już się wie, czego szukać.
-const SECTIONS = ["decisions", "outcomes", "team", "tools", "spending", "log"] as const
+// „Procedury" stoją zaraz za narzędziami, bo to ta sama klasa rzeczy: jedno i drugie
+// przełożony PODPISUJE nazwiskiem i jedno i drugie może wycofać. Przed wydatkami
+// i dziennikiem, które czyta się dopiero wtedy, gdy już się wie, czego szukać.
+const SECTIONS = [
+  "decisions",
+  "outcomes",
+  "team",
+  "tools",
+  "procedures",
+  "spending",
+  "log",
+] as const
 type Section = (typeof SECTIONS)[number]
 
 const isSection = (value: unknown): value is Section =>
@@ -63,7 +76,7 @@ export default async function Page({
 
   // Liczby do plakietek lecą ZAWSZE — to one mówią, czy warto tam zajrzeć — ale są
   // trzema tanimi zapytaniami zbiorczymi, a nie pobraniem treści czterech sekcji.
-  const [waiting, suspended, spentAll, team, failures] = await Promise.all([
+  const [waiting, suspended, spentAll, team, failures, procedures] = await Promise.all([
     pool.query<{ n: string }>(
       `select count(*)::text as n from desk.access_request where status='pending'`,
     ),
@@ -79,6 +92,10 @@ export default async function Page({
     // że jest o czym rozmawiać, ZANIM cokolwiek otworzy — tak samo jak przy prośbach
     // czekających na decyzję.
     failedCaseCount(),
+    // Pełna lista zamiast `count(*)`: `activeProcedures()` wsypuje przy okazji zasiew,
+    // więc świeże wdrożenie pokazuje procedury od pierwszego wejścia na ten ekran,
+    // a nie dopiero po pierwszej turze. Wierszy są jednostki, nie tysiące.
+    activeProcedures(),
   ])
   const today = Number(spentAll.rows[0]?.total ?? 0)
   const headcount = team.length
@@ -114,6 +131,11 @@ export default async function Page({
                 tone: "warn",
               },
               {
+                key: "procedures",
+                label: translate("supervision.tabProcedures"),
+                note: String(procedures.length),
+              },
+              {
                 key: "spending",
                 label: translate("supervision.tabSpending"),
                 note: zl(today, locale),
@@ -138,6 +160,7 @@ export default async function Page({
               </section>
             )}
             {section === "tools" && <McpSupervision />}
+            {section === "procedures" && <ProcedureSupervision />}
             {section === "spending" && <Spending />}
             {section === "log" && <Log />}
           </div>

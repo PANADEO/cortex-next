@@ -36,7 +36,20 @@ export function SectionTabs({
   label: string
 }) {
   return (
-    <nav aria-label={label} className="mt-6 flex gap-1 overflow-x-auto border-b">
+    /**
+     * ZAWIJAMY, NIE PRZEWIJAMY — i to jest poprawka, nie preferencja.
+     *
+     * Do 03.09.2026 stało tu `overflow-x-auto`. Przy sześciu zakładkach mieściły się
+     * w szerokości strumienia; siódma („Procedury") przesunęła treść do 719 px przy
+     * 680 px widocznych, więc OSTATNIA zakładka wypadała poza kadr — i to na KAŻDEJ
+     * szerokości okna, także na 1600 px, bo strona jest zaklejona na szerokości czytania.
+     *
+     * Przewijanie w poziomie bez żadnego znaku, że jest co przewijać, to dla tej persony
+     * sekcja, której nie ma. Zawinięcie kosztuje jeden dodatkowy wiersz i pokazuje
+     * wszystko naraz — a `border-b` zostaje pod całością, bo kreska oddziela listwę
+     * od treści, nie zakładki od siebie.
+     */
+    <nav aria-label={label} className="mt-6 flex flex-wrap gap-1 border-b">
       {tabs.map((tab) => {
         const current = tab.key === active
         // Pierwsza zakładka jest domyślna, więc jej adres nie niesie parametru —

@@ -2,13 +2,24 @@ import { policyFor } from "@cortex/desk-core/capability-gate"
 import { departmentLabel } from "@cortex/desk-core/capability-text"
 import { identity } from "@cortex/desk-core/identity"
 import * as memory from "@cortex/desk-core/memory"
+import { activeProcedures } from "@cortex/desk-core/procedures/store"
+import { visibleFor } from "@cortex/desk-core/procedures/visible"
 import { Icon } from "@cortex/desk-ui/components/icon"
 import { Avatar } from "@cortex/desk-ui/components/persona-switcher"
 import { SettingsDialog } from "@cortex/desk-ui/components/settings-dialog"
 import { Shell } from "@cortex/desk-ui/components/shell"
 import { deskT } from "@cortex/desk-ui/i18n/server"
 import { HUB, MOUNTED_IN_SHELL, t } from "@cortex/desk-ui/routes"
-import { Brain, ChevronRight, FolderOpen, LayoutGrid, ListChecks, Settings2, ShieldCheck } from "lucide-react"
+import {
+  Brain,
+  ChevronRight,
+  FolderOpen,
+  LayoutGrid,
+  ListChecks,
+  ScrollText,
+  Settings2,
+  ShieldCheck,
+} from "lucide-react"
 import Link from "next/link"
 
 /**
@@ -24,6 +35,10 @@ export default async function Page() {
   const p = await policyFor(u)
   const translate = await deskT()
   const proposed = (await memory.all(u.id)).filter((m) => m.status === "proposed").length
+  // Liczba liczona TĄ SAMĄ funkcją, którą tura odsiewa procedury (`visibleFor`). Własne
+  // sito dałoby na kafelku liczbę, która nie zgadza się z listą po kliknięciu — i to
+  // w miejscu, w którym człowiek dopiero uczy się, że takie zasady w ogóle istnieją.
+  const mine = visibleFor(await activeProcedures(), u.department).length
   return (
     <Shell>
       <div className="h-full overflow-y-auto pb-desk-bar">
@@ -72,6 +87,18 @@ export default async function Page() {
                 <Icon as={ChevronRight} px={16} className="text-desk-muted" />
               </Link>
             )}
+
+            <Link
+              href={t("/procedures")}
+              className="flex h-desk-row items-center gap-2.5 border-t px-4 hover:bg-desk-raised/60"
+            >
+              <Icon as={ScrollText} px={16} className="text-desk-muted" />
+              <span className="t-body flex-1">{translate("procedures.title")}</span>
+              <span className="t-meta tabular-nums">
+                {translate("procedures.count", { count: mine })}
+              </span>
+              <Icon as={ChevronRight} px={16} className="text-desk-muted" />
+            </Link>
 
             <Link
               href={t("/capabilities")}

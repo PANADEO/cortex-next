@@ -31,6 +31,13 @@ export type StepFailure =
   | "computation-stopped"
   /** usługa spoza Biurka nie dała rady */
   | "outside-service"
+  /**
+   * Model poprosił o spisaną zasadę firmy, której ta osoba nie ma w swoim zasięgu —
+   * albo która nie istnieje wcale. To NIE jest brak zdolności (`open_procedure` zdolności
+   * nie ma) ani brak pliku: nazwa procedury przychodzi jako napis, więc da się ją zgadnąć
+   * albo przenieść ze starej sprawy. Odmowa musi być zdarzeniem, żeby zostawiła ślad.
+   */
+  | "no-such-procedure"
   /** wyjątek, którego nie umiemy nazwać — świadomie nazwany, a nie przemilczany */
   | "unknown"
 

@@ -258,7 +258,8 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "tabTeam": "Team",
-    "tabOutcomes": "Failures"
+    "tabOutcomes": "Failures",
+    "tabProcedures": "Procedures"
   },
   "outcomes": {
     "title": "What did not work",
@@ -330,6 +331,76 @@
       "other": "I can do {{count}} things here"
     },
     "requestQueued": "The request for “{{name}}” is waiting for your manager. You will hear back once they decide."
+  },
+  "procedures": {
+    "title": "How we do things",
+    "lead": "This is how we agreed to work in {{department}}. The assistant follows exactly the same rules.",
+    "empty": "Nothing that touches your work has been written down yet.",
+    "emptyHint": "If something here is done a settled way, say so — your manager can write it down.",
+    "showBody": "Show the text",
+    "issued": "issue {{edition}} · issued by {{who}} · {{date}}",
+    "unsigned": "issue {{edition}} · {{date}} · nobody here has signed it yet",
+    "propose": "Suggest a procedure",
+    "proposeTitle": "Write what is missing here",
+    "proposeLead": "This goes to your manager. If they agree that this is how we do it, they will write it down and issue it.",
+    "proposePlaceholder": "e.g. “We have nothing written down about how we label invoices from foreign suppliers”",
+    "note": "Nothing changes here. Your manager writes and issues the rules, and every one of them carries a date and a signature.",
+    "count": {
+      "one": "{{count}} rule",
+      "other": "{{count}} rules"
+    },
+    "manageTitle": "Company procedures",
+    "manageLead": "Written rules for how specific things are done here. You issue them and you withdraw them — each one shows who and when.",
+    "costTitle": "What this adds to every job",
+    "costLead": "A rule read on every job is attached to it every single time — even when the case has nothing to do with it. Below is how many characters that adds for people in each department.",
+    "costNone": "Nothing so far. No rule is read on every job.",
+    "costCounting": "Counting…",
+    "costChars": {
+      "one": "{{count}} character",
+      "other": "{{count}} characters"
+    },
+    "costDraft": {
+      "one": "This rule will add {{count}} character to every job — including the ones it has nothing to do with.",
+      "other": "This rule will add {{count}} characters to every job — including the ones it has nothing to do with."
+    },
+    "nothingYet": "There is not a single procedure yet.",
+    "stateWithdrawn": "withdrawn",
+    "mode": {
+      "index": "The assistant reaches for it when it needs it",
+      "always": "The assistant reads it on every job",
+      "paths": "The assistant gets it when it touches the listed folders"
+    },
+    "modeWhat": {
+      "index": "It sees the title and that one sentence, and opens the text only when the task matches. This is the ordinary choice.",
+      "always": "The text goes into every job, so it costs all the time. This is how you write rules that apply to everything.",
+      "paths": "It costs nothing until the assistant reaches into the folders listed here."
+    },
+    "scopeEveryone": "applies to everyone",
+    "scopeSome": "applies to: {{departments}}",
+    "folders": "folders: {{folders}}",
+    "newEdition": "Issue a new version",
+    "withdraw": "Withdraw",
+    "restore": "Restore",
+    "withdrawn": "Withdrawn: {{title}}. The assistant stops using it.",
+    "restored": "Restored: {{title}}",
+    "history": "Earlier issues",
+    "write": "Write a new procedure",
+    "formNew": "New procedure",
+    "formNext": "New issue of: {{title}}",
+    "fieldTitle": "Title",
+    "hintTitle": "e.g. “VAT summary”",
+    "fieldDescription": "One sentence: what this is about",
+    "hintDescription": "e.g. “How we put together the monthly VAT summary from invoices”",
+    "fieldMode": "When the assistant reads this",
+    "fieldPaths": "Folders that should bring this up",
+    "hintPaths": "One folder per line, e.g. My files/Invoices",
+    "fieldScope": "Who this applies to",
+    "hintScope": "Tick nothing if it applies to everyone in the company.",
+    "fieldBody": "The text",
+    "hintBody": "Write it the way you would explain it to somebody new on the team. Bullet points read better than a paragraph.",
+    "publish": "Issue",
+    "published": "Issued: {{title}} · issue {{edition}}",
+    "failed": "That did not work."
   },
   "composer": {
     "untitled": "Untitled",
@@ -422,7 +493,8 @@
         "computationError": "The computation fell over on an error in the code.",
         "computationStopped": "The computation went over its allowance and was stopped.",
         "outsideService": "A service outside the Desk could not do it.",
-        "unknown": "This action did not go through."
+        "unknown": "This action did not go through.",
+        "noSuchProcedure": "There is no such company rule written down — or it does not apply to your department."
       },
       "changed": {
         "browses": "No. I opened nothing and changed nothing.",
@@ -432,7 +504,8 @@
         "computes": "No. Nothing was computed and none of your files changed.",
         "stores": "No. Nothing was added to or changed in My files.",
         "external": "I don't know whether the other side did it. Before you repeat this, make sure it did not do it twice.",
-        "unknown": "I don't know. The action stopped halfway — look in the case folder before you ask for it again."
+        "unknown": "I don't know. The action stopped halfway — look in the case folder before you ask for it again.",
+        "consults": "No. The company rule was not opened, and nothing changed because of it."
       },
       "next": {
         "tryAgain": "This is not your fault. Ask for the same thing once more — if it fails again, I will report it myself to someone who can fix it.",
@@ -443,7 +516,8 @@
         "pasteTheFragment": "Open this file and see whether it can be read. If it can, paste the part you need into your request.",
         "describeMorePrecisely": "Write more precisely what the result should contain — a more precise description usually makes the computation work the second time.",
         "smallerPortion": "Ask for a smaller portion at a time — one month, say, instead of the whole year.",
-        "tryAgainTell": "This is not your fault. Ask for the same thing once more — if it fails again, tell your manager: {{person}}."
+        "tryAgainTell": "This is not your fault. Ask for the same thing once more — if it fails again, tell your manager: {{person}}.",
+        "askForProcedure": "Ask your manager to write that rule down. Until then the assistant works from general knowledge."
       }
     },
     "allFailed": "It did not work"
@@ -493,6 +567,15 @@
     "noSuchServer": "There is no such server.",
     "connectFailed": "Could not connect: {{reason}}",
     "unknownAction": "I do not know that action.",
+    "procedureNeedsWords": "Write a title and one sentence about what this procedure covers.",
+    "procedureNeedsBody": "Write the text — the text is the procedure.",
+    "procedureNeedsPaths": "With this setting, list at least one folder, one per line.",
+    "procedureBadTitle": "I cannot build a name out of that title. Use letters or digits in it.",
+    "procedureExists": "A procedure with that title already exists here. Change the title, or issue a new version of that one.",
+    "procedureNoSuch": "There is no such procedure.",
+    "procedureNoSuchDepartment": "I do not know that department.",
+    "procedureBadPath": "A folder pattern cannot contain a comma. Put each folder on its own line.",
+    "procedureBroken": "I cannot store this procedure in that shape. Check the title and the one-sentence description — neither may start or end with a quotation mark.",
     "somethingOutside": "something the catalogue does not have",
     "writeWhatYouNeed": "Write what you need.",
     "noSuchCapability": "There is no such capability.",
@@ -612,6 +695,10 @@
       "remember": {
         "one": "suggested {{count}} thing to remember",
         "other": "suggested {{count}} things to remember"
+      },
+      "consulting": {
+        "one": "checked {{count}} company rule",
+        "other": "checked {{count}} company rules"
       }
     },
     "evidence": {
@@ -633,12 +720,18 @@
       "external": "{{source}}: {{label}} — {{detail}}",
       "externalNamed": "{{server}}: {{tool}} — {{detail}}",
       "externalBare": "{{source}}: {{label}}",
-      "externalNamedBare": "{{server}}: {{tool}}"
+      "externalNamedBare": "{{server}}: {{tool}}",
+      "basis": "per procedure {{detail}}"
     },
     "remember": {
       "running": "Suggesting something to remember",
       "ok": "Suggested something to remember",
       "failed": "Didn't suggest anything to remember"
+    },
+    "open_procedure": {
+      "running": "Checking the company rules",
+      "ok": "Checked the company rules",
+      "failed": "Could not open the company rules"
     }
   },
   "evidence": {
@@ -692,7 +785,10 @@
     "caseMessage": "writes a message on the case",
     "personLimit": "changes {{who}}’s daily limit",
     "personDisabled": "disables {{who}}’s account",
-    "personEnabled": "enables {{who}}’s account"
+    "personEnabled": "enables {{who}}’s account",
+    "procedurePublished": "issues the procedure “{{name}}” · issue {{edition}}",
+    "procedureWithdrawn": "withdraws the procedure “{{name}}”",
+    "procedureRestored": "restores the procedure “{{name}}”"
   },
   "capability": {
     "files": {
