@@ -195,23 +195,41 @@ test.describe("Obszar 28b · Drobiazgi z audytu", () => {
   })
 
   test("Kosz pokazuje najnowsze i daje się opróżnić", async ({ page, request }) => {
+    // Ten scenariusz był do 03.09.2026 ZIELONY NA CUDZYCH ŚMIECIACH. Pętla sprzątająca
+    // czytała `list.entries`, a `/api/files` zwraca `files` — więc `?? []` robiło z niej
+    // cichy no-op: ani jeden plik nie trafiał do kosza. Kosz i tak nie był pusty, bo
+    // zostawiały w nim coś inne scenariusze, więc „Opróżnij kosz" się pokazywał i test
+    // przechodził, nigdy nie dotknąwszy materiału, który sam założył. Skutkiem ubocznym
+    // były trzy porzucone pliki na biurku PER PRZEBIEG — po stu przebiegach biurko Anny
+    // miało ich ponad sto trzydzieści i nie nadawało się już do pokazania.
     const anna = { Cookie: "desk_persona=anna" }
+    const znak = `kosz-drobiazg-${Date.now()}`
     for (let i = 0; i < 3; i++) {
       const fd = new FormData()
       fd.append("folder", "Moje pliki")
-      fd.append("file", new File(["x"], `kosz-drobiazg-${i}-${Date.now()}.txt`))
+      fd.append("file", new File(["x"], `${znak}-${i}.txt`))
       await request.post("/api/files/upload", { headers: anna, multipart: fd })
     }
+
     const list = await (await request.get("/api/files?folder=Moje pliki", { headers: anna })).json()
-    for (const f of (list.entries ?? []).filter((x: { name: string }) =>
-      x.name.startsWith("kosz-drobiazg-"),
-    )) {
-      await request.post("/api/files", { headers: anna, data: { action: "trash", path: f.path } })
+    const moje = (list.files ?? []).filter((x: { name: string }) => x.name.startsWith(znak))
+    // KONTROLA DODATNIA na własnym materiale: bez niej literówka w nazwie pola wraca
+    // dokładnie tą samą drogą, którą przyszła — po cichu i na zielono.
+    expect(moje, "wgrane pliki nie wróciły z listy — sprzątanie znów jest pozorne").toHaveLength(3)
+    for (const f of moje) {
+      const r = await request.post("/api/files", {
+        headers: anna,
+        data: { action: "trash", path: f.path },
+      })
+      expect(r.ok(), `nie udało się wyrzucić ${f.path} do kosza`).toBe(true)
     }
 
     await as(page, "anna")
     await otworz(page, "/files")
     await page.getByRole("button", { name: /Kosz/ }).click()
+    // Kosz pokazuje TO, CO WŁAŚNIE WYRZUCILIŚMY — tego właśnie tytuł tego scenariusza
+    // obiecuje, a poprzednia wersja nie sprawdzała wcale.
+    await expect(page.getByText(`${znak}-0.txt`)).toBeVisible()
     await expect(page.getByRole("button", { name: "Opróżnij kosz" })).toBeVisible()
 
     page.on("dialog", (d) => d.accept())
