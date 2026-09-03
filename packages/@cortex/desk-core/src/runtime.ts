@@ -22,7 +22,7 @@ import * as memory from "./memory"
 import * as sandbox from "./sandbox"
 import { refuseShared } from "./shared-access"
 import { beginTurn, endTurn, wasAborted } from "./turn-control"
-import type { DeskEvent, Policy, StepFailure, User } from "./types"
+import type { DeskEvent, FileMeta, Policy, StepFailure, User } from "./types"
 
 /**
  * Ile znaków pliku trafia do modelu. Sufit musi istnieć — okno kontekstu jest skończone —
@@ -30,6 +30,32 @@ import type { DeskEvent, Policy, StepFailure, User } from "./types"
  * stron zwykłego tekstu i mieści typowe zestawienie miesięczne w całości.
  */
 const READ_LIMIT = 60_000
+
+/**
+ * Ile TRAFIEŃ szukanie oddaje modelowi. Sufit stoi na wyniku, nie na liczbie przeszukanych
+ * plików, i to jest zmierzone: 5000 dokumentów przechodzi w 339 ms, ale niesie 743 trafienia.
+ * Turę zabijają trafienia, a nie pliki — ograniczenie wejścia kosztowałoby więc odpowiedzi
+ * („tych plików nie sprawdziłem”) tam, gdzie kosztu w ogóle nie ma.
+ *
+ * Sto wierszy z fragmentami mieści się w ułamku sufitu `read_file` i wystarcza, żeby model
+ * wskazał właściwy plik. Obcięcie MÓWI O SOBIE — inaczej byłby to trzeci raz, gdy ten produkt
+ * podaje wynik ucięty nieodróżnialny od kompletnego.
+ */
+const MATCH_LIMIT = 100
+
+/**
+ * Największy plik, do którego szukanie zajrzy. Nie jest to ostrożność wobec dysku: cała
+ * zawartość ląduje w pamięci procesu Biurka, a ten obsługuje wszystkie tury naraz, więc
+ * jeden eksport bazy potrafi zatrzymać pracę wszystkim. Trzydzieści razy sufit `read_file`
+ * to granica, za którą plik przestaje być dokumentem księgowym.
+ *
+ * Plik odrzucony na tym suficie jest NAZWANY w odpowiedzi — po to, żeby dało się go wskazać
+ * wprost i przeczytać czynnością `read_file`, zamiast dowiadywać się o nim po ciszy.
+ */
+const SEARCH_FILE_LIMIT = 2_000_000
+
+/** Ile znaków fragmentu wokół trafienia widzi model — tyle, ile trzeba, by poznać kontekst. */
+const FRAGMENT = 160
 
 /**
  * F4 · RUNTIME AGENTA — jedyne miejsce w kodzie, które zna bibliotekę agentową.
@@ -139,6 +165,53 @@ type StepResult = {
    * inaczej niż dopasowaniem napisu; powód da się. Krok udany go nie ma.
    */
   reason?: StepFailure
+  /**
+   * Argumenty, które czynność poznała DOPIERO wykonując pracę — dziś: pliki, w których
+   * szukanie znalazło trafienie. Jadą do `tool_end`, bo dowód powstaje wyłącznie ze
+   * zdarzeń: czego tu nie ma, tego dla sprawy nie było. Patrz `DeskEvent.tool_end`.
+   */
+  discovered?: Record<string, unknown>
+}
+
+/**
+ * Wszystkie PLIKI w katalogu i jego podkatalogach, ścieżkami logicznymi.
+ *
+ * Idzie przez `desk-storage`, a nie przez `node:fs` — bo to tamten moduł, i tylko on, stoi
+ * między nazwą podaną przez model a dyskiem, i tylko on wie, że wspólna półka ma inny korzeń.
+ * Własne czytanie katalogu byłoby drugą drogą do tych samych plików, czyli drugim miejscem,
+ * w którym trzeba pamiętać o wyjściu poza biurko.
+ *
+ * Błędu NIE ŁYKAMY: katalog, do którego nie dało się zajrzeć, ma wywrócić całe szukanie.
+ * Po cichu pominięty podkatalog dałby odpowiedź „nic nie znalazłem” o korpusie, którego
+ * połowy nikt nie oglądał — czyli cichą złą odpowiedź, najgorszy możliwy wynik.
+ */
+async function filesUnder(user: string, folder: string, depth = 6): Promise<FileMeta[]> {
+  const found: FileMeta[] = []
+  const descend = async (where: string, level: number): Promise<void> => {
+    for (const entry of await storage.list(user, where)) {
+      if (!entry.folder) {
+        found.push(entry)
+        continue
+      }
+      // Sufit zagnieżdżenia broni przed dowiązaniem w kółko; katalog głębszy niż sześć
+      // pięter to nie jest układ, w którym pani Basia trzyma faktury.
+      if (level < depth) await descend(entry.path, level + 1)
+    }
+  }
+  await descend(folder, 0)
+  return found
+}
+
+/**
+ * Fragment wiersza WOKÓŁ trafienia, nie jego początek. Wiersz arkusza bywa długi, a szukane
+ * słowo stoi w nim gdziekolwiek — pierwsze 160 znaków pokazałoby wtedy sam nagłówek kolumn
+ * i ani razu tego, po co model tu przyszedł. Ucięcie z obu stron znaczymy wielokropkiem.
+ */
+function fragmentAround(line: string, at: number): string {
+  const from = Math.max(0, at - Math.floor(FRAGMENT / 3))
+  const piece = line.slice(from, from + FRAGMENT)
+  const tidy = piece.replace(/\s+/g, " ").trim()
+  return `${from > 0 ? "…" : ""}${tidy}${from + FRAGMENT < line.length ? "…" : ""}`
 }
 
 export function toolsForPolicy(u: User, p: Policy, caseId: string) {
@@ -171,7 +244,12 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
     // `reason` jest opcjonalny CELOWO: krok udany powodu nie ma, a `exactOptionalPropertyTypes`
     // odróżnia „klucza nie ma" od „klucz jest i ma undefined". Stąd rozgałęzienie przy
     // składaniu obiektu zamiast wpisania `reason: r.reason`.
-    let end: { ok: boolean; summary: string; reason?: StepFailure } = {
+    let end: {
+      ok: boolean
+      summary: string
+      reason?: StepFailure
+      discovered?: Record<string, unknown>
+    } = {
       ok: false,
       summary: "przerwane",
       reason: "interrupted",
@@ -183,6 +261,7 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
         ok: r.ok !== false,
         summary: r.summary,
         ...(r.reason === undefined ? {} : { reason: r.reason }),
+        ...(r.discovered === undefined ? {} : { discovered: r.discovered }),
       }
       answer = r.answer
     } catch (e) {
@@ -329,6 +408,220 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
             }
           }
         }),
+    })
+
+    /**
+     * SZUKANIE BIEGNIE W TYM PROCESIE — nie w piaskownicy i nie w indeksie w Postgresie.
+     * Trzy warianty, zmierzone, nie oszacowane:
+     *
+     *   24 faktury      proces Biurka   8,8 ms │ piaskownica  192 ms │ indeks ~1,3 ms + wgranie
+     *   5000 dokumentów proces Biurka    339 ms │ piaskownica 1762 ms │ indeks  1,2–2,1 ms
+     *
+     * Piaskownica jest 22× wolniejsza na realnym korpusie, ale odpada z powodu cięższego niż
+     * czas: żeby cokolwiek przeszukać, trzeba najpierw skopiować do niej CAŁY korpus, czyli
+     * zrobić DRUGĄ kopię dokumentów klienta. Indeks w bazie wygrywa czasem i przegrywa tym
+     * samym — jest trzecią kopią treści, a do tego polskiej konfiguracji wyszukiwania
+     * pełnotekstowego (`hunspell-pl`) w obrazie `postgres:16` po prostu NIE MA.
+     *
+     * Wariant tutejszy jest jedyny, który zostawia ślad NA KAŻDYM przeszukanym pliku:
+     * brama wspólnej półki i osąd „czy to tekst” zapadają per plik, w tym samym kodzie,
+     * co przy `read_file`. Kopia, którą trzeba by wpierw zrobić, żadnej z tych bram
+     * by nie przeszła — bo przechodzi się je raz, przy kopiowaniu, a nie przy czytaniu.
+     *
+     * ZDOLNOŚĆ TA SAMA CO PRZY CZYTANIU (`files.read`), i to nie jest oszczędność. Szukanie
+     * JEST czytaniem: otwiera pliki tej osoby i wnosi ich fragmenty do sprawy. Osobna
+     * zdolność musiałaby przejść test rozłączności z ADR-0001 — a nie ma sytuacji, w której
+     * ktoś ma czytać swoje pliki, ale nie ma prawa ich przeszukać. Byłaby za to nową kłódką
+     * dla pani Basi w jej podstawowym zadaniu.
+     */
+    t.find_in_files = tool({
+      description:
+        "Szuka słowa albo zwrotu w plikach tekstowych na biurku użytkownika i oddaje pasujące " +
+        "wiersze razem ze ścieżkami. Używaj tego ZAMIAST otwierania plików po kolei, gdy nie " +
+        "wiesz, w którym z nich jest odpowiedź. Widzi wyłącznie tekst — PDF-y, skany, arkusze " +
+        "Excela i pliki Worda zostaną pominięte i wymienione osobno; do nich służy read_document. " +
+        "Odpowiedź mówi, ile plików przeszukano i ile pominięto: nie twierdź, że czegoś nie ma, " +
+        "dopóki nie przeczytasz tych liczb.",
+      inputSchema: z.object({
+        query: z.string().describe("szukany zwrot, np. „Orange” albo numer faktury"),
+        folder: z.string().optional().describe("gdzie szukać, domyślnie „Moje pliki”"),
+      }),
+      execute: async ({ query, folder }) => {
+        const where = folder?.trim() || "Moje pliki"
+        return step(
+          "find_in_files",
+          `Szukam „${query}” w „${where}”`,
+          { query, folder: where },
+          async () => {
+            const needle = query.trim().toLocaleLowerCase("pl")
+            // Pusty zwrot pasuje do każdego wiersza, więc szukanie nim nie jest szukaniem.
+            // Powód bierzemy z zamkniętej listy — dwunasty, dla pomyłki modelu, którą model
+            // sam poprawia w tej samej turze, kosztowałby dwa słowniki i strażnika.
+            if (needle === "") {
+              return {
+                ok: false,
+                summary: "pusty zwrot — nie ma czego szukać",
+                reason: "wrong-kind",
+                answer:
+                  "Podaj, czego mam szukać. Pusty zwrot pasuje do każdego wiersza w każdym pliku.",
+              }
+            }
+
+            let candidates: FileMeta[]
+            try {
+              candidates = await filesUnder(u.id, where)
+            } catch {
+              return {
+                ok: false,
+                summary: "nie udało się przejrzeć katalogu",
+                reason: "cannot-open",
+                answer:
+                  `Nie udało się zajrzeć do katalogu ${where}. Sprawdź czynnością list_files, ` +
+                  "jak on się naprawdę nazywa.",
+              }
+            }
+
+            const mayRecognise = hasCapability(p, "document.read")
+            // CZTERY POWODY POMINIĘCIA, LICZONE OSOBNO. Jeden licznik „pominięto” byłby
+            // powtórzeniem błędu, który siedział już w `run_computation`: „za duże” i „nie
+            // udało się” to dla człowieka dwa różne wyjścia, a zlane w jedną liczbę
+            // przestają nimi być. Po ciszy zaś odpowiedź „nic nie znalazłem” na katalogu
+            // pełnym PDF-ów jest nieprawdą wypisaną z powagą.
+            const skippedShared: string[] = []
+            const skippedNotText: string[] = []
+            const skippedTooBig: string[] = []
+            const skippedUnopened: string[] = []
+            const matched: string[] = []
+            const lines: string[] = []
+            let searched = 0
+            let hits = 0
+            let filesWithHits = 0
+
+            for (const file of candidates) {
+              // Brama wspólnej półki PER PLIK, tą samą funkcją co w `read_file`. Katalog
+              // może mieszać własne pliki z firmowymi, więc pytanie raz na całe szukanie
+              // albo odmawiałoby za dużo, albo wpuszczało za dużo.
+              if (refuseShared(may, file.path, "read")) {
+                skippedShared.push(file.path)
+                continue
+              }
+              // Ten sam osąd, co przy `read_file`: `readFile(utf8)` na PDF-ie oddaje śmieci,
+              // które w wyniku szukania wyglądałyby jak treść dokumentu.
+              if (notReadable(file.path, mayRecognise)) {
+                skippedNotText.push(file.path)
+                continue
+              }
+              if (file.size > SEARCH_FILE_LIMIT) {
+                skippedTooBig.push(file.path)
+                continue
+              }
+              let text: string
+              try {
+                text = await storage.read(u.id, file.path)
+              } catch {
+                skippedUnopened.push(file.path)
+                continue
+              }
+              searched += 1
+
+              let hitHere = false
+              for (const [index, line] of text.split("\n").entries()) {
+                const at = line.toLocaleLowerCase("pl").indexOf(needle)
+                if (at < 0) continue
+                // Liczymy DALEJ po zapełnieniu listy — sufit stoi na tym, co wraca do modelu,
+                // a nie na tym, ile naprawdę jest. Inaczej zdanie o obcięciu nie miałoby
+                // z czego powiedzieć, ile trafień zostało za nim.
+                hits += 1
+                if (!hitHere) {
+                  hitHere = true
+                  filesWithHits += 1
+                }
+                if (lines.length >= MATCH_LIMIT) continue
+                if (!matched.includes(file.path)) matched.push(file.path)
+                lines.push(`${file.path}:${index + 1}: ${fragmentAround(line, at)}`)
+              }
+            }
+
+            /** Kilka nazw na przykład — pełna lista pominiętych bywa dłuższa niż wynik. */
+            const few = (list: string[]) =>
+              list.slice(0, 5).join(", ") + (list.length > 5 ? ", …" : "")
+
+            const cut = hits > lines.length
+            // Liczby w mianowniku z dwukropkiem, nie „12 trafień”: liczebnik sklejony
+            // z rzeczownikiem w kodzie daje „1 trafień” przy pierwszym trafieniu.
+            const skipped = [
+              skippedNotText.length > 0 ? `nietekstowe: ${skippedNotText.length}` : "",
+              skippedShared.length > 0 ? `bez wglądu we wspólne: ${skippedShared.length}` : "",
+              skippedTooBig.length > 0 ? `za duże: ${skippedTooBig.length}` : "",
+              skippedUnopened.length > 0 ? `nieotwarte: ${skippedUnopened.length}` : "",
+            ].filter((one) => one !== "")
+
+            const summary =
+              `„${query}” — trafienia: ${hits}, pliki z trafieniami: ${filesWithHits}, ` +
+              `przeszukane: ${searched}` +
+              (cut ? `, pokazane pierwsze: ${lines.length}` : "") +
+              (skipped.length > 0 ? `, pominięte — ${skipped.join(", ")}` : "")
+
+            const said: string[] = []
+            if (lines.length > 0) said.push(lines.join("\n"))
+            said.push(
+              hits === 0
+                ? `Ani jednego trafienia na „${query}”. Przeszukane pliki: ${searched}.`
+                : cut
+                  ? `Trafienia: ${hits}, pliki z trafieniami: ${filesWithHits}, przeszukane pliki: ` +
+                    `${searched}. POWYŻEJ JEST PIERWSZE ${lines.length} TRAFIEŃ — reszty tu nie ma. ` +
+                    "Zawęź zwrot albo wskaż katalog, jeśli potrzebujesz całości."
+                  : `Trafienia: ${hits}, pliki z trafieniami: ${filesWithHits}, ` +
+                    `przeszukane pliki: ${searched}.`,
+            )
+
+            if (skippedNotText.length > 0) {
+              said.push(
+                `Pominięte, bo to nie są pliki tekstowe: ${skippedNotText.length} ` +
+                  `(${few(skippedNotText)}). Nie wiem, co w nich jest — nie mów człowiekowi, ` +
+                  "że czegoś tam nie ma.",
+              )
+              // Zdanie o drodze do tych plików pisze `notReadable`, bo to ono zna listę
+              // formatów, które rozpoznawanie obsługuje, ORAZ obie sytuacje: ze zdolnością
+              // (adres czynności `read_document`) i bez niej (droga do zgody przez report_gap).
+              // Przykład wybieramy spośród tych, które w ogóle da się rozpoznać — inaczej
+              // rada powstałaby na archiwum i nie odesłałaby nigdzie.
+              const example = skippedNotText.find((one) => isRecognisable(one)) ?? skippedNotText[0]
+              const why = example ? notReadable(example, mayRecognise) : null
+              if (why) said.push(why)
+            }
+            if (skippedShared.length > 0) {
+              // Same liczby, BEZ nazw: nazwa pliku ze wspólnej półki jest treścią, której
+              // ta osoba nie ma prawa zobaczyć, a odmowa nie może być drogą do jej poznania.
+              const refusal = refuseShared(may, skippedShared[0] ?? "", "read")
+              said.push(
+                `Pominięte, bo leżą na wspólnej półce: ${skippedShared.length}. ${refusal ?? ""}`,
+              )
+            }
+            if (skippedTooBig.length > 0) {
+              said.push(
+                `Pominięte, bo są za duże na przeszukanie: ${skippedTooBig.length} ` +
+                  `(${few(skippedTooBig)}). Jeśli odpowiedź ma być w którymś z nich, ` +
+                  "otwórz go czynnością read_file.",
+              )
+            }
+            if (skippedUnopened.length > 0) {
+              said.push(
+                `Pominięte, bo nie dało się ich otworzyć: ${skippedUnopened.length} ` +
+                  `(${few(skippedUnopened)}).`,
+              )
+            }
+
+            return {
+              summary,
+              answer: said.join("\n\n"),
+              // Pliki, których fragment NAPRAWDĘ wszedł do tej odpowiedzi — i tylko one.
+              // To one weszły do kontekstu modelu, więc to one mają stać w „Co weszło”.
+              discovered: { matched },
+            }
+          },
+        )
+      },
     })
   }
 

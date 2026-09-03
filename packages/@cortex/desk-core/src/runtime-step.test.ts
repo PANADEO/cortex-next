@@ -110,6 +110,7 @@ describe("krok narzędzia, gdy narzędzie się przewraca", () => {
   }
   cases.push(["list_files", call("list_files", { folder: "Moje pliki" })])
   cases.push(["read_file", call("read_file", { path: "Moje pliki/x.csv" })])
+  cases.push(["find_in_files", call("find_in_files", { query: "faktura" })])
   cases.push(["write_document", call("write_document", { name: "raport.md", text: "treść" })])
   cases.push(["verify_document", call("verify_document", { name: "raport.md" })])
   cases.push(["save_to_my_files", call("save_to_my_files", { name: "raport.md" })])

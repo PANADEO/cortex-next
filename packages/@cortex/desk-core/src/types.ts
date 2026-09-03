@@ -81,6 +81,23 @@ export type DeskEvent =
        * i dlatego ekran musi mieć jedno bezpieczne zdanie domyślne.
        */
       reason?: StepFailure
+      /**
+       * ARGUMENTY, KTÓRYCH CZYNNOŚĆ NIE ZNAŁA NA STARCIE — dopisane przy zamknięciu kroku.
+       *
+       * Dowód czyta pliki wniesione do sprawy z `tool_start.args`, bo dotąd wszystkie
+       * czynności wiedziały o nich z góry: `read_file` dostaje ścieżkę, `run_computation`
+       * dostaje listę montowań. Szukanie w plikach jest pierwszą, która tego NIE wie —
+       * o tym, do których plików zajrzała, dowiaduje się dopiero po przejrzeniu katalogu.
+       *
+       * Rozważone i odrzucone: wykonać pracę PRZED `tool_start` i wpisać wynik do jego
+       * argumentów. Wtedy krok pojawiałby się na ekranie dopiero po zakończeniu, jego czas
+       * trwania byłby zerowy, a czynność, która się przewróci, nie zostawiłaby ANI JEDNEGO
+       * zdarzenia — czyli dokładnie ta cicha dziura, którą zamknął opakowywacz `step()`.
+       *
+       * `pairSteps` dokłada te wartości do argumentów kroku, więc dowód i strażnik obietnic
+       * czytają je tą samą drogą co resztę i nie muszą wiedzieć, że powstały później.
+       */
+      discovered?: Record<string, unknown>
     }
   | {
       type: "blocked"

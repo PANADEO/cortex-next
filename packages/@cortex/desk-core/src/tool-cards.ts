@@ -137,6 +137,37 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
     }),
     K({
       /**
+       * `reads`, NIE `computes` — i to jest cała decyzja tej karty. Szukanie otwiera pliki
+       * tej osoby i wnosi ich fragmenty do sprawy; że po drodze coś porównuje, nie czyni
+       * z niego obliczenia. Wpisane po stronie liczenia mówiłoby w dowodzie „policzono”
+       * o czynności, po której w teczce nie przybyło nic, a w kontekście modelu przybyła
+       * treść z cudzych dokumentów.
+       *
+       * BEZ `argName`, i to nie jest przeoczenie. `argName` karmi zbiór plików wniesionych
+       * do sprawy, a jedyny argument tej czynności to szukany zwrot — wpisanie go tam
+       * kazałoby dowodowi uznać słowo „faktura” za plik z biurka. Nazwy plików wchodzą
+       * osią `inputs`, którą czynność dopisuje po przeszukaniu.
+       *
+       * W `inputs` idą WYŁĄCZNIE pliki, których fragment naprawdę trafił do odpowiedzi.
+       * Plik, którego trafienie odpadło na suficie listy, do kontekstu modelu nie wszedł
+       * i nie ma prawa stać w „Co weszło” — ile ich było, mówi podsumowanie.
+       */
+      name: "find_in_files",
+      kind: "reads",
+      inputs: { arg: "matched", phrase: "tools.evidence.found" },
+      running: "tools.find_in_files.running",
+      ok: "tools.find_in_files.ok",
+      failed: "tools.find_in_files.failed",
+      argDetail: "query",
+      // Waga niżej niż przy czytaniu: przejrzenie plików pod kątem jednego zwrotu niesie
+      // mniej niż przeczytanie któregokolwiek z nich, więc przy skracaniu zdania odpada
+      // wcześniej niż odczyt i niż powstały dokument.
+      group: { key: "searching", phrase: "tools.groups.searching", weight: 2 },
+      evidence: { list: "intake", phrase: "tools.evidence.searched" },
+      source: "builtin",
+    }),
+    K({
+      /**
        * `reads`, tak samo jak `read_file` — bo dokument zbudowany wyłącznie z PDF-a MA się
        * liczyć jako wniesiona treść. Bez tego panel wypisywałby „dokument powstał bez
        * odczytania choćby jednego pliku z biurka” nad sprawą, w której cała treść przyszła

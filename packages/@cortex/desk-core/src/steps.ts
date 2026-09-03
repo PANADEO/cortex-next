@@ -59,6 +59,10 @@ export function pairSteps(events: DeskEvent[]): Step[] {
       if (e.summary !== undefined) k.summary = e.summary
       if (e.ms !== undefined) k.ms = e.ms
       if (e.reason !== undefined) k.reason = e.reason
+      // Argumenty dopisane po fakcie dołączają do tych z otwarcia kroku, zamiast żyć obok.
+      // Czym plik jest dla sprawy, nie zależy od tego, KIEDY czynność poznała jego nazwę —
+      // a dowód i strażnik obietnic pytają o pliki w jednym miejscu i mają tak zostać.
+      if (e.discovered) k.args = { ...k.args, ...e.discovered }
       if (e.id) byId.delete(e.id)
     }
   }
