@@ -156,19 +156,6 @@ describe("słownik Biurka", () => {
   })
 
   /**
-   * ŻADNE ZDANIE NIE ODSYŁA DO BEZIMIENNEJ WŁADZY.
-   *
-   * Ten ślepy zaułek wracał w tym produkcie DWA RAZY. Najpierw siedział w `failure.ts`
-   * („zgłoś to administratorowi"), został stamtąd usunięty — i wrócił tydzień później
-   * w słowniku przebiegu, przy okazji przebudowy kroku, który padł. Pani Basia nie wie,
-   * kto to administrator, nie ma jego numeru i nie ma jak go zapytać; zdanie, które ją
-   * tam odsyła, kończy się dla niej ścianą i powrotem do robienia ręcznie.
-   *
-   * Wolno odesłać do PRZEŁOŻONEGO, bo tę osobę Biurko umie wskazać z imienia
-   * (`approver()` w `people.ts`), i wolno powiedzieć, że asystent zgłosi rzecz sam.
-   * Nie wolno odesłać do nikogo.
-   */
-  /**
    * ŻADNA TRASA NIE ODDAJE ZDANIA WPISANEGO NA SZTYWNO.
    *
    * Napis w kodzie trasy jest niewidoczny dla wszystkiego, co pilnuje słownika: nie ma go
@@ -276,55 +263,41 @@ describe("słownik Biurka", () => {
     expect(offenders).toEqual([])
   })
 
-  it("żadne zdanie nie odsyła do bezimiennej władzy", () => {
-    // KSZTAŁT REGUŁY, NIE DŁUGOŚĆ LISTY. Pierwsza wersja szukała rzeczowników
-    // („administrator", „helpdesk") i była zła w obie strony naraz. Przeciekała, bo `\w`
-    // w JS bez flagi `u` NIE OBEJMUJE polskich liter — „obsługa techniczna" była łapana,
-    // „obsługę techniczną" już nie. I podnosiła fałszywy alarm na zdaniach niewinnych:
-    // „Administratorem danych osobowych jest firma" to klauzula RODO, którą ma każde
-    // polskie pismo, a „Koszty administracyjne" to pozycja z każdego zestawienia wydatków.
-    // Zablokowanie ich na budowie byłoby gorsze niż przeciek, bo zmusza do obchodzenia
-    // strażnika — a strażnik, którego się obchodzi, przestaje cokolwiek znaczyć.
-    //
-    // Rzecz, o którą nam chodzi, nie jest SŁOWEM, tylko CZYNNOŚCIĄ: odesłaniem człowieka
-    // do kogoś, kogo nie umie wskazać. Reguła sprawdza więc parę „czasownik odesłania
-    // + bezimienny adresat" w jednym zdaniu. Klauzula RODO nie ma czasownika odesłania
-    // i przechodzi; „zgłoś to do działu informatycznego" ma i nie przechodzi.
-    const SENDS = [
-      "zg[łl]o[śs]", "popro[śs]", "skontaktuj", "napisz", "zapytaj", "zadzwo[ńn]",
-      "oddaj", "przeka[żz]", "powiedz", "udaj si[ęe]", "zwr[óo][ćc] si[ęe]", "zwr[óo][ćc] to",
-      "contact", "ask", "report (?:it|this)", "call", "reach out",
-    ]
-    const NOBODY = [
-      "administrator", "admin\\b", "sysadmin", "helpdesk", "help-?desk",
-      "informatyk", "informatyczn", "serwis", "technik", "support",
-      "wsparci", "infolini", "opiekun\\p{L}* systemu", "zespo[łl]\\p{L}* wsparcia",
-      "dzia[łl]\\p{L}* (?:it|techniczn|informatyczn)", "obs[łl]ug\\p{L}* techniczn",
-      "it team", "tech support",
-    ]
-    // Para musi stać w JEDNYM zdaniu — bez tego „Zgłoś zestawienie. Administratorem
-    // danych jest firma." dałoby trafienie przez granicę dwóch niezwiązanych zdań.
-    const FACELESS = new RegExp(
-      `(?:${SENDS.join("|")})[^.!?]{0,60}?(?:${NOBODY.join("|")})`,
-      "iu",
-    )
-    // Samo „IT" jako dział — OSOBNO i z uwzględnieniem wielkości liter. Wrzucone do
-    // listy wyżej dawało cztery fałszywe alarmy naraz, wszystkie angielskie: „Ask your
-    // manager for it." to `ask` + zaimek `it`, a nie odesłanie do działu informatycznego.
-    // Wielka litera rozróżnia te dwa znaczenia lepiej niż jakikolwiek kontekst, jaki
-    // dałoby się tu wypisać.
-    // Dwa kroki, bo jedno wyrażenie nie uniesie dwóch różnych wrażliwości naraz:
-    // czasownik szukamy bez względu na wielkość liter, samo „IT" — z jej uwzględnieniem.
-    // Sklejone w jeden wzorzec bez flagi `i` gubiło „Zgłoś" pisane wielką literą.
-    const SENDS_RE = new RegExp(`(?:${SENDS.join("|")})`, "iu")
-    const sendsToIT = (text: string) =>
-      text
-        .split(/(?<=[.!?])\s+/)
-        .some((sentence) => SENDS_RE.test(sentence) && /\bIT\b/u.test(sentence))
+  /**
+   * ŻADNE ZAKOŃCZENIE NIE ODSYŁA DO BEZIMIENNEJ WŁADZY.
+   *
+   * Reguła produktu jest jedna: gdy praca się nie udaje albo czegoś nie wolno, człowiek
+   * ma dostać CZASOWNIK i osobę, do której da się podejść. „Zgłoś to administratorowi"
+   * jest ścianą — pani Basia nie wie, kto to, nie ma jego numeru i nie ma jak zapytać.
+   * Ten zaułek wracał w tym produkcie już DWA RAZY, za każdym razem w innym pliku.
+   *
+   * ZAKRES, NIE DŁUGOŚĆ LISTY — i to jest sedno tej wersji. Dwie poprzednie skanowały
+   * CAŁY słownik w poszukiwaniu słów, i obie były złe w obie strony naraz: przepuszczały
+   * kilkanaście form odesłania, a jednocześnie zapalały się na zdaniach niewinnych,
+   * bo „serwis", „technik" i „support" to słownictwo z FAKTUR, a nie z odesłań.
+   * Zablokowanie zdania „Poproś o fakturę za serwis auta" byłoby gorsze niż przeciek:
+   * strażnik, który myli się przeciwko dobrej treści, zostaje obejściem, nie regułą.
+   *
+   * Sprawdzamy więc wyłącznie ZAKOŃCZENIA — zdania, które domykają trudny moment
+   * i jako jedyne mają obowiązek kogoś wskazać. Jest ich kilkanaście i są policzalne.
+   * W tym zbiorze słownictwo faktur nie występuje, więc kolizja znika sama, a nie przez
+   * łatanie wzorca — i dlatego wolno tu trzymać „serwis" oraz „technik", które przy
+   * skanie całego słownika zapalałyby się na każdej fakturze za naprawę samochodu. Zdanie z `{{person}}` przechodzi zawsze: skoro pada imię, adresat
+   * nie jest bezimienny, choćby stał obok słowa „IT".
+   */
+  it("żadne zakończenie nie odsyła do bezimiennej władzy", () => {
+    /** Klucze, które DOMYKAJĄ trudny moment — jedyne miejsce, gdzie odesłanie ma sens. */
+    const ENDINGS = [/^trail\.failure\.next\./, /^lock\./, /^failure\./, /^api\./]
+    const FACELESS =
+      /admin\w*|helpdesk|help[- ]desk|informatyk\w*|serwis\w*|technik\w*|sysadmin\w*|infolini\w*|dzia[łl]\w* (?:IT|techniczn\w+)|wsparci\w+ techniczn\w+|obs[łl]ug\w+ techniczn\w+|support (?:team|desk)|IT (?:department|support)|tech support|opiekun\w* systemu/iu
     const offenders: string[] = []
     const walk = (node: unknown, key: string) => {
       if (typeof node === "string") {
-        if (FACELESS.test(node) || sendsToIT(node)) offenders.push(`${key} = ${node}`)
+        if (!ENDINGS.some((one) => one.test(key.replace(/^(pl|en)\./, "")))) return
+        // Imię własne w zdaniu znaczy, że adresat JEST wskazany — reszta zdania może
+        // wtedy nazywać jego dział, i to jest pomoc, nie ściana.
+        if (node.includes("{{person}}")) return
+        if (FACELESS.test(node)) offenders.push(`${key} = ${node}`)
         return
       }
       if (node && typeof node === "object") {
@@ -334,6 +307,23 @@ describe("słownik Biurka", () => {
     walk(pl, "pl")
     walk(en, "en")
     expect(offenders).toEqual([])
+  })
+
+  it("strażnik zakończeń w ogóle coś ogląda", () => {
+    // Bez tego cały test wyżej mógłby być zielony dlatego, że zakres jest pusty —
+    // wystarczyłaby zmiana nazwy grupy w słowniku i nikt by się nie dowiedział.
+    const ENDINGS = [/^trail\.failure\.next\./, /^lock\./, /^failure\./, /^api\./]
+    const counted: string[] = []
+    const walk = (node: unknown, key: string) => {
+      if (typeof node === "string") {
+        if (ENDINGS.some((one) => one.test(key))) counted.push(key)
+      } else if (node && typeof node === "object") {
+        for (const [k, v] of Object.entries(node)) walk(v, key ? `${key}.${k}` : k)
+      }
+    }
+    walk(pl, "")
+    expect(counted.length, "zbiór zakończeń jest pusty — reguła nie ma czego pilnować")
+      .toBeGreaterThan(20)
   })
 
   it("żadne zdanie nie kończy się samą rolą, bez zadania", () => {
