@@ -12,7 +12,7 @@
       "one": "I can do {{granted}} of {{count}} thing",
       "other": "I can do {{granted}} of {{count}} things"
     },
-    "privacy": "Files stay on the company server. Only the content the assistant has to read in order to do the job reaches the model.",
+    "privacy": "Files stay on the company server. The assistant reads only the files the job needs.",
     "memory": "Memory",
     "sharedWithMe": "Shared with me",
     "disabledTitle": "This account is disabled.",
@@ -22,12 +22,6 @@
     "cases": "Cases",
     "files": "Files",
     "me": "Me"
-  },
-  "persona": {
-    "switch": "Switch person (demo)",
-    "settings": "Language and appearance",
-    "language": "Language",
-    "appearance": "Appearance"
   },
   "common": {
     "close": "Close",
@@ -107,7 +101,8 @@
     "pages": "Pages",
     "newer": "← Newer",
     "older": "Older →",
-    "pageOf": "Page {{page}} of {{pages}} · {{total}} cases"
+    "pageOf": "Page {{page}} of {{pages}} · {{total}} cases",
+    "sharedLead": "Cases someone invited you to."
   },
   "files": {
     "title": "My files",
@@ -481,6 +476,11 @@
       "ok": "Read",
       "failed": "Didn't read it"
     },
+    "find_in_files": {
+      "running": "Searching the files",
+      "ok": "Searched the files",
+      "failed": "Didn't search the files"
+    },
     "read_document": {
       "running": "Recognising",
       "ok": "Recognised",
@@ -545,6 +545,7 @@
         "other": "drew {{count}} images"
       },
       "computing": "computed",
+      "searching": "searched the files",
       "stored": {
         "one": "saved {{count}} file to My files",
         "other": "saved {{count}} files to My files"
@@ -571,6 +572,8 @@
       "verified": "read {{name}} back after saving — {{detail}}",
       "computed": "computed — {{detail}}",
       "used": "used in a computation: {{name}}",
+      "found": "found in: {{name}}",
+      "searched": "searched the files — {{detail}}",
       "stored": "saved to My files: {{detail}}",
       "external": "{{source}}: {{label}} — {{detail}}",
       "externalNamed": "{{server}}: {{tool}} — {{detail}}",
@@ -812,5 +815,17 @@
     "note": "These messages are for people. The assistant does not see them and does not act on them.",
     "failed": "The message could not be sent.",
     "empty": "A message cannot be empty."
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "appearance": "Colours",
+    "appliesAtOnce": "Changes take effect at once. There is nothing to save.",
+    "done": "Done",
+    "close": "Close"
+  },
+  "demo": {
+    "badge": "Demo",
+    "viewingAs": "viewing the Desk as:"
   }
 }

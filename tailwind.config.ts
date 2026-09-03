@@ -285,7 +285,7 @@ const config: Config = {
         "desk-step": "var(--desk-h-step)",
         "desk-row": "var(--desk-h-row)",
         "desk-bar": "var(--desk-h-bar)",
-        "desk-touch": "var(--desk-h-touch)",
+        "desk-demo": "var(--desk-h-demo)",
         "desk-side": "var(--desk-w-side)",
         "desk-result": "var(--desk-w-result)",
       },

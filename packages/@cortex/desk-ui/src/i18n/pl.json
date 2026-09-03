@@ -9,7 +9,7 @@
     "myFiles": "Moje pliki",
     "supervision": "Nadzór",
     "skills": "Umiem {{granted}} z {{count}} rzeczy",
-    "privacy": "Pliki zostają na serwerze firmy. Do modelu trafia tylko ta treść, którą asystent musi przeczytać, żeby wykonać zlecenie.",
+    "privacy": "Pliki zostają na serwerze firmy. Asystent czyta tylko te pliki, które są potrzebne do zlecenia.",
     "memory": "Pamięć",
     "sharedWithMe": "Udostępnione mi",
     "disabledTitle": "To konto jest wyłączone.",
@@ -19,12 +19,6 @@
     "cases": "Sprawy",
     "files": "Pliki",
     "me": "Ja"
-  },
-  "persona": {
-    "switch": "Przełącz osobę (pokaz)",
-    "settings": "Język i wygląd",
-    "language": "Język",
-    "appearance": "Wygląd"
   },
   "common": {
     "close": "Zamknij",
@@ -110,7 +104,8 @@
     "pages": "Strony",
     "newer": "← Nowsze",
     "older": "Starsze →",
-    "pageOf": "Strona {{page}} z {{pages}} · {{total}} spraw"
+    "pageOf": "Strona {{page}} z {{pages}} · {{total}} spraw",
+    "sharedLead": "Sprawy, do których ktoś Cię zaprosił."
   },
   "files": {
     "title": "Moje pliki",
@@ -500,6 +495,11 @@
       "ok": "Przeczytałem",
       "failed": "Nie przeczytałem"
     },
+    "find_in_files": {
+      "running": "Przeszukuję pliki",
+      "ok": "Przeszukałem pliki",
+      "failed": "Nie przeszukałem plików"
+    },
     "read_document": {
       "running": "Rozpoznaję",
       "ok": "Rozpoznałem",
@@ -572,6 +572,7 @@
         "other": "narysowałem {{count}} obrazów"
       },
       "computing": "policzyłem",
+      "searching": "przeszukałem pliki",
       "stored": {
         "one": "odłożyłem {{count}} plik do Moich plików",
         "few": "odłożyłem {{count}} pliki do Moich plików",
@@ -606,6 +607,8 @@
       "verified": "odczytano {{name}} po zapisie — {{detail}}",
       "computed": "policzono — {{detail}}",
       "used": "wzięto do obliczeń: {{name}}",
+      "found": "znaleziono w: {{name}}",
+      "searched": "przeszukano pliki — {{detail}}",
       "stored": "odłożono do Moich plików: {{detail}}",
       "external": "{{source}}: {{label}} — {{detail}}",
       "externalNamed": "{{server}}: {{tool}} — {{detail}}",
@@ -851,5 +854,17 @@
     "note": "Te wiadomości czytają ludzie. Asystent ich nie widzi i nie wykonuje.",
     "failed": "Nie udało się wysłać.",
     "empty": "Wiadomość nie może być pusta."
+  },
+  "settings": {
+    "title": "Ustawienia",
+    "language": "Język",
+    "appearance": "Kolory",
+    "appliesAtOnce": "Zmiana działa od razu. Nic nie trzeba zapisywać.",
+    "done": "Gotowe",
+    "close": "Zamknij"
+  },
+  "demo": {
+    "badge": "Pokaz",
+    "viewingAs": "oglądasz Biurko jako:"
   }
 }

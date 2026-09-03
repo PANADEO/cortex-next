@@ -1,3 +1,4 @@
+import { sharedWith } from "@cortex/desk-core/case-access"
 import { migrate, pool } from "@cortex/desk-core/db"
 import { countResults } from "@cortex/desk-core/folder-server"
 import { viewer } from "@cortex/desk-core/identity"
@@ -58,6 +59,30 @@ export default async function Page({
     documents: results.get(r.id) ?? 0,
   }))
 
+  /**
+   * SPRAWY UDOSTĘPNIONE MI STOJĄ TUTAJ, bo od 03.09.2026 nie ma ich już w pasku bocznym.
+   * Pasek stracił listy, żeby przestać powielać ekran główny — ale udostępnione NIE BYŁY
+   * duplikatem: nie ma ich ani na „/", ani tutaj, więc razem z sekcją zniknęłaby jedyna
+   * droga do cudzej sprawy, do której ktoś mnie zaprosił.
+   *
+   * Tylko na pierwszej stronie i bez stronicowania: to nie jest ciąg dalszy MOICH spraw,
+   * tylko osobna, krótka lista. Wmieszanie jej w tamto stronicowanie znaczyłoby, że
+   * „strona 3 z 45" liczy dwie różne rzeczy naraz.
+   */
+  const guest = page === 1 ? await sharedWith(u.id, 20) : []
+  const guestResults = await countResults(
+    u.id,
+    guest.map((r) => r.id),
+  )
+  const guestCases: CaseRow[] = guest.map((r) => ({
+    id: r.id,
+    title: r.title,
+    status: r.status,
+    reason: null,
+    updatedAt: r.updatedAt.toISOString(),
+    documents: guestResults.get(r.id) ?? 0,
+  }))
+
   const link = (n: number) => `${t("/cases")}?strona=${n}`
 
   return (
@@ -101,6 +126,16 @@ export default async function Page({
                   <span />
                 )}
               </nav>
+            )}
+
+            {guestCases.length > 0 && (
+              <section className="mt-8">
+                <h2 className="t-h3">{translate("shell.sharedWithMe")}</h2>
+                <p className="t-meta mt-0.5">{translate("cases.sharedLead")}</p>
+                <div className="mt-3">
+                  <CaseList cases={guestCases} />
+                </div>
+              </section>
             )}
           </div>
         </div>

@@ -1,18 +1,10 @@
 "use client"
 import { departmentLabel } from "@cortex/desk-core/capability-text"
 import type { User } from "@cortex/desk-core/types"
-import * as Menu from "@radix-ui/react-dropdown-menu"
-import { Check, ChevronDown, Settings2 } from "lucide-react"
-import { useRouter } from "next/navigation"
-import {
-  useDeskAppearance,
-  useDeskLocale,
-  useDeskT,
-  useSetDeskLocale,
-  useShellLocaleBridge,
-} from "../i18n/client"
-import { DESK_LOCALES, DESK_LOCALE_NAMES } from "../i18n/locale"
-import { api, t as route } from "../routes"
+import { ChevronRight } from "lucide-react"
+import Link from "next/link"
+import { useDeskT } from "../i18n/client"
+import { t as route } from "../routes"
 import { Icon } from "./icon"
 
 export function Avatar({ u, px = 36 }: { u: User; px?: number }) {
@@ -28,130 +20,40 @@ export function Avatar({ u, px = 36 }: { u: User; px?: number }) {
 }
 
 /**
- * Menu osoby — i JEDYNE miejsce z ustawieniami widoku.
+ * WIZYTÓWKA PROWADZI DO WŁASNEGO EKRANU. Nie jest już menu.
  *
- * Język i wygląd stoją tutaj, a nie w pasku u góry, bo Biurko jest ekranem rozmowy:
- * pasek zabrałby wysokość dokładnie tam, gdzie potrzebna jest treść. Wszystko „o mnie"
- * — kim jestem, w jakim języku czytam, jak to ma wyglądać — siedzi więc w jednym
- * miejscu na dole kolumny, tym samym, które w Cortex Coworku trzyma tożsamość.
+ * CO TU BYŁO DO 03.09.2026 i dlaczego wyleciało. Ten sam element trzymał TRZY różne
+ * rzeczy pod jedną strzałką w dół: przełączanie osób (funkcja pokazu, u klienta
+ * nieobecna), język i wygląd (ustawienia). Trzy rodzaje decyzji w jednym rozwijanym
+ * menu to element bez pierwowzoru w Outlooku, Excelu ani w banku — a każdy element bez
+ * pierwowzoru pani Basia musi ODKRYĆ, zamiast rozpoznać.
  *
- * Sekcja osób renderuje się WYŁĄCZNIE wtedy, gdy przełączenie naprawdę zmieni
- * tożsamość (`identity().switchable`). Pod bramą logowania tożsamość jest ustalona
- * z zewnątrz, więc menu wybierałoby osobę i nic by się nie działo: wygląda to na
- * awarię Biurka, a jest konfiguracją.
+ * Skutki były dwa, oba mierzalne. Ustawienia dało się otworzyć wyłącznie z paska
+ * bocznego, którego poniżej 768 px nie ma — czyli u klienta na telefonie języka nie
+ * dało się zmienić w ogóle. A przełączanie osób renderowało się pod warunkiem
+ * `switchable`, więc menu u klienta wyglądało na zepsute: strzałka jest, po kliknięciu
+ * prawie nic.
+ *
+ * Teraz: wizytówka to LINK do „Ja" (wzorzec, który ten użytkownik zna z każdego telefonu
+ * i z każdego banku), ustawienia mają własne okno osiągalne z „Ja" bezwarunkowo
+ * (`settings-dialog.tsx`), a przełączanie osób ma własny pasek widoczny tylko na pokazie
+ * (`demo-bar.tsx`). Jedna rzecz, jedno miejsce.
  */
-export function Persona({
-  me,
-  everyone,
-  /**
-   * `settingsOnly` — wyzwalacz bez wizytówki. Na ekranie „Ja" tożsamość stoi już
-   * w nagłówku, więc pełna wizytówka byłaby TRZECIM imieniem i działem na jednym
-   * ekranie. Menu jest tam potrzebne dla języka i wyglądu, wizytówka nie.
-   */
-  settingsOnly,
-}: {
-  me: User
-  everyone: User[]
-  settingsOnly?: boolean
-}) {
-  const router = useRouter()
+export function Persona({ me }: { me: User }) {
   const translate = useDeskT()
-  const locale = useDeskLocale()
-  const setLocale = useSetDeskLocale()
-  const appearance = useDeskAppearance()
-  // Ten komponent stoi na każdym ekranie Biurka, więc most języka wisi tutaj:
-  // język zmieniony w katalogu aplikacji dogania Biurko przy pierwszym wejściu.
-  useShellLocaleBridge()
-
-  async function toggle(id: string) {
-    await fetch(api("/persona"), { method: "POST", body: JSON.stringify({ id }) })
-    router.push(route("/"))
-    router.refresh()
-  }
-
   return (
-    <Menu.Root>
-      <Menu.Trigger className="flex w-full items-center gap-2.5 rounded-md p-1 text-left hover:bg-desk-raised/70">
-        {settingsOnly ? (
-          <>
-            <Icon as={Settings2} px={16} className="shrink-0 text-desk-muted" />
-            <span className="t-body min-w-0 flex-1">{translate("persona.settings")}</span>
-          </>
-        ) : (
-          <>
-            <Avatar u={me} />
-            <span className="min-w-0 flex-1">
-              <span className="t-body-m block truncate">
-                {me.firstName} {me.lastName}
-              </span>
-              <span className="t-meta block truncate">
-                {departmentLabel(translate, me.department)}
-              </span>
-            </span>
-          </>
-        )}
-        <Icon as={ChevronDown} px={16} className="shrink-0 text-desk-muted" />
-      </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Content
-          align="start"
-          sideOffset={4}
-          className="z-50 min-w-[220px] rounded-md border bg-desk-surface py-1 shadow-desk-pop"
-        >
-          {everyone.length > 1 && (
-            <>
-              <Menu.Label className="t-micro px-3 py-1">{translate("persona.switch")}</Menu.Label>
-              {everyone.map((u) => (
-                <Menu.Item
-                  key={u.id}
-                  onSelect={() => toggle(u.id)}
-                  className="t-body flex cursor-pointer items-center gap-2.5 px-3 py-1.5 outline-none data-[highlighted]:bg-desk-raised"
-                >
-                  <Avatar u={u} px={24} />
-                  <span className="flex-1">
-                    {u.firstName} {u.lastName}
-                  </span>
-                  {u.id === me.id && <Icon as={Check} px={16} className="text-desk-accent" />}
-                </Menu.Item>
-              ))}
-              <Menu.Separator className="my-1 h-px bg-desk-line" />
-            </>
-          )}
-
-          <Menu.Label className="t-micro px-3 py-1">{translate("persona.language")}</Menu.Label>
-          {DESK_LOCALES.map((code) => (
-            <Menu.Item
-              key={code}
-              onSelect={() => setLocale(code)}
-              className="t-body flex cursor-pointer items-center gap-2.5 px-3 py-1.5 outline-none data-[highlighted]:bg-desk-raised"
-            >
-              <span className="flex-1">{DESK_LOCALE_NAMES[code]}</span>
-              {code === locale && <Icon as={Check} px={16} className="text-desk-accent" />}
-            </Menu.Item>
-          ))}
-
-          {appearance && (
-            <>
-              <Menu.Separator className="my-1 h-px bg-desk-line" />
-              <Menu.Label className="t-micro px-3 py-1">
-                {translate("persona.appearance")}
-              </Menu.Label>
-              {appearance.choices.map((choice) => (
-                <Menu.Item
-                  key={choice.id}
-                  onSelect={() => appearance.set(choice.id)}
-                  className="t-body flex cursor-pointer items-center gap-2.5 px-3 py-1.5 outline-none data-[highlighted]:bg-desk-raised"
-                >
-                  <span className="flex-1">{choice.label}</span>
-                  {choice.id === appearance.current && (
-                    <Icon as={Check} px={16} className="text-desk-accent" />
-                  )}
-                </Menu.Item>
-              ))}
-            </>
-          )}
-        </Menu.Content>
-      </Menu.Portal>
-    </Menu.Root>
+    <Link
+      href={route("/me")}
+      className="flex w-full items-center gap-2.5 rounded-md p-1 text-left hover:bg-desk-raised/70"
+    >
+      <Avatar u={me} />
+      <span className="min-w-0 flex-1">
+        <span className="t-body-m block truncate">
+          {me.firstName} {me.lastName}
+        </span>
+        <span className="t-meta block truncate">{departmentLabel(translate, me.department)}</span>
+      </span>
+      <Icon as={ChevronRight} px={16} className="shrink-0 text-desk-muted" />
+    </Link>
   )
 }

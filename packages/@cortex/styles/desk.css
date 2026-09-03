@@ -70,7 +70,11 @@
   --desk-h-row: 44px;
   --desk-h-nav: 36px;
   --desk-h-bar: 56px;
-  --desk-h-touch: 44px;
+  /* Wysokość paska pokazu. W to miejsce wchodzi po `--desk-h-touch`, który miał
+     DOKŁADNIE TĘ SAMĄ wartość co `--desk-h-row` (44px) i nie był używany przez ani
+     jeden komponent — dwie nazwy na jedną liczbę to zaproszenie, żeby rozjechały się
+     przy pierwszej zmianie i nikt nie wiedział, która jest prawdziwa. */
+  --desk-h-demo: 36px;
   --desk-w-side: 260px;
   --desk-w-result: 360px;
   --desk-measure: 66ch;

@@ -125,7 +125,7 @@ describe("theme powłoki jest nietknięty", () => {
 
   /** Pozostałe role Biurka — sekcja motywu, w której każda z nich musi stać. */
   const DESK_SCALES: Record<string, string[]> = {
-    spacing: ["desk-step", "desk-row", "desk-bar", "desk-touch", "desk-side", "desk-result"],
+    spacing: ["desk-step", "desk-row", "desk-bar", "desk-demo", "desk-side", "desk-result"],
     maxWidth: ["desk-measure", "desk-stream"],
     boxShadow: ["desk-pop", "desk-window"],
     borderRadius: ["desk-pill"],

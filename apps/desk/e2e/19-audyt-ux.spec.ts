@@ -178,7 +178,10 @@ test.describe("Obszar 28b · Drobiazgi z audytu", () => {
     // wtedy, gdy jest schowany klasą, więc liczenie po całej stronie mierzyłoby
     // co innego, niż widzi człowiek.
     await expect(page.locator("main").getByText("Anna Kowalska", { exact: true })).toHaveCount(1)
-    await expect(page.getByText("Język i wygląd")).toBeVisible()
+    // Wejście do ustawień MUSI tu być bez żadnego warunku: pasek boczny jest na 360 px
+    // schowany, więc to jedyna droga do języka. Do 03.09.2026 stało pod `switchable`,
+    // czyli u klienta nie było go wcale.
+    await expect(page.getByRole("button", { name: "Ustawienia" })).toBeVisible()
   })
 
   test("Panel wyniku nie zabiera ćwierci ekranu pustej sprawie", async ({ page, request }) => {
@@ -273,5 +276,65 @@ test.describe("Obszar 28b · Drobiazgi z audytu", () => {
     // Jedna linia tekstu 13 px to ok. 20 px wysokości plus wyściółka; złamanie
     // w środku wyrazu podwaja tę wartość i tak wyglądał ten pasek przed poprawką.
     expect(box!.height).toBeLessThan(34)
+  })
+})
+
+/**
+ * Obszar 28c · SZAFKA — pasek boczny ma stałą, krótką listę miejsc.
+ *
+ * DLACZEGO LICZYMY. Do 03.09.2026 pasek pokazywał listę spraw i listę udostępnionych,
+ * czyli od ośmiu do dwudziestu jeden klikalnych elementów — a lista spraw była DOKŁADNIE
+ * tą samą listą, którą ekran główny rysuje pod polem zlecenia. Kolumna, po której wodzi
+ * się wzrokiem w poszukiwaniu czterech stałych miejsc, przestawała działać.
+ *
+ * Liczba jest tu treścią, nie estetyką, więc pilnuje jej test. Bez niego pierwsza „drobna”
+ * pozycja wróci przy najbliższej okazji i nikt nie zauważy, kiedy zrobiło się ich znowu
+ * dwadzieścia.
+ */
+test.describe("Obszar 28c · Szafka", () => {
+  /** Wszystko, w co da się kliknąć w kolumnie po lewej. */
+  const miejsca = (page: import("@playwright/test").Page) =>
+    page.locator("aside").getByRole("link")
+
+  test("Pracownica ma pięć miejsc, przełożony sześć", async ({ page }) => {
+    await as(page, "anna")
+    await otworz(page, "/")
+    // Nowa sprawa · Sprawy · Moje pliki · Pamięć · wizytówka.
+    await expect(miejsca(page)).toHaveCount(5)
+
+    await as(page, "robert")
+    await otworz(page, "/")
+    // …plus Nadzór, który jest wyłącznie jego.
+    await expect(miejsca(page)).toHaveCount(6)
+    await expect(page.locator("aside").getByRole("link", { name: /Nadzór/ })).toBeVisible()
+  })
+
+  test("Pasek nie powtarza listy spraw z ekranu głównego", async ({ page }) => {
+    await as(page, "anna")
+    await otworz(page, "/")
+    // Tytuł pierwszej sprawy stoi na ekranie głównym i NIE MA go w kolumnie po lewej.
+    const tytul = await page
+      .locator("main")
+      .getByRole("link")
+      .filter({ hasText: /nowa|gotowe|przerwane/i })
+      .first()
+      .innerText()
+      .catch(() => "")
+    const pierwszaLinia = tytul.split("\n")[0]?.trim() ?? ""
+    if (pierwszaLinia.length > 3) {
+      await expect(page.locator("aside").getByText(pierwszaLinia, { exact: true })).toHaveCount(0)
+    }
+    // Zamiast listy stoi LICZBA — i to jest cała zmiana.
+    await expect(page.locator("aside").getByRole("link", { name: /Sprawy/ })).toBeVisible()
+  })
+
+  test("Wizytówka prowadzi do „Ja”, a nie otwiera menu", async ({ page }) => {
+    // Menu z trzema różnymi rzeczami pod jedną strzałką w dół nie ma pierwowzoru
+    // w Outlooku ani w banku. Wizytówka prowadząca do „mojego ekranu” ma go wszędzie.
+    await as(page, "anna")
+    await otworz(page, "/")
+    await page.locator("aside").getByRole("link", { name: /Anna Kowalska/ }).click()
+    await expect(page).toHaveURL(/\/me$/)
+    await expect(page.getByRole("button", { name: "Ustawienia" })).toBeVisible()
   })
 })

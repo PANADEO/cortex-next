@@ -2,13 +2,13 @@ import { policyFor } from "@cortex/desk-core/capability-gate"
 import { departmentLabel } from "@cortex/desk-core/capability-text"
 import { identity } from "@cortex/desk-core/identity"
 import * as memory from "@cortex/desk-core/memory"
-import { everyone } from "@cortex/desk-core/people"
 import { Icon } from "@cortex/desk-ui/components/icon"
-import { Avatar, Persona } from "@cortex/desk-ui/components/persona-switcher"
+import { Avatar } from "@cortex/desk-ui/components/persona-switcher"
+import { SettingsDialog } from "@cortex/desk-ui/components/settings-dialog"
 import { Shell } from "@cortex/desk-ui/components/shell"
 import { deskT } from "@cortex/desk-ui/i18n/server"
 import { HUB, MOUNTED_IN_SHELL, t } from "@cortex/desk-ui/routes"
-import { Brain, ChevronRight, FolderOpen, LayoutGrid, ListChecks, ShieldCheck } from "lucide-react"
+import { Brain, ChevronRight, FolderOpen, LayoutGrid, ListChecks, Settings2, ShieldCheck } from "lucide-react"
 import Link from "next/link"
 
 /**
@@ -20,7 +20,7 @@ import Link from "next/link"
  * ten, na którym stoi opowieść o nadzorze.
  */
 export default async function Page() {
-  const { user: u, switchable } = await identity()
+  const { user: u } = await identity()
   const p = await policyFor(u)
   const translate = await deskT()
   const proposed = (await memory.all(u.id)).filter((m) => m.status === "proposed").length
@@ -102,14 +102,29 @@ export default async function Page() {
             )}
           </div>
 
-          {/* Menu osoby niesie własną wizytówkę, więc na tym ekranie byłaby TRZECIA
-              z rzędu — imię i dział stoją już w nagłówku wyżej. Zostaje to, po co
-              tu naprawdę się wchodzi: przełączenie osoby, język i wygląd. */}
-          {switchable && (
-            <div className="mt-6 rounded-lg border bg-desk-surface p-3">
-              <Persona me={u} everyone={await everyone()} settingsOnly />
-            </div>
-          )}
+          {/*
+            USTAWIENIA STOJĄ BEZWARUNKOWO — i to jest cała poprawka, nie przeniesienie
+            przycisku. Do 03.09.2026 ta sekcja renderowała się pod `switchable`, a
+            `identity()` zwraca tam FAŁSZ wszędzie, gdzie tożsamość daje brama logowania,
+            czyli u każdego klienta. Drugie wejście do języka było w pasku bocznym, który
+            poniżej 768 px nie istnieje. Wychodziło z tego, że pracownica z telefonem nie
+            mogła zmienić języka w ogóle — i nie było o tym ani jednego zgłoszenia, bo
+            nie ma jak zgłosić czegoś, czego się nie znalazło.
+          */}
+          <div className="mt-6 overflow-hidden rounded-lg border bg-desk-surface">
+            <SettingsDialog
+              trigger={
+                <button
+                  type="button"
+                  className="flex h-desk-row w-full items-center gap-2.5 px-4 text-left hover:bg-desk-raised/60"
+                >
+                  <Icon as={Settings2} px={16} className="text-desk-muted" />
+                  <span className="t-body flex-1">{translate("settings.title")}</span>
+                  <Icon as={ChevronRight} px={16} className="text-desk-muted" />
+                </button>
+              }
+            />
+          </div>
 
           <p className="t-micro mt-6">{translate("shell.privacy")}</p>
         </div>

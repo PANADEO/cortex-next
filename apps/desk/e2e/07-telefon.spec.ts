@@ -13,7 +13,12 @@ test.describe("Obszar 7 · Telefon", () => {
   test("Dolna nawigacja prowadzi do plików i z powrotem", async ({ page }) => {
     await as(page, "anna")
     await page.goto("/")
-    const nawigacja = page.locator("nav").filter({ hasText: "Sprawy" }).filter({ hasText: "Pliki" })
+    // DOKŁADNA nazwa, nie fragment. Od 03.09.2026 pasek boczny też jest `<nav>` i też
+    // zawiera „Sprawy" oraz „Moje pliki", więc dopasowanie po fragmencie „Pliki" trafia
+    // w dwa elementy naraz i scenariusz umiera na trybie ścisłym zamiast na treści.
+    const nawigacja = page
+      .getByRole("navigation")
+      .filter({ has: page.getByRole("link", { name: "Pliki", exact: true }) })
     await nawigacja.getByRole("link", { name: "Pliki" }).click()
     await expect(page).toHaveURL(/\/files/)
     await expect(page.getByRole("heading", { name: "Moje pliki" })).toBeVisible()
