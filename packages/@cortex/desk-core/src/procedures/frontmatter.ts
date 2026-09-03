@@ -10,8 +10,12 @@
 // i `context: fork` są w tym formacie legalne, a u nas są zakazane: procedura to WYŁĄCZNIE
 // tekst. Skrypt w procedurze byłby narzędziem bez bramki narzędziowej — czyli obejściem
 // jedynego mechanizmu, na którym stoi zgoda przełożonego. Pominięcie ich po cichu byłoby
-// gorsze niż odrzucenie: przełożony wgrałby plik, zobaczył „przyjęto" i żył w przekonaniu,
-// że jego `hooks` działają.
+// gorsze niż odrzucenie: ktoś wsypałby taki tekst i żył w przekonaniu, że jego `hooks` działają.
+//
+// GDZIE TA ODMOWA DZIŚ TRAFIA. Wyłącznie do `console.error` przy zasiewie, bo wgrywania
+// gotowego `SKILL.md` przez człowieka NIE MA — przełożony wydaje procedurę formularzem,
+// który składa ten tekst z pól. Reguła stoi tu mimo to, bo zasiew idzie tą samą drogą,
+// a upload jest pierwszą rzeczą, która się o nią oprze, gdy dojdzie.
 //
 // Parser jest własny i celowo maleńki. Wciągnięcie biblioteki YAML dla sześciu pól
 // otworzyłoby cały YAML — z kotwicami, znacznikami typów i resztą powierzchni, której

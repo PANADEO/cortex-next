@@ -520,7 +520,8 @@
         "askForProcedure": "Ask your manager to write that rule down. Until then the assistant works from general knowledge."
       }
     },
-    "allFailed": "It did not work"
+    "allFailed": "It did not work",
+    "basedOn": "Based on"
   },
   "mcp": {
     "failed": "That did not work.",

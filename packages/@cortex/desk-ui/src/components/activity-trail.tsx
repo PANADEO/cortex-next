@@ -398,6 +398,7 @@ export function ActivityTrail({
           jedyną rzecz, która odróżnia to narzędzie od zwykłego czatu. */}
       {(evidence.intake.length > 0 ||
         evidence.produced.length > 0 ||
+        evidence.basis.length > 0 ||
         external ||
         uncertain ||
         blocked) && (
@@ -419,6 +420,18 @@ export function ActivityTrail({
             openFile={openFile}
             canOpenFile={canOpenFile}
           />
+          {/* WG CZEGO — spisane zasady firmy, według których zrobiono tę sprawę.
+              Osobna lista, nie wiersz w „Co weszło": procedura nie jest treścią wniesioną
+              do sprawy, tylko PODSTAWĄ. W biurze rachunkowym to jest gotowy dowód należytej
+              staranności i ma się czytać jak taki.
+
+              Stoi NA KOŃCU list, a nie na początku, bo odpowiada na pytanie zadawane po
+              fakcie — „na jakiej podstawie to zrobiłeś" — a nie na „co się stało".
+
+              Bez plakietki pliku: obiektem tego wiersza jest dokument firmy, nie plik
+              w teczce sprawy, więc `Pill` prowadziłby donikąd. Cała treść wiersza — tytuł,
+              wydanie, podpis i data — siedzi w zdaniu. */}
+          <Ledger title={translate("trail.basedOn")} lines={evidence.basis} timeOf={timeOf} />
           {external && (
             <div className="flex gap-2 text-[13px] leading-5">
               <Icon as={Globe} px={14} className="mt-0.5 shrink-0 text-desk-muted" />

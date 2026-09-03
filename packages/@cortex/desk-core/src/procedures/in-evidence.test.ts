@@ -43,12 +43,12 @@ const wroteSheet = (name: string): DeskEvent[] => {
   ]
 }
 
-const podpis = "«Zestawienie VAT», wydanie 3 · wydał Robert Nowak · 12.09.2026"
+const signature = "«Zestawienie VAT», wydanie 3 · wydał Robert Nowak · 12.09.2026"
 
 describe("«Wg czego» w dowodzie", () => {
   it("otwarta procedura daje wiersz z wydaniem i podpisem", () => {
-    const d = evidenceFromEvents(opened("zestawienie-vat", podpis), t)
-    expect(d.basis.map((w) => w.text)).toEqual([`wg procedury ${podpis}`])
+    const d = evidenceFromEvents(opened("zestawienie-vat", signature), t)
+    expect(d.basis.map((w) => w.text)).toEqual([`wg procedury ${signature}`])
     // Wydanie i nazwisko to CAŁA wartość tej listy. Wiersz bez nich mówiłby tylko,
     // że jakaś zasada istniała.
     expect(d.basis[0]?.text).toContain("wydanie 3")
@@ -56,7 +56,7 @@ describe("«Wg czego» w dowodzie", () => {
   })
 
   it("procedura NIE trafia do «Co weszło» ani do «Co powstało»", () => {
-    const d = evidenceFromEvents(opened("zestawienie-vat", podpis), t)
+    const d = evidenceFromEvents(opened("zestawienie-vat", signature), t)
     expect(d.intake).toEqual([])
     expect(d.produced).toEqual([])
   })
@@ -65,14 +65,14 @@ describe("«Wg czego» w dowodzie", () => {
     // Klasa `consults`, a nie `reads`, i to jest cała różnica. Gdyby procedura karmiła
     // zbiór „co weszło z biurka", zdanie o dokumencie powstałym bez zajrzenia do
     // czegokolwiek przestałoby się pojawiać tam, gdzie jest prawdziwe.
-    const d = evidenceFromEvents([...opened("zasady", podpis), ...wroteSheet("z.csv")], t)
+    const d = evidenceFromEvents([...opened("zasady", signature), ...wroteSheet("z.csv")], t)
     expect(d.unverified).toContain(t("evidence.noIntake"))
   })
 
   it("ale gdy plik NAPRAWDĘ wszedł, zdania o braku wejścia nie ma", () => {
     // Kontrola ujemna do testu wyżej.
     const d = evidenceFromEvents(
-      [...opened("zasady", podpis), ...readFile("Moje pliki/f.csv"), ...wroteSheet("z.csv")],
+      [...opened("zasady", signature), ...readFile("Moje pliki/f.csv"), ...wroteSheet("z.csv")],
       t,
     )
     expect(d.unverified).not.toContain(t("evidence.noIntake"))

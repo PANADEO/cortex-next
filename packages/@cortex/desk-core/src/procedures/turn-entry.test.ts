@@ -114,7 +114,7 @@ describe("co idzie do promptu i ile kosztuje", () => {
 })
 
 describe("wskazówka przy dotknięciu ścieżki", () => {
-  const faktury = make({
+  const invoices = make({
     name: "faktury-zakupowe",
     loading: "paths",
     paths: ["Moje pliki/Faktury"],
@@ -144,7 +144,7 @@ describe("wskazówka przy dotknięciu ścieżki", () => {
   })
 
   it("mówi o procedurze, gdy czynność sięgnęła po pasujący plik", () => {
-    const s = hintFor([faktury], { path: "Moje pliki/Faktury/08/f1.pdf" }, new Set())
+    const s = hintFor([invoices], { path: "Moje pliki/Faktury/08/f1.pdf" }, new Set())
     expect(s).toContain("«Tytuł faktury-zakupowe»")
     expect(s).toContain("open_procedure")
     // Wskazówka NIE niesie treści procedury. Gdyby niosła, procedura weszłaby do tury
@@ -153,15 +153,15 @@ describe("wskazówka przy dotknięciu ścieżki", () => {
   })
 
   it("milczy, gdy nic nie pasuje", () => {
-    expect(hintFor([faktury], { path: "Moje pliki/Umowy/u1.pdf" }, new Set())).toBe("")
-    expect(hintFor([faktury], { description: "policz coś" }, new Set())).toBe("")
+    expect(hintFor([invoices], { path: "Moje pliki/Umowy/u1.pdf" }, new Set())).toBe("")
+    expect(hintFor([invoices], { description: "policz coś" }, new Set())).toBe("")
   })
 
   it("nie przypomina o procedurze już otwartej w tej turze", () => {
     // Inaczej model dostawałby to samo zdanie przy każdym kolejnym pliku i marnował
     // kroki na drugie wywołanie tej samej czynności.
     const s = hintFor(
-      [faktury],
+      [invoices],
       { path: "Moje pliki/Faktury/f.pdf" },
       new Set(["faktury-zakupowe"]),
     )
@@ -171,7 +171,7 @@ describe("wskazówka przy dotknięciu ścieżki", () => {
   it("procedura w innym trybie NIE zapala wskazówki", () => {
     // Kontrola ujemna: bez niej `index` z wypełnionym `paths` (czego parser zresztą nie
     // wpuści) dublowałby się między indeksem a wskazówką.
-    const jako = make({ name: "vat", loading: "index", paths: ["Moje pliki/Faktury"] })
-    expect(hintFor([jako], { path: "Moje pliki/Faktury/f.pdf" }, new Set())).toBe("")
+    const asIndex = make({ name: "vat", loading: "index", paths: ["Moje pliki/Faktury"] })
+    expect(hintFor([asIndex], { path: "Moje pliki/Faktury/f.pdf" }, new Set())).toBe("")
   })
 })

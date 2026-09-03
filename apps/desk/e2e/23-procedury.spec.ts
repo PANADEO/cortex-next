@@ -167,6 +167,78 @@ test.describe("Obszar 33 · Jak to robimy — zasady firmy na ekranie", () => {
     await page.getByRole("button", { name: "Anuluj" }).click()
   })
 
+  test("Sprawa zrobiona według zasady pokazuje to w dowodzie — z wydaniem i podpisem", async ({
+    page,
+    request,
+  }) => {
+    /**
+     * STRAŻNIK NA BRAK, KTÓRY PRZESZEDŁ WSZYSTKIE POZOSTAŁE BRAMKI.
+     *
+     * Lista „Wg czego" powstawała w `evidence.ts` i miała komplet testów jednostkowych —
+     * zielonych — a `activity-trail.tsx` nie odwoływał się do niej ANI RAZ. Na ekranie nie
+     * było jej wcale. Testy sprawdzały strukturę danych, żaden nie dotykał ekranu, więc
+     * produkt ogłoszono skończonym z brakiem tej jednej rzeczy, dla której ADR-0001 §4
+     * każe w ogóle wpuszczać procedury do dowodu.
+     *
+     * Dlatego ten scenariusz idzie PRZEZ PRZEGLĄDARKĘ i pyta o NAPISY, a nie o pola.
+     */
+    const r = await request.post("/api/test/seed-turn", {
+      headers: ANNA,
+      data: {
+        title: "Dowód z podstawą",
+        status: "done",
+        events: [
+          {
+            type: "tool_start",
+            id: "p1",
+            name: "open_procedure",
+            label: "zestawienie-vat",
+            args: { name: "zestawienie-vat" },
+          },
+          {
+            type: "tool_end",
+            id: "p1",
+            name: "open_procedure",
+            ok: true,
+            ms: 40,
+            summary: `«${VAT}», wydanie 9 · wydał Robert Nowak · 03.09.2026`,
+          },
+          {
+            type: "tool_start",
+            id: "r1",
+            name: "read_file",
+            label: "faktury-08.csv",
+            args: { path: "Moje pliki/faktury-08.csv" },
+          },
+          {
+            type: "tool_end",
+            id: "r1",
+            name: "read_file",
+            ok: true,
+            summary: "24 wiersze",
+            ms: 12,
+          },
+        ],
+      },
+    })
+    expect(r.ok(), "nie udało się zasiać sprawy z podstawą").toBe(true)
+    const id = (await r.json()).id as string
+
+    await as(page, "anna")
+    await otworz(page, `/case/${id}`)
+
+    const basedOn = page.getByRole("list", { name: "Wg czego" })
+    await expect(basedOn).toBeVisible()
+    // Wydanie i nazwisko to CAŁA wartość tej listy — bez nich mówiłaby tylko, że jakaś
+    // zasada istniała, a nie że sprawę zrobiono według konkretnego, podpisanego tekstu.
+    await expect(basedOn).toContainText(VAT)
+    await expect(basedOn).toContainText("wydanie 9")
+    await expect(basedOn).toContainText("Robert Nowak")
+
+    // I NIE JEST to wiersz w „Co weszło": procedura nie jest treścią wniesioną do sprawy.
+    await expect(page.getByRole("list", { name: "Co weszło" })).not.toContainText(VAT)
+  })
+
   test("Żadna sekcja nadzoru nie chowa się poza kadrem listwy", async ({ page }) => {
     /**
      * Dołożenie zakładki „Procedury" przesunęło listwę do 719 px przy 680 px szerokości

@@ -129,9 +129,14 @@ export type Draft = {
  * DLACZEGO W OGÓLE SKŁADAMY TEKST, skoro `publish` przyjmuje gotowy obiekt. Bo wtedy
  * walidacja byłaby DRUGA: musiałbym tu powtórzyć wzorzec nazwy, zakaz pustej treści
  * i obie połowy reguły o wzorcach ścieżek. Dwa zestawy reguł na to samo rozjeżdżają się
- * przy pierwszej poprawce w jednym z nich, a rozjazd wychodzi dopiero na pliku wgranym
- * ręcznie. Tekst przechodzi więc przez ten sam `parseSkill`, co plik od człowieka —
- * drugiej drogi wejścia procedury do produktu nie ma.
+ * przy pierwszej poprawce w jednym z nich. Tekst przechodzi więc przez ten sam `parseSkill`,
+ * co zasiew — drugiego zestawu reguł na to samo w produkcie nie ma.
+ *
+ * WGRYWANIA GOTOWEGO PLIKU `SKILL.md` PRZEZ CZŁOWIEKA NIE MA i nie było w pierwszym cięciu.
+ * Formularz jest jedyną drogą, którą przełożony wydaje procedurę. Gdyby upload kiedyś doszedł,
+ * `refusalFor` niżej NIE MA jeszcze gałęzi dla `forbidden-key` — plik ze `scripts` dostałby
+ * ogólne „nie umiem tego przeczytać" zamiast nazwy zakazanego klucza, czyli dokładnie
+ * odwrotnie, niż każe ADR-0001 §5. To jest do dopisania RAZEM z uploadem, nie wcześniej.
  *
  * Poprawność samego składania pilnuje PRZEBIEG TAM I Z POWROTEM w `readBack` niżej,
  * a nie moja wiara w to, że wszystkie znaki są niewinne.

@@ -553,7 +553,8 @@
         "askForProcedure": "Poproś przełożonego, żeby taką zasadę spisał. Do tego czasu asystent pracuje według tego, co umie ogólnie."
       }
     },
-    "allFailed": "Nie udało się"
+    "allFailed": "Nie udało się",
+    "basedOn": "Wg czego"
   },
   "mcp": {
     "failed": "Nie udało się.",
