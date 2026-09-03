@@ -55,7 +55,6 @@ export function FileRow({
   origin,
   picked,
   pick,
-  picking,
 }: {
   p: FileMeta
   actions: FileActions
@@ -67,8 +66,6 @@ export function FileRow({
    */
   picked?: boolean | undefined
   pick?: ((path: string, shift: boolean) => void) | undefined
-  /** Czy pola wyboru mają być widoczne bez najeżdżania — prawda, gdy coś już zaznaczono. */
-  picking?: boolean | undefined
   /**
    * Sprawa, z której ten plik przyszedł — WYŁĄCZNIE gdy istnieje na to zdarzenie.
    * Plik bez pochodzenia nie dostaje żadnej plakietki, a w szczególności nie dostaje
@@ -131,31 +128,29 @@ export function FileRow({
         onKeyDown={shortcuts}
         className={`group flex h-desk-row items-center gap-2 px-3 ${picked ? "bg-desk-accent-soft" : "hover:bg-desk-raised/60"}`}
       >
-        {/* Ikona typu i pole wyboru dzielą to samo miejsce: rozszerzenie odróżnia
-            .csv od .md i nie ma go po co tracić, dopóki nikt niczego nie zaznacza. */}
-        <span className="relative grid w-7 shrink-0 place-items-center text-desk-muted">
-          <Icon
-            as={fileIcon(p)}
-            px={16}
-            className={pick ? (picked || picking ? "opacity-0" : "group-hover:opacity-0") : ""}
+        {/* POLE WYBORU STOI ZAWSZE, i to jest cała zmiana z 03.09.2026.
+            Wcześniej dzieliło miejsce z ikoną typu i wychodziło z ukrycia dopiero pod
+            myszą — a rzecz, na którą trzeba najechać, żeby się dowiedzieć, że istnieje,
+            nie istnieje dla nikogo, kto o niej nie wie. Zaznaczanie wielu plików było
+            więc funkcją dla tych, którzy ją już znali. Kwadracik po lewej stronie wiersza
+            pani Basia widziała w poczcie i na dysku firmowym; to jest znana forma.
+            Ikona typu przestaje się z nim przepychać i dostaje własne miejsce, bo
+            rozszerzenie odróżnia .csv od .md i nie ma go po co tracić. */}
+        {pick && (
+          <input
+            type="checkbox"
+            checked={Boolean(picked)}
+            // Zaznaczenie zakresem: Shift bierze wszystko od ostatniego kliknięcia.
+            // Bez tego „zaznacz te dwadzieścia" to dwadzieścia kliknięć, czyli ten
+            // sam problem, który to zaznaczanie ma rozwiązać.
+            onClick={(e) => pick(p.path, e.shiftKey)}
+            onChange={() => {}}
+            aria-label={translate("files.pick", { name: p.name })}
+            className="h-4 w-4 shrink-0 accent-desk-accent"
           />
-          {pick && (
-            <input
-              type="checkbox"
-              checked={Boolean(picked)}
-              // Zaznaczenie zakresem: Shift bierze wszystko od ostatniego kliknięcia.
-              // Bez tego „zaznacz te dwadzieścia" to dwadzieścia kliknięć, czyli ten
-              // sam problem, który to zaznaczanie ma rozwiązać.
-              onClick={(e) => pick(p.path, e.shiftKey)}
-              onChange={() => {}}
-              aria-label={translate("files.pick", { name: p.name })}
-              className={`absolute h-4 w-4 accent-desk-accent ${
-                picked || picking
-                  ? ""
-                  : "opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
-              }`}
-            />
-          )}
+        )}
+        <span className="grid w-7 shrink-0 place-items-center text-desk-muted">
+          <Icon as={fileIcon(p)} px={16} />
         </span>
 
         {editing ? (
@@ -189,15 +184,26 @@ export function FileRow({
 
         {origin && (
           // Link, nie napis — to jedyna droga powrotna od wyniku do jego uzasadnienia.
-          // Na wąskim ekranie zostaje sama ikona, żeby nie zjadać nazwy pliku.
+          //
+          // PLAKIETKA ALBO JEJ BRAK, nigdy sama ikona. Do 03.09.2026 poniżej 640 px znikał
+          // sam TYTUŁ (`hidden sm:inline`) i zostawała goła chmurka z dymkiem — a dymka nie
+          // ma czym wywołać na ekranie dotykowym, więc na telefonie stał tu znaczek, którego
+          // nikt nie miał jak odczytać. Zejście tytułu do jednego wyrazu też nie jest
+          // wyjściem: przy 360 px plakietka zjadała nazwę pliku do trzech liter, a nazwa
+          // jest w tym wierszu treścią, plakietka tylko przypisem.
+          // Poniżej 640 px plakietka wypada więc W CAŁOŚCI, a droga powrotna zostaje —
+          // „Otwórz sprawę, z której przyszedł" stoi w menu pod trzema kropkami, które
+          // od tej samej poprawki widać bez najeżdżania.
           <a
             href={t(`/case/${origin.caseId}`)}
+            // Nazwa dla czytnika ZAWIERA widoczny tytuł i dokłada mu zdanie („Ze sprawy: …"),
+            // więc oko i ucho nie rozjeżdżają się — dopowiada, nie podmienia.
             aria-label={translate("fileRow.fromCase", { title: origin.title })}
             title={translate("fileRow.fromCase", { title: origin.title })}
-            className="t-micro flex max-w-[11rem] shrink-0 items-center gap-1 rounded-sm px-1.5 py-0.5 text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
+            className="t-micro hidden max-w-[11rem] shrink-0 items-center gap-1 rounded-sm px-1.5 py-0.5 text-desk-muted hover:bg-desk-raised hover:text-desk-ink sm:flex"
           >
-            <Icon as={MessageSquareText} px={12} />
-            <span className="hidden truncate sm:inline">{origin.title}</span>
+            <Icon as={MessageSquareText} px={12} className="shrink-0" />
+            <span className="min-w-0 truncate">{origin.title}</span>
           </a>
         )}
 
@@ -209,9 +215,18 @@ export function FileRow({
         </span>
 
         <Menu.Root>
+          {/* TRZY KROPKI STOJĄ ZAWSZE. Do 03.09.2026 wychodziły spod `opacity-0` dopiero
+              pod myszą, a za nimi leży WSZYSTKO, co da się z plikiem zrobić: podgląd,
+              pobranie, zmiana nazwy, przeniesienie, usunięcie. Dla kogoś, kto nie wie,
+              że tam coś jest, plik nie miał więc żadnych czynności — a to jest dokładnie
+              ta osoba, dla której ten produkt powstał.
+              Same kropki zostają bez podpisu świadomie: to jest znana forma („więcej"
+              w poczcie, w Teamsach, w telefonie), a nie ikona-zagadka, i cała jej treść
+              stoi rozpisana słowami w menu, które otwiera. Warunkiem jest to, żeby dało
+              się ją zobaczyć bez najeżdżania — i to jest właśnie ta poprawka. */}
           <Menu.Trigger
             aria-label={translate("fileRow.more", { name: p.name })}
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-sm text-desk-muted opacity-0 hover:bg-desk-raised focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
           >
             <Icon as={MoreHorizontal} px={16} />
           </Menu.Trigger>

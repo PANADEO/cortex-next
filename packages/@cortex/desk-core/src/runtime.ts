@@ -864,7 +864,7 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
     t.run_computation = tool({
       description:
         "Uruchamia kod na danych i ODDAJE PLIKI, które ten kod zapisze. Podaj kod oraz " +
-        'listę plików z biurka w polu `pliki` — zostaną zamontowane w katalogu roboczym ' +
+        "listę plików z biurka w polu `pliki` — zostaną zamontowane w katalogu roboczym " +
         'pod swoimi nazwami (np. "faktury-08.csv"). Wypisz wynik przez print/console.log. ' +
         "KAŻDY PLIK ZAPISANY W KATALOGU ROBOCZYM TRAFIA DO TECZKI SPRAWY — tak powstają " +
         "dokumenty (pandoc: .docx, .pdf), arkusze i wykresy z danych (matplotlib). " +
@@ -967,7 +967,20 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
                     : "błąd wykonania"),
               ...(failure === undefined ? {} : { reason: failure }),
               answer: [r.output || "(brak wyjścia)", ...saidAboutFiles].join("\n\n"),
-              ...(made.length > 0 ? { produced: made } : {}),
+              // NAZWY WYTWORZONYCH PLIKÓW IDĄ DO ZDARZENIA, nie tylko do modelu.
+              //
+              // Do 03.09.2026 stało tu `produced: made` — a `produced` NIE JEST polem
+              // `StepResult`. Rozsypanie omija sprawdzanie nadmiarowych pól, więc `tsc`
+              // milczał i linia nie publikowała niczego. Nazwy docierały do modelu przez
+              // `answer` i nigdzie indziej; w „Co powstało" stał jeden wiersz „policzone,
+              // plików: 4" — liczba bez nazw, w którą nie da się kliknąć. Pilnuje tego
+              // teraz `step-result-shape.test.ts`, bo kompilator tej klasy błędu nie widzi.
+              //
+              // Nazwy BAZOWE, nie ścieżki: `collect()` oddaje ścieżki logiczne w teczce
+              // sprawy, a w dowodzie rzeczą jest plik. Ścieżkę zna karta artefaktu.
+              ...(made.length > 0
+                ? { discovered: { made: made.map((one) => path.basename(one)) } }
+                : {}),
             }
           } finally {
             await box.dispose().catch(() => {})

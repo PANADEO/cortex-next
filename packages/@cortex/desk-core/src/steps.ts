@@ -69,8 +69,14 @@ export function pairSteps(events: DeskEvent[]): Step[] {
   return steps
 }
 
-/** Nazwa pliku bez ścieżki — w tytule kroku pokazujemy sam plik, ścieżka schodzi do szczegółu. */
-function baseName(s: string) {
+/**
+ * Nazwa pliku bez ścieżki — w tytule kroku pokazujemy sam plik, ścieżka schodzi do szczegółu.
+ *
+ * Wyprowadzona, bo tej samej nazwy potrzebuje dowód: wiersz potwierdzenia prowadzi do pliku,
+ * a teczka sprawy zna pliki po nazwie, nie po ścieżce logicznej. Druga kopia tych trzech
+ * znaków rozeszłaby się przy pierwszej zmianie separatora.
+ */
+export function baseName(s: string) {
   return s.split("/").filter(Boolean).pop() ?? s
 }
 
@@ -303,27 +309,45 @@ const CHANGED_UNKNOWN = "trail.failure.changed.unknown"
 const NO_REASON: StepFailure = "unknown"
 
 /**
- * `approver` — „Imię Nazwisko" osoby, która w tej firmie wydaje zgody; pusto, gdy Biurko
+ * KTO PATRZY — bo od tego zależy, kogo zdanie „co teraz" ma wskazać.
+ *
+ * `approver` to „Imię Nazwisko" osoby, która w tej firmie wydaje zgody; pusto, gdy Biurko
  * nie umie jej wskazać. Bierze się stąd, że zdanie „co teraz" nie może kończyć się
  * BEZIMIENNYM adresatem. Pierwsza wersja tego kodu odsyłała do „administratora" i to był
  * ten sam ślepy zaułek, który zamykamy przy kłódce — tylko przeniesiony o jeden ekran.
  * Pani Basia nie wie, kto to administrator, i nie ma jak go zapytać.
+ *
+ * `iAmTheApprover` domyka to samo z drugiej strony i jest to poprawka spisana po tym, jak
+ * ta sama usterka wyszła w kłódce (`lock.tsx`, `lock.youDecide`). Bez niej Robert czytał
+ * na WŁASNEJ sprawie „powiedz o tym swojemu przełożonemu: Robert Nowak" — czyli był
+ * odsyłany do samego siebie, na koncie, na którym jako jedyny mógł cokolwiek z tym zrobić.
+ * Odesłanie do samego siebie jest ślepym zaułkiem tak samo jak odesłanie do nikogo,
+ * a wygląda dodatkowo na usterkę — i to u tej jednej osoby, która ten produkt pokazuje.
  */
+export type FailureViewer = {
+  approver?: string | undefined
+  iAmTheApprover?: boolean | undefined
+}
+
 export function describeFailure(
   k: Step,
   translate: DeskT,
-  approver?: string,
+  viewer?: FailureViewer,
 ): FailureText | null {
   if (k.status !== "failed") return null
   const reason = k.reason ?? NO_REASON
   const c = cardFor(k.name, k.source)
   const changed = UNCERTAIN_EFFECT.includes(reason) ? CHANGED_UNKNOWN : CHANGED[c.kind]
+  // Imię wchodzi do zdania tylko wtedy, gdy jest KOMU je powiedzieć — a osobie, która
+  // sama wydaje zgody, zostaje zdanie bez adresata. Ono nikogo nie wskazuje, ale też
+  // nikogo nie zapętla; wskazanie jej samej byłoby gorsze niż brak wskazania.
+  const person = viewer?.iAmTheApprover ? undefined : viewer?.approver
   // Wariant z imieniem wyłącznie tam, gdzie zdanie i tak kogoś przywołuje. Konstrukcja
   // „swojemu przełożonemu: Robert Nowak" omija odmianę polskiego imienia — dopełniacz
   // i celownik wymagałyby słownika fleksyjnego, którego tu nie ma i nie będzie.
   const next =
-    NEXT[reason] === "trail.failure.next.tryAgain" && approver
-      ? translate("trail.failure.next.tryAgainTell", { person: approver })
+    NEXT[reason] === "trail.failure.next.tryAgain" && person
+      ? translate("trail.failure.next.tryAgainTell", { person })
       : translate(NEXT[reason])
   return {
     happened: translate(HAPPENED[reason]),

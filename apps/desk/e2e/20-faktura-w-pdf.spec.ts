@@ -47,7 +47,7 @@ test.describe("Obszar 29 · Faktura w PDF przestaje być ślepym zaułkiem", () 
       ],
       pl,
     )
-    expect(d.intake).toEqual([
+    expect(d.intake.map((w) => w.text)).toEqual([
       "Moje pliki/faktury-08.csv — 10 wierszy",
       "rozpoznano Moje pliki/faktura.pdf — 1 strona",
     ])
@@ -76,7 +76,9 @@ test.describe("Obszar 29 · Faktura w PDF przestaje być ślepym zaułkiem", () 
       [...para("a", "read_document", { path: "umowa.pdf" }, "20 z 34 stron; dalszych nie odczytano")],
       pl,
     )
-    expect(d.intake).toEqual(["rozpoznano umowa.pdf — 20 z 34 stron; dalszych nie odczytano"])
+    expect(d.intake.map((w) => w.text)).toEqual([
+      "rozpoznano umowa.pdf — 20 z 34 stron; dalszych nie odczytano",
+    ])
   })
 
   test("Odczyt i rozpoznanie nie zlewają się w jedno zdanie, bo to dwie różne rzeczy", () => {

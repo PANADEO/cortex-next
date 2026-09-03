@@ -67,10 +67,17 @@ export function AttachmentChip({
       )}
 
       {remove && !z.uploading && (
+        // KRZYŻYK STOI ZAWSZE. Do 03.09.2026 pojawiał się dopiero pod myszą, więc dołączony
+        // przez pomyłkę plik nie miał widocznej drogi odwrotu — a to jest ta jedna chwila,
+        // w której człowiek najbardziej potrzebuje zobaczyć, że da się cofnąć.
+        // Krzyżyk zostaje bez podpisu, bo nie jest ikoną-zagadką: to znana forma domknięcia
+        // przypiętego do NAZWANEJ rzeczy (karta w przeglądarce, załącznik w poczcie),
+        // a nazwa pliku stoi tuż obok. Słowo „Usuń" na kaflu o szerokości 210 px
+        // wypchnęłoby tę nazwę, czyli zabrałoby jedyną informację, która tu jest treścią.
         <button
           onClick={remove}
           aria-label={translate("attachments.remove", { name: z.name })}
-          className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-desk-pill border bg-desk-surface text-desk-muted opacity-0 shadow-desk-pop transition hover:text-desk-ink focus-visible:opacity-100 group-hover/chip:opacity-100 [@media(hover:none)]:opacity-100"
+          className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-desk-pill border bg-desk-surface text-desk-muted shadow-desk-pop transition hover:text-desk-ink"
         >
           <Icon as={X} px={12} />
         </button>

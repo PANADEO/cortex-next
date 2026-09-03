@@ -145,16 +145,26 @@ export function ResultPanel({
         )}
       </div>
 
-      <div className="flex shrink-0 items-center gap-1 border-b px-3 py-2">
+      {/* `flex-wrap`: panel schodzi suwakiem do 320 px, a podpisy w innym języku bywają
+          dłuższe niż polskie. Zawinięcie do drugiej linii jest gorsze od jednej linii,
+          ale nieporównanie lepsze od podpisu uciętego poza krawędzią panelu. */}
+      <div className="flex shrink-0 flex-wrap items-center gap-1 border-b px-3 py-2">
         <Action
           icon={Download}
-          title={translate("files.download")}
+          label={translate("files.download")}
           na={() => window.open(fileUrl(active, true), "_blank")}
         />
-        <Action icon={FolderInput} title={translate("fileRow.toMyFiles")} na={toMyFiles} />
+        <Action
+          icon={FolderInput}
+          label={translate("result.save")}
+          // Podpis mówi CZYNNOŚĆ, dymek dopowiada MIEJSCE. Pełne „Zapisz do Moich plików"
+          // na przycisku wypycha z tej listwy dwa pozostałe działania.
+          hint={translate("fileRow.toMyFiles")}
+          na={toMyFiles}
+        />
         <Action
           icon={copied ? Check : Copy}
-          title={copied ? translate("result.copied") : translate("result.copy")}
+          label={copied ? translate("result.copied") : translate("result.copy")}
           na={copy}
         />
       </div>
@@ -231,15 +241,36 @@ function FromYou({
   )
 }
 
-function Action({ icon, title, na }: { icon: LucideIcon; title: string; na: () => void }) {
+/**
+ * Działanie na wyniku niesie SŁOWO, nie samą ikonę.
+ *
+ * Do 03.09.2026 stały tu trzy gołe ikony z `aria-label`. Czytnik ekranu je nazywał, wzrok —
+ * nie: strzałka w dół, teczka ze strzałką i dwie kartki nie mają pierwowzoru, do którego
+ * pani Basia mogłaby je przyłożyć. To jest najważniejszy panel w produkcie i akurat w nim
+ * trzy jedyne czynności były zagadką; a osoba, która boi się, że coś zepsuje, zagadek nie
+ * klika. Dymek nie jest podpisem — trzeba wiedzieć, że tam coś jest, żeby na to najechać.
+ *
+ * `aria-label` znika razem z tym: gdy przycisk ma widoczny napis, druga nazwa dla czytnika
+ * potrafi się z nim rozjechać, a wtedy „kliknij Pobierz" znaczy co innego dla oka i dla ucha.
+ */
+function Action({
+  icon,
+  label,
+  hint,
+  na,
+}: {
+  icon: LucideIcon
+  label: string
+  hint?: string | undefined
+  na: () => void
+}) {
   return (
     <button
       onClick={na}
-      title={title}
-      aria-label={title}
-      className="grid h-8 w-8 place-items-center rounded-sm text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
+      {...(hint ? { title: hint } : {})}
+      className="flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-sm px-2 text-[13px] text-desk-muted hover:bg-desk-raised hover:text-desk-ink"
     >
-      <Icon as={icon} px={16} />
+      <Icon as={icon} px={16} /> {label}
     </button>
   )
 }

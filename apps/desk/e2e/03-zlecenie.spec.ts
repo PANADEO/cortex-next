@@ -10,6 +10,13 @@ import { as, expect, test } from "./osoby"
  */
 const pl = makeDeskT("pl")
 
+/**
+ * Dowód jest listą WIERSZY, nie napisów: wiersz niesie jeszcze słowo statusu, plik do
+ * kliknięcia i indeks zdarzenia, po którym ekran bierze godzinę. Tam, gdzie sprawdzamy
+ * TREŚĆ dowodu, a nie jego układ na ekranie, pytamy o same zdania.
+ */
+const tresc = (rows: { text: string }[]) => rows.map((w) => w.text)
+
 /** Pole zlecenia ma etykietę, nie tekst zastępczy — i ta etykieta nie znika przy pisaniu. */
 const POLE = "Napisz, co mam zrobić"
 
@@ -63,7 +70,10 @@ test.describe("Obszar 3 · Zlecam robotę, dostaję dokument z dowodem", () => {
 
       // dowód jest dostępny po rozwinięciu przebiegu
       await rozwin(summary)
-      await expect(przebieg.getByText("Sprawdzone:")).toBeVisible()
+      // Dowód rozdziela to, co WESZŁO, od tego, co POWSTAŁO — dwie różne rzeczy, dwa
+      // nagłówki. Wcześniej stały pod wspólnym słowem „Sprawdzone:".
+      await expect(przebieg.getByText("Co weszło")).toBeVisible()
+      await expect(przebieg.getByText("Co powstało")).toBeVisible()
       await expect(
         przebieg.getByText(/To jest lista tego, co faktycznie się wydarzyło/),
       ).toBeVisible()
@@ -148,7 +158,7 @@ test.describe("Reguła dowodu — dowód pochodzi ze zdarzeń, nie z opowieści 
       pl,
     )
     expect(d.unverified).toContain("zawartość pliku w.md po zapisie")
-    expect(d.produced.join(" ")).not.toMatch(/sprawdzi/i)
+    expect(tresc(d.produced).join(" ")).not.toMatch(/sprawdzi/i)
   })
 
   test('Sprawdzony dokument nie trafia do „Nie sprawdzone"', () => {
@@ -243,8 +253,8 @@ test.describe("Reguła dowodu — dowód pochodzi ze zdarzeń, nie z opowieści 
       pl,
     )
     // nieudany zapis nie może przypisać sobie sukcesu odczytu
-    expect(d.intake.join(" ")).toMatch(/a\.csv/)
-    expect(d.produced.join(" ")).not.toMatch(/w\.md/)
+    expect(tresc(d.intake).join(" ")).toMatch(/a\.csv/)
+    expect(tresc(d.produced).join(" ")).not.toMatch(/w\.md/)
   })
 })
 

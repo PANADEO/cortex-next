@@ -1,5 +1,9 @@
+import { makeDeskT } from "@cortex/desk-ui/i18n/locale"
 import type { APIRequestContext } from "@playwright/test"
 import { as, expect, otworz, test } from "./osoby"
+
+/** Napisy czyta człowiek po polsku — bierzemy je stąd, nie z pamięci. */
+const pl = makeDeskT("pl")
 
 /**
  * Obszar 28 · CZTERY RZECZY, KTÓRE AUDYTOR ZOBACZY W PIERWSZYCH PIĘCIU MINUTACH.
@@ -107,9 +111,9 @@ test.describe("Obszar 28 · Awaria nie obwinia pracownicy", () => {
     // Powtórzenie wpisuje TO SAMO zlecenie z powrotem w pole — a nie wysyła go samo,
     // bo wysłanie kosztuje i decyduje o nim człowiek.
     await page.getByRole("button", { name: "Spróbuj jeszcze raz" }).click()
-    await expect(page.getByRole("textbox", { name: /Co mam zrobić|zlecenie/i }).first()).toHaveValue(
-      "Policz sumę z faktur za sierpień.",
-    )
+    await expect(
+      page.getByRole("textbox", { name: /Co mam zrobić|zlecenie/i }).first(),
+    ).toHaveValue("Policz sumę z faktur za sierpień.")
   })
 
   test("Wyczerpanie limitu kroków nie udaje sukcesu", async ({ page, request }) => {
@@ -141,7 +145,10 @@ test.describe("Obszar 28 · Nadzór nie odjeżdża z listą spraw", () => {
     await expect(link).toBeInViewport()
 
     // ...także po przewinięciu listy spraw do końca
-    await page.locator("nav").first().evaluate((n) => n.scrollTo(0, n.scrollHeight))
+    await page
+      .locator("nav")
+      .first()
+      .evaluate((n) => n.scrollTo(0, n.scrollHeight))
     await expect(link).toBeInViewport()
   })
 })
@@ -293,8 +300,7 @@ test.describe("Obszar 28b · Drobiazgi z audytu", () => {
  */
 test.describe("Obszar 28c · Szafka", () => {
   /** Wszystko, w co da się kliknąć w kolumnie po lewej. */
-  const miejsca = (page: import("@playwright/test").Page) =>
-    page.locator("aside").getByRole("link")
+  const miejsca = (page: import("@playwright/test").Page) => page.locator("aside").getByRole("link")
 
   test("Pracownica ma pięć miejsc, przełożony sześć", async ({ page }) => {
     await as(page, "anna")
@@ -333,8 +339,129 @@ test.describe("Obszar 28c · Szafka", () => {
     // w Outlooku ani w banku. Wizytówka prowadząca do „mojego ekranu” ma go wszędzie.
     await as(page, "anna")
     await otworz(page, "/")
-    await page.locator("aside").getByRole("link", { name: /Anna Kowalska/ }).click()
+    await page
+      .locator("aside")
+      .getByRole("link", { name: /Anna Kowalska/ })
+      .click()
     await expect(page).toHaveURL(/\/me$/)
     await expect(page.getByRole("button", { name: "Ustawienia" })).toBeVisible()
+  })
+})
+
+/**
+ * Obszar 28d · NIC KLIKALNEGO NIE CZEKA NA MYSZ, A IKONA BEZ PODPISU NIE ISTNIEJE.
+ *
+ * DLACZEGO TUTAJ, A NIE W TEŚCIE JEDNOSTKOWYM. Widoczność jest tu skutkiem ARKUSZA STYLÓW,
+ * nie drzewa: `opacity-0` zostawia element w DOM, o pełnym rozmiarze i klikalny — więc
+ * `toBeVisible()` Playwrighta też mówi na niego „widoczny", a jsdom nie stosuje Tailwinda
+ * i nie widzi tu w ogóle niczego. Jedynym pomiarem, który to rozstrzyga, jest wyliczona
+ * przezroczystość w prawdziwej przeglądarce. Źródła pilnuje osobno
+ * `packages/@cortex/desk-ui/src/components/visible-controls.test.tsx`.
+ */
+test.describe("Obszar 28d · Widać bez najeżdżania", () => {
+  test("Trzy kropki i pole wyboru w wierszu pliku widać od razu", async ({ page, request }) => {
+    // Za trzema kropkami leży WSZYSTKO, co da się z plikiem zrobić — podgląd, pobranie,
+    // zmiana nazwy, przeniesienie, usunięcie. Do 03.09.2026 wychodziły spod `opacity-0`
+    // dopiero pod myszą, więc dla kogoś, kto o nich nie wiedział, plik nie miał żadnych
+    // czynności. Pole wyboru chowało się tak samo i zabierało ze sobą całe zaznaczanie
+    // wielu plików naraz.
+    const name = `bez-najezdzania-${Date.now()}.txt`
+    const fd = new FormData()
+    fd.append("folder", "Moje pliki")
+    fd.append("file", new File(["treść"], name, { type: "text/plain" }))
+    await request.post("/api/files/upload", { headers: anna, multipart: fd })
+
+    await as(page, "anna")
+    await otworz(page, "/files")
+    // Kursor stoi z dala od listy — inaczej mierzylibyśmy stan PO najechaniu, czyli
+    // dokładnie to, czego ten scenariusz ma nie przepuścić.
+    await page.mouse.move(0, 0)
+
+    const more = page.getByRole("button", { name: `Więcej opcji dla ${name}` })
+    await expect(more).toBeVisible()
+    await expect(more).toHaveCSS("opacity", "1")
+
+    const box = page.getByRole("checkbox", { name: `Zaznacz ${name}` })
+    await expect(box).toBeVisible()
+    await expect(box).toHaveCSS("opacity", "1")
+
+    // Sprzątamy po sobie: bez tego każdy przebieg zostawia plik na biurku Anny.
+    await request.post("/api/files", {
+      headers: anna,
+      data: { action: "trash", path: `Moje pliki/${name}` },
+    })
+  })
+
+  test("Listwa panelu wyniku niesie trzy słowa i mieści się w jednej linii na 360 px", async ({
+    page,
+    request,
+  }) => {
+    // Trzy jedyne czynności na gotowym dokumencie były gołymi ikonami z `aria-label`.
+    // Podpis jest tu droższy niż ikona, więc scenariusz sprawdza OBIE rzeczy naraz:
+    // że słowa są i że mieszczą się na najwęższym ekranie, na którym ten panel staje.
+    // Sprawa zakładana po TYTULE — trasa zasiewu kasuje poprzednią o tej samej nazwie,
+    // więc kolejne przebiegi nie zostawiają stosu spraw.
+    const seed = await request.post("/api/test/seed-turn", {
+      headers: anna,
+      data: { title: "Wynik do obejrzenia", events: [] },
+    })
+    const { id } = await seed.json()
+    // Plik w teczce sprawy BEZ zdarzenia załącznika to dokładnie to, co widzi panel jako
+    // wynik pracy agenta — patrz `splitFolder`.
+    const fd = new FormData()
+    fd.append("folder", `Sprawy/${id}`)
+    fd.append("file", new File(["gotowe\n"], "zestawienie.md", { type: "text/markdown" }))
+    await request.post("/api/files/upload", { headers: anna, multipart: fd })
+
+    await as(page, "anna")
+    await page.setViewportSize({ width: 360, height: 780 })
+    // Bez `networkidle`: na widoku sprawy wisi strumień zdarzeń i sieć nigdy nie ucichnie.
+    await page.goto(`/case/${id}`)
+
+    // Poniżej 1024 px panel jest arkuszem wysuwanym z dołu — wchodzi się w niego paskiem
+    // z nazwą pliku, czyli tak, jak zrobiłby to człowiek z telefonem.
+    await page.getByRole("button", { name: /zestawienie\.md/ }).click()
+    const sheet = page.getByRole("dialog")
+    // Napisy BIERZEMY ZE SŁOWNIKA, nie wpisujemy ich tutaj. Wpisany napis czyni z tego
+    // scenariusza strażnika mojej pamięci o brzmieniu przycisków, a nie tego, że one są
+    // podpisane i mieszczą się na ekranie — a przy dłuższym tłumaczeniu szukanie po nazwie
+    // przewróciłoby się PRZED pomiarem i nikt by się nie dowiedział, że listwa pękła.
+    const words = [pl("files.download"), pl("result.save"), pl("result.copy")]
+    const spots: { word: string; top: number; right: number; edge: number }[] = []
+    for (const word of words) {
+      const button = sheet.getByRole("button", { name: word, exact: true })
+      await expect(button).toBeVisible()
+      // Mierzymy w układzie STRONY (`offsetTop`/`offsetLeft`), a nie ekranu: arkusz wjeżdża
+      // z dołu i przez chwilę stoi na przesunięciu, więc `boundingBox()` trzech przycisków
+      // różniłby się o samą animację. Układ jest już wtedy policzony i się nie rusza.
+      const spot = await button.evaluate((el) => {
+        const one = el as HTMLElement
+        const strip = one.parentElement as HTMLElement
+        return {
+          top: one.offsetTop,
+          right: one.offsetLeft + one.offsetWidth,
+          // prawa krawędź listwy w TYM SAMYM układzie odniesienia — listwa nie jest
+          // pozycjonowana, więc obie wartości liczą się od tego samego przodka.
+          edge: strip.offsetLeft + strip.clientWidth,
+        }
+      })
+      spots.push({ word, ...spot })
+    }
+    // JEDNA LINIA to dwie rzeczy naraz, i obie trzeba sprawdzić osobno: podpisy nie zeszły
+    // do drugiego wiersza (to widać po wysokości) ANI nie wyjechały poza krawędź listwy
+    // (tego wysokość nie pokaże — przy `flex-nowrap` treść po prostu ucieka za obrys).
+    const tops = spots.map((z) => z.top)
+    expect(
+      new Set(tops).size,
+      `listwa zawinęła się na 360 px: ${spots.map((z) => `${z.word}@${z.top}`).join(", ")}`,
+    ).toBe(1)
+    for (const z of spots) {
+      expect(z.right, `„${z.word}" wychodzi poza listwę na 360 px`).toBeLessThanOrEqual(z.edge)
+    }
+
+    await request.post("/api/files", {
+      headers: anna,
+      data: { action: "trash", path: `Sprawy/${id}/zestawienie.md` },
+    })
   })
 })

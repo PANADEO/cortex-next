@@ -157,6 +157,37 @@ describe("trzy zdania kroku, który się nie udał", () => {
     expect(withoutReason!.next).toMatch(/jeszcze raz/)
   })
 
+  it("odmowa NIE jest nieudanym krokiem", () => {
+    // `report_gap` nie przechodzi przez opakowywacz `step()` — emituje osobne zdarzenie
+    // `blocked` i dostaje własną kartę (kłódkę). Gdyby kiedyś przeszło tamtą drogą, brak
+    // zgody wyglądałby na ekranie jak awaria narzędzia: krzyżyk, słowo „nie udało się"
+    // i rada „spróbuj jeszcze raz" pod czynnością, której powtórzenie nic nie zmieni.
+    const refusal: DeskEvent[] = [
+      { type: "blocked", description: "sprawdzić kontrahenta w wykazie VAT" },
+    ]
+    expect(pairSteps(refusal), "odmowa zrobiła się krokiem narzędzia").toHaveLength(0)
+  })
+
+  it("imię przełożonego wchodzi do zdania, gdy jest KOMU powiedzieć", () => {
+    // Bez imienia zdanie kończy się adresatem bez twarzy albo obietnicą bez adresata;
+    // to jest cały powód, dla którego `approver` w ogóle tu wchodzi.
+    const k = one(pair("write_sheet", false, "cannot-save"))
+    expect(describeFailure(k, pl, { approver: "Robert Nowak" })!.next).toContain("Robert Nowak")
+  })
+
+  it("nie odsyła przełożonego do niego samego", () => {
+    // TO JEST TA ASERCJA. Na własnej sprawie Robert czytał „powiedz o tym swojemu
+    // przełożonemu: Robert Nowak" — odesłanie do samego siebie, na koncie, na którym
+    // jako jedyny mógł z tym cokolwiek zrobić. Ta sama usterka, którą `lock.tsx` zamknął
+    // zdaniem `lock.youDecide`, tyle że o jeden ekran dalej.
+    const k = one(pair("write_sheet", false, "cannot-save"))
+    const mine = describeFailure(k, pl, { approver: "Robert Nowak", iAmTheApprover: true })!
+    expect(mine.next, "zdanie odsyła przełożonego do niego samego").not.toContain("Robert Nowak")
+    // Kontrola z drugiej strony: zdanie ma ZOSTAĆ radą, a nie zniknąć razem z imieniem.
+    expect(mine.next).toBe(describeFailure(k, pl)!.next)
+    expect(mine.next.length).toBeGreaterThan(10)
+  })
+
   it("żadne zdanie nie niesie nazwy kontenera ani roli bez zadania", () => {
     for (const reason of STEP_FAILURES) {
       for (const name of Object.keys(TOOL_CARDS)) {

@@ -31,8 +31,8 @@ import { Icon } from "./icon"
 import { CapabilityLock } from "./lock"
 import { Markdown } from "./markdown"
 import { PanelHandle, WIDTH_DEFAULT, clamp } from "./resize-handle"
-import { ShareMenu, type CaseShare } from "./share-menu"
 import { ResultPanel } from "./result-panel"
+import { ShareMenu, type CaseShare } from "./share-menu"
 import { TaskField } from "./task-field"
 import { useToast } from "./toast"
 import { UnbackedPromises } from "./unbacked-promises"
@@ -299,8 +299,16 @@ export function CaseView({
     [results, attachments, selected, last],
   )
 
-  // Decyzja człowieka bije wszystko; bez niej rozstrzyga zawartość.
-  const panel = panelChoice ?? (results.length > 0 || attachments.length > 0)
+  // Decyzja człowieka bije wszystko; bez niej rozstrzyga to, czy jest CO CZYTAĆ.
+  //
+  // Sam załącznik panelu NIE otwiera, i to jest cała treść tego warunku. Wgranie pliku
+  // do zlecenia jest wejściem, nie wynikiem — a wcześniej wystarczało, żeby zabrać ćwierć
+  // szerokości ekranu w scenariuszu najczęstszym ze wszystkich: „wrzuciła plik, jeszcze
+  // nic nie zleciła". Człowiek dostawał wtedy 360 px pod zdanie „Tu pojawi się gotowy
+  // dokument" w chwili, w której na pewno jeszcze nic się nie pojawi. Załącznik widać
+  // w rozmowie, przy poleceniu, do którego należy; panel czeka na pierwszy dokument,
+  // który naprawdę powstał.
+  const panel = panelChoice ?? results.length > 0
 
   const byName = useCallback((n: string) => folder.find((x) => x.name === n) ?? null, [folder])
 
@@ -552,6 +560,15 @@ export function CaseView({
                         now={now}
                         approver={approver}
                         iAmTheApprover={iAmTheApprover}
+                        /* Plik z dowodu prowadzi DO TEGO PLIKU — tą samą drogą, co karta
+                           artefaktu i załącznik w rozmowie. Dowód, w którym nazwa jest
+                           tylko napisem, każe człowiekowi szukać jej jeszcze raz ręcznie. */
+                        openFile={(n) => showFile(byName(n))}
+                        /* Bez tego plakietka „Co weszło" była przyciskiem bez czynności:
+                           `byName` szuka wyłącznie w teczce sprawy, a pliki wniesione leżą
+                           na biurku. Predykat, nie próba otwarcia — element ma nie WYGLĄDAĆ
+                           na klikalny, zamiast milczeć po kliknięciu. */
+                        canOpenFile={(n) => byName(n) !== null}
                       />
                     </div>
                   )}
@@ -607,7 +624,9 @@ export function CaseView({
                                 ? translate("case.exhausted")
                                 : translate("case.interrupted")}
                           </div>
-                          {ev.reason && <p className="t-meta mt-0.5">{reasonText(translate, ev.reason)}</p>}
+                          {ev.reason && (
+                            <p className="t-meta mt-0.5">{reasonText(translate, ev.reason)}</p>
+                          )}
                           {ev.status !== "stopped" && (
                             <button
                               // Przy awarii ŁĄCZA sensowna jest jedna rzecz: to samo zlecenie

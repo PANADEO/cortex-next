@@ -214,8 +214,9 @@
     "savedAt": "saved {{when}}",
     "unverified": "unverified",
     "verified": "verified after saving",
+    "save": "Save",
     "copied": "Copied",
-    "copy": "Copy the contents",
+    "copy": "Copy contents",
     "fromYou": "From you ({{count}})"
   },
   "requests": {
@@ -389,7 +390,9 @@
       "one": "{{count}} thing unverified",
       "other": "{{count}} things unverified"
     },
-    "checked": "Checked:",
+    "cameIn": "What came in",
+    "cameOut": "What was produced",
+    "openFile": "Open file {{name}}",
     "asked": "Asked outside the company:",
     "notChecked": "Not checked:",
     "notAllowed": "You have no consent for this:",
@@ -620,7 +623,11 @@
       "verified": "read {{name}} back after saving — {{detail}}",
       "computed": "computed — {{detail}}",
       "used": "used in a computation: {{name}}",
+      "usedWord": "Used in a computation",
+      "made": "created in the case folder: {{name}}",
+      "madeWord": "Created",
       "found": "found in: {{name}}",
+      "foundWord": "Found in",
       "searched": "searched the files — {{detail}}",
       "stored": "saved to My files: {{detail}}",
       "external": "{{source}}: {{label}} — {{detail}}",

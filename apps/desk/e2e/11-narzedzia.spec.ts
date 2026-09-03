@@ -4,7 +4,8 @@ import { describeFailure, describeStep, pairSteps, summariseGroup } from "@corte
 import { cardFor } from "@cortex/desk-core/tool-cards"
 import type { DeskEvent, StepFailure } from "@cortex/desk-core/types"
 import { makeDeskT } from "@cortex/desk-ui/i18n/locale"
-import { expect, test } from "./osoby"
+import type { APIRequestContext } from "@playwright/test"
+import { as, expect, test } from "./osoby"
 
 /**
  * Scenariusze czyta człowiek po polsku, więc zdania budujemy polskim tłumaczem.
@@ -12,6 +13,13 @@ import { expect, test } from "./osoby"
  * `describeStep`, `summariseGroup` i `evidenceFromEvents` dostają go jawnie.
  */
 const pl = makeDeskT("pl")
+
+/**
+ * Dowód jest listą WIERSZY, nie napisów: wiersz niesie jeszcze słowo statusu, plik do
+ * kliknięcia i indeks zdarzenia, po którym ekran bierze godzinę. Tam, gdzie sprawdzamy
+ * TREŚĆ dowodu, a nie jego układ na ekranie, pytamy o same zdania.
+ */
+const tresc = (rows: { text: string }[]) => rows.map((w) => w.text)
 
 /** Para start/koniec jednego narzędzia — tak, jak zapisuje ją runtime. */
 const para = (
@@ -54,8 +62,8 @@ test.describe("Obszar 19 · Opis i dowód pochodzą z kart, nie z listy nazw w k
       ],
       pl,
     )
-    expect(d.intake).toEqual(["Moje pliki/a.csv — 10 wierszy"])
-    expect(d.produced).toEqual([
+    expect(tresc(d.intake)).toEqual(["Moje pliki/a.csv — 10 wierszy"])
+    expect(tresc(d.produced)).toEqual([
       "zapisano w.md — 100 znaków",
       "odczytano w.md po zapisie — 0 pustych pól",
       "zapisano arkusz t.csv — 5 wierszy",
@@ -64,7 +72,7 @@ test.describe("Obszar 19 · Opis i dowód pochodzą z kart, nie z listy nazw w k
       "odłożono do Moich plików: Moje pliki/w.md",
     ])
     // przeglądanie teczki świadomie nie zostawia wiersza — nic nie wnosi i nic nie zmienia
-    expect(d.intake.join(" ")).not.toMatch(/pozycji/)
+    expect(tresc(d.intake).join(" ")).not.toMatch(/pozycji/)
   })
 
   test("Obraz nadal nie podlega regule sprawdzenia, arkusz nadal podlega", () => {
@@ -119,8 +127,8 @@ test.describe("Obszar 20 · Narzędzie, którego nikt nie zna, nie znika po cich
   test("Wiersz idzie na osobną listę i nazywa serwer, z którego pochodzi", () => {
     const d = evidenceFromEvents(obce, pl)
     expect(d.external).toHaveLength(1)
-    expect(d.external[0]).toContain("nbp")
-    expect(d.external[0]).toContain("EUR 4,2841")
+    expect(d.external[0]!.text).toContain("nbp")
+    expect(d.external[0]!.text).toContain("EUR 4,2841")
     // „odpowiedział 200" to nie to samo co „rzecz się wydarzyła" — ani do zrobionych,
     // ani do tego, co weszło z biurka
     expect(d.produced).toHaveLength(0)
@@ -215,5 +223,142 @@ test.describe("Obszar 30 · Krok, który się nie udał, przestaje kłamać", ()
     expect(same.every((k) => k.status === "failed")).toBe(true)
     expect(summariseGroup(same, pl)).toBe("Nic nie zostało zrobione")
     expect(pl("trail.allFailed")).toBe("Nie udało się")
+  })
+})
+
+/**
+ * Obszar 31 · DOWÓD CZYTA SIĘ JAK POTWIERDZENIE, NIE JAK SKLEJKA.
+ *
+ * Dowód stał pod jednym słowem „Sprawdzone:" jako `intake` i `produced` sklejone
+ * kropkami w jeden akapit trzynastką, w którym nic nie było klikalne. „Co wziąłem"
+ * i „co zrobiłem" to dla człowieka dwie różne rzeczy — pierwsza jest lekturą, druga
+ * wynikiem — a pod wspólnym słowem obie wyglądały jak zasługa.
+ *
+ * Scenariusze idą przez EKRAN, a nie przez samą funkcję, bo rozdzielenie i klikalność
+ * są własnością ekranu: `evidenceFromEvents` może oddawać dwie listy i dalej dać się
+ * skleić w jeden akapit, tak jak dawało przez cały czas.
+ */
+test.describe("Obszar 31 · Dowód czyta się jak potwierdzenie", () => {
+  const ANNA = { Cookie: "desk_persona=anna" }
+  const ARKUSZ = "zestawienie-dowod.csv"
+
+  /** Zdarzenia zasiewamy, ekran sprawdzamy naprawdę — bez płacenia za turę modelu. */
+  async function zasiej(request: APIRequestContext, title: string, events: DeskEvent[]) {
+    const r = await request.post("/api/test/seed-turn", {
+      headers: ANNA,
+      data: { title, status: "done", events },
+    })
+    expect(r.ok(), `nie udało się zasiać sprawy „${title}”`).toBe(true)
+    return (await r.json()).id as string
+  }
+
+  test("Co weszło i co powstało to dwie osobne listy, nie jeden akapit", async ({
+    page,
+    request,
+  }) => {
+    const id = await zasiej(request, "Dowód rozdzielony", [
+      ...para("a", "read_file", { path: "Moje pliki/faktury-08.csv" }, "10 wierszy"),
+      ...para("b", "write_sheet", { name: ARKUSZ }, "5 wierszy"),
+    ])
+    await as(page, "anna")
+    await page.goto(`/case/${id}`)
+
+    const weszlo = page.getByRole("list", { name: "Co weszło" })
+    const powstalo = page.getByRole("list", { name: "Co powstało" })
+    await expect(weszlo).toBeVisible()
+    await expect(powstalo).toBeVisible()
+
+    // Każda lista mówi o SWOICH rzeczach — inaczej rozdzielenie jest samą kreską.
+    await expect(weszlo).toContainText("Przeczytałem")
+    await expect(weszlo).not.toContainText("Zapisałem arkusz")
+    await expect(powstalo).toContainText("Zapisałem arkusz")
+    await expect(powstalo).not.toContainText("Przeczytałem")
+
+    // Jeden wiersz to jedno zdarzenie, a nie człon zdania sklejonego kropkami.
+    await expect(weszlo.getByRole("listitem")).toHaveCount(1)
+    await expect(powstalo.getByRole("listitem")).toHaveCount(1)
+  })
+
+  test("Wiersz dowodu niesie godzinę zdarzenia, tak jak potwierdzenie z banku", async ({
+    page,
+    request,
+  }) => {
+    const id = await zasiej(request, "Dowód z godziną", [
+      ...para("a", "read_file", { path: "Moje pliki/faktury-08.csv" }, "10 wierszy"),
+    ])
+    await as(page, "anna")
+    await page.goto(`/case/${id}`)
+
+    const wiersz = page.getByRole("list", { name: "Co weszło" }).getByRole("listitem").first()
+    await expect(wiersz).toHaveText(/\d{2}:\d{2}:\d{2}/)
+  })
+
+  test("Plik z dowodu jest rzeczą do kliknięcia i prowadzi do tego pliku", async ({
+    page,
+    request,
+  }) => {
+    const id = await zasiej(request, "Dowód z plikiem", [
+      ...para("b", "write_sheet", { name: ARKUSZ }, "5 wierszy"),
+    ])
+    // Plik musi NAPRAWDĘ leżeć w teczce sprawy — inaczej sprawdzalibyśmy sam przycisk,
+    // a nie to, że prowadzi on do czegokolwiek.
+    const wgranie = await request.post("/api/files/upload", {
+      headers: ANNA,
+      multipart: {
+        caseId: id,
+        file: { name: ARKUSZ, mimeType: "text/csv", buffer: Buffer.from("a,b\n1,2\n") },
+      },
+    })
+    expect(wgranie.ok()).toBe(true)
+
+    await as(page, "anna")
+    await page.goto(`/case/${id}`)
+
+    const plik = page.getByRole("button", { name: `Otwórz plik ${ARKUSZ}` })
+    await expect(plik).toBeVisible()
+    await plik.click()
+
+    // Ta sama droga, co z karty artefaktu: panel obok, nie nowa karta przeglądarki.
+    await expect(
+      page.getByRole("complementary", { name: "Panel wyniku" }).getByText(ARKUSZ).first(),
+    ).toBeVisible()
+  })
+
+  test("Plik, którego ten ekran nie umie otworzyć, NIE udaje przycisku", async ({
+    page,
+    request,
+  }) => {
+    /**
+     * Widok sprawy szuka pliku wyłącznie w TECZCE SPRAWY (`byName` po listingu teczki),
+     * a „Co weszło" wymienia pliki z biurka. Plakietka wejściowa była więc `<button>`
+     * z etykietą „Otwórz plik…", po którym kliknięciu nie działo się NIC. Zmierzone
+     * na ekranie 03.09.2026: „zestawienie.docx" otwierało panel, „faktury-08.csv" milczał.
+     *
+     * Ekran, którego cała teza brzmi „nie twierdzę rzeczy, których nie było", nie może
+     * obiecywać czynności, której nie wykonuje. Nazwa zostaje widoczna — znika sama obietnica.
+     */
+    const id = await zasiej(request, "Dowód z plikiem z biurka", [
+      ...para("a", "read_file", { path: "Moje pliki/faktury-08.csv" }, "10 wierszy"),
+      ...para("b", "write_sheet", { name: ARKUSZ }, "5 wierszy"),
+    ])
+    const wgranie = await request.post("/api/files/upload", {
+      headers: ANNA,
+      multipart: {
+        caseId: id,
+        file: { name: ARKUSZ, mimeType: "text/csv", buffer: Buffer.from("a,b\n1,2\n") },
+      },
+    })
+    expect(wgranie.ok()).toBe(true)
+
+    await as(page, "anna")
+    await page.goto(`/case/${id}`)
+
+    // Plik z biurka: widoczny, ale nie jest przyciskiem.
+    await expect(page.getByRole("list", { name: "Co weszło" })).toContainText("faktury-08.csv")
+    await expect(page.getByRole("button", { name: "Otwórz plik faktury-08.csv" })).toHaveCount(0)
+
+    // KONTROLA DODATNIA w tym samym przebiegu: plik leżący w teczce sprawy przyciskiem
+    // ZOSTAJE. Bez niej reguła „nigdy nie rób przycisku" byłaby tak samo zielona.
+    await expect(page.getByRole("button", { name: `Otwórz plik ${ARKUSZ}` })).toBeVisible()
   })
 })

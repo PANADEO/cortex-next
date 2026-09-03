@@ -430,7 +430,6 @@ export function FileExplorer() {
                 p={p}
                 {...(origins[p.path] ? { origin: origins[p.path]! } : {})}
                 picked={picked.includes(p.path)}
-                picking={picked.length > 0}
                 pick={pick}
                 actions={{
                   openFolder: (x) => goTo(x.path),

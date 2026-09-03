@@ -141,9 +141,9 @@ test.describe("Obszar 25 · Odpowiedź obcego serwera nie udaje wykonanej pracy"
 
   test("Wiersz nazywa źródło po ludzku, a nie kluczem narzędzia", () => {
     const [w] = evidenceFromEvents(obce, pl).external
-    expect(w).toContain("wykaz podatników VAT")
-    expect(w).toContain("sprawdzenie rachunku w wykazie")
-    expect(w).not.toContain("mcp_")
+    expect(w!.text).toContain("wykaz podatników VAT")
+    expect(w!.text).toContain("sprawdzenie rachunku w wykazie")
+    expect(w!.text).not.toContain("mcp_")
   })
 
   test(
@@ -165,8 +165,13 @@ test.describe("Obszar 25 · Odpowiedź obcego serwera nie udaje wykonanej pracy"
       await page.goto(`/case/${id}`)
       await expect(page.getByText("wykaz podatników VAT").first()).toBeVisible()
       await expect(page.getByText("Pytałem poza firmą:")).toBeVisible()
-      // najważniejsze: odpytanie obcego serwera NIE jest opisane jako sprawdzone
-      await expect(page.getByText("Sprawdzone:")).toHaveCount(0)
+      // NAJWAŻNIEJSZE: odpytanie obcego serwera nie jest ani tym, co weszło z biurka,
+      // ani tym, co powstało. Sprawdzamy więc, że nie ma ŻADNEJ z tych dwóch list —
+      // każda z nich rysuje się tylko wtedy, gdy ma co pokazać. Wcześniej stało tu
+      // pytanie o nagłówek „Sprawdzone:", którego dowód już nie używa: asercja, która
+      // nie ma jak się zaczerwienić, jest gorsza niż jej brak.
+      await expect(page.getByRole("list", { name: "Co weszło" })).toHaveCount(0)
+      await expect(page.getByRole("list", { name: "Co powstało" })).toHaveCount(0)
     },
   )
 })

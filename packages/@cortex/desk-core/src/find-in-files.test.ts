@@ -290,12 +290,15 @@ describe("dowód po szukaniu", () => {
     await search(policy("files.read"), { query: "orange" })
     const evidence = evidenceFromEvents(events, translate)
 
-    expect(evidence.intake).toContain("znaleziono w: Moje pliki/faktury-08.csv")
+    // Dowód jest listą WIERSZY, nie napisów — tutaj pytamy o same zdania, bo w grę
+    // wchodzi treść dowodu, a nie jego układ na ekranie.
+    const sentences = evidence.intake.map((w) => w.text)
+    expect(sentences).toContain("znaleziono w: Moje pliki/faktury-08.csv")
     // Plik bez trafienia został przeszukany, ale do sprawy nie wniósł NICZEGO.
-    expect(evidence.intake.join(" ")).not.toContain("notatki.txt")
+    expect(sentences.join(" ")).not.toContain("notatki.txt")
     // Liczby idą wierszem podsumowania, nie listą plików.
-    expect(evidence.intake.some((one) => one.startsWith("przeszukano pliki —"))).toBe(true)
-    expect(evidence.intake.join(" ")).toContain("przeszukane: 2")
+    expect(sentences.some((one) => one.startsWith("przeszukano pliki —"))).toBe(true)
+    expect(sentences.join(" ")).toContain("przeszukane: 2")
   })
 
   it("szukanie stoi po stronie CZYTANIA, nie liczenia", async () => {

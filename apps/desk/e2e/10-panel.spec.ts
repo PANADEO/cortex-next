@@ -249,6 +249,22 @@ test.describe("Obszar 16 · Załącznik nie udaje wyniku pracy", () => {
     })
     await page.goto(`/case/${id}`)
 
+    // Czekamy, aż teczka sprawy naprawdę dojdzie do przeglądarki. Bez tego zdanie
+    // „panelu nie ma" byłoby prawdziwe wyłącznie dlatego, że jeszcze nic nie doszło —
+    // i strażnik świeciłby na zielono także wtedy, gdyby panel otwierał się na załącznik.
+    const strumien = new RegExp(`/case/${id}/events`)
+    for (let i = 0; i < 2; i++) {
+      await page.waitForResponse((r) => strumien.test(r.url()) && r.ok())
+    }
+
+    // SAM ZAŁĄCZNIK PANELU NIE OTWIERA. „Wrzuciła plik, jeszcze nic nie zleciła" jest
+    // najczęstszym stanem tego ekranu, a panel zabierał w nim ćwierć szerokości pod
+    // zdanie „Tu pojawi się gotowy dokument" — czyli obiecywał wynik w chwili, w której
+    // na pewno jeszcze żadnego nie ma. Panel czeka na pierwszy dokument, który POWSTAŁ.
+    await expect(panelu(page)).toBeHidden()
+
+    // A gdy człowiek otworzy panel sam, wgrany plik dalej nie udaje wyniku pracy.
+    await otworzPanel(page)
     await expect(panelu(page).getByText("Tu pojawi się gotowy dokument.")).toBeVisible()
     await expect(panelu(page).getByRole("button", { name: /Od Ciebie \(1\)/ })).toBeVisible()
   })

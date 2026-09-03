@@ -129,6 +129,18 @@ describe("słownik Biurka", () => {
         card.group?.phrase,
         card.evidence?.phrase,
         card.evidence?.phraseBare,
+        // Słowo statusu wiersza dowodu dla plików wniesionych jako DANE. Bez tej pozycji
+        // literówka pokazałaby w potwierdzeniu `tools.evidence.usedWord` zamiast
+        // „Wziąłem do obliczeń" — i tylko w sprawach liczonych w piaskownicy.
+        card.inputs?.word,
+        // Zdanie tego samego wiersza. Brakowało go tu obok `word`, więc literówka w NIM
+        // przechodziła — a to jest połowa wiersza, nie ozdoba.
+        card.inputs?.phrase,
+        // Lustro po stronie wyniku: pliki WYTWORZONE. Doszło 03.09.2026 razem z odbiorem
+        // plików z piaskownicy i musi tu stać z tego samego powodu, co pozycja wyżej —
+        // te wiersze widać wyłącznie w sprawach, w których coś naprawdę powstało.
+        card.outputs?.word,
+        card.outputs?.phrase,
       ].filter((key): key is string => typeof key === "string"),
     )
     expect(fromCards.length).toBeGreaterThan(20)

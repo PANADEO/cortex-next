@@ -1,5 +1,5 @@
 "use client"
-import { evidenceFromEvents } from "@cortex/desk-core/evidence"
+import { evidenceFromEvents, type EvidenceLine } from "@cortex/desk-core/evidence"
 import {
   describeFailure,
   describeStep,
@@ -19,7 +19,6 @@ import {
   Globe,
   LoaderCircle,
   Lock,
-  ShieldCheck,
   TriangleAlert,
   X,
 } from "lucide-react"
@@ -33,13 +32,104 @@ function fileIcon(name: string): LucideIcon {
   return FileText
 }
 
-/** Nazwa pliku jako osobny, rozpoznawalny obiekt — nie fragment zdania. */
-function Pill({ name }: { name: string }) {
-  return (
-    <span className="inline-flex h-5 max-w-[220px] shrink-0 items-center gap-1 rounded-sm bg-desk-raised px-1.5 align-middle">
+/**
+ * Nazwa pliku jako osobny, rozpoznawalny obiekt — nie fragment zdania.
+ *
+ * Z `open` staje się rzeczą DO KLIKNIĘCIA i prowadzi do tego pliku. Bez `open` zostaje
+ * napisem, i to nie jest wybór stylu: w wierszu przebiegu plakietka siedzi wewnątrz
+ * przycisku rozwijającego krok, a przycisk w przycisku to układ, którego przeglądarka
+ * ani czytnik ekranu nie umieją obsłużyć.
+ */
+function Pill({ name, open }: { name: string; open?: ((name: string) => void) | undefined }) {
+  const translate = useDeskT()
+  const inside = (
+    <>
       <Icon as={fileIcon(name)} px={12} className="shrink-0 text-desk-muted" />
       <span className="truncate text-[13px]">{name}</span>
-    </span>
+    </>
+  )
+  const shape =
+    "inline-flex h-5 max-w-[220px] shrink-0 items-center gap-1 rounded-sm bg-desk-raised px-1.5 align-middle"
+  return open ? (
+    <button
+      type="button"
+      onClick={() => open(name)}
+      aria-label={translate("trail.openFile", { name })}
+      className={`${shape} hover:bg-desk-raised/60 hover:underline`}
+    >
+      {inside}
+    </button>
+  ) : (
+    <span className={shape}>{inside}</span>
+  )
+}
+
+/**
+ * POTWIERDZENIE, NIE SKLEJKA — jedna sekcja dowodu jako historia operacji.
+ *
+ * Dotąd „co weszło" i „co powstało" stały pod jednym słowem „Sprawdzone:", sklejone
+ * kropkami w akapit trzynastką, w którym nic nie było klikalne. To są dwie różne rzeczy:
+ * pliki, które agent PRZECZYTAŁ, i dokumenty, które ZAPISAŁ — a człowiek musi je
+ * rozróżnić bez wysiłku. Forma jest ta, którą pani Basia zna z banku: wiersz na
+ * zdarzenie, słowo statusu, obiekt do kliknięcia, godzina po prawej.
+ */
+function Ledger({
+  title,
+  lines,
+  timeOf,
+  openFile,
+  canOpenFile,
+}: {
+  title: string
+  lines: EvidenceLine[]
+  timeOf: (i: number) => string | null
+  openFile?: ((name: string) => void) | undefined
+  canOpenFile?: ((name: string) => boolean) | undefined
+}) {
+  if (!lines.length) return null
+  return (
+    <div>
+      {/* `desk-muted`, nie `desk-muted-2` — ten drugi nie wyrabia progu kontrastu
+          na tle podniesionym; to samo ustalenie, co przy nagłówkach karty awarii. */}
+      <div className="t-micro text-desk-muted">{title}</div>
+      {/* Nazwa na LIŚCIE, nie tylko w nagłówku nad nią: kto czyta ten ekran czytnikiem,
+          wchodzi w listę wprost i musi wiedzieć, do której z dwóch wszedł. */}
+      <ul aria-label={title} className="mt-0.5">
+        {lines.map((w) => {
+          const at = timeOf(w.i)
+          return (
+            <li
+              key={`${w.i}-${w.text}`}
+              className="flex items-center gap-1.5 py-px text-[13px] leading-5"
+            >
+              <Icon as={Check} px={12} className="shrink-0 text-desk-ok" />
+              {w.word ? (
+                <>
+                  <span className="shrink-0 text-desk-ink">{w.word}</span>
+                  {/* PRZYCISK TYLKO WTEDY, GDY JEST CO OTWORZYĆ.
+                      Widok sprawy szuka pliku WYŁĄCZNIE w teczce sprawy, a „Co weszło"
+                      wymienia pliki z biurka („Moje pliki/…", „Wspólne pliki/…"). Zmierzone
+                      na ekranie: klik w „zestawienie.docx" otwierał panel, klik
+                      w „faktury-08.csv" nie robił NIC — a element wyglądał i brzmiał
+                      (`aria-label` „Otwórz plik…") jak przycisk. Ekran obiecywał czynność,
+                      której nie wykonuje. Plakietka bez celu jest teraz napisem. */}
+                  {w.file && (
+                    <Pill
+                      name={w.file}
+                      open={canOpenFile?.(w.file) === false ? undefined : openFile}
+                    />
+                  )}
+                  {w.detail && <span className="truncate text-desk-muted">{w.detail}</span>}
+                </>
+              ) : (
+                <span className="truncate text-desk-muted">{w.text}</span>
+              )}
+              {at && <span className="t-micro ml-auto shrink-0 pl-2 tabular-nums">{at}</span>}
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
 
@@ -111,7 +201,7 @@ function Row({
   const locale = useDeskLocale()
   const [open, setOpen] = useState(k.status === "failed")
   const o = describeStep(k, translate)
-  const failure = describeFailure(k, translate, approver)
+  const failure = describeFailure(k, translate, { approver, iAmTheApprover })
   const s = STEP_STATUS[k.status]
   const ms = k.status === "running" ? now - new Date(at).getTime() : k.ms
   const duration = stepDuration(ms)
@@ -162,6 +252,8 @@ export function ActivityTrail({
   now,
   approver,
   iAmTheApprover,
+  openFile,
+  canOpenFile,
 }: {
   entries: AuditEntry[]
   isWorking: boolean
@@ -169,8 +261,16 @@ export function ActivityTrail({
   /** Przechodzi do zdania „co teraz" przy kroku, który padł — patrz `describeFailure`. */
   approver?: string | undefined
   iAmTheApprover?: boolean | undefined
+  /**
+   * Otwarcie pliku z wiersza dowodu. Wchodzi propem, bo teczkę sprawy zna widok sprawy,
+   * a przebieg zna wyłącznie zdarzenia — i tak ma zostać.
+   */
+  openFile?: ((name: string) => void) | undefined
+  /** Czy ten plik da się w ogóle otworzyć z tego ekranu — patrz komentarz przy `Pill`. */
+  canOpenFile?: ((name: string) => boolean) | undefined
 }) {
   const translate = useDeskT()
+  const locale = useDeskLocale()
   const steps = pairSteps(entries.map((w) => w.event))
   const evidence = evidenceFromEvents(
     entries.map((w) => w.event),
@@ -186,6 +286,16 @@ export function ActivityTrail({
   const external = evidence.external.length > 0
   const [collapsed, setCollapsed] = useState(false)
   const collapsedOnce = useRef(false)
+
+  /**
+   * GODZINA WIERSZA DOWODU. Dowód liczy się ze zdarzeń i nie zna zegara — indeks kroku
+   * jest jedynym, co z niego wychodzi, a wpis dziennika trzyma czas. Ta sama droga, którą
+   * godzinę bierze wiersz przebiegu, więc obie liczby na ekranie zawsze się zgadzają.
+   */
+  const timeOf = (i: number) => {
+    const at = entries[i]?.at
+    return at ? new Intl.DateTimeFormat(locale, { timeStyle: "medium" }).format(new Date(at)) : null
+  }
 
   // Zwijamy 800 ms po zakończeniu — ale zła wiadomość nigdy nie chowa się sama.
   useEffect(() => {
@@ -291,18 +401,24 @@ export function ActivityTrail({
         external ||
         uncertain ||
         blocked) && (
-        <div className="space-y-1 border-t bg-desk-raised/40 px-3 py-2.5">
-          {(evidence.intake.length > 0 || evidence.produced.length > 0) && (
-            <div className="flex gap-2 text-[13px] leading-5">
-              <Icon as={ShieldCheck} px={14} className="mt-0.5 shrink-0 text-desk-ok" />
-              <div>
-                <span className="text-desk-ink">{translate("trail.checked")}</span>{" "}
-                <span className="text-desk-muted">
-                  {[...evidence.intake, ...evidence.produced].join(" · ")}
-                </span>
-              </div>
-            </div>
-          )}
+        <div className="space-y-2 border-t bg-desk-raised/40 px-3 py-2.5">
+          {/* DWA NAGŁÓWKI, NIE JEDEN. „Co wziąłem" i „co zrobiłem" to dla człowieka dwie
+              różne rzeczy, a stały pod wspólnym słowem „Sprawdzone:" — i pierwsza z nich
+              wyglądała wtedy jak zasługa, choć jest tylko lekturą. */}
+          <Ledger
+            title={translate("trail.cameIn")}
+            lines={evidence.intake}
+            timeOf={timeOf}
+            openFile={openFile}
+            canOpenFile={canOpenFile}
+          />
+          <Ledger
+            title={translate("trail.cameOut")}
+            lines={evidence.produced}
+            timeOf={timeOf}
+            openFile={openFile}
+            canOpenFile={canOpenFile}
+          />
           {external && (
             <div className="flex gap-2 text-[13px] leading-5">
               <Icon as={Globe} px={14} className="mt-0.5 shrink-0 text-desk-muted" />
@@ -310,7 +426,9 @@ export function ActivityTrail({
                 {/* „Zapytałem", nie „sprawdziłem": z tego, że obcy serwer odpowiedział,
                     nie wynika, że odpowiedział prawdę ani że rzecz się wydarzyła. */}
                 <span className="text-desk-ink">{translate("trail.asked")}</span>{" "}
-                <span className="text-desk-muted">{evidence.external.join(" · ")}</span>
+                <span className="text-desk-muted">
+                  {evidence.external.map((w) => w.text).join(" · ")}
+                </span>
               </div>
             </div>
           )}

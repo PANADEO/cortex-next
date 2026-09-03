@@ -73,8 +73,25 @@ export type ToolCard = {
    *
    * Osobne pole, a nie druga wartość `kind`, bo obliczenie NIE jest odczytaniem: człowiek
    * ma widzieć, że plik wszedł do sprawy, i osobno — że wszedł jako dane, a nie jako lektura.
+   *
+   * `word` to SŁOWO STATUSU wiersza potwierdzenia — to samo zdanie bez nazwy pliku, bo
+   * nazwa stoi obok jako rzecz do kliknięcia. Osobny klucz jest tu konieczny: pozostałe
+   * wiersze biorą słowo z `ok` karty („Przeczytałem"), a tu karta mówi o CZYNNOŚCI
+   * („Policzyłem"), nie o tym, co się stało z tym jednym plikiem.
    */
-  inputs?: { arg: string; phrase: string }
+  inputs?: { arg: string; phrase: string; word: string }
+  /**
+   * LUSTRO `inputs` PO STRONIE WYNIKU — pliki, które czynność WYTWORZYŁA, po jednym wierszu.
+   *
+   * Powstało 03.09.2026 razem z odbiorem plików z piaskownicy. Bez tego sprawa, w której
+   * powstał .docx, .pdf i wykres, miała w „Co powstało" jeden wiersz „policzone, plików: 4":
+   * liczbę bez nazw, w którą nie da się kliknąć. Nazwy szły do MODELU (`answer`) i nie szły
+   * do dowodu — czyli dokładnie tam, gdzie ten produkt ma jedyny argument.
+   *
+   * Osobne pole, a nie `evidence.list: "produced"`, bo tamto daje JEDEN wiersz na krok,
+   * ze zdania podsumowania. Tutaj rzeczą jest plik i jest ich tyle, ile powstało.
+   */
+  outputs?: { arg: string; phrase: string; word: string }
   /** gdy nie ma podsumowania z narzędzia, szczegół bierzemy z tego argumentu */
   argDetail?: string
   /** brak `grupa` znaczy: ta czynność świadomie nie wchodzi do zdania podsumowania */
@@ -154,7 +171,7 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
        */
       name: "find_in_files",
       kind: "reads",
-      inputs: { arg: "matched", phrase: "tools.evidence.found" },
+      inputs: { arg: "matched", phrase: "tools.evidence.found", word: "tools.evidence.foundWord" },
       running: "tools.find_in_files.running",
       ok: "tools.find_in_files.ok",
       failed: "tools.find_in_files.failed",
@@ -245,7 +262,11 @@ export const TOOL_CARDS: Record<string, ToolCard> = Object.fromEntries(
     K({
       name: "run_computation",
       kind: "computes",
-      inputs: { arg: "files", phrase: "tools.evidence.used" },
+      inputs: { arg: "files", phrase: "tools.evidence.used", word: "tools.evidence.usedWord" },
+      // `made` NIE przychodzi z argumentów wywołania — czynność poznaje te nazwy dopiero,
+      // gdy kod się wykona. Wchodzą do zdarzenia przez `discovered`, tą samą drogą co
+      // `matched` w szukaniu; patrz `StepResult.discovered`.
+      outputs: { arg: "made", phrase: "tools.evidence.made", word: "tools.evidence.madeWord" },
       running: "tools.run_computation.running",
       ok: "tools.run_computation.ok",
       failed: "tools.run_computation.failed",
