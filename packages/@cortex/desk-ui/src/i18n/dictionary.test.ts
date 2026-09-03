@@ -149,6 +149,42 @@ describe("słownik Biurka", () => {
    * więc, że słowa są, podczas gdy na ekranie „Co potrafię" stało gołe `shared.read`
    * i `shared.write` — przez wiele wydań, po polsku i po angielsku.
    */
+  /**
+   * ŻADNE DWA ZLECENIA STARTOWE NIE MAJĄ TEGO SAMEGO TYTUŁU.
+   *
+   * Na pustym ekranie stały obok siebie DWA kafelki z identycznym tytułem „Zestawienie
+   * kosztów miesiąca" i identyczną podpowiedzią. Różniły się wyłącznie tym, co powstaje
+   * na końcu — arkusz albo dokument — a tego nie było widać nigdzie. Pierwsza minuta
+   * pracy w produkcie sprowadzała się do rzutu monetą, i to w miejscu, które ma
+   * pokazywać, że narzędzie wie, czego człowiek chce.
+   *
+   * Pilnujemy TYTUŁU i PODPOWIEDZI osobno: identyczna podpowiedź przy różnych tytułach
+   * też nie mówi, czym te dwa zlecenia się różnią.
+   */
+  it("żadne dwa zlecenia startowe nie wyglądają tak samo", () => {
+    for (const [language, dictionary] of [
+      ["pl", pl],
+      ["en", en],
+    ] as const) {
+      const tasks = (dictionary as { quickTask: Record<string, Record<string, string>> }).quickTask
+      for (const field of ["title", "hint"] as const) {
+        const seen = new Map<string, string>()
+        const clashes: string[] = []
+        for (const [id, one] of Object.entries(tasks)) {
+          const text = one[field]
+          if (!text) continue
+          const twin = seen.get(text)
+          if (twin) clashes.push(`${language}: „${text}” — ${twin} i ${id}`)
+          else seen.set(text, id)
+        }
+        expect(
+          clashes,
+          `dwa zlecenia z pustego ekranu mają to samo pole „${field}” — człowiek nie ma jak wybrać`,
+        ).toEqual([])
+      }
+    }
+  })
+
   it("żadna nazwa klucza nie zawiera kropki", () => {
     const offenders: string[] = []
     const walk = (node: unknown, at: string) => {

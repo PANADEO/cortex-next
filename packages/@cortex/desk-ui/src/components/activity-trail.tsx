@@ -98,12 +98,14 @@ function Row({
   at,
   now,
   approver,
+  iAmTheApprover,
 }: {
   k: Step
   at: string
   now: number
   /** „Imię Nazwisko" osoby wydającej zgody; pusto, gdy Biurko nie umie jej wskazać. */
   approver?: string | undefined
+  iAmTheApprover?: boolean | undefined
 }) {
   const translate = useDeskT()
   const locale = useDeskLocale()
@@ -159,12 +161,14 @@ export function ActivityTrail({
   isWorking,
   now,
   approver,
+  iAmTheApprover,
 }: {
   entries: AuditEntry[]
   isWorking: boolean
   now: number
   /** Przechodzi do zdania „co teraz" przy kroku, który padł — patrz `describeFailure`. */
   approver?: string | undefined
+  iAmTheApprover?: boolean | undefined
 }) {
   const translate = useDeskT()
   const steps = pairSteps(entries.map((w) => w.event))
@@ -274,6 +278,7 @@ export function ActivityTrail({
               at={entries[k.i]?.at ?? new Date().toISOString()}
               now={now}
               approver={approver}
+              iAmTheApprover={iAmTheApprover}
             />
           ))}
         </ul>

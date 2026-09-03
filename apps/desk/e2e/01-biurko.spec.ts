@@ -1,4 +1,9 @@
+import { quickTasksByRole } from "@cortex/desk-core/people"
+import { makeDeskT } from "@cortex/desk-ui/i18n/locale"
 import { as, expect, test } from "./osoby"
+
+/** Napisy czyta człowiek po polsku — bierzemy je stąd, nie z pamięci. */
+const pl = makeDeskT("pl")
 
 /**
  * Gotowe zlecenia mają JEDNĄ postać: trzy kafle, zawsze widoczne. Wcześniej były trzy
@@ -31,19 +36,24 @@ test.describe("Obszar 1 · To jest MOJE biurko", () => {
     }
     await page.goto("/")
     await expect(page.getByRole("button", { name: "Podpowiedzi", exact: true })).toHaveCount(0)
-    const karty = page.locator("button", {
-      hasText: /Zestawienie kosztów|Notatka ze spotkania|brakuje w dokumencie/,
-    })
-    expect(await karty.count()).toBeGreaterThanOrEqual(3)
+    // Tytuły ZE SŁOWNIKA i wyliczone z zasiewu — nie wpisane tutaj. Wpisany napis czyni
+    // z tego testu strażnika MOJEJ pamięci o brzmieniu kafelków, a nie tego, że one stoją.
+    const tytuly = (quickTasksByRole["member"] ?? []).map((id) =>
+      pl(`quickTask.${id}.title`),
+    )
+    expect(tytuly.length).toBeGreaterThanOrEqual(3)
+    for (const tytul of tytuly.slice(0, 3)) {
+      await expect(page.getByRole("button", { name: tytul })).toBeVisible()
+    }
   })
 
   test("Kliknięcie gotowego zlecenia wstawia treść do pola, ale nie wysyła", async ({ page }) => {
     await as(page, "anna")
     await page.goto("/")
-    await page
-      .locator("button", { hasText: /Zestawienie kosztów/ })
-      .first()
-      .click()
+    // TYTUŁ ZE SŁOWNIKA, nie wpisany tutaj. Poprzednia wersja szukała „Zestawienie
+    // kosztów" i zerwała się przy pierwszej zmianie napisu — a zmiana była naprawą:
+    // dwa kafelki miały ten sam tytuł i nie dało się między nimi wybrać.
+    await page.getByRole("button", { name: pl("quickTask.expensesSheet.title") }).click()
     await expect(page.getByLabel(POLE)).not.toBeEmpty()
     await expect(page).toHaveURL("http://localhost:3210/")
   })

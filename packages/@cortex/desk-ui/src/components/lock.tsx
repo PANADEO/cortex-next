@@ -1,9 +1,10 @@
 "use client"
 import { capabilityLabel } from "@cortex/desk-core/capability-text"
 import { Lock, ShieldCheck } from "lucide-react"
+import Link from "next/link"
 import { useState } from "react"
 import { useDeskT } from "../i18n/client"
-import { api } from "../routes"
+import { api, t } from "../routes"
 import { Icon } from "./icon"
 import { OtherRequest } from "./other-request"
 import { useToast } from "./toast"
@@ -33,6 +34,7 @@ export function CapabilityLock({
   capabilityId,
   alreadyRequested,
   approver,
+  iAmTheApprover,
 }: {
   description: string
   /** Nazwa zapisana w STARYM zdarzeniu; nowe niosą samo `capabilityId`. */
@@ -41,6 +43,13 @@ export function CapabilityLock({
   alreadyRequested?: boolean | undefined
   /** „Imię Nazwisko" osoby wydającej zgodę; pusto, gdy Biurko nie umie jej wskazać. */
   approver?: string | undefined
+  /**
+   * CZY OGLĄDAJĄCY JEST TĄ OSOBĄ. Bez tego kartka mówiła przełożonemu „Zgodę wydaje
+   * Robert Nowak, Twój przełożony" — czyli odsyłała go do niego samego, i to na koncie,
+   * na którym on jako jedyny w firmie może tę zgodę wydać. Wyglądało to na usterkę
+   * produktu dokładnie u tej osoby, która ma go komuś sprzedać.
+   */
+  iAmTheApprover?: boolean | undefined
 }) {
   // Nazwa powstaje TU, przy renderze, w języku tej osoby — zdarzenie niesie tożsamość.
   // Napis ze starego zdarzenia zostaje jako zapasowy, bo tamtych spraw nie przepisujemy.
@@ -78,11 +87,23 @@ export function CapabilityLock({
             przeczytać imię i czynność jednym spojrzeniem, a nie szukać nazwiska
             dwa akapity wyżej. */}
         <div className="t-meta mt-1.5 text-desk-ink">
-          {approver
-            ? translate("lock.decidedBy", { person: approver })
-            : translate("lock.decidedByAnyone")}
+          {iAmTheApprover
+            ? translate("lock.youDecide")
+            : approver
+              ? translate("lock.decidedBy", { person: approver })
+              : translate("lock.decidedByAnyone")}
         </div>
-        {sent ? (
+        {iAmTheApprover && capabilityId ? (
+          /* Przełożony nie prosi sam siebie — dostaje DROGĘ do włączenia. Zostawienie
+             tu przycisku „Poproś o zgodę" znaczyłoby wpis w kolejce, który on sam za
+             chwilę zatwierdzi: ceremonia bez treści. */
+          <Link
+            href={t("/supervision?section=team")}
+            className="t-btn mt-2 inline-block rounded-md border px-2.5 py-1 hover:bg-desk-raised"
+          >
+            {translate("lock.turnItOn")}
+          </Link>
+        ) : sent ? (
           <div className="mt-2 flex items-center gap-1.5 text-[12px] text-desk-ok">
             <Icon as={ShieldCheck} px={12} /> {translate("capabilities.requestSent")}
           </div>

@@ -301,7 +301,9 @@
     "decidedBy": "{{person}}, your manager, decides on this.",
     "decidedByAnyone": "Your manager decides on this.",
     "askForApproval": "Ask for approval",
-    "writeWhatYouNeed": "Write what is needed"
+    "writeWhatYouNeed": "Write what is needed",
+    "youDecide": "You are the one who approves this.",
+    "turnItOn": "Turn it on in Oversight"
   },
   "otherRequest": {
     "sent": "The request went to your manager. They will get back to you once they decide.",
@@ -719,8 +721,8 @@
   },
   "quickTask": {
     "expensesDocument": {
-      "title": "Monthly expense summary",
-      "hint": "add a file with invoices (CSV or XLSX)",
+      "title": "Monthly costs written up",
+      "hint": "add a file with invoices (CSV or XLSX) — you get a document",
       "text": "Make an expense summary from the invoices: group it by category, total it up and save a finished document."
     },
     "documentGaps": {
@@ -734,8 +736,8 @@
       "text": "Turn this into concise notes: what was decided, who does what, by when."
     },
     "expensesSheet": {
-      "title": "Monthly expense summary",
-      "hint": "add a file with invoices (CSV or XLSX)",
+      "title": "Monthly costs as a table",
+      "hint": "add a file with invoices (CSV or XLSX) — you get a spreadsheet",
       "text": "Make an expense summary from the invoices: group it by category, total it up and save it as a spreadsheet."
     },
     "analysis": {

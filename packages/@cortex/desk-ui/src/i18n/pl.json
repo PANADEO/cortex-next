@@ -310,7 +310,9 @@
     "decidedBy": "Zgodę wydaje {{person}}, Twój przełożony.",
     "decidedByAnyone": "Zgodę wydaje Twój przełożony.",
     "askForApproval": "Poproś o zgodę",
-    "writeWhatYouNeed": "Napisz, czego potrzeba"
+    "writeWhatYouNeed": "Napisz, czego potrzeba",
+    "youDecide": "To Ty wydajesz zgodę na tę czynność.",
+    "turnItOn": "Włącz w Nadzorze"
   },
   "otherRequest": {
     "sent": "Prośba poszła do przełożonego. Odezwie się, gdy ją rozpatrzy.",
@@ -758,8 +760,8 @@
   },
   "quickTask": {
     "expensesDocument": {
-      "title": "Zestawienie kosztów miesiąca",
-      "hint": "dodaj plik z fakturami (CSV lub XLSX)",
+      "title": "Koszty miesiąca opisane słowami",
+      "hint": "dodaj plik z fakturami (CSV lub XLSX) — wyjdzie dokument",
       "text": "Zrób zestawienie kosztów z faktur: pogrupuj po kategorii, policz sumy i zapisz gotowy dokument."
     },
     "documentGaps": {
@@ -773,8 +775,8 @@
       "text": "Zrób z tego zwięzłą notatkę: ustalenia, kto co robi, terminy."
     },
     "expensesSheet": {
-      "title": "Zestawienie kosztów miesiąca",
-      "hint": "dodaj plik z fakturami (CSV lub XLSX)",
+      "title": "Koszty miesiąca w tabeli",
+      "hint": "dodaj plik z fakturami (CSV lub XLSX) — wyjdzie arkusz",
       "text": "Zrób zestawienie kosztów z faktur: pogrupuj po kategorii, policz sumy i zapisz jako arkusz."
     },
     "analysis": {

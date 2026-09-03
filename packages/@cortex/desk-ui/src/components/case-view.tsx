@@ -88,6 +88,7 @@ export function CaseView({
   everyone,
   me,
   approver,
+  iAmTheApprover,
 }: {
   id: string
   policyFor: Policy
@@ -101,6 +102,7 @@ export function CaseView({
    * serwera, bo kto decyduje, wie baza, a kłódka jest komponentem klienta.
    */
   approver?: string | undefined
+  iAmTheApprover?: boolean | undefined
 }) {
   const [entries, setEntries] = useState<AuditEntry[]>([])
   const [caseFile, setCaseFile] = useState<Case | null>(null)
@@ -543,6 +545,7 @@ export function CaseView({
                         isWorking={isWorking && lastTurn}
                         now={now}
                         approver={approver}
+                        iAmTheApprover={iAmTheApprover}
                       />
                     </div>
                   )}
@@ -561,6 +564,7 @@ export function CaseView({
                           name={ev.name}
                           capabilityId={ev.capabilityId}
                           approver={approver}
+                          iAmTheApprover={iAmTheApprover}
                         />
                       )
                     if (ev.type === "assistant")

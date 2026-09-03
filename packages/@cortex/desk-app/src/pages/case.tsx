@@ -2,7 +2,7 @@ import { policyFor } from "@cortex/desk-core/capability-gate"
 import { accessTo } from "@cortex/desk-core/case-access"
 import { migrate, pool } from "@cortex/desk-core/db"
 import { viewer } from "@cortex/desk-core/identity"
-import { approverName, everyone, names } from "@cortex/desk-core/people"
+import { approver, approverName, everyone, names } from "@cortex/desk-core/people"
 import { CaseView } from "@cortex/desk-ui/components/case-view"
 import { Shell } from "@cortex/desk-ui/components/shell"
 import { deskT } from "@cortex/desk-ui/i18n/server"
@@ -55,6 +55,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         }))}
         me={u.id}
         approver={await approverName()}
+        // Kto patrzy, liczy SERWER. Kartka odmowy nie ma prawa zgadywać po imieniu,
+        // czy nie stoi właśnie przed osobą, która tę zgodę wydaje.
+        iAmTheApprover={(await approver())?.id === u.id}
       />
     </Shell>
   )
