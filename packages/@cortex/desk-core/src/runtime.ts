@@ -1,6 +1,7 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
 import { generateText, stepCountIs, tool, type ModelMessage, type ToolSet } from "ai"
 import { randomUUID } from "node:crypto"
+import path from "node:path"
 import { z } from "zod"
 import * as audit from "./audit-log"
 import { hasCapability } from "./capability-gate"
@@ -862,7 +863,14 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
   if (hasCapability(p, "code.run")) {
     t.run_computation = tool({
       description:
-        'Uruchamia obliczenia na danych. Podaj kod w JavaScript (Node) oraz listę plików z biurka w polu `pliki` — zostaną zamontowane w katalogu roboczym pod swoimi nazwami (np. "faktury-08.csv"). Wypisz wynik przez console.log.',
+        "Uruchamia kod na danych i ODDAJE PLIKI, które ten kod zapisze. Podaj kod oraz " +
+        'listę plików z biurka w polu `pliki` — zostaną zamontowane w katalogu roboczym ' +
+        'pod swoimi nazwami (np. "faktury-08.csv"). Wypisz wynik przez print/console.log. ' +
+        "KAŻDY PLIK ZAPISANY W KATALOGU ROBOCZYM TRAFIA DO TECZKI SPRAWY — tak powstają " +
+        "dokumenty (pandoc: .docx, .pdf), arkusze i wykresy z danych (matplotlib). " +
+        "Środowisko zależy od wdrożenia; domyślnie jest to Python z pandas, openpyxl, " +
+        "matplotlib, weasyprint i pandokiem. Gdy czegoś zabraknie, kod padnie i " +
+        "zobaczysz to w wyniku — nie zgaduj, czy biblioteka jest.",
       inputSchema: z.object({
         description: z.string().describe("po ludzku, co liczysz"),
         code: z.string(),
@@ -916,13 +924,50 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
               : r.ok
                 ? undefined
                 : "computation-error"
+
+            // PLIKI WYCHODZĄ Z PIASKOWNICY, i to jest cała różnica między „umiem policzyć"
+            // a „umiem zrobić dokument". Do 03.09.2026 lista `produced` docierała aż tutaj
+            // i się kończyła: kod mógł złożyć arkusz albo narysować wykres, po czym plik
+            // ginął razem z katalogiem przy `dispose()` w `finally`. Zabieramy je PRZED
+            // sprzątaniem — potem nie ma już czego zabierać.
+            //
+            // Zabieramy TAKŻE po nieudanym obliczeniu: skrypt, który zapisał trzy z pięciu
+            // arkuszy i przewrócił się na czwartym, zostawił trzy prawdziwe pliki. Wyrzucenie
+            // ich dlatego, że tura skończyła się źle, byłoby karą za cudzy błąd.
+            const got = await box.collect(caseFolder, r.produced).catch(() => null)
+            const made = got?.kept ?? []
+            const lost = got?.skipped ?? []
+
+            const saidAboutFiles: string[] = []
+            if (made.length > 0) {
+              saidAboutFiles.push(
+                `W teczce sprawy powstały pliki: ${made.map((one) => path.basename(one)).join(", ")}.`,
+              )
+            }
+            if (lost.length > 0) {
+              // Cicha strata pliku jest gorsza niż jego brak: człowiek przeczytałby
+              // w wyjściu „zapisano wykres" i nie znalazłby go u siebie.
+              saidAboutFiles.push(
+                `NIE UDAŁO SIĘ zabrać ${lost.length} plików (${lost
+                  .map((one) => `${path.basename(one.name)} — ${one.why}`)
+                  .join(", ")}). Powiedz o tym człowiekowi, nie przemilczaj.`,
+              )
+            }
+
             return {
               ok: r.ok,
               summary:
                 stopped ||
-                (r.ok ? "policzone" : reason ? `błąd wykonania — ${reason}` : "błąd wykonania"),
+                (r.ok
+                  ? made.length > 0
+                    ? `policzone, plików: ${made.length}`
+                    : "policzone"
+                  : reason
+                    ? `błąd wykonania — ${reason}`
+                    : "błąd wykonania"),
               ...(failure === undefined ? {} : { reason: failure }),
-              answer: r.output || "(brak wyjścia)",
+              answer: [r.output || "(brak wyjścia)", ...saidAboutFiles].join("\n\n"),
+              ...(made.length > 0 ? { produced: made } : {}),
             }
           } finally {
             await box.dispose().catch(() => {})

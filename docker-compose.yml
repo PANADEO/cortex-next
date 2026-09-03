@@ -181,6 +181,17 @@ services:
       # reguła nie brzmi „tylko adresy publiczne". Bez tej listy przełożony wpisujący
       # `http://127.0.0.1:5432` kazałby kontenerowi Biurka tam pójść.
       MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-}
+      # PIASKOWNICA KODU — WŁĄCZANA ŚWIADOMIE, nie domyślnie.
+      #
+      # Pusta wartość znaczy „demona nie ma" i wtedy obliczenia biegną ścieżką ZASTĘPCZĄ:
+      # proces potomny z zamkniętym systemem plików, ale z OTWARTĄ SIECIĄ. To dlatego
+      # zdolność `code.run` należy dziś do przełożonego, a nie do roli startowej.
+      #
+      # Ustawienie tej zmiennej BEZ postawionego demona jest gorsze niż jej brak: Biurko
+      # uzna, że piaskownica jest, i każda tura z obliczeniem padnie na połączeniu. Demon
+      # stawia się osobno, na hoście — patrz `deploy/cortex-sandbox.service` i
+      # `deploy/compose-fragment.yml` w repozytorium cortex-sandbox.
+      DESK_SANDBOX_SOCKET: ${DESK_SANDBOX_SOCKET:-}
       # Ilustromat — modele konfigurowalne per instancja klienta. Puste =
       # domyślne z app/idp/lib/ilustromat/config.ts, nie awaria.
       ILUSTROMAT_TEXT_MODEL: ${ILUSTROMAT_TEXT_MODEL:-}

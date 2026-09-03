@@ -156,6 +156,11 @@ services:
       # `desk-storage.ts` domyśla się `./.data` w warstwie zapisywalnej kontenera,
       # czyli w miejscu, które znika przy każdym `docker compose up` nowego obrazu.
       - DESK_DATA_DIR=/data/desk
+      # PIASKOWNICA KODU — włączana świadomie, nie domyślnie. Puste znaczy „demona nie ma"
+      # i wtedy obliczenia biegną ścieżką zastępczą z OTWARTĄ SIECIĄ. Ustawienie tego BEZ
+      # postawionego demona jest gorsze niż brak: każda tura z obliczeniem padnie na
+      # połączeniu. Demon stawia się na hoście — patrz repozytorium cortex-sandbox.
+      - DESK_SANDBOX_SOCKET=${DESK_SANDBOX_SOCKET:-}
       # Kto może być serwerem MCP. Domyślnie `mcp-*`, czyli usługi nazwane tak w tym
       # samym compose — adres PRYWATNY z definicji i to jest przypadek poprawny, więc
       # reguła nie brzmi „tylko adresy publiczne". Bez tej listy przełożony wpisujący

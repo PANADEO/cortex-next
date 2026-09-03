@@ -25,6 +25,32 @@ import capabilities from "../seed/capabilities.json"
 const ROLES = capabilities.roles as Record<string, string[]>
 
 /**
+ * Czy TEN plik NADAJE gnieździe niepustą wartość.
+ *
+ * WYMIENIENIE ZMIENNEJ TO NIE PODŁĄCZENIE. Compose wystawia ją z pustą wartością
+ * domyślną (`${DESK_SANDBOX_SOCKET:-}`), czyli mówi „da się włączyć", a nie „jest
+ * włączone" — i to jest właściwy kształt, bo ustawienie jej BEZ postawionego demona
+ * jest gorsze niż brak: każda tura z obliczeniem padłaby na połączeniu.
+ *
+ * Pierwsza wersja szukała samej NAZWY i zapalała się na własnym zapisie `${…:-}`,
+ * czyli na wpisie mówiącym dokładnie „niepodłączone".
+ */
+function wiredIn(text: string): boolean {
+  for (const raw of text.split("\n")) {
+    const line = raw.split("#")[0] ?? ""
+    const at = line.indexOf("DESK_SANDBOX_SOCKET")
+    if (at < 0) continue
+    const rest = line.slice(at + "DESK_SANDBOX_SOCKET".length).trimStart()
+    if (!rest.startsWith(":") && !rest.startsWith("=")) continue
+    const value = rest.slice(1).trim()
+    // Puste albo samo rozwinięcie z pustym domyślnikiem = niepodłączone.
+    if (value === "" || /^\$\{[^}]*:-\s*\}$/.test(value)) continue
+    return true
+  }
+  return false
+}
+
+/**
  * Czy któryś plik wdrożenia ustawia `DESK_SANDBOX_SOCKET`. Pusta lista znaczy: demona
  * nie ma, więc obliczenia biegną ścieżką zapasową z OTWARTĄ SIECIĄ (`sandbox.ts` mówi
  * to wprost) — i dopiero wtedy odłożenie `code.run` jest uzasadnione.
@@ -34,7 +60,7 @@ function composeWiring(): string[] {
   return fs
     .readdirSync(root)
     .filter((name) => /^docker-compose.*\.ya?ml$/.test(name))
-    .filter((name) => fs.readFileSync(path.join(root, name), "utf8").includes("DESK_SANDBOX_SOCKET"))
+    .filter((name) => wiredIn(fs.readFileSync(path.join(root, name), "utf8")))
 }
 
 /**
