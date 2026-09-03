@@ -910,7 +910,9 @@
     "linkCopied": "Skopiowane",
     "copyFailed": "Nie udało się skopiować linku. Zaznacz adres na górze i skopiuj ręcznie.",
     "viewOnly": "Osoba z dostępem może tę sprawę tylko oglądać. Nie zleca i niczego nie zmienia.",
-    "failed": "Nie udało się zmienić dostępu. Spróbuj jeszcze raz."
+    "failed": "Nie udało się zmienić dostępu. Spróbuj jeszcze raz.",
+    "findPerson": "Szukaj osoby",
+    "nobodyFound": "Nikogo takiego tu nie ma."
   },
   "settings": {
     "title": "Ustawienia",

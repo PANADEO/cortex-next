@@ -1,6 +1,6 @@
 "use client"
 import * as Menu from "@radix-ui/react-dropdown-menu"
-import { Check, Link2, Share2, UserPlus, X } from "lucide-react"
+import { Check, Link2, Search, Share2, UserPlus, X } from "lucide-react"
 import { useState } from "react"
 import { useDeskT } from "../i18n/client"
 import { api } from "../routes"
@@ -51,6 +51,7 @@ export function ShareMenu({
   const { toast } = useToast()
   const [taken, setTaken] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [query, setQuery] = useState("")
 
   async function act(body: Record<string, unknown>) {
     setTaken(true)
@@ -66,6 +67,21 @@ export function ShareMenu({
 
   const name = (who: string) => people[who] ?? who
   const canInvite = everyone.filter((u) => u.id !== me && !shares.some((s) => s.who === u.id))
+
+  /**
+   * WYSZUKIWANIE OD SIÓDMEJ OSOBY — bo lista rośnie z firmą, a menu nie.
+   *
+   * Pierwsza wersja wypisywała wszystkich w okienku wysokości sześciu wierszy. W firmie
+   * na sześć osób to działa; w firmie na dwieście znaczy przewijanie po sześć nazwisk
+   * naraz, bez żadnej drogi na skróty. Próg siedem, bo tyle mniej więcej mieści się bez
+   * przewijania — poniżej niego pole wyszukiwania byłoby kontrolką bez zadania, czyli
+   * dokładnie tym, co ten produkt z ekranów usuwa.
+   */
+  const withSearch = canInvite.length > 7
+  const needle = query.trim().toLocaleLowerCase()
+  const shown = needle
+    ? canInvite.filter((u) => u.name.toLocaleLowerCase().includes(needle))
+    : canInvite
 
   /**
    * Link kopiujemy z PASKA ADRESU, a nie sklejamy ze stałej. Biurko stoi pod dwoma
@@ -135,8 +151,30 @@ export function ShareMenu({
               <div className="t-micro flex items-center gap-1.5 pb-1 pt-3">
                 <Icon as={UserPlus} px={12} /> {translate("share.addSomeone")}
               </div>
+              {withSearch && (
+                <div className="relative pb-1">
+                  <Icon
+                    as={Search}
+                    px={14}
+                    className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-desk-muted"
+                  />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    // Radix przechwytuje klawisze w menu na własne skakanie po literach —
+                    // bez tego wpisanie „an" zamiast filtrować, przeskakiwałoby kursorem.
+                    onKeyDown={(e) => e.stopPropagation()}
+                    aria-label={translate("share.findPerson")}
+                    placeholder={translate("share.findPerson")}
+                    className="t-body h-8 w-full rounded-md border bg-desk-surface pl-7 pr-2"
+                  />
+                </div>
+              )}
               <ul className="max-h-48 space-y-0.5 overflow-y-auto">
-                {canInvite.map((u) => (
+                {shown.length === 0 && (
+                  <li className="t-meta px-2 py-1.5">{translate("share.nobodyFound")}</li>
+                )}
+                {shown.map((u) => (
                   <li key={u.id}>
                     <button
                       onClick={() => act({ action: "share", who: u.id })}

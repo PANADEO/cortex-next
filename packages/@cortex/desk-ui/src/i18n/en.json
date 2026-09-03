@@ -863,7 +863,9 @@
     "linkCopied": "Copied",
     "copyFailed": "The link could not be copied. Select the address at the top and copy it by hand.",
     "viewOnly": "Anyone with access can only look at this case. They cannot give jobs or change anything.",
-    "failed": "Access could not be changed. Try again."
+    "failed": "Access could not be changed. Try again.",
+    "findPerson": "Find a person",
+    "nobodyFound": "Nobody here by that name."
   },
   "settings": {
     "title": "Settings",
