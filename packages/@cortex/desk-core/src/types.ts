@@ -189,3 +189,57 @@ export type TrashEntry = {
   fromFolder: string
   when: string
 }
+
+/**
+ * ZESTAWIENIE PORAŻEK dla przełożonego. Typ stoi TUTAJ, a nie osobno po obu stronach
+ * trasy, z tego samego powodu co `TrashEntry`: odpowiedź z `fetch` jest nietypowana,
+ * więc rozjazd nazw pól byłby dla `tsc` niewidzialny — a ekran, którym ktoś odpowiada
+ * szefowi „czy to działa", ma mylić się głośno albo wcale.
+ *
+ * CZEGO W TYM TYPIE NIE MA I MIEĆ NIE BĘDZIE: tytułu sprawy, nazwy pliku ani opisu,
+ * którym agent nazwał brakującą czynność. Sprawa jest prywatna, a wszystkie trzy są
+ * treścią — tytuł bierze się z pierwszego zdania człowieka, a opis braku układa model
+ * z tego, co miał zrobić. Przełożony dostaje LICZBY, POWODY i ZDOLNOŚCI, i to jest
+ * cała treść tego zestawienia.
+ */
+export type Outcomes = {
+  /** ile dni wstecz obejmuje zestawienie — ekran musi to powiedzieć, a nie założyć */
+  days: number
+  /** ile spraw skończyło się czym; stan jest wartością ze skończonej listy */
+  cases: CaseCount[]
+  /**
+   * Ile procent ZAKOŃCZONYCH spraw skończyło się wynikiem. `null` znaczy „w tym oknie
+   * nie skończyła się ani jedna" — a to jest inna odpowiedź niż zero.
+   */
+  resultShare: number | null
+  /** powody PRZERWANIA — wartości ze skończonej listy, zdanie dobiera ekran */
+  stops: StopCount[]
+  /** nieudane czynności agenta, po powodzie ze skończonej listy `StepFailure` */
+  steps: StepFailureCount[]
+  /** kłódki: czynności, których komuś zabrakło, po zdolnościach */
+  missing: MissingCapabilityCount[]
+  cost: CostSplit
+}
+
+export type CaseCount = { status: CaseStatus; cases: number }
+
+export type StopCount = { reason: string; cases: number }
+
+export type StepFailureCount = {
+  reason: StepFailure
+  /** ile razy czynność się wywróciła */
+  times: number
+  /** w ilu RÓŻNYCH sprawach — czterdzieści awarii w dwóch sprawach to inna choroba */
+  cases: number
+}
+
+export type MissingCapabilityCount = {
+  /** `null` — czynność, której katalog zdolności w ogóle nie zna */
+  capabilityId: string | null
+  times: number
+  /** ilu różnych ludzi trafiło na tę kłódkę; imion tu nie ma i nie potrzeba */
+  people: number
+}
+
+/** Koszt rozbity na ten, który coś przyniósł, i ten, który nie. */
+export type CostSplit = { withResult: number; withoutResult: number; unfinished: number }

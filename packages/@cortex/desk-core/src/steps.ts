@@ -331,3 +331,19 @@ export function describeFailure(
     next: next,
   }
 }
+
+/**
+ * SAMO ZDANIE „CO SIĘ STAŁO", bez reszty karty awarii.
+ *
+ * Zestawienie porażek dla przełożonego ma POWÓD JAKO WARTOŚĆ (`no-such-file`) i nie ma
+ * kroku, do którego ten powód należał — liczy zdarzenia z całego miesiąca, a nie jedną
+ * czynność. Nie ma więc czego podać `describeFailure`, a zdania „czy coś się zmieniło"
+ * i „co teraz" mówią tam o pojedynczej czynności i na zestawieniu byłyby nieprawdą.
+ *
+ * Mapa `HAPPENED` zostaje prywatna: drugie miejsce, w którym powód zamienia się w klucz
+ * słownika, byłoby tą samą wartością zadeklarowaną dwa razy — czyli tą klasą defektu,
+ * od której zaczął się spór o kontrast.
+ */
+export function failureHappened(translate: DeskT, reason: StepFailure): string {
+  return translate(HAPPENED[reason])
+}

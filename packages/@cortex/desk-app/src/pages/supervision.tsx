@@ -3,9 +3,11 @@ import { describeEntry } from "@cortex/desk-core/audit-log-text"
 import { capabilityCatalogue, policyFor, spentToday } from "@cortex/desk-core/capability-gate"
 import { pool } from "@cortex/desk-core/db"
 import { viewer } from "@cortex/desk-core/identity"
+import { failedCaseCount } from "@cortex/desk-core/outcomes"
 import { DEPARTMENTS, everyone, names, ROLES } from "@cortex/desk-core/people"
 import { Icon } from "@cortex/desk-ui/components/icon"
 import { McpSupervision } from "@cortex/desk-ui/components/mcp-supervision"
+import { Outcomes } from "@cortex/desk-ui/components/outcomes"
 import { RequestSupervision } from "@cortex/desk-ui/components/request-supervision"
 import { SectionTabs } from "@cortex/desk-ui/components/section-tabs"
 import { Shell } from "@cortex/desk-ui/components/shell"
@@ -31,7 +33,12 @@ import { Fragment } from "react"
  * Sekcja jest w ADRESIE, nie w stanie komponentu — patrz `SectionTabs`.
  */
 
-const SECTIONS = ["decisions", "team", "tools", "spending", "log"] as const
+// „Nieudane" stoi DRUGIE, zaraz za tym, co czeka na decyzję. Pierwsza pozycja jest
+// domyślna (jej adres nie niesie parametru), a domyślnym ekranem przełożonego zostaje
+// to, co wymaga go dziś. Zaraz potem idzie odpowiedź na pytanie, które zadaje mu jego
+// szef — przed katalogiem narzędzi i przed dziennikiem, bo tamte dwa czyta się wtedy,
+// gdy już się wie, czego szukać.
+const SECTIONS = ["decisions", "outcomes", "team", "tools", "spending", "log"] as const
 type Section = (typeof SECTIONS)[number]
 
 const isSection = (value: unknown): value is Section =>
@@ -56,7 +63,7 @@ export default async function Page({
 
   // Liczby do plakietek lecą ZAWSZE — to one mówią, czy warto tam zajrzeć — ale są
   // trzema tanimi zapytaniami zbiorczymi, a nie pobraniem treści czterech sekcji.
-  const [waiting, suspended, spentAll, team] = await Promise.all([
+  const [waiting, suspended, spentAll, team, failures] = await Promise.all([
     pool.query<{ n: string }>(
       `select count(*)::text as n from desk.access_request where status='pending'`,
     ),
@@ -68,6 +75,10 @@ export default async function Page({
        where updated_at::date = now()::date`,
     ),
     everyone(),
+    // Porażki w plakietce, a nie dopiero po wejściu w sekcję: przełożony ma zobaczyć,
+    // że jest o czym rozmawiać, ZANIM cokolwiek otworzy — tak samo jak przy prośbach
+    // czekających na decyzję.
+    failedCaseCount(),
   ])
   const today = Number(spentAll.rows[0]?.total ?? 0)
   const headcount = team.length
@@ -89,6 +100,12 @@ export default async function Page({
                 label: translate("supervision.tabDecisions"),
                 count: Number(waiting.rows[0]?.n ?? 0),
               },
+              {
+                key: "outcomes",
+                label: translate("supervision.tabOutcomes"),
+                count: failures,
+                tone: "warn",
+              },
               { key: "team", label: translate("supervision.tabTeam"), note: String(headcount) },
               {
                 key: "tools",
@@ -107,6 +124,7 @@ export default async function Page({
 
           <div className="pt-6">
             {section === "decisions" && <Decisions />}
+            {section === "outcomes" && <Outcomes catalogue={capabilityCatalogue} />}
             {section === "team" && (
               <section>
                 <h2 className="t-section mb-1">{translate("team.title")}</h2>
