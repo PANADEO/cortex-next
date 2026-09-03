@@ -14,10 +14,28 @@
 // bywają decyzją wdrożeniowa i mogą się różnić — wtedy ten test trzeba świadomie zmienić,
 // i o to chodzi, żeby zmiana była świadoma.
 
+import fs from "node:fs"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
 import { describe, expect, it } from "vitest"
+
+const here = path.dirname(fileURLToPath(import.meta.url))
 import capabilities from "../seed/capabilities.json"
 
 const ROLES = capabilities.roles as Record<string, string[]>
+
+/**
+ * Czy któryś plik wdrożenia ustawia `DESK_SANDBOX_SOCKET`. Pusta lista znaczy: demona
+ * nie ma, więc obliczenia biegną ścieżką zapasową z OTWARTĄ SIECIĄ (`sandbox.ts` mówi
+ * to wprost) — i dopiero wtedy odłożenie `code.run` jest uzasadnione.
+ */
+function composeWiring(): string[] {
+  const root = path.resolve(here, "../../../..")
+  return fs
+    .readdirSync(root)
+    .filter((name) => /^docker-compose.*\.ya?ml$/.test(name))
+    .filter((name) => fs.readFileSync(path.join(root, name), "utf8").includes("DESK_SANDBOX_SOCKET"))
+}
 
 /**
  * Zadania biurowe rozpisane na zdolności, których naprawdę wymagają — po jednej na krok,
@@ -84,6 +102,15 @@ describe("rola startowa unosi zadanie, nie tylko listę", () => {
           `„${blocked}” już nie blokuje — skreśl pole blocked z tego zadania`,
         ).toBeGreaterThan(0)
         expect(blocked.length).toBeGreaterThan(20)
+        // …I DOPÓKI JEGO POWÓD JEST PRAWDZIWY. Do 03.09.2026 ten wpis reagował wyłącznie
+        // na ROLĘ: dopisanie `code.run` kazało go skreślić, ale PODŁĄCZENIE DEMONA nie
+        // zmieniało nic. Wpis mówiłby wtedy „czeka na demona", mając demona pod bokiem —
+        // czyli byłby przeterminowaną wymówką, a nie nazwaną luką. Powód sprawdzamy
+        // u źródła: w plikach wdrożenia.
+        expect(
+          composeWiring(),
+          "demon piaskownicy jest już podłączony w compose — przeczytaj pole blocked na nowo",
+        ).toEqual([])
         return
       }
       expect(missing).toEqual([])

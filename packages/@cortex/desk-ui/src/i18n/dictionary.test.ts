@@ -178,6 +178,20 @@ describe("słownik Biurka", () => {
     const API = path.join(here, "../../../desk-app/src/api")
     /** Kody czytane przez front, nie zdania dla człowieka. */
     const MACHINE_CODES = new Set(["name-clash"])
+    /**
+     * ODSTĘPSTWA NAZWANE, każde z warunkiem skreślenia. Pusta lista jest celem.
+     *
+     * `mcp.ts` oddaje `k.rejected` — powód odrzucenia schematu narzędzia, ułożony
+     * w `desk-core/mcp/`. Zdania są tam wpisane na sztywno po polsku (`client.ts`
+     * przy „Nie udało się połączyć" i „Nie umiem odczytać schematu", `hygiene.ts`
+     * przy „Schemat używa …"), więc przetłumaczenie ich wymaga przerobienia trzech
+     * klas wyjątków w warstwie MCP, a nie poprawki w tej trasie. Ekran jest
+     * przełożonego, nie pani Basi, więc szkoda jest mniejsza — ale JEST.
+     *
+     * SKREŚLIĆ, gdy warstwa MCP zacznie rzucać KODY zamiast zdań, tak jak od
+     * 03.09.2026 robi to `desk-storage` przez `StorageProblem`.
+     */
+    const EXEMPT = new Map([["mcp.ts", "k.rejected — zdania układa desk-core/mcp/, patrz komentarz"]])
     const offenders: string[] = []
     for (const file of readdirSync(API).filter((one) => one.endsWith(".ts"))) {
       if (file.startsWith("test-")) continue // narzędzia testowe nie mówią do człowieka
@@ -188,15 +202,40 @@ describe("słownik Biurka", () => {
         true,
         ts.ScriptKind.TS,
       )
+      /**
+       * Sprawdzamy WYŁĄCZNIE to, co naprawdę wychodzi na drut — pierwszy argument
+       * `NextResponse.json(...)`. Bez tego zawężenia strażnik zapalał się na
+       * `team.ts`, gdzie `{ error: NextResponse.json(…) }` jest wewnętrznym nośnikiem
+       * odmowy, a nie odpowiedzią; czyli karałby kod poprawny.
+       */
+      const isPayload = (node: ts.Node) =>
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        node.expression.name.text === "json"
+      const check = (payload: ts.Node) => {
+        if (!ts.isObjectLiteralExpression(payload)) return
+        for (const property of payload.properties) {
+          if (!ts.isPropertyAssignment(property)) continue
+          if (!ts.isIdentifier(property.name) || property.name.text !== "error") continue
+          const value = property.initializer
+          // JEDYNE, co wolno: wynik `translate(...)` albo kod czytany maszynowo.
+          // Poprzednia wersja odrzucała sam LITERAŁ, a komentarz obiecywał „wyłącznie
+          // translate" — i przez tę różnicę przeszło `error: String(e).slice(0, 200)`
+          // w `files.ts`, którym polskie zdanie z `desk-storage` trafiało do dymka
+          // anglojęzycznego użytkownika. Reguła dogania teraz własną obietnicę.
+          const zTlumacza =
+            ts.isCallExpression(value) &&
+            ts.isIdentifier(value.expression) &&
+            value.expression.text === "translate"
+          const kod = ts.isStringLiteralLike(value) && MACHINE_CODES.has(value.text)
+          if (zTlumacza || kod) continue
+          if (EXEMPT.has(file)) continue
+          offenders.push(`${file}: error: ${value.getText().slice(0, 60)}`)
+        }
+      }
       const visit = (node: ts.Node): void => {
-        if (
-          ts.isPropertyAssignment(node) &&
-          ts.isIdentifier(node.name) &&
-          node.name.text === "error" &&
-          ts.isStringLiteralLike(node.initializer) &&
-          !MACHINE_CODES.has(node.initializer.text)
-        ) {
-          offenders.push(`${file}: "${node.initializer.text}"`)
+        if (isPayload(node) && (node as ts.CallExpression).arguments[0]) {
+          check((node as ts.CallExpression).arguments[0]!)
         }
         ts.forEachChild(node, visit)
       }
@@ -314,11 +353,45 @@ describe("słownik Biurka", () => {
     // narzędzi, zwykły rzeczownik z opisu, a nie ktoś, do kogo odsyłamy człowieka.
     // Wpisane na próbę, dały trzy fałszywe alarmy na własnym słowniku i wyleciały.
     //
-    // `\p{L}` zamiast `\w`, bo `\w` bez tego NIE OBEJMUJE polskich liter — przez to
-    // „obsługa techniczna" było łapane, a „obsługę techniczną" przechodziło. Ten sam
-    // błąd wracał tu dwa razy, więc znika razem z `\w`.
-    const FACELESS =
-      /admin\p{L}*|helpdesk|help[- ]desk|informatyk\p{L}*|serwis\p{L}*|technik\p{L}*|sysadmin\p{L}*|infolini\p{L}*|programi[sś][tc]\p{L}*|deweloper\p{L}*|dzia[łl]\p{L}* (?:techniczn\p{L}+|informatyczn\p{L}+)|wsparci\p{L}+|obs[łl]ug\p{L}+ techniczn\p{L}+|opiekun\p{L}* systemu|tech support|\bsupport(?:u|em|owi|cie)?\b(?!s)/iu
+    // REGUŁA, KTÓRA TU OBOWIĄZUJE — i która 03.09.2026 zastąpiła listę rzeczowników.
+    // Przewinieniem jest ODESŁANIE DO CZŁOWIEKA BEZ TWARZY, a nie samo słowo. Poprzednia
+    // wersja blakowała rzeczowniki i przez to strzelała do treści niewinnej: „Ten format
+    // pliku nie ma jeszcze wsparcia" (wsparcie = obsługa formatu), „Opłata administracyjna"
+    // (przymiotnik, nie osoba), „politechnikę" (`technik` bez granicy słowa), angielskie
+    // „Support for XLSX sheets". Strażnik mylący się przeciwko dobrej treści jest gorszy
+    // niż jego brak, bo uczy ludzi go omijać — to jest doktryna tego pliku i tamta wersja
+    // ją łamała.
+    //
+    // Na liście stoją więc WYŁĄCZNIE ludzie i zespoły ludzi. Rzeczownik abstrakcyjny
+    // („wsparcie", „serwis", „administracja") wchodzi tylko wtedy, gdy zdanie używa go
+    // JAKO ADRESATA — czyli z przyimkiem kierunku przed nim.
+    const FACELESS: { pattern: RegExp; what: string }[] = [
+      { pattern: /administrator\p{L}*/iu, what: "administrator" },
+      { pattern: /helpdesk|help[- ]desk/iu, what: "helpdesk" },
+      { pattern: /informatyk\p{L}*/iu, what: "informatyk" },
+      { pattern: /serwisant\p{L}*/iu, what: "serwisant" },
+      // Granica słowa jest tu istotna: bez niej „politechnikę" jest naruszeniem.
+      { pattern: /\btechnik\p{L}*/iu, what: "technik" },
+      { pattern: /sysadmin\p{L}*/iu, what: "sysadmin" },
+      { pattern: /infolini\p{L}*/iu, what: "infolinia" },
+      { pattern: /programi[sś][tc]\p{L}*/iu, what: "programista" },
+      { pattern: /deweloper\p{L}*/iu, what: "deweloper" },
+      { pattern: /dzia[łl]\p{L}* (?:techniczn|informatyczn|wsparci)\p{L}+/iu, what: "dział techniczny" },
+      { pattern: /obs[łl]ug\p{L}+ techniczn\p{L}+/iu, what: "obsługa techniczna" },
+      { pattern: /wsparci\p{L}+ techniczn\p{L}+/iu, what: "wsparcie techniczne" },
+      { pattern: /opiekun\p{L}* systemu/iu, what: "opiekun systemu" },
+      // Rzeczownik abstrakcyjny DOPIERO jako adresat: „zgłoś do wsparcia", „skontaktuj
+      // się ze wsparciem" — ale nie „nie ma jeszcze wsparcia dla tego formatu".
+      { pattern: /\b(?:do|ze|z|przez)\s+wsparci\p{L}+/iu, what: "odesłanie do „wsparcia”" },
+      { pattern: /technical[- ]support|support (?:team|desk|line)/iu, what: "tech support" },
+      // „IT" WIELKIMI, bez flagi `i` — z nią „check whether **it support**s text" było
+      // naruszeniem. Ta sama pomyłka co przy samym „IT" niżej, popełniona drugi raz.
+      { pattern: /IT[- ]support/u, what: "IT support" },
+      { pattern: /(?:contact|call|ask|email)\s+(?:the\s+)?support\b/iu, what: "contact support" },
+      // Samo „IT" TYLKO wielkimi literami i osobno od reszty: z flagą `i` łapało
+      // angielskie „check whether it supports text", czyli zdanie bez naruszenia.
+      { pattern: /\bIT\b/u, what: "dział IT" },
+    ]
     const offenders: string[] = []
     const walk = (node: unknown, key: string) => {
       if (typeof node === "string") {
@@ -331,7 +404,10 @@ describe("słownik Biurka", () => {
         // Samo „IT" jako dział — WIELKIMI literami, i to nie jest drobiazg: z flagą `i`
         // angielskie „check whether it supports text" jest odesłaniem do działu IT.
         // Fałszywy alarm na własnym słowniku wrócił tą drogą raz i tędy nie wróci.
-        if (FACELESS.test(node) || /\bIT\b/u.test(node)) offenders.push(`${key} = ${node}`)
+        // Komunikat mówi, KTÓRA reguła się zapaliła — inaczej człowiek, który tu trafi,
+        // zgaduje, o które słowo chodzi, i najczęściej zgaduje źle.
+        const hit = FACELESS.find((one) => one.pattern.test(node))
+        if (hit) offenders.push(`${key} = ${node}  ← ${hit.what}`)
         return
       }
       if (node && typeof node === "object") {

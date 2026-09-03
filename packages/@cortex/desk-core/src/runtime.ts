@@ -587,9 +587,13 @@ export function toolsForPolicy(u: User, p: Policy, caseId: string) {
               as: f.split("/").pop()!,
               write: false,
             })),
-            // Sieci NIE MA i nie da się o nią poprosić: profil demona przybija
-            // `--network=none` każdej sprawie. Wcześniej stało tu `egress: []` z komentarzem
-            // „NIEEGZEKWOWANE w POC" — parametr, który wyglądał na granicę i nią nie był.
+            // SIEĆ — i to zdanie brzmiało tu do 03.09.2026 odwrotnie, niż jest naprawdę.
+            // „Sieci NIE MA" jest prawdą WYŁĄCZNIE dla gałęzi demona (`--network=none`
+            // w jego profilu). Domyślne wdrożenie nie ustawia `DESK_SANDBOX_SOCKET`
+            // w ŻADNYM pliku compose, więc biegnie ścieżka zapasowa `node --permission`,
+            // a ta sieci nie zamyka — mówi to wprost `sandbox.ts`. Zdanie o zamkniętej
+            // sieci czytane w tym pliku wystarczyło, żeby przyznać `code.run` z czystym
+            // sumieniem; dlatego stoi tu teraz cała prawda, a nie jej lepsza połowa.
           })
           // `finally` przy sprzątaniu piaskownicy, bo wyjątek w `exec` zostawiał
           // katalog i proces bez właściciela — a piaskownica ma po sobie sprzątać

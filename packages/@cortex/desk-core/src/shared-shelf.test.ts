@@ -74,7 +74,7 @@ describe("Wspólna półka", () => {
       `${SHARED}/../sekret-poza-wszystkim.txt`,
       `${MY_FILES}/../../../sekret-poza-wszystkim.txt`,
     ]) {
-      await expect(storage.read("anna", zla), zla).rejects.toThrow(/poza biurkiem/)
+      await expect(storage.read("anna", zla), zla).rejects.toThrow(/outside-desk/)
     }
   })
 

@@ -163,7 +163,12 @@
     "picked": "Selected: {{count}}",
     "unpick": "Clear",
     "movedManyToTrash": "Moved to the bin: {{count}}",
-    "deleteManyFailed": "The selected files could not be deleted."
+    "deleteManyFailed": "The selected files could not be deleted.",
+    "problem": {
+      "outside-desk": "That file is outside your desk.",
+      "too-many-copies": "There are already too many files with that name. Rename it and try again.",
+      "bad-id": "That item was not recognised in the bin. Refresh the page and try again."
+    }
   },
   "fileRow": {
     "newName": "New file name",
@@ -462,7 +467,8 @@
     "noAnswerInTime": "The server did not answer within {{seconds}} s. Check whether it is running at that address.",
     "noSuchFile": "There is no such file.",
     "noSuchCase": "There is no such case.",
-    "emptyJob": "The job is empty — write what I should do."
+    "emptyJob": "The job is empty — write what I should do.",
+    "unexpected": "That action could not be completed. Try again, and if it keeps happening, tell your manager."
   },
   "tools": {
     "list_files": {

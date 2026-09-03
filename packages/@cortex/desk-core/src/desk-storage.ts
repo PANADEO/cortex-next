@@ -24,7 +24,7 @@ function safePath(user: string, wzgledna: string) {
   const inner = shared ? clean.slice(SHARED.length).replace(/^\/+/, "") : clean
   const target = path.resolve(root, inner)
   if (target !== root && !target.startsWith(root + path.sep)) {
-    throw new Error("Ścieżka poza biurkiem")
+    throw new StorageProblem("outside-desk")
   }
   return { root, target, shared }
 }
@@ -119,7 +119,29 @@ async function freeName(fullTarget: string): Promise<string> {
       return candidate
     }
   }
-  throw new Error("Za dużo plików o tej nazwie")
+  throw new StorageProblem("too-many-copies")
+}
+
+/**
+ * KŁOPOT SKŁADOWANIA NAZWANY KODEM, NIE ZDANIEM.
+ *
+ * Do 03.09.2026 te cztery przypadki leciały jako `new Error("Zły identyfikator")` —
+ * polskim zdaniem wpisanym na sztywno w warstwie, która nie ma pojęcia, w jakim języku
+ * czyta człowiek. `files.ts` odsyłał je do przeglądarki przez `String(e)`, a ekran
+ * pokazywał w toaście, więc anglojęzyczny użytkownik dostawał „Error: Zły identyfikator".
+ * Ani jeden strażnik tego nie widział: strażnik napisów pilnuje TRAS, a zdanie mieszkało
+ * o dwa pliki dalej.
+ *
+ * Kod przechodzi przez trasę i dopiero ekran zamienia go na zdanie — tą samą drogą,
+ * którą od dawna jedzie `name-clash`.
+ */
+export type StorageCode = "outside-desk" | "too-many-copies" | "bad-id"
+
+export class StorageProblem extends Error {
+  constructor(public code: StorageCode) {
+    super(code)
+    this.name = "StorageProblem"
+  }
 }
 
 export class NameClash extends Error {
@@ -243,7 +265,7 @@ export async function emptyTrash(user: string): Promise<number> {
  */
 export async function restoreTarget(user: string, id: string) {
   if (id.includes("/") || id.includes("\\") || !id.includes("__"))
-    throw new Error("Zły identyfikator")
+    throw new StorageProblem("bad-id")
   const { basis } = splitId(id)
   const folder = path.dirname(basis)
   try {
@@ -256,7 +278,7 @@ export async function restoreTarget(user: string, id: string) {
 
 export async function restore(user: string, id: string) {
   if (id.includes("/") || id.includes("\\") || !id.includes("__"))
-    throw new Error("Zły identyfikator")
+    throw new StorageProblem("bad-id")
   const { root } = safePath(user, ".")
   const source = path.join(root, ".trash", id)
   const { basis } = splitId(id)

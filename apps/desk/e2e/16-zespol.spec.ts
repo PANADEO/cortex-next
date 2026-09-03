@@ -258,6 +258,39 @@ test.describe("Obszar 25 · Wszystkie sprawy dają się przewertować", () => {
 test.describe("Obszar 25 · Zlecenie startowe kończy się wynikiem, nie kłódką", () => {
   const ANNA = { Cookie: "desk_persona=anna" }
 
+  /**
+   * SUMY POLICZONE NIEZALEŻNIE OD MODELU, z `Moje pliki/faktury-08.csv`, po kategoriach.
+   * To jest sedno całego pomiaru: pytanie brzmi „czy pani Basia dostanie POPRAWNE liczby
+   * bez piaskownicy", a nie „czy powstanie plik". Pierwsza wersja tego scenariusza
+   * sprawdzała samo powstanie pliku i przeszłaby też wtedy, gdyby model policzył źle —
+   * czyli w jedynym przypadku, o który tu naprawdę chodzi.
+   */
+  const KATEGORIE = [
+    { nazwa: "Materiały biurowe", netto: 1702.5, brutto: 2094.08 },
+    { nazwa: "Podróże służbowe", netto: 2536.9, brutto: 2761.65 },
+    { nazwa: "Telekomunikacja", netto: 899, brutto: 1105.77 },
+    { nazwa: "Usługi IT", netto: 6100, brutto: 7503 },
+    { nazwa: "Usługi prawne", netto: 8500, brutto: 10455 },
+    { nazwa: "Paliwo", netto: 712.3, brutto: 876.13 },
+  ]
+
+  /**
+   * „1 702,50", „1702.5", „1702,50" to ta sama liczba — porównujemy po znormalizowaniu.
+   *
+   * GRANICA CYFRY jest tu istotna i kosztowała jedno wstrzyknięcie: bez niej zwykłe
+   * `includes("712.30")` znajdowało tę liczbę w napisie „1712.30", więc podmieniona suma
+   * kategorii przechodziła jako poprawna. Sprawdzian, który daje się oszukać cyfrą
+   * dopisaną z przodu, nie sprawdza rachunku.
+   */
+  const mowiLiczbe = (tekst: string, wartosc: number) => {
+    const bezOdstepow = tekst.replace(/[\s\u00a0]/g, "")
+    return [wartosc.toFixed(2), String(wartosc)].some((forma) =>
+      [forma, forma.replace(".", ",")].some((wariant) =>
+        new RegExp(`(?<!\\d)${wariant.replace(/[.]/g, "\\.")}(?!\\d)`).test(bezOdstepow),
+      ),
+    )
+  }
+
   /** Ta sama droga, którą jedzie tura z ekranu — bez przeglądarki, bo pytamy o zdarzenia. */
   async function tura(request: APIRequestContext, title: string, text: string) {
     const { id } = await (
@@ -270,55 +303,130 @@ test.describe("Obszar 25 · Zlecenie startowe kończy się wynikiem, nie kłódk
       await new Promise((r) => setTimeout(r, 2000))
       const d = await (await request.get(`/api/case/${id}/events`, { headers: ANNA })).json()
       if (d.caseFile.status !== "working" && d.caseFile.status !== "new")
-        return d.events as { event: DeskEvent }[]
+        return { id, status: d.caseFile.status as string, events: d.events as { event: DeskEvent }[] }
     }
     throw new Error("tura się nie skończyła")
   }
 
-  test(
-    "„Zestawienie kosztów miesiąca” pani Basia dowozi bez proszenia o zgodę",
-    { tag: "@model" },
-    async ({ request }) => {
-      test.setTimeout(220_000)
+  /**
+   * ZLECENIA Z PUSTEGO EKRANU, KTÓRE MÓWIĄ „POLICZ" — wszystkie trzy, nie jedno.
+   *
+   * Zarzut dotyczył całej trójki: `CAPABILITY_HINTS` w `runtime.ts` mapuje „policz" na
+   * `code.run`, którego rola startowa nie ma. Zmierzenie jednego zlecenia i rozciągnięcie
+   * wniosku na pozostałe dwa byłoby dokładnie tym rozumowaniem, które ten scenariusz
+   * miał zastąpić pomiarem.
+   */
+  const ZLECENIA = [
+    { id: "expensesSheet", narzedzie: "write_sheet", liczy: true },
+    { id: "expensesDocument", narzedzie: "write_document", liczy: true },
+    { id: "analysis", narzedzie: "write_document", liczy: true },
+  ]
 
-      // TEKST ZE SŁOWNIKA, nie z parafrazy: gdyby ktoś przepisał zlecenie na takie,
-      // którego rola nie unosi, ten scenariusz ma spaść — a parafraza w teście
-      // sprawdzałaby moje wyobrażenie o zleceniu zamiast zlecenia z ekranu.
-      const zlecenie = pl("quickTask.expensesSheet.text")
-      expect(zlecenie).toContain("policz")
-
-      // WARUNEK WSTĘPNY PRZED WYDANIEM PIENIĘDZY: bez pliku z fakturami na biurku
-      // scenariusz nie sprawdziłby niczego, a turę i tak by opłacił.
-      const { files } = await (await request.get("/api/files", { headers: ANNA })).json()
-      const faktury = (files as { path: string }[]).filter((f) => f.path.endsWith(".csv"))
-      expect(faktury.length, "biurko Anny nie ma pliku CSV — nie ma czego liczyć").toBeGreaterThan(
-        0,
+  test.describe("Zlecenia startowe pani Basi", () => {
+    test.beforeAll(async ({ request }) => {
+      // WARUNEK WSTĘPNY POMIARU: Anna NIE MA `code.run`. Bez tego scenariusz przeszedłby
+      // również z przypadkowym nadaniem — czyli mierzyłby coś innego, niż obiecuje.
+      const { people } = await (
+        await request.get("/api/team", { headers: { Cookie: "desk_persona=robert" } })
+      ).json()
+      const anna = people.find((x: { id: string }) => x.id === "anna")
+      expect(anna.granted, "pomiar ma sens tylko wtedy, gdy Anna NIE MA code.run").not.toContain(
+        "code.run",
       )
+    })
 
-      const events = await tura(request, "Zestawienie kosztów — rola startowa", zlecenie)
-      const uzyte = events
-        .filter((x) => x.event.type === "tool_start")
-        .map((x) => (x.event as { name: string }).name)
+    for (const zlecenie of ZLECENIA) {
+      test(
+        `„${zlecenie.id}" kończy się wynikiem, nie prośbą o dostęp`,
+        { tag: "@model" },
+        async ({ request }) => {
+          test.setTimeout(240_000)
 
-      // KONTROLA DODATNIA: tura zrobiła cokolwiek. Bez tego wiersza scenariusz byłby
-      // zielony także wtedy, gdy agent nie kiwnął palcem — brak kłódki jest wtedy
-      // prawdą bez wartości.
-      expect(uzyte.length, "agent nie użył żadnego narzędzia — nie ma czego oceniać").toBeGreaterThan(
-        0,
+          // TEKST ZE SŁOWNIKA, nie z parafrazy: gdyby ktoś przepisał zlecenie na takie,
+          // którego rola nie unosi, ten scenariusz ma spaść.
+          const tresc = pl(`quickTask.${zlecenie.id}.text`)
+          expect(tresc, "to zlecenie miało mówić „policz”").toMatch(/policz/i)
+
+          // Bez pliku z fakturami nie ma czego liczyć — sprawdzamy PRZED wydaniem
+          // pieniędzy na turę.
+          const { files } = await (await request.get("/api/files", { headers: ANNA })).json()
+          expect(
+            (files as { path: string }[]).some((f) => f.path.endsWith("faktury-08.csv")),
+            "biurko Anny nie ma faktur — nie ma czego liczyć",
+          ).toBe(true)
+
+          const { id, status, events } = await tura(request, `Zlecenie ${zlecenie.id}`, tresc)
+
+          // KONTROLA DODATNIA: tura zrobiła cokolwiek.
+          const zaczete = events.filter((x) => x.event.type === "tool_start")
+          expect(zaczete.length, "agent nie użył żadnego narzędzia").toBeGreaterThan(0)
+
+          // SEDNO: żadnej prośby o dostęp — `blocked` to zdarzenie, z którego bierze się
+          // kłódka na ekranie.
+          const klodki = events
+            .filter((x) => x.event.type === "blocked")
+            .map((x) => (x.event as { description: string }).description)
+          expect(klodki, `skończyło się prośbą o dostęp: ${klodki.join("; ")}`).toEqual([])
+
+          // WYNIK MA SIĘ UDAĆ, nie tylko zacząć. Sprawdzanie po `tool_start` przepuszczało
+          // zapis, który padł — a padnięty zapis jest dla pani Basi tym samym co kłódka.
+          const udane = events.filter(
+            (x) =>
+              x.event.type === "tool_end" &&
+              (x.event as { name: string }).name === zlecenie.narzedzie &&
+              (x.event as { ok?: boolean }).ok !== false,
+          )
+          expect(
+            udane.length,
+            `${zlecenie.narzedzie} nie zakończyło się powodzeniem; użyte: ${zaczete
+              .map((x) => (x.event as { name: string }).name)
+              .join(", ")}`,
+          ).toBeGreaterThan(0)
+          expect(status, "sprawa nie skończyła się powodzeniem").toBe("done")
+
+          if (!zlecenie.liczy) return
+
+          // POPRAWNOŚĆ LICZB — bez tego cały scenariusz mierzy powstanie pliku, a pytanie
+          // brzmiało, czy bez piaskownicy wychodzą DOBRE sumy.
+          const teczka = `Sprawy/${id}`
+          const spis = await (
+            await request.get(`/api/files?folder=${encodeURIComponent(teczka)}`, { headers: ANNA })
+          ).json()
+          const wyniki = (spis.files ?? []) as { path: string; name: string }[]
+          expect(wyniki.length, "w teczce sprawy nie ma żadnego pliku").toBeGreaterThan(0)
+
+          let tresci = ""
+          for (const f of wyniki) {
+            const r = await request.get(`/api/file?path=${encodeURIComponent(f.path)}`, {
+              headers: ANNA,
+            })
+            if (r.ok()) tresci += `\n${await r.text()}`
+          }
+
+          // REGUŁA BEZ PROGU: wymieniłeś kategorię — masz ją policzyć dobrze.
+          //
+          // Pierwsza wersja liczyła „ile z sześciu sum się zgadza" i żądała czterech.
+          // Sprawdzone wstrzyknięciem: dopisanie faktury na 1000 zł do „Paliwa" psuje
+          // jedną sumę, zostaje pięć poprawnych — i próg to przepuszczał. Próg z natury
+          // toleruje błędny rachunek, a to jest jedyna rzecz, której ten scenariusz ma
+          // nie tolerować. Pytamy więc o to, co model SAM napisał, a nie o to, ile
+          // z moich oczekiwań pokrył.
+          //
+          // Netto albo brutto — obie podstawy są poprawne, model wybiera jedną.
+          const wymienione = KATEGORIE.filter((k) => tresci.includes(k.nazwa))
+          expect(
+            wymienione.length,
+            `wynik nie wymienia ani kilku kategorii — nie ma czego sprawdzać:\n${tresci.slice(0, 700)}`,
+          ).toBeGreaterThanOrEqual(4)
+          const zle = wymienione
+            .filter((k) => !mowiLiczbe(tresci, k.netto) && !mowiLiczbe(tresci, k.brutto))
+            .map((k) => `${k.nazwa} — miało wyjść ${k.netto} (netto) albo ${k.brutto} (brutto)`)
+          expect(
+            zle,
+            `rachunek się nie zgadza w tych kategoriach.\nw plikach sprawy:\n${tresci.slice(0, 900)}`,
+          ).toEqual([])
+        },
       )
-
-      // SEDNO: żadnej prośby o dostęp. `blocked` to jest dokładnie to zdarzenie,
-      // z którego bierze się kłódka na ekranie.
-      const klodki = events
-        .filter((x) => x.event.type === "blocked")
-        .map((x) => (x.event as { description: string }).description)
-      expect(klodki, `zlecenie startowe skończyło się prośbą o dostęp: ${klodki.join("; ")}`).toEqual(
-        [],
-      )
-
-      // OBIETNICA ZLECENIA: „zapisz jako arkusz". Tura bez arkusza nie jest sukcesem,
-      // nawet jeśli obeszła się bez kłódki.
-      expect(uzyte, `użyte narzędzia: ${uzyte.join(", ")}`).toContain("write_sheet")
-    },
-  )
+    }
+  })
 })

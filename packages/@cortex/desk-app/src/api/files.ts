@@ -90,6 +90,16 @@ export async function POST(req: Request) {
     if (e instanceof storage.NameClash) {
       return NextResponse.json({ error: "name-clash", name: e.name }, { status: 409 })
     }
-    return NextResponse.json({ error: String(e).slice(0, 200) }, { status: 400 })
+    // Kłopot NAZWANY przez warstwę dysku dostaje polskie (albo angielskie) zdanie
+    // dopiero tutaj, bo dopiero tutaj wiadomo, w jakim języku czyta ten człowiek.
+    if (e instanceof storage.StorageProblem) {
+      return NextResponse.json({ error: translate(`files.problem.${e.code}`) }, { status: 400 })
+    }
+    // AWARIA NIEPRZEWIDZIANA. Do 03.09.2026 szedł tu `String(e)`, więc pani Basia
+    // dostawała w dymku „Error: ENOENT: no such file or directory" — zdanie, którego
+    // nikt nie napisał z myślą o czytelniku i z którym nie da się nic zrobić. Szczegół
+    // jest potrzebny, ale W LOGU SERWERA, gdzie zagląda ten, kto umie go użyć.
+    console.error("[files]", e)
+    return NextResponse.json({ error: translate("api.unexpected") }, { status: 400 })
   }
 }

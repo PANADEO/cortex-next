@@ -49,7 +49,7 @@ vi.mock("@cortex/desk-core/capability-gate", () => ({
  * uruchomienie testów. Na maszynie z ustawionym `DESK_DATA_DIR` byłby to zapis na
  * PRAWDZIWĄ wspólną półkę firmy, wykonany przez test jednostkowy.
  *
- * Rzucająca atrapa naprawia przy okazji drugą, subtelniejszą wadę: „przeszło bramę"
+ * Rzucająca stub naprawia przy okazji drugą, subtelniejszą wadę: „przeszło bramę"
  * znaczy teraz dokładnie tyle i nic więcej. Wcześniej wyjątek z bazy liczył się za
  * przejście, więc test nie odróżniał „doszło do dysku i padło" od „doszło do dysku
  * i zapisało".
@@ -74,7 +74,19 @@ vi.mock("@cortex/desk-core/desk-storage", () => ({
   emptyTrash: refuse,
   createFolder: refuse,
   caseFolder: () => "Sprawy/x",
+  // ATRAPA MUSI BYĆ KOMPLETNA, i to nie jest porządkowanie. Brak eksportu nie daje
+  // odmowy — daje `TypeError: … is not a function`, a kontrola dodatnia niżej liczyła
+  // KAŻDY wyjątek za „brama przepuściła". Trasa, która wywracała się na dziurawej
+  // atrapie, wyglądała więc dokładnie tak samo jak trasa, która przeszła bramę.
+  // Pilnuje tego test „stub zna każdą czynność dysku".
+  prepareDesk: refuse,
+  read: refuse,
+  readBinary: refuse,
+  write: refuse,
   NameClash: class NameClash extends Error {},
+  // Klasa, nie stub funkcji: `files.ts` robi na niej `instanceof`, a `instanceof`
+  // na `undefined` sam rzuca — czyli znowu wyglądałoby to na przejście bramy.
+  StorageProblem: class StorageProblem extends Error {},
 }))
 vi.mock("@cortex/desk-core/file-origin", () => ({ originsInMyFiles: refuse }))
 
@@ -232,8 +244,15 @@ describe("wspólna półka odmawia na każdej trasie", () => {
       try {
         const r = await one.call()
         if (r.status === 403) refused.push(`${one.route} — ${one.what}`)
-      } catch {
-        // przeszło bramę i przewróciło się dalej, na infrastrukturze — to znaczy „przeszło"
+      } catch (e) {
+        // Przeszło bramę i przewróciło się dalej, na infrastrukturze — to znaczy
+        // „przeszło". ALE nie każdy wyjątek to znaczy: `… is not a function` albo
+        // „No export defined" mówi, że rozsypała się ATRAPA, a nie że brama puściła.
+        // Bez tego rozróżnienia dziurawa stub udawała dowód.
+        const reason = String(e)
+        if (/is not a function|No .* export|not defined/i.test(reason)) {
+          throw new Error(`${one.route} — ${one.what}: stub jest niepełna, nie brama puściła. ${reason}`)
+        }
       }
     }
     expect(refused, "brama odmawia mimo nadanej zdolności — to nie jest brama, to ściana")
@@ -285,5 +304,76 @@ describe("żadna trasa nie wymyka się temu sprawdzeniu", () => {
     for (const file of Object.keys(EXEMPT)) {
       expect(present.has(file), `EXEMPT wymienia ${file}, którego nie ma w katalogu`).toBe(true)
     }
+  })
+
+  it("stub zna każdą czynność dysku", () => {
+    // PRZYCZYNA, NIE OBJAW. Brak jednej nazwy w atrapie nie daje odmowy — daje
+    // `TypeError`, a wyjątek do złudzenia przypomina „przeszło bramę i przewróciło się
+    // dalej". Tak właśnie `file.ts` przez pewien czas UDAWAŁ, że przechodzi bramę,
+    // podczas gdy wywracał się na `storage.read`, którego stub nie miała.
+    //
+    // Trzymanie listy ręcznie nie działa: `desk-storage` rośnie (`restoreTarget`
+    // i `StorageProblem` doszły w tym tygodniu), a stub nie ma jak o tym wiedzieć.
+    const STORAGE = path.resolve(API, "../../../desk-core/src/desk-storage.ts")
+    const realModule = ts.createSourceFile(
+      "desk-storage.ts",
+      readFileSync(STORAGE, "utf8"),
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TS,
+    )
+    const exported = realModule.statements
+      .filter((one) =>
+        one.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword),
+      )
+      .flatMap((one) => {
+        if (ts.isFunctionDeclaration(one) || ts.isClassDeclaration(one))
+          return one.name ? [one.name.text] : []
+        if (ts.isVariableStatement(one))
+          return one.declarationList.declarations.flatMap((d) =>
+            ts.isIdentifier(d.name) ? [d.name.text] : [],
+          )
+        return []
+      })
+    expect(exported.length, "nie odczytałem eksportów desk-storage").toBeGreaterThan(10)
+
+    // Nazwy w atrapie czytamy z TEGO pliku — jedyne miejsce, gdzie naprawdę stoją.
+    const selfSource = ts.createSourceFile(
+      "self.ts",
+      readFileSync(path.join(API, "shared-shelf-routes.test.ts"), "utf8"),
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TS,
+    )
+    const stub = new Set<string>()
+    const walk = (node: ts.Node): void => {
+      if (
+        ts.isCallExpression(node) &&
+        node.arguments[0] &&
+        ts.isStringLiteralLike(node.arguments[0]) &&
+        node.arguments[0].text === "@cortex/desk-core/desk-storage"
+      ) {
+        const factory = node.arguments[1]
+        if (factory && ts.isArrowFunction(factory)) {
+          const literal = ts.isParenthesizedExpression(factory.body)
+            ? factory.body.expression
+            : factory.body
+          if (ts.isObjectLiteralExpression(literal)) {
+            for (const property of literal.properties) {
+              if (property.name && ts.isIdentifier(property.name)) stub.add(property.name.text)
+            }
+          }
+        }
+      }
+      ts.forEachChild(node, walk)
+    }
+    walk(selfSource)
+    expect(stub.size, "nie odczytałem atrapy z tego pliku").toBeGreaterThan(10)
+
+    expect(
+      exported.filter((name) => !stub.has(name)),
+      "stub nie zna tych czynności — trasa, która po nie sięgnie, wywali się na " +
+        "`is not a function`, a to wygląda w tym teście jak przejście bramy",
+    ).toEqual([])
   })
 })

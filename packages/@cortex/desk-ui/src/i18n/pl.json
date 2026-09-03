@@ -168,7 +168,12 @@
     "picked": "Zaznaczone: {{count}}",
     "unpick": "Odznacz",
     "movedManyToTrash": "Przeniesione do kosza: {{count}}",
-    "deleteManyFailed": "Nie udało się skasować zaznaczonych plików."
+    "deleteManyFailed": "Nie udało się skasować zaznaczonych plików.",
+    "problem": {
+      "outside-desk": "Ten plik jest poza Twoim biurkiem.",
+      "too-many-copies": "Jest już za dużo plików o tej nazwie. Zmień nazwę i spróbuj jeszcze raz.",
+      "bad-id": "Nie rozpoznano tego pliku w koszu. Odśwież stronę i spróbuj jeszcze raz."
+    }
   },
   "fileRow": {
     "newName": "Nowa nazwa pliku",
@@ -481,7 +486,8 @@
     "noAnswerInTime": "Serwer nie odpowiedział w ciągu {{seconds}} s. Sprawdź, czy działa pod tym adresem.",
     "noSuchFile": "Nie ma takiego pliku.",
     "noSuchCase": "Nie ma takiej sprawy.",
-    "emptyJob": "Zlecenie jest puste — napisz, co mam zrobić."
+    "emptyJob": "Zlecenie jest puste — napisz, co mam zrobić.",
+    "unexpected": "Nie udało się wykonać tej czynności. Spróbuj jeszcze raz, a jeśli to się powtórzy — powiedz o tym przełożonemu."
   },
   "tools": {
     "list_files": {
