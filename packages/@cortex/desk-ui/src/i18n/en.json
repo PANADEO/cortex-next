@@ -256,7 +256,53 @@
     "logNote": "The application writes this journal itself. The agent has no access to it and cannot change it.",
     "today": "Today",
     "yesterday": "Yesterday",
-    "tabTeam": "Team"
+    "tabTeam": "Team",
+    "tabOutcomes": "Failures"
+  },
+  "outcomes": {
+    "title": "What did not work",
+    "lead": "Over the last {{days}} days. Numbers, reasons and skills — never the content of someone else’s case.",
+    "loading": "Counting…",
+    "unreadable": "This summary could not be counted. Refresh in a moment — the numbers are in the database, the screen is simply not reaching them right now.",
+    "worksTitle": "Is it working",
+    "cell": {
+      "done": "ended with a result",
+      "failed": "failed",
+      "stopped": "stopped",
+      "unfinished": "in progress"
+    },
+    "share": "{{share}}% of finished jobs end with a result.",
+    "shareUnknown": "Not one case finished in this window — there is nothing to measure yet.",
+    "stopped": {
+      "one": "{{reason}} — {{count}} case",
+      "other": "{{reason}} — {{count}} cases"
+    },
+    "missingTitle": "What people are missing",
+    "missingLead": "Actions the agent needed at work and did not have switched on. Each row is one skill you can switch on for someone.",
+    "missingEmpty": "Nobody hit a lock.",
+    "missingOutside": "an action the skill catalogue does not know",
+    "missingAction": "Switch a skill on in Team",
+    "stepsTitle": "What breaks",
+    "stepsLead": "The agent’s failed actions, counted from events — not from what the model wrote about them.",
+    "stepsEmpty": "No action fell over.",
+    "costTitle": "Is it worth paying for",
+    "costLead": "The same question, about money: how much went into work and how much into repeating the same thing.",
+    "costWithResult": "for work that ended with a result",
+    "costWithoutResult": "for work that brought nothing",
+    "costUnfinished": "for work still under way",
+    "costNote": "Counted from cost events inside this window, not from a case’s whole lifetime — an old expensive case reopened yesterday does not inflate the bill.",
+    "times": {
+      "one": "{{count}} time",
+      "other": "{{count}} times"
+    },
+    "inCases": {
+      "one": "in {{count}} case",
+      "other": "in {{count}} cases"
+    },
+    "people": {
+      "one": "{{count}} person",
+      "other": "{{count}} people"
+    }
   },
   "home": {
     "greeting": "Good morning, {{name}}.",
@@ -807,18 +853,17 @@
     "failed": "The memory could not be changed.",
     "privacy": "The memory is yours. Your manager sees in the journal that you accepted or deleted something — never what it said."
   },
-  "talk": {
-    "seenBy": "Seen by:",
-    "nobody": "only you",
-    "share": "+ Share",
-    "shareWith": "Who should see this case",
-    "stopSharing": "Stop sharing with {{name}}",
-    "write": "Write to the people who can see this case",
-    "send": "Send the message",
-    "placeholder": "Write to the people who can see this case…",
-    "note": "These messages are for people. The assistant does not see them and does not act on them.",
-    "failed": "The message could not be sent.",
-    "empty": "A message cannot be empty."
+  "share": {
+    "open": "Share this case",
+    "title": "Who can see this case",
+    "nobody": "Only you, for now.",
+    "addSomeone": "Show it to someone else",
+    "stop": "Remove access: {{name}}",
+    "copyLink": "Copy a link to this case",
+    "linkCopied": "Copied",
+    "copyFailed": "The link could not be copied. Select the address at the top and copy it by hand.",
+    "viewOnly": "Anyone with access can only look at this case. They cannot give jobs or change anything.",
+    "failed": "Access could not be changed. Try again."
   },
   "settings": {
     "title": "Settings",

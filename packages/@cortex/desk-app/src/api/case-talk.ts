@@ -1,15 +1,23 @@
-import { accessTo, say, share, unshare } from "@cortex/desk-core/case-access"
+import { accessTo, share, unshare } from "@cortex/desk-core/case-access"
 import { whoAmI } from "@cortex/desk-core/identity"
 import { person } from "@cortex/desk-core/people"
 import { deskT } from "@cortex/desk-ui/i18n/server"
 import { NextResponse } from "next/server"
 
 /**
- * Rozmowa przy sprawie i udostępnianie jej do wglądu.
+ * UDOSTĘPNIANIE SPRAWY DO WGLĄDU — i nic poza tym.
  *
- * PISAĆ może każdy, kto sprawę widzi — właściciel i goście. UDOSTĘPNIAĆ wyłącznie
- * właściciel: wgląd w treść cudzej pracy to co innego niż nadzór, więc gość, któremu
- * pokazano jedną sprawę, nie rozdaje jej dalej.
+ * Udostępnia wyłącznie WŁAŚCICIEL: wgląd w treść cudzej pracy to co innego niż nadzór,
+ * więc gość, któremu pokazano jedną sprawę, nie rozdaje jej dalej.
+ *
+ * PISANIE WIADOMOŚCI ZOSTAŁO USUNIĘTE 03.09.2026, decyzją właściciela produktu.
+ * Była to druga droga rozmowy w produkcie, który ma jedną — obok sprawy, obok dowodu
+ * i obok wszystkiego, co ten produkt umie pokazać. Firma ma do tego pocztę i komunikator.
+ * Gość ma widzieć sprawę i nic więcej.
+ *
+ * Wiersze zapisane wcześniej ZOSTAJĄ w bazie. Kasowanie cudzych zdań przy zmianie
+ * zakresu produktu byłoby zniszczeniem danych, a nie sprzątaniem — trasa po prostu
+ * przestaje ich przyjmować i ekran przestaje je pokazywać.
  */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -20,12 +28,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: translate("api.notYourCase") }, { status: 403 })
   }
   const b = await req.json()
-
-  if (b.action === "say") {
-    const text = String(b.text ?? "").trim()
-    if (!text) return NextResponse.json({ error: translate("talk.empty") }, { status: 400 })
-    return NextResponse.json({ ok: true, message: await say(id, u.id, text) })
-  }
 
   if (access !== "owner") {
     return NextResponse.json({ error: translate("api.ownerShares") }, { status: 403 })

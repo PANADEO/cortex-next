@@ -26,12 +26,12 @@ import { api, t } from "../routes"
 import { ActivityTrail } from "./activity-trail"
 import { Artifacts } from "./artifacts"
 import { AttachmentList, type Attachment } from "./attachments"
-import { CaseTalk, type CaseMessage, type CaseShare } from "./case-talk"
 import { fileIcon } from "./file-row"
 import { Icon } from "./icon"
 import { CapabilityLock } from "./lock"
 import { Markdown } from "./markdown"
 import { PanelHandle, WIDTH_DEFAULT, clamp } from "./resize-handle"
+import { ShareMenu, type CaseShare } from "./share-menu"
 import { ResultPanel } from "./result-panel"
 import { TaskField } from "./task-field"
 import { useToast } from "./toast"
@@ -120,9 +120,8 @@ export function CaseView({
   const [panelChoice, setPanelChoice] = useState<boolean | null>(null)
   const [width, setWidthState] = useState(WIDTH_DEFAULT)
   const [selected, setSelected] = useState<string | null>(null)
-  // Wiadomości ludzi i lista wglądów przychodzą tą samą trasą co zdarzenia, ale OBOK
-  // nich — model dostaje `events` i nigdy tego.
-  const [messages, setMessages] = useState<CaseMessage[]>([])
+  // Lista wglądów przychodzi tą samą trasą co zdarzenia, ale OBOK nich — model dostaje
+  // `events` i nigdy tego.
   const [shares, setShares] = useState<CaseShare[]>([])
   const [owner, setOwner] = useState<string | null>(null)
   const from = useRef(0)
@@ -212,12 +211,6 @@ export function CaseView({
           return same ? t : next
         })
 
-        setMessages((w) =>
-          w.length === (d.messages ?? []).length &&
-          w.every((x, i) => x.id === d.messages[i]?.id && x.text === d.messages[i]?.text)
-            ? w
-            : (d.messages ?? []),
-        )
         setOwner((w) => (w === d.owner ? w : (d.owner ?? null)))
         setShares((w) =>
           w.length === (d.shares ?? []).length && w.every((x, i) => x.who === d.shares[i]?.who)
@@ -456,6 +449,19 @@ export function CaseView({
           >
             <Icon as={panel ? PanelRightClose : PanelRight} px={16} />
           </button>
+          {/* Udostępnienie stoi TUTAJ, przy trzech kropkach — czynność rzadka trafia
+            do miejsca dla czynności rzadkich. Do 03.09.2026 był to pas nad polem
+            zlecenia, czyli nad rzeczą, której używa się co minutę. */}
+          {!readOnly && (
+            <ShareMenu
+              id={id}
+              shares={shares}
+              people={people ?? {}}
+              everyone={everyone ?? []}
+              me={me ?? ""}
+              refresh={() => setNow(Date.now())}
+            />
+          )}
           <Menu.Root>
             <Menu.Trigger
               aria-label={translate("case.more")}
@@ -676,20 +682,6 @@ export function CaseView({
         )}
 
         <div className="shrink-0 border-t bg-desk-surface p-3">
-          {(messages.length > 0 || shares.length > 0 || !readOnly) && (
-            <div className={readOnly ? "" : "mb-3"}>
-              <CaseTalk
-                id={id}
-                messages={messages}
-                shares={shares}
-                people={people ?? {}}
-                everyone={readOnly ? [] : (everyone ?? [])}
-                me={me ?? ""}
-                canShare={!readOnly}
-                refresh={() => setNow(Date.now())}
-              />
-            </div>
-          )}
           {/* Pole zlecenia dostaje wyłącznie właściciel: gość ogląda, nie zleca.
               To DOKŁADNIE to samo pole co na biurku — jeden komponent, jedna postać,
               więc osoba, która nauczyła się go raz, nie uczy się go tu drugi raz. */}

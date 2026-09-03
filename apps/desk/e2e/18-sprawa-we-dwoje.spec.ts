@@ -62,28 +62,56 @@ test.describe("Obszar 27 · Udostępnienie sprawy do wglądu", () => {
     expect(dalej.status()).toBe(403)
   })
 
-  test("Wiadomość ludzi NIE jest zdarzeniem sprawy — model jej nie dostaje", async ({
+  test("Pisania wiadomości NIE MA — także wtedy, gdy ktoś zapyta o nie wprost trasą", async ({
     request,
   }) => {
-    // Sprawdzane na ZDARZENIACH, nie na ekranie: to one jadą do modelu jako historia.
+    // Warstwa wiadomości między ludźmi została zdjęta 03.09.2026 decyzją właściciela
+    // produktu: udostępnienie ma dawać PODGLĄD i nic więcej. Sprawdzamy to na TRASIE,
+    // nie na ekranie — schowanie pola przy działającej trasie znaczyłoby, że funkcja
+    // dalej jest, tylko bez klamki.
     const id = await nowaSprawa(request)
-    const przed = await (await request.get(`/api/case/${id}/events`, { headers: anna })).json()
-
-    await request.post(`/api/case/${id}/talk`, {
+    const r = await request.post(`/api/case/${id}/talk`, {
       headers: anna,
       data: { action: "say", text: "Kasia, zerknij na to proszę." },
     })
+    expect(r.status(), "trasa nadal przyjmuje wiadomości").toBe(400)
 
     const po = await (await request.get(`/api/case/${id}/events`, { headers: anna })).json()
-    expect(po.events.length).toBe(przed.events.length)
-    expect(po.messages.map((m: { text: string }) => m.text)).toContain(
-      "Kasia, zerknij na to proszę.",
-    )
-    // ...i ani śladu treści w samych zdarzeniach
-    expect(JSON.stringify(po.events)).not.toContain("Kasia, zerknij")
+    expect(JSON.stringify(po)).not.toContain("Kasia, zerknij")
+    // Sprawa dalej daje się udostępnić — usunięto rozmowę, nie wgląd.
+    const dalej = await request.post(`/api/case/${id}/talk`, {
+      headers: anna,
+      data: { action: "share", who: "robert" },
+    })
+    expect(dalej.ok()).toBe(true)
   })
 
-  test("Gość widzi sprawę i rozmowę, ale nie dostaje pola zlecenia", async ({ page, request }) => {
+  test("Gość ogląda sprawę i nie ma czym w niej pisać — ani do agenta, ani do ludzi", async ({
+    page,
+    request,
+  }) => {
+    const id = await nowaSprawa(request)
+    await request.post(`/api/case/${id}/talk`, {
+      headers: anna,
+      data: { action: "share", who: "robert" },
+    })
+
+    await as(page, "robert")
+    await otworz(page, `/case/${id}`)
+    // Sprawa naprawdę się otwiera — bez tego wiersza reszta byłaby zielona także wtedy,
+    // gdyby gość dostał stronę odmowy.
+    await expect(page.getByText("Sprawa próbna").first()).toBeVisible()
+    // pole zlecenia dostaje wyłącznie właściciel — gość ogląda, nie zleca
+    await expect(page.getByRole("button", { name: "Zleć zadanie" })).toHaveCount(0)
+    // ...i nie ma też DRUGIEGO pola, do ludzi. Udostępnienie znaczy podgląd, kropka.
+    await expect(page.getByRole("textbox")).toHaveCount(0)
+    // Gość nie rozdaje sprawy dalej, więc nie widzi nawet ikony udostępniania.
+    await expect(page.getByRole("button", { name: /Udostępnij/ })).toHaveCount(0)
+  })
+
+  test("Dziennik notuje NADANIE i COFNIĘCIE wglądu, po imieniu", async ({ page, request }) => {
+    // Wpis o wiadomościach zniknął razem z wiadomościami. Zostaje to, co przy udostępnianiu
+    // naprawdę jest decyzją: komu pokazano cudzą pracę i kiedy mu to zabrano.
     const id = await nowaSprawa(request)
     await request.post(`/api/case/${id}/talk`, {
       headers: anna,
@@ -91,27 +119,11 @@ test.describe("Obszar 27 · Udostępnienie sprawy do wglądu", () => {
     })
     await request.post(`/api/case/${id}/talk`, {
       headers: anna,
-      data: { action: "say", text: "Zerknij, proszę, na to zestawienie." },
-    })
-
-    await as(page, "robert")
-    await otworz(page, `/case/${id}`)
-    await expect(page.getByText("Zerknij, proszę, na to zestawienie.")).toBeVisible()
-    // pole zlecenia dostaje wyłącznie właściciel — gość ogląda, nie zleca
-    await expect(page.getByRole("button", { name: "Zleć zadanie" })).toHaveCount(0)
-    // ...ale odpisać może, bo po to mu tę sprawę pokazano
-    await expect(page.getByRole("textbox", { name: /Napisz do osób/ })).toBeVisible()
-  })
-
-  test("Dziennik notuje rozmowę, ale nie jej treść", async ({ page, request }) => {
-    const id = await nowaSprawa(request)
-    await request.post(`/api/case/${id}/talk`, {
-      headers: anna,
-      data: { action: "say", text: "Poufna uwaga o kliencie." },
+      data: { action: "unshare", who: "robert" },
     })
     await as(page, "robert")
     await otworz(page, "/supervision?section=log")
-    await expect(page.getByText("pisze wiadomość przy sprawie").first()).toBeVisible()
-    await expect(page.getByText("Poufna uwaga o kliencie.")).toHaveCount(0)
+    await expect(page.getByText(/udostępnia sprawę/).first()).toBeVisible()
+    await expect(page.getByText(/cofa wgląd w sprawę/).first()).toBeVisible()
   })
 })

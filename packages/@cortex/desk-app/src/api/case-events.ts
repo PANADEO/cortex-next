@@ -1,4 +1,4 @@
-import { accessTo, messages, sharesOf } from "@cortex/desk-core/case-access"
+import { accessTo, sharesOf } from "@cortex/desk-core/case-access"
 import { migrate, pool } from "@cortex/desk-core/db"
 import * as storage from "@cortex/desk-core/desk-storage"
 import { whoAmI } from "@cortex/desk-core/identity"
@@ -44,7 +44,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     owner,
     // Wiadomości ludzi jadą OBOK zdarzeń, nie wśród nich: model dostaje `events`,
     // a tego nie dostaje nigdy.
-    messages: await messages(id),
     shares: access === "owner" ? await sharesOf(id) : [],
   })
 }

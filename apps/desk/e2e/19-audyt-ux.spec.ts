@@ -262,8 +262,8 @@ test.describe("Obszar 28b · Drobiazgi z audytu", () => {
     const { id } = await r.json()
     await as(page, "anna")
     await otworz(page, `/case/${id}`)
-    await page.getByRole("button", { name: "Udostępnij" }).click()
-    await expect(page.getByRole("menuitem", { name: /Robert/ })).toBeVisible()
+    await page.getByRole("button", { name: "Udostępnij tę sprawę" }).click()
+    await expect(page.getByRole("button", { name: /Robert/ })).toBeVisible()
     await expect(page.locator("select")).toHaveCount(0)
   })
 

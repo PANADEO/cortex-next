@@ -263,7 +263,61 @@
     "logNote": "Dziennik zapisuje sama aplikacja. Agent nie ma do niego dostępu i nie może go zmienić.",
     "today": "Dzisiaj",
     "yesterday": "Wczoraj",
-    "tabTeam": "Zespół"
+    "tabTeam": "Zespół",
+    "tabOutcomes": "Nieudane"
+  },
+  "outcomes": {
+    "title": "Co się nie udało",
+    "lead": "Z ostatnich {{days}} dni. Liczby, powody i zdolności — nigdy treść cudzej sprawy.",
+    "loading": "Liczę…",
+    "unreadable": "Nie udało się policzyć tego zestawienia. Odśwież stronę za chwilę — liczby są w bazie, ekran w tej chwili do nich nie dociera.",
+    "worksTitle": "Czy to działa",
+    "cell": {
+      "done": "zakończone wynikiem",
+      "failed": "nieudane",
+      "stopped": "przerwane",
+      "unfinished": "w toku"
+    },
+    "share": "{{share}}% zakończonych zleceń kończy się wynikiem.",
+    "shareUnknown": "W tym oknie nie skończyła się ani jedna sprawa — nie ma jeszcze czego mierzyć.",
+    "stopped": {
+      "one": "{{reason}} — {{count}} sprawa",
+      "few": "{{reason}} — {{count}} sprawy",
+      "many": "{{reason}} — {{count}} spraw",
+      "other": "{{reason}} — {{count}} spraw"
+    },
+    "missingTitle": "Czego ludziom brakuje",
+    "missingLead": "Czynności, których agent potrzebował w pracy, a nie miał ich włączonych. Każdy wiersz to jedna zdolność, którą da się komuś włączyć.",
+    "missingEmpty": "Nikt nie trafił na kłódkę.",
+    "missingOutside": "czynność, której katalog zdolności nie zna",
+    "missingAction": "Włącz zdolność w Zespole",
+    "stepsTitle": "Co się psuje",
+    "stepsLead": "Nieudane czynności agenta, policzone ze zdarzeń — nie z tego, co model o nich napisał.",
+    "stepsEmpty": "Żadna czynność się nie wywróciła.",
+    "costTitle": "Czy warto płacić",
+    "costLead": "To samo pytanie, tylko o pieniądze: ile poszło na pracę, a ile na powtarzanie tego samego.",
+    "costWithResult": "za pracę zakończoną wynikiem",
+    "costWithoutResult": "za pracę, która nic nie przyniosła",
+    "costUnfinished": "za pracę, która jeszcze trwa",
+    "costNote": "Liczone ze zdarzeń kosztu z tego okna, a nie z sumy życia sprawy — stara droga sprawa otwarta wczoraj nie zawyża rachunku.",
+    "times": {
+      "one": "{{count}} raz",
+      "few": "{{count}} razy",
+      "many": "{{count}} razy",
+      "other": "{{count}} razy"
+    },
+    "inCases": {
+      "one": "w {{count}} sprawie",
+      "few": "w {{count}} sprawach",
+      "many": "w {{count}} sprawach",
+      "other": "w {{count}} sprawach"
+    },
+    "people": {
+      "one": "{{count}} osoba",
+      "few": "{{count}} osoby",
+      "many": "{{count}} osób",
+      "other": "{{count}} osób"
+    }
   },
   "home": {
     "greeting": "Dzień dobry, {{name}}.",
@@ -846,18 +900,17 @@
     "failed": "Nie udało się zmienić pamięci.",
     "privacy": "Pamięć jest Twoja. Przełożony widzi w dzienniku, że coś przyjąłeś albo skasowałeś — nigdy treści."
   },
-  "talk": {
-    "seenBy": "Widzą:",
-    "nobody": "tylko Ty",
-    "share": "+ Udostępnij",
-    "shareWith": "Komu pokazać tę sprawę",
-    "stopSharing": "Cofnij wgląd: {{name}}",
-    "write": "Napisz do osób, które widzą tę sprawę",
-    "send": "Wyślij wiadomość",
-    "placeholder": "Napisz do osób, które widzą tę sprawę…",
-    "note": "Te wiadomości czytają ludzie. Asystent ich nie widzi i nie wykonuje.",
-    "failed": "Nie udało się wysłać.",
-    "empty": "Wiadomość nie może być pusta."
+  "share": {
+    "open": "Udostępnij tę sprawę",
+    "title": "Kto widzi tę sprawę",
+    "nobody": "Na razie tylko Ty.",
+    "addSomeone": "Pokaż komuś jeszcze",
+    "stop": "Zabierz dostęp: {{name}}",
+    "copyLink": "Kopiuj link do sprawy",
+    "linkCopied": "Skopiowane",
+    "copyFailed": "Nie udało się skopiować linku. Zaznacz adres na górze i skopiuj ręcznie.",
+    "viewOnly": "Osoba z dostępem może tę sprawę tylko oglądać. Nie zleca i niczego nie zmienia.",
+    "failed": "Nie udało się zmienić dostępu. Spróbuj jeszcze raz."
   },
   "settings": {
     "title": "Ustawienia",
