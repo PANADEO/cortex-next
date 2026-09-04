@@ -26,6 +26,7 @@ import { promptBlock } from "./procedures/prompt-block"
 import { activeProcedures, type StoredProcedure } from "./procedures/store"
 import { visibleFor } from "./procedures/visible"
 import * as sandbox from "./sandbox"
+import { sandboxUsable } from "./sandbox-daemon"
 import { refuseShared } from "./shared-access"
 import { beginTurn, endTurn, wasAborted } from "./turn-control"
 import type { DeskEvent, FileMeta, Policy, StepFailure, User } from "./types"
@@ -975,7 +976,20 @@ export function toolsForPolicy(
       }),
   })
 
-  if (hasCapability(p, "code.run")) {
+  // URUCHAMIANIE KODU WYMAGA PRAWDZIWEJ PIASKOWNICY, nie tylko zdolności.
+  //
+  // Do 04.09.2026 brak demona znaczył CICHE ZEJŚCIE na ścieżkę zastępczą: `node
+  // --permission` odcina system plików, ale SIECI NIE ZAMYKA — mówi to wprost komentarz
+  // w `sandbox.ts`. Żaden plik uruchomieniowy nie ustawia `DESK_SANDBOX_SOCKET`, więc
+  // domyślnym stanem KAŻDEGO wdrożenia był kod z modelu językowego uruchamiany na
+  // dokumentach klienta z otwartym internetem — i nikt się o tym nie dowiadywał, bo brak
+  // zmiennej znaczył „ścieżka zastępcza", a nie „błąd".
+  //
+  // Filtrujemy NA ODKRYCIU, tą samą zasadą co przy zdolnościach: czego nie ma, tego model
+  // nie widzi i nie może o to poprosić. Wdrożenie, które świadomie godzi się na słabszą
+  // izolację, mówi to wprost przez `DESK_ALLOW_WEAK_SANDBOX` — a wtedy jest to DEKLARACJA
+  // w pliku uruchomieniowym, a nie przeoczenie.
+  if (hasCapability(p, "code.run") && sandboxUsable()) {
     t.run_computation = tool({
       description:
         "Uruchamia kod na danych i ODDAJE PLIKI, które ten kod zapisze. Podaj kod oraz " +

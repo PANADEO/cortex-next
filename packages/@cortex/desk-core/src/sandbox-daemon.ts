@@ -51,6 +51,20 @@ const socketPath = () => process.env.DESK_SANDBOX_SOCKET ?? ""
 /** Czy w ogóle mamy demona. Brak zmiennej znaczy „zostajemy na ścieżce zastępczej". */
 export const daemonConfigured = () => socketPath() !== ""
 
+/**
+ * CZY WOLNO W OGÓLE URUCHAMIAĆ KOD Z MODELU.
+ *
+ * Ścieżka zastępcza (`node --permission` w `sandbox.ts`) odcina system plików, ale NIE
+ * ZAMYKA SIECI — jej własny komentarz mówi to wprost. Kod napisany przez model, puszczony
+ * na dokumentach klienta, z otwartym internetem, jest czymś innym niż piaskownica i nie
+ * może być domyślnym stanem wdrożenia tylko dlatego, że nikt nie ustawił zmiennej.
+ *
+ * `DESK_ALLOW_WEAK_SANDBOX` istnieje dla wdrożeń, które tę cenę znają i płacą świadomie
+ * — jej obecność w pliku uruchomieniowym jest podpisem pod tą decyzją. Bez niej i bez
+ * demona czynność licząca po prostu NIE WCHODZI do tury.
+ */
+export const sandboxUsable = () => daemonConfigured() || process.env.DESK_ALLOW_WEAK_SANDBOX === "1"
+
 function call<T>(method: string, path: string, body?: unknown, timeoutMs = 120_000): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const payload = body === undefined ? undefined : Buffer.from(JSON.stringify(body))
@@ -73,7 +87,11 @@ function call<T>(method: string, path: string, body?: unknown, timeoutMs = 120_0
           try {
             parsed = text === "" ? {} : JSON.parse(text)
           } catch {
-            reject(new Error(`piaskownica odpowiedziała czymś, co nie jest JSON-em: ${text.slice(0, 200)}`))
+            reject(
+              new Error(
+                `piaskownica odpowiedziała czymś, co nie jest JSON-em: ${text.slice(0, 200)}`,
+              ),
+            )
             return
           }
           const code = res.statusCode ?? 0
@@ -111,8 +129,12 @@ export const presets = () =>
  * `runtime`, demon oczekiwał `preset`, a JSON połykał to po cichu — HTTP 201 i kod wykonany
  * w złym języku. Dziś demon odrzuca nieznane pola, więc taka pomyłka jest głośna.
  */
-export const createBox = (opts: { user: string; caseId: string; preset?: string; limits?: DaemonLimits }) =>
-  call<DaemonBox>("POST", "/v1/sandboxes", opts, 60_000)
+export const createBox = (opts: {
+  user: string
+  caseId: string
+  preset?: string
+  limits?: DaemonLimits
+}) => call<DaemonBox>("POST", "/v1/sandboxes", opts, 60_000)
 
 export const execBox = (id: string, code: string, timeoutMs: number) =>
   call<DaemonExec>("POST", `/v1/sandboxes/${encodeURIComponent(id)}/exec`, { code }, timeoutMs)

@@ -192,6 +192,19 @@ services:
       # stawia się osobno, na hoście — patrz `deploy/cortex-sandbox.service` i
       # `deploy/compose-fragment.yml` w repozytorium cortex-sandbox.
       DESK_SANDBOX_SOCKET: ${DESK_SANDBOX_SOCKET:-}
+      # PUSTE POWYŻEJ ZNACZY TERAZ „BEZ OBLICZEŃ", A NIE „ciszej i słabiej".
+      #
+      # Do 04.09.2026 brak demona schodził po cichu na ścieżkę zastępczą — czyli kod
+      # napisany przez model językowy biegł na dokumentach klienta z otwartym internetem,
+      # a jedynym śladem tej decyzji był komentarz wyżej. Domyślny stan każdego wdrożenia
+      # był więc słabszy, niż ktokolwiek zadeklarował.
+      #
+      # Dziś czynność licząca po prostu NIE WCHODZI do tury bez demona: model jej nie
+      # widzi i nie poprosi o coś, czego nie ma. Wdrożenie, które tę cenę zna i płaci
+      # świadomie, wpisuje niżej „1" — i wtedy jest to podpis pod decyzją, a nie
+      # przeoczenie. Zostawione puste NIE jest zaniedbaniem: to jest domyślna odpowiedź
+      # „nie uruchamiamy kodu, dopóki nie stoi piaskownica".
+      DESK_ALLOW_WEAK_SANDBOX: ${DESK_ALLOW_WEAK_SANDBOX:-}
       # Ilustromat — modele konfigurowalne per instancja klienta. Puste =
       # domyślne z app/idp/lib/ilustromat/config.ts, nie awaria.
       ILUSTROMAT_TEXT_MODEL: ${ILUSTROMAT_TEXT_MODEL:-}

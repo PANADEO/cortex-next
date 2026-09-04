@@ -17,6 +17,12 @@ const events: DeskEvent[] = []
 
 // `server-only` rzuca wyjątkiem przy imporcie poza Next — a to jest jego cała treść.
 // Poza serwerem Next nic nie chroni, więc podmiana niczego nie osłabia.
+// PIASKOWNICA: ten plik podmienia `./sandbox` w całości, więc prawdziwej nie potrzebuje —
+// ale `run_computation` rejestruje się dopiero, gdy Biurko ma czym uruchomić kod (patrz
+// `sandbox-required.test.ts`). Jawna zgoda jest tu tańsza niż podmiana drugiego modułu
+// i mówi wprost, na czym ten plik stoi.
+process.env["DESK_ALLOW_WEAK_SANDBOX"] = "1"
+
 vi.mock("server-only", () => ({}))
 
 // Baza: `appendEvent` woła `pool.query`, a my chcemy zdarzeń w tablicy, nie w Postgresie.

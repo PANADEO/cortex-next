@@ -18,6 +18,12 @@ let missing: string[] = []
 let outcome = { ok: true, output: "policzone" }
 const execCalls: string[] = []
 
+// PIASKOWNICA: ten plik podmienia `./sandbox` w całości, więc prawdziwej nie potrzebuje —
+// ale `run_computation` rejestruje się dopiero, gdy Biurko ma czym uruchomić kod (patrz
+// `sandbox-required.test.ts`). Jawna zgoda jest tu tańsza niż podmiana drugiego modułu
+// i mówi wprost, na czym ten plik stoi.
+process.env["DESK_ALLOW_WEAK_SANDBOX"] = "1"
+
 vi.mock("server-only", () => ({}))
 vi.mock("./db", () => ({
   migrate: async () => {},
