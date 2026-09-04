@@ -1086,9 +1086,10 @@ export function toolsForPolicy(
             // samą nazwą. Sam opis czynności tego nie zamyka: zmierzone na prawdziwej turze,
             // model potknął się o to PO udanym obliczeniu na tym samym pliku. Zdanie kosztuje
             // nic i zamienia ślepy zaułek w jedną poprawkę.
-            const wrongName = (files ?? []).filter(
-              (f) => f.includes("/") && !r.ok && r.output.includes(f),
-            )
+            // Warunkiem jest LINIA WYJĄTKU, nie całe wyjście. Kod, który wypisał ścieżkę
+            // w logu i przewrócił się na dzieleniu przez zero, dostawał inaczej podpowiedź
+            // o nazwie pliku — czyli poradę mijającą się z jego błędem.
+            const wrongName = (files ?? []).filter((f) => f.includes("/") && reason.includes(f))
             if (wrongName.length > 0) {
               saidAboutFiles.push(
                 `W kodzie użyłeś pełnej ścieżki z biurka. W katalogu roboczym te pliki leżą ` +

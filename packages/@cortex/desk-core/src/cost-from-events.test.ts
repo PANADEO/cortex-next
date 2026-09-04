@@ -73,22 +73,49 @@ function sources(dir: string, into: string[] = []): string[] {
   return into
 }
 
-/** Wiersz kodu, czyli taki, który nie jest komentarzem `//` ani wnętrzem bloku `/* … *\/`. */
+/**
+ * Kod z WYCIĘTYMI komentarzami — a nie „wiersze, które nie wyglądają na komentarz".
+ *
+ * Pierwsza wersja odrzucała CAŁY wiersz zaczynający się od `/*`, więc
+ * `/* uwaga *\/ pool.query(...)` przechodziło jako komentarz razem z zapytaniem, które
+ * niosło. Weryfikator obszedł tak całego strażnika jedną linijką. Tniemy więc same
+ * komentarze i zostawiamy resztę wiersza.
+ */
 function codeLines(text: string): string[] {
   const out: string[] = []
   let inBlock = false
   for (const raw of text.split("\n")) {
-    const line = raw.trim()
-    if (inBlock) {
-      if (line.includes("*/")) inBlock = false
-      continue
+    let rest = raw
+    let kept = ""
+    while (rest !== "") {
+      if (inBlock) {
+        const close = rest.indexOf("*/")
+        if (close < 0) break
+        inBlock = false
+        rest = rest.slice(close + 2)
+        continue
+      }
+      const line = rest.indexOf("//")
+      const block = rest.indexOf("/*")
+      if (block >= 0 && (line < 0 || block < line)) {
+        kept += rest.slice(0, block)
+        inBlock = true
+        rest = rest.slice(block + 2)
+        continue
+      }
+      if (line >= 0) {
+        kept += rest.slice(0, line)
+        rest = ""
+        continue
+      }
+      kept += rest
+      rest = ""
     }
-    if (line.startsWith("/*")) {
-      if (!line.includes("*/")) inBlock = true
-      continue
-    }
-    if (line.startsWith("//") || line.startsWith("*")) continue
-    out.push(raw)
+    // Wiersz ciągłego komentarza blokowego bywa wyrównany gwiazdką — po wycięciu zostaje
+    // sam napis w rodzaju „* patrz cost_usd", który kodem nie jest.
+    const trimmed = kept.trim()
+    if (trimmed === "" || trimmed.startsWith("*")) continue
+    out.push(kept)
   }
   return out
 }

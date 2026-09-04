@@ -207,7 +207,18 @@ function Row({
 }) {
   const translate = useDeskT()
   const locale = useDeskLocale()
-  const [open, setOpen] = useState(k.status === "failed" && revealFailure === true)
+  /**
+   * `null` znaczy „człowiek jeszcze nie decydował" — wtedy o rozwinięciu rozstrzyga tura.
+   *
+   * Stało tu `useState(k.status === "failed" && revealFailure)`, czyli decyzja ZAMROŻONA
+   * w chwili montowania wiersza. Na żywo to nie wystarcza: gdy start i koniec nieudanego
+   * kroku przyjdą w jednej paczce odpytania, jest on w tamtej chwili krokiem OSTATNIM,
+   * więc otwiera się — i zostaje otwarty do końca tury, także po udanym powtórzeniu.
+   * Człowiek patrzył wtedy na ślad `FileNotFoundError` przez resztę pracy agenta, mimo
+   * że wszystko poszło dobrze. Zamrożony `useState` na zmienny prop nie reaguje.
+   */
+  const [openedByHand, setOpenedByHand] = useState<boolean | null>(null)
+  const open = openedByHand ?? (k.status === "failed" && revealFailure === true)
   const o = describeStep(k, translate)
   const failure = describeFailure(k, translate, { approver, iAmTheApprover })
   const s = STEP_STATUS[k.status]
@@ -219,7 +230,7 @@ function Row({
     <li>
       <button
         type="button"
-        onClick={() => hasDetail && setOpen((x) => !x)}
+        onClick={() => hasDetail && setOpenedByHand(!open)}
         aria-expanded={hasDetail ? open : undefined}
         disabled={!hasDetail}
         className="group flex h-9 w-full items-center gap-2 rounded-sm px-3 text-left enabled:hover:bg-desk-raised/60 md:h-desk-step"
@@ -243,8 +254,21 @@ function Row({
       {open && hasDetail && (
         <div className="pb-2 pl-10 pr-3 pt-0.5 text-[13px] leading-5 text-desk-muted">
           {o.path && <div>{translate("trail.onFile", { path: o.path })}</div>}
-          {o.detail && <div>{translate("trail.saw", { detail: o.detail })}</div>}
+          {/* NAJPIERW ZDANIE DLA CZŁOWIEKA, POTEM ZAPIS TECHNICZNY.
+              Przy kroku, który padł, `summary` jest linią wyjątku — „błąd wykonania —
+              FileNotFoundError: [Errno 2]…". Stała PIERWSZA, nad kartą awarii, więc
+              osoba, która świadomie kliknęła „co się stało", najpierw dostawała komunikat
+              interpretera, a dopiero pod nim trzy zdania po polsku. Kolejność jest
+              odwrócona, a sama linia przyciszona — nie znika, bo dla przełożonego
+              i dla diagnozy jest jedyną konkretną informacją, ale przestaje być
+              pierwszym, co się czyta. */}
+          {o.detail && !failure && <div>{translate("trail.saw", { detail: o.detail })}</div>}
           {failure && <Failure text={failure} />}
+          {o.detail && failure && (
+            <div className="t-micro pt-1 text-desk-muted">
+              {translate("trail.technical", { detail: o.detail })}
+            </div>
+          )}
           <div className="t-micro pt-0.5">
             {new Intl.DateTimeFormat(locale, { timeStyle: "medium" }).format(new Date(at))}
           </div>

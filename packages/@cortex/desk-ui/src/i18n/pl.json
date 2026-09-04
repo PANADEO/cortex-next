@@ -481,6 +481,7 @@
   "trail": {
     "onFile": "Na pliku: {{path}}",
     "saw": "Zobaczyłem: {{detail}}",
+    "technical": "Zapis techniczny: {{detail}}",
     "working": "Pracuję nad tym…",
     "stumbled": "Zrobione z potknięciem: {{what}}",
     "label": "Przebieg pracy",

@@ -15,7 +15,7 @@
 // bo `useState(k.status === "failed")` wygląda niewinnie i czyta się jak wygoda.
 
 import type { DeskEvent } from "@cortex/desk-core/types"
-import { render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, within } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 import { DeskLocaleProvider } from "../i18n/client"
 import { makeDeskT } from "../i18n/locale"
@@ -57,6 +57,17 @@ const ruined = [
   ...step("read_document", true, "20 z 56 stron", { path: "Sprawy/c1/hhh.xlsx" }),
   ...step("run_computation", false, BOOM, { files: ["hhh.xlsx"], description: "policz" }),
 ]
+
+/** Samo drzewo — potrzebne osobno, bo `rerender` przyjmuje element, nie propsy. */
+const trail = (entries: ReturnType<typeof entry>[], isWorking: boolean) => (
+  <DeskLocaleProvider locale="pl">
+    <ActivityTrail
+      entries={entries}
+      isWorking={isWorking}
+      now={Date.parse("2026-09-04T07:41:00Z")}
+    />
+  </DeskLocaleProvider>
+)
 
 function show(entries: ReturnType<typeof entry>[], isWorking = false) {
   return render(
@@ -106,12 +117,45 @@ describe("czy przebieg jest rozwinięty po wejściu na sprawę", () => {
 
 describe("wiersz kroku, który padł", () => {
   it("NIE pokazuje śladu błędu sam z siebie, gdy tura się udała", () => {
-    // Krok w przebiegu zostaje, z krzyżykiem — znika wyłącznie SAMO ROZWINIĘCIE.
+    // Sprawa oglądana PO fakcie: cała tura naraz, ostatni krok udany. Wiersz, który
+    // padł, zostaje w przebiegu z krzyżykiem — znika wyłącznie SAMO ROZWINIĘCIE.
     // Kto chce zobaczyć, klika; nic nie jest usunięte ani przemilczane.
     show(detour, true)
     expect(screen.queryByText(new RegExp("FileNotFoundError"))).toBeNull()
     const list = screen.getByRole("list", { name: t("trail.steps") })
     expect(within(list).getAllByRole("listitem")).toHaveLength(3)
+  })
+
+  it("ZAMYKA SIĘ SAM, gdy agent naprawi to w następnym kroku — NA ŻYWO", () => {
+    // NAJWAŻNIEJSZY test w tym pliku i jedyny, który sprawdza tę rzecz W RUCHU.
+    //
+    // Test wyżej renderuje całą turę naraz, czyli scenariusz „wracam na sprawę sprzed
+    // godziny". Na żywo jest inaczej: krok, który padł, przez chwilę JEST krokiem
+    // ostatnim, więc wiersz słusznie się otwiera. Pytanie brzmi, co się dzieje POTEM.
+    //
+    // Zmierzone przed poprawką: nic. `useState` zamrażał decyzję w chwili montowania
+    // wiersza, więc zostawał on otwarty do końca tury i człowiek patrzył na ślad
+    // `FileNotFoundError` przez resztę pracy agenta — mimo że agent poprawił ścieżkę
+    // i wszystko dokończył. Prop się zmieniał, stan nie.
+    const view = render(trail(detour.slice(0, 4), true)) // odczyt ✓ + obliczenie ✕
+    expect(screen.getByText(new RegExp("FileNotFoundError"))).toBeTruthy()
+
+    view.rerender(trail(detour, true)) // przyszedł udany krok
+    expect(screen.queryByText(new RegExp("FileNotFoundError"))).toBeNull()
+  })
+
+  it("ale RĘKI CZŁOWIEKA nie cofa — raz rozwinięty wiersz zostaje rozwinięty", () => {
+    // Kontrola ujemna do poprawki wyżej. Bez niej „samo się zamyka" zatrzaskiwałoby
+    // wiersz pod palcami osobie, która właśnie go czyta.
+    const view = render(trail(detour.slice(0, 4), true))
+    const failed = screen
+      .getAllByRole("button")
+      .find((b) => /Nie policzyłem/.test(b.textContent ?? ""))
+    fireEvent.click(failed!) // zwija ręką
+    expect(screen.queryByText(new RegExp("FileNotFoundError"))).toBeNull()
+    fireEvent.click(failed!) // i rozwija z powrotem
+    view.rerender(trail(detour, true))
+    expect(screen.getByText(new RegExp("FileNotFoundError"))).toBeTruthy()
   })
 
   it("KONTROLA UJEMNA: gdy tura padła, powód i «co teraz» są widoczne od razu", () => {

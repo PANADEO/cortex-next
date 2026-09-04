@@ -454,6 +454,7 @@
   "trail": {
     "onFile": "On file: {{path}}",
     "saw": "I saw: {{detail}}",
+    "technical": "Technical note: {{detail}}",
     "working": "Working on it…",
     "stumbled": "Done, with a stumble: {{what}}",
     "label": "Work trail",

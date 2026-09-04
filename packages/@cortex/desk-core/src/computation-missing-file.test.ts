@@ -15,6 +15,7 @@ import type { DeskEvent, Policy, User } from "./types"
 
 const events: DeskEvent[] = []
 let missing: string[] = []
+let outcome = { ok: true, output: "policzone" }
 const execCalls: string[] = []
 
 vi.mock("server-only", () => ({}))
@@ -49,7 +50,7 @@ vi.mock("./sandbox", () => ({
     missing,
     exec: async (code: string) => {
       execCalls.push(code)
-      return { ok: true, output: "policzone" }
+      return outcome
     },
     collect: async () => ({ kept: [], skipped: [] }),
     dispose: async () => {},
@@ -94,6 +95,7 @@ describe("brakujący plik zatrzymuje obliczenie", () => {
     events.length = 0
     execCalls.length = 0
     missing = []
+    outcome = { ok: true, output: "policzone" }
   })
 
   it("KOD NIE RUSZA, a krok kończy się powodem «nie ma pliku»", async () => {
@@ -127,5 +129,50 @@ describe("brakujący plik zatrzymuje obliczenie", () => {
     await run(["Sprawy/c1/dane.csv"])
     expect(execCalls).toEqual(["print(1)"])
     expect(ended()?.ok).toBe(true)
+  })
+})
+
+describe("podpowiedź o pełnej ścieżce użytej w kodzie", () => {
+  beforeEach(() => {
+    events.length = 0
+    execCalls.length = 0
+    missing = []
+    outcome = { ok: true, output: "policzone" }
+  })
+
+  const boom = (line: string) =>
+    (outcome = {
+      ok: false,
+      output: `Traceback (most recent call last):\n  File "<string>"\n${line}`,
+    })
+
+  it("odpala się, gdy WYJĄTEK mówi o pliku, który leży pod samą nazwą", async () => {
+    boom("FileNotFoundError: [Errno 2] No such file or directory: 'Sprawy/c1/dane.csv'")
+    const answer = await run(["Sprawy/c1/dane.csv"])
+    expect(answer).toContain("«Sprawy/c1/dane.csv» to «dane.csv»")
+  })
+
+  it("MILCZY, gdy ścieżka stoi w logu, a przewróciło się co innego", async () => {
+    // Warunkiem była kiedyś obecność ścieżki w CAŁYM wyjściu, więc kod, który wypisał
+    // ścieżkę w logu i padł na dzieleniu przez zero, dostawał poradę o nazwie pliku —
+    // czyli wskazówkę mijającą się z jego błędem. Fałszywa podpowiedź w narzędziu, które
+    // ma naprowadzać, jest gorsza niż jej brak.
+    outcome = {
+      ok: false,
+      output: "wczytuję Sprawy/c1/dane.csv\nZeroDivisionError: division by zero",
+    }
+    const answer = await run(["Sprawy/c1/dane.csv"])
+    expect(answer).not.toContain("pełnej ścieżki")
+  })
+
+  it("MILCZY, gdy obliczenie się udało", async () => {
+    const answer = await run(["Sprawy/c1/dane.csv"])
+    expect(answer).not.toContain("pełnej ścieżki")
+  })
+
+  it("MILCZY przy pliku bez katalogu — nie ma czego mylić", async () => {
+    boom("FileNotFoundError: [Errno 2] No such file or directory: 'dane.csv'")
+    const answer = await run(["dane.csv"])
+    expect(answer).not.toContain("pełnej ścieżki")
   })
 })
