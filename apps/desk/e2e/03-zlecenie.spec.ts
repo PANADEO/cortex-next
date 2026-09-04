@@ -41,6 +41,39 @@ test.describe("Obszar 3 · Zlecam robotę, dostaję dokument z dowodem", () => {
     await expect(page.getByRole("button", { name: "Zleć zadanie" })).toBeVisible()
   })
 
+  test("Plik przeciągnięty z pulpitu ląduje w zleceniu, nie otwiera się w przeglądarce", async ({
+    page,
+  }) => {
+    /**
+     * Przeciąganie działało dotąd wyłącznie w „Moich plikach". Pole zlecenia miało
+     * wklejanie (`onPaste`) robiące dokładnie to samo — i nie miało upuszczania.
+     *
+     * Ten scenariusz idzie przez PRAWDZIWE zdarzenia przeglądarki, bo testy jednostkowe
+     * składają `DataTransfer` własnoręcznie: tam atrapa może mieć kształt, którego prawdziwa
+     * przeglądarka nie ma. Tutaj `DataTransfer` jest prawdziwy, plik prawdziwy, a upuszczenie
+     * idzie tam, gdzie celuje człowiek — w RAMKĘ pola, nie w jego wnętrze.
+     */
+    await as(page, "anna")
+    await page.goto("/")
+
+    const frame = page.locator('[data-drop="task"]')
+    await expect(frame).toBeVisible()
+
+    await frame.evaluate((box) => {
+      const carrier = new DataTransfer()
+      carrier.items.add(new File(["nr,netto\n1/08,1000\n"], "z-pulpitu.csv", { type: "text/csv" }))
+      box.dispatchEvent(new DragEvent("dragenter", { dataTransfer: carrier, bubbles: true }))
+      box.dispatchEvent(new DragEvent("drop", { dataTransfer: carrier, bubbles: true }))
+    })
+
+    // Plik jest ZAŁĄCZNIKIEM tego zlecenia — wariant A decyzji właściciela. Do „Moich
+    // plików" prowadzi osobna droga i ma nią zostać.
+    await expect(page.getByText("z-pulpitu.csv")).toBeVisible()
+    // I nadal jesteśmy w aplikacji: przeglądarka nie otworzyła pliku zamiast go przyjąć.
+    expect(new URL(page.url()).pathname).toBe("/")
+    await expect(page.getByLabel(POLE)).toBeVisible()
+  })
+
   test(
     "Praca na pliku z biurka kończy się dokumentem z dowodem",
     { tag: "@model" },

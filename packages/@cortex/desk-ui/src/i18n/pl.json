@@ -90,7 +90,9 @@
     "reason": {
       "stopped-by-you": "przerwane przez Ciebie",
       "server-restart": "przerwane restartem serwera"
-    }
+    },
+    "dropHere": "Upuść — dołączę do tego zlecenia",
+    "dropFolder": "Całego folderu nie przyjmę. Otwórz go i przeciągnij pliki, których potrzebujesz."
   },
   "cases": {
     "documents": {

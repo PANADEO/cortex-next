@@ -1,11 +1,55 @@
 "use client"
 import type { Policy } from "@cortex/desk-core/types"
 import { LoaderCircle, Paperclip } from "lucide-react"
-import { useId, useRef, type RefObject } from "react"
+import { useEffect, useId, useRef, useState, type RefObject } from "react"
 import { useDeskT } from "../i18n/client"
 import { AttachmentList, type Attachment } from "./attachments"
 import { CapabilityButton } from "./capability-list"
 import { Icon } from "./icon"
+import { useToast } from "./toast"
+
+/**
+ * PRZEGLĄDARKA DOMYŚLNIE OTWIERA UPUSZCZONY PLIK — i to jest najgorszy możliwy skutek
+ * chybionego celu: sprawa znika z ekranu, a człowiek nie wie, co się stało i jak wrócić.
+ *
+ * Blokada stoi na CAŁYM dokumencie, bo chybić da się wszędzie, ale wyłącznie w fazie
+ * bąbelkowania i tylko wtedy, gdy nikt inny tego nie obsłużył (`defaultPrevented`).
+ * Inaczej zabiłaby upuszczanie w „Moich plikach", które działa i ma zostać.
+ */
+function useDropDoesNotLeaveTheApp() {
+  useEffect(() => {
+    const swallow = (e: DragEvent) => {
+      if (e.defaultPrevented) return
+      e.preventDefault()
+    }
+    document.addEventListener("dragover", swallow)
+    document.addEventListener("drop", swallow)
+    return () => {
+      document.removeEventListener("dragover", swallow)
+      document.removeEventListener("drop", swallow)
+    }
+  }, [])
+}
+
+/** Czy w tym, co ktoś ciągnie, są w ogóle PLIKI — a nie zaznaczony tekst albo odnośnik. */
+const carriesFiles = (t: DataTransfer | null) =>
+  Boolean(t) && Array.from(t!.types).includes("Files")
+
+/**
+ * Czy wśród upuszczonych rzeczy jest KATALOG. Przeglądarka oddaje go w `files` jako wpis
+ * o zerowym rozmiarze i pustym typie, więc bez tego sprawdzenia człowiek upuściłby folder
+ * faktur i nie dostał ani pliku, ani zdania — czyli ciszę w miejscu, w którym spodziewa się
+ * dwudziestu czterech dokumentów.
+ */
+function hasFolder(t: DataTransfer): boolean {
+  for (const item of Array.from(t.items)) {
+    const entry = (
+      item as DataTransferItem & { webkitGetAsEntry?: () => { isDirectory: boolean } | null }
+    ).webkitGetAsEntry?.()
+    if (entry?.isDirectory) return true
+  }
+  return false
+}
 
 /**
  * POLE ZLECENIA MA JEDNĄ POSTAĆ — na biurku i na dole sprawy, przy każdej szerokości okna.
@@ -55,9 +99,18 @@ export function TaskField({
   policyFor: Policy
 }) {
   const translate = useDeskT()
+  const { toast } = useToast()
   const picker = useRef<HTMLInputElement>(null)
   const id = useId()
   const hintId = `${id}-hint`
+  const [over, setOver] = useState(false)
+  /**
+   * `dragenter` i `dragleave` strzelają TAKŻE z każdego dziecka ramki, więc przesunięcie
+   * kursora z obramowania na pole tekstowe wygląda jak wyjście. Licznik znosi zagnieżdżenie —
+   * ten sam chwyt, co w `file-explorer.tsx`.
+   */
+  const depth = useRef(0)
+  useDropDoesNotLeaveTheApp()
   const empty = !text.trim() && files.length === 0
   const blocked = empty || busy || files.some((z) => z.uploading)
 
@@ -69,7 +122,54 @@ export function TaskField({
       <p id={hintId} className="t-meta mb-2 mt-0.5">
         {hint}
       </p>
-      <div className="editor rounded-xl border bg-desk-surface shadow-desk-pop">
+      {/* CELEM JEST CAŁA RAMKA, nie samo pole tekstowe. Człowiek celuje w prostokąt,
+          który widzi; trzy piksele obok trafiałyby w dokument, a plik otworzyłby się
+          zamiast dołączyć. Uchwyty siedzą tu, a nie na `textarea`, właśnie dlatego. */}
+      <div
+        data-drop="task"
+        onDragEnter={(e) => {
+          if (!carriesFiles(e.dataTransfer)) return
+          e.preventDefault()
+          depth.current += 1
+          setOver(true)
+        }}
+        onDragOver={(e) => {
+          // Bez tego przeglądarka odmawia upuszczenia — `dragover` musi być przechwycony
+          // przy KAŻDYM ruchu, nie tylko przy wejściu.
+          if (carriesFiles(e.dataTransfer)) e.preventDefault()
+        }}
+        onDragLeave={() => {
+          depth.current -= 1
+          if (depth.current <= 0) {
+            depth.current = 0
+            setOver(false)
+          }
+        }}
+        onDrop={(e) => {
+          if (!carriesFiles(e.dataTransfer)) return
+          e.preventDefault()
+          depth.current = 0
+          setOver(false)
+          if (hasFolder(e.dataTransfer)) {
+            // Zdanie zamiast ciszy. Katalog wygląda jak plik i upuszcza się tak samo,
+            // a bez tego człowiek zobaczyłby, że „nic się nie stało".
+            toast({ text: translate("case.dropFolder"), tone: "error" })
+            return
+          }
+          onFiles(e.dataTransfer.files)
+        }}
+        className={`editor relative rounded-xl border bg-desk-surface shadow-desk-pop ${
+          over ? "border-desk-accent ring-2 ring-desk-accent-soft" : ""
+        }`}
+      >
+        {/* Zdanie, a nie sama ramka: „coś się podświetliło" nie mówi, CO się stanie
+            po puszczeniu. `pointer-events-none`, żeby nakładka nie przejęła upuszczenia
+            i nie wywołała `dragleave` w chwili, w której kursor nad nią wjeżdża. */}
+        {over && (
+          <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center rounded-xl bg-desk-surface/90">
+            <span className="t-body-m text-desk-accent">{translate("case.dropHere")}</span>
+          </div>
+        )}
         {files.length > 0 && (
           <div className="max-h-[136px] overflow-y-auto border-b px-3 py-2.5">
             <AttachmentList files={files} remove={removeFile} />

@@ -89,7 +89,9 @@
     "reason": {
       "stopped-by-you": "you stopped it",
       "server-restart": "interrupted by a server restart"
-    }
+    },
+    "dropHere": "Drop it — I will attach it to this job",
+    "dropFolder": "I cannot take a whole folder. Open it and drag in the files you need."
   },
   "cases": {
     "documents": {
