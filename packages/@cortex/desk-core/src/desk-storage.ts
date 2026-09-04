@@ -189,11 +189,25 @@ export async function copy(user: string, fromPath: string, toPath: string) {
   return path.relative(root, target)
 }
 
-/** Kasowanie jest odwracalne — do kosza, nie w niebyt. W identyfikatorze siedzi CAŁA ścieżka źródłowa. */
+/**
+ * Kasowanie jest odwracalne — do kosza, nie w niebyt. W identyfikatorze siedzi CAŁA ścieżka
+ * źródłowa, więc przywracanie wie, skąd plik zniknął, choćby leżał na wspólnej półce.
+ *
+ * KOSZ JEST ZAWSZE WŁASNY, także dla pliku ze wspólnej półki. Do 04.09.2026 korzeń brało
+ * się z pliku ŹRÓDŁOWEGO, więc firmowy wzór pisma lądował w `wspolne/.trash` — katalogu,
+ * do którego nie zagląda ani `trash()`, ani `restore()`, ani `emptyTrash()`, bo wszystkie
+ * trzy pytają o kosz OSOBY. Plik znikał z półki i nie pokazywał się nigdzie: nie do
+ * odzyskania, nie do skasowania, rosnący bez końca. Reszta kodu zakładała ten kształt od
+ * początku — komentarz przy `restoreTarget` opisuje wprost „osobę, która wyrzuciła firmowy
+ * wzór pisma DO WŁASNEGO KOSZA". Tylko to jedno miejsce robiło inaczej.
+ */
 export async function toTrash(user: string, wzgledna: string) {
-  const { root, target } = safePath(user, wzgledna)
+  const { target } = safePath(user, wzgledna)
+  const { root: mine } = safePath(user, ".")
   const id = `${Date.now()}__${encodeURIComponent(wzgledna)}`
-  await fs.rename(target, path.join(root, ".trash", id))
+  const bin = path.join(mine, ".trash")
+  await fs.mkdir(bin, { recursive: true })
+  await fs.rename(target, path.join(bin, id))
   return id
 }
 

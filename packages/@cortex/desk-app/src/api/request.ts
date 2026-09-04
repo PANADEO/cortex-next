@@ -124,14 +124,20 @@ export async function PATCH(req: Request) {
   }
   const { who, capability } = r.rows[0]
 
+  // ODMOWA PRZED ZAPISEM, nie po nim. Prośba „o coś spoza katalogu" nie ma czego nadać
+  // i ekran przełożonego słusznie nie pokazuje przy niej przycisku nadania — ale trasa
+  // dawała się zawołać wprost, a wtedy działy się trzy rzeczy naraz i każda mówiła co
+  // innego: baza zapisywała „przyznane", wołający dostawał 400, a wpis do dziennika
+  // NIE POWSTAWAŁ, bo `audit.write` stoi za tym zwrotem. Prośby nie dało się potem
+  // rozpatrzyć drugi raz — kolejne wywołanie odbijało się o 409 „już rozstrzygnięta".
+  // Teraz prośba zostaje `pending`, czyli w stanie, w którym naprawdę jest.
+  if (capability === "other" && decision === "granted") {
+    return NextResponse.json({ error: translate("api.notGrantable") }, { status: 400 })
+  }
   await pool.query(
     `update desk.access_request set status=$2, decided_at=now(), decided_by=$3 where id=$1`,
     [id, decision, u.id],
   )
-  if (capability === "other" && decision === "granted") {
-    // nie ma czego nadać — taką prośbę można wyłącznie odnotować jako przyjętą do rozważenia
-    return NextResponse.json({ error: translate("api.notGrantable") }, { status: 400 })
-  }
   if (decision === "granted") {
     await pool.query(
       `insert into desk.grant (who, capability, granted_by) values ($1,$2,$3)
