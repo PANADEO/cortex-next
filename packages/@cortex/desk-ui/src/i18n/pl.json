@@ -593,7 +593,6 @@
     "noSharedWrite": "Odkładanie na wspólną półkę nadaje przełożony.",
     "tooLarge": "{{name}} waży więcej niż 25 MB.",
     "dailyLimit": "Wyczerpany dzienny limit kosztów. Poproś przełożonego o podniesienie.",
-    "costUnreadable": "Nie udało się odczytać dzisiejszego kosztu.",
     "managerOnly": "To robi przełożony.",
     "badUrl": "Adres musi zaczynać się od http:// albo https://.",
     "badName": "Nazwa techniczna: małe litery, cyfry i myślnik.",
@@ -823,12 +822,7 @@
     "mcpToolApproved": "przyjmuje narzędzie {{tool}} z serwera {{server}}",
     "mcpToolWithdrawn": "wycofuje narzędzie {{tool}} z serwera {{server}}",
     "mcpToolSuspended": "— narzędzie {{tool}} wstrzymane: {{reason}}",
-    "costReset": {
-      "one": "— wyzerowano dzisiejszy koszt ({{usd}} USD na {{count}} sprawie)",
-      "few": "— wyzerowano dzisiejszy koszt ({{usd}} USD na {{count}} sprawach)",
-      "many": "— wyzerowano dzisiejszy koszt ({{usd}} USD na {{count}} sprawach)",
-      "other": "— wyzerowano dzisiejszy koszt ({{usd}} USD na {{count}} sprawach)"
-    },
+    "costReset": "— wyzerowano dzisiejszy koszt ({{usd}} USD); wycofane",
     "unknown": "zdarzenie „{{type}}” (nieopisane)",
     "capabilityGranted": "nadaje zdolność „{{name}}” osobie {{who}}",
     "personCreated": "wchodzi na Biurko pierwszy raz ({{email}})",

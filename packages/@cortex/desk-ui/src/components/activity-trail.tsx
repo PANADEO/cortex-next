@@ -189,6 +189,7 @@ function Row({
   now,
   approver,
   iAmTheApprover,
+  revealFailure,
 }: {
   k: Step
   at: string
@@ -196,10 +197,17 @@ function Row({
   /** „Imię Nazwisko" osoby wydającej zgody; pusto, gdy Biurko nie umie jej wskazać. */
   approver?: string | undefined
   iAmTheApprover?: boolean | undefined
+  /**
+   * Czy krok, który padł, ma sam się otworzyć. Decyduje o tym CAŁA tura, nie ten wiersz:
+   * gdy tura skończyła się źle, zdanie „co teraz" jest najważniejszą rzeczą na ekranie
+   * i chowanie go za kliknięciem szkodzi; gdy tura się udała, ten sam tekst jest opisem
+   * objazdu, który agent zrobił sam sobie — i wygląda jak awaria, której nie było.
+   */
+  revealFailure?: boolean | undefined
 }) {
   const translate = useDeskT()
   const locale = useDeskLocale()
-  const [open, setOpen] = useState(k.status === "failed")
+  const [open, setOpen] = useState(k.status === "failed" && revealFailure === true)
   const o = describeStep(k, translate)
   const failure = describeFailure(k, translate, { approver, iAmTheApprover })
   const s = STEP_STATUS[k.status]
@@ -276,15 +284,39 @@ export function ActivityTrail({
     entries.map((w) => w.event),
     translate,
   )
-  const stumble = steps.some((k) => k.status === "failed")
+  /**
+   * CZY TURA SKOŃCZYŁA SIĘ ŹLE — po OSTATNIM kroku, nie po jakimkolwiek.
+   *
+   * Dotąd wystarczył jeden krok z krzyżykiem w dowolnym miejscu, żeby nagłówek zapalił
+   * się na żółto, cały przebieg został rozwinięty na stałe, a wiersz z surowym błędem
+   * sam się otworzył. Tymczasem agent, który pomylił ścieżkę pliku, poprawił ją i dokończył
+   * pracę, NIE zrobił nic niepokojącego — to jego własny objazd, tak samo jak człowiek
+   * otwierający nie ten segregator. Pani Basia dostawała ostrzeżenie o zdarzeniu, które
+   * jej nie dotyczy, i ślad `FileNotFoundError` pod nim.
+   *
+   * O tym, czy jest źle, mówi krok OSTATNI: jeśli padła ostatnia próba, tura naprawdę
+   * skończyła się porażką i nagłówek ma o tym krzyczeć. Jeśli po potknięciu przyszedł
+   * udany krok, potknięcie było drogą, a nie wynikiem — zostaje w przebiegu z krzyżykiem,
+   * jeden klik stąd, i nic z niego nie znika.
+   */
+  const endedBadly = steps[steps.length - 1]?.status === "failed"
   // „Zrobione z potknięciem: nic nie zostało zrobione" jest zdaniem sprzecznym samym
   // ze sobą, a właśnie tak brzmiał nagłówek, gdy PADŁY WSZYSTKIE kroki. Grupa, z której
   // nie wyszła ani jedna czynność, mówi wprost, że się nie udało.
-  const nothingDone = stumble && !steps.some((k) => k.status === "ok")
+  const nothingDone = endedBadly && !steps.some((k) => k.status === "ok")
   const uncertain = evidence.unverified.length > 0
   const blocked = evidence.notAllowed.length > 0
   const external = evidence.external.length > 0
-  const [collapsed, setCollapsed] = useState(false)
+  /**
+   * SPRAWA OTWARTA PO CZASIE ZACZYNA ZWINIĘTA. Zwijanie po 800 ms jest po to, żeby przebieg
+   * nie zatrzasnął się w oczach człowieka, który właśnie na niego patrzył. Kto wraca do
+   * sprawy sprzed godziny, nie patrzył — dostawał więc mignięcie całej listy kroków i
+   * dopiero potem porządek. Praca agenta ma być rzeczą DO OBEJRZENIA NA ŻĄDANIE, a nie
+   * pierwszą rzeczą, którą widać po wejściu.
+   */
+  const [collapsed, setCollapsed] = useState(
+    !isWorking && steps.length > 0 && !endedBadly && !uncertain && !blocked,
+  )
   const collapsedOnce = useRef(false)
 
   /**
@@ -300,7 +332,7 @@ export function ActivityTrail({
   // Zwijamy 800 ms po zakończeniu — ale zła wiadomość nigdy nie chowa się sama.
   useEffect(() => {
     if (isWorking || collapsedOnce.current || !steps.length) return
-    if (stumble || uncertain || blocked) {
+    if (endedBadly || uncertain || blocked) {
       collapsedOnce.current = true
       return
     }
@@ -309,7 +341,7 @@ export function ActivityTrail({
       collapsedOnce.current = true
     }, 800)
     return () => clearTimeout(t)
-  }, [isWorking, steps.length, stumble, uncertain, blocked])
+  }, [isWorking, steps.length, endedBadly, uncertain, blocked])
 
   if (!steps.length) return null
 
@@ -326,7 +358,7 @@ export function ActivityTrail({
       }
     : nothingDone
       ? { icon: X, className: "text-desk-bad", text: translate("trail.allFailed") }
-      : stumble
+      : endedBadly
         ? {
             icon: TriangleAlert,
             className: "text-desk-warn",
@@ -389,6 +421,7 @@ export function ActivityTrail({
               now={now}
               approver={approver}
               iAmTheApprover={iAmTheApprover}
+              revealFailure={endedBadly}
             />
           ))}
         </ul>

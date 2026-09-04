@@ -979,8 +979,10 @@ export function toolsForPolicy(
     t.run_computation = tool({
       description:
         "Uruchamia kod na danych i ODDAJE PLIKI, które ten kod zapisze. Podaj kod oraz " +
-        "listę plików z biurka w polu `pliki` — zostaną zamontowane w katalogu roboczym " +
-        'pod swoimi nazwami (np. "faktury-08.csv"). Wypisz wynik przez print/console.log. ' +
+        "listę plików z biurka w polu `pliki`. UWAGA NA NAZWY: w polu `pliki` podajesz " +
+        "PEŁNĄ ścieżkę z biurka, ale w katalogu roboczym plik leży pod SAMĄ NAZWĄ, bez " +
+        'katalogów — "Sprawy/abc123/raport.xlsx" otwierasz w kodzie jako "raport.xlsx". ' +
+        "Wypisz wynik przez print/console.log. " +
         "KAŻDY PLIK ZAPISANY W KATALOGU ROBOCZYM TRAFIA DO TECZKI SPRAWY — tak powstają " +
         "dokumenty (pandoc: .docx, .pdf), arkusze i wykresy z danych (matplotlib). " +
         "Środowisko zależy od wdrożenia; domyślnie jest to Python z pandas, openpyxl, " +
@@ -1015,6 +1017,31 @@ export function toolsForPolicy(
           // katalog i proces bez właściciela — a piaskownica ma po sobie sprzątać
           // także wtedy, gdy to ona jest przyczyną awarii.
           try {
+            // PLIKU NIE BYŁO — NIE URUCHAMIAMY KODU.
+            //
+            // Piaskownica startowała dotąd także wtedy, gdy montaż się nie udał, więc kod
+            // przewracał się na `FileNotFoundError`, a w przebiegu stawał krzyżyk ze śladem
+            // stosu Pythona. Dwie rzeczy naraz były przez to gorsze, niż musiały być:
+            // model dostawał błąd interpretera zamiast zdania o brakującym pliku, a człowiek
+            // — wpis, z którego nie da się wyczytać, że po prostu podano złą ścieżkę.
+            //
+            // Liczenie na CZĘŚCI plików też odpada: wynik policzony z dwóch faktur zamiast
+            // trzech wygląda jak wynik prawidłowy i nie ma na sobie żadnego znaku.
+            if (box.missing.length > 0) {
+              const named = box.missing.map((one) => `«${one}»`).join(", ")
+              return {
+                ok: false,
+                summary:
+                  box.missing.length === 1
+                    ? `nie ma pliku ${named}`
+                    : `nie ma ${box.missing.length} plików: ${named}`,
+                reason: "no-such-file" as const,
+                answer:
+                  `Nie ma na biurku tych plików: ${named}. Kodu NIE uruchomiono, ` +
+                  "więc nic nie zostało policzone. Sprawdź ścieżkę czynnością `list_files` " +
+                  "i powtórz z poprawną — nie zgaduj i nie licz z tego, co zostało.",
+              }
+            }
             const r = await box.exec(code)
             // „Za duże" to nie to samo co „nie udało się" — i człowiek ma zobaczyć różnicę.
             // Bez tego rozróżnienia obliczenie ucięte na suficie wygląda w dowodzie
@@ -1054,6 +1081,22 @@ export function toolsForPolicy(
             const lost = got?.skipped ?? []
 
             const saidAboutFiles: string[] = []
+            // POMYŁKA NAZWY W ŚRODKU, nazwana po imieniu. Model wpisuje do `pliki` pełną
+            // ścieżkę z biurka i tę samą ścieżkę powtarza potem w kodzie — a plik leży pod
+            // samą nazwą. Sam opis czynności tego nie zamyka: zmierzone na prawdziwej turze,
+            // model potknął się o to PO udanym obliczeniu na tym samym pliku. Zdanie kosztuje
+            // nic i zamienia ślepy zaułek w jedną poprawkę.
+            const wrongName = (files ?? []).filter(
+              (f) => f.includes("/") && !r.ok && r.output.includes(f),
+            )
+            if (wrongName.length > 0) {
+              saidAboutFiles.push(
+                `W kodzie użyłeś pełnej ścieżki z biurka. W katalogu roboczym te pliki leżą ` +
+                  `pod samą nazwą: ${wrongName
+                    .map((f) => `«${f}» to «${path.basename(f)}»`)
+                    .join(", ")}. Popraw kod i powtórz.`,
+              )
+            }
             if (made.length > 0) {
               saidAboutFiles.push(
                 `W teczce sprawy powstały pliki: ${made.map((one) => path.basename(one)).join(", ")}.`,

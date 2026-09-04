@@ -11,8 +11,21 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const u = await whoAmI()
   const translate = await deskT()
   const from = Number(new URL(req.url).searchParams.get("from") ?? 0)
+  // KOSZT LICZONY ZE ZDARZEŃ, a nie z kolumny `case_file.cost_usd`. To ostatnie miejsce
+  // w produkcie, które czytało tamtą kolumnę, i jedyne, przez które człowiek koszt widział.
+  //
+  // Kolumna jest sumą utrzymywaną obok zdarzeń, więc dawała się rozjechać ze stanem
+  // faktycznym i rozjeżdżała się naprawdę: trasa testowa zerowała ją dla wszystkich spraw
+  // „z dzisiaj", także dla spraw człowieka klikającego w Biurku w trakcie przebiegu testów.
+  // Wracał na ekran sprawy, którą przed chwilą zrobił, i widział 0,00 zł.
+  //
+  // Zdarzenie `cost` jest niewzruszalne — nikt go nie nadpisuje ani nie zeruje — więc ta
+  // suma naprawia też HISTORIĘ: sprawy okradzione z kolumny pokazują znowu swój koszt.
   const s = await pool.query(
-    `select owner, title, status, reason, cost_usd::float8 as cost, updated_at as "updatedAt" from desk.case_file where id=$1`,
+    `select c.owner, c.title, c.status, c.reason, c.updated_at as "updatedAt",
+            coalesce((select sum((e.payload->>'usd')::numeric) from desk.event e
+                       where e.case_id = c.id and e.payload->>'type' = 'cost'), 0)::float8 as cost
+       from desk.case_file c where c.id=$1`,
     [id],
   )
   if (!s.rowCount) {

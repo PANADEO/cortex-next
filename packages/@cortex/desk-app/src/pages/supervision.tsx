@@ -83,9 +83,15 @@ export default async function Page({
     pool.query<{ n: string }>(
       `select count(*)::text as n from desk.mcp_tool where status='suspended'`,
     ),
+    // DZISIEJSZY KOSZT ZE ZDARZEŃ, nie z kolumny sprawy — ta sama zasada, na której stoi
+    // `spentToday` i `costByStatus`, i ostatnie miejsce w produkcie, które ją łamało.
+    // Suma po kolumnie z `updated_at` z dzisiaj wnosiła CAŁY historyczny koszt sprawy
+    // sprzed miesiąca, w której ktoś dziś dopisał zdanie — więc plakietka nad sekcją
+    // pokazywała inną liczbę niż wykres pod nią, obie podpisane „dzisiaj".
     pool.query<{ total: string }>(
-      `select coalesce(sum(cost_usd),0)::text as total from desk.case_file
-       where updated_at::date = now()::date`,
+      `select coalesce(sum((payload->>'usd')::numeric),0)::text as total
+         from desk.event
+        where payload->>'type' = 'cost' and at::date = now()::date`,
     ),
     everyone(),
     // Porażki w plakietce, a nie dopiero po wejściu w sekcję: przełożony ma zobaczyć,

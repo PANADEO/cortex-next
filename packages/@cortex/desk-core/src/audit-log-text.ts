@@ -257,14 +257,14 @@ export function describeEntry(
         text: translate("journal.procedureRestored", { name: String(s.name ?? "") }),
         weight: "important",
       }
+    // ZDARZENIE WYCOFANE, opis zostaje. Trasa testowa zerowała kolumnę `cost_usd` i pisała
+    // ten wpis; nie robi już ani jednego, ani drugiego (patrz `cost-from-events.test.ts`).
+    // W dzienniku leżą jednak tysiące takich wierszy z przeszłości i mają się dalej czytać
+    // po ludzku — dziennik jest zapisem tego, co się wydarzyło, także wtedy, gdy było to
+    // pomyłką. Liczba spraw z opisu wypadła, bo nikt jej już nie zapisuje, a opis sięgający
+    // po niezapisywane pole jest dokładnie tą usterką, której pilnuje kontrakt dziennika.
     case "cost.reset":
-      return {
-        text: translate("journal.costReset", {
-          usd: String(s.usd ?? 0),
-          count: Number(s.cases ?? 0),
-        }),
-        weight: "normal",
-      }
+      return { text: translate("journal.costReset", { usd: String(s.usd ?? 0) }), weight: "normal" }
     default:
       return { text: translate("journal.unknown", { type: w.type }), weight: "normal" }
   }

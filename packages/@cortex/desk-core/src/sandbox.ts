@@ -27,6 +27,11 @@ export type ExecOutcome = {
 export type Handle = {
   id: string
   folder: string
+  /**
+   * Ścieżki z `mounts`, których na biurku nie było. Pusta lista znaczy „wszystko się
+   * zamontowało" — a niepusta jest powodem, żeby kodu w ogóle nie uruchamiać.
+   */
+  missing: string[]
   exec(code: string): Promise<ExecOutcome>
   /**
    * Przenosi na biurko pliki, które kod zostawił. WOŁAĆ PRZED `dispose()` — potem
@@ -137,7 +142,18 @@ async function collectFrom(
   return { kept, skipped }
 }
 
-async function mountInto(folder: string, user: string, mounts: Mount[]) {
+/**
+ * Kopiuje pliki z biurka do katalogu roboczego i ODDAJE TE, KTÓRYCH NIE ZNALAZŁ.
+ *
+ * Do 04.09.2026 nieudany montaż był CICHY, z komentarzem „agent zobaczy pusty katalog".
+ * Zmierzone na prawdziwej sprawie, co agent widzi naprawdę: piaskownica wstawała bez
+ * pliku, kod ruszał i przewracał się na `FileNotFoundError`, a człowiek dostawał w
+ * przebiegu krzyżyk ze śladem stosu Pythona zamiast zdania „nie ma takiego pliku".
+ * Cisza nie oszczędziła nikomu ani jednego błędu — przesunęła go tylko o jeden krok
+ * dalej i zamieniła w gorszy.
+ */
+async function mountInto(folder: string, user: string, mounts: Mount[]): Promise<string[]> {
+  const missing: string[] = []
   for (const m of mounts) {
     try {
       const source = await fullPath(user, m.fromDesk)
@@ -145,9 +161,10 @@ async function mountInto(folder: string, user: string, mounts: Mount[]) {
       await fs.mkdir(path.dirname(target), { recursive: true })
       await fs.cp(source, target, { recursive: true })
     } catch {
-      /* montaż nieistniejącej ścieżki jest cichy — agent zobaczy pusty katalog */
+      missing.push(m.fromDesk)
     }
   }
+  return missing
 }
 
 export async function create(opts: {
@@ -170,10 +187,11 @@ export async function create(opts: {
       ...(opts.preset === undefined ? {} : { preset: opts.preset }),
       limits: { seconds: limits.seconds, memoryMb: limits.memoryMb },
     })
-    await mountInto(box.folder, opts.user, opts.mounts)
+    const missing = await mountInto(box.folder, opts.user, opts.mounts)
     return {
       id: box.id,
       folder: box.folder,
+      missing,
       async exec(code: string) {
         // Zapas 15 s ponad limit sprawy: chcemy usłyszeć od demona „timeout" jako WYNIK,
         // a nie zerwać połączenie i zgadywać, co się stało po drugiej stronie.
@@ -193,11 +211,12 @@ export async function create(opts: {
   // /private/var/... — bez rozwinięcia dowiązania uprawnienia nie objęłyby własnego katalogu
   const folder = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), `desk-${opts.caseId}-`)))
 
-  await mountInto(folder, opts.user, opts.mounts)
+  const missing = await mountInto(folder, opts.user, opts.mounts)
 
   return {
     id: path.basename(folder),
     folder,
+    missing,
     async exec(code: string) {
       return new Promise((resolve) => {
         // Jawna lista zmiennych środowiskowych. NIGDY ...process.env —

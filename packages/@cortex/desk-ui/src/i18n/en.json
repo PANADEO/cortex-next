@@ -560,7 +560,6 @@
     "noSharedWrite": "Your manager grants the right to put things on the company shelf.",
     "tooLarge": "{{name}} is larger than 25 MB.",
     "dailyLimit": "The daily cost limit is used up. Ask your manager to raise it.",
-    "costUnreadable": "Could not read today’s cost.",
     "managerOnly": "Your manager does this.",
     "badUrl": "The address has to start with http:// or https://.",
     "badName": "Technical name: lowercase letters, digits and hyphens.",
@@ -770,10 +769,7 @@
     "mcpToolApproved": "accepts tool {{tool}} from server {{server}}",
     "mcpToolWithdrawn": "withdraws tool {{tool}} from server {{server}}",
     "mcpToolSuspended": "— tool {{tool}} suspended: {{reason}}",
-    "costReset": {
-      "one": "— today’s cost was reset ({{usd}} USD across {{count}} case)",
-      "other": "— today’s cost was reset ({{usd}} USD across {{count}} cases)"
-    },
+    "costReset": "— today’s cost was reset ({{usd}} USD); withdrawn",
     "unknown": "event “{{type}}” (undescribed)",
     "capabilityGranted": "grants the “{{name}}” capability to {{who}}",
     "personCreated": "signs in to the Desk for the first time ({{email}})",
